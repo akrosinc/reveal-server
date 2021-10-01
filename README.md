@@ -1,2 +1,2 @@
-# reveal-fhir-query
-Query resources in FHIR format
+# reveal-server
+Core server for the Reveal platform
