@@ -8,6 +8,7 @@ buildscript {
 }
 
 plugins {
+    id "org.sonarqube" version "3.3"
     id 'org.owasp.dependencycheck' version '6.3.2'
     id 'org.springframework.boot' version '2.5.5'
     id 'io.spring.dependency-management' version '1.0.11.RELEASE'
@@ -38,4 +39,10 @@ dependencies {
 
 test {
     useJUnitPlatform()
+}
+
+sonarqube {
+    properties {
+        property "sonar.sourceEncoding", "UTF-8"
+    }
 }
