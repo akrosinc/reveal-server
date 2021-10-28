@@ -1,21 +1,12 @@
 package com.revealprecision.revealserver.persistence.repository;
 
 import com.revealprecision.revealserver.persistence.domain.Plan;
-
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
-import java.util.List;
+import java.util.UUID;
 
-public interface PlanRepository {
+@Repository
+public interface PlanRepository extends JpaRepository<Plan, UUID> {
 
-    List<Plan> searchPlans(String planTitle);
-
-    @Query(value = "SELECT * FROM plan WHERE payload ->> 'title' LIKE '%:planTitle%;",
-        countQuery = "SELECT COUNT(*) FROM plan WHERE payload ->> 'title' LIKE '%:planTitle%;",
-        nativeQuery = true)
-    Page<Plan> searchPlans(@Param("planTitle") String planTitle, Pageable PageRequest);
 }
