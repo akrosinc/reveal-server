@@ -7,7 +7,7 @@ Core server for the Reveal platform
 This will scan the system for code using SonarQube.
 
 ```bash
-./gradlew --stacktrace sonarqube -Dsonar.login=743e90ec3404e42d67132b12648d40c5f896461d -Dsonar.host.url=https://sonar-ops.akros.online -Dsonar.dependencyCheck.htmlReportPath=build/reports/dependency-check-report.html
+./gradlew --stacktrace sonarqube -Dsonar.login=757122c7b05f7f0e7872caf3ac9a0f4cb6564248 -Dsonar.host.url=https://sonar-ops.akros.online -Dsonar.dependencyCheck.htmlReportPath=build/reports/dependency-check-report.html
 ```
 
 ## Jacoco

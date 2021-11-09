@@ -1,52 +1,28 @@
 package com.revealprecision.revealserver.persistence.domain;
 
-import org.hibernate.annotations.GenericGenerator;
+import com.fasterxml.jackson.annotation.JsonRawValue;
 import org.hibernate.envers.Audited;
 
 import javax.persistence.*;
-import java.util.UUID;
+import javax.validation.constraints.NotNull;
 
 @Entity
 @Table
 @Audited
 public class Plan extends AbstractAuditableEntity {
-    @Id
-    @GenericGenerator(name = "UUIDGenerator", strategy = "uuid2")
-    @GeneratedValue(generator = "UUIDGenerator")
-    private UUID id;
-    @Column
-    private String title;
 
-    public Plan(UUID id, String title) {
-        this.id = id;
-        this.title = title;
-    }
-
-    public Plan() {
-
-    }
-
-    public Plan(String title) {
-        this.title = title;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
+    @NotNull(message = "Cannot save with empty payload")
+    @Column (name = "payload", columnDefinition = "json")
+    @JsonRawValue
+    private String payload;
 
     @Override
     public String toString() {
-        return "Plan{" +
-                "createdBy='" + createdBy + '\'' +
-                ", createdDatetime=" + createdDatetime +
-                ", modifiedBy='" + modifiedBy + '\'' +
-                ", modifiedDatetime=" + modifiedDatetime +
-                ", id=" + id +
-                ", title='" + title + '\'' +
-                '}';
+        return "\"plan\": {" +
+                ", \"id\": \"" + id + "\"" +
+                ", \"createdDatetime\": \"" + createdDatetime + "\"" +
+                ", \"modifiedDatetime\": \"" + modifiedDatetime + "\"" +
+                ", \"payload\": \"" + payload + "\"" +
+                "}";
     }
 }

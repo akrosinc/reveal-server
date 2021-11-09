@@ -1,26 +1,36 @@
 package com.revealprecision.revealserver.persistence.domain;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import org.hibernate.envers.Audited;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import javax.persistence.Column;
-import javax.persistence.MappedSuperclass;
-import javax.persistence.EntityListeners;
-import javax.persistence.PrePersist;
-import javax.persistence.PreUpdate;
+import javax.persistence.*;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
-import java.util.Objects;
 
 @MappedSuperclass
 @EntityListeners(AuditingEntityListener.class)
 @Audited
 public abstract class AbstractAuditableEntity {
+    @Id
+    @Column
+    protected Long id;
 
-    @Column(name = "created_by", nullable = false) protected String createdBy;
-    @Column(name = "created__datetime", nullable = false) protected LocalDateTime createdDatetime = LocalDateTime.now();
-    @Column(name = "modified_by", nullable = false) protected String modifiedBy;
-    @Column(name = "modified_datetime", nullable = false) protected LocalDateTime modifiedDatetime = LocalDateTime.now();
+    @Column(name = "created_datetime", nullable = false)
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS[X]", timezone = "${spring.jackson.time-zone}")
+    protected LocalDateTime createdDatetime = LocalDateTime.now();
+
+    @Column(name = "modified_datetime", nullable = false)
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS[X]", timezone = "${spring.jackson.time-zone}")
+    protected LocalDateTime modifiedDatetime = LocalDateTime.now();
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
 
     @PrePersist
     public void prePersist() {
@@ -32,10 +42,5 @@ public abstract class AbstractAuditableEntity {
     @PreUpdate
     public void preUpdate() {
         this.modifiedDatetime = ZonedDateTime.now().toLocalDateTime();
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(super.hashCode(), createdBy, createdDatetime, modifiedBy, modifiedDatetime);
     }
 }
