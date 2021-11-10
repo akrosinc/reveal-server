@@ -11,10 +11,10 @@ import java.util.UUID;
 @Repository
 public interface PlanRepository extends JpaRepository<Plan, UUID> {
 
-    @Modifying
-    @Query(value = "SELECT payload FROM plan WHERE payload ->> 'identifier' = ':planIdentifier'", nativeQuery = true)
-    static Plan findAllByPlanIdentifier(String planIdentifier) {
-
-        return "blue";
-    };
+//    @Modifying
+//    @Query(value = "SELECT payload FROM plan WHERE payload ->> 'identifier' = ':planIdentifier'", nativeQuery = true)
+//    static Plan findAllByPlanIdentifier(String planIdentifier) {
+//
+//        return "blue";
+//    };
 }

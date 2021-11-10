@@ -3,15 +3,13 @@ package com.revealprecision.revealserver.api;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.service.PlanService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import javax.annotation.security.RolesAllowed;
 import java.util.List;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("api/v1/")
@@ -27,6 +25,7 @@ public class PlanController {
 			tags = { "Plan" }
 	)
 	@ResponseStatus(HttpStatus.OK)
+//	@RolesAllowed("view_plan")
 	@GetMapping(value = "/plan",
 			produces = "application/json"
 	)
@@ -34,17 +33,17 @@ public class PlanController {
 		return planService.getPlans(); /// Add pagination
 	}
 
-	@Operation(summary = "Fetch a Plan by identfier",
-			description = "Fetch a Plan by identfier",
-			tags = { "Plan" }
-	)
-	@ResponseStatus(HttpStatus.OK)
-	@GetMapping(value = "/plan/{identifier}",
-			produces = "application/json"
-	)
-	public Plan getPlanByIdentifier(@Parameter(description = "Plan identifier") @PathVariable("identifier") String planIdentifier){
-		return planService.getPlanByIdentifer(planIdentifier);
-	}
+//	@Operation(summary = "Fetch a Plan by identfier",
+//			description = "Fetch a Plan by identfier",
+//			tags = { "Plan" }
+//	)
+//	@ResponseStatus(HttpStatus.OK)
+//	@GetMapping(value = "/plan/{identifier}",
+//			produces = "application/json"
+//	)
+//	public Plan getPlanByIdentifier(@Parameter(description = "Plan identifier") @PathVariable("identifier") String planIdentifier){
+//		return planService.getPlanByIdentifer(planIdentifier);
+//	}
 
 	@Operation(summary = "Create a plan",
 			description = "Create a Plan",
