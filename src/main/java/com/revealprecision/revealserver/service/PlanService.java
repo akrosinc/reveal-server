@@ -42,7 +42,7 @@ public class PlanService {
         return save;
     }
 
-    public Plan getPlanByIdentifer(String planIdentifier) {
-        return PlanRepository.findAllByPlanIdentifier(planIdentifier);
-    }
+//    public Plan getPlanByIdentifer(String planIdentifier) {
+//        return PlanRepository.findAllByPlanIdentifier(planIdentifier);
+//    }
 }
