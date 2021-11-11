@@ -47,3 +47,4 @@ public class KeycloakSecurityConfig extends KeycloakWebSecurityConfigurerAdapter
     public KeycloakConfigResolver KeycloakConfigResolver() {
         return new KeycloakSpringBootConfigResolver();
     }
+}
