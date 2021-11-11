@@ -1,13 +1,13 @@
-# reveal-server
+# revealserver
 
 Core server for the Reveal platform
 
 ## Static code analysis
 
-This will scan the system for code using SonarQube
+This will scan the system for code using SonarQube.
 
 ```bash
-./gradlew --stacktrace sonarqube -Dsonar.login=d498159b2f7dc035c905f8b810823bf2c295dd33 -Dsonar.host.url=https://sonar-ops.akros.online
+./gradlew --stacktrace sonarqube -Dsonar.login=757122c7b05f7f0e7872caf3ac9a0f4cb6564248 -Dsonar.host.url=https://sonar-ops.akros.online -Dsonar.dependencyCheck.htmlReportPath=build/reports/dependency-check-report.html
 ```
 
 ## Jacoco
