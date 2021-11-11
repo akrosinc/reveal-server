@@ -1,7 +1,6 @@
 package com.revealprecision.revealserver.persistence.domain;
 
 import com.revealprecision.revealserver.persistence.domain.model.PlanPayload;
-import org.hibernate.annotations.Type;
 import org.hibernate.envers.Audited;
 
 import javax.persistence.*;
@@ -14,7 +13,6 @@ import javax.validation.constraints.NotNull;
 public class Plan extends AbstractAuditableEntity {
 
     @NotNull(message = "Cannot save with empty payload")
-    @Type(type = "json")
     @Column (columnDefinition = "json")
     private PlanPayload payload;
 
