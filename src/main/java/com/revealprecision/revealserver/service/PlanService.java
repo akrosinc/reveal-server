@@ -7,10 +7,9 @@ import com.revealprecision.revealserver.persistence.repository.PlanRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
-import java.util.UUID;
 
 @Service
 public class PlanService {
@@ -25,8 +24,8 @@ public class PlanService {
         this.producerService = producerService;
         this.objectMapper = objectMapper;
     }
-    public List<Plan> getPlans(){
-        return planRepository.findAll();
+    public Page<Plan> getPlans(Integer pageNumber, Integer pageSize){
+        return planRepository.findAll(PageRequest.of(pageNumber,pageSize));
     }
 
     public Plan createPlan(Plan plan) {
@@ -42,7 +41,7 @@ public class PlanService {
         return save;
     }
 
-//    public Plan getPlanByIdentifer(String planIdentifier) {
-//        return PlanRepository.findAllByPlanIdentifier(planIdentifier);
-//    }
+    public Plan getPlanByIdentifier(String planIdentifier) {
+        return planRepository.findByIdentifier(planIdentifier);
+    }
 }
