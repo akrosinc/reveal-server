@@ -1,0 +1,13 @@
+{
+  "properties": [
+    {
+      "name": "keycloak.policy-enforcer-config.enforcement-mode",
+      "type": "java.lang.String",
+      "description": "Description for keycloak.policy-enforcer-config.enforcement-mode."
+    },
+    {
+      "name": "keycloak.policy-enforcer-config.lazy-load-paths",
+      "type": "java.lang.String",
+      "description": "Description for keycloak.policy-enforcer-config.lazy-load-paths."
+    }
+  ] }

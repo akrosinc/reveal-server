@@ -8,11 +8,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.security.RolesAllowed;
 import java.util.List;
 
 @RestController
-@RequestMapping("api/v1/")
+@RequestMapping("/api/v1/")
 public class PlanController {
 	private PlanService planService;
 
@@ -25,7 +24,6 @@ public class PlanController {
 			tags = { "Plan" }
 	)
 	@ResponseStatus(HttpStatus.OK)
-//	@RolesAllowed("view_plan")
 	@GetMapping(value = "/plan",
 			produces = "application/json"
 	)
