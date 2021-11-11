@@ -25,7 +25,7 @@ public class KafkaConsumerConfig {
     private String bootstrapServers;
 
     @Value("${spring.kafka.consumer.auto-offset-reset}")
-    private String auto_topic_reset_config;
+    private String autoTopicResetConfig;
 
     @Bean
     public ConsumerFactory<String, String> consumerFactory() {
@@ -44,7 +44,7 @@ public class KafkaConsumerConfig {
                 StringDeserializer.class);
         props.put(
                 ConsumerConfig.AUTO_OFFSET_RESET_CONFIG,
-                auto_topic_reset_config);
+                autoTopicResetConfig);
         return new DefaultKafkaConsumerFactory<>(props);
     }
 

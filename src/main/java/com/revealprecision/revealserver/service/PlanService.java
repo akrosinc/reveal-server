@@ -13,8 +13,8 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class PlanService {
-    private static final Logger logger = LoggerFactory.getLogger(ProducerService.class);
-    private PlanRepository planRepository;
+    private static final Logger logger = LoggerFactory.getLogger(PlanService.class);
+    private final PlanRepository planRepository;
     private final ProducerService producerService;
     private final ObjectMapper objectMapper;
 
@@ -30,13 +30,12 @@ public class PlanService {
 
     public Plan createPlan(Plan plan) {
         Plan save = planRepository.save(plan);
-        logger.info(String.format("Plan saved to database as %s", plan));
+        logger.info("Plan saved to database as {}", plan);
 
         try {
             producerService.sendMessage(objectMapper.writeValueAsString(plan));
         } catch (JsonProcessingException e) {
-            logger.debug(String.format("Plan not mapped %s", e.getMessage()));
-            e.printStackTrace();
+            logger.debug("Plan not mapped {}", e.getMessage());
         }
         return save;
     }

@@ -14,7 +14,7 @@ public class ProducerService {
     private static final Logger logger = LoggerFactory.getLogger(ProducerService.class);
     private static final String KAFKA_TOPIC = "reveal";
 
-    private KafkaTemplate<String, String> kafkaTemplate;
+    private final KafkaTemplate<String, String> kafkaTemplate;
 
     public ProducerService(KafkaTemplate<String, String> kafkaTemplate) {
         this.kafkaTemplate = kafkaTemplate;
@@ -29,11 +29,11 @@ public class ProducerService {
 
             @Override
             public void onSuccess(SendResult<String, String> result) {
-                logger.info(String.format("Sent message to Kafka on topic %s at offset %s", result.getRecordMetadata().topic(), result.getRecordMetadata().offset()));
+                logger.info("Sent message to Kafka on topic {} at offset {}", result.getRecordMetadata().topic(), result.getRecordMetadata().offset());
             }
             @Override
             public void onFailure(Throwable ex) {
-                logger.info(String.format("Unable to send message to Kafka due to %s", ex.getMessage()));
+                logger.info("Unable to send message to Kafka due to {}", ex.getMessage());
             }
         });
     }
