@@ -1,6 +1,8 @@
 package com.revealprecision.revealserver.persistence.domain;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.vladmihalcea.hibernate.type.json.JsonType;
+import org.hibernate.annotations.TypeDef;
 import org.hibernate.envers.Audited;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -8,6 +10,8 @@ import javax.persistence.*;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 
+
+@TypeDef(name = "json", typeClass = JsonType.class)
 @MappedSuperclass
 @EntityListeners(AuditingEntityListener.class)
 @Audited
