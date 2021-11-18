@@ -12,24 +12,17 @@ CREATE TABLE revinfo (
     revtstmp BIGINT NOT NULL,
     timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-
+CREATE SEQUENCE task_seq INCREMENT 50;
 CREATE TABLE IF NOT EXISTS task (
     id BIGINT UNIQUE NOT NULL,
     created_by VARCHAR(36) NOT NULL,
     created_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
     modified_by VARCHAR(36) NOT NULL,
     modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
-    payload JSONB NOT NULL DEFAULT '{}'::jsonb,
     PRIMARY KEY (id)
 );
 
 CREATE INDEX IF NOT EXISTS task_idx ON task(id);
-CREATE INDEX IF NOT EXISTS task_payload_idx ON task((payload ->> 'identifier'));
-CREATE INDEX IF NOT EXISTS task_payload_plan_idx ON task((payload ->> 'planIdentifier'));
-CREATE INDEX IF NOT EXISTS task_payload_group_idx ON task((payload ->> 'groupIdentifier'));
-CREATE INDEX IF NOT EXISTS task_payload_focus ON task((payload ->> 'focus'));
-CREATE INDEX IF NOT EXISTS task_payload_status ON task((payload ->> 'status'));
-CREATE INDEX IF NOT EXISTS task_payload_code ON task((payload ->> 'code'));
 
 CREATE TABLE IF NOT EXISTS task_aud (
     id BIGINT NOT NULL,
@@ -39,17 +32,24 @@ CREATE TABLE IF NOT EXISTS task_aud (
     created_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
     modified_by VARCHAR(36) NOT NULL,
     modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
-    payload JSONB NOT NULL DEFAULT '{}'::jsonb,
     PRIMARY KEY (id)
 );
 
+CREATE SEQUENCE plan_seq INCREMENT 50;
 CREATE TABLE IF NOT EXISTS plan (
     id BIGINT UNIQUE NOT NULL,
+    identifier VARCHAR(36),
+    name VARCHAR(36),
+    title VARCHAR(36),
+    status VARCHAR(36),
+    date TIMESTAMP,
+    effective_period_start DATE,
+    effective_period_end DATE,
+    intervention_type VARCHAR(36),
     created_by VARCHAR(36) NOT NULL,
     created_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
     modified_by VARCHAR(36) NOT NULL,
     modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
-    payload JSONB NOT NULL DEFAULT '{}'::jsonb,
     PRIMARY KEY (id)
 );
 
@@ -57,11 +57,18 @@ CREATE TABLE IF NOT EXISTS plan_aud (
     id BIGINT NOT NULL,
     REV INT NOT NULL,
     REVTYPE INTEGER NULL,
+    identifier VARCHAR(36),
+    name VARCHAR(36),
+    title VARCHAR(36),
+    status VARCHAR(36),
+    date TIMESTAMP,
+    effective_period_start DATE,
+    effective_period_end DATE,
+    intervention_type VARCHAR(36),
     created_by VARCHAR(36) NOT NULL,
     created_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
     modified_by VARCHAR(36) NOT NULL,
     modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
-    payload JSONB NOT NULL DEFAULT '{}'::jsonb,
     PRIMARY KEY (id)
 );
 

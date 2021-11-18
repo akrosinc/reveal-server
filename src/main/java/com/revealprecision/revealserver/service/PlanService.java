@@ -1,6 +1,5 @@
 package com.revealprecision.revealserver.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.repository.PlanRepository;
@@ -32,11 +31,11 @@ public class PlanService {
         Plan save = planRepository.save(plan);
         logger.info("Plan saved to database as {}", plan);
 
-        try {
-            producerService.sendMessage(objectMapper.writeValueAsString(plan));
-        } catch (JsonProcessingException e) {
-            logger.debug("Plan not mapped {}", e.getMessage());
-        }
+//        try {
+//            producerService.sendMessage(objectMapper.writeValueAsString(plan));
+//        } catch (JsonProcessingException e) {
+//            logger.debug("Plan not mapped {}", e.getMessage());
+//        }
         return save;
     }
 
