@@ -1,27 +1,37 @@
 package com.revealprecision.revealserver.persistence.domain;
 
+import com.revealprecision.revealserver.enums.TaskPriorityEnum;
+import com.revealprecision.revealserver.enums.TaskStatusEnum;
+import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.envers.Audited;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Table;
+import javax.persistence.*;
 import javax.validation.constraints.NotNull;
+import java.time.LocalDateTime;
+import java.util.Date;
 
 @Entity
-@Table
 @Audited
+@Getter
+@Setter
 public class Task extends AbstractAuditableEntity {
-    @NotNull(message = "Cannot save with empty payload")
-    @Column (name = "payload")
-    private String payload;
-
-    @Override
-    public String toString() {
-        return "\"task\": {" +
-                ", \"id\": \"" + id + "\"" +
-                ", \"createdDatetime\": \"" + createdDatetime + "\"" +
-                ", \"modifiedDatetime\": \"" + modifiedDatetime + "\"" +
-                ", \"payload\": \"" + payload + "\"" +
-                "}";
-    }
+    @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "task_seq_generator")
+    @SequenceGenerator(name = "task_seq_generator", sequenceName = "task_seq")
+    private Long id;
+    private String identifier;
+    private String planIdentifier;
+    private String focus;
+    private String code;
+    private TaskStatusEnum status;
+    private TaskPriorityEnum priority;
+    private LocalDateTime authoredOn;
+    private String description;
+    private LocalDateTime lastModified;
+    private Enum businessStatus;
+    private Date executionPeriodStart;
+    private Date executionPeriodEnd;
+    private String groupIdentifier;
+    private String instantiatesUri;
 }

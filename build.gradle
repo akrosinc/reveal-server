@@ -45,7 +45,6 @@ dependencies {
     runtimeOnly 'org.postgresql:postgresql:42.3.1'
     implementation 'org.keycloak:keycloak-spring-boot-starter:15.0.2'
     implementation 'org.keycloak.bom:keycloak-adapter-bom:15.0.2'
-    implementation group: 'com.vladmihalcea', name: 'hibernate-types-55', version: '2.14.0'
     compileOnly 'org.projectlombok:lombok:1.18.22'
     annotationProcessor 'org.projectlombok:lombok:1.18.22'
 
