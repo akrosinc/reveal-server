@@ -1,0 +1,187 @@
+{
+  "allowRemoteResourceManagement": true,
+  "policyEnforcementMode": "ENFORCING",
+  "resources": [
+    {
+      "name": "/api/v1/task",
+      "ownerManagedAccess": false,
+      "displayName": "task resource",
+      "attributes": {},
+      "uris": [
+        "/api/v1/task"
+      ],
+      "scopes": [
+        {
+          "name": "v_task"
+        },
+        {
+          "name": "c_task"
+        }
+      ]
+    },
+    {
+      "name": "/api/v1/plan",
+      "ownerManagedAccess": false,
+      "displayName": "plan resource",
+      "attributes": {},
+      "uris": [
+        "/api/v1/plan"
+      ],
+      "scopes": [
+        {
+          "name": "v_plan"
+        },
+        {
+          "name": "c_plan"
+        }
+      ]
+    },
+    {
+      "name": "/actuator/health",
+      "ownerManagedAccess": false,
+      "displayName": "/actuator/health",
+      "attributes": {},
+      "uris": [
+        "/actuator/health"
+      ]
+    }
+  ],
+  "policies": [
+    {
+      "name": "actuator_policy",
+      "description": "actuator_policy",
+      "type": "client",
+      "logic": "POSITIVE",
+      "decisionStrategy": "UNANIMOUS",
+      "config": {
+        "clients": "[\"reveal-web\",\"reveal-server\"]"
+      }
+    },
+    {
+      "name": "actuator_permissions",
+      "description": "actuator_permissions",
+      "type": "resource",
+      "logic": "POSITIVE",
+      "decisionStrategy": "UNANIMOUS",
+      "config": {
+        "resources": "[\"/actuator/health\"]",
+        "applyPolicies": "[\"actuator_policy\"]"
+      }
+    },
+    {
+      "name": "view_task_policy",
+      "description": "view_task_policy",
+      "type": "role",
+      "logic": "POSITIVE",
+      "decisionStrategy": "UNANIMOUS",
+      "config": {
+        "roles": "[{\"id\":\"task_view\",\"required\":false}]"
+      }
+    },
+    {
+      "name": "view_task_permission",
+      "description": "view_task_permission",
+      "type": "scope",
+      "logic": "POSITIVE",
+      "decisionStrategy": "UNANIMOUS",
+      "config": {
+        "resources": "[\"/api/v1/task\"]",
+        "scopes": "[\"v_task\"]",
+        "applyPolicies": "[\"view_task_policy\"]"
+      }
+    },
+    {
+      "name": "create_task_policy",
+      "description": "create_task_policy",
+      "type": "role",
+      "logic": "POSITIVE",
+      "decisionStrategy": "UNANIMOUS",
+      "config": {
+        "roles": "[{\"id\":\"task_create\",\"required\":false}]"
+      }
+    },
+    {
+      "name": "create_task_permission",
+      "description": "create_task_permission",
+      "type": "scope",
+      "logic": "POSITIVE",
+      "decisionStrategy": "UNANIMOUS",
+      "config": {
+        "resources": "[\"/api/v1/task\"]",
+        "scopes": "[\"c_task\"]",
+        "applyPolicies": "[\"create_task_policy\"]"
+      }
+    },
+    {
+      "name": "view_plan_policy",
+      "description": "view_plan_policy",
+      "type": "role",
+      "logic": "POSITIVE",
+      "decisionStrategy": "UNANIMOUS",
+      "config": {
+        "roles": "[{\"id\":\"plan_view\",\"required\":false}]"
+      }
+    },
+    {
+      "name": "view_plan_permission",
+      "description": "view_plan_permission",
+      "type": "scope",
+      "logic": "POSITIVE",
+      "decisionStrategy": "UNANIMOUS",
+      "config": {
+        "resources": "[\"/api/v1/plan\"]",
+        "scopes": "[\"v_plan\"]",
+        "applyPolicies": "[\"view_plan_policy\"]"
+      }
+    },
+    {
+      "name": "create_plan_policy",
+      "description": "create_plan_policy",
+      "type": "role",
+      "logic": "POSITIVE",
+      "decisionStrategy": "UNANIMOUS",
+      "config": {
+        "roles": "[{\"id\":\"plan_create\",\"required\":false}]"
+      }
+    },
+    {
+      "name": "create_plan_permission",
+      "description": "create_plan_permission",
+      "type": "scope",
+      "logic": "POSITIVE",
+      "decisionStrategy": "UNANIMOUS",
+      "config": {
+        "resources": "[\"/api/v1/plan\"]",
+        "scopes": "[\"c_plan\"]",
+        "applyPolicies": "[\"create_plan_policy\"]"
+      }
+    }
+  ],
+  "scopes": [
+    {
+      "name": "v_task",
+      "displayName": "View Task"
+    },
+    {
+      "name": "c_task",
+      "displayName": "Create Task"
+    },
+    {
+      "name": "u_task",
+      "displayName": "Update Task"
+    },
+    {
+      "name": "v_plan",
+      "displayName": "View Plan"
+    },
+    {
+      "name": "c_plan",
+      "displayName": "Create Plan"
+    },
+    {
+      "name": "u_plan",
+      "displayName": "Update Plan"
+    }
+  ],
+  "decisionStrategy": "UNANIMOUS"
+}
