@@ -10,6 +10,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
+import java.util.UUID;
+
 @Service
 public class PlanService {
     private static final Logger logger = LoggerFactory.getLogger(PlanService.class);
@@ -39,7 +41,7 @@ public class PlanService {
         return save;
     }
 
-    public Plan getPlanByIdentifier(String planIdentifier) {
+    public Plan getPlanByIdentifier(UUID planIdentifier) {
         return planRepository.findByIdentifier(planIdentifier);
     }
 }

@@ -35,10 +35,8 @@ CREATE TABLE IF NOT EXISTS task_aud (
     PRIMARY KEY (id)
 );
 
-CREATE SEQUENCE plan_seq INCREMENT 50;
 CREATE TABLE IF NOT EXISTS plan (
-    id BIGINT UNIQUE NOT NULL,
-    identifier VARCHAR(36),
+    identifier UUID UNIQUE NOT NULL,
     name VARCHAR(36),
     title VARCHAR(36),
     status VARCHAR(36),
@@ -50,14 +48,13 @@ CREATE TABLE IF NOT EXISTS plan (
     created_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
     modified_by VARCHAR(36) NOT NULL,
     modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
-    PRIMARY KEY (id)
+    PRIMARY KEY (identifier)
 );
 
 CREATE TABLE IF NOT EXISTS plan_aud (
-    id BIGINT NOT NULL,
+    identifier UUID NOT NULL,
     REV INT NOT NULL,
     REVTYPE INTEGER NULL,
-    identifier VARCHAR(36),
     name VARCHAR(36),
     title VARCHAR(36),
     status VARCHAR(36),
@@ -69,7 +66,7 @@ CREATE TABLE IF NOT EXISTS plan_aud (
     created_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
     modified_by VARCHAR(36) NOT NULL,
     modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
-    PRIMARY KEY (id)
+    PRIMARY KEY (identifier)
 );
 
 CREATE TABLE IF NOT EXISTS raster_store (

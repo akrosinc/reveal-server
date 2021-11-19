@@ -33,7 +33,7 @@ public abstract class AbstractAuditableEntity {
 
 
     @PrePersist
-    public void onPrePersist() {
+    public void prePersist() {
         LocalDateTime now = ZonedDateTime.now().toLocalDateTime();
         this.createdDatetime = now;
         this.modifiedDatetime = now;
