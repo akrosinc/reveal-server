@@ -10,10 +10,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/api/v1/")
 public class PlanController {
-	private PlanService planService;
+	private PlanService  planService;
 
 	@Autowired
 	public PlanController(PlanService planService) {
@@ -39,7 +41,7 @@ public class PlanController {
 	@GetMapping(value = "/plan/{identifier}",
 			produces = "application/json"
 	)
-	public Plan getPlanByIdentifier(@Parameter(description = "Plan identifier") @PathVariable("identifier") String planIdentifier){
+	public Plan getPlanByIdentifier(@Parameter(description = "Plan identifier") @PathVariable("identifier") UUID planIdentifier){
 		return planService.getPlanByIdentifier(planIdentifier);
 	}
 
