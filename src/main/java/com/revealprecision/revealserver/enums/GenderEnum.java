@@ -8,7 +8,7 @@ public enum GenderEnum {
     male,
     female,
     other,
-    Unknown
+    unknown
 }
 
 
