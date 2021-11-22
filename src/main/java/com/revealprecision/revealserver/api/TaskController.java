@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.api;
 
+import com.revealprecision.revealserver.enums.TaskStatusEnum;
 import com.revealprecision.revealserver.persistence.domain.Task;
 import com.revealprecision.revealserver.service.TaskService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -9,6 +10,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/")
@@ -28,10 +31,11 @@ public class TaskController {
 			produces = "application/json"
 	)
 	public Page<Task> getTasks(
-			@Parameter(description = "Plan identifier of the task") @RequestParam(required = false) String planIdentifier,
+			@Parameter(description = "Search by Plan identifier") @RequestParam(required = false) UUID planIdentifier,
+			@Parameter(description = "Search by status") @RequestParam(required = false) TaskStatusEnum status,
 			@Parameter(description = "Page number to return") @RequestParam(defaultValue = "0", required = false) Integer pageNumber,
 			@Parameter(description = "Number of records per page") @RequestParam(defaultValue = "50", required = false) Integer pageSize) {
-		return taskService.getTasks(pageNumber,pageSize);
+		return taskService.findTasksByCriteria(planIdentifier, status, pageNumber,pageSize);
 	}
 
 	@Operation(summary = "Fetch a Task by identifier",
@@ -42,7 +46,7 @@ public class TaskController {
 	@GetMapping(value = "/task/{identifier}",
 			produces = "application/json"
 	)
-	public Task getTaskByIdentifier(@Parameter(description = "Task identifier") @PathVariable("identifier") String taskIdentifier){
+	public Task getTaskByIdentifier(@Parameter(description = "Task identifier") @PathVariable("identifier") UUID taskIdentifier){
 		return taskService.getTaskByIdentifier(taskIdentifier);
 	}
 

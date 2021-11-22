@@ -12,15 +12,20 @@ import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 import java.util.Date;
+import java.util.UUID;
 
 @Entity
 @Audited
 @Getter
 @Setter
+
+@NamedNativeQuery(name = "Task.findByPlanIdentifier",query = "select * from task where plan_identifier = ?", resultClass = Task.class)
+
 public class Task extends AbstractAuditableEntity {
     @Id
+    @GeneratedValue
     @NotNull(message = "identifier can not be null")
-    private String identifier;
+    private UUID identifier;
 
     @NotNull(message = "planIdentifier can not be null")
     private String planIdentifier;
