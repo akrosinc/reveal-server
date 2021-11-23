@@ -1,0 +1,122 @@
+[
+  {
+    "name" : "location_view",
+    "description" : "/api/v1/location",
+    "scopeParamRequired" : false,
+    "composite" : false
+  },
+  {
+    "name" : "location_create",
+    "description" : "/api/v1/location",
+    "scopeParamRequired" : false,
+    "composite" : false
+  },
+  {
+    "name" : "location_update",
+    "description" : "/api/v1/location/{identifier}",
+    "scopeParamRequired" : false,
+    "composite" : false
+  },
+  {
+    "name" : "location_delete",
+    "description" : "/api/v1/location/{identifier}",
+    "scopeParamRequired" : false,
+    "composite" : false
+  },
+  {
+    "name" : "location_hierarchy_view",
+    "description" : "/api/v1/locationHierarchy",
+    "scopeParamRequired" : false,
+    "composite" : false
+  },
+  {
+    "name" : "location_hierarchy_create",
+    "description" : "/api/v1/locationHierarchy",
+    "scopeParamRequired" : false,
+    "composite" : false
+  },
+  {
+    "name" : "location_hierarchy_update",
+    "description" : "/api/v1/locationHierarchy/{identifier}",
+    "scopeParamRequired" : false,
+    "composite" : false
+  },
+  {
+    "name" : "location_hierarchy_delete",
+    "description" : "/api/v1/locationHierarchy/{identifier}",
+    "scopeParamRequired" : false,
+    "composite" : false
+  },
+  {
+    "name" : "geographic_level_view",
+    "description" : "/api/v1/geographicLevel",
+    "scopeParamRequired" : false,
+    "composite" : false
+  },
+  {
+    "name" : "geographic_level_create",
+    "description" : "/api/v1/geographicLevel",
+    "scopeParamRequired" : false,
+    "composite" : false
+  },
+  {
+    "name" : "geographic_level_update",
+    "description" : "/api/v1/geographicLevel/{identifier}",
+    "scopeParamRequired" : false,
+    "composite" : false
+  },
+  {
+    "name" : "geographic_level_delete",
+    "description" : "/api/v1/geographicLevel/{identifier}",
+    "scopeParamRequired" : false,
+    "composite" : false
+  },
+  {
+    "name" : "plan_view",
+    "description" : "/api/v1/plan",
+    "scopeParamRequired" : false,
+    "composite" : false
+  },
+  {
+    "name" : "plan_create",
+    "description" : "/api/v1/plan",
+    "scopeParamRequired" : false,
+    "composite" : false
+  },
+  {
+    "name" : "plan_update",
+    "description" : "/api/v1/plan/{identifier}",
+    "scopeParamRequired" : false,
+    "composite" : false
+  },
+  {
+    "name" : "plan_delete",
+    "description" : "/api/v1/plan/{identifier}",
+    "scopeParamRequired" : false,
+    "composite" : false
+  },
+  {
+    "name" : "task_view",
+    "description" : "/api/v1/task",
+    "scopeParamRequired" : false,
+    "composite" : false
+  },
+  {
+    "name" : "task_create",
+    "description" : "/api/v1/task",
+    "scopeParamRequired" : false,
+    "composite" : false
+  },
+  {
+    "name" : "task_update",
+    "description" : "/api/v1/task/{identifier}",
+    "scopeParamRequired" : false,
+    "composite" : false
+  },
+  {
+    "name" : "task_delete",
+    "description" : "/api/v1/task/{identifier}",
+    "scopeParamRequired" : false,
+    "composite" : false
+  }
+]
