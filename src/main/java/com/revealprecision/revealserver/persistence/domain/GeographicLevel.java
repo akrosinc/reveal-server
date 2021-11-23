@@ -1,20 +1,26 @@
 package com.revealprecision.revealserver.persistence.domain;
 
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.hibernate.envers.Audited;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
+import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
 import java.util.UUID;
 
 @Entity
 @Audited
 @Getter
 @Setter
+@RequiredArgsConstructor
+@NamedNativeQueries(
+        @NamedNativeQuery(
+                name = "findByName",
+                query = "select * from geographic_level where name = ?",
+                resultClass = GeographicLevel.class
+        )
+)
 public class GeographicLevel extends AbstractAuditableEntity {
     @Id
     @GeneratedValue

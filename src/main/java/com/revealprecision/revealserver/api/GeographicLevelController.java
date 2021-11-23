@@ -5,12 +5,9 @@ import com.revealprecision.revealserver.service.GeographicLevelService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import javax.validation.Valid;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/")
@@ -27,5 +24,11 @@ public class GeographicLevelController {
     public GeographicLevel create(@RequestBody GeographicLevel geographicLevel){
         return geographicLevelService.createGeographicLevel(geographicLevel);
     }
+
+    @GetMapping(value = "/geographicLevel", produces = MediaType.APPLICATION_JSON_VALUE)
+    public List<GeographicLevel> getGeographicLevels(){
+        return geographicLevelService.getGeographicLevels();
+    }
+
 
 }

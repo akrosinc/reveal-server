@@ -112,6 +112,38 @@ CREATE TABLE IF NOT EXISTS location_hierarchy_aud(
     modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
     PRIMARY KEY (identifier)
 );
+
+CREATE TABLE IF NOT EXISTS location(
+    identifier UUID UNIQUE NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    geometry jsonb NOT NULL,
+    type VARCHAR(255) NOT NULL,
+    status VARCHAR(255) NOT NULL,
+    external_id UUID,
+    geographic_level_id UUID,
+    created_by VARCHAR(36) NOT NULL,
+    created_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by VARCHAR(36) NOT NULL,
+    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    PRIMARY KEY (identifier)
+);
+
+CREATE TABLE IF NOT EXISTS location_aud(
+    identifier UUID UNIQUE NOT NULL,
+    REV INT NOT NULL,
+    REVTYPE INTEGER NULL,
+    name VARCHAR(255) NOT NULL,
+    geometry jsonb NOT NULL,
+    type VARCHAR(255) NOT NULL,
+    status VARCHAR(255) NOT NULL,
+    external_id UUID,
+    geographic_level_id UUID,
+    created_by VARCHAR(36) NOT NULL,
+    created_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by VARCHAR(36) NOT NULL,
+    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    PRIMARY KEY (identifier)
+);
 CREATE TABLE IF NOT EXISTS raster_store (
     id BIGINT NOT NULL,
     created_by VARCHAR(36) NOT NULL,
