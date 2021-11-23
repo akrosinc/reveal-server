@@ -1,0 +1,164 @@
+{
+	"info": {
+		"_postman_id": "b456c597-f9ce-48aa-8afe-761c3b9c88d9",
+		"name": "1000_service_basics",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "test actuator",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", () => {",
+							"  pm.expect(pm.response.code).to.eql(200);",
+							"});",
+							"",
+							"const jsonData = pm.response.json();",
+							"pm.test(\"Test data of the response\", () => {",
+							"  pm.expect(jsonData.status).to.eql(\"UP\");",
+							"  pm.expect(jsonData.components.db.status).to.eql(\"UP\");",
+							"  pm.expect(jsonData.components.ping.status).to.eql(\"UP\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{server_url}}/actuator/health",
+					"host": [
+						"{{server_url}}"
+					],
+					"path": [
+						"actuator",
+						"health"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "test api-docs",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", () => {",
+							"  pm.expect(pm.response.code).to.eql(200);",
+							"});",
+							"",
+							"const jsonData = pm.response.json();",
+							"pm.test(\"Test data of the response\", () => {",
+							"  pm.expect(jsonData.openapi).to.eql(\"3.0.1\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{server_url}}/api-docs",
+					"host": [
+						"{{server_url}}"
+					],
+					"path": [
+						"api-docs"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "get list plans bad token",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 401\", () => {",
+							"  pm.expect(pm.response.code).to.eql(401);",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJYNVRqeVQ1RzUya2RORjB2LXVucXJhY25mbzBKcV9RSWtRcEdwZWtUTlZVIn0.eyJleHAiOjE2MzY0NzQwMDYsImlhdCI6MTYzNjQ3MDQwNiwianRpIjoiNTlhMmZiODYtYjUxZS00NDJjLTg0ZTItNGRmYzYzZmVkZTBlIiwiaXNzIjoiaHR0cHM6Ly9zc28tb3BzLmFrcm9zLm9ubGluZS9hdXRoL3JlYWxtcy9yZXZlYWwiLCJhdWQiOiJhY2NvdW50Iiwic3ViIjoiYWFlYjMxZDAtYTlmNC00NzA1LTgyYzgtZmRiNDYyMTU3NmYxIiwidHlwIjoiQmVhcmVyIiwiYXpwIjoicmV2ZWFsLXdlYiIsInNlc3Npb25fc3RhdGUiOiI4NTFmZjg3MC01YzUxLTQ2M2QtOGNkMS0yZjEyNmE5OTFjZWIiLCJhY3IiOiIxIiwicmVhbG1fYWNjZXNzIjp7InJvbGVzIjpbImRlZmF1bHQtcm9sZXMtcmV2ZWFsIiwib2ZmbGluZV9hY2Nlc3MiLCJ2aWV3X3BsYW4iLCJ1bWFfYXV0aG9yaXphdGlvbiJdfSwicmVzb3VyY2VfYWNjZXNzIjp7ImFjY291bnQiOnsicm9sZXMiOlsibWFuYWdlLWFjY291bnQiLCJtYW5hZ2UtYWNjb3VudC1saW5rcyIsInZpZXctcHJvZmlsZSJdfX0sInNjb3BlIjoicHJvZmlsZSBlbWFpbCIsInNpZCI6Ijg1MWZmODcwLTVjNTEtNDYzZC04Y2QxLTJmMTI2YTk5MWNlYiIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJuYW1lIjoiVGVzdCBVc2VyIiwicHJlZmVycmVkX3VzZXJuYW1lIjoidGVzdC51c2VyIiwiZ2l2ZW5fbmFtZSI6IlRlc3QiLCJmYW1pbHlfbmFtZSI6IlVzZXIiLCJlbWFpbCI6InRlc3RAYWtyb3Mub25saW5lIn0.IXHCeng5grSUVXkVTEGJ_gJuPtSYOkl-y0ryHfyy-LR-Kwm7C26pepabCVrp1wofHurAepEXDgC9W_GSuja3OqMFLSAFNPgXz_cIvQBM0hGNYJ2b21hQeiG43ciytDvuvmNdjhar5VbPYcl2660YqRoe6QvjeRep4y0GaDOQ8TZ4kcluZtNk3DfI-SrpQ2dXftqlDtIEFOT5YtwPDEUS7HmeqNS-mCHPnogI_g24fVHJPp0B1PoOWzdGOEIrjiWPnu1uORALpPdA-EvQz9fYEbk_wAxxiMyZMhvn0icomqJWzWYT0MHi9gz4XlsutKKK5PJfMNK5upg-KGVTkgBLcA",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{server_url}}/api/v1/plan",
+					"host": [
+						"{{server_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"plan"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "get list plans with no token",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 401\", () => {",
+							"  pm.expect(pm.response.code).to.eql(401);",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{server_url}}/api/v1/plan",
+					"host": [
+						"{{server_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"plan"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
