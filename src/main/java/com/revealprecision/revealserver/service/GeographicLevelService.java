@@ -3,9 +3,12 @@ package com.revealprecision.revealserver.service;
 import com.revealprecision.revealserver.persistence.domain.GeographicLevel;
 import com.revealprecision.revealserver.persistence.repository.GeographicLevelRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class GeographicLevelService {
@@ -20,7 +23,22 @@ public class GeographicLevelService {
         return geographicLevelRepository.save(geographicLevel);
     }
 
-    public List<GeographicLevel> getGeographicLevels(){
-        return geographicLevelRepository.findAll();
+    public Page<GeographicLevel> getGeographicLevels(Integer pageNumber, Integer pageSize){
+        return geographicLevelRepository.findAll(PageRequest.of(pageNumber,pageSize));
+    }
+
+    public Optional<GeographicLevel> findGeographicLevelByIdentifier(UUID identifier){
+        return geographicLevelRepository.findById(identifier);
+    }
+
+    public GeographicLevel update(UUID identifier,GeographicLevel geographicLevel){
+        Optional<GeographicLevel> updateGeographicLevelOptional = geographicLevelRepository.findById(identifier);
+        if(updateGeographicLevelOptional.isPresent()){
+            GeographicLevel updateGeographicLevel = updateGeographicLevelOptional.get();
+            updateGeographicLevel.setName(geographicLevel.getName());
+            updateGeographicLevel.setTitle(geographicLevel.getTitle());
+            return geographicLevelRepository.save(updateGeographicLevel);
+        }
+        return  null;
     }
 }

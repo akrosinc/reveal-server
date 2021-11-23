@@ -16,7 +16,11 @@ import java.util.UUID;
 @Getter
 @Setter
 @RequiredArgsConstructor
-@NamedNativeQuery(name = "Plan.findByIdentifier",query = "select * from plan where identifier = ?", resultClass = Plan.class)
+@NamedNativeQueries(
+        @NamedNativeQuery(name = "findByIdentifier",
+                          query = "select * from plan where identifier = ?",
+                          resultClass = Plan.class)
+)
 public class Plan extends AbstractAuditableEntity {
     @Id
     @GeneratedValue
