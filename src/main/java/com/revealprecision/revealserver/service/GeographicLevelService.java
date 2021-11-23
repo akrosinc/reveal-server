@@ -5,6 +5,8 @@ import com.revealprecision.revealserver.persistence.repository.GeographicLevelRe
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class GeographicLevelService {
     private GeographicLevelRepository geographicLevelRepository;
@@ -16,5 +18,9 @@ public class GeographicLevelService {
 
     public GeographicLevel createGeographicLevel(GeographicLevel geographicLevel) {
         return geographicLevelRepository.save(geographicLevel);
+    }
+
+    public List<GeographicLevel> getGeographicLevels(){
+        return geographicLevelRepository.findAll();
     }
 }

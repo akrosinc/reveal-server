@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.persistence.domain;
 
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.hibernate.envers.Audited;
 
@@ -14,6 +15,7 @@ import java.util.UUID;
 @Audited
 @Getter
 @Setter
+@RequiredArgsConstructor
 public class LocationHierarchy extends AbstractAuditableEntity {
     @Id
     @GeneratedValue
