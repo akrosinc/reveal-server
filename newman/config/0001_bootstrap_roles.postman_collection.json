@@ -1,0 +1,144 @@
+{
+	"info": {
+		"_postman_id": "7120ea24-f97b-4803-82ca-ae864c5b5552",
+		"name": "0001_bootstrap_roles",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Authenticate master",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"tests[\"response_code\"] = responseCode.code === 200;",
+							"",
+							"var jsonData = JSON.parse(responseBody);",
+							"pm.globals.set(\"auth_bearer_token\", jsonData.access_token);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{
+							"key": "grant_type",
+							"value": "password",
+							"type": "text"
+						},
+						{
+							"key": "username",
+							"value": "{{keycloak_master_username}}",
+							"type": "text"
+						},
+						{
+							"key": "password",
+							"value": "{{keycloak_master_password}}",
+							"type": "text"
+						},
+						{
+							"key": "client_id",
+							"value": "admin-cli",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{keycloak_URL}}/auth/realms/master/protocol/openid-connect/token",
+					"host": [
+						"{{keycloak_URL}}"
+					],
+					"path": [
+						"auth",
+						"realms",
+						"master",
+						"protocol",
+						"openid-connect",
+						"token"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create role",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"tests[\"test: response_code\"] = (responseCode.code === 201 || responseCode.code === 409);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{auth_bearer_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"name\" : \"{{name}}\",\n    \"description\" : \"{{description}}\",\n    \"scopeParamRequired\" : {{scopeParamRequired}},\n    \"composite\" : {{composite}}\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{keycloak_URL}}/auth/admin/realms/{{keycloak_realm}}/roles",
+					"host": [
+						"{{keycloak_URL}}"
+					],
+					"path": [
+						"auth",
+						"admin",
+						"realms",
+						"{{keycloak_realm}}",
+						"roles"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	]
+}
