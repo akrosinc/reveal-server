@@ -69,6 +69,49 @@ CREATE TABLE IF NOT EXISTS plan_aud (
     PRIMARY KEY (identifier)
 );
 
+CREATE TABLE IF NOT EXISTS geographic_level(
+  identifier UUID UNIQUE NOT NULL,
+  name VARCHAR(255),
+  title VARCHAR(255),
+  created_by VARCHAR(36) NOT NULL,
+  created_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+  modified_by VARCHAR(36) NOT NULL,
+  modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+  PRIMARY KEY (identifier)
+);
+
+CREATE TABLE IF NOT EXISTS geographic_level_aud(
+    identifier UUID UNIQUE NOT NULL,
+    REV INT NOT NULL,
+    REVTYPE INTEGER NULL,
+    name VARCHAR(255),
+    title VARCHAR(255),
+    created_by VARCHAR(36) NOT NULL,
+    created_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by VARCHAR(36) NOT NULL,
+    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    PRIMARY KEY (identifier)
+);
+CREATE TABLE IF NOT EXISTS location_hierarchy(
+     identifier UUID UNIQUE NOT NULL,
+     nodes VARCHAR(255),
+    created_by VARCHAR(36) NOT NULL,
+    created_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by VARCHAR(36) NOT NULL,
+    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    PRIMARY KEY (identifier)
+);
+CREATE TABLE IF NOT EXISTS location_hierarchy_aud(
+    identifier UUID UNIQUE NOT NULL,
+    REV INT NOT NULL,
+    REVTYPE INTEGER NULL,
+    nodes VARCHAR(255),
+    created_by VARCHAR(36) NOT NULL,
+    created_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by VARCHAR(36) NOT NULL,
+    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    PRIMARY KEY (identifier)
+);
 CREATE TABLE IF NOT EXISTS raster_store (
     id BIGINT NOT NULL,
     created_by VARCHAR(36) NOT NULL,
@@ -78,7 +121,6 @@ CREATE TABLE IF NOT EXISTS raster_store (
     rid serial primary key,
     rast raster,
     file_name VARCHAR(36)
-
 );
 
 CREATE INDEX IF NOT EXISTS raster_store_idx ON raster_store(id);

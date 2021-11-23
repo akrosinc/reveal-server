@@ -8,6 +8,7 @@ import org.hibernate.envers.Audited;
 
 import javax.persistence.*;
 import java.util.Date;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -24,7 +25,7 @@ public class Plan extends AbstractAuditableEntity {
     private Date effectivePeriodStart;
     private Date effectivePeriodEnd;
     @Enumerated(EnumType.STRING)
-    PlanStatusEnum status;
+    private PlanStatusEnum status;
     @Enumerated(EnumType.STRING)
-    PlanInterventionTypeEnum interventionType;
+    private PlanInterventionTypeEnum interventionType;
 }

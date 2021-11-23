@@ -32,12 +32,6 @@ public class PlanService {
     public Plan createPlan(Plan plan) {
         Plan save = planRepository.save(plan);
         logger.info("Plan saved to database as {}", plan);
-
-//        try {
-//            producerService.sendMessage(objectMapper.writeValueAsString(plan));
-//        } catch (JsonProcessingException e) {
-//            logger.debug("Plan not mapped {}", e.getMessage());
-//        }
         return save;
     }
 

@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -50,7 +51,7 @@ public class PlanController {
 			tags = { "Plan" }
 	)
 	@ResponseStatus(HttpStatus.CREATED)
-	@PostMapping(value = "/plan", consumes = "application/json", produces = "application/json")
+	@PostMapping(value = "/plan", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	public Plan createPlan(@Validated @RequestBody Plan plan) {
 		return planService.createPlan(plan);
 	}
