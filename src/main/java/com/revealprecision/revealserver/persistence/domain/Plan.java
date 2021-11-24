@@ -8,6 +8,8 @@ import org.hibernate.envers.Audited;
 
 import javax.persistence.*;
 import java.util.Date;
+import java.util.Set;
+import java.util.UUID;
 
 @Entity
 @Audited
@@ -16,16 +18,14 @@ import java.util.Date;
 @NamedNativeQuery(name = "Plan.findByIdentifier",query = "select * from plan where identifier = ?", resultClass = Plan.class)
 public class Plan extends AbstractAuditableEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "plan_seq_generator")
-    @SequenceGenerator(name = "plan_seq_generator", sequenceName = "plan_seq")
-    protected Long id;
-    private String identifier;
+    @GeneratedValue
+    private UUID identifier;
     private String name;
     private String title;
     private Date effectivePeriodStart;
     private Date effectivePeriodEnd;
     @Enumerated(EnumType.STRING)
-    PlanStatusEnum status;
+    private PlanStatusEnum status;
     @Enumerated(EnumType.STRING)
-    PlanInterventionTypeEnum interventionType;
+    private PlanInterventionTypeEnum interventionType;
 }

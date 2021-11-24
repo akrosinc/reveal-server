@@ -6,7 +6,9 @@
       "name": "/api/v1/task",
       "ownerManagedAccess": false,
       "displayName": "task resource",
-      "attributes": {},
+      "attributes": {
+
+      },
       "uris": [
         "/api/v1/task"
       ],
@@ -20,10 +22,34 @@
       ]
     },
     {
+      "name": "/api/v1/task/{identifier}",
+      "ownerManagedAccess": false,
+      "displayName": "task resource",
+      "attributes": {
+
+      },
+      "uris": [
+        "/api/v1/task/{identifier}"
+      ],
+      "scopes": [
+        {
+          "name": "v_task"
+        },
+        {
+          "name": "d_task"
+        },
+        {
+          "name": "u_task"
+        }
+      ]
+    },
+    {
       "name": "/api/v1/plan",
       "ownerManagedAccess": false,
       "displayName": "plan resource",
-      "attributes": {},
+      "attributes": {
+
+      },
       "uris": [
         "/api/v1/plan"
       ],
@@ -37,10 +63,157 @@
       ]
     },
     {
+      "name": "/api/v1/plan/{identifier}",
+      "ownerManagedAccess": false,
+      "displayName": "plan resource",
+      "attributes": {
+
+      },
+      "uris": [
+        "/api/v1/plan/{identifier}"
+      ],
+      "scopes": [
+        {
+          "name": "v_plan"
+        },
+        {
+          "name": "d_plan"
+        },
+        {
+          "name": "u_plan"
+        }
+      ]
+    },
+    {
+      "name": "/api/v1/geographicLevel",
+      "ownerManagedAccess": false,
+      "displayName": "geographicLevel resource",
+      "attributes": {
+
+      },
+      "uris": [
+        "/api/v1/geographicLevel"
+      ],
+      "scopes": [
+        {
+          "name": "v_geographic_level"
+        },
+        {
+          "name": "c_geographic_level"
+        }
+      ]
+    },
+    {
+      "name": "/api/v1/geographicLevel/{identifier}",
+      "ownerManagedAccess": false,
+      "displayName": "geographicLevel resource",
+      "attributes": {
+
+      },
+      "uris": [
+        "/api/v1/geographicLevel/{identifier}"
+      ],
+      "scopes": [
+        {
+          "name": "v_geographic_level"
+        },
+        {
+          "name": "d_geographic_level"
+        },
+        {
+          "name": "u_geographic_level"
+        }
+      ]
+    },
+    {
+      "name": "/api/v1/locationHierarchy",
+      "ownerManagedAccess": false,
+      "displayName": "locationHierarchy resource",
+      "attributes": {
+
+      },
+      "uris": [
+        "/api/v1/locationHierarchy"
+      ],
+      "scopes": [
+        {
+          "name": "v_location_hierarchy"
+        },
+        {
+          "name": "c_location_hierarchy"
+        }
+      ]
+    },
+    {
+      "name": "/api/v1/locationHierarchy/{identifier}",
+      "ownerManagedAccess": false,
+      "displayName": "locationHierarchy resource",
+      "attributes": {
+
+      },
+      "uris": [
+        "/api/v1/locationHierarchy/{identifier}"
+      ],
+      "scopes": [
+        {
+          "name": "v_location_hierarchy"
+        },
+        {
+          "name": "d_location_hierarchy"
+        },
+        {
+          "name": "u_location_hierarchy"
+        }
+      ]
+    },
+    {
+      "name": "/api/v1/location",
+      "ownerManagedAccess": false,
+      "displayName": "location resource",
+      "attributes": {
+
+      },
+      "uris": [
+        "/api/v1/location"
+      ],
+      "scopes": [
+        {
+          "name": "v_location"
+        },
+        {
+          "name": "c_location"
+        }
+      ]
+    },
+    {
+      "name": "/api/v1/location/{identifier}",
+      "ownerManagedAccess": false,
+      "displayName": "location resource",
+      "attributes": {
+
+      },
+      "uris": [
+        "/api/v1/location/{identifier}"
+      ],
+      "scopes": [
+        {
+          "name": "v_location"
+        },
+        {
+          "name": "d_location"
+        },
+        {
+          "name": "u_location"
+        }
+      ]
+    },
+    {
       "name": "/actuator/health",
       "ownerManagedAccess": false,
       "displayName": "/actuator/health",
-      "attributes": {},
+      "attributes": {
+
+      },
       "uris": [
         "/actuator/health"
       ]
@@ -108,8 +281,52 @@
       "decisionStrategy": "UNANIMOUS",
       "config": {
         "resources": "[\"/api/v1/task\"]",
-        "scopes": "[\"c_task\"]",
+        "scopes": "[\"v_task\",\"c_task\"]",
         "applyPolicies": "[\"create_task_policy\"]"
+      }
+    },
+    {
+      "name": "update_task_policy",
+      "description": "update_task_policy",
+      "type": "role",
+      "logic": "POSITIVE",
+      "decisionStrategy": "UNANIMOUS",
+      "config": {
+        "roles": "[{\"id\":\"task_view\",\"required\":false},{\"id\":\"task_update\",\"required\":false}]"
+      }
+    },
+    {
+      "name": "update_task_permission",
+      "description": "update_task_permission",
+      "type": "scope",
+      "logic": "POSITIVE",
+      "decisionStrategy": "UNANIMOUS",
+      "config": {
+        "resources": "[\"/api/v1/task/{identifier}\"]",
+        "scopes": "[\"v_task\",\"u_task\"]",
+        "applyPolicies": "[\"update_task_policy\"]"
+      }
+    },
+    {
+      "name": "delete_task_policy",
+      "description": "delete_task_policy",
+      "type": "role",
+      "logic": "POSITIVE",
+      "decisionStrategy": "UNANIMOUS",
+      "config": {
+        "roles": "[{\"id\":\"task_view\",\"required\":false},{\"id\":\"task_delete\",\"required\":false}]"
+      }
+    },
+    {
+      "name": "delete_task_permission",
+      "description": "delete_task_permission",
+      "type": "scope",
+      "logic": "POSITIVE",
+      "decisionStrategy": "UNANIMOUS",
+      "config": {
+        "resources": "[\"/api/v1/task/{identifier}\"]",
+        "scopes": "[\"v_task\",\"d_task\"]",
+        "applyPolicies": "[\"delete_task_policy\"]"
       }
     },
     {
@@ -155,9 +372,365 @@
         "scopes": "[\"c_plan\"]",
         "applyPolicies": "[\"create_plan_policy\"]"
       }
+    },
+    {
+      "name": "update_plan_policy",
+      "description": "update_plan_policy",
+      "type": "role",
+      "logic": "POSITIVE",
+      "decisionStrategy": "UNANIMOUS",
+      "config": {
+        "roles": "[{\"id\":\"plan_view\",\"required\":false},{\"id\":\"plan_update\",\"required\":false}]"
+      }
+    },
+    {
+      "name": "update_plan_permission",
+      "description": "update_plan_permission",
+      "type": "scope",
+      "logic": "POSITIVE",
+      "decisionStrategy": "UNANIMOUS",
+      "config": {
+        "resources": "[\"/api/v1/plan/{identifier}\"]",
+        "scopes": "[\"v_plan\",\"u_plan\"]",
+        "applyPolicies": "[\"update_plan_policy\"]"
+      }
+    },
+    {
+      "name": "delete_plan_policy",
+      "description": "delete_plan_policy",
+      "type": "role",
+      "logic": "POSITIVE",
+      "decisionStrategy": "UNANIMOUS",
+      "config": {
+        "roles": "[{\"id\":\"plan_view\",\"required\":false},{\"id\":\"plan_delete\",\"required\":false}]"
+      }
+    },
+    {
+      "name": "delete_plan_permission",
+      "description": "delete_plan_permission",
+      "type": "scope",
+      "logic": "POSITIVE",
+      "decisionStrategy": "UNANIMOUS",
+      "config": {
+        "resources": "[\"/api/v1/plan/{identifier}\"]",
+        "scopes": "[\"v_plan\",\"d_plan\"]",
+        "applyPolicies": "[\"delete_plan_policy\"]"
+      }
+    },
+    {
+      "name": "view_geographic_level_policy",
+      "description": "view_geographic_level_policy",
+      "type": "role",
+      "logic": "POSITIVE",
+      "decisionStrategy": "UNANIMOUS",
+      "config": {
+        "roles": "[{\"id\":\"geographic_level_view\",\"required\":false}]"
+      }
+    },
+    {
+      "name": "view_geographic_level_permission",
+      "description": "view_geographic_level_permission",
+      "type": "scope",
+      "logic": "POSITIVE",
+      "decisionStrategy": "UNANIMOUS",
+      "config": {
+        "resources": "[\"/api/v1/geographicLevel\"]",
+        "scopes": "[\"v_geographic_level\"]",
+        "applyPolicies": "[\"view_geographic_level_policy\"]"
+      }
+    },
+    {
+      "name": "create_geographic_level_policy",
+      "description": "create_geographic_level_policy",
+      "type": "role",
+      "logic": "POSITIVE",
+      "decisionStrategy": "UNANIMOUS",
+      "config": {
+        "roles": "[{\"id\":\"geographic_level_create\",\"required\":false}]"
+      }
+    },
+    {
+      "name": "create_geographic_level_permission",
+      "description": "create_geographic_level_permission",
+      "type": "scope",
+      "logic": "POSITIVE",
+      "decisionStrategy": "UNANIMOUS",
+      "config": {
+        "resources": "[\"/api/v1/geographicLevel\"]",
+        "scopes": "[\"c_geographic_level\"]",
+        "applyPolicies": "[\"create_geographic_level_policy\"]"
+      }
+    },
+    {
+      "name": "update_geographic_level_policy",
+      "description": "update_geographic_level_policy",
+      "type": "role",
+      "logic": "POSITIVE",
+      "decisionStrategy": "UNANIMOUS",
+      "config": {
+        "roles": "[{\"id\":\"geographic_level_view\",\"required\":false},{\"id\":\"geographic_level_update\",\"required\":false}]"
+      }
+    },
+    {
+      "name": "update_geographic_level_permission",
+      "description": "update_geographic_level_permission",
+      "type": "scope",
+      "logic": "POSITIVE",
+      "decisionStrategy": "UNANIMOUS",
+      "config": {
+        "resources": "[\"/api/v1/geographicLevel/{identifier}\"]",
+        "scopes": "[\"v_geographic_level\",\"u_geographic_level\"]",
+        "applyPolicies": "[\"update_geographic_level_policy\"]"
+      }
+    },
+    {
+      "name": "delete_geographic_level_policy",
+      "description": "delete_geographic_level_policy",
+      "type": "role",
+      "logic": "POSITIVE",
+      "decisionStrategy": "UNANIMOUS",
+      "config": {
+        "roles": "[{\"id\":\"geographic_level_view\",\"required\":false},{\"id\":\"geographic_level_delete\",\"required\":false}]"
+      }
+    },
+    {
+      "name": "delete_geographic_level_permission",
+      "description": "delete_geographic_level_permission",
+      "type": "scope",
+      "logic": "POSITIVE",
+      "decisionStrategy": "UNANIMOUS",
+      "config": {
+        "resources": "[\"/api/v1/geographicLevel/{identifier}\"]",
+        "scopes": "[\"v_geographic_level\",\"d_geographic_level\"]",
+        "applyPolicies": "[\"delete_geographic_level_policy\"]"
+      }
+    },
+    {
+      "name": "view_location_hierarchy_policy",
+      "description": "view_location_hierarchy_policy",
+      "type": "role",
+      "logic": "POSITIVE",
+      "decisionStrategy": "UNANIMOUS",
+      "config": {
+        "roles": "[{\"id\":\"location_hierarchy_view\",\"required\":false}]"
+      }
+    },
+    {
+      "name": "view_location_hierarchy_permission",
+      "description": "view_location_hierarchy_permission",
+      "type": "scope",
+      "logic": "POSITIVE",
+      "decisionStrategy": "UNANIMOUS",
+      "config": {
+        "resources": "[\"/api/v1/locationHierarchy\"]",
+        "scopes": "[\"v_location_hierarchy\"]",
+        "applyPolicies": "[\"view_location_hierarchy_policy\"]"
+      }
+    },
+    {
+      "name": "create_location_hierarchy_policy",
+      "description": "create_location_hierarchy_policy",
+      "type": "role",
+      "logic": "POSITIVE",
+      "decisionStrategy": "UNANIMOUS",
+      "config": {
+        "roles": "[{\"id\":\"location_hierarchy_create\",\"required\":false}]"
+      }
+    },
+    {
+      "name": "create_location_hierarchy_permission",
+      "description": "create_location_hierarchy_permission",
+      "type": "scope",
+      "logic": "POSITIVE",
+      "decisionStrategy": "UNANIMOUS",
+      "config": {
+        "resources": "[\"/api/v1/locationHierarchy\"]",
+        "scopes": "[\"c_location_hierarchy\"]",
+        "applyPolicies": "[\"create_location_hierarchy_policy\"]"
+      }
+    },
+    {
+      "name": "update_location_hierarchy_policy",
+      "description": "update_location_hierarchy_policy",
+      "type": "role",
+      "logic": "POSITIVE",
+      "decisionStrategy": "UNANIMOUS",
+      "config": {
+        "roles": "[{\"id\":\"location_hierarchy_view\",\"required\":false},{\"id\":\"location_hierarchy_update\",\"required\":false}]"
+      }
+    },
+    {
+      "name": "update_location_hierarchy_permission",
+      "description": "update_location_hierarchy_permission",
+      "type": "scope",
+      "logic": "POSITIVE",
+      "decisionStrategy": "UNANIMOUS",
+      "config": {
+        "resources": "[\"/api/v1/locationHierarchy/{identifier}\"]",
+        "scopes": "[\"v_location_hierarchy\",\"u_location_hierarchy\"]",
+        "applyPolicies": "[\"update_location_hierarchy_policy\"]"
+      }
+    },
+    {
+      "name": "delete_location_hierarchy_policy",
+      "description": "delete_location_hierarchy_policy",
+      "type": "role",
+      "logic": "POSITIVE",
+      "decisionStrategy": "UNANIMOUS",
+      "config": {
+        "roles": "[{\"id\":\"location_hierarchy_view\",\"required\":false},{\"id\":\"location_hierarchy_delete\",\"required\":false}]"
+      }
+    },
+    {
+      "name": "delete_location_hierarchy_permission",
+      "description": "delete_location_hierarchy_permission",
+      "type": "scope",
+      "logic": "POSITIVE",
+      "decisionStrategy": "UNANIMOUS",
+      "config": {
+        "resources": "[\"/api/v1/locationHierarchy/{identifier}\"]",
+        "scopes": "[\"v_location_hierarchy\",\"d_location_hierarchy\"]",
+        "applyPolicies": "[\"delete_location_hierarchy_policy\"]"
+      }
+    },
+    {
+      "name": "view_location_policy",
+      "description": "view_location_policy",
+      "type": "role",
+      "logic": "POSITIVE",
+      "decisionStrategy": "UNANIMOUS",
+      "config": {
+        "roles": "[{\"id\":\"location_view\",\"required\":false}]"
+      }
+    },
+    {
+      "name": "view_location_permission",
+      "description": "view_location_permission",
+      "type": "scope",
+      "logic": "POSITIVE",
+      "decisionStrategy": "UNANIMOUS",
+      "config": {
+        "resources": "[\"/api/v1/location\"]",
+        "scopes": "[\"v_location\"]",
+        "applyPolicies": "[\"view_location_policy\"]"
+      }
+    },
+    {
+      "name": "create_location_policy",
+      "description": "create_location_policy",
+      "type": "role",
+      "logic": "POSITIVE",
+      "decisionStrategy": "UNANIMOUS",
+      "config": {
+        "roles": "[{\"id\":\"location_create\",\"required\":false}]"
+      }
+    },
+    {
+      "name": "create_location_permission",
+      "description": "create_location_permission",
+      "type": "scope",
+      "logic": "POSITIVE",
+      "decisionStrategy": "UNANIMOUS",
+      "config": {
+        "resources": "[\"/api/v1/location\"]",
+        "scopes": "[\"c_location\"]",
+        "applyPolicies": "[\"create_location_policy\"]"
+      }
+    },
+    {
+      "name": "update_location_policy",
+      "description": "update_location_policy",
+      "type": "role",
+      "logic": "POSITIVE",
+      "decisionStrategy": "UNANIMOUS",
+      "config": {
+        "roles": "[{\"id\":\"location_view\",\"required\":false},{\"id\":\"location_update\",\"required\":false}]"
+      }
+    },
+    {
+      "name": "update_location_permission",
+      "description": "update_location_permission",
+      "type": "scope",
+      "logic": "POSITIVE",
+      "decisionStrategy": "UNANIMOUS",
+      "config": {
+        "resources": "[\"/api/v1/location/{identifier}\"]",
+        "scopes": "[\"v_location\",\"u_location\"]",
+        "applyPolicies": "[\"update_location_policy\"]"
+      }
+    },
+    {
+      "name": "delete_location_policy",
+      "description": "delete_location_policy",
+      "type": "role",
+      "logic": "POSITIVE",
+      "decisionStrategy": "UNANIMOUS",
+      "config": {
+        "roles": "[{\"id\":\"location_view\",\"required\":false},{\"id\":\"location_delete\",\"required\":false}]"
+      }
+    },
+    {
+      "name": "delete_location_permission",
+      "description": "delete_location_permission",
+      "type": "scope",
+      "logic": "POSITIVE",
+      "decisionStrategy": "UNANIMOUS",
+      "config": {
+        "resources": "[\"/api/v1/location/{identifier}\"]",
+        "scopes": "[\"v_location\",\"d_location\"]",
+        "applyPolicies": "[\"delete_location_policy\"]"
+      }
     }
   ],
   "scopes": [
+    {
+      "name": "v_geographic_level",
+      "displayName": "View Geographic Level"
+    },
+    {
+      "name": "c_geographic_level",
+      "displayName": "Create Geographic Level"
+    },
+    {
+      "name": "u_geographic_level",
+      "displayName": "Update Geographic Level"
+    },
+    {
+      "name": "d_geographic_level",
+      "displayName": "Delete Geographic Level"
+    },
+    {
+      "name": "v_location_hierarchy",
+      "displayName": "View Location Hierarchy"
+    },
+    {
+      "name": "c_location_hierarchy",
+      "displayName": "Create Location Hierarchy"
+    },
+    {
+      "name": "u_location_hierarchy",
+      "displayName": "Update Location Hierarchy"
+    },
+    {
+      "name": "d_location_hierarchy",
+      "displayName": "Delete Location Hierarchy"
+    },
+    {
+      "name": "v_location",
+      "displayName": "View Location"
+    },
+    {
+      "name": "c_location",
+      "displayName": "Create Location"
+    },
+    {
+      "name": "u_location",
+      "displayName": "Update Location"
+    },
+    {
+      "name": "d_location",
+      "displayName": "Delete Location"
+    },
     {
       "name": "v_task",
       "displayName": "View Task"
@@ -171,6 +744,10 @@
       "displayName": "Update Task"
     },
     {
+      "name": "d_task",
+      "displayName": "Delete Task"
+    },
+    {
       "name": "v_plan",
       "displayName": "View Plan"
     },
@@ -181,6 +758,10 @@
     {
       "name": "u_plan",
       "displayName": "Update Plan"
+    },
+    {
+      "name": "d_plan",
+      "displayName": "Delete Plan"
     }
   ],
   "decisionStrategy": "UNANIMOUS"

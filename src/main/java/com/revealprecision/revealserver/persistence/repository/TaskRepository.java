@@ -11,5 +11,5 @@ import java.util.UUID;
 public interface TaskRepository extends JpaRepository<Task, UUID> {
     Task findByIdentifier(UUID identifier);
 
-    Page<Task> findByPlanIdentifier(UUID planIdentifier, Integer pageNumber, Integer pageSize);
+//    Page<Task> findByPlanIdentifier(UUID planIdentifier, Integer pageNumber, Integer pageSize);
 }
