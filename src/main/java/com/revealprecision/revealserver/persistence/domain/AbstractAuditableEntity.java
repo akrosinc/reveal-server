@@ -15,25 +15,22 @@ import java.time.ZonedDateTime;
 @EntityListeners(AuditingEntityListener.class)
 @Audited
 public abstract class AbstractAuditableEntity {
-    @NotNull
+
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS[X]", timezone = "${spring.jackson.time-zone}")
     protected LocalDateTime createdDatetime = LocalDateTime.now();
 
-    @NotNull
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS[X]", timezone = "${spring.jackson.time-zone}")
     protected LocalDateTime modifiedDatetime = LocalDateTime.now();
 
-    @NotNull
     @CreatedBy
     protected String createdBy;
 
-    @NotNull
     @LastModifiedBy
     protected String modifiedBy;
 
 
     @PrePersist
-    public void onPrePersist() {
+    public void prePersist() {
         LocalDateTime now = ZonedDateTime.now().toLocalDateTime();
         this.createdDatetime = now;
         this.modifiedDatetime = now;

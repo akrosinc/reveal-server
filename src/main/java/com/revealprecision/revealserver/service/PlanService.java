@@ -10,6 +10,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
+import java.util.UUID;
+
 @Service
 public class PlanService {
     private static final Logger logger = LoggerFactory.getLogger(PlanService.class);
@@ -30,16 +32,10 @@ public class PlanService {
     public Plan createPlan(Plan plan) {
         Plan save = planRepository.save(plan);
         logger.info("Plan saved to database as {}", plan);
-
-//        try {
-//            producerService.sendMessage(objectMapper.writeValueAsString(plan));
-//        } catch (JsonProcessingException e) {
-//            logger.debug("Plan not mapped {}", e.getMessage());
-//        }
         return save;
     }
 
-    public Plan getPlanByIdentifier(String planIdentifier) {
+    public Plan getPlanByIdentifier(UUID planIdentifier) {
         return planRepository.findByIdentifier(planIdentifier);
     }
 }
