@@ -93,7 +93,7 @@ CREATE TABLE IF NOT EXISTS plan_aud (
     created_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
     modified_by VARCHAR(36) NOT NULL,
     modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
-    PRIMARY KEY (identifier)
+    PRIMARY KEY (identifier,REV)
 );
 
 CREATE TABLE IF NOT EXISTS geographic_level(
@@ -108,7 +108,7 @@ CREATE TABLE IF NOT EXISTS geographic_level(
 );
 
 CREATE TABLE IF NOT EXISTS geographic_level_aud(
-    identifier UUID UNIQUE NOT NULL,
+    identifier UUID NOT NULL,
     REV INT NOT NULL,
     REVTYPE INTEGER NULL,
     name VARCHAR(255),
@@ -117,7 +117,7 @@ CREATE TABLE IF NOT EXISTS geographic_level_aud(
     created_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
     modified_by VARCHAR(36) NOT NULL,
     modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
-    PRIMARY KEY (identifier)
+    PRIMARY KEY (identifier,REV)
 );
 CREATE TABLE IF NOT EXISTS location_hierarchy(
     identifier UUID UNIQUE NOT NULL,
@@ -129,7 +129,7 @@ CREATE TABLE IF NOT EXISTS location_hierarchy(
     PRIMARY KEY (identifier)
 );
 CREATE TABLE IF NOT EXISTS location_hierarchy_aud(
-    identifier UUID UNIQUE NOT NULL,
+    identifier UUID NOT NULL,
     REV INT NOT NULL,
     REVTYPE INTEGER NULL,
     nodes VARCHAR(255),
@@ -137,7 +137,39 @@ CREATE TABLE IF NOT EXISTS location_hierarchy_aud(
     created_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
     modified_by VARCHAR(36) NOT NULL,
     modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    PRIMARY KEY (identifier,REV)
+);
+
+CREATE TABLE IF NOT EXISTS location(
+    identifier UUID UNIQUE NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    geometry jsonb NOT NULL,
+    type VARCHAR(255) NOT NULL,
+    status VARCHAR(255) NOT NULL,
+    external_id UUID,
+    geographic_level_id UUID,
+    created_by VARCHAR(36) NOT NULL,
+    created_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by VARCHAR(36) NOT NULL,
+    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
     PRIMARY KEY (identifier)
+);
+
+CREATE TABLE IF NOT EXISTS location_aud(
+    identifier UUID NOT NULL,
+    REV INT NOT NULL,
+    REVTYPE INTEGER NULL,
+    name VARCHAR(255) NOT NULL,
+    geometry jsonb NOT NULL,
+    type VARCHAR(255) NOT NULL,
+    status VARCHAR(255) NOT NULL,
+    external_id UUID,
+    geographic_level_id UUID,
+    created_by VARCHAR(36) NOT NULL,
+    created_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by VARCHAR(36) NOT NULL,
+    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    PRIMARY KEY (identifier,REV)
 );
 CREATE TABLE IF NOT EXISTS raster_store (
     id BIGINT NOT NULL,

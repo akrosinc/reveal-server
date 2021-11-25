@@ -40,7 +40,7 @@ public class PlanController {
 	)
 	@ResponseStatus(HttpStatus.OK)
 	@GetMapping(value = "/plan/{identifier}",
-			produces = "application/json"
+			produces = MediaType.APPLICATION_JSON_VALUE
 	)
 	public Plan getPlanByIdentifier(@Parameter(description = "Plan identifier") @PathVariable("identifier") UUID planIdentifier){
 		return planService.getPlanByIdentifier(planIdentifier);
