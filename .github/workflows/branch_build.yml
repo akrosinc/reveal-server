@@ -5,9 +5,9 @@ name: Java CI with Gradle
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: none
+    branches:
+    - '/refs/heads/*'
+    - '!main'
 
 jobs:
   dependancy:
@@ -61,29 +61,3 @@ jobs:
       run: chmod +x gradlew
     - name: Build with Gradle
       run: ./gradlew clean build
-
-  container:
-
-    runs-on: ubuntu-latest
-    needs: [build]
-
-    steps:
-
-    - name: Output Run Number
-      run: echo ${{ github.run_number }}
-
-    - name: Checkout the code
-      uses: actions/checkout@v2
-
-    - name: Login to DockerHub
-      uses: docker/login-action@v1
-      with:
-        username: akros
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-    - name: Build and push
-      uses: docker/build-push-action@v2
-      with:
-        context: .
-        push: true
-        tags: akrosinc/reveal-server:v3.0.${{ github.run_number }}
