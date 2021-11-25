@@ -6,8 +6,12 @@ name: Java CI with Gradle
 on:
   push:
     branches:
-    - '/refs/heads/*'
-    - '!main'
+      - '/refs/heads/*'
+      - '!main'
+  pull_request:
+    branches:
+      - '/refs/heads/*'
+      - '!main'
 
 jobs:
   dependancy:
