@@ -6,5 +6,5 @@ Usual, Official, Temp, Nickname, Anonymous, Old, Maiden
 */
 
 public enum NameUseEnum {
-    usual
+    USUAL
 }

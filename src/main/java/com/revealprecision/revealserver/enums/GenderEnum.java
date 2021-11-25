@@ -5,10 +5,10 @@ Genders are introduced as defined by https://www.hl7.org/fhir/person.html
 */
 
 public enum GenderEnum {
-    male,
-    female,
-    other,
-    unknown
+    MALE,
+    FEMALE,
+    OTHER,
+    UNKNOWN
 }
 
 
