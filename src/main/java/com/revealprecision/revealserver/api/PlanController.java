@@ -30,7 +30,9 @@ public class PlanController {
 	@GetMapping(value = "/plan",
 			produces = "application/json"
 	)
-	public Page<Plan> getPlans(@RequestParam(defaultValue = "0") Integer pageNumber, @RequestParam(defaultValue = "50") Integer pageSize){
+	public Page<Plan> getPlans(
+			@Parameter(description = "Page number to return") @RequestParam(defaultValue = "0", required = false) Integer pageNumber,
+			@Parameter(description = "Number of records per page") @RequestParam(defaultValue = "50", required = false) Integer pageSize){
 		return planService.getPlans(pageNumber,pageSize);
 	}
 
