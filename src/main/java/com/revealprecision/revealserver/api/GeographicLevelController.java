@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -30,8 +31,9 @@ public class GeographicLevelController {
             description = "Create a geographicLevel",
             tags = { "Location" }
     )
+    @ResponseStatus(HttpStatus.CREATED)
     @PostMapping(value = "/geographicLevel", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public GeographicLevel create(@RequestBody GeographicLevel geographicLevel){
+    public GeographicLevel create(@Valid @RequestBody GeographicLevel geographicLevel){
         return geographicLevelService.createGeographicLevel(geographicLevel);
     }
 
@@ -57,7 +59,7 @@ public class GeographicLevelController {
                 if(levelOptional.isPresent()){
                     return levelOptional.get();
                 }
-                return new ResponseEntity<Void>(HttpStatus.NO_CONTENT);
+                return new ResponseEntity<Void>(HttpStatus.NOT_FOUND);
     }
 
     @Operation(summary = "Update a geographicLevel",

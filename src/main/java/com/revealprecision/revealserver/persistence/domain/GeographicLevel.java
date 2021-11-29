@@ -25,8 +25,10 @@ public class GeographicLevel extends AbstractAuditableEntity {
     @Id
     @GeneratedValue
     private UUID identifier;
+
     @NotBlank(message = "title is required and must not be empty")
     private  String title;
+
     @NotBlank(message = "name is required and must not be empty")
     private String name;
 }
