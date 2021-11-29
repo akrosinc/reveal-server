@@ -6,14 +6,15 @@ import com.revealprecision.revealserver.persistence.domain.GeographicLevel;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.repository.GeographicLevelRepository;
 import com.revealprecision.revealserver.service.LocationService;
-import org.codehaus.jettison.json.JSONException;
-import org.codehaus.jettison.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Optional;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/")
@@ -35,5 +36,18 @@ public class LocationController {
         Location location = objectMapper.convertValue(data.get("location"),Location.class);
         location.setGeographicLevel(geographicLevel);
         return locationService.createLocation(location);
+    }
+
+    @GetMapping(value = "/location/{identifier}",produces = MediaType.APPLICATION_JSON_VALUE)
+    public Object findLocationById(@PathVariable UUID identifier){
+        Optional<Location> locationOptional = locationService.findByIdentifier(identifier);
+        if(locationOptional.isPresent())
+            return locationOptional.get();
+        return new ResponseEntity<Location>(HttpStatus.NO_CONTENT);
+    }
+
+    @GetMapping(value = "/location",produces = MediaType.APPLICATION_JSON_VALUE)
+    public Page<Location> getLocations(@RequestParam(defaultValue = "0") Integer pageNumber, @RequestParam(defaultValue = "50") Integer pageSize){
+        return locationService.getLocations(pageNumber,pageSize);
     }
 }
