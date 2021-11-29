@@ -7,13 +7,16 @@ import io.swagger.v3.oas.annotations.Parameter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/")
 public class PlanController {
-	private PlanService planService;
+	private PlanService  planService;
 
 	@Autowired
 	public PlanController(PlanService planService) {
@@ -27,7 +30,9 @@ public class PlanController {
 	@GetMapping(value = "/plan",
 			produces = "application/json"
 	)
-	public Page<Plan> getPlans(@RequestParam(defaultValue = "0") Integer pageNumber, @RequestParam(defaultValue = "50") Integer pageSize){
+	public Page<Plan> getPlans(
+			@Parameter(description = "Page number to return") @RequestParam(defaultValue = "0", required = false) Integer pageNumber,
+			@Parameter(description = "Number of records per page") @RequestParam(defaultValue = "50", required = false) Integer pageSize){
 		return planService.getPlans(pageNumber,pageSize);
 	}
 
@@ -37,9 +42,9 @@ public class PlanController {
 	)
 	@ResponseStatus(HttpStatus.OK)
 	@GetMapping(value = "/plan/{identifier}",
-			produces = "application/json"
+			produces = MediaType.APPLICATION_JSON_VALUE
 	)
-	public Plan getPlanByIdentifier(@Parameter(description = "Plan identifier") @PathVariable("identifier") String planIdentifier){
+	public Plan getPlanByIdentifier(@Parameter(description = "Plan identifier") @PathVariable("identifier") UUID planIdentifier){
 		return planService.getPlanByIdentifier(planIdentifier);
 	}
 
@@ -48,7 +53,7 @@ public class PlanController {
 			tags = { "Plan" }
 	)
 	@ResponseStatus(HttpStatus.CREATED)
-	@PostMapping(value = "/plan", consumes = "application/json", produces = "application/json")
+	@PostMapping(value = "/plan", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	public Plan createPlan(@Validated @RequestBody Plan plan) {
 		return planService.createPlan(plan);
 	}

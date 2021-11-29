@@ -1,6 +1,5 @@
 package com.revealprecision.revealserver.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.repository.PlanRepository;
@@ -10,6 +9,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+
+import java.util.UUID;
 
 @Service
 public class PlanService {
@@ -31,16 +32,10 @@ public class PlanService {
     public Plan createPlan(Plan plan) {
         Plan save = planRepository.save(plan);
         logger.info("Plan saved to database as {}", plan);
-
-        try {
-            producerService.sendMessage(objectMapper.writeValueAsString(plan));
-        } catch (JsonProcessingException e) {
-            logger.debug("Plan not mapped {}", e.getMessage());
-        }
         return save;
     }
 
-    public Plan getPlanByIdentifier(String planIdentifier) {
+    public Plan getPlanByIdentifier(UUID planIdentifier) {
         return planRepository.findByIdentifier(planIdentifier);
     }
 }

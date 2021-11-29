@@ -1,7 +1,7 @@
 package com.revealprecision.revealserver.enums;
 
 public enum PersonToStructureRelationshipTypeEnum {
-    HeadOfHousehold,
-    HeadOfCompound,
-    Owner
+    HEAD_OF_HOUSEHOLD,
+    HEAD_OF_COMPOUND,
+    OWNER
 }
