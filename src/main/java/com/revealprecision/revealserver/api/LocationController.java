@@ -6,6 +6,7 @@ import com.revealprecision.revealserver.persistence.domain.GeographicLevel;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.repository.GeographicLevelRepository;
 import com.revealprecision.revealserver.service.LocationService;
+import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
@@ -28,6 +29,10 @@ public class LocationController {
         this.geographicLevelRepository = geographicLevelRepository;
     }
 
+    @Operation(summary = "Create a location",
+            description = "Create a location",
+            tags = { "Location" }
+    )
     @PostMapping(value = "/location",consumes = MediaType.APPLICATION_JSON_VALUE,produces = MediaType.APPLICATION_JSON_VALUE)
     public Location createLocation(@RequestBody JsonNode data){
         ObjectMapper objectMapper = new ObjectMapper();
