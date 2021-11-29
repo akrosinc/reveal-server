@@ -4,6 +4,7 @@ CREATE EXTENSION IF NOT EXISTS postgis_raster WITH SCHEMA public;
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;
 CREATE EXTENSION IF NOT EXISTS pg_stat_statements WITH SCHEMA public;
 CREATE EXTENSION IF NOT EXISTS btree_gist WITH SCHEMA public;
+CREATE SEQUENCE hibernate_sequence START 1;
 
 CREATE TABLE revinfo (
     rev INTEGER PRIMARY KEY DEFAULT 1,
@@ -121,7 +122,7 @@ CREATE TABLE IF NOT EXISTS geographic_level_aud(
 );
 CREATE TABLE IF NOT EXISTS location_hierarchy(
      identifier UUID UNIQUE NOT NULL,
-     node_order VARCHAR(255),
+     node_order VARCHAR[],
      created_by VARCHAR(36) NOT NULL,
      created_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
      modified_by VARCHAR(36) NOT NULL,
@@ -132,7 +133,7 @@ CREATE TABLE IF NOT EXISTS location_hierarchy_aud(
     identifier UUID NOT NULL,
     REV INT NOT NULL,
     REVTYPE INTEGER NULL,
-    node_order VARCHAR(255),
+    node_order VARCHAR[],
     created_by VARCHAR(36) NOT NULL,
     created_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
     modified_by VARCHAR(36) NOT NULL,

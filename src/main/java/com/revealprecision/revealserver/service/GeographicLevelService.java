@@ -35,7 +35,6 @@ public class GeographicLevelService {
         Optional<GeographicLevel> updateGeographicLevelOptional = geographicLevelRepository.findById(identifier);
         if(updateGeographicLevelOptional.isPresent()){
             GeographicLevel updateGeographicLevel = updateGeographicLevelOptional.get();
-            updateGeographicLevel.setName(geographicLevel.getName());
             updateGeographicLevel.setTitle(geographicLevel.getTitle());
             return geographicLevelRepository.save(updateGeographicLevel);
         }

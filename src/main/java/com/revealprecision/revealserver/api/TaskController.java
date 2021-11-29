@@ -33,8 +33,6 @@ public class TaskController {
 			produces = "application/json"
 	)
 	public Page<Task> getTasks(
-//			@Parameter(description = "Search by Plan identifier") @RequestParam(required = false) UUID planIdentifier,
-//			@Parameter(description = "Search by status") @RequestParam(required = false) TaskStatusEnum status,
 			@Parameter(description = "Page number to return") @RequestParam(defaultValue = "0", required = false) Integer pageNumber,
 			@Parameter(description = "Number of records per page") @RequestParam(defaultValue = "50", required = false) Integer pageSize) {
 		return taskRepository.findAll(PageRequest.of(pageNumber,pageSize));

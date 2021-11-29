@@ -34,10 +34,13 @@ public class LocationController {
             tags = { "Location" }
     )
     @PostMapping(value = "/location",consumes = MediaType.APPLICATION_JSON_VALUE,produces = MediaType.APPLICATION_JSON_VALUE)
-    public Location createLocation(@RequestBody JsonNode data){
+    public Object createLocation(@RequestBody JsonNode data){
         ObjectMapper objectMapper = new ObjectMapper();
         String geoLevelName = objectMapper.convertValue(data.get("geographicLevel"),String.class);
         GeographicLevel geographicLevel = geographicLevelRepository.findByName(geoLevelName);
+        if(geographicLevel == null){
+            return new ResponseEntity<>("Geographic Level does not exist",HttpStatus.UNPROCESSABLE_ENTITY);
+        }
         Location location = objectMapper.convertValue(data.get("location"),Location.class);
         location.setGeographicLevel(geographicLevel);
         return locationService.createLocation(location);
