@@ -5,10 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.hibernate.envers.Audited;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.validation.constraints.NotBlank;
+import javax.persistence.*;
 import java.util.UUID;
 
 @Entity
@@ -16,10 +13,14 @@ import java.util.UUID;
 @Getter
 @Setter
 @RequiredArgsConstructor
-public class LocationHierarchy extends AbstractAuditableEntity {
+public class LocationRelationship extends AbstractAuditableEntity{
     @Id
     @GeneratedValue
     private UUID identifier;
-    @NotBlank(message = "order is required and must not be empty")
-    private String node_order;
+    private UUID location_hierarchy_identifier;
+    private UUID location_identifier;
+    private UUID parent_identifier;
+    private String ancestry;
+
+
 }

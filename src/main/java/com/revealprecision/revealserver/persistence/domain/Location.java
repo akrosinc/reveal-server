@@ -7,11 +7,13 @@ import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
+import org.hibernate.envers.Audited;
 
 import javax.persistence.*;
 import java.util.UUID;
 
 @Entity
+@Audited
 @Getter
 @Setter
 @RequiredArgsConstructor

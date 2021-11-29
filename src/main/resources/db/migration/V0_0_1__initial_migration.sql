@@ -94,18 +94,18 @@ CREATE TABLE IF NOT EXISTS geographic_level_aud(
 );
 CREATE TABLE IF NOT EXISTS location_hierarchy(
      identifier UUID UNIQUE NOT NULL,
-     nodes VARCHAR(255),
-    created_by VARCHAR(36) NOT NULL,
-    created_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
-    modified_by VARCHAR(36) NOT NULL,
-    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
-    PRIMARY KEY (identifier)
+     node_order VARCHAR(255),
+     created_by VARCHAR(36) NOT NULL,
+     created_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+     modified_by VARCHAR(36) NOT NULL,
+     modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+     PRIMARY KEY (identifier)
 );
 CREATE TABLE IF NOT EXISTS location_hierarchy_aud(
     identifier UUID NOT NULL,
     REV INT NOT NULL,
     REVTYPE INTEGER NULL,
-    nodes VARCHAR(255),
+    node_order VARCHAR(255),
     created_by VARCHAR(36) NOT NULL,
     created_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
     modified_by VARCHAR(36) NOT NULL,
@@ -144,6 +144,34 @@ CREATE TABLE IF NOT EXISTS location_aud(
     modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
     PRIMARY KEY (identifier,REV)
 );
+
+CREATE TABLE IF NOT EXISTS location_relationship(
+    identifier UUID UNIQUE NOT NULL,
+    location_hierarchy_identifier UUID NOT NULL,
+    location_identifier UUID NOT NULL,
+    parent_identifier UUID NOT NULL,
+    ancestry VARCHAR(255) NOT NULL,
+    created_by VARCHAR(36) NOT NULL,
+    created_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by VARCHAR(36) NOT NULL,
+    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    PRIMARY KEY (identifier)
+);
+
+CREATE TABLE IF NOT EXISTS location_relationship_aud(
+    identifier UUID NOT NULL,
+    REV INT NOT NULL,
+    REVTYPE INTEGER NULL,
+    location_hierarchy_identifier UUID NOT NULL,
+    location_identifier UUID NOT NULL,
+    parent_identifier UUID NOT NULL,
+    ancestry VARCHAR(255) NOT NULL,
+    created_by VARCHAR(36) NOT NULL,
+    created_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by VARCHAR(36) NOT NULL,
+    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    PRIMARY KEY (identifier,REV)
+);
 CREATE TABLE IF NOT EXISTS raster_store (
     id BIGINT NOT NULL,
     created_by VARCHAR(36) NOT NULL,
@@ -154,6 +182,8 @@ CREATE TABLE IF NOT EXISTS raster_store (
     rast raster,
     file_name VARCHAR(36)
 );
+
+
 
 CREATE INDEX IF NOT EXISTS raster_store_idx ON raster_store(id);
 CREATE INDEX raster_store_rast_st_convexhull_idx ON raster_store USING gist( public.ST_ConvexHull(rast) );
