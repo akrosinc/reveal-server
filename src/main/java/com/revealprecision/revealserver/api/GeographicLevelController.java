@@ -57,7 +57,7 @@ public class GeographicLevelController {
                 if(levelOptional.isPresent()){
                     return levelOptional.get();
                 }
-                return new ResponseEntity<Void>(HttpStatus.NO_CONTENT);
+                return new ResponseEntity<Void>(HttpStatus.NOT_FOUND);
     }
 
     @Operation(summary = "Update a geographicLevel",
