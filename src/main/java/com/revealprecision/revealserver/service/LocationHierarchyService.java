@@ -23,4 +23,9 @@ public class LocationHierarchyService {
     public Page<LocationHierarchy> getLocationHierarchies(Integer pageNumber, Integer pageSize){
         return locationHierarchyRepository.findAll(PageRequest.of(pageNumber,pageSize));
     }
+
+    public Boolean isLocationHierarchyExists(LocationHierarchy locationHierarchy){
+        //TODO: implement
+        return  false;
+    }
 }
