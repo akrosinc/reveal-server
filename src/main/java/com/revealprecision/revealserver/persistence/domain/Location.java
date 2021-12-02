@@ -38,7 +38,7 @@ public class Location extends AbstractAuditableEntity{
     private String status;
     private UUID externalId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "geographic_level_id", insertable = false)
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "geographic_level_id")
     private GeographicLevel geographicLevel;
 }
