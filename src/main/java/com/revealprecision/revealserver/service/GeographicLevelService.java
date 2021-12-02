@@ -40,4 +40,12 @@ public class GeographicLevelService {
         }
         return  null;
     }
+
+    public GeographicLevel findByName(String name){
+        return geographicLevelRepository.findByName(name);
+    }
+
+    public Boolean isGeographicLevelExist(GeographicLevel geographicLevel){
+        return geographicLevelRepository.existsByNameAndTitle(geographicLevel.getName(),geographicLevel.getTitle());
+    }
 }

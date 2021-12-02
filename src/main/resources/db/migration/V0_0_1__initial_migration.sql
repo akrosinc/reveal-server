@@ -14,6 +14,7 @@ CREATE TABLE revinfo (
 
 CREATE TABLE IF NOT EXISTS task (
     identifier VARCHAR(36) NOT NULL,
+    entity_status VARCHAR(36),
     created_by VARCHAR(36) NOT NULL,
     created_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
     modified_by VARCHAR(36) NOT NULL,
@@ -41,6 +42,7 @@ CREATE INDEX IF NOT EXISTS task_business_status_idx ON task(business_status);
 
 CREATE TABLE IF NOT EXISTS task_aud (
     identifier VARCHAR(36) NOT NULL,
+    entity_status VARCHAR(36),
     REV INT NOT NULL,
     REVTYPE INTEGER NULL,
     created_by VARCHAR(36) NOT NULL,
@@ -65,6 +67,7 @@ CREATE TABLE IF NOT EXISTS task_aud (
 
 CREATE TABLE IF NOT EXISTS plan (
     identifier UUID UNIQUE NOT NULL,
+    entity_status VARCHAR(36),
     name VARCHAR(36),
     title VARCHAR(36),
     status VARCHAR(36),
@@ -81,6 +84,7 @@ CREATE TABLE IF NOT EXISTS plan (
 
 CREATE TABLE IF NOT EXISTS plan_aud (
     identifier UUID NOT NULL,
+    entity_status VARCHAR(36),
     REV INT NOT NULL,
     REVTYPE INTEGER NULL,
     name VARCHAR(36),
@@ -99,6 +103,7 @@ CREATE TABLE IF NOT EXISTS plan_aud (
 
 CREATE TABLE IF NOT EXISTS geographic_level(
   identifier UUID UNIQUE NOT NULL,
+  entity_status VARCHAR(36),
   name VARCHAR(255),
   title VARCHAR(255),
   created_by VARCHAR(36) NOT NULL,
@@ -110,6 +115,7 @@ CREATE TABLE IF NOT EXISTS geographic_level(
 
 CREATE TABLE IF NOT EXISTS geographic_level_aud(
     identifier UUID NOT NULL,
+    entity_status VARCHAR(36),
     REV INT NOT NULL,
     REVTYPE INTEGER NULL,
     name VARCHAR(255),
@@ -122,6 +128,7 @@ CREATE TABLE IF NOT EXISTS geographic_level_aud(
 );
 CREATE TABLE IF NOT EXISTS location_hierarchy(
      identifier UUID UNIQUE NOT NULL,
+     entity_status VARCHAR(36),
      node_order VARCHAR[],
      created_by VARCHAR(36) NOT NULL,
      created_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -131,6 +138,7 @@ CREATE TABLE IF NOT EXISTS location_hierarchy(
 );
 CREATE TABLE IF NOT EXISTS location_hierarchy_aud(
     identifier UUID NOT NULL,
+    entity_status VARCHAR(36),
     REV INT NOT NULL,
     REVTYPE INTEGER NULL,
     node_order VARCHAR[],
@@ -143,6 +151,7 @@ CREATE TABLE IF NOT EXISTS location_hierarchy_aud(
 
 CREATE TABLE IF NOT EXISTS location(
     identifier UUID UNIQUE NOT NULL,
+    entity_status VARCHAR(36),
     name VARCHAR(255) NOT NULL,
     geometry jsonb NOT NULL,
     type VARCHAR(255) NOT NULL,
@@ -158,6 +167,7 @@ CREATE TABLE IF NOT EXISTS location(
 
 CREATE TABLE IF NOT EXISTS location_aud(
     identifier UUID NOT NULL,
+    entity_status VARCHAR(36),
     REV INT NOT NULL,
     REVTYPE INTEGER NULL,
     name VARCHAR(255) NOT NULL,
@@ -175,6 +185,7 @@ CREATE TABLE IF NOT EXISTS location_aud(
 
 CREATE TABLE IF NOT EXISTS location_relationship(
     identifier UUID UNIQUE NOT NULL,
+    entity_status VARCHAR(36),
     location_hierarchy_identifier UUID NOT NULL,
     location_identifier UUID NOT NULL,
     parent_identifier UUID NOT NULL,
@@ -188,6 +199,7 @@ CREATE TABLE IF NOT EXISTS location_relationship(
 
 CREATE TABLE IF NOT EXISTS location_relationship_aud(
     identifier UUID NOT NULL,
+    entity_status VARCHAR(36),
     REV INT NOT NULL,
     REVTYPE INTEGER NULL,
     location_hierarchy_identifier UUID NOT NULL,

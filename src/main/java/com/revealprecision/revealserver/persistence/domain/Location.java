@@ -18,6 +18,10 @@ import java.util.UUID;
 @Setter
 @RequiredArgsConstructor
 @TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
+@NamedNativeQueries({
+        @NamedNativeQuery(name = "Location.findByGeographicLevel",query = "select * from location where geographic_level_id = ?", resultClass = Location.class),
+        @NamedNativeQuery(name = "Location.hasParentChildRelationship", query= "select  ST_Contains(?,?)")
+})
 public class Location extends AbstractAuditableEntity{
     @Id
     @GeneratedValue

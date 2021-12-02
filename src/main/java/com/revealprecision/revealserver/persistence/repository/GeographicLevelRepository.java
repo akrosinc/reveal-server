@@ -9,4 +9,5 @@ import java.util.UUID;
 @Repository
 public interface GeographicLevelRepository extends JpaRepository<GeographicLevel,UUID>{
     GeographicLevel findByName(String name);
+    Boolean existsByNameAndTitle(String name,String title);
 }

@@ -33,7 +33,10 @@ public class GeographicLevelController {
     )
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping(value = "/geographicLevel", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public GeographicLevel create(@Valid @RequestBody GeographicLevel geographicLevel){
+    public Object create(@Valid @RequestBody GeographicLevel geographicLevel){
+        if(geographicLevelService.isGeographicLevelExist(geographicLevel)){
+            return new ResponseEntity<>("Already  Exists",HttpStatus.CONFLICT);
+        }
         return geographicLevelService.createGeographicLevel(geographicLevel);
     }
 
