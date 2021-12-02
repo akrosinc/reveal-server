@@ -8,9 +8,7 @@ import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 import org.hibernate.envers.Audited;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
+import javax.persistence.*;
 import javax.validation.constraints.NotEmpty;
 import java.util.List;
 import java.util.UUID;
@@ -30,5 +28,5 @@ public class LocationHierarchy extends AbstractAuditableEntity {
     private UUID identifier;
     @NotEmpty(message = "node order list  is required and must not be empty")
     @Type(type = "list-array")
-    private List<String> node_order;
+    private List<String> nodeOrder;
 }
