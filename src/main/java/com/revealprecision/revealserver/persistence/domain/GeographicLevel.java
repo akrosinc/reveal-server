@@ -14,13 +14,6 @@ import java.util.UUID;
 @Getter
 @Setter
 @RequiredArgsConstructor
-@NamedNativeQueries(
-        @NamedNativeQuery(
-                name = "findByName",
-                query = "select * from geographic_level where name = ?",
-                resultClass = GeographicLevel.class
-        )
-)
 public class GeographicLevel extends AbstractAuditableEntity {
     @Id
     @GeneratedValue
