@@ -142,6 +142,16 @@
 				}
 			],
 			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{auth_bearer_token}}",
+							"type": "string"
+						}
+					]
+				},
 				"method": "POST",
 				"header": [],
 				"body": {
@@ -199,6 +209,16 @@
 				}
 			],
 			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{auth_bearer_token}}",
+							"type": "string"
+						}
+					]
+				},
 				"method": "GET",
 				"header": [],
 				"url": {
@@ -225,11 +245,6 @@
 						"exec": [
 							"pm.test(\"Status code is 404\", () => {",
 							"  pm.expect(pm.response.code).to.eql(404);",
-							"});",
-							"",
-							"const jsonData = pm.response.json();",
-							"pm.test(\"Test data of the response\", () => {",
-							"  pm.expect(jsonData.error).to.eql(\"Not Found\");",
 							"});"
 						],
 						"type": "text/javascript"
@@ -246,6 +261,16 @@
 				}
 			],
 			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{auth_bearer_token}}",
+							"type": "string"
+						}
+					]
+				},
 				"method": "GET",
 				"header": [],
 				"url": {
@@ -293,6 +318,16 @@
 				}
 			],
 			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{auth_bearer_token}}",
+							"type": "string"
+						}
+					]
+				},
 				"method": "POST",
 				"header": [],
 				"body": {
@@ -348,6 +383,16 @@
 				}
 			],
 			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{auth_bearer_token}}",
+							"type": "string"
+						}
+					]
+				},
 				"method": "POST",
 				"header": [],
 				"body": {
@@ -403,6 +448,16 @@
 				}
 			],
 			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{auth_bearer_token}}",
+							"type": "string"
+						}
+					]
+				},
 				"method": "PUT",
 				"header": [],
 				"body": {
@@ -459,6 +514,16 @@
 				}
 			],
 			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{auth_bearer_token}}",
+							"type": "string"
+						}
+					]
+				},
 				"method": "PUT",
 				"header": [],
 				"body": {
@@ -515,6 +580,16 @@
 				}
 			],
 			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{auth_bearer_token}}",
+							"type": "string"
+						}
+					]
+				},
 				"method": "PUT",
 				"header": [],
 				"body": {
@@ -571,6 +646,16 @@
 				}
 			],
 			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{auth_bearer_token}}",
+							"type": "string"
+						}
+					]
+				},
 				"method": "PUT",
 				"header": [],
 				"body": {
@@ -622,6 +707,16 @@
 				}
 			],
 			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{auth_bearer_token}}",
+							"type": "string"
+						}
+					]
+				},
 				"method": "DELETE",
 				"header": [],
 				"url": {
@@ -664,6 +759,16 @@
 				}
 			],
 			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{auth_bearer_token}}",
+							"type": "string"
+						}
+					]
+				},
 				"method": "DELETE",
 				"header": [],
 				"url": {
@@ -706,6 +811,16 @@
 				}
 			],
 			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{auth_bearer_token}}",
+							"type": "string"
+						}
+					]
+				},
 				"method": "PUT",
 				"header": [],
 				"body": {
