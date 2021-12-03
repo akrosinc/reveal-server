@@ -1,19 +1,22 @@
 package com.revealprecision.revealserver.persistence.domain;
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.Setter;
+import lombok.*;
+import lombok.experimental.FieldNameConstants;
 import org.hibernate.envers.Audited;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Pattern;
 import java.util.UUID;
 
+@FieldNameConstants
 @Entity
 @Audited
 @Getter
 @Setter
-@RequiredArgsConstructor
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 @NamedNativeQueries(
         @NamedNativeQuery(
                 name = "findByName",
@@ -26,7 +29,14 @@ public class GeographicLevel extends AbstractAuditableEntity {
     @GeneratedValue
     private UUID identifier;
     @NotBlank(message = "title is required and must not be empty")
+    @Pattern(regexp = "[a-z0-9\\-]+", message = "pattern not matched")
     private  String title;
     @NotBlank(message = "name is required and must not be empty")
     private String name;
+
+    public GeographicLevel update(GeographicLevel request) {
+        this.name = request.getName();
+        this.title = request.getTitle();
+        return this;
+    }
 }
