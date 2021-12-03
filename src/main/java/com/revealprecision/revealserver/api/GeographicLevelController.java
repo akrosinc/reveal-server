@@ -1,5 +1,7 @@
 package com.revealprecision.revealserver.api;
 
+import com.revealprecision.revealserver.api.dto.factory.GeographicLevelResponseFactory;
+import com.revealprecision.revealserver.api.dto.response.GeographicLevelResponse;
 import com.revealprecision.revealserver.persistence.domain.GeographicLevel;
 import com.revealprecision.revealserver.service.GeographicLevelService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -12,12 +14,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
 import java.util.Optional;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/")
-@Validated
 public class GeographicLevelController {
     private GeographicLevelService geographicLevelService;
 
@@ -31,7 +33,7 @@ public class GeographicLevelController {
             tags = { "Location" }
     )
     @PostMapping(value = "/geographicLevel", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public GeographicLevel create(@RequestBody GeographicLevel geographicLevel){
+    public GeographicLevel create(@Valid @RequestBody GeographicLevel geographicLevel){
         return geographicLevelService.createGeographicLevel(geographicLevel);
     }
 
@@ -51,13 +53,9 @@ public class GeographicLevelController {
             tags = { "Location" }
     )
     @GetMapping(value = "/geographicLevel/{identifier}",produces = MediaType.APPLICATION_JSON_VALUE)
-    public Object findGeographicLevelByIdentifier(
+    public ResponseEntity<GeographicLevelResponse> findGeographicLevelByIdentifier(
             @Parameter(description = "Identifier of the geographicLevel") @PathVariable UUID identifier){
-                Optional<GeographicLevel> levelOptional = geographicLevelService.findGeographicLevelByIdentifier(identifier);
-                if(levelOptional.isPresent()){
-                    return levelOptional.get();
-                }
-                return new ResponseEntity<Void>(HttpStatus.NOT_FOUND);
+        return ResponseEntity.status(200).body(GeographicLevelResponseFactory.fromEntity(geographicLevelService.findGeographicLevelByIdentifier(identifier)));
     }
 
     @Operation(summary = "Update a geographicLevel",
@@ -66,7 +64,7 @@ public class GeographicLevelController {
     )
     @PutMapping(value = "/geographicLevel/{identifier}",consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public GeographicLevel updateGeographicLevel(
-            @RequestBody GeographicLevel geographicLevel,
+            @Valid @RequestBody GeographicLevel geographicLevel,
             @Parameter(description = "Identifier of the geographicLevel") @PathVariable UUID identifier){
         return geographicLevelService.update(identifier,geographicLevel);
     }

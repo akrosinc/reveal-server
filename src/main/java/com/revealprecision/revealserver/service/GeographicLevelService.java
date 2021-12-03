@@ -1,10 +1,12 @@
 package com.revealprecision.revealserver.service;
 
+import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.GeographicLevel;
 import com.revealprecision.revealserver.persistence.repository.GeographicLevelRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -23,22 +25,17 @@ public class GeographicLevelService {
         return geographicLevelRepository.save(geographicLevel);
     }
 
-    public Page<GeographicLevel> getGeographicLevels(Integer pageNumber, Integer pageSize){
-        return geographicLevelRepository.findAll(PageRequest.of(pageNumber,pageSize));
+    public Page<GeographicLevel> getGeographicLevels(Integer pageNumber, Integer pageSize) {
+        return geographicLevelRepository.findAll(PageRequest.of(pageNumber, pageSize));
     }
 
-    public Optional<GeographicLevel> findGeographicLevelByIdentifier(UUID identifier){
-        return geographicLevelRepository.findById(identifier);
+    public GeographicLevel findGeographicLevelByIdentifier(UUID identifier) {
+        return geographicLevelRepository.findById(identifier)
+                .orElseThrow(() -> new NotFoundException(Pair.of(GeographicLevel.Fields.identifier, identifier), GeographicLevel.class));
     }
 
-    public GeographicLevel update(UUID identifier,GeographicLevel geographicLevel){
-        Optional<GeographicLevel> updateGeographicLevelOptional = geographicLevelRepository.findById(identifier);
-        if(updateGeographicLevelOptional.isPresent()){
-            GeographicLevel updateGeographicLevel = updateGeographicLevelOptional.get();
-            updateGeographicLevel.setName(geographicLevel.getName());
-            updateGeographicLevel.setTitle(geographicLevel.getTitle());
-            return geographicLevelRepository.save(updateGeographicLevel);
-        }
-        return  null;
+    public GeographicLevel update(UUID identifier, GeographicLevel geographicLevel) {
+        GeographicLevel updateGeographicLevel = findGeographicLevelByIdentifier(identifier);
+        return geographicLevelRepository.save(updateGeographicLevel.update(geographicLevel));
     }
 }

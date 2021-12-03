@@ -213,5 +213,10 @@ CREATE TABLE IF NOT EXISTS raster_store (
     file_name VARCHAR(36)
 );
 
+CREATE SEQUENCE IF NOT EXISTS hibernate_sequence
+    START WITH 1
+    INCREMENT BY 1
+    MAXVALUE 9223372036854775807;
+
 CREATE INDEX IF NOT EXISTS raster_store_idx ON raster_store(id);
 CREATE INDEX raster_store_rast_st_convexhull_idx ON raster_store USING gist( public.ST_ConvexHull(rast) );
