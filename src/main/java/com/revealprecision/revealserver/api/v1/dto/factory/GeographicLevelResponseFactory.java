@@ -1,6 +1,6 @@
-package com.revealprecision.revealserver.api.dto.factory;
+package com.revealprecision.revealserver.api.v1.dto.factory;
 
-import com.revealprecision.revealserver.api.dto.response.GeographicLevelResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.GeographicLevelResponse;
 import com.revealprecision.revealserver.persistence.domain.GeographicLevel;
 import java.util.stream.Collectors;
 import lombok.AccessLevel;
