@@ -98,7 +98,7 @@ CREATE TABLE IF NOT EXISTS plan_aud (
 
 CREATE TABLE IF NOT EXISTS geographic_level(
   identifier UUID UNIQUE NOT NULL,
-  name VARCHAR(255),
+  name VARCHAR(255) UNIQUE,
   title VARCHAR(255),
   created_by VARCHAR(36) NOT NULL,
   created_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -119,6 +119,7 @@ CREATE TABLE IF NOT EXISTS geographic_level_aud(
     modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
     PRIMARY KEY (identifier,REV)
 );
+
 CREATE TABLE IF NOT EXISTS location_hierarchy(
      identifier UUID UNIQUE NOT NULL,
      node_order VARCHAR(255),
@@ -128,6 +129,7 @@ CREATE TABLE IF NOT EXISTS location_hierarchy(
      modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
      PRIMARY KEY (identifier)
 );
+
 CREATE TABLE IF NOT EXISTS location_hierarchy_aud(
     identifier UUID NOT NULL,
     REV INT NOT NULL,
@@ -199,6 +201,7 @@ CREATE TABLE IF NOT EXISTS location_relationship_aud(
     modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
     PRIMARY KEY (identifier,REV)
 );
+
 CREATE TABLE IF NOT EXISTS raster_store (
     id BIGINT NOT NULL,
     created_by VARCHAR(36) NOT NULL,
@@ -209,6 +212,11 @@ CREATE TABLE IF NOT EXISTS raster_store (
     rast raster,
     file_name VARCHAR(36)
 );
+
+CREATE SEQUENCE IF NOT EXISTS hibernate_sequence
+    START WITH 1
+    INCREMENT BY 1
+    MAXVALUE 9223372036854775807;
 
 CREATE INDEX IF NOT EXISTS raster_store_idx ON raster_store(id);
 CREATE INDEX raster_store_rast_st_convexhull_idx ON raster_store USING gist( public.ST_ConvexHull(rast) );
