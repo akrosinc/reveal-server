@@ -1,9 +1,8 @@
-package com.revealprecision.revealserver.api;
+package com.revealprecision.revealserver.api.v1.controller;
 
-import com.revealprecision.revealserver.api.dto.factory.GeographicLevelRequestFactory;
-import com.revealprecision.revealserver.api.dto.factory.GeographicLevelResponseFactory;
-import com.revealprecision.revealserver.api.dto.request.GeographicLevelRequest;
-import com.revealprecision.revealserver.api.dto.response.GeographicLevelResponse;
+import com.revealprecision.revealserver.api.v1.dto.factory.GeographicLevelResponseFactory;
+import com.revealprecision.revealserver.api.v1.dto.request.GeographicLevelRequest;
+import com.revealprecision.revealserver.api.v1.dto.response.GeographicLevelResponse;
 import com.revealprecision.revealserver.service.GeographicLevelService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -45,7 +44,7 @@ public class GeographicLevelController {
       @Valid @RequestBody GeographicLevelRequest geographicLevelRequest) {
     return ResponseEntity.status(HttpStatus.CREATED).body(GeographicLevelResponseFactory.fromEntity(
         geographicLevelService.createGeographicLevel(
-            GeographicLevelRequestFactory.toEntity(geographicLevelRequest))));
+            geographicLevelRequest)));
   }
 
   @Operation(summary = "List geographicLevels",
@@ -83,7 +82,7 @@ public class GeographicLevelController {
       @Parameter(description = "Identifier of the geographicLevel") @PathVariable UUID identifier) {
     return ResponseEntity.status(HttpStatus.OK).body(GeographicLevelResponseFactory.fromEntity(
         geographicLevelService.update(identifier,
-            GeographicLevelRequestFactory.toEntity(geographicLevelRequest))));
+            geographicLevelRequest)));
   }
 
   @Operation(summary = "Delete a geographicLevel",

@@ -1,4 +1,4 @@
-package com.revealprecision.revealserver.api.dto.request;
+package com.revealprecision.revealserver.api.v1.dto.request;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Pattern;

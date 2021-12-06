@@ -1,4 +1,4 @@
-package com.revealprecision.revealserver.api.dto.response;
+package com.revealprecision.revealserver.api.v1.dto.response;
 
 import java.util.UUID;
 import lombok.AllArgsConstructor;

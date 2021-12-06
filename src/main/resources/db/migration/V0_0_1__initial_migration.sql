@@ -98,7 +98,7 @@ CREATE TABLE IF NOT EXISTS plan_aud (
 
 CREATE TABLE IF NOT EXISTS geographic_level(
   identifier UUID UNIQUE NOT NULL,
-  name VARCHAR(255),
+  name VARCHAR(255) UNIQUE,
   title VARCHAR(255),
   created_by VARCHAR(36) NOT NULL,
   created_datetime TIMESTAMP WITH TIME ZONE NOT NULL,

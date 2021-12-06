@@ -1,13 +1,20 @@
 package com.revealprecision.revealserver.persistence.domain;
 
-import lombok.*;
-import lombok.experimental.FieldNameConstants;
-import org.hibernate.envers.Audited;
-
-import javax.persistence.*;
+import com.revealprecision.revealserver.api.v1.dto.request.GeographicLevelRequest;
+import java.util.UUID;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Pattern;
-import java.util.UUID;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.experimental.FieldNameConstants;
+import org.hibernate.envers.Audited;
 
 @FieldNameConstants
 @Entity
@@ -17,13 +24,6 @@ import java.util.UUID;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@NamedNativeQueries(
-    @NamedNativeQuery(
-        name = "findByName",
-        query = "select * from geographic_level where name = ?",
-        resultClass = GeographicLevel.class
-    )
-)
 public class GeographicLevel extends AbstractAuditableEntity {
 
   @Id
@@ -35,9 +35,10 @@ public class GeographicLevel extends AbstractAuditableEntity {
 
   @Pattern(regexp = "[a-z0-9\\-]+", message = "pattern not matched")
   @NotBlank(message = "must not be empty")
+  @Column(unique = true)
   private String name;
 
-  public GeographicLevel update(GeographicLevel request) {
+  public GeographicLevel update(GeographicLevelRequest request) {
     this.name = request.getName();
     this.title = request.getTitle();
     return this;

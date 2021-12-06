@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.exceptions.handler;
 
+import com.revealprecision.revealserver.exceptions.ConflictException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.exceptions.dto.ApiErrorResponse;
 import com.revealprecision.revealserver.exceptions.dto.ValidationErrorResponse;
@@ -40,5 +41,14 @@ public class CustomExceptionHandler {
         .timestamp(LocalDateTime.now())
         .message(ex.getMessage()).build();
     return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+  }
+
+  @ExceptionHandler(ConflictException.class)
+  protected ResponseEntity<ApiErrorResponse> handleConflict(ConflictException ex) {
+    ApiErrorResponse response = ApiErrorResponse.builder()
+        .statusCode(HttpStatus.CONFLICT.value())
+        .timestamp(LocalDateTime.now())
+        .message(ex.getMessage()).build();
+    return new ResponseEntity<>(response, HttpStatus.CONFLICT);
   }
 }
