@@ -1,6 +1,9 @@
 package com.revealprecision.revealserver.exceptions.dto;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
 
 @Getter
 @Setter
@@ -8,7 +11,7 @@ import lombok.*;
 @Builder
 public class ValidationErrorResponse {
 
-    private String field;
-    private String rejectedValue;
-    private String messageKey;
+  private String field;
+  private String rejectedValue;
+  private String messageKey;
 }

@@ -1,10 +1,11 @@
 package com.revealprecision.revealserver.exceptions.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import lombok.*;
-
 import java.time.LocalDateTime;
 import java.util.List;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
@@ -12,8 +13,8 @@ import java.util.List;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ApiErrorResponse {
 
-    private int statusCode;
-    private LocalDateTime timestamp;
-    private String message;
-    private List<ValidationErrorResponse> fieldValidationErrors;
+  private int statusCode;
+  private LocalDateTime timestamp;
+  private String message;
+  private List<ValidationErrorResponse> fieldValidationErrors;
 }

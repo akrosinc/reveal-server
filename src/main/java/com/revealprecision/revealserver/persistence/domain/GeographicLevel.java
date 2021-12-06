@@ -18,25 +18,28 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 @NamedNativeQueries(
-        @NamedNativeQuery(
-                name = "findByName",
-                query = "select * from geographic_level where name = ?",
-                resultClass = GeographicLevel.class
-        )
+    @NamedNativeQuery(
+        name = "findByName",
+        query = "select * from geographic_level where name = ?",
+        resultClass = GeographicLevel.class
+    )
 )
 public class GeographicLevel extends AbstractAuditableEntity {
-    @Id
-    @GeneratedValue
-    private UUID identifier;
-    @NotBlank(message = "title is required and must not be empty")
-    @Pattern(regexp = "[a-z0-9\\-]+", message = "pattern not matched")
-    private  String title;
-    @NotBlank(message = "name is required and must not be empty")
-    private String name;
 
-    public GeographicLevel update(GeographicLevel request) {
-        this.name = request.getName();
-        this.title = request.getTitle();
-        return this;
-    }
+  @Id
+  @GeneratedValue
+  private UUID identifier;
+
+  @NotBlank(message = "must not be empty")
+  private String title;
+
+  @Pattern(regexp = "[a-z0-9\\-]+", message = "pattern not matched")
+  @NotBlank(message = "must not be empty")
+  private String name;
+
+  public GeographicLevel update(GeographicLevel request) {
+    this.name = request.getName();
+    this.title = request.getTitle();
+    return this;
+  }
 }
