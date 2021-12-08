@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "0549359e-9900-42d2-86da-6fb54c6f936e",
+		"_postman_id": "0bba3a0a-ca38-4107-8fa1-0fa2c8295f39",
 		"name": "1001_geographicLevel",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
@@ -124,8 +124,8 @@
 							"});",
 							"",
 							"const jsonData = pm.response.json();",
-							"pm.variables.set(\"geographicLevel_identifier\",jsonData.identifier);",
-							"pm.variables.set(\"geographicLevel_name\",jsonData.name);"
+							"pm.environment.set(\"geographicLevel_identifier\",jsonData.identifier);",
+							"pm.environment.set(\"geographicLevel_name\",jsonData.name);"
 						],
 						"type": "text/javascript"
 					}
@@ -134,8 +134,10 @@
 					"listen": "prerequest",
 					"script": {
 						"exec": [
-							"pm.variables.unset(\"geographicLevel_identifier\");",
-							"pm.variables.unset(\"geographicLevel_name\");"
+							"pm.environment.unset(\"geographicLevel_identifier\");",
+							"pm.environment.unset(\"geographicLevel_name\");",
+							"",
+							"pm.variables.set(\"body_name\", pm.variables.replaceIn('{{$randomBsBuzz}}'));"
 						],
 						"type": "text/javascript"
 					}
@@ -156,7 +158,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"name\": \"{{$randomFirstName}}\",\n    \"title\": \"title for {{$randomFirstName}}\"\n}",
+					"raw": "{\n    \"name\": \"{{body_name}}\",\n    \"title\": \"title for {{body_name}}\"\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -301,7 +303,7 @@
 							"",
 							"const jsonData = pm.response.json();",
 							"pm.test(\"Test data of the response\", () => {",
-							"  pm.expect(jsonData.message).to.include(\"Duplicate value for name\");",
+							"  pm.expect(jsonData.message).to.include(\"Name with value\");",
 							"});"
 						],
 						"type": "text/javascript"
@@ -366,7 +368,8 @@
 							"",
 							"const jsonData = pm.response.json();",
 							"pm.test(\"Test data of the response\", () => {",
-							"  pm.expect(jsonData.message).to.include(\"name can only contain [a-z09\\_]\");",
+							"  pm.expect(jsonData.fieldValidationErrors[0].field).to.eql(\"name\");",
+							"  pm.expect(jsonData.fieldValidationErrors[0].messageKey).to.eql(\"pattern not matched\");",
 							"});"
 						],
 						"type": "text/javascript"
@@ -431,7 +434,8 @@
 							"",
 							"const jsonData = pm.response.json();",
 							"pm.test(\"Test data of the response\", () => {",
-							"  pm.expect(jsonData.message).to.include(\"Title is a manditory field\");",
+							"  pm.expect(jsonData.fieldValidationErrors[0].field).to.eql(\"title\");",
+							"  pm.expect(jsonData.fieldValidationErrors[0].messageKey).to.eql(\"must not be empty\");",
 							"});"
 						],
 						"type": "text/javascript"
@@ -462,7 +466,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"name\": \"{{$geographicLevel_name}}\"\n}",
+					"raw": "{\n    \"name\": \"{{geographicLevel_name}}\"\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -497,7 +501,8 @@
 							"",
 							"const jsonData = pm.response.json();",
 							"pm.test(\"Test data of the response\", () => {",
-							"  pm.expect(jsonData.message).to.include(\"Name is a manditory field\");",
+							"  pm.expect(jsonData.fieldValidationErrors[0].field).to.eql(\"name\");",
+							"  pm.expect(jsonData.fieldValidationErrors[0].messageKey).to.eql(\"must not be empty\");",
 							"});"
 						],
 						"type": "text/javascript"
@@ -528,7 +533,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"title\": \"{{$geographicLevel_name}}\"\n}",
+					"raw": "{\n    \"title\": \"{{geographicLevel_name}}\"\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -594,7 +599,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"name\": \"{{$geographicLevel_name}}x\",\n    \"title\": \"title for {{$geographicLevel_name}}\"\n}",
+					"raw": "{\n    \"name\": \"{{geographicLevel_name}}x\",\n    \"title\": \"title for {{geographicLevel_name}}\"\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -660,7 +665,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"name\": \"{{$geographicLevel_name}}\",\n    \"title\": \"title for {{$geographicLevel_name}} 2\"\n}",
+					"raw": "{\n    \"name\": \"{{geographicLevel_name}}\",\n    \"title\": \"title for {{geographicLevel_name}} 2\"\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -825,7 +830,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"name\": \"{{$geographicLevel_name}}\",\n    \"title\": \"title for {{$geographicLevel_name}} 2\"\n}",
+					"raw": "{\n    \"name\": \"{{geographicLevel_name}}\",\n    \"title\": \"title for {{geographicLevel_name}} 2\"\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -860,7 +865,7 @@
 							"",
 							"const jsonData = pm.response.json();",
 							"pm.test(\"Test data of the response\", () => {",
-							"  pm.expect(jsonData).to.not.contain(pm.variables.get(\"geographicLevel_identifier\"));",
+							"  pm.expect(jsonData.content).to.not.contain(pm.environment.get(\"geographicLevel_identifier\"));",
 							"});"
 						],
 						"type": "text/javascript"
