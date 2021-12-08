@@ -1,7 +1,10 @@
 package com.revealprecision.revealserver.persistence.domain;
 
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
@@ -16,11 +19,12 @@ import java.util.UUID;
 @Audited
 @Getter
 @Setter
-@RequiredArgsConstructor
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
 @TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
 @NamedNativeQueries({
-        @NamedNativeQuery(name = "Location.findByGeographicLevel",query = "select * from location where geographic_level_id = ?", resultClass = Location.class),
-        @NamedNativeQuery(name = "Location.hasParentChildRelationship", query= "select  ST_Contains(?,?)")
+        @NamedNativeQuery(name = "Location.hasParentChildRelationship", query= "select ST_Contains (ST_AsText(ST_GeomFromGeoJSON(?)),ST_AsText(ST_Centroid(ST_GeomFromGeoJSON(?))))")
 })
 public class Location extends AbstractAuditableEntity{
     @Id
@@ -39,6 +43,6 @@ public class Location extends AbstractAuditableEntity{
     private UUID externalId;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "geographic_level_id")
+    @JoinColumn(name = "geographic_level_identifier")
     private GeographicLevel geographicLevel;
 }

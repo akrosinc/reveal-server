@@ -1,7 +1,9 @@
 package com.revealprecision.revealserver.service;
 
+import com.revealprecision.revealserver.api.v1.dto.request.LocationHierarchyRequest;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.repository.LocationHierarchyRepository;
+import org.jobrunr.scheduling.JobScheduler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -9,23 +11,37 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class LocationHierarchyService {
-    private LocationHierarchyRepository locationHierarchyRepository;
 
-    @Autowired
-    public LocationHierarchyService(LocationHierarchyRepository locationHierarchyRepository) {
-        this.locationHierarchyRepository = locationHierarchyRepository;
-    }
+  private LocationHierarchyRepository locationHierarchyRepository;
+  private LocationRelationshipService locationRelationshipService;
+  private JobScheduler jobScheduler;
 
-    public LocationHierarchy createLocationHierarchy(LocationHierarchy locationHierarchy){
-        return locationHierarchyRepository.save(locationHierarchy);
-    }
+  @Autowired
+  public LocationHierarchyService(LocationHierarchyRepository locationHierarchyRepository,
+      LocationRelationshipService locationRelationshipService,
+      JobScheduler jobScheduler) {
+    this.locationHierarchyRepository = locationHierarchyRepository;
+    this.locationRelationshipService = locationRelationshipService;
+    this.jobScheduler = jobScheduler;
+  }
 
-    public Page<LocationHierarchy> getLocationHierarchies(Integer pageNumber, Integer pageSize){
-        return locationHierarchyRepository.findAll(PageRequest.of(pageNumber,pageSize));
+  public LocationHierarchy createLocationHierarchy(
+      LocationHierarchyRequest locationHierarchyRequest) {
+    LocationHierarchy locationHierarchy = locationHierarchyRepository.save(
+        LocationHierarchy.builder().nodeOrder(locationHierarchyRequest.getNodeOrder()).build());
+    if (locationHierarchy != null) {
+      jobScheduler.enqueue(
+          () -> locationRelationshipService.createLocationRelationships(locationHierarchy));
     }
+    return locationHierarchy;
+  }
 
-    public Boolean isLocationHierarchyExists(LocationHierarchy locationHierarchy){
-        //TODO: implement
-        return  false;
-    }
+  public Page<LocationHierarchy> getLocationHierarchies(Integer pageNumber, Integer pageSize) {
+    return locationHierarchyRepository.findAll(PageRequest.of(pageNumber, pageSize));
+  }
+
+  public Boolean isLocationHierarchyExists(LocationHierarchy locationHierarchy) {
+    //TODO: implement
+    return false;
+  }
 }
