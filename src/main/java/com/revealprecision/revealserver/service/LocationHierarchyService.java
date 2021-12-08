@@ -15,14 +15,17 @@ public class LocationHierarchyService {
   private LocationHierarchyRepository locationHierarchyRepository;
   private LocationRelationshipService locationRelationshipService;
   private JobScheduler jobScheduler;
+  private GeographicLevelService geographicLevelService;
 
   @Autowired
   public LocationHierarchyService(LocationHierarchyRepository locationHierarchyRepository,
       LocationRelationshipService locationRelationshipService,
-      JobScheduler jobScheduler) {
+      JobScheduler jobScheduler,
+      GeographicLevelService geographicLevelService) {
     this.locationHierarchyRepository = locationHierarchyRepository;
     this.locationRelationshipService = locationRelationshipService;
     this.jobScheduler = jobScheduler;
+    this.geographicLevelService = geographicLevelService;
   }
 
   public LocationHierarchy createLocationHierarchy(
