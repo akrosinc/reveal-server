@@ -21,5 +21,6 @@ public class LocationRequest {
   @NotNull
   private Geometry geometry;
 
+  @NotNull
   private LocationProperty properties;
 }

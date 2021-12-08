@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.validator.constraints.UniqueElements;
 
 @Getter
 @Setter
@@ -15,7 +16,8 @@ import lombok.Setter;
 @NoArgsConstructor
 public class LocationHierarchyRequest {
 
-  @NotEmpty
+  @NotEmpty(message = "node order list  is required and must not be empty")
+  @UniqueElements(message = "duplicate nodes in hierarchy")
   private List<String> nodeOrder;
 
 }
