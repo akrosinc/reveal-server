@@ -213,6 +213,36 @@ CREATE TABLE IF NOT EXISTS raster_store (
     file_name VARCHAR(36)
 );
 
+CREATE TABLE IF NOT EXISTS organization(
+    identifier UUID NOT NULL,
+    active BOOLEAN,
+    name VARCHAR(255) NOT NULL,
+    type VARCHAR(36) NOT NULL,
+    organization_parent_id UUID,
+    entity_status VARCHAR(36) NOT NULL,
+    created_by VARCHAR(36) NOT NULL,
+    created_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by VARCHAR(36) NOT NULL,
+    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    PRIMARY KEY (identifier)
+);
+
+CREATE TABLE IF NOT EXISTS organization_aud(
+    identifier UUID NOT NULL,
+    REV INT NOT NULL,
+    REVTYPE INTEGER NULL,
+    active BOOLEAN,
+    name VARCHAR(255) NOT NULL,
+    type VARCHAR(36) NOT NULL,
+    organization_parent_id UUID,
+    entity_status VARCHAR(36) NOT NULL,
+    created_by VARCHAR(36) NOT NULL,
+    created_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by VARCHAR(36) NOT NULL,
+    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    PRIMARY KEY (identifier,REV)
+);
+
 CREATE SEQUENCE IF NOT EXISTS hibernate_sequence
     START WITH 1
     INCREMENT BY 1
