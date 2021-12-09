@@ -1,12 +1,21 @@
 package com.revealprecision.revealserver.service;
 
+import static java.util.stream.Collectors.joining;
+
 import com.revealprecision.revealserver.api.v1.dto.request.LocationHierarchyRequest;
+import com.revealprecision.revealserver.exceptions.ConflictException;
+import com.revealprecision.revealserver.exceptions.NotFoundException;
+import com.revealprecision.revealserver.exceptions.constant.Error;
+import com.revealprecision.revealserver.persistence.domain.GeographicLevel;
+import com.revealprecision.revealserver.persistence.domain.GeographicLevel.Fields;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.repository.LocationHierarchyRepository;
+import java.util.List;
 import org.jobrunr.scheduling.JobScheduler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -30,6 +39,20 @@ public class LocationHierarchyService {
 
   public LocationHierarchy createLocationHierarchy(
       LocationHierarchyRequest locationHierarchyRequest) {
+    locationHierarchyRequest.getNodeOrder().stream().forEach(nodeName -> {
+      if (!geographicLevelService.findByName(nodeName).isPresent()) {
+        throw new NotFoundException(Pair.of(Fields.name, nodeName), GeographicLevel.class);
+      }
+    });
+
+    List<LocationHierarchy> existingHierarchy = findByNodeOrder(
+        locationHierarchyRequest.getNodeOrder());
+    if (existingHierarchy != null && !existingHierarchy.isEmpty()) {
+      throw new ConflictException(
+          String.format(Error.NON_UNIQUE, LocationHierarchy.Fields.nodeOrder,
+              locationHierarchyRequest.getNodeOrder()));
+    }
+
     LocationHierarchy locationHierarchy = locationHierarchyRepository.save(
         LocationHierarchy.builder().nodeOrder(locationHierarchyRequest.getNodeOrder()).build());
     if (locationHierarchy != null) {
@@ -43,8 +66,9 @@ public class LocationHierarchyService {
     return locationHierarchyRepository.findAll(PageRequest.of(pageNumber, pageSize));
   }
 
-  public Boolean isLocationHierarchyExists(LocationHierarchy locationHierarchy) {
-    //TODO: implement
-    return false;
+
+  public List<LocationHierarchy> findByNodeOrder(List<String> nodeOrder) {
+    return locationHierarchyRepository
+        .findByNodeOrderArray(nodeOrder.stream().collect(joining(",", "{", "}")));
   }
 }
