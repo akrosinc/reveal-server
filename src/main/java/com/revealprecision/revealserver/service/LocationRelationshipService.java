@@ -3,16 +3,20 @@ package com.revealprecision.revealserver.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.revealprecision.revealserver.persistence.domain.GeographicLevel;
-import com.revealprecision.revealserver.persistence.domain.Geometry;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
 import com.revealprecision.revealserver.persistence.repository.GeographicLevelRepository;
 import com.revealprecision.revealserver.persistence.repository.LocationRelationshipRepository;
 import com.revealprecision.revealserver.persistence.repository.LocationRepository;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -47,7 +51,7 @@ public class LocationRelationshipService {
 
     geographicLevelToLocationsMap.entrySet().stream().forEach(item -> {
       List<Location> parentLocations = item.getValue();
-      if (geographicLevels.size() > geographicLevels.indexOf(item.getKey()) + 1)  {
+      if (geographicLevels.size() > geographicLevels.indexOf(item.getKey()) + 1) {
         List<Location> potentialChildren = geographicLevelToLocationsMap
             .get(geographicLevels.get(geographicLevels.indexOf(item.getKey()) + 1));
         ObjectMapper mapper = new ObjectMapper();
@@ -64,12 +68,18 @@ public class LocationRelationshipService {
               e.printStackTrace();
             }
             if (locationRepository.hasParentChildRelationship(parentGeometry, childGeometry)) {
-              LocationRelationship locationRelationship = new LocationRelationship();
-              locationRelationship.setParent_identifier(location.getIdentifier());
-              locationRelationship
-                  .setLocation_hierarchy_identifier(locationHierarchy.getIdentifier());
-              locationRelationship.setLocation_identifier(potentialChild.getIdentifier());
-              locationRelationship.setAncestry("TODO");
+              List<UUID> ancestry = new ArrayList<>();
+              Optional<LocationRelationship> locationRelationshipOptional = locationRelationshipRepository.findByLocationHierarchyIdentifierAndLocationIdentifier(locationHierarchy.getIdentifier(),location.getIdentifier());
+              if(locationRelationshipOptional.isPresent()){
+                ancestry.addAll(locationRelationshipOptional.get().getAncestry());
+              }
+              ancestry.add(location.getIdentifier());
+
+              LocationRelationship locationRelationship = LocationRelationship.builder()
+                  .parentIdentifier(location.getIdentifier())
+                  .locationHierarchyIdentifier(locationHierarchy.getIdentifier())
+                  .locationIdentifier(potentialChild.getIdentifier())
+                  .ancestry(ancestry).build();
               locationRelationshipRepository.save(locationRelationship);
             }
 
