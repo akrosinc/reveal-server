@@ -1,14 +1,16 @@
 package com.revealprecision.revealserver.service;
 
 import com.cosium.spring.data.jpa.entity.graph.domain.EntityGraphUtils;
+import com.revealprecision.revealserver.api.v1.dto.request.OrganizationCriteria;
 import com.revealprecision.revealserver.api.v1.dto.request.OrganizationRequest;
-import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.Organization;
 import com.revealprecision.revealserver.persistence.domain.Organization.Fields;
 import com.revealprecision.revealserver.persistence.repository.OrganizationRepository;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 
@@ -29,7 +31,6 @@ public class OrganizationService {
             : findByIdWithChildren(organizationRequest.getPartOf()))
         .type(organizationRequest.getType())
         .active(organizationRequest.isActive())
-        .entityStatus(EntityStatus.ACTIVE)
         .build());
   }
 
@@ -38,6 +39,26 @@ public class OrganizationService {
       return findByIdWithoutChildren(identifier);
     } else {
       return findByIdWithChildren(identifier);
+    }
+  }
+
+  public Page<Organization> findAll(OrganizationCriteria criteria, Pageable pageable) {
+    if (criteria.isRoot()) {
+      return organizationRepository.getAllByCriteriaWithRoot(criteria.getName(),
+          (criteria.getType() == null) ? null : criteria.getType().name(), pageable);
+    } else {
+      return organizationRepository.getAllByCriteriaWithoutRoot(criteria.getName(),
+          (criteria.getType() == null) ? null : criteria.getType().name(), pageable);
+    }
+  }
+
+  public long getCountFindAll(OrganizationCriteria criteria) {
+    if (criteria.isRoot()) {
+      return organizationRepository.getCountByCriteriaWithRoot(criteria.getName(),
+          (criteria.getType() == null) ? null : criteria.getType().name());
+    } else {
+      return organizationRepository.getCountByCriteriaWithoutRoot(criteria.getName(),
+          (criteria.getType() == null) ? null : criteria.getType().name());
     }
   }
 

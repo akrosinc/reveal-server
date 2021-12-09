@@ -1,7 +1,6 @@
 package com.revealprecision.revealserver.persistence.domain;
 
 import com.revealprecision.revealserver.api.v1.dto.request.OrganizationRequest;
-import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.enums.OrganizationTypeEnum;
 import java.util.Set;
 import java.util.UUID;
@@ -55,10 +54,6 @@ public class Organization extends AbstractAuditableEntity {
 
   @OneToMany(mappedBy = "parent", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
   private Set<Organization> children;
-
-  @Enumerated(EnumType.STRING)
-  @Column(nullable = false)
-  private EntityStatus entityStatus;
 
   @ManyToOne
   @JoinColumn(name = "organization_parent_id", nullable = true)
