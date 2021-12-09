@@ -1,6 +1,5 @@
 package com.revealprecision.revealserver.api.v1.dto.response;
 
-import com.revealprecision.revealserver.persistence.domain.Geometry;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -14,10 +13,10 @@ import lombok.Setter;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class LocationResponse {
+public class LocationPropertyResponse {
 
-  private UUID identifier;
-  private String type;
-  private Geometry geometry;
-  private LocationPropertyResponse properties;
+  private String name;
+  private String status;
+  private UUID externalId;
+  private String geographicLevel;
 }
