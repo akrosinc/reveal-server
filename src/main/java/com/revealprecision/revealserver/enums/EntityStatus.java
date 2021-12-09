@@ -2,5 +2,7 @@ package com.revealprecision.revealserver.enums;
 
 public enum EntityStatus {
   DELETED,
-  ACTIVE
+  ACTIVE,
+  CREATING,
+  DELETING
 }

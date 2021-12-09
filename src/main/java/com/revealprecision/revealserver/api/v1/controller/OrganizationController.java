@@ -1,13 +1,18 @@
 package com.revealprecision.revealserver.api.v1.controller;
 
 import com.revealprecision.revealserver.api.v1.dto.factory.OrganizationResponseFactory;
+import com.revealprecision.revealserver.api.v1.dto.request.OrganizationCriteria;
 import com.revealprecision.revealserver.api.v1.dto.request.OrganizationRequest;
+import com.revealprecision.revealserver.api.v1.dto.response.CountResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.OrganizationResponse;
+import com.revealprecision.revealserver.enums.SummaryEnum;
 import com.revealprecision.revealserver.service.OrganizationService;
 import io.swagger.v3.oas.annotations.Operation;
 import java.util.UUID;
 import javax.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -44,6 +49,28 @@ public class OrganizationController {
             organizationService.createOrganization(organizationRequest)));
   }
 
+  @Operation(summary = "Fetch organizations",
+      description = "Fetch organizations",
+      tags = {"Organization"}
+  )
+  @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<?> getOrganizations(
+      @PageableDefault(size = 50) Pageable pageable,
+      OrganizationCriteria criteria,
+      @RequestParam(value = "_summary", defaultValue = "TRUE") SummaryEnum _summary) {
+
+    if (_summary.equals(SummaryEnum.COUNT)) {
+      return ResponseEntity.status(HttpStatus.OK)
+          .body(new CountResponse(organizationService.getCountFindAll(criteria)));
+
+    } else {
+      return ResponseEntity.status(HttpStatus.OK).body(
+          OrganizationResponseFactory.fromEntityPage(
+              organizationService.findAll(criteria, pageable),
+              pageable, _summary));
+    }
+  }
+
   @Operation(summary = "Get an organization by identifier",
       description = "Get an organization by identifier",
       tags = {"Organization"}
@@ -59,6 +86,10 @@ public class OrganizationController {
                 organizationService.findById(identifier, _summary)));
   }
 
+  @Operation(summary = "Update an organization",
+      description = "Update an organization",
+      tags = {"Organization"}
+  )
   @PutMapping(value = "/{identifier}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<OrganizationResponse> updateOrganization(
       @Valid @RequestBody OrganizationRequest organizationRequest, @PathVariable UUID identifier) {
@@ -67,6 +98,10 @@ public class OrganizationController {
             organizationService.updateOrganization(identifier, organizationRequest)));
   }
 
+  @Operation(summary = "Delete an organization",
+      description = "Delete an organization",
+      tags = {"Organization"}
+  )
   @DeleteMapping(value = "/{identifier}")
   public ResponseEntity<Void> deleteOrganization(@PathVariable UUID identifier) {
     organizationService.deleteOrganization(identifier);
