@@ -6,6 +6,7 @@ import java.util.UUID;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.NamedNativeQuery;
 import javax.validation.constraints.NotEmpty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -30,6 +31,7 @@ import org.hibernate.validator.constraints.UniqueElements;
     name = "list-array",
     typeClass = ListArrayType.class
 )
+@NamedNativeQuery(name = "LocationHierarchy.findByNodeOrderArray",query = "select * from location_hierarchy where node_order = CAST(? AS VARCHAR[])",resultClass = LocationHierarchy.class)
 public class LocationHierarchy extends AbstractAuditableEntity {
 
   @Id

@@ -128,9 +128,9 @@ CREATE TABLE IF NOT EXISTS geographic_level_aud(
 
 CREATE TABLE IF NOT EXISTS location_hierarchy(
      identifier UUID UNIQUE NOT NULL,
-     node_order VARCHAR(255),
-    entity_status VARCHAR(36),
-    created_by VARCHAR(36) NOT NULL,
+     node_order VARCHAR[] NOT NULL ,
+     entity_status VARCHAR(36),
+     created_by VARCHAR(36) NOT NULL,
      created_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
      modified_by VARCHAR(36) NOT NULL,
      modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -142,7 +142,7 @@ CREATE TABLE IF NOT EXISTS location_hierarchy_aud(
     entity_status VARCHAR(36),
     REV INT NOT NULL,
     REVTYPE INTEGER NULL,
-    node_order VARCHAR[],
+    node_order VARCHAR[] NOT NULL,
     created_by VARCHAR(36) NOT NULL,
     created_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
     modified_by VARCHAR(36) NOT NULL,
