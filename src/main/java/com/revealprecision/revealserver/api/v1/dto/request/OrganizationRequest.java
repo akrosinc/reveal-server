@@ -4,6 +4,8 @@ import com.revealprecision.revealserver.enums.OrganizationTypeEnum;
 import java.util.UUID;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
+
+import io.swagger.v3.oas.annotations.Parameter;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -24,5 +26,6 @@ public class OrganizationRequest {
   @NotNull(message = "must not be null")
   private boolean active;
 
+  @Parameter(description = "Parent organization identifier")
   private UUID partOf;
 }
