@@ -92,7 +92,7 @@ public class GeographicLevelController {
   @DeleteMapping(value = "/geographicLevel/{identifier}")
   public ResponseEntity<Void> deleteGeographicLeve(@PathVariable UUID identifier) {
     geographicLevelService.deleteGeographicLevel(identifier);
-    return ResponseEntity.ok().build();
+    return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
   }
 
 }
