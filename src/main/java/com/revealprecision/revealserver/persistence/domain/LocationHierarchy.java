@@ -26,8 +26,6 @@ import org.hibernate.validator.constraints.UniqueElements;
 @Audited
 @Getter
 @Setter
-@SQLDelete(sql = "UPDATE location_hierarchy SET entity_status = 'DELETED' where identifier=?")
-@Where(clause = "entity_status='ACTIVE'")
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -35,7 +33,8 @@ import org.hibernate.validator.constraints.UniqueElements;
     name = "list-array",
     typeClass = ListArrayType.class
 )
-@NamedNativeQuery(name = "LocationHierarchy.findByNodeOrderArray", query = "select * from location_hierarchy where node_order = CAST(? AS VARCHAR[])", resultClass = LocationHierarchy.class)
+@SQLDelete(sql = "UPDATE location_hierarchy SET entity_status = 'DELETED' where identifier=?")
+@Where(clause = "entity_status='ACTIVE'")
 public class LocationHierarchy extends AbstractAuditableEntity {
 
   @Id

@@ -5,7 +5,8 @@ import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 
 public class LocationHierarchyResponseFactory {
 
-  public static LocationHierarchyResponse fromEntity(LocationHierarchy locationHierarchy) {
+  public static LocationHierarchyResponse fromEntityWithoutTree(
+      LocationHierarchy locationHierarchy) {
     return LocationHierarchyResponse.builder().identifier(locationHierarchy.getIdentifier())
         .nodeOrder(locationHierarchy.getNodeOrder()).build();
   }

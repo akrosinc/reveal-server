@@ -14,6 +14,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 public class LocationHierarchyResponse {
+
   private UUID identifier;
 
   private List<String> nodeOrder;

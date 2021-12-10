@@ -175,7 +175,7 @@ CREATE TABLE IF NOT EXISTS location_aud(
     type VARCHAR(255) NOT NULL,
     status VARCHAR(255) NOT NULL,
     external_id UUID,
-    geographic_level_id UUID,
+    geographic_level_identifier UUID,
     entity_status VARCHAR(36) NOT NULL,
     created_by VARCHAR(36) NOT NULL,
     created_datetime TIMESTAMP WITH TIME ZONE NOT NULL,

@@ -11,6 +11,7 @@ import com.revealprecision.revealserver.persistence.domain.GeographicLevel.Field
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.repository.LocationHierarchyRepository;
 import java.util.List;
+import java.util.UUID;
 import org.jobrunr.scheduling.JobScheduler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -71,4 +72,16 @@ public class LocationHierarchyService {
     return locationHierarchyRepository
         .findByNodeOrderArray(nodeOrder.stream().collect(joining(",", "{", "}")));
   }
+
+  public void deleteLocationHierarchy(UUID identifier) {
+    LocationHierarchy locationHierarchy = findByIdentifier(identifier);
+    locationHierarchyRepository.delete(locationHierarchy);
+  }
+
+  public LocationHierarchy findByIdentifier(UUID identifier) {
+    return locationHierarchyRepository.findById(identifier).orElseThrow(
+        () -> new NotFoundException(Pair.of(LocationHierarchy.Fields.identifier, identifier),
+            LocationHierarchy.class));
+  }
+
 }

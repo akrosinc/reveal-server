@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.persistence.domain;
 
+import com.revealprecision.revealserver.api.v1.dto.request.LocationRequest;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import java.util.UUID;
 import javax.persistence.Column;
@@ -16,6 +17,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.experimental.FieldNameConstants;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Type;
@@ -23,6 +25,7 @@ import org.hibernate.annotations.TypeDef;
 import org.hibernate.annotations.Where;
 import org.hibernate.envers.Audited;
 
+@FieldNameConstants
 @Entity
 @Audited
 @Getter
@@ -56,4 +59,14 @@ public class Location extends AbstractAuditableEntity {
   @ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "geographic_level_identifier")
   private GeographicLevel geographicLevel;
+
+  public Location update(LocationRequest locationRequest, GeographicLevel geographicLevel) {
+    this.type = locationRequest.getType();
+    this.name = locationRequest.getProperties().getName();
+    this.status = locationRequest.getProperties().getStatus();
+    this.externalId = locationRequest.getProperties().getExternalId();
+    this.geometry = locationRequest.getGeometry();
+    this.geographicLevel = geographicLevel;
+    return this;
+  }
 }
