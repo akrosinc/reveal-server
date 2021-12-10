@@ -30,7 +30,8 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-actuator:2.5.6'
     implementation 'org.springframework.boot:spring-boot-starter-batch:2.5.6'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa:2.5.6'
-    implementation ('org.springframework.boot:spring-boot-starter-web:2.5.6') {
+    implementation 'com.cosium.spring.data:spring-data-jpa-entity-graph:2.4.1'
+    implementation('org.springframework.boot:spring-boot-starter-web:2.5.6') {
         exclude module: 'spring-boot-starter-tomcat'
     }
     implementation 'org.springframework.boot:spring-boot-starter-undertow:2.5.6'

@@ -1,74 +1,82 @@
 package com.revealprecision.revealserver.persistence.domain;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.revealprecision.revealserver.enums.BusinessStatusEnum;
 import com.revealprecision.revealserver.enums.TaskPriorityEnum;
 import com.revealprecision.revealserver.enums.TaskStatusEnum;
-import com.revealprecision.revealserver.enums.BusinessStatusEnum;
-import lombok.Getter;
-import lombok.Setter;
-import org.hibernate.envers.Audited;
-
-import javax.persistence.*;
-import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.UUID;
+import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+import javax.persistence.NamedNativeQuery;
+import javax.validation.constraints.NotNull;
+import lombok.Getter;
+import lombok.Setter;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.Where;
+import org.hibernate.envers.Audited;
 
 @Entity
 @Audited
 @Getter
 @Setter
 
-@NamedNativeQuery(name = "Task.findByPlanIdentifier",query = "select * from task where plan_identifier = ?", resultClass = Task.class)
-
+@NamedNativeQuery(name = "Task.findByPlanIdentifier", query = "select * from task where plan_identifier = ? where entity_status='ACTIVE'", resultClass = Task.class)
+@SQLDelete(sql = "UPDATE task SET entity_status = 'DELETED' where identifier=?")
+@Where(clause = "entity_status='ACTIVE'")
 public class Task extends AbstractAuditableEntity {
-    @Id
-    @GeneratedValue
-    @NotNull(message = "identifier can not be null")
-    private UUID identifier;
 
-    @NotNull(message = "planIdentifier can not be null")
-    private String planIdentifier;
+  @Id
+  @GeneratedValue
+  @NotNull(message = "identifier can not be null")
+  private UUID identifier;
 
-    @NotNull(message = "focus can not be null")
-    private String focus;
+  @NotNull(message = "planIdentifier can not be null")
+  private String planIdentifier;
 
-    @NotNull(message = "code can not be null")
-    private String code;
+  @NotNull(message = "focus can not be null")
+  private String focus;
 
-    @NotNull(message = "status can not be null")
-    @Enumerated(EnumType.STRING)
-    private TaskStatusEnum status;
+  @NotNull(message = "code can not be null")
+  private String code;
 
-    @NotNull(message = "priority can not be null")
-    @Enumerated(EnumType.STRING)
-    private TaskPriorityEnum priority;
+  @NotNull(message = "status can not be null")
+  @Enumerated(EnumType.STRING)
+  private TaskStatusEnum status;
 
-    @NotNull(message = "authoredOn can not be null")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS[X]", timezone = "${spring.jackson.time-zone}")
-    private LocalDateTime authoredOn;
+  @NotNull(message = "priority can not be null")
+  @Enumerated(EnumType.STRING)
+  private TaskPriorityEnum priority;
 
-    private String description;
+  @NotNull(message = "authoredOn can not be null")
+  @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS[X]", timezone = "${spring.jackson.time-zone}")
+  private LocalDateTime authoredOn;
 
-    @NotNull(message = "lastModified can not be null")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS[X]", timezone = "${spring.jackson.time-zone}")
-    private LocalDateTime lastModified;
+  private String description;
 
-    @NotNull(message = "businessStatus can not be null")
-    @Enumerated(EnumType.STRING)
-    private BusinessStatusEnum businessStatus;
+  @NotNull(message = "lastModified can not be null")
+  @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS[X]", timezone = "${spring.jackson.time-zone}")
+  private LocalDateTime lastModified;
 
-    @NotNull(message = "executionPeriodStart can not be null")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
-    private Date executionPeriodStart;
+  @NotNull(message = "businessStatus can not be null")
+  @Enumerated(EnumType.STRING)
+  private BusinessStatusEnum businessStatus;
 
-    @NotNull(message = "executionPeriodEnd can not be null")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
-    private Date executionPeriodEnd;
+  @NotNull(message = "executionPeriodStart can not be null")
+  @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+  private Date executionPeriodStart;
 
-    @NotNull(message = "groupIdentifier can not be null")
-    private String groupIdentifier;
+  @NotNull(message = "executionPeriodEnd can not be null")
+  @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+  private Date executionPeriodEnd;
 
-    @NotNull(message = "instantiatesUri can not be null")
-    private String instantiatesUri;
+  @NotNull(message = "groupIdentifier can not be null")
+  private String groupIdentifier;
+
+  @NotNull(message = "instantiatesUri can not be null")
+  private String instantiatesUri;
 }
