@@ -10,6 +10,8 @@ import com.revealprecision.revealserver.service.OrganizationService;
 import io.swagger.v3.oas.annotations.Operation;
 import java.util.UUID;
 import javax.validation.Valid;
+
+import io.swagger.v3.oas.annotations.Parameter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -57,7 +59,7 @@ public class OrganizationController {
   public ResponseEntity<?> getOrganizations(
       @PageableDefault(size = 50) Pageable pageable,
       OrganizationCriteria criteria,
-      @RequestParam(value = "_summary", defaultValue = "TRUE") SummaryEnum _summary) {
+      @Parameter(description = "Toggle summary data") @RequestParam(value = "_summary", defaultValue = "TRUE") SummaryEnum _summary) {
 
     if (_summary.equals(SummaryEnum.COUNT)) {
       return ResponseEntity.status(HttpStatus.OK)
@@ -76,8 +78,9 @@ public class OrganizationController {
       tags = {"Organization"}
   )
   @GetMapping(value = "/{identifier}", produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<OrganizationResponse> getOrganization(@PathVariable UUID identifier,
-      @RequestParam(defaultValue = "true", required = false) boolean _summary) {
+  public ResponseEntity<OrganizationResponse> getOrganization(
+          @Parameter(description = "Organization identifier") @PathVariable UUID identifier,
+          @Parameter(description = "Toggle summary data") @RequestParam(defaultValue = "true", required = false) boolean _summary) {
     return ResponseEntity
         .status(HttpStatus.OK)
         .body((_summary) ? OrganizationResponseFactory.fromEntityWithoutChild(
@@ -92,7 +95,8 @@ public class OrganizationController {
   )
   @PutMapping(value = "/{identifier}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<OrganizationResponse> updateOrganization(
-      @Valid @RequestBody OrganizationRequest organizationRequest, @PathVariable UUID identifier) {
+      @Valid @RequestBody OrganizationRequest organizationRequest,
+      @Parameter(description = "Organization identifier") @PathVariable UUID identifier) {
     return ResponseEntity.status(HttpStatus.OK).body(
         OrganizationResponseFactory.fromEntityWithoutChild(
             organizationService.updateOrganization(identifier, organizationRequest)));
@@ -103,8 +107,8 @@ public class OrganizationController {
       tags = {"Organization"}
   )
   @DeleteMapping(value = "/{identifier}")
-  public ResponseEntity<Void> deleteOrganization(@PathVariable UUID identifier) {
+  public ResponseEntity<Void> deleteOrganization(@Parameter(description = "Organization identifier") @PathVariable UUID identifier) {
     organizationService.deleteOrganization(identifier);
-    return ResponseEntity.ok().build();
+    return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
   }
 }
