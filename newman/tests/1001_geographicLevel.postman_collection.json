@@ -569,7 +569,9 @@
 							"const jsonData = pm.response.json();",
 							"pm.test(\"Test data of the response\", () => {",
 							"  pm.expect(jsonData.message).to.include(\"Name is final and cannot be changed\");",
-							"});"
+							"});",
+							"",
+							"// https://revealplatform.atlassian.net/browse/RP-29"
 						],
 						"type": "text/javascript"
 					}
