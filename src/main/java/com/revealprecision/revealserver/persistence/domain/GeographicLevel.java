@@ -14,6 +14,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.FieldNameConstants;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.Where;
 import org.hibernate.envers.Audited;
 
 @FieldNameConstants
@@ -24,6 +26,8 @@ import org.hibernate.envers.Audited;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@SQLDelete(sql = "UPDATE geographic_level SET entity_status = 'DELETED' where identifier=?")
+@Where(clause = "entity_status='ACTIVE'")
 public class GeographicLevel extends AbstractAuditableEntity {
 
   @Id

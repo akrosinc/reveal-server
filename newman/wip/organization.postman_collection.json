@@ -1,0 +1,187 @@
+{
+	"info": {
+		"_postman_id": "e45b0f36-f7c7-4853-af49-6eb51a8c8f9b",
+		"name": "organization",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Create organization",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{auth_bearer_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"name\":\"reveal\",\r\n    \"type\":\"CG\",\r\n    \"active\": true,\r\n    \"partOf\": null\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{server_url}}/api/v1/organization",
+					"host": [
+						"{{server_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"organization"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get organization by identifier",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{auth_bearer_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{server_url}}/api/v1/organization/caf2adb8-c5fd-4e6a-af56-2be85e9622c0",
+					"host": [
+						"{{server_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"organization",
+						"caf2adb8-c5fd-4e6a-af56-2be85e9622c0"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get organization by criteria",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{auth_bearer_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{server_url}}/api/v1/organization",
+					"host": [
+						"{{server_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"organization"
+					],
+					"query": [
+						{
+							"key": "type",
+							"value": null,
+							"disabled": true
+						},
+						{
+							"key": "name",
+							"value": null,
+							"disabled": true
+						},
+						{
+							"key": "root",
+							"value": null,
+							"disabled": true
+						},
+						{
+							"key": "_summary",
+							"value": null,
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update organization",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{auth_bearer_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"name\":\"reveal\",\r\n    \"type\":\"CG\",\r\n    \"active\": true,\r\n    \"partOf\": null\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{server_url}}/api/v1/organization/194b472c-ace4-4290-9851-4ed691f669f3",
+					"host": [
+						"{{server_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"organization",
+						"194b472c-ace4-4290-9851-4ed691f669f3"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete organization",
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "{{server_url}}/api/v1/organization/caf2adb8-c5fd-4e6a-af56-2be85e9622c0",
+					"host": [
+						"{{server_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"organization",
+						"caf2adb8-c5fd-4e6a-af56-2be85e9622c0"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
