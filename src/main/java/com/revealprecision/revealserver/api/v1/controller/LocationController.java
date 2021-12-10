@@ -51,6 +51,10 @@ public class LocationController {
         .body(LocationResponseFactory.fromEntity(locationService.createLocation(locationRequest)));
   }
 
+  @Operation(summary = "Fetch a locationHierarchy",
+          description = "Fetch a locationHierarchy",
+          tags = {"Location"}
+  )
   @GetMapping(value = "/location/{identifier}", produces = MediaType.APPLICATION_JSON_VALUE)
   public Object findLocationById(@PathVariable UUID identifier) {
     Optional<Location> locationOptional = locationService.findByIdentifier(identifier);
@@ -60,6 +64,10 @@ public class LocationController {
     return new ResponseEntity<Location>(HttpStatus.NO_CONTENT);
   }
 
+  @Operation(summary = "Search for locationHierarchy",
+          description = "Search for locationHierarchy",
+          tags = {"Location"}
+  )
   @GetMapping(value = "/location", produces = MediaType.APPLICATION_JSON_VALUE)
   public Page<Location> getLocations(@RequestParam(defaultValue = "0") Integer pageNumber,
       @RequestParam(defaultValue = "50") Integer pageSize) {
