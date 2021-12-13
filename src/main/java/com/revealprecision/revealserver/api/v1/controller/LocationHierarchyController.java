@@ -59,7 +59,7 @@ public class LocationHierarchyController {
   @DeleteMapping(value = "/{identifier}")
   public ResponseEntity<Void> deleteLocationHierarchy(
       @Parameter(description = "LocationHierarchy Identifier") @PathVariable UUID identifier) {
-    locationHierarchyService.deleteLocationHierarchy(identifier);
+    locationHierarchyService.deleteLocationHierarchyAndAssociatedLocationRelationships(identifier);
     return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
   }
 }

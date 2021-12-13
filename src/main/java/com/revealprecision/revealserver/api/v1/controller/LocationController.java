@@ -4,7 +4,6 @@ import com.revealprecision.revealserver.api.v1.dto.factory.LocationResponseFacto
 import com.revealprecision.revealserver.api.v1.dto.request.LocationRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationResponse;
 import com.revealprecision.revealserver.persistence.domain.Location;
-import com.revealprecision.revealserver.persistence.repository.GeographicLevelRepository;
 import com.revealprecision.revealserver.service.LocationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -30,13 +29,10 @@ import org.springframework.web.bind.annotation.RestController;
 public class LocationController {
 
   private LocationService locationService;
-  private GeographicLevelRepository geographicLevelRepository;
 
   @Autowired
-  public LocationController(LocationService locationService,
-      GeographicLevelRepository geographicLevelRepository) {
+  public LocationController(LocationService locationService) {
     this.locationService = locationService;
-    this.geographicLevelRepository = geographicLevelRepository;
   }
 
   @Operation(summary = "Create a Location",

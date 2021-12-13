@@ -73,9 +73,12 @@ public class LocationHierarchyService {
         .findByNodeOrderArray(nodeOrder.stream().collect(joining(",", "{", "}")));
   }
 
-  public void deleteLocationHierarchy(UUID identifier) {
+  public void deleteLocationHierarchyAndAssociatedLocationRelationships(UUID identifier) {
     LocationHierarchy locationHierarchy = findByIdentifier(identifier);
     locationHierarchyRepository.delete(locationHierarchy);
+    jobScheduler.enqueue(() -> locationRelationshipService
+        .deleteLocationRelationshipsForHierarchy(locationHierarchy)
+    );
   }
 
   public LocationHierarchy findByIdentifier(UUID identifier) {

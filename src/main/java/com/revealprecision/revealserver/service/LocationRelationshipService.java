@@ -10,8 +10,6 @@ import com.revealprecision.revealserver.persistence.repository.GeographicLevelRe
 import com.revealprecision.revealserver.persistence.repository.LocationRelationshipRepository;
 import com.revealprecision.revealserver.persistence.repository.LocationRepository;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -69,8 +67,10 @@ public class LocationRelationshipService {
             }
             if (locationRepository.hasParentChildRelationship(parentGeometry, childGeometry)) {
               List<UUID> ancestry = new ArrayList<>();
-              Optional<LocationRelationship> locationRelationshipOptional = locationRelationshipRepository.findByLocationHierarchyIdentifierAndLocationIdentifier(locationHierarchy.getIdentifier(),location.getIdentifier());
-              if(locationRelationshipOptional.isPresent()){
+              Optional<LocationRelationship> locationRelationshipOptional = locationRelationshipRepository
+                  .findByLocationHierarchyIdentifierAndLocationIdentifier(
+                      locationHierarchy.getIdentifier(), location.getIdentifier());
+              if (locationRelationshipOptional.isPresent()) {
                 ancestry.addAll(locationRelationshipOptional.get().getAncestry());
               }
               ancestry.add(location.getIdentifier());
@@ -89,5 +89,16 @@ public class LocationRelationshipService {
     });
 
   }
+
+  public void deleteLocationRelationshipsForHierarchy(LocationHierarchy locationHierarchy) {
+    Optional<List<LocationRelationship>> locationRelationshipsToDelete = locationRelationshipRepository
+        .findByLocationHierarchyIdentifier(locationHierarchy.getIdentifier());
+    if (locationRelationshipsToDelete.isPresent()) {
+      locationRelationshipRepository.deleteAllById(locationRelationshipsToDelete.get().stream()
+          .map(LocationRelationship::getIdentifier).collect(
+              Collectors.toList()));
+    }
+  }
+
 
 }

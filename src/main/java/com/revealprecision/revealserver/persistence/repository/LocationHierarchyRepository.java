@@ -9,6 +9,6 @@ import org.springframework.data.repository.query.Param;
 
 public interface LocationHierarchyRepository extends JpaRepository<LocationHierarchy, UUID> {
 
-  @Query(value = "SELECT * FROM location_hierarchy l where l.node_order = CAST(:nodes AS VARCHAR[])", nativeQuery = true)
+  @Query(value = "SELECT * FROM location_hierarchy l WHERE l.node_order = CAST(:nodes AS VARCHAR[]) AND entity_status = 'ACTIVE'", nativeQuery = true)
   List<LocationHierarchy> findByNodeOrderArray(@Param("nodes") String nodeOrder);
 }
