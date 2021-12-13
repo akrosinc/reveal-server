@@ -256,6 +256,54 @@ CREATE TABLE IF NOT EXISTS organization_aud(
     PRIMARY KEY (identifier,REV)
 );
 
+CREATE TABLE IF NOT EXISTS "user"(
+    identifier UUID NOT NULL,
+    sid UUID,
+    username VARCHAR(255) NOT NULL,
+    first_name VARCHAR(255) NOT NULL,
+    last_name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    remote_state VARCHAR(64) NOT NULL,
+    entity_status VARCHAR(36) NOT NULL,
+    created_by VARCHAR(36) NOT NULL,
+    created_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by VARCHAR(36) NOT NULL,
+    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    PRIMARY KEY (identifier)
+);
+
+CREATE TABLE IF NOT EXISTS user_aud(
+    identifier UUID NOT NULL,
+    REV INT NOT NULL,
+    REVTYPE INTEGER NULL,
+    sid UUID,
+    username VARCHAR(255) NOT NULL,
+    first_name VARCHAR(255) NOT NULL,
+    last_name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    remote_state VARCHAR(64) NOT NULL,
+    entity_status VARCHAR(36) NOT NULL,
+    created_by VARCHAR(36) NOT NULL,
+    created_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by VARCHAR(36) NOT NULL,
+    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    PRIMARY KEY (identifier, REV)
+);
+
+CREATE TABLE IF NOT EXISTS "user_groups"(
+    user_id UUID NOT NULL,
+    organization_id UUID NOT NULL,
+    CONSTRAINT user_groups_pk PRIMARY KEY (user_id, organization_id),
+    FOREIGN KEY (user_id) REFERENCES "user"(identifier),
+    FOREIGN KEY (organization_id) REFERENCES organization(identifier)
+);
+
+CREATE TABLE IF NOT EXISTS user_security_groups(
+    identifier UUID NOT NULL,
+    security_group VARCHAR(255),
+    FOREIGN KEY (identifier) REFERENCES "user"(identifier)
+);
+
 CREATE SEQUENCE IF NOT EXISTS hibernate_sequence
     START WITH 1
     INCREMENT BY 1
