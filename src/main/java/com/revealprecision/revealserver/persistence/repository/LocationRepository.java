@@ -10,6 +10,4 @@ import org.springframework.stereotype.Repository;
 public interface LocationRepository extends JpaRepository<Location, UUID> {
 
   List<Location> findByGeographicLevelIdentifier(UUID geographicLevelId);
-
-  Boolean hasParentChildRelationship(String parentGeometry, String childGeometry);
 }

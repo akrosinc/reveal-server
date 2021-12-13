@@ -65,7 +65,8 @@ public class LocationRelationshipService {
             } catch (JsonProcessingException e) {
               e.printStackTrace();
             }
-            if (locationRepository.hasParentChildRelationship(parentGeometry, childGeometry)) {
+            if (locationRelationshipRepository
+                .hasParentChildRelationship(parentGeometry, childGeometry)) {
               List<UUID> ancestry = new ArrayList<>();
               Optional<LocationRelationship> locationRelationshipOptional = locationRelationshipRepository
                   .findByLocationHierarchyIdentifierAndLocationIdentifier(
