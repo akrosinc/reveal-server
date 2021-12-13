@@ -3,7 +3,9 @@ package com.revealprecision.revealserver.persistence.repository;
 import com.cosium.spring.data.jpa.entity.graph.domain.EntityGraph;
 import com.cosium.spring.data.jpa.entity.graph.repository.EntityGraphJpaRepository;
 import com.revealprecision.revealserver.persistence.domain.Organization;
+import java.util.Collection;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -41,4 +43,7 @@ public interface OrganizationRepository extends EntityGraphJpaRepository<Organiz
           + "AND (CAST(:type as text) IS NULL OR o.type = CAST(:type as text)) AND entity_status='ACTIVE'", nativeQuery = true)
   long getCountByCriteriaWithoutRoot(@Param("name") String name,
       @Param("type") String type);
+
+  @Query(value = "SELECT * FROM organization o WHERE o.identifier IN :identifiers", nativeQuery = true)
+  Set<Organization> findByIdentifiers(@Param("identifiers") Collection<UUID> identifiers);
 }

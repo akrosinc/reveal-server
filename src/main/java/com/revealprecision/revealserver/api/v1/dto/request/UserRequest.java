@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.api.v1.dto.request;
 
 import java.util.Set;
+import java.util.UUID;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
@@ -38,9 +39,9 @@ public class UserRequest {
   @NotNull
   private boolean tempPassword;
 
-  @NotNull
-  private Set<String> organizations;
+  //@NotEmpty
+  private Set<UUID> organizations;
 
-  @NotNull
+  //@NotEmpty
   private Set<String> securityGroups;
 }

@@ -7,6 +7,7 @@ import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.Organization;
 import com.revealprecision.revealserver.persistence.domain.Organization.Fields;
 import com.revealprecision.revealserver.persistence.repository.OrganizationRepository;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -92,5 +93,9 @@ public class OrganizationService {
   public void deleteOrganization(UUID identifier) {
     Organization organization = findByIdWithoutChildren(identifier);
     organizationRepository.delete(organization);
+  }
+
+  public Set<Organization> findByIdentifiers(Set<UUID> identifiers) {
+    return organizationRepository.findByIdentifiers(identifiers);
   }
 }
