@@ -10,8 +10,6 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
-import javax.persistence.NamedNativeQueries;
-import javax.persistence.NamedNativeQuery;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -36,9 +34,6 @@ import org.hibernate.envers.Audited;
 @NoArgsConstructor
 @Builder
 @TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
-@NamedNativeQueries({
-    @NamedNativeQuery(name = "Location.hasParentChildRelationship", query = "select ST_Contains (ST_AsText(ST_GeomFromGeoJSON(?)),ST_AsText(ST_Centroid(ST_GeomFromGeoJSON(?))))")
-})
 public class Location extends AbstractAuditableEntity {
 
   @Id
