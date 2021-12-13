@@ -55,4 +55,8 @@ public abstract class AbstractAuditableEntity {
   public void postDelete() {
     this.entityStatus = EntityStatus.DELETED;
   }
+
+  public void setEntityStatus(EntityStatus entityStatus) {
+    this.entityStatus = entityStatus;
+  }
 }

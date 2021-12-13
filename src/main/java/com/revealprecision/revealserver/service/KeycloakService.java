@@ -2,8 +2,10 @@ package com.revealprecision.revealserver.service;
 
 import com.revealprecision.revealserver.api.v1.dto.request.UserRequest;
 import com.revealprecision.revealserver.config.KeycloakConfig;
+import com.revealprecision.revealserver.exceptions.ConflictException;
 import java.util.Collections;
 import java.util.Map;
+import java.util.stream.Collectors;
 import javax.ws.rs.core.Response;
 import org.keycloak.admin.client.resource.UsersResource;
 import org.keycloak.representations.idm.CredentialRepresentation;
@@ -30,7 +32,7 @@ public class KeycloakService {
     return passwordCredentials;
   }
 
-  public void addUser(UserRequest userRequest) {
+  public String addUser(UserRequest userRequest) {
     UsersResource usersResource = KeycloakConfig.getInstance().realm(KeycloakConfig.realm).users();
     CredentialRepresentation credentialRepresentation = createPasswordCredentials(
         userRequest.getPassword(), userRequest.isTempPassword());
@@ -46,6 +48,17 @@ public class KeycloakService {
     kcUser.setEmailVerified(false);
     kcUser.setNotBefore(0);
     kcUser.setAccess(access);
+    kcUser.setGroups(userRequest.getSecurityGroups().stream().collect(Collectors.toList()));
     Response response = usersResource.create(kcUser);
+
+    if (response.getStatus() == 201) {
+      UserRepresentation kcCreatedUser = usersResource.search(userRequest.getUserName()).get(0);
+      return kcCreatedUser.getId();
+    } else if (response.getStatus() == 409) {
+      String output = response.readEntity(String.class);
+      throw new ConflictException(output);
+    } else {
+      throw new ConflictException("DSA");
+    }
   }
 }

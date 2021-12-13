@@ -32,7 +32,7 @@ import org.hibernate.envers.Audited;
 @Entity
 @SQLDelete(sql = "UPDATE user SET entity_status = 'DELETED' where identifier=?")
 @Where(clause = "entity_status='ACTIVE'")
-public class User extends AbstractAuditableEntity {
+public class Users extends AbstractAuditableEntity {
 
   @ManyToMany
   @JoinTable(
@@ -43,6 +43,8 @@ public class User extends AbstractAuditableEntity {
   @Id
   @GeneratedValue
   private UUID identifier;
+  @Column
+  private UUID sid;
   @Column(nullable = false)
   private String firstName;
   @Column(nullable = false)
