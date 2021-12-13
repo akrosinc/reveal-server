@@ -11,4 +11,7 @@ public interface LocationHierarchyRepository extends JpaRepository<LocationHiera
 
   @Query(value = "SELECT * FROM location_hierarchy l WHERE l.node_order = CAST(:nodes AS VARCHAR[]) AND entity_status = 'ACTIVE'", nativeQuery = true)
   List<LocationHierarchy> findByNodeOrderArray(@Param("nodes") String nodeOrder);
+
+  @Query(value = "SELECT * FROM location_hierarchy l WHERE :name = ANY(l.node_order)", nativeQuery = true)
+  List<LocationHierarchy> findLocationHierarchiesByNodeOrderContaining(String name);
 }

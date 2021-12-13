@@ -5,6 +5,8 @@ import java.util.UUID;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -24,14 +26,18 @@ import org.hibernate.envers.Audited;
 @Builder
 @SQLDelete(sql = "UPDATE location_relationship SET entity_status = 'DELETED' where identifier=?")
 @Where(clause = "entity_status='ACTIVE'")
-public class LocationRelationship extends AbstractAuditableEntity{
-    @Id
-    @GeneratedValue
-    private UUID identifier;
-    private UUID locationHierarchyIdentifier;
-    private UUID locationIdentifier;
-    private UUID parentIdentifier;
+public class LocationRelationship extends AbstractAuditableEntity {
 
-    @Type(type = "list-array")
-    private List<UUID> ancestry;
+  @Id
+  @GeneratedValue
+  private UUID identifier;
+  private UUID locationHierarchyIdentifier;
+  private UUID locationIdentifier;
+
+  @ManyToOne
+  @JoinColumn(name = "parent_identifier")
+  private Location parentLocation;
+
+  @Type(type = "list-array")
+  private List<UUID> ancestry;
 }

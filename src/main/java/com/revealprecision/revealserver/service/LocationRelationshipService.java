@@ -7,9 +7,11 @@ import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
 import com.revealprecision.revealserver.persistence.repository.GeographicLevelRepository;
+import com.revealprecision.revealserver.persistence.repository.LocationHierarchyRepository;
 import com.revealprecision.revealserver.persistence.repository.LocationRelationshipRepository;
 import com.revealprecision.revealserver.persistence.repository.LocationRepository;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,13 +27,16 @@ public class LocationRelationshipService {
   private LocationRelationshipRepository locationRelationshipRepository;
   private GeographicLevelRepository geographicLevelRepository;
   private LocationRepository locationRepository;
+  private LocationHierarchyRepository locationHierarchyRepository;
 
   @Autowired
   public LocationRelationshipService(LocationRelationshipRepository locationRelationshipRepository,
-      GeographicLevelRepository geographicLevelRepository, LocationRepository locationRepository) {
+      GeographicLevelRepository geographicLevelRepository, LocationRepository locationRepository,
+      LocationHierarchyRepository locationHierarchyRepository) {
     this.locationRelationshipRepository = locationRelationshipRepository;
     this.geographicLevelRepository = geographicLevelRepository;
     this.locationRepository = locationRepository;
+    this.locationHierarchyRepository = locationHierarchyRepository;
   }
 
   public void createLocationRelationships(LocationHierarchy locationHierarchy) {
@@ -47,43 +52,17 @@ public class LocationRelationshipService {
       geographicLevelToLocationsMap.put(geographicLevel, locations);
     });
 
+    geographicLevelToLocationsMap.get(geographicLevels.get(0))
+        .forEach(location -> createRootLocationRelationship(location, locationHierarchy));
+
     geographicLevelToLocationsMap.entrySet().stream().forEach(item -> {
       List<Location> parentLocations = item.getValue();
       if (geographicLevels.size() > geographicLevels.indexOf(item.getKey()) + 1) {
         List<Location> potentialChildren = geographicLevelToLocationsMap
             .get(geographicLevels.get(geographicLevels.indexOf(item.getKey()) + 1));
-        ObjectMapper mapper = new ObjectMapper();
         for (Location location : parentLocations) {
           for (Location potentialChild : potentialChildren) {
-            String parentGeometry = null;
-            String childGeometry = null;
-
-            try {
-              parentGeometry = mapper.writeValueAsString(location.getGeometry());
-              childGeometry = mapper.writeValueAsString(potentialChild.getGeometry());
-
-            } catch (JsonProcessingException e) {
-              e.printStackTrace();
-            }
-            if (locationRelationshipRepository
-                .hasParentChildRelationship(parentGeometry, childGeometry)) {
-              List<UUID> ancestry = new ArrayList<>();
-              Optional<LocationRelationship> locationRelationshipOptional = locationRelationshipRepository
-                  .findByLocationHierarchyIdentifierAndLocationIdentifier(
-                      locationHierarchy.getIdentifier(), location.getIdentifier());
-              if (locationRelationshipOptional.isPresent()) {
-                ancestry.addAll(locationRelationshipOptional.get().getAncestry());
-              }
-              ancestry.add(location.getIdentifier());
-
-              LocationRelationship locationRelationship = LocationRelationship.builder()
-                  .parentIdentifier(location.getIdentifier())
-                  .locationHierarchyIdentifier(locationHierarchy.getIdentifier())
-                  .locationIdentifier(potentialChild.getIdentifier())
-                  .ancestry(ancestry).build();
-              locationRelationshipRepository.save(locationRelationship);
-            }
-
+            createParentChildRelationship(location, potentialChild, locationHierarchy);
           }
         }
       }
@@ -101,5 +80,93 @@ public class LocationRelationshipService {
     }
   }
 
+  public void createRootLocationRelationship(Location location,
+      LocationHierarchy locationHierarchy) {
+    locationRelationshipRepository.save(
+        LocationRelationship.builder().locationIdentifier(location.getIdentifier())
+            .locationHierarchyIdentifier(locationHierarchy.getIdentifier()).ancestry(
+            Collections.emptyList())
+            .build());
+  }
+
+  public void updateLocationRelationshipsForNewLocation(Location location) {
+    var locationHierarchies = locationHierarchyRepository
+        .findLocationHierarchiesByNodeOrderContaining(location.getGeographicLevel().getName());
+    for (var locationHierarchy : locationHierarchies) {
+
+      Integer nodePosition =
+          locationHierarchy.getNodeOrder().indexOf(location.getGeographicLevel().getName()) - 1;
+      if (nodePosition < locationHierarchy.getNodeOrder().size() && nodePosition > 0) {
+        var parentGeographicLevelName = locationHierarchy.getNodeOrder()
+            .get(nodePosition);
+
+        var parentGeographicLevel = geographicLevelRepository.findByName(parentGeographicLevelName);
+
+        var upperGeographicLevelLocations = locationRepository
+            .findByGeographicLevelIdentifier(parentGeographicLevel.get()
+                .getIdentifier());
+
+        upperGeographicLevelLocations.stream().forEach(
+            parentLocation -> createParentChildRelationship(parentLocation, location,
+                locationHierarchy));
+      }
+
+      nodePosition = locationHierarchy.getNodeOrder().indexOf(location.getName()) + 1;
+      if (nodePosition < locationHierarchy.getNodeOrder().size()) {
+        var lowerLevelGeographicLevelName = locationHierarchy.getNodeOrder()
+            .get(nodePosition);
+        var lowerGeographicLevel = geographicLevelRepository
+            .findByName(lowerLevelGeographicLevelName);
+        var lowerGeographicLevelLocations = locationRepository
+            .findByGeographicLevelIdentifier(lowerGeographicLevel.get()
+                .getIdentifier());
+
+        lowerGeographicLevelLocations.stream().forEach(
+            childLocation -> createParentChildRelationship(location, childLocation,
+                locationHierarchy));
+
+      }
+
+
+    }
+  }
+
+  private void createParentChildRelationship(Location parentLocation, Location childLocation,
+      LocationHierarchy locationHierarchy) {
+    ObjectMapper mapper = new ObjectMapper();
+    String parentGeometry = null;
+    String childGeometry = null;
+    try {
+      parentGeometry = mapper.writeValueAsString(parentLocation.getGeometry());
+      childGeometry = mapper.writeValueAsString(childLocation.getGeometry());
+    } catch (JsonProcessingException e) {
+      e.printStackTrace();
+    }
+    if (locationRelationshipRepository.hasParentChildRelationship(parentGeometry, childGeometry)) {
+      var ancestry = getAncestryFromParentLocation(parentLocation, locationHierarchy);
+      locationRelationshipRepository.save(
+          LocationRelationship.builder().parentLocation(parentLocation)
+              .locationIdentifier(childLocation.getIdentifier())
+              .locationHierarchyIdentifier(locationHierarchy.getIdentifier()).ancestry(ancestry)
+              .build());
+    }
+  }
+
+
+  private List<UUID> getAncestryFromParentLocation(Location parentLocation,
+      LocationHierarchy locationHierarchy) {
+    List<UUID> ancestry = new ArrayList<>();
+    if (parentLocation == null) {
+      return ancestry;
+    }
+    Optional<LocationRelationship> locationRelationshipOptional = locationRelationshipRepository
+        .findByLocationHierarchyIdentifierAndLocationIdentifier(
+            locationHierarchy.getIdentifier(), parentLocation.getIdentifier());
+    if (locationRelationshipOptional.isPresent()) {
+      ancestry.addAll(locationRelationshipOptional.get().getAncestry());
+    }
+    ancestry.add(parentLocation.getIdentifier());
+    return ancestry;
+  }
 
 }

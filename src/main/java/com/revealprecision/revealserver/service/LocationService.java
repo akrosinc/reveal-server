@@ -6,24 +6,30 @@ import com.revealprecision.revealserver.persistence.domain.GeographicLevel;
 import com.revealprecision.revealserver.persistence.domain.GeographicLevel.Fields;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.repository.LocationRepository;
+import java.util.Optional;
+import java.util.UUID;
+import org.jobrunr.scheduling.JobScheduler;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
-
-import java.util.Optional;
-import java.util.UUID;
 
 @Service
 public class LocationService {
 
   private LocationRepository locationRepository;
   private GeographicLevelService geographicLevelService;
+  private LocationRelationshipService locationRelationshipService;
+  private JobScheduler jobScheduler;
 
   public LocationService(LocationRepository locationRepository,
-      GeographicLevelService geographicLevelService) {
+      GeographicLevelService geographicLevelService,
+      LocationRelationshipService locationRelationshipService,
+      JobScheduler jobScheduler) {
     this.locationRepository = locationRepository;
     this.geographicLevelService = geographicLevelService;
+    this.locationRelationshipService = locationRelationshipService;
+    this.jobScheduler = jobScheduler;
   }
 
   public Location createLocation(LocationRequest locationRequest) {
@@ -34,14 +40,15 @@ public class LocationService {
           Pair.of(Fields.name, locationRequest.getProperties().getGeographicLevel()),
           GeographicLevel.class);
     }
-    Location saveLocation = new Location();
-    saveLocation.setGeographicLevel(geographicLevel.get());
-    saveLocation.setType(locationRequest.getType());
-    saveLocation.setGeometry(locationRequest.getGeometry());
-    saveLocation.setName(locationRequest.getProperties().getName());
-    saveLocation.setStatus(locationRequest.getProperties().getStatus());
-    saveLocation.setExternalId(locationRequest.getProperties().getExternalId());
-    return locationRepository.save(saveLocation);
+    var savedLocation = locationRepository
+        .save(Location.builder().geographicLevel(geographicLevel.get())
+            .type(locationRequest.getType())
+            .geometry(locationRequest.getGeometry()).name(locationRequest.getProperties().getName())
+            .status(locationRequest.getProperties().getStatus())
+            .externalId(locationRequest.getProperties().getExternalId()).build());
+    jobScheduler.enqueue(
+        () -> locationRelationshipService.updateLocationRelationshipsForNewLocation(savedLocation));
+    return savedLocation;
   }
 
   public Location findByIdentifier(UUID identifier) {
