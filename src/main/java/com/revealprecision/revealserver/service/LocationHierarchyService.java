@@ -91,4 +91,10 @@ public class LocationHierarchyService {
             LocationHierarchy.class));
   }
 
+  public List<LocationHierarchy> findHierarchiesContainingGeographicLevel(
+      String geographicLevelName) {
+    return locationHierarchyRepository
+        .findLocationHierarchiesByNodeOrderContaining(geographicLevelName);
+  }
+
 }
