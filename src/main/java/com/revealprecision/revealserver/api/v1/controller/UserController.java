@@ -4,10 +4,9 @@ import com.revealprecision.revealserver.api.v1.dto.factory.UserResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.UserRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.UserResponse;
 import com.revealprecision.revealserver.service.UserService;
-import java.util.List;
-import java.util.stream.Collectors;
 import javax.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -37,10 +36,10 @@ public class UserController {
   }
 
   @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<List<UserResponse>> getUsers(
+  public ResponseEntity<Page<UserResponse>> getUsers(
       @RequestParam(value = "search", defaultValue = "") String search, Pageable pageable) {
     return ResponseEntity.status(HttpStatus.OK)
-        .body(userService.searchUsers(search, pageable).stream().map(
-            UserResponseFactory::fromEntity).collect(Collectors.toList()));
+        .body(UserResponseFactory.fromEntityPage(userService.searchUsers(search, pageable),
+            pageable));
   }
 }
