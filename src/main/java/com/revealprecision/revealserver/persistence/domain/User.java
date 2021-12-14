@@ -11,6 +11,7 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
+import javax.persistence.Table;
 import javax.validation.constraints.Email;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -30,9 +31,10 @@ import org.hibernate.envers.Audited;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
+@Table(name = "users")
 @SQLDelete(sql = "UPDATE user SET entity_status = 'DELETED' where identifier=?")
 @Where(clause = "entity_status='ACTIVE'")
-public class Users extends AbstractAuditableEntity {
+public class User extends AbstractAuditableEntity {
 
   @ManyToMany
   @JoinTable(

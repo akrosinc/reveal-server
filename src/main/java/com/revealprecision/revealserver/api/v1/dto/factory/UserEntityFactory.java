@@ -2,7 +2,7 @@ package com.revealprecision.revealserver.api.v1.dto.factory;
 
 import com.revealprecision.revealserver.api.v1.dto.request.UserRequest;
 import com.revealprecision.revealserver.persistence.domain.Organization;
-import com.revealprecision.revealserver.persistence.domain.Users;
+import com.revealprecision.revealserver.persistence.domain.User;
 import java.util.Set;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -10,8 +10,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class UserEntityFactory {
 
-  public static Users toEntity(UserRequest request, Set<Organization> organizations) {
-    return Users.builder()
+  public static User toEntity(UserRequest request, Set<Organization> organizations) {
+    return User.builder()
         .userName(request.getUserName())
         .email(request.getEmail())
         .firstName(request.getFirstName())

@@ -29,7 +29,7 @@ public class UserRequest {
   @NotBlank(message = "must not be empty")
   private String lastName;
 
-  @NotBlank(message = "must not be empty")
+  @NotNull(message = "must not be null")
   @Email
   private String email;
 
