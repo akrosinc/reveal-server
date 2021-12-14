@@ -42,6 +42,41 @@
 				}
 			},
 			"response": []
+		},
+		{
+			"name": "Search users with optional parameter",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{auth_bearer_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{server_url}}/api/v1/user?search=vic3",
+					"host": [
+						"{{server_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"user"
+					],
+					"query": [
+						{
+							"key": "search",
+							"value": "vic3"
+						}
+					]
+				}
+			},
+			"response": []
 		}
 	]
 }
