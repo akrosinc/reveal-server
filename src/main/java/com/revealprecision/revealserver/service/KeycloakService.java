@@ -3,10 +3,12 @@ package com.revealprecision.revealserver.service;
 import com.revealprecision.revealserver.api.v1.dto.request.UserRequest;
 import com.revealprecision.revealserver.config.KeycloakConfig;
 import com.revealprecision.revealserver.exceptions.ConflictException;
+import com.revealprecision.revealserver.exceptions.KeycloakException;
 import java.util.Collections;
 import java.util.Map;
 import java.util.stream.Collectors;
 import javax.ws.rs.core.Response;
+import org.json.JSONObject;
 import org.keycloak.admin.client.resource.UsersResource;
 import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
@@ -50,15 +52,16 @@ public class KeycloakService {
     kcUser.setAccess(access);
     kcUser.setGroups(userRequest.getSecurityGroups().stream().collect(Collectors.toList()));
     Response response = usersResource.create(kcUser);
-
+    
     if (response.getStatus() == 201) {
       UserRepresentation kcCreatedUser = usersResource.search(userRequest.getUserName()).get(0);
       return kcCreatedUser.getId();
     } else if (response.getStatus() == 409) {
       String output = response.readEntity(String.class);
-      throw new ConflictException(output);
+      JSONObject error = new JSONObject(output);
+      throw new ConflictException(error.getString("errorMessage"));
     } else {
-      throw new ConflictException("DSA");
+      throw new KeycloakException("Unknown error on Keycloak");
     }
   }
 }

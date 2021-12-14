@@ -3,6 +3,7 @@ package com.revealprecision.revealserver.service;
 import com.cosium.spring.data.jpa.entity.graph.domain.EntityGraphUtils;
 import com.revealprecision.revealserver.api.v1.dto.request.OrganizationCriteria;
 import com.revealprecision.revealserver.api.v1.dto.request.OrganizationRequest;
+import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.Organization;
 import com.revealprecision.revealserver.persistence.domain.Organization.Fields;
@@ -26,13 +27,16 @@ public class OrganizationService {
   }
 
   public Organization createOrganization(OrganizationRequest organizationRequest) {
-    return organizationRepository.save(Organization.builder()
+    Organization organization = Organization.builder()
         .name(organizationRequest.getName())
         .parent((organizationRequest.getPartOf() == null) ? null
             : findByIdWithChildren(organizationRequest.getPartOf()))
         .type(organizationRequest.getType())
         .active(organizationRequest.isActive())
-        .build());
+        .build();
+    organization.setEntityStatus(EntityStatus.ACTIVE);
+    
+    return organizationRepository.save(organization);
   }
 
   public Organization findById(UUID identifier, boolean _summary) {
