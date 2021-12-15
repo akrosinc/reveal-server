@@ -15,7 +15,7 @@ public class UserResponseFactory {
 
   public static UserResponse fromEntity(User user) {
     var organizations = user.getOrganizations().stream()
-        .map(OrganizationResponseFactory::fromEntityWithChild).collect(
+        .map(OrganizationResponseFactory::fromEntityWithoutChild).collect(
             Collectors.toSet());
     return UserResponse.builder()
         .identifier(user.getIdentifier())
