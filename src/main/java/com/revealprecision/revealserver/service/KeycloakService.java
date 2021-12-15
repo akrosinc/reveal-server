@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import javax.ws.rs.core.Response;
 import org.json.JSONObject;
+import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.UsersResource;
 import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
@@ -52,7 +53,7 @@ public class KeycloakService {
     kcUser.setAccess(access);
     kcUser.setGroups(userRequest.getSecurityGroups().stream().collect(Collectors.toList()));
     Response response = usersResource.create(kcUser);
-    
+
     if (response.getStatus() == 201) {
       UserRepresentation kcCreatedUser = usersResource.search(userRequest.getUserName()).get(0);
       return kcCreatedUser.getId();
@@ -63,5 +64,13 @@ public class KeycloakService {
     } else {
       throw new KeycloakException("Unknown error on Keycloak");
     }
+  }
+
+  public void deleteUser(String username) {
+    Keycloak keycloak = KeycloakConfig.getInstance();
+    UsersResource users = keycloak.realm(KeycloakConfig.realm).users();
+    users.search(username)
+        .stream()
+        .forEach(user -> keycloak.realm(KeycloakConfig.realm).users().delete(user.getId()));
   }
 }

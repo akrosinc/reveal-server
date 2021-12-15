@@ -4,6 +4,7 @@ import com.revealprecision.revealserver.api.v1.dto.factory.UserResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.UserRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.UserResponse;
 import com.revealprecision.revealserver.service.UserService;
+import java.util.UUID;
 import javax.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -11,7 +12,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -41,5 +44,17 @@ public class UserController {
     return ResponseEntity.status(HttpStatus.OK)
         .body(UserResponseFactory.fromEntityPage(userService.searchUsers(search, pageable),
             pageable));
+  }
+
+  @GetMapping(value = "/{identifier}", produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<UserResponse> getUser(@PathVariable("identifier") UUID identifier) {
+    return ResponseEntity.status(HttpStatus.OK)
+        .body(UserResponseFactory.fromEntity(userService.getByIdentifiers(identifier)));
+  }
+
+  @DeleteMapping("/{identifier}")
+  public ResponseEntity<Void> deleteUser(@PathVariable("identifier") UUID identifier) {
+    userService.deleteUser(identifier);
+    return ResponseEntity.status(HttpStatus.OK).build();
   }
 }
