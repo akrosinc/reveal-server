@@ -16,14 +16,13 @@ public interface UserRepository extends EntityGraphJpaRepository<User, UUID> {
 
   Optional<User> findByUserName(String username);
 
-  @Query(value = "SELECT * FROM users usr "
-      + "LEFT JOIN user_groups ug ON usr.identifier = ug.user_id "
-      + "LEFT JOIN organization org ON org.identifier = ug.organization_id "
-      + "WHERE usr.user_name LIKE %:param% "
-      + "OR usr.first_name LIKE %:param% "
-      + "OR usr.last_name LIKE %:param% "
-      + "OR usr.email LIKE %:param% "
-      + "OR org.name LIKE %:param%", nativeQuery = true)
+  @Query(value = "select u from User u "
+      + "left join u.organizations org "
+      + "where u.userName like %:param% "
+      + "OR u.firstName like %:param% "
+      + "OR u.lastName like %:param% "
+      + "OR u.email like %:param% "
+      + "OR org.name like %:param%")
   Page<User> searchByParameter(@Param("param") String param, Pageable pageable,
       EntityGraph entityGraph);
 
