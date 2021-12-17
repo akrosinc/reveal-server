@@ -83,5 +83,9 @@ public class UserService {
   public void updateUser(UUID identifier, UserRequest userRequest) {
     User user = getByIdentifier(identifier);
     keycloakService.updateUser(user.getSid().toString(), userRequest);
+    user.updateUser(userRequest);
+    user.setOrganizations(organizationService.findByIdentifiers(userRequest.getOrganizations()));
+    userRepository.save(user);
+    //TODO Updating user could be upgraded if nedeed
   }
 }

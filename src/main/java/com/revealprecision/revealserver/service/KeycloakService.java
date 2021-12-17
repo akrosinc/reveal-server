@@ -8,6 +8,7 @@ import com.revealprecision.revealserver.persistence.repository.UserRepository;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -95,21 +96,33 @@ public class KeycloakService {
     UserResource userResource = KeycloakConfig.getInstance().realm(KeycloakConfig.realm).users()
         .get(kcId);
 
-    Map<String, GroupRepresentation> groups = KeycloakConfig.getInstance()
-        .realm(KeycloakConfig.realm)
-        .groups().groups().stream()
-        .collect(Collectors.toMap(GroupRepresentation::getName, Function.identity()));
     if (userResource != null) {
       UserRepresentation kcUser = userResource.toRepresentation();
       kcUser.setFirstName(userRequest.getFirstName());
       kcUser.setLastName(userRequest.getLastName());
       kcUser.setEmail(userRequest.getEmail());
       userResource.update(kcUser);
-      userResource.leaveGroup(groups.get("user_management").getId());
-      userResource.joinGroup(groups.get("standard_user").getId());
-      //TODO finish logic about updating user groups
+      updateGroups(kcId, userRequest.getSecurityGroups());
     } else {
       throw new KeycloakException("User not found in Keycloak");
     }
+  }
+
+  private void updateGroups(String kcId, Set<String> newGroups) {
+    Map<String, GroupRepresentation> groups = KeycloakConfig.getInstance()
+        .realm(KeycloakConfig.realm)
+        .groups().groups().stream()
+        .collect(Collectors.toMap(GroupRepresentation::getName, Function.identity()));
+    UserResource userResource = KeycloakConfig.getInstance().realm(KeycloakConfig.realm).users()
+        .get(kcId);
+
+    groups.forEach(
+        (s, groupRepresentation) -> userResource.leaveGroup(groupRepresentation.getId()));
+    newGroups.stream().forEach(s -> {
+      GroupRepresentation representation = groups.get(s);
+      if (representation != null) {
+        userResource.joinGroup(representation.getId());
+      }
+    });
   }
 }

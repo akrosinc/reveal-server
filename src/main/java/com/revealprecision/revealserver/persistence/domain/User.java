@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.persistence.domain;
 
+import com.revealprecision.revealserver.api.v1.dto.request.UserRequest;
 import java.util.Set;
 import java.util.UUID;
 import javax.persistence.CollectionTable;
@@ -62,4 +63,12 @@ public class User extends AbstractAuditableEntity {
   private Set<String> securityGroups;
 
   private String apiResponse;
+
+  public User updateUser(UserRequest request) {
+    this.firstName = request.getFirstName();
+    this.lastName = request.getLastName();
+    this.email = request.getEmail();
+    this.securityGroups = request.getSecurityGroups();
+    return this;
+  }
 }
