@@ -107,6 +107,7 @@ public class KeycloakService {
       userResource.update(kcUser);
       userResource.leaveGroup(groups.get("user_management").getId());
       userResource.joinGroup(groups.get("standard_user").getId());
+      //TODO finish logic about updating user groups
     } else {
       throw new KeycloakException("User not found in Keycloak");
     }
