@@ -130,64 +130,6 @@
 			"response": []
 		},
 		{
-			"name": "create a organization bad active",
-			"event": [
-				{
-					"listen": "test",
-					"script": {
-						"exec": [
-							"pm.test(\"Status code is 400\", () => {",
-							"  pm.expect(pm.response.code).to.eql(400);",
-							"});",
-							"",
-							"const jsonData = pm.response.json();",
-							"pm.test(\"Test data of the response\", () => {",
-							"  pm.expect(jsonData.message).to.contain(\"SOMETHING HERE\");",
-							"});",
-							"",
-							"// https://revealplatform.atlassian.net/browse/RP-33"
-						],
-						"type": "text/javascript"
-					}
-				}
-			],
-			"request": {
-				"auth": {
-					"type": "bearer",
-					"bearer": [
-						{
-							"key": "token",
-							"value": "{{auth_bearer_token}}",
-							"type": "string"
-						}
-					]
-				},
-				"method": "POST",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\r\n    \"name\":\"{{$randomFirstName}}\",\r\n    \"type\":\"CG\",\r\n    \"active\": pink,\r\n    \"partOf\": null\r\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "{{server_url}}/api/v1/organization",
-					"host": [
-						"{{server_url}}"
-					],
-					"path": [
-						"api",
-						"v1",
-						"organization"
-					]
-				}
-			},
-			"response": []
-		},
-		{
 			"name": "create a organization bad parent",
 			"event": [
 				{
@@ -1308,6 +1250,59 @@
 						{
 							"key": "_summary",
 							"value": "FALSE"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "search with summary count",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", () => {",
+							"  pm.expect(pm.response.code).to.eql(200);",
+							"});",
+							"",
+							"const jsonData = pm.response.json();",
+							"pm.test(\"Test data of the response\", () => {",
+							"  pm.expect(jsonData.count).to.be.a(\"number\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{auth_bearer_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{server_url}}/api/v1/organization?_summary=COUNT",
+					"host": [
+						"{{server_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"organization"
+					],
+					"query": [
+						{
+							"key": "_summary",
+							"value": "COUNT"
 						}
 					]
 				}

@@ -37,7 +37,7 @@ public class GeographicLevelController {
 
   @Operation(summary = "Create a geographicLevel",
       description = "Create a geographicLevel",
-      tags = {"Location"}
+      tags = {"Geographic Level"}
   )
   @PostMapping(value = "/geographicLevel", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<GeographicLevelResponse> create(
@@ -49,7 +49,7 @@ public class GeographicLevelController {
 
   @Operation(summary = "List geographicLevels",
       description = "List geographicLevels",
-      tags = {"Location"}
+      tags = {"Geographic Level"}
   )
   @GetMapping(value = "/geographicLevel", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<Page<GeographicLevelResponse>> getGeographicLevels(
@@ -63,7 +63,7 @@ public class GeographicLevelController {
 
   @Operation(summary = "Fetch a geographicLevel",
       description = "Fetch a geographicLevel",
-      tags = {"Location"}
+      tags = {"Geographic Level"}
   )
   @GetMapping(value = "/geographicLevel/{identifier}", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<GeographicLevelResponse> findGeographicLevelByIdentifier(
@@ -74,7 +74,7 @@ public class GeographicLevelController {
 
   @Operation(summary = "Update a geographicLevel",
       description = "Update a geographicLevel",
-      tags = {"Location"}
+      tags = {"Geographic Level"}
   )
   @PutMapping(value = "/geographicLevel/{identifier}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<GeographicLevelResponse> updateGeographicLevel(
@@ -87,7 +87,7 @@ public class GeographicLevelController {
 
   @Operation(summary = "Delete a geographicLevel",
       description = "Delete a geographicLevel",
-      tags = {"Location"}
+      tags = {"Geographic Level"}
   )
   @DeleteMapping(value = "/geographicLevel/{identifier}")
   public ResponseEntity<Void> deleteGeographicLeve(@PathVariable UUID identifier) {
