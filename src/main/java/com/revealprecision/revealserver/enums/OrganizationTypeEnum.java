@@ -8,7 +8,8 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum OrganizationTypeEnum implements Serializable {
   CG("Community group"),
-  TEAM("Team");
+  TEAM("Team"),
+  OTHER("Other");
 
   private String organizationType;
 

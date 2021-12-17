@@ -35,7 +35,7 @@ public class OrganizationService {
         .active(organizationRequest.isActive())
         .build();
     organization.setEntityStatus(EntityStatus.ACTIVE);
-    
+
     return organizationRepository.save(organization);
   }
 
@@ -49,21 +49,17 @@ public class OrganizationService {
 
   public Page<Organization> findAll(OrganizationCriteria criteria, Pageable pageable) {
     if (criteria.isRoot()) {
-      return organizationRepository.getAllByCriteriaWithRoot(criteria.getName(),
-          (criteria.getType() == null) ? null : criteria.getType().name(), pageable);
+      return organizationRepository.getAllByCriteriaWithRoot(criteria.getSearch(), pageable);
     } else {
-      return organizationRepository.getAllByCriteriaWithoutRoot(criteria.getName(),
-          (criteria.getType() == null) ? null : criteria.getType().name(), pageable);
+      return organizationRepository.getAllByCriteriaWithoutRoot(criteria.getSearch(), pageable);
     }
   }
 
   public long getCountFindAll(OrganizationCriteria criteria) {
     if (criteria.isRoot()) {
-      return organizationRepository.getCountByCriteriaWithRoot(criteria.getName(),
-          (criteria.getType() == null) ? null : criteria.getType().name());
+      return organizationRepository.getCountByCriteriaWithRoot(criteria.getSearch());
     } else {
-      return organizationRepository.getCountByCriteriaWithoutRoot(criteria.getName(),
-          (criteria.getType() == null) ? null : criteria.getType().name());
+      return organizationRepository.getCountByCriteriaWithoutRoot(criteria.getSearch());
     }
   }
 

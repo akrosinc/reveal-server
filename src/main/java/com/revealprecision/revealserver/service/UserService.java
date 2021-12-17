@@ -36,10 +36,16 @@ public class UserService {
   }
 
   public User createUser(UserRequest userRequest) {
-    if (userRepository.findByUserName(userRequest.getUserName()).isPresent()) {
+    if (userRequest.getEmail() == null) {
+      if (userRepository.findByUserName(userRequest.getUserName()).isPresent()) {
+        throw new ConflictException(
+            String.format(Error.NON_UNIQUE, StringUtils.capitalize(Fields.userName),
+                userRequest.getUserName()));
+      }
+    } else if (userRepository.findByUserNameOrEmail(userRequest.getUserName(),
+        userRequest.getEmail()).isPresent()) {
       throw new ConflictException(
-          String.format(Error.NON_UNIQUE, StringUtils.capitalize(Fields.userName),
-              userRequest.getUserName()));
+          "Username and email must be unique!"); //TODO This could be refactored to be prettier
     }
 
     Set<Organization> organizations = organizationService.findByIdentifiers(
@@ -48,13 +54,13 @@ public class UserService {
     user.setEntityStatus(EntityStatus.CREATING);
     user = userRepository.save(user);
 
-    UUID keyCloakId = UUID.fromString(keycloakService.addUser(userRequest));
+    UUID keyCloakId = UUID.fromString(keycloakService.addUser(userRequest, user.getIdentifier()));
     user.setSid(keyCloakId);
     user.setEntityStatus(EntityStatus.ACTIVE);
     return userRepository.save(user);
   }
 
-  public User getByIdentifiers(UUID identifier) {
+  public User getByIdentifier(UUID identifier) {
     return userRepository.findByIdentifier(identifier)
         .orElseThrow(() -> new NotFoundException(Pair.of(
             Fields.identifier, identifier), User.class));
@@ -67,8 +73,15 @@ public class UserService {
   }
 
   public void deleteUser(UUID identifier) {
-    User user = getByIdentifiers(identifier);
-    keycloakService.deleteUser(user.getUserName());
+    User user = getByIdentifier(identifier);
+    user.setEntityStatus(EntityStatus.DELETING);
+    user = userRepository.save(user);
+    keycloakService.deleteUser(user.getSid().toString(), user.getIdentifier());
     userRepository.delete(user);
+  }
+
+  public void updateUser(UUID identifier, UserRequest userRequest) {
+    User user = getByIdentifier(identifier);
+    keycloakService.updateUser(user.getSid().toString(), userRequest);
   }
 }

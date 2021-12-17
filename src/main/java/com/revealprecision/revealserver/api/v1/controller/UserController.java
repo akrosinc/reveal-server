@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -24,6 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/user")
 public class UserController {
+
 
   private UserService userService;
 
@@ -49,12 +51,19 @@ public class UserController {
   @GetMapping(value = "/{identifier}", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<UserResponse> getUser(@PathVariable("identifier") UUID identifier) {
     return ResponseEntity.status(HttpStatus.OK)
-        .body(UserResponseFactory.fromEntity(userService.getByIdentifiers(identifier)));
+        .body(UserResponseFactory.fromEntity(userService.getByIdentifier(identifier)));
   }
 
   @DeleteMapping("/{identifier}")
   public ResponseEntity<Void> deleteUser(@PathVariable("identifier") UUID identifier) {
     userService.deleteUser(identifier);
+    return ResponseEntity.status(HttpStatus.OK).build();
+  }
+
+  @PutMapping("/{identifier}")
+  public ResponseEntity<Void> update(@PathVariable("identifier") UUID identifier,
+      @Valid @RequestBody UserRequest userRequest) {
+    userService.updateUser(identifier, userRequest);
     return ResponseEntity.status(HttpStatus.OK).build();
   }
 }
