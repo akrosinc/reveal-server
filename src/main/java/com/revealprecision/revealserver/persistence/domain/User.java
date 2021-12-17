@@ -32,7 +32,7 @@ import org.hibernate.envers.Audited;
 @NoArgsConstructor
 @Entity
 @Table(name = "users")
-@SQLDelete(sql = "UPDATE user SET entity_status = 'DELETED' where identifier=?")
+@SQLDelete(sql = "UPDATE users SET entity_status = 'DELETED' where identifier=?")
 @Where(clause = "entity_status='ACTIVE'")
 public class User extends AbstractAuditableEntity {
 
@@ -60,4 +60,6 @@ public class User extends AbstractAuditableEntity {
   @CollectionTable(name = "user_security_groups", joinColumns = @JoinColumn(name = "identifier"))
   @Column(name = "security_group")
   private Set<String> securityGroups;
+
+  private String apiResponse;
 }

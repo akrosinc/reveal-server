@@ -5,12 +5,14 @@ import java.util.UUID;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
+import org.hibernate.validator.constraints.Length;
 
 @Getter
 @Setter
@@ -20,6 +22,7 @@ import lombok.ToString;
 @ToString
 public class UserRequest {
 
+  @Pattern(regexp = "^[a-z]+([._]?[a-z]+)*$", message = "must match regex")
   @NotBlank(message = "must not be empty")
   private String userName;
 
@@ -29,8 +32,8 @@ public class UserRequest {
   @NotBlank(message = "must not be empty")
   private String lastName;
 
-  @NotNull(message = "must not be null")
   @Email
+  @Length(min = 1, message = "can not be blank")
   private String email;
 
   @NotBlank(message = "must not be empty")
@@ -39,9 +42,9 @@ public class UserRequest {
   @NotNull
   private boolean tempPassword;
 
-  //@NotEmpty
+  @NotNull
   private Set<UUID> organizations;
 
-  //@NotEmpty
+  @NotNull
   private Set<String> securityGroups;
 }

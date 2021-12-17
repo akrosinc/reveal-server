@@ -19,30 +19,26 @@ public interface OrganizationRepository extends EntityGraphJpaRepository<Organiz
   Optional<Organization> findById(UUID id, EntityGraph graph);
 
   @Query(value =
-      "SELECT * FROM organization o WHERE (CAST(:name as text) IS NULL OR o.name = CAST(:name as text)) "
-          + "AND (CAST(:type as text) IS NULL OR o.type = CAST(:type as text))"
-          + "AND o.organization_parent_id IS NULL AND entity_status='ACTIVE'", nativeQuery = true)
-  Page<Organization> getAllByCriteriaWithRoot(@Param("name") String name,
-      @Param("type") String type, Pageable pageable);
+      "SELECT o FROM Organization o WHERE (lower(o.name) like lower(concat('%', :param, '%')) "
+          + "OR lower(o.type) like lower(concat('%', :param, '%'))) "
+          + "AND o.parent IS NULL AND o.entityStatus='ACTIVE'", nativeQuery = true)
+  Page<Organization> getAllByCriteriaWithRoot(@Param("param") String param, Pageable pageable);
 
   @Query(value =
-      "SELECT * FROM organization o WHERE (CAST(:name as text) IS NULL OR o.name = CAST(:name as text)) "
-          + "AND (CAST(:type as text) IS NULL OR o.type = CAST(:type as text)) AND entity_status='ACTIVE'", nativeQuery = true)
-  Page<Organization> getAllByCriteriaWithoutRoot(@Param("name") String name,
-      @Param("type") String type, Pageable pageable);
+      "SELECT o FROM Organization o WHERE (lower(o.name) like lower(concat('%', :param, '%')) "
+          + "OR lower(o.type) like lower(concat('%', :param, '%'))) AND entity_status='ACTIVE'")
+  Page<Organization> getAllByCriteriaWithoutRoot(@Param("param") String param, Pageable pageable);
 
   @Query(value =
-      "SELECT count(*) FROM organization o WHERE (CAST(:name as text) IS NULL OR o.name = CAST(:name as text)) "
-          + "AND (CAST(:type as text) IS NULL OR o.type = CAST(:type as text))"
-          + "AND o.organization_parent_id IS NULL AND entity_status='ACTIVE'", nativeQuery = true)
-  long getCountByCriteriaWithRoot(@Param("name") String name,
-      @Param("type") String type);
+      "SELECT count(o) FROM Organization o WHERE (lower(o.name) like lower(concat('%', :param, '%')) "
+          + "OR lower(o.type) like lower(concat('%', :param, '%'))) "
+          + "AND o.parent IS NULL AND o.entityStatus='ACTIVE'", nativeQuery = true)
+  long getCountByCriteriaWithRoot(@Param("param") String param);
 
   @Query(value =
-      "SELECT count(*) FROM organization o WHERE (CAST(:name as text) IS NULL OR o.name = CAST(:name as text)) "
-          + "AND (CAST(:type as text) IS NULL OR o.type = CAST(:type as text)) AND entity_status='ACTIVE'", nativeQuery = true)
-  long getCountByCriteriaWithoutRoot(@Param("name") String name,
-      @Param("type") String type);
+      "SELECT o FROM Organization o WHERE (lower(o.name) like lower(concat('%', :param, '%')) "
+          + "OR lower(o.type) like lower(concat('%', :param, '%'))) AND entity_status='ACTIVE'", nativeQuery = true)
+  long getCountByCriteriaWithoutRoot(@Param("param") String param);
 
   @Query(value = "SELECT * FROM organization o WHERE o.identifier IN :identifiers", nativeQuery = true)
   Set<Organization> findByIdentifiers(@Param("identifiers") Collection<UUID> identifiers);
