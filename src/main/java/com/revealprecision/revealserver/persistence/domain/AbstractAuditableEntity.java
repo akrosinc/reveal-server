@@ -17,6 +17,11 @@ import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+/*
+This abstract is used to add auditable information to the database records, which is independent of any similar information that may be contained within any of the domain objects.
+These columns deal with the metadata used by Hibernate envers and other auditing concepts in order to manage and maintain a good audit trail.
+*/
+
 @MappedSuperclass
 @EntityListeners(AuditingEntityListener.class)
 @Audited

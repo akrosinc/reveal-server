@@ -33,7 +33,7 @@ public class LocationHierarchyController {
 
   @Operation(summary = "Create a locationHierarchy",
       description = "Create a locationHierarchy",
-      tags = {"Location"}
+      tags = {"Location Hierarchy"}
   )
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<LocationHierarchyResponse> createLocationHierarchy(
@@ -43,8 +43,10 @@ public class LocationHierarchyController {
             locationHierarchyService.createLocationHierarchy(locationHierarchyRequest)));
   }
 
-  @Operation(summary = "Get LocationHierarchy by identifier", description = "Get LocationHierarchy by identifier", tags = {
-      "LocationHierarchy"})
+  @Operation(summary = "Get LocationHierarchy by identifier",
+      description = "Get LocationHierarchy by identifier",
+      tags = {"Location Hierarchy"}
+  )
   @GetMapping("/{identifier}")
   public ResponseEntity<LocationHierarchyResponse> getLocationHierarchy(
       @Parameter(description = "LocationHierarchy identifier") @PathVariable UUID identifier) {
@@ -54,7 +56,7 @@ public class LocationHierarchyController {
 
   @Operation(summary = "Delete LocationHierarchy",
       description = "Delete LocationHierarchy",
-      tags = {"LocationHierarchy"}
+      tags = {"Location Hierarchy"}
   )
   @DeleteMapping(value = "/{identifier}")
   public ResponseEntity<Void> deleteLocationHierarchy(
