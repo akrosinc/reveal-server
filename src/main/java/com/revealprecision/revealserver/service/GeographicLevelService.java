@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.service;
 
 import com.revealprecision.revealserver.api.v1.dto.request.GeographicLevelRequest;
+import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.exceptions.ConflictException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.exceptions.constant.Error;
@@ -32,10 +33,11 @@ public class GeographicLevelService {
           String.format(Error.NON_UNIQUE, StringUtils.capitalize(Fields.name),
               geographicLevelRequest.getName()));
     }
-    return geographicLevelRepository.save(
-        GeographicLevel.builder()
-            .name(geographicLevelRequest.getName())
-            .title(geographicLevelRequest.getTitle()).build());
+    GeographicLevel geographicLevel = GeographicLevel.builder()
+        .name(geographicLevelRequest.getName())
+        .title(geographicLevelRequest.getTitle()).build();
+    geographicLevel.setEntityStatus(EntityStatus.ACTIVE);
+    return geographicLevelRepository.save(geographicLevel);
   }
 
   public Page<GeographicLevel> getGeographicLevels(Pageable pageable) {

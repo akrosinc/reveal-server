@@ -3,10 +3,12 @@ package com.revealprecision.revealserver.service;
 import com.cosium.spring.data.jpa.entity.graph.domain.EntityGraphUtils;
 import com.revealprecision.revealserver.api.v1.dto.request.OrganizationCriteria;
 import com.revealprecision.revealserver.api.v1.dto.request.OrganizationRequest;
+import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.Organization;
 import com.revealprecision.revealserver.persistence.domain.Organization.Fields;
 import com.revealprecision.revealserver.persistence.repository.OrganizationRepository;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -25,13 +27,16 @@ public class OrganizationService {
   }
 
   public Organization createOrganization(OrganizationRequest organizationRequest) {
-    return organizationRepository.save(Organization.builder()
+    Organization organization = Organization.builder()
         .name(organizationRequest.getName())
         .parent((organizationRequest.getPartOf() == null) ? null
             : findByIdWithChildren(organizationRequest.getPartOf()))
         .type(organizationRequest.getType())
         .active(organizationRequest.isActive())
-        .build());
+        .build();
+    organization.setEntityStatus(EntityStatus.ACTIVE);
+
+    return organizationRepository.save(organization);
   }
 
   public Organization findById(UUID identifier, boolean _summary) {
@@ -44,21 +49,17 @@ public class OrganizationService {
 
   public Page<Organization> findAll(OrganizationCriteria criteria, Pageable pageable) {
     if (criteria.isRoot()) {
-      return organizationRepository.getAllByCriteriaWithRoot(criteria.getName(),
-          (criteria.getType() == null) ? null : criteria.getType().name(), pageable);
+      return organizationRepository.getAllByCriteriaWithRoot(criteria.getSearch(), pageable);
     } else {
-      return organizationRepository.getAllByCriteriaWithoutRoot(criteria.getName(),
-          (criteria.getType() == null) ? null : criteria.getType().name(), pageable);
+      return organizationRepository.getAllByCriteriaWithoutRoot(criteria.getSearch(), pageable);
     }
   }
 
   public long getCountFindAll(OrganizationCriteria criteria) {
     if (criteria.isRoot()) {
-      return organizationRepository.getCountByCriteriaWithRoot(criteria.getName(),
-          (criteria.getType() == null) ? null : criteria.getType().name());
+      return organizationRepository.getCountByCriteriaWithRoot(criteria.getSearch());
     } else {
-      return organizationRepository.getCountByCriteriaWithoutRoot(criteria.getName(),
-          (criteria.getType() == null) ? null : criteria.getType().name());
+      return organizationRepository.getCountByCriteriaWithoutRoot(criteria.getSearch());
     }
   }
 
@@ -92,5 +93,9 @@ public class OrganizationService {
   public void deleteOrganization(UUID identifier) {
     Organization organization = findByIdWithoutChildren(identifier);
     organizationRepository.delete(organization);
+  }
+
+  public Set<Organization> findByIdentifiers(Set<UUID> identifiers) {
+    return organizationRepository.findByIdentifiers(identifiers);
   }
 }

@@ -13,6 +13,7 @@ import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
+import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 import lombok.AllArgsConstructor;
@@ -58,6 +59,9 @@ public class Organization extends AbstractAuditableEntity {
   @ManyToOne
   @JoinColumn(name = "organization_parent_id", nullable = true)
   private Organization parent;
+
+  @ManyToMany(mappedBy = "organizations")
+  private Set<User> users;
 
   public Organization update(OrganizationRequest organizationRequest, Organization parent) {
     this.name = organizationRequest.getName();
