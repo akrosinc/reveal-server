@@ -2,9 +2,11 @@ package com.revealprecision.revealserver.api.v1.dto.request;
 
 import com.sun.istack.Nullable;
 import lombok.*;
-import org.hibernate.validator.constraints.Length;
 
-import javax.validation.constraints.*;
+import javax.validation.constraints.Email;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
 import java.util.Set;
 import java.util.UUID;
 
@@ -13,12 +15,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@ToString
-public class UserRequest {
-
-    @Pattern(regexp = "^[a-z]+([._]?[a-z]+)*$", message = "must match regex")
-    @NotBlank(message = "must not be empty")
-    private String userName;
+public class UserUpdateRequest {
 
     @NotBlank(message = "must not be empty")
     private String firstName;
@@ -30,13 +27,6 @@ public class UserRequest {
     @Nullable
     @Size(min = 3, message = "minimum number of characters is 3")
     private String email;
-
-    @NotBlank(message = "must not be empty")
-    @Length(min = 5, message = "minimum number of characters is 5")
-    private String password;
-
-    @NotNull
-    private boolean tempPassword;
 
     @NotNull
     private Set<UUID> organizations;
