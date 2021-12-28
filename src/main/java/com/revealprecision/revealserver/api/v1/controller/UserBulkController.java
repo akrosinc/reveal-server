@@ -8,6 +8,7 @@ import com.revealprecision.revealserver.api.v1.dto.response.UserBulkResponse;
 import com.revealprecision.revealserver.batch.runner.UserBatchRunner;
 import com.revealprecision.revealserver.service.StorageService;
 import com.revealprecision.revealserver.service.UserBulkService;
+import java.io.IOException;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.JobParametersInvalidException;
@@ -17,6 +18,7 @@ import org.springframework.batch.core.repository.JobRestartException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -63,4 +65,13 @@ public class UserBulkController {
     return ResponseEntity.status(HttpStatus.ACCEPTED)
         .body(IdentifierResponse.builder().identifier(identifier).build());
   }
+
+  @GetMapping("/csv")
+  public ResponseEntity<?> downloadTemplate() throws IOException {
+    return ResponseEntity.status(HttpStatus.OK)
+        .contentType(MediaType.APPLICATION_OCTET_STREAM)
+        .header("Content-disposition", "attachment;filename=UserTemplate.xlsx")
+        .body(storageService.downloadTemplate());
+  }
+
 }

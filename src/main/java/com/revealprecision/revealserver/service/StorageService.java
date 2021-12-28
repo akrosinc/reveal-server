@@ -3,8 +3,10 @@ package com.revealprecision.revealserver.service;
 import com.revealprecision.revealserver.exceptions.FileFormatException;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -28,5 +30,12 @@ public class StorageService {
   public void deleteCSV(String path) throws IOException {
     File file = new File(path);
     file.delete();
+  }
+
+  public ByteArrayResource downloadTemplate() throws IOException {
+    Path path = Paths.get("src/main/resources/template/AkrosTemplate.xlsx");
+    ByteArrayResource resource = new ByteArrayResource(Files.readAllBytes(path));
+
+    return resource;
   }
 }
