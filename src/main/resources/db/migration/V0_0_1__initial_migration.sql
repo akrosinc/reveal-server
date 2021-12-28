@@ -341,24 +341,24 @@ CREATE TABLE IF NOT EXISTS users_aud
     PRIMARY KEY (identifier, REV)
 );
 
-CREATE TABLE IF NOT EXISTS "user_groups"
+CREATE TABLE IF NOT EXISTS "user_organization"
 (
-    user_id         UUID NOT NULL,
-    organization_id UUID NOT NULL,
-    PRIMARY KEY (user_id, organization_id),
-    FOREIGN KEY (user_id) REFERENCES users (identifier),
-    FOREIGN KEY (organization_id) REFERENCES organization (identifier)
+    user_identifier         UUID NOT NULL,
+    organization_identifier UUID NOT NULL,
+    PRIMARY KEY (user_identifier, organization_identifier),
+    FOREIGN KEY (user_identifier) REFERENCES users (identifier),
+    FOREIGN KEY (organization_identifier) REFERENCES organization (identifier)
 );
 
-CREATE TABLE IF NOT EXISTS "user_groups_aud"
+CREATE TABLE IF NOT EXISTS "user_organization_aud"
 (
-    user_id         UUID    NOT NULL,
-    organization_id UUID    NOT NULL,
-    REV             INT     NOT NULL,
-    REVTYPE         INTEGER NULL,
-    PRIMARY KEY (user_id, organization_id, REV),
-    FOREIGN KEY (user_id) REFERENCES users (identifier),
-    FOREIGN KEY (organization_id) REFERENCES organization (identifier)
+    user_identifier         UUID    NOT NULL,
+    organization_identifier UUID    NOT NULL,
+    REV                     INT     NOT NULL,
+    REVTYPE                 INTEGER NULL,
+    PRIMARY KEY (user_identifier, organization_identifier, REV),
+    FOREIGN KEY (user_identifier) REFERENCES users (identifier),
+    FOREIGN KEY (organization_identifier) REFERENCES organization (identifier)
 );
 
 CREATE TABLE IF NOT EXISTS user_security_groups
