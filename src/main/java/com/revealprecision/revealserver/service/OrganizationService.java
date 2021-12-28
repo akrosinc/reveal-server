@@ -8,13 +8,14 @@ import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.Organization;
 import com.revealprecision.revealserver.persistence.domain.Organization.Fields;
 import com.revealprecision.revealserver.persistence.repository.OrganizationRepository;
-import java.util.Set;
-import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
+
+import java.util.Set;
+import java.util.UUID;
 
 @Service
 public class OrganizationService {
@@ -50,6 +51,7 @@ public class OrganizationService {
   public Page<Organization> findAll(OrganizationCriteria criteria, Pageable pageable) {
     if (criteria.isRoot()) {
       return organizationRepository.getAllByCriteriaWithRoot(criteria.getSearch(), pageable);
+      //TODO update this method, search should apply on children also
     } else {
       return organizationRepository.getAllByCriteriaWithoutRoot(criteria.getSearch(), pageable);
     }

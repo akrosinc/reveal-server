@@ -3,6 +3,7 @@ package com.revealprecision.revealserver.persistence.repository;
 import com.cosium.spring.data.jpa.entity.graph.domain.EntityGraph;
 import com.cosium.spring.data.jpa.entity.graph.repository.EntityGraphJpaRepository;
 import com.revealprecision.revealserver.persistence.domain.User;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import javax.transaction.Transactional;
@@ -49,5 +50,9 @@ public interface UserRepository extends EntityGraphJpaRepository<User, UUID> {
   @Query("UPDATE User usr SET usr.apiResponse = :message WHERE usr.identifier = :id")
   void setApiResponse(@Param("id") UUID id, @Param("message") String message);
 
+  @Query(value = "select u.email from users u where u.entity_status != 'DELETED' and u.email is not null", nativeQuery = true)
+  List<String> getAllEmails();
 
+  @Query(value = "select u.user_name from users u where u.entity_status != 'DELETED'", nativeQuery = true)
+  List<String> getAllUsernames();
 }
