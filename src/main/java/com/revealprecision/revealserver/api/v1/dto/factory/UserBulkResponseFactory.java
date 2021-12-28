@@ -13,8 +13,10 @@ import org.springframework.data.domain.Pageable;
 public class UserBulkResponseFactory {
 
   public static UserBulkResponse fromEntity(UserBulk userBulk) {
-    return UserBulkResponse.builder().filename(userBulk.getFilename())
-        .identifier(userBulk.getIdentifier()).uploadDatetime(userBulk.getUploadDatetime())
+    return UserBulkResponse.builder()
+        .filename(userBulk.getFilename())
+        .identifier(userBulk.getIdentifier())
+        .uploadDatetime(userBulk.getUploadDatetime())
         .status(userBulk.getStatus()).build();
   }
 
