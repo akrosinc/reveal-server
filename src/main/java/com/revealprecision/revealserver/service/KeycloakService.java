@@ -26,7 +26,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class KeycloakService {
 
-  private static final Map<String, Boolean> access = Map.of(
+  public static final Map<String, Boolean> access = Map.of(
       "manageGroupMembership", false,
       "view", false,
       "mapRoles", false,
@@ -35,7 +35,7 @@ public class KeycloakService {
   );
   private final UserRepository userRepository;
 
-  private static CredentialRepresentation createPasswordCredentials(String password,
+  public static CredentialRepresentation createPasswordCredentials(String password,
       boolean temporary) {
     CredentialRepresentation passwordCredentials = new CredentialRepresentation();
     passwordCredentials.setTemporary(temporary);
