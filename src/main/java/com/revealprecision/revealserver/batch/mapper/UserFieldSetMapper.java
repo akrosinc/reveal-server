@@ -20,7 +20,7 @@ public class UserFieldSetMapper implements FieldSetMapper<UserBatchDTO> {
     try {
       String email = (String) converter.convert(fieldSet.readString("email"), String.class);
       return UserBatchDTO.builder()
-          .userName((String) converter.convert(fieldSet.readString("userName"), String.class))
+          .username((String) converter.convert(fieldSet.readString("username"), String.class))
           .firstName((String) converter.convert(fieldSet.readString("firstName"), String.class))
           .lastName((String) converter.convert(fieldSet.readString("lastName"), String.class))
           .email(email.isBlank() ? null : email)

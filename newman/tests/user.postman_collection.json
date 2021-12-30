@@ -22,7 +22,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"username\": \"milan.katic\",\r\n    \"firstName\": \"Milan\",\r\n    \"lastName\": \"Katic\",\r\n    \"email\": \"katicmilan7@gmail.com\",\r\n    \"password\": \"Milan7\",\r\n    \"tempPassword\": false,\r\n    \"organization\": [],\r\n    \"securityGroups\": []\r\n}\r\n",
+					"raw": "{\r\n    \"userName\": \"milan.kaaatic\",\r\n    \"firstName\": \"Milan\",\r\n    \"lastName\": \"Katic\",\r\n    \"email\": \"\",\r\n    \"password\": \"Mila\",\r\n    \"tempPassword\": false,\r\n    \"organizations\": [],\r\n    \"securityGroups\": []\r\n}\r\n",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -59,7 +59,7 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "{{server_url}}/api/v1/user?search=vic3",
+					"raw": "{{server_url}}/api/v1/user",
 					"host": [
 						"{{server_url}}"
 					],
@@ -71,8 +71,138 @@
 					"query": [
 						{
 							"key": "search",
-							"value": "vic3"
+							"value": "vic",
+							"disabled": true
 						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete user",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{auth_bearer_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "{{server_url}}/api/v1/user/0276e324-e9ac-44a3-b15e-60cd36c56e7a",
+					"host": [
+						"{{server_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"user",
+						"0276e324-e9ac-44a3-b15e-60cd36c56e7a"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get User by Identifier",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{server_url}}/api/v1/user/0276e324-e9ac-44a3-b15e-60cd36c56e7a",
+					"host": [
+						"{{server_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"user",
+						"0276e324-e9ac-44a3-b15e-60cd36c56e7a"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update user",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{auth_bearer_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"firstName\": \"Petar\",\r\n    \"lastName\": \"Petrovic\",\r\n    \"email\": null,\r\n    \"organizations\": [],\r\n    \"securityGroups\": [\"user_management\"]\r\n}\r\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{server_url}}/api/v1/user/b3e4b0cf-efc1-4358-898e-a1c6757c6615",
+					"host": [
+						"{{server_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"user",
+						"b3e4b0cf-efc1-4358-898e-a1c6757c6615"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Reset password",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{auth_bearer_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"password\": \"newPassw\",\r\n    \"tempPassword\": true\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{server_url}}/api/v1/user/resetPassword/b3e4b0cf-efc1-4358-898e-a1c6757c6615",
+					"host": [
+						"{{server_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"user",
+						"resetPassword",
+						"b3e4b0cf-efc1-4358-898e-a1c6757c6615"
 					]
 				}
 			},

@@ -8,6 +8,7 @@ import com.revealprecision.revealserver.exceptions.dto.ApiErrorResponse;
 import com.revealprecision.revealserver.exceptions.dto.ValidationErrorResponse;
 import java.time.LocalDateTime;
 import java.util.stream.Collectors;
+import javax.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -69,6 +70,16 @@ public class CustomExceptionHandler {
         .statusCode(HttpStatus.BAD_REQUEST.value())
         .timestamp(LocalDateTime.now())
         .message(ex.getMessage()).build();
+    return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+  }
+
+  @ExceptionHandler(ConstraintViolationException.class)
+  protected ResponseEntity<ApiErrorResponse> handleViolationException(
+      ConstraintViolationException ex) {
+    ApiErrorResponse response = ApiErrorResponse.builder()
+        .statusCode(HttpStatus.BAD_REQUEST.value())
+        .timestamp(LocalDateTime.now())
+        .message(ex.getMessage().split(":")[1].trim()).build();
     return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
   }
 }

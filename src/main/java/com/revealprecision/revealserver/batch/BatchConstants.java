@@ -7,7 +7,7 @@ public class BatchConstants {
   public static final String[] userFields = new String[]{
       "firstName",
       "lastName",
-      "userName",
+      "username",
       "email",
       "password",
       "tempPassword",

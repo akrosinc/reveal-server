@@ -14,7 +14,7 @@ import lombok.Setter;
 @AllArgsConstructor
 public class UserBatchDTO {
 
-  private String userName;
+  private String username;
   private String firstName;
   private String lastName;
   private String email;
