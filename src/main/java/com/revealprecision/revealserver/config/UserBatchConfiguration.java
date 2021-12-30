@@ -1,7 +1,6 @@
 package com.revealprecision.revealserver.config;
 
 import com.revealprecision.revealserver.batch.BatchConstants;
-import com.revealprecision.revealserver.batch.CustomSkipPolicy;
 import com.revealprecision.revealserver.batch.dto.UserBatchDTO;
 import com.revealprecision.revealserver.batch.listener.UserJobCompletionNotificationListener;
 import com.revealprecision.revealserver.batch.mapper.UserFieldSetMapper;
@@ -31,6 +30,7 @@ import org.springframework.core.io.PathResource;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.security.task.DelegatingSecurityContextAsyncTaskExecutor;
+import org.springframework.transaction.PlatformTransactionManager;
 
 @Configuration
 @RequiredArgsConstructor
@@ -43,13 +43,14 @@ public class UserBatchConfiguration {
   private final StepBuilderFactory stepBuilderFactory;
   private final UserItemProcessor userItemProcessor;
   private final JobRepository jobRepository;
+  private final PlatformTransactionManager platformTransactionManager;
 
 
   @Bean
   public TaskExecutor getAsyncExecutor() {
 
     ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-    executor.setCorePoolSize(20);
+    executor.setCorePoolSize(7);
     executor.setMaxPoolSize(1000);
     executor.setWaitForTasksToCompleteOnShutdown(true);
     executor.setThreadNamePrefix("Async-");
@@ -110,12 +111,12 @@ public class UserBatchConfiguration {
   @Bean
   public Step userStep() {
     return stepBuilderFactory.get("step1")
-        .<UserBatchDTO, User>chunk(50)
+        .<UserBatchDTO, User>chunk(10)
         .reader(userReader(null))
         .processor(userItemProcessor)
         .writer(userWriter())
-        .faultTolerant()
-        .skipPolicy(new CustomSkipPolicy())
+        .taskExecutor(getAsyncExecutor())
+        .throttleLimit(20)
         .build();
   }
 }
