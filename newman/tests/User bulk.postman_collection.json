@@ -1,0 +1,100 @@
+{
+	"info": {
+		"_postman_id": "21751c0c-988c-4086-a269-9da6642e3221",
+		"name": "User bulk",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Import users from CSV",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{auth_bearer_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": []
+						}
+					]
+				},
+				"url": {
+					"raw": "{{server_url}}/api/v1/user/bulk",
+					"host": [
+						"{{server_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"user",
+						"bulk"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Bulk details",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{auth_bearer_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{server_url}}/api/v1/user/bulk/2059431b-6661-4e1f-b509-fce4973714a1",
+					"host": [
+						"{{server_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"user",
+						"bulk",
+						"2059431b-6661-4e1f-b509-fce4973714a1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get all bulks",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{server_url}}/api/v1/user/bulk",
+					"host": [
+						"{{server_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"user",
+						"bulk"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

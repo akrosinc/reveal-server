@@ -70,6 +70,7 @@ public class UserItemProcessor implements ItemProcessor<UserBatchDTO, User> {
     if (!isUserValid(item)) {
       return null;
     }
+    item.getSecurityGroups().remove("");
     User user = UserEntityFactory.toEntity(item);
     if (user.getEmail() != null) {
       alreadyAddedEmails.add(user.getEmail());
@@ -78,6 +79,7 @@ public class UserItemProcessor implements ItemProcessor<UserBatchDTO, User> {
     setOrganizations(user, item.getOrganizations());
     user.setUserBulk(userBulk);
     createUserKeycloak(item, user);
+    user.setEntityStatus(EntityStatus.ACTIVE);
     return user;
   }
 
