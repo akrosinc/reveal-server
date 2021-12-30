@@ -18,9 +18,10 @@ import lombok.Setter;
 public class UserResponse {
 
   private UUID identifier;
-  private String userName;
+  private String username;
   private String firstName;
   private String lastName;
   private String email;
   private Set<OrganizationResponse> organizations;
+  private Set<String> securityGroups;
 }

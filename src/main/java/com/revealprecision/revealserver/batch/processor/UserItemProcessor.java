@@ -74,7 +74,7 @@ public class UserItemProcessor implements ItemProcessor<UserBatchDTO, User> {
     if (user.getEmail() != null) {
       alreadyAddedEmails.add(user.getEmail());
     }
-    alreadyAddedUsernames.add(user.getUserName());
+    alreadyAddedUsernames.add(user.getUsername());
     setOrganizations(user, item.getOrganizations());
     user.setUserBulk(userBulk);
     createUserKeycloak(item, user);
@@ -82,23 +82,23 @@ public class UserItemProcessor implements ItemProcessor<UserBatchDTO, User> {
   }
 
   public boolean isUserValid(final UserBatchDTO userBatchDTO) {
-    if (!userBatchDTO.getUserName().matches(BatchConstants.Constraint.USERNAME_REGEX)) {
-      saveUserBulkException("Username must match regex", userBatchDTO.getUserName());
+    if (!userBatchDTO.getUsername().matches(BatchConstants.Constraint.USERNAME_REGEX)) {
+      saveUserBulkException("Username must match regex", userBatchDTO.getUsername());
       return false;
     } else if (userBatchDTO.getFirstName().isBlank() || userBatchDTO.getLastName().isBlank()
         || userBatchDTO.getPassword().isBlank()) {
       saveUserBulkException("Fist name, last name and password are mandatory",
-          userBatchDTO.getUserName());
+          userBatchDTO.getUsername());
       return false;
-    } else if (listOfExistingUsernames.contains(userBatchDTO.getUserName())
-        || alreadyAddedUsernames.contains(userBatchDTO.getUserName())) {
-      saveUserBulkException("User with username: " + userBatchDTO.getUserName() + " already exist",
-          userBatchDTO.getUserName());
+    } else if (listOfExistingUsernames.contains(userBatchDTO.getUsername())
+        || alreadyAddedUsernames.contains(userBatchDTO.getUsername())) {
+      saveUserBulkException("User with username: " + userBatchDTO.getUsername() + " already exist",
+          userBatchDTO.getUsername());
       return false;
     } else if (listOfExistingEmails.contains(userBatchDTO.getEmail())
         || alreadyAddedEmails.contains(userBatchDTO.getEmail())) {
       saveUserBulkException("User with email: " + userBatchDTO.getEmail() + " already exist",
-          userBatchDTO.getUserName());
+          userBatchDTO.getUsername());
       return false;
     } else {
       return true;
@@ -135,7 +135,7 @@ public class UserItemProcessor implements ItemProcessor<UserBatchDTO, User> {
         userBatchDTO.getPassword(), userBatchDTO.getTempPassword());
 
     UserRepresentation kcUser = new UserRepresentation();
-    kcUser.setUsername(userBatchDTO.getUserName());
+    kcUser.setUsername(userBatchDTO.getUsername());
     kcUser.setCredentials(Collections.singletonList(credentialRepresentation));
     kcUser.setFirstName(userBatchDTO.getFirstName());
     kcUser.setLastName(userBatchDTO.getLastName());
@@ -153,7 +153,7 @@ public class UserItemProcessor implements ItemProcessor<UserBatchDTO, User> {
     response.close();
 
     if (response.getStatus() == 201) {
-      UserRepresentation kcCreatedUser = usersResource.search(userBatchDTO.getUserName()).get(0);
+      UserRepresentation kcCreatedUser = usersResource.search(userBatchDTO.getUsername()).get(0);
       user.setSid(UUID.fromString(kcCreatedUser.getId()));
       user.setEntityStatus(EntityStatus.ACTIVE);
     } else if (response.getStatus() == 409) {

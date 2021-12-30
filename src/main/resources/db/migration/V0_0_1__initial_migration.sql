@@ -306,7 +306,7 @@ CREATE TABLE IF NOT EXISTS users
 (
     identifier           UUID                     NOT NULL,
     sid                  UUID,
-    user_name            VARCHAR(255)             NOT NULL,
+    username             VARCHAR(255)             NOT NULL,
     first_name           VARCHAR(255)             NOT NULL,
     last_name            VARCHAR(255)             NOT NULL,
     email                VARCHAR(255),
@@ -327,7 +327,7 @@ CREATE TABLE IF NOT EXISTS users_aud
     REV                  INT                      NOT NULL,
     REVTYPE              INTEGER                  NULL,
     sid                  UUID,
-    user_name            VARCHAR(255)             NOT NULL,
+    username             VARCHAR(255)             NOT NULL,
     first_name           VARCHAR(255)             NOT NULL,
     last_name            VARCHAR(255)             NOT NULL,
     email                VARCHAR(255),
