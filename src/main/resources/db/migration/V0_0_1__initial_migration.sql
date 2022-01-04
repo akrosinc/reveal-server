@@ -276,7 +276,7 @@ CREATE TABLE IF NOT EXISTS user_bulk
 (
     identifier        UUID                     NOT NULL,
     filename          VARCHAR(255)             NOT NULL,
-    upload_datetime   TIMESTAMP WITH TIME ZONE NOT NULL,
+    uploaded_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
     status            VARCHAR(255),
     entity_status     VARCHAR(36)              NOT NULL,
     created_by        VARCHAR(36)              NOT NULL,
@@ -292,7 +292,7 @@ CREATE TABLE IF NOT EXISTS user_bulk_aud
     REV               INT                      NOT NULL,
     REVTYPE           INTEGER                  NULL,
     filename          VARCHAR(255)             NOT NULL,
-    upload_datetime   TIMESTAMP WITH TIME ZONE NOT NULL,
+    uploaded_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
     status            VARCHAR(255),
     entity_status     VARCHAR(36)              NOT NULL,
     created_by        VARCHAR(36)              NOT NULL,

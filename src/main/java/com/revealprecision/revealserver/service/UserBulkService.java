@@ -27,7 +27,7 @@ public class UserBulkService {
     userBulk.setFilename(file);
     userBulk.setStatus(BulkStatusEnum.PROCESSING);
     userBulk.setEntityStatus(EntityStatus.ACTIVE);
-    userBulk.setUploadDatetime(LocalDateTime.now());
+    userBulk.setUploadedDatetime(LocalDateTime.now());
     userBulk = userBulkRepository.save(userBulk);
     return userBulk.getIdentifier();
   }
