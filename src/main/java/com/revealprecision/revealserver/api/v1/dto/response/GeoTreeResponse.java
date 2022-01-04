@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.api.v1.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.revealprecision.revealserver.persistence.domain.Geometry;
 import java.util.List;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -11,15 +12,14 @@ import lombok.Setter;
 
 @Getter
 @Setter
-@Builder
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class LocationHierarchyResponse {
-
+public class GeoTreeResponse {
   private UUID identifier;
-
-  private List<String> nodeOrder;
-
-  private List<GeoTreeResponse> geoTree;
+  private String type;
+  private Geometry geometry;
+  private LocationPropertyResponse properties;
+  private List<GeoTreeResponse> children;
 }
