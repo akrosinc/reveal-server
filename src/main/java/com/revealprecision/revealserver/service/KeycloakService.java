@@ -6,10 +6,12 @@ import com.revealprecision.revealserver.api.v1.dto.request.UserUpdateRequest;
 import com.revealprecision.revealserver.config.KeycloakConfig;
 import com.revealprecision.revealserver.exceptions.ConflictException;
 import com.revealprecision.revealserver.exceptions.KeycloakException;
+import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.persistence.repository.UserRepository;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -23,6 +25,7 @@ import org.keycloak.admin.client.resource.UsersResource;
 import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.GroupRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -142,4 +145,14 @@ public class KeycloakService {
     userResource.resetPassword(credentialRepresentation);
   }
 
+  @Async
+  public void deleteAll(List<User> users, UsersResource resource) {
+    int i = 0;
+    for (User u : users) {
+      if (u.getSid() != null) {
+        resource.delete(u.getSid().toString());
+        System.out.println(++i);
+      }
+    }
+  }
 }

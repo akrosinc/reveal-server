@@ -5,6 +5,7 @@ import com.revealprecision.revealserver.api.v1.dto.factory.UserEntityFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.UserPasswordRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.UserRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.UserUpdateRequest;
+import com.revealprecision.revealserver.config.KeycloakConfig;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.exceptions.ConflictException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
@@ -13,8 +14,10 @@ import com.revealprecision.revealserver.persistence.domain.Organization;
 import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.persistence.domain.User.Fields;
 import com.revealprecision.revealserver.persistence.repository.UserRepository;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import org.keycloak.admin.client.resource.UsersResource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -95,5 +98,11 @@ public class UserService {
   public void resetPassword(UUID identifier, UserPasswordRequest passwordRequest) {
     User user = getByIdentifier(identifier);
     keycloakService.resetPassword(user.getSid().toString(), passwordRequest);
+  }
+
+  public void deleteAll() {
+    List<User> users = userRepository.findAll();
+    UsersResource userResource = KeycloakConfig.getInstance().realm(KeycloakConfig.realm).users();
+    keycloakService.deleteAll(users, userResource);
   }
 }
