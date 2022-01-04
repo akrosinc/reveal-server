@@ -410,6 +410,38 @@ CREATE TABLE IF NOT EXISTS user_bulk_exception_aud
     PRIMARY KEY (identifier, REV)
 );
 
+CREATE TABLE IF NOT EXISTS form
+(
+    identifier        UUID                     NOT NULL,
+    name              VARCHAR(255)             NOT NULL,
+    title             VARCHAR(255)             NOT NULL,
+    template          boolean                  NOT NULL,
+    payload           jsonb                    NOT NULL,
+    entity_status     VARCHAR(36)              NOT NULL,
+    created_by        VARCHAR(36)              NOT NULL,
+    created_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by       VARCHAR(36)              NOT NULL,
+    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    PRIMARY KEY (identifier)
+);
+
+CREATE TABLE IF NOT EXISTS form_aud
+(
+    identifier        UUID                     NOT NULL,
+    REV               INT                      NOT NULL,
+    REVTYPE           INTEGER                  NULL,
+    name              VARCHAR(255)             NOT NULL,
+    title             VARCHAR(255)             NOT NULL,
+    template          boolean                  NOT NULL,
+    payload           jsonb                    NOT NULL,
+    entity_status     VARCHAR(36)              NOT NULL,
+    created_by        VARCHAR(36)              NOT NULL,
+    created_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by       VARCHAR(36)              NOT NULL,
+    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    PRIMARY KEY (identifier, REV)
+);
+
 CREATE SEQUENCE IF NOT EXISTS hibernate_sequence
     START WITH 1
     INCREMENT BY 1
