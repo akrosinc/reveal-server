@@ -22,5 +22,4 @@ public interface LocationRelationshipRepository extends JpaRepository<LocationRe
   @Query(value = "SELECT ST_Contains (ST_AsText(ST_GeomFromGeoJSON(:parent)),ST_AsText(ST_Centroid(ST_GeomFromGeoJSON(:child))))", nativeQuery = true)
   Boolean hasParentChildRelationship(@Param("parent") String parent,
       @Param("child") String child);
-
 }

@@ -31,8 +31,14 @@ public class LocationRelationship extends AbstractAuditableEntity {
   @Id
   @GeneratedValue
   private UUID identifier;
-  private UUID locationHierarchyIdentifier;
-  private UUID locationIdentifier;
+
+  @ManyToOne
+  @JoinColumn(name = "location_hierarchy_identifier")
+  private LocationHierarchy locationHierarchy;
+
+  @ManyToOne
+  @JoinColumn(name = "location_identifier")
+  private Location location;
 
   @ManyToOne
   @JoinColumn(name = "parent_identifier")

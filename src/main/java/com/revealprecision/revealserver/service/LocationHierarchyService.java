@@ -9,8 +9,10 @@ import com.revealprecision.revealserver.exceptions.constant.Error;
 import com.revealprecision.revealserver.persistence.domain.GeographicLevel;
 import com.revealprecision.revealserver.persistence.domain.GeographicLevel.Fields;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
+import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
 import com.revealprecision.revealserver.persistence.repository.LocationHierarchyRepository;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.jobrunr.scheduling.JobScheduler;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -95,6 +97,10 @@ public class LocationHierarchyService {
       String geographicLevelName) {
     return locationHierarchyRepository
         .findLocationHierarchiesByNodeOrderContaining(geographicLevelName);
+  }
+
+  public Optional<List<LocationRelationship>> getLocationRelationshipsForLocationHierarchy(LocationHierarchy locationHierarchy){
+    return locationRelationshipService.getLocationRelationshipsForLocationHierarchy(locationHierarchy);
   }
 
 }

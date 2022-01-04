@@ -83,8 +83,8 @@ public class LocationRelationshipService {
   public void createRootLocationRelationship(Location location,
       LocationHierarchy locationHierarchy) {
     locationRelationshipRepository.save(
-        LocationRelationship.builder().locationIdentifier(location.getIdentifier())
-            .locationHierarchyIdentifier(locationHierarchy.getIdentifier()).ancestry(
+        LocationRelationship.builder().location(location)
+            .locationHierarchy(locationHierarchy).ancestry(
             Collections.emptyList())
             .build());
   }
@@ -126,8 +126,6 @@ public class LocationRelationshipService {
                 locationHierarchy));
 
       }
-
-
     }
   }
 
@@ -145,9 +143,8 @@ public class LocationRelationshipService {
     if (locationRelationshipRepository.hasParentChildRelationship(parentGeometry, childGeometry)) {
       var ancestry = getAncestryFromParentLocation(parentLocation, locationHierarchy);
       locationRelationshipRepository.save(
-          LocationRelationship.builder().parentLocation(parentLocation)
-              .locationIdentifier(childLocation.getIdentifier())
-              .locationHierarchyIdentifier(locationHierarchy.getIdentifier()).ancestry(ancestry)
+          LocationRelationship.builder().parentLocation(parentLocation).location(childLocation)
+              .locationHierarchy(locationHierarchy).ancestry(ancestry)
               .build());
     }
   }
@@ -169,4 +166,7 @@ public class LocationRelationshipService {
     return ancestry;
   }
 
+  public Optional<List<LocationRelationship>> getLocationRelationshipsForLocationHierarchy(LocationHierarchy locationHierarchy){
+    return locationRelationshipRepository.findByLocationHierarchyIdentifier(locationHierarchy.getIdentifier());
+  }
 }
