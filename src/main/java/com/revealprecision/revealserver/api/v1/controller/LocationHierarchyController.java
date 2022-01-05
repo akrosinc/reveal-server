@@ -3,13 +3,9 @@ package com.revealprecision.revealserver.api.v1.controller;
 import com.revealprecision.revealserver.api.v1.dto.factory.LocationHierarchyResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.LocationHierarchyRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationHierarchyResponse;
-import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
 import com.revealprecision.revealserver.service.LocationHierarchyService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import javax.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,10 +53,9 @@ public class LocationHierarchyController {
       @Parameter(description = "LocationHierarchy identifier") @PathVariable UUID identifier,
       @Parameter(description = "Toggle summary data") @RequestParam(defaultValue = "true", required = false) boolean _summary) {
     var locationHierarchy = locationHierarchyService.findByIdentifier(identifier);
-    Optional<List<LocationRelationship>> relationships = locationHierarchyService.getLocationRelationshipsForLocationHierarchy(locationHierarchy);
     return ResponseEntity.status(HttpStatus.OK).body((_summary) ? LocationHierarchyResponseFactory
-        .fromEntityWithoutTree(locationHierarchy): LocationHierarchyResponseFactory.fromEntityWithTree(locationHierarchy,relationships.isPresent()? relationships.get(): Collections
-        .emptyList()));
+        .fromEntityWithoutTree(locationHierarchy)
+        : LocationHierarchyResponseFactory.fromEntityWithTree(locationHierarchy));
   }
 
   @Operation(summary = "Delete LocationHierarchy",
