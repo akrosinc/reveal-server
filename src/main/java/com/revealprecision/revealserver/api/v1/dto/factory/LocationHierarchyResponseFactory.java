@@ -35,17 +35,22 @@ public class LocationHierarchyResponseFactory {
   private static List<GeoTreeResponse> generateLocationTreeResponse(
       List<LocationRelationship> locationRelationships) {
     var rootLocations = locationRelationships.stream()
-        .filter(locationRelationship -> locationRelationship.getParentLocation() == null).collect(
+        .filter(locationRelationship -> locationRelationship.getParentLocation() == null).map(locationRelationship -> locationRelationship.getLocation()).collect(
             Collectors.toList());
-    GeoTree geoTree = new GeoTree();
-    geoTree.buildTreeFromList(locationRelationships);
-    //TODO: split geotrees by country or root node,(fillter with ancestry where there is root node,and include root note as well)
-    List<GeoTreeResponse> locationHierarchies = new ArrayList<>();
 
-    List<GeoTreeResponse> geoTreeResponse = generateGeoTreeResponseFromTree(
-        geoTree.getLocationsHierarchy());
-    if (!geoTreeResponse.isEmpty()) {
-      locationHierarchies.add(geoTreeResponse.get(0));
+    List<GeoTreeResponse> locationHierarchies = new ArrayList<>();
+    for (var location : rootLocations) {
+      GeoTree geoTree = new GeoTree();
+      var locationRelationshipsSplitByRootLocation = locationRelationships.stream().filter(
+          locationRelationship -> locationRelationship.getLocation().equals(location)
+              || locationRelationship.getAncestry().contains(location.getIdentifier())).collect(
+          Collectors.toList());
+      geoTree.buildTreeFromList(locationRelationshipsSplitByRootLocation);
+      List<GeoTreeResponse> geoTreeResponse = generateGeoTreeResponseFromTree(
+          geoTree.getLocationsHierarchy());
+      if (!geoTreeResponse.isEmpty()) {
+        locationHierarchies.add(geoTreeResponse.get(0));
+      }
     }
     return locationHierarchies;
   }
@@ -55,7 +60,7 @@ public class LocationHierarchyResponseFactory {
     List<GeoTreeResponse> geoTreeResponses = new ArrayList<>();
 
     for (Map.Entry<UUID, TreeNode<UUID, Location>> entry : map.entrySet()) {
-      List<GeoTreeResponse> foundLocations = getTheData(entry.getValue());
+      List<GeoTreeResponse> foundLocations = buildGeoResponseFromNode(entry.getValue());
       if (!foundLocations.isEmpty()) {
         geoTreeResponses.addAll(foundLocations);
       }
@@ -65,7 +70,7 @@ public class LocationHierarchyResponseFactory {
     return geoTreeResponses;
   }
 
-  private static List<GeoTreeResponse> getTheData(TreeNode<UUID, Location> node) {
+  private static List<GeoTreeResponse> buildGeoResponseFromNode(TreeNode<UUID, Location> node) {
     List<GeoTreeResponse> allLocationData = new ArrayList<>();
 
     var locationPropertyResponse = LocationPropertyResponse.builder().name(node.getNode().getName())
@@ -76,7 +81,7 @@ public class LocationHierarchyResponseFactory {
     List<GeoTreeResponse> children = new ArrayList<>();
     if (node.getChildren() != null) {
       for (Map.Entry<UUID, TreeNode<UUID, Location>> childEntry : node.getChildren().entrySet()) {
-        List<GeoTreeResponse> childLocations = getTheData(childEntry.getValue());
+        List<GeoTreeResponse> childLocations = buildGeoResponseFromNode(childEntry.getValue());
         if (!childLocations.isEmpty()) {
           children.addAll(childLocations);
         }
