@@ -42,7 +42,7 @@ public class UserService {
 
   public User createUser(UserRequest userRequest) {
     if (userRequest.getEmail() == null) {
-      if (userRepository.findByUsername(userRequest.getUsername()).isPresent()) {
+      if (userRepository.getByUsername(userRequest.getUsername()).isPresent()) {
         throw new ConflictException(
             String.format(Error.NON_UNIQUE, StringUtils.capitalize(Fields.username),
                 userRequest.getUsername()));

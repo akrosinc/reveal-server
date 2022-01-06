@@ -17,9 +17,11 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface UserRepository extends EntityGraphJpaRepository<User, UUID> {
 
-  Optional<User> findByUsername(String username);
+  @Query(value = "select * from users u where u.username = :username and u.entity_status != 'DELETED'", nativeQuery = true)
+  Optional<User> getByUsername(@Param("username") String username);
 
-  Optional<User> findByEmail(String email);
+  @Query(value = "select * from users u where u.email = :email and u.entity_status != 'DELETED'", nativeQuery = true)
+  Optional<User> findByEmail(@Param("email") String email);
 
   @Query(value = "select u from User u "
       + "where (u.username = :username "
