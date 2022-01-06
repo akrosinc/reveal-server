@@ -87,6 +87,16 @@ public class UserService {
 
   public void updateUser(UUID identifier, UserUpdateRequest userRequest) {
     User user = getByIdentifier(identifier);
+    if (userRequest.getEmail() != null) {
+      userRepository.findByEmail(userRequest.getEmail()).ifPresent(user1 -> {
+        if (!user1.getIdentifier().equals(user.getIdentifier())) {
+          throw new ConflictException(
+              String.format(Error.NON_UNIQUE, StringUtils.capitalize(Fields.email),
+                  userRequest.getEmail())
+          );
+        }
+      });
+    }
     Set<String> securityGroups = keycloakService.updateUser(user.getSid().toString(), userRequest);
     user.updateUser(userRequest);
     user.setOrganizations(organizationService.findByIdentifiers(userRequest.getOrganizations()));

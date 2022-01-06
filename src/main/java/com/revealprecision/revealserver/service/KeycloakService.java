@@ -106,7 +106,7 @@ public class KeycloakService {
       UserRepresentation kcUser = userResource.toRepresentation();
       kcUser.setFirstName(userRequest.getFirstName());
       kcUser.setLastName(userRequest.getLastName());
-      kcUser.setEmail(userRequest.getEmail());
+      kcUser.setEmail(userRequest.getEmail() == null ? "" : userRequest.getEmail());
       userResource.update(kcUser);
       return updateGroups(kcId, userRequest.getSecurityGroups());
     } else {

@@ -19,6 +19,8 @@ public interface UserRepository extends EntityGraphJpaRepository<User, UUID> {
 
   Optional<User> findByUsername(String username);
 
+  Optional<User> findByEmail(String email);
+
   @Query(value = "select u from User u "
       + "where (u.username = :username "
       + "or lower(u.email) = lower(:email)) "
