@@ -48,7 +48,7 @@ public abstract class AbstractAuditableEntity {
     LocalDateTime now = ZonedDateTime.now().toLocalDateTime();
     this.createdDatetime = now;
     this.modifiedDatetime = now;
-    this.entityStatus = EntityStatus.ACTIVE;
+    //this.entityStatus = EntityStatus.ACTIVE;
   }
 
   @PreUpdate
@@ -59,5 +59,9 @@ public abstract class AbstractAuditableEntity {
   @PostRemove
   public void postDelete() {
     this.entityStatus = EntityStatus.DELETED;
+  }
+
+  public void setEntityStatus(EntityStatus entityStatus) {
+    this.entityStatus = entityStatus;
   }
 }
