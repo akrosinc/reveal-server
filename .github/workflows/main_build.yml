@@ -16,14 +16,17 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+
     - name: Set up JDK 11
       uses: actions/setup-java@v2
       with:
         java-version: '11'
         distribution: 'adopt'
         cache: gradle
+
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
+
     - name: Build with Gradle
       run: ./gradlew dependencyCheckAnalyze --info
 
@@ -33,14 +36,17 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+
     - name: Set up JDK 11
       uses: actions/setup-java@v2
       with:
         java-version: '11'
         distribution: 'adopt'
         cache: gradle
+
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
+
     - name: Build with Gradle
       run: ./gradlew --stacktrace sonarqube -Dsonar.login=d54c5bab14b3d0e24d9f1e93765cca5539efd98c -Dsonar.host.url=https://sonar-ops.akros.online -Dsonar.dependencyCheck.htmlReportPath=build/reports/dependency-check-report.html
 
@@ -69,16 +75,25 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+
     - name: Set up JDK 11
       uses: actions/setup-java@v2
       with:
         java-version: '11'
         distribution: 'adopt'
         cache: gradle
+
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
+
     - name: Build with Gradle
       run: ./gradlew clean build -x test
+
+    - name: Archive jar files
+      uses: actions/upload-artifact@v2
+      with:
+        name: reveal-server.jar
+        path: build/libs/revealserver*-SNAPSHOT.jar
 
   container:
 
@@ -86,6 +101,11 @@ jobs:
     needs: [build]
 
     steps:
+
+    - name: Download a single artifact
+      uses: actions/download-artifact@v2
+      with:
+        name: reveal-server.jar
 
     - name: Output Run Number
       run: echo ${{ github.run_number }}
