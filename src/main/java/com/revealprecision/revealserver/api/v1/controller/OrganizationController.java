@@ -8,13 +8,11 @@ import com.revealprecision.revealserver.api.v1.dto.response.OrganizationResponse
 import com.revealprecision.revealserver.enums.SummaryEnum;
 import com.revealprecision.revealserver.service.OrganizationService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import java.util.UUID;
 import javax.validation.Valid;
-
-import io.swagger.v3.oas.annotations.Parameter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -57,7 +55,7 @@ public class OrganizationController {
   )
   @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<?> getOrganizations(
-      @PageableDefault(size = 50) Pageable pageable,
+      Pageable pageable,
       OrganizationCriteria criteria,
       @Parameter(description = "Toggle summary data") @RequestParam(value = "_summary", defaultValue = "TRUE") SummaryEnum _summary) {
 
@@ -79,8 +77,8 @@ public class OrganizationController {
   )
   @GetMapping(value = "/{identifier}", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<OrganizationResponse> getOrganization(
-          @Parameter(description = "Organization identifier") @PathVariable UUID identifier,
-          @Parameter(description = "Toggle summary data") @RequestParam(defaultValue = "true", required = false) boolean _summary) {
+      @Parameter(description = "Organization identifier") @PathVariable UUID identifier,
+      @Parameter(description = "Toggle summary data") @RequestParam(defaultValue = "true", required = false) boolean _summary) {
     return ResponseEntity
         .status(HttpStatus.OK)
         .body((_summary) ? OrganizationResponseFactory.fromEntityWithoutChild(
@@ -107,7 +105,8 @@ public class OrganizationController {
       tags = {"Organization"}
   )
   @DeleteMapping(value = "/{identifier}")
-  public ResponseEntity<Void> deleteOrganization(@Parameter(description = "Organization identifier") @PathVariable UUID identifier) {
+  public ResponseEntity<Void> deleteOrganization(
+      @Parameter(description = "Organization identifier") @PathVariable UUID identifier) {
     organizationService.deleteOrganization(identifier);
     return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
   }

@@ -27,9 +27,9 @@ repositories {
 }
 
 dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter-actuator:2.6.1'
-    implementation 'org.springframework.boot:spring-boot-starter-batch:2.5.6'
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa:2.6.1'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator:2.5.6'
+    implementation 'org.springframework.batch:spring-batch-core:4.3.4'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa:2.5.6'
     implementation 'com.cosium.spring.data:spring-data-jpa-entity-graph:2.4.1'
     implementation('org.springframework.boot:spring-boot-starter-web:2.5.6') {
         exclude module: 'spring-boot-starter-tomcat'
@@ -47,6 +47,10 @@ dependencies {
     runtimeOnly 'org.postgresql:postgresql:42.3.1'
     implementation 'org.keycloak:keycloak-spring-boot-starter:15.0.2'
     implementation 'org.keycloak.bom:keycloak-adapter-bom:15.0.2'
+    implementation 'org.keycloak:keycloak-admin-client:15.0.2'
+    implementation 'org.jboss.resteasy:resteasy-client:5.0.1.Final'
+    implementation 'org.jboss.resteasy:resteasy-jaxb-provider:5.0.1.Final'
+    implementation 'org.json:json:20211205'
     implementation group: 'com.vladmihalcea', name: 'hibernate-types-55', version: '2.14.0'
     compileOnly 'org.projectlombok:lombok:1.18.22'
     annotationProcessor 'org.projectlombok:lombok:1.18.22'
