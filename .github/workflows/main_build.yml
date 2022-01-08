@@ -152,7 +152,7 @@ jobs:
   deploy:
 
     runs-on: ubuntu-latest
-    needs: [container]
+    # needs: [container]
 
     steps:
 
