@@ -114,6 +114,7 @@ jobs:
       with:
         name: reveal-server.jar
         path: build/libs/revealserver*-SNAPSHOT.jar
+        retention-days: 1
 
   container:
 
