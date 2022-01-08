@@ -161,6 +161,7 @@ jobs:
       uses: actions/checkout@v2
       with:
         repository: akrosinc/reveal-operations
+        ref: main
 
     - name: Touch the build number
       run: echo ${{ github.run_number }}
