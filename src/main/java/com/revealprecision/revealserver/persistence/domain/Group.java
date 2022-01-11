@@ -12,7 +12,7 @@ import javax.persistence.*;
 import java.util.UUID;
 
 @Entity
-//@Audited
+@Audited
 @Getter
 @Setter
 @RequiredArgsConstructor
@@ -31,7 +31,7 @@ public class Group extends AbstractAuditableEntity{
     private String type;
 
     @ManyToOne
-    @JoinColumn(name = "location_identifier")
-    private Location locationIdentifier;
+    @JoinColumn(name = "location_identifier",referencedColumnName = "identifier")
+    private Location location;
 
 }
