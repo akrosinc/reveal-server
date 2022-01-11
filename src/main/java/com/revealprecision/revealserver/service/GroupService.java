@@ -8,6 +8,7 @@ import com.revealprecision.revealserver.persistence.domain.Group;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.repository.GroupRepository;
 import com.revealprecision.revealserver.persistence.repository.LocationRepository;
+import com.sun.xml.bind.v2.TODO;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,21 +27,10 @@ public class GroupService {
     @Autowired
     private GroupRepository groupRepository;
 
+//TODO - TB: Wire in the location if need be
+//    @Autowired
+//    private LocationService locationService;
 
-    @Autowired
-    private LocationService locationService;
-
-//    private final ProducerService producerService;
-
-
-    //    @Autowired
-//    public GroupService(GroupRepository groupRepository
-////            , ProducerService producerService
-//            , ObjectMapper objectMapper) {
-//        this.groupRepository = groupRepository;
-////        this.producerService = producerService;
-//        this.objectMapper = objectMapper;
-//    }
     public Page<Group> getGroups(Integer pageNumber, Integer pageSize) {
         return groupRepository.findAll(PageRequest.of(pageNumber, pageSize));
     }

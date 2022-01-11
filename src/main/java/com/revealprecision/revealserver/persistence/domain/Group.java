@@ -13,7 +13,6 @@ import java.util.UUID;
 @Audited
 @Getter
 @Setter
-//@RequiredArgsConstructor
 @SQLDelete(sql = "UPDATE \"group\" SET entity_status = 'DELETED' where identifier=?")
 @Where(clause = "entity_status='ACTIVE'")
 @Table(name = "\"group\"")
