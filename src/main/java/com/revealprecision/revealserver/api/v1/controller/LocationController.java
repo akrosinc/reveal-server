@@ -43,15 +43,9 @@ public class LocationController {
   @PostMapping(value = "/location", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public Location createLocation(@RequestBody JsonNode data) {
     ObjectMapper objectMapper = new ObjectMapper();
-    String geoLevelName = objectMapper.convertValue(data.get("properties").get("geographicLevel"), String.class);
+    String geoLevelName = objectMapper.convertValue(data.get("geographicLevel"), String.class);
     GeographicLevel geographicLevel = geographicLevelRepository.findByName(geoLevelName).get();
     Location location = objectMapper.convertValue(data.get("location"), Location.class);
-
-    Location location1 = new Location();
-    location1.setGeographicLevel(geographicLevel);
-    location1.setExternalId(objectMapper.convertValue(data.get("properties").get("externalId"), UUID.class));
-
-
     location.setGeographicLevel(geographicLevel);
     return locationService.createLocation(location);
   }

@@ -1,5 +1,8 @@
 package com.revealprecision.revealserver.api.v1.controller;
 
+import com.revealprecision.revealserver.api.v1.dto.factory.GroupResponseFactory;
+import com.revealprecision.revealserver.api.v1.dto.request.GroupRequest;
+import com.revealprecision.revealserver.api.v1.dto.response.GroupResponse;
 import com.revealprecision.revealserver.persistence.domain.Group;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.service.GroupService;
@@ -10,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,12 +23,12 @@ import java.util.UUID;
 @RequestMapping("/api/v1/")
 public class GroupController {
 
-  private final GroupService groupService;
+    private final GroupService groupService;
 
-  @Autowired
-  public GroupController(GroupService groupService) {
-    this.groupService = groupService;
-  }
+    @Autowired
+    public GroupController(GroupService groupService) {
+        this.groupService = groupService;
+    }
 
   @Operation(summary = "Fetch all groups",
       description = "Fetch all Groups",
@@ -40,26 +44,49 @@ public class GroupController {
     return groupService.getGroups(pageNumber, pageSize);
   }
 
-  @Operation(summary = "Fetch a Plan by identfier",
-      description = "Fetch a Plan by identfier",
-      tags = {"Group"}
-  )
-  @ResponseStatus(HttpStatus.OK)
-  @GetMapping(value = "/group/{identifier}",
-      produces = MediaType.APPLICATION_JSON_VALUE
-  )
-  public Group getPlanByIdentifier(
-      @Parameter(description = "Group identifier") @PathVariable("identifier") UUID groupIdentifier) {
-    return groupService.getGroupByIdentifier(groupIdentifier);
-  }
+    @Operation(summary = "Fetch a group by identfier",
+            description = "Fetch a group by identfier",
+            tags = {"Group"}
+    )
+    @ResponseStatus(HttpStatus.OK)
+    @GetMapping(value = "/group/{identifier}",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public Group getGroupByIdentifier(
+            @Parameter(description = "Group identifier") @PathVariable("identifier") UUID groupIdentifier) {
+        return groupService.getGroupByIdentifier(groupIdentifier);
+    }
 
-  @Operation(summary = "Create a group",
-      description = "Create a Group",
-      tags = {"Group"}
-  )
-  @ResponseStatus(HttpStatus.CREATED)
-  @PostMapping(value = "/group", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-  public Group createGroup(@Validated @RequestBody Group group) {
-    return groupService.createGroup(group);
-  }
+    @Operation(summary = "Create a group",
+            description = "Create a Group",
+            tags = {"Group"}
+    )
+    @ResponseStatus(HttpStatus.CREATED)
+    @PostMapping(value = "/group", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public GroupResponse createGroup(@Validated @RequestBody GroupRequest groupRequest) {
+        return GroupResponseFactory.fromEntity(groupService.createGroup(groupRequest));
+    }
+    @Operation(summary = "Delete a group by identfier",
+            description = "Delete a group by identfier",
+            tags = {"Group"}
+    )
+
+    @DeleteMapping(value = "/group/{identifier}",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public ResponseEntity<?> removeGroupByIdentifier(
+            @Parameter(description = "Group identifier") @PathVariable("identifier") UUID groupIdentifier) {
+        groupService.removeGroup(groupIdentifier);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping(value = "/group/{identifier}",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public GroupResponse updateGroupByIdentifier(
+            @Parameter(description = "Group identifier") @PathVariable("identifier") UUID groupIdentifier,
+            @Validated @RequestBody GroupRequest groupRequest) {
+        return GroupResponseFactory.fromEntity(groupService.updateGroup(groupIdentifier, groupRequest));
+    }
+
 }
