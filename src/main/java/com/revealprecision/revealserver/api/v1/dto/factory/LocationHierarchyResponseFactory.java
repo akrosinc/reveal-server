@@ -13,6 +13,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 
 public class LocationHierarchyResponseFactory {
 
@@ -20,6 +23,18 @@ public class LocationHierarchyResponseFactory {
       LocationHierarchy locationHierarchy) {
     return LocationHierarchyResponse.builder().identifier(locationHierarchy.getIdentifier())
         .nodeOrder(locationHierarchy.getNodeOrder()).build();
+  }
+
+
+  public static Page<LocationHierarchyResponse> fromEntityPage(
+      Page<LocationHierarchy> locationHierarchies,
+      Pageable pageable) {
+
+    var locationHierarchyResponseContent = locationHierarchies.getContent().stream()
+        .map(LocationHierarchyResponseFactory::fromEntityWithoutTree)
+        .collect(Collectors.toList());
+    return new PageImpl<>(locationHierarchyResponseContent, pageable,
+        locationHierarchies.getTotalElements());
   }
 
   public static LocationHierarchyResponse fromEntityWithTree(LocationHierarchy locationHierarchy) {
@@ -35,7 +50,8 @@ public class LocationHierarchyResponseFactory {
   private static List<GeoTreeResponse> generateLocationTreeResponse(
       List<LocationRelationship> locationRelationships) {
     var rootLocations = locationRelationships.stream()
-        .filter(locationRelationship -> locationRelationship.getParentLocation() == null).map(locationRelationship -> locationRelationship.getLocation()).collect(
+        .filter(locationRelationship -> locationRelationship.getParentLocation() == null)
+        .map(locationRelationship -> locationRelationship.getLocation()).collect(
             Collectors.toList());
 
     List<GeoTreeResponse> locationHierarchies = new ArrayList<>();

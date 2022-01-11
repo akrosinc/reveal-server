@@ -3,6 +3,7 @@ package com.revealprecision.revealserver.service;
 import static java.util.stream.Collectors.joining;
 
 import com.revealprecision.revealserver.api.v1.dto.request.LocationHierarchyRequest;
+import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.exceptions.ConflictException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.exceptions.constant.Error;
@@ -17,7 +18,7 @@ import java.util.UUID;
 import org.jobrunr.scheduling.JobScheduler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 
@@ -56,17 +57,19 @@ public class LocationHierarchyService {
               locationHierarchyRequest.getNodeOrder()));
     }
 
-    LocationHierarchy locationHierarchy = locationHierarchyRepository.save(
-        LocationHierarchy.builder().nodeOrder(locationHierarchyRequest.getNodeOrder()).build());
-    if (locationHierarchy != null) {
+    var locationHierarchyToSave = LocationHierarchy.builder()
+        .nodeOrder(locationHierarchyRequest.getNodeOrder()).build();
+    locationHierarchyToSave.setEntityStatus(EntityStatus.ACTIVE);
+    var savedLocationHierarchy = locationHierarchyRepository.save(locationHierarchyToSave);
+    if (savedLocationHierarchy != null) {
       jobScheduler.enqueue(
-          () -> locationRelationshipService.createLocationRelationships(locationHierarchy));
+          () -> locationRelationshipService.createLocationRelationships(savedLocationHierarchy));
     }
-    return locationHierarchy;
+    return savedLocationHierarchy;
   }
 
-  public Page<LocationHierarchy> getLocationHierarchies(Integer pageNumber, Integer pageSize) {
-    return locationHierarchyRepository.findAll(PageRequest.of(pageNumber, pageSize));
+  public Page<LocationHierarchy> getLocationHierarchies(Pageable pageable) {
+    return locationHierarchyRepository.findAll(pageable);
   }
 
 
@@ -99,8 +102,10 @@ public class LocationHierarchyService {
         .findLocationHierarchiesByNodeOrderContaining(geographicLevelName);
   }
 
-  public Optional<List<LocationRelationship>> getLocationRelationshipsForLocationHierarchy(LocationHierarchy locationHierarchy){
-    return locationRelationshipService.getLocationRelationshipsForLocationHierarchy(locationHierarchy);
+  public Optional<List<LocationRelationship>> getLocationRelationshipsForLocationHierarchy(
+      LocationHierarchy locationHierarchy) {
+    return locationRelationshipService
+        .getLocationRelationshipsForLocationHierarchy(locationHierarchy);
   }
 
 }

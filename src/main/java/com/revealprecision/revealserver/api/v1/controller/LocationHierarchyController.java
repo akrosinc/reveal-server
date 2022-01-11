@@ -9,6 +9,9 @@ import io.swagger.v3.oas.annotations.Parameter;
 import java.util.UUID;
 import javax.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -57,6 +60,18 @@ public class LocationHierarchyController {
         .fromEntityWithoutTree(locationHierarchy)
         : LocationHierarchyResponseFactory.fromEntityWithTree(locationHierarchy));
   }
+
+  @Operation(summary = "Get List of Location Hierarchy",
+      description = "Get List of Location Hierarchy",
+      tags = {"Location Hierarchy"}
+  )
+  @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<Page<LocationHierarchyResponse>> getLocationHierarchies(
+      @PageableDefault(size = 50) Pageable pageable) {
+    return ResponseEntity.status(HttpStatus.OK).body(LocationHierarchyResponseFactory
+        .fromEntityPage(locationHierarchyService.getLocationHierarchies(pageable), pageable));
+  }
+
 
   @Operation(summary = "Delete LocationHierarchy",
       description = "Delete LocationHierarchy",

@@ -2,6 +2,7 @@ package com.revealprecision.revealserver.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.persistence.domain.GeographicLevel;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
@@ -82,11 +83,12 @@ public class LocationRelationshipService {
 
   public void createRootLocationRelationship(Location location,
       LocationHierarchy locationHierarchy) {
-    locationRelationshipRepository.save(
-        LocationRelationship.builder().location(location)
-            .locationHierarchy(locationHierarchy).ancestry(
+    var locationRelationshipToSave = LocationRelationship.builder().location(location)
+        .locationHierarchy(locationHierarchy).ancestry(
             Collections.emptyList())
-            .build());
+        .build();
+    locationRelationshipToSave.setEntityStatus(EntityStatus.ACTIVE);
+    locationRelationshipRepository.save(locationRelationshipToSave);
   }
 
   public void updateLocationRelationshipsForNewLocation(Location location) {
@@ -111,7 +113,8 @@ public class LocationRelationshipService {
                 locationHierarchy));
       }
 
-      nodePosition = locationHierarchy.getNodeOrder().indexOf(location.getName()) + 1;
+      nodePosition =
+          locationHierarchy.getNodeOrder().indexOf(location.getGeographicLevel().getName()) + 1;
       if (nodePosition < locationHierarchy.getNodeOrder().size()) {
         var lowerLevelGeographicLevelName = locationHierarchy.getNodeOrder()
             .get(nodePosition);
@@ -142,10 +145,12 @@ public class LocationRelationshipService {
     }
     if (locationRelationshipRepository.hasParentChildRelationship(parentGeometry, childGeometry)) {
       var ancestry = getAncestryFromParentLocation(parentLocation, locationHierarchy);
-      locationRelationshipRepository.save(
-          LocationRelationship.builder().parentLocation(parentLocation).location(childLocation)
-              .locationHierarchy(locationHierarchy).ancestry(ancestry)
-              .build());
+      var locationRelationshipToSave = LocationRelationship.builder().parentLocation(parentLocation)
+          .location(childLocation)
+          .locationHierarchy(locationHierarchy).ancestry(ancestry)
+          .build();
+      locationRelationshipToSave.setEntityStatus(EntityStatus.ACTIVE);
+      locationRelationshipRepository.save(locationRelationshipToSave);
     }
   }
 
@@ -166,7 +171,9 @@ public class LocationRelationshipService {
     return ancestry;
   }
 
-  public Optional<List<LocationRelationship>> getLocationRelationshipsForLocationHierarchy(LocationHierarchy locationHierarchy){
-    return locationRelationshipRepository.findByLocationHierarchyIdentifier(locationHierarchy.getIdentifier());
+  public Optional<List<LocationRelationship>> getLocationRelationshipsForLocationHierarchy(
+      LocationHierarchy locationHierarchy) {
+    return locationRelationshipRepository
+        .findByLocationHierarchyIdentifier(locationHierarchy.getIdentifier());
   }
 }
