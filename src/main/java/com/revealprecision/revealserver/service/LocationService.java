@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.service;
 
 import com.revealprecision.revealserver.api.v1.dto.request.LocationRequest;
+import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.GeographicLevel;
 import com.revealprecision.revealserver.persistence.domain.GeographicLevel.Fields;
@@ -40,12 +41,13 @@ public class LocationService {
           Pair.of(Fields.name, locationRequest.getProperties().getGeographicLevel()),
           GeographicLevel.class);
     }
-    var savedLocation = locationRepository
-        .save(Location.builder().geographicLevel(geographicLevel.get())
-            .type(locationRequest.getType())
-            .geometry(locationRequest.getGeometry()).name(locationRequest.getProperties().getName())
-            .status(locationRequest.getProperties().getStatus())
-            .externalId(locationRequest.getProperties().getExternalId()).build());
+    var locationToSave = Location.builder().geographicLevel(geographicLevel.get())
+        .type(locationRequest.getType())
+        .geometry(locationRequest.getGeometry()).name(locationRequest.getProperties().getName())
+        .status(locationRequest.getProperties().getStatus())
+        .externalId(locationRequest.getProperties().getExternalId()).build();
+    locationToSave.setEntityStatus(EntityStatus.ACTIVE);
+    var savedLocation = locationRepository.save(locationToSave);
     jobScheduler.enqueue(
         () -> locationRelationshipService.updateLocationRelationshipsForNewLocation(savedLocation));
     return savedLocation;

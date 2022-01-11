@@ -48,7 +48,6 @@ public abstract class AbstractAuditableEntity {
     LocalDateTime now = ZonedDateTime.now().toLocalDateTime();
     this.createdDatetime = now;
     this.modifiedDatetime = now;
-    //this.entityStatus = EntityStatus.ACTIVE;
   }
 
   @PreUpdate
