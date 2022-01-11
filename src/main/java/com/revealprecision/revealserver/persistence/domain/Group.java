@@ -1,8 +1,6 @@
 package com.revealprecision.revealserver.persistence.domain;
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
@@ -15,10 +13,13 @@ import java.util.UUID;
 @Audited
 @Getter
 @Setter
-@RequiredArgsConstructor
+//@RequiredArgsConstructor
 @SQLDelete(sql = "UPDATE \"group\" SET entity_status = 'DELETED' where identifier=?")
 @Where(clause = "entity_status='ACTIVE'")
 @Table(name = "\"group\"")
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class Group extends AbstractAuditableEntity{
 
     @Id
