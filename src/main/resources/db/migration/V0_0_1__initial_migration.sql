@@ -108,13 +108,14 @@ CREATE TABLE IF NOT EXISTS plan_aud
 CREATE TABLE IF NOT EXISTS geographic_level
 (
     identifier        UUID UNIQUE              NOT NULL,
-    name              VARCHAR(255) UNIQUE,
+    name              VARCHAR(255)             NOT NULL,
     title             VARCHAR(255),
     entity_status     VARCHAR(36)              NOT NULL,
     created_by        VARCHAR(36)              NOT NULL,
     created_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,
     modified_by       VARCHAR(36)              NOT NULL,
     modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    UNIQUE (name, entity_status),
     PRIMARY KEY (identifier)
 );
 
@@ -122,7 +123,7 @@ CREATE TABLE IF NOT EXISTS geographic_level_aud
 (
     identifier        UUID                     NOT NULL,
     REV               INT                      NOT NULL,
-    REVTYPE           INTEGER                  NULL,
+    REVTYPE           INTEGER                  NOT NULL,
     name              VARCHAR(255),
     title             VARCHAR(255),
     entity_status     VARCHAR(36)              NOT NULL,
@@ -133,92 +134,98 @@ CREATE TABLE IF NOT EXISTS geographic_level_aud
     PRIMARY KEY (identifier, REV)
 );
 
-CREATE TABLE IF NOT EXISTS location_hierarchy(
-     identifier UUID UNIQUE NOT NULL,
-     node_order VARCHAR[] NOT NULL ,
-     entity_status VARCHAR(36),
-     created_by VARCHAR(36) NOT NULL,
-     created_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
-     modified_by VARCHAR(36) NOT NULL,
-     modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
-     PRIMARY KEY (identifier)
-);
-
-CREATE TABLE IF NOT EXISTS location_hierarchy_aud(
-    identifier UUID NOT NULL,
-    REV INT NOT NULL,
-    REVTYPE INTEGER NULL,
-    node_order VARCHAR[] NOT NULL,
-    entity_status VARCHAR(36) NOT NULL,
-    created_by VARCHAR(36) NOT NULL,
-    created_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
-    modified_by VARCHAR(36) NOT NULL,
-    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
-    PRIMARY KEY (identifier,REV)
-);
-
-CREATE TABLE IF NOT EXISTS location(
-    identifier UUID UNIQUE NOT NULL,
-    name VARCHAR(255) NOT NULL,
-    geometry jsonb NOT NULL,
-    type VARCHAR(255) NOT NULL,
-    status VARCHAR(255) NOT NULL,
-    external_id UUID,
-    geographic_level_identifier UUID,
-    entity_status VARCHAR(36) NOT NULL,
-    created_by VARCHAR(36),
-    created_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
-    modified_by VARCHAR(36) NOT NULL,
+CREATE TABLE IF NOT EXISTS location_hierarchy
+(
+    identifier        UUID UNIQUE              NOT NULL,
+    node_order        VARCHAR[]                NOT NULL,
+    entity_status     VARCHAR(36),
+    created_by        VARCHAR(36)              NOT NULL,
+    created_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by       VARCHAR(36)              NOT NULL,
     modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
     PRIMARY KEY (identifier)
 );
 
-CREATE TABLE IF NOT EXISTS location_aud(
-    identifier UUID NOT NULL,
-    REV INT NOT NULL,
-    REVTYPE INTEGER NULL,
-    name VARCHAR(255) NOT NULL,
-    geometry jsonb NOT NULL,
-    type VARCHAR(255) NOT NULL,
-    status VARCHAR(255) NOT NULL,
-    external_id UUID,
-    geographic_level_identifier UUID,
-    entity_status VARCHAR(36) NOT NULL,
-    created_by VARCHAR(36) NOT NULL,
-    created_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
-    modified_by VARCHAR(36) NOT NULL,
+CREATE TABLE IF NOT EXISTS location_hierarchy_aud
+(
+    identifier        UUID                     NOT NULL,
+    REV               INT                      NOT NULL,
+    REVTYPE           INTEGER                  NULL,
+    node_order        VARCHAR[]                NOT NULL,
+    entity_status     VARCHAR(36)              NOT NULL,
+    created_by        VARCHAR(36)              NOT NULL,
+    created_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by       VARCHAR(36)              NOT NULL,
     modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
-    PRIMARY KEY (identifier,REV)
+    PRIMARY KEY (identifier, REV)
 );
 
-CREATE TABLE IF NOT EXISTS location_relationship(
-    identifier UUID UNIQUE NOT NULL,
-    location_hierarchy_identifier UUID NOT NULL,
-    location_identifier UUID NOT NULL,
-    parent_identifier UUID,
-    ancestry UUID[] NOT NULL,
-    entity_status VARCHAR(36) NOT NULL,
-    created_by VARCHAR(36),
-    created_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
-    modified_by VARCHAR(36),
-    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+CREATE TABLE IF NOT EXISTS location
+(
+    identifier                  UUID UNIQUE              NOT NULL,
+    name                        VARCHAR(255)             NOT NULL,
+    geometry                    jsonb                    NOT NULL,
+    type                        VARCHAR(255)             NOT NULL,
+    status                      VARCHAR(255)             NOT NULL,
+    external_id                 UUID,
+    geographic_level_identifier UUID,
+    entity_status               VARCHAR(36)              NOT NULL,
+    created_by                  VARCHAR(36),
+    created_datetime            TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by                 VARCHAR(36)              NOT NULL,
+    modified_datetime           TIMESTAMP WITH TIME ZONE NOT NULL,
     PRIMARY KEY (identifier)
 );
 
-CREATE TABLE IF NOT EXISTS location_relationship_aud(
-    identifier UUID NOT NULL,
-    REV INT NOT NULL,
-    REVTYPE INTEGER NULL,
-    location_hierarchy_identifier UUID NOT NULL,
-    location_identifier UUID NOT NULL,
-    parent_identifier UUID,
-    ancestry UUID[] NOT NULL,
-    entity_status VARCHAR(36) NOT NULL,
-    created_by VARCHAR(36),
-    created_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
-    modified_by VARCHAR(36),
-    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
-    PRIMARY KEY (identifier,REV)
+CREATE TABLE IF NOT EXISTS location_aud
+(
+    identifier                  UUID                     NOT NULL,
+    REV                         INT                      NOT NULL,
+    REVTYPE                     INTEGER                  NULL,
+    name                        VARCHAR(255)             NOT NULL,
+    geometry                    jsonb                    NOT NULL,
+    type                        VARCHAR(255)             NOT NULL,
+    status                      VARCHAR(255)             NOT NULL,
+    external_id                 UUID,
+    geographic_level_identifier UUID,
+    entity_status               VARCHAR(36)              NOT NULL,
+    created_by                  VARCHAR(36)              NOT NULL,
+    created_datetime            TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by                 VARCHAR(36)              NOT NULL,
+    modified_datetime           TIMESTAMP WITH TIME ZONE NOT NULL,
+    PRIMARY KEY (identifier, REV)
+);
+
+CREATE TABLE IF NOT EXISTS location_relationship
+(
+    identifier                    UUID UNIQUE              NOT NULL,
+    location_hierarchy_identifier UUID                     NOT NULL,
+    location_identifier           UUID                     NOT NULL,
+    parent_identifier             UUID,
+    ancestry                      UUID[]                   NOT NULL,
+    entity_status                 VARCHAR(36)              NOT NULL,
+    created_by                    VARCHAR(36),
+    created_datetime              TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by                   VARCHAR(36),
+    modified_datetime             TIMESTAMP WITH TIME ZONE NOT NULL,
+    PRIMARY KEY (identifier)
+);
+
+CREATE TABLE IF NOT EXISTS location_relationship_aud
+(
+    identifier                    UUID                     NOT NULL,
+    REV                           INT                      NOT NULL,
+    REVTYPE                       INTEGER                  NULL,
+    location_hierarchy_identifier UUID                     NOT NULL,
+    location_identifier           UUID                     NOT NULL,
+    parent_identifier             UUID,
+    ancestry                      UUID[]                   NOT NULL,
+    entity_status                 VARCHAR(36)              NOT NULL,
+    created_by                    VARCHAR(36),
+    created_datetime              TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by                   VARCHAR(36),
+    modified_datetime             TIMESTAMP WITH TIME ZONE NOT NULL,
+    PRIMARY KEY (identifier, REV)
 );
 
 CREATE TABLE IF NOT EXISTS raster_store
