@@ -12,6 +12,7 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
+import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 import javax.validation.constraints.Email;
 import lombok.AllArgsConstructor;
@@ -39,9 +40,9 @@ public class User extends AbstractAuditableEntity {
 
   @ManyToMany
   @JoinTable(
-      name = "user_groups",
-      joinColumns = @JoinColumn(name = "user_id"),
-      inverseJoinColumns = @JoinColumn(name = "organization_id"))
+      name = "user_organization",
+      joinColumns = @JoinColumn(name = "user_identifier"),
+      inverseJoinColumns = @JoinColumn(name = "organization_identifier"))
   Set<Organization> organizations;
   @Id
   @GeneratedValue
@@ -61,6 +62,10 @@ public class User extends AbstractAuditableEntity {
   @CollectionTable(name = "user_security_groups", joinColumns = @JoinColumn(name = "identifier"))
   @Column(name = "security_group")
   private Set<String> securityGroups;
+
+  @ManyToOne
+  @JoinColumn(name = "user_bulk_identifier")
+  private UserBulk userBulk;
 
   private String apiResponse;
 
