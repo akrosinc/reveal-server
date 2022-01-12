@@ -1,16 +1,19 @@
 package com.revealprecision.revealserver.api.v1.controller;
 
 import com.revealprecision.revealserver.api.v1.dto.factory.LocationResponseFactory;
+import com.revealprecision.revealserver.api.v1.dto.request.LocationCriteria;
 import com.revealprecision.revealserver.api.v1.dto.request.LocationRequest;
+import com.revealprecision.revealserver.api.v1.dto.response.CountResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationResponse;
-import com.revealprecision.revealserver.persistence.domain.Location;
+import com.revealprecision.revealserver.enums.SummaryEnum;
 import com.revealprecision.revealserver.service.LocationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import java.util.UUID;
 import javax.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -57,14 +60,21 @@ public class LocationController {
         .body(LocationResponseFactory.fromEntity(locationService.findByIdentifier(identifier)));
   }
 
-  @Operation(summary = "Search for locationHierarchy",
-      description = "Search for locationHierarchy",
+  @Operation(summary = "Search for Locations",
+      description = "Search for Locations",
       tags = {"Location"}
   )
   @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-  public Page<Location> getLocations(@RequestParam(defaultValue = "0") Integer pageNumber,
-      @RequestParam(defaultValue = "50") Integer pageSize) {
-    return locationService.getLocations(pageNumber, pageSize);
+  public ResponseEntity<?> getLocations(@PageableDefault(size = 50) Pageable pageable,
+      LocationCriteria criteria,
+      @Parameter(description = "Toggle summary data") @RequestParam(defaultValue = "true", required = false) SummaryEnum _summary) {
+    if (_summary.equals(SummaryEnum.COUNT)) {
+      return ResponseEntity.status(HttpStatus.OK)
+          .body(new CountResponse(locationService.getAllCount(criteria)));
+    } else {
+      return ResponseEntity.status(HttpStatus.OK).body(LocationResponseFactory
+          .fromEntityPage(locationService.getLocations(criteria, pageable), pageable));
+    }
   }
 
   @Operation(summary = "Update Location", description = "Update Location", tags = {"Location"})

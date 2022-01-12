@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.service;
 
+import com.revealprecision.revealserver.api.v1.dto.request.LocationCriteria;
 import com.revealprecision.revealserver.api.v1.dto.request.LocationRequest;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
@@ -11,7 +12,7 @@ import java.util.Optional;
 import java.util.UUID;
 import org.jobrunr.scheduling.JobScheduler;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 
@@ -59,8 +60,12 @@ public class LocationService {
             Location.class));
   }
 
-  public Page<Location> getLocations(Integer pageNumber, Integer pageSize) {
-    return locationRepository.findAll(PageRequest.of(pageNumber, pageSize));
+  public Page<Location> getLocations(LocationCriteria criteria, Pageable pageable) {
+    return locationRepository.findAlLByCriteria(criteria.getSearch(), pageable);
+  }
+
+  public long getAllCount(LocationCriteria criteria) {
+    return locationRepository.findAllCountByCriteria(criteria.getSearch());
   }
 
   public void deleteLocation(UUID identifier) {
