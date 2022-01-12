@@ -72,8 +72,11 @@ public class LocationController {
       return ResponseEntity.status(HttpStatus.OK)
           .body(new CountResponse(locationService.getAllCount(criteria)));
     } else {
-      return ResponseEntity.status(HttpStatus.OK).body(LocationResponseFactory
-          .fromEntityPage(locationService.getLocations(criteria, pageable), pageable));
+      return ResponseEntity.status(HttpStatus.OK)
+          .body(LocationResponseFactory
+              .fromEntityPage(locationService.getLocations(criteria, pageable), pageable,
+                  _summary));
+
     }
   }
 
