@@ -26,12 +26,12 @@ import java.util.UUID;
 @RequestMapping("/api/v1/")
 public class PersonController {
 
-    private final PersonService personService;
+  private final PersonService personService;
 
-    @Autowired
-    public PersonController(PersonService personService) {
-        this.personService = personService;
-    }
+  @Autowired
+  public PersonController(PersonService personService) {
+    this.personService = personService;
+  }
 
   @Operation(summary = "Fetch all persons",
       description = "Fetch all persons",
@@ -47,50 +47,54 @@ public class PersonController {
     return personService.getPersons(pageNumber, pageSize);
   }
 
-    @Operation(summary = "Fetch a person by identfier",
-            description = "Fetch a person by identfier",
-            tags = {"Person"}
-    )
-    @ResponseStatus(HttpStatus.OK)
-    @GetMapping(value = "/person/{identifier}",
-            produces = MediaType.APPLICATION_JSON_VALUE
-    )
-    public Person getGroupByIdentifier(
-            @Parameter(description = "Person identifier") @PathVariable("identifier") UUID personIdentifier) {
-        return personService.getPersonByIdentifier(personIdentifier);
-    }
+  @Operation(summary = "Fetch a person by identfier",
+      description = "Fetch a person by identfier",
+      tags = {"Person"}
+  )
+  @ResponseStatus(HttpStatus.OK)
+  @GetMapping(value = "/person/{identifier}",
+      produces = MediaType.APPLICATION_JSON_VALUE
+  )
+  public PersonResponse getGroupByIdentifier(
+      @Parameter(description = "Person identifier") @PathVariable("identifier") UUID personIdentifier) {
+    return PersonResponseFactory.fromEntity(personService.getPersonByIdentifier(personIdentifier));
+  }
 
-    @Operation(summary = "Create a person",
-            description = "Create a Person",
-            tags = {"Person"}
-    )
-    @ResponseStatus(HttpStatus.CREATED)
-    @PostMapping(value = "/person", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public PersonResponse createPerson(@Validated @RequestBody PersonRequest personRequest) {
+  @Operation(summary = "Create a person",
+      description = "Create a Person",
+      tags = {"Person"}
+  )
+  @ResponseStatus(HttpStatus.CREATED)
+  @PostMapping(value = "/person", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  public PersonResponse createPerson(@Validated @RequestBody PersonRequest personRequest) {
+    return PersonResponseFactory.fromEntity(personService.createPerson(personRequest));
+  }
 
-        return PersonResponseFactory.fromEntity(personService.createPerson(personRequest));
-    }
-    @Operation(summary = "Delete a person by identfier",
-            description = "Delete a person by identfier",
-            tags = {"Person"}
-    )
+  @Operation(summary = "Delete a person by identfier",
+      description = "Delete a person by identfier",
+      tags = {"Person"}
+  )
+  @DeleteMapping(value = "/person/{identifier}",
+      produces = MediaType.APPLICATION_JSON_VALUE
+  )
+  public ResponseEntity<?> removeGroupByIdentifier(
+      @Parameter(description = "Person identifier") @PathVariable("identifier") UUID personIdentifier) {
+    personService.removePerson(personIdentifier);
+    return ResponseEntity.status(HttpStatus.NO_CONTENT).body("Person with identifier "+ personIdentifier +" deleted");
+  }
 
-    @DeleteMapping(value = "/person/{identifier}",
-            produces = MediaType.APPLICATION_JSON_VALUE
-    )
-    public ResponseEntity<?> removeGroupByIdentifier(
-            @Parameter(description = "Person identifier") @PathVariable("identifier") UUID groupIdentifier) {
-        personService.removePerson(groupIdentifier);
-        return ResponseEntity.noContent().build();
-    }
-
-    @PutMapping(value = "/person/{identifier}",
-            produces = MediaType.APPLICATION_JSON_VALUE
-    )
-    public PersonResponse updateGroupByIdentifier(
-            @Parameter(description = "Group identifier") @PathVariable("identifier") UUID personIdentifier,
-            @Validated @RequestBody PersonRequest personRequest) {
-        return PersonResponseFactory.fromEntity(personService.updatePerson(personIdentifier, personRequest));
-    }
+  @Operation(summary = "Update a person by identfier",
+      description = "Update a person by identfier",
+      tags = {"Person"}
+  )
+  @PutMapping(value = "/person/{identifier}",
+      produces = MediaType.APPLICATION_JSON_VALUE
+  )
+  public PersonResponse updateGroupByIdentifier(
+      @Parameter(description = "Group identifier") @PathVariable("identifier") UUID personIdentifier,
+      @Validated @RequestBody PersonRequest personRequest) {
+    return PersonResponseFactory.fromEntity(
+        personService.updatePerson(personIdentifier, personRequest));
+  }
 
 }

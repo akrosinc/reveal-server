@@ -1,13 +1,45 @@
 package com.revealprecision.revealserver.api.v1.dto.request;
 
-import com.revealprecision.revealserver.enums.GroupTypeEnum;
+import java.time.LocalDate;
+import lombok.Builder;
 import lombok.Data;
 
 @Data
 public class PersonRequest {
 
-    String name;
-    GroupTypeEnum type;
+    boolean active;
+    Name name;
+    Gender gender;
+    LocalDate birthDate;
+    String[] groups;
 
-//    UUID locationIdentifier;
+    @Data
+    @Builder
+    public static class Name{
+        Use use;
+        String text;
+        String family;
+        String given;
+        String prefix;
+        String suffix;
+    }
+
+
+    public enum Use{
+        usual,
+        official,
+        temp,
+        nickname,
+        anonymous,
+        old,
+        maiden
+    }
+
+    public enum Gender{
+        male,
+        female,
+        other,
+        unknown
+    }
 }
+
