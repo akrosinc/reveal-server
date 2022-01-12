@@ -55,6 +55,10 @@ public class Location extends AbstractAuditableEntity {
   @JoinColumn(name = "geographic_level_identifier")
   private GeographicLevel geographicLevel;
 
+  @ManyToOne
+  @JoinColumn(name = "bulk_location_identifier")
+  private LocationBulk locationBulk;
+
   public Location update(LocationRequest locationRequest, GeographicLevel geographicLevel) {
     this.type = locationRequest.getType();
     this.name = locationRequest.getProperties().getName();

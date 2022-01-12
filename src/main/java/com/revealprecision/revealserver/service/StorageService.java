@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -27,7 +28,22 @@ public class StorageService {
     return path;
   }
 
-  public void deleteCSV(String path) throws IOException {
+  public String saveJSON(MultipartFile file) {
+    //TODO: combine methods for saving file? should we be checking for file extension or MIME type or both?
+    if (file.getContentType().endsWith(MediaType.APPLICATION_JSON_VALUE)) {
+      throw new FileFormatException("Wrong file format. You can upload only .json file!");
+    }
+    String path = "src/main/resources/batch/" + file.getOriginalFilename();
+    Path filePath = Paths.get(path);
+    try {
+      file.transferTo(filePath);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    return path;
+  }
+
+  public void deleteFile(String path) throws IOException {
     File file = new File(path);
     file.delete();
   }

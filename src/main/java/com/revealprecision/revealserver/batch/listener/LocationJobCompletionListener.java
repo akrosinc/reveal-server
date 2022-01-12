@@ -1,10 +1,10 @@
 package com.revealprecision.revealserver.batch.listener;
 
 import com.revealprecision.revealserver.enums.BulkStatusEnum;
-import com.revealprecision.revealserver.persistence.domain.UserBulk;
-import com.revealprecision.revealserver.persistence.repository.UserBulkRepository;
+import com.revealprecision.revealserver.persistence.domain.LocationBulk;
+import com.revealprecision.revealserver.persistence.repository.LocationBulkRepository;
+import com.revealprecision.revealserver.service.LocationBulkService;
 import com.revealprecision.revealserver.service.StorageService;
-import com.revealprecision.revealserver.service.UserBulkService;
 import java.io.IOException;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -14,10 +14,10 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-public class UserJobCompletionNotificationListener implements JobExecutionListener {
+public class LocationJobCompletionListener implements JobExecutionListener {
 
-  private final UserBulkService userBulkService;
-  private final UserBulkRepository userBulkRepository;
+  private final LocationBulkService locationBulkService;
+  private final LocationBulkRepository locationBulkRepository;
   private final StorageService storageService;
 
   @Override
@@ -27,11 +27,11 @@ public class UserJobCompletionNotificationListener implements JobExecutionListen
 
   @Override
   public void afterJob(JobExecution jobExecution) {
-    String userBulkId = jobExecution.getJobParameters().getString("userBulkId");
+    String locationBulkId = jobExecution.getJobParameters().getString("locationBulkId");
     String filePath = jobExecution.getJobParameters().getString("filePath");
-    UserBulk userBulk = userBulkService.findById(UUID.fromString(userBulkId));
-    userBulk.setStatus(BulkStatusEnum.COMPLETE);
-    userBulkRepository.save(userBulk);
+    LocationBulk locationBulk = locationBulkService.findById(UUID.fromString(locationBulkId));
+    locationBulk.setStatus(BulkStatusEnum.COMPLETE);
+    locationBulkRepository.save(locationBulk);
     try {
       storageService.deleteFile(filePath);
     } catch (IOException e) {
