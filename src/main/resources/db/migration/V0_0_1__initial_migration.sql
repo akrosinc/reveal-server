@@ -159,6 +159,35 @@ CREATE TABLE IF NOT EXISTS location_hierarchy_aud
     modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
     PRIMARY KEY (identifier, REV)
 );
+CREATE TABLE IF NOT EXISTS location_bulk
+(
+    identifier        UUID                     NOT NULL,
+    filename          VARCHAR(255)             NOT NULL,
+    uploaded_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    status            VARCHAR(255),
+    entity_status     VARCHAR(36)              NOT NULL,
+    created_by        VARCHAR(36)              NOT NULL,
+    created_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by       VARCHAR(36)              NOT NULL,
+    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    PRIMARY KEY (identifier)
+);
+
+CREATE TABLE IF NOT EXISTS location_bulk_aud
+(
+    identifier        UUID                     NOT NULL,
+    REV               INT                      NOT NULL,
+    REVTYPE           INTEGER                  NULL,
+    filename          VARCHAR(255)             NOT NULL,
+    uploaded_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    status            VARCHAR(255),
+    entity_status     VARCHAR(36)              NOT NULL,
+    created_by        VARCHAR(36)              NOT NULL,
+    created_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by       VARCHAR(36)              NOT NULL,
+    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    PRIMARY KEY (identifier, REV)
+);
 
 CREATE TABLE IF NOT EXISTS location
 (
@@ -170,11 +199,14 @@ CREATE TABLE IF NOT EXISTS location
     external_id                 UUID,
     geographic_level_identifier UUID,
     entity_status               VARCHAR(36)              NOT NULL,
+    bulk_location_identifier    UUID,
     created_by                  VARCHAR(36),
     created_datetime            TIMESTAMP WITH TIME ZONE NOT NULL,
     modified_by                 VARCHAR(36)              NOT NULL,
     modified_datetime           TIMESTAMP WITH TIME ZONE NOT NULL,
-    PRIMARY KEY (identifier)
+    PRIMARY KEY (identifier),
+    FOREIGN KEY (bulk_location_identifier) REFERENCES location_bulk (identifier)
+
 );
 
 CREATE TABLE IF NOT EXISTS location_aud
@@ -189,10 +221,43 @@ CREATE TABLE IF NOT EXISTS location_aud
     external_id                 UUID,
     geographic_level_identifier UUID,
     entity_status               VARCHAR(36)              NOT NULL,
+    bulk_location_identifier    UUID,
     created_by                  VARCHAR(36)              NOT NULL,
     created_datetime            TIMESTAMP WITH TIME ZONE NOT NULL,
     modified_by                 VARCHAR(36)              NOT NULL,
     modified_datetime           TIMESTAMP WITH TIME ZONE NOT NULL,
+    PRIMARY KEY (identifier, REV)
+);
+
+
+CREATE TABLE IF NOT EXISTS location_bulk_exception
+(
+    identifier               UUID                     NOT NULL,
+    name                     VARCHAR(255),
+    message                  VARCHAR(255),
+    location_bulk_identifier UUID                     NOT NULL,
+    entity_status            VARCHAR(36)              NOT NULL,
+    created_by               VARCHAR(36)              NOT NULL,
+    created_datetime         TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by              VARCHAR(36)              NOT NULL,
+    modified_datetime        TIMESTAMP WITH TIME ZONE NOT NULL,
+    PRIMARY KEY (identifier),
+    FOREIGN KEY (location_bulk_identifier) REFERENCES location_bulk (identifier)
+);
+
+CREATE TABLE IF NOT EXISTS location_bulk_exception_aud
+(
+    identifier               UUID                     NOT NULL,
+    REV                      INT                      NOT NULL,
+    REVTYPE                  INTEGER                  NULL,
+    name                     VARCHAR(255),
+    message                  VARCHAR(255),
+    location_bulk_identifier UUID                     NOT NULL,
+    entity_status            VARCHAR(36)              NOT NULL,
+    created_by               VARCHAR(36)              NOT NULL,
+    created_datetime         TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by              VARCHAR(36)              NOT NULL,
+    modified_datetime        TIMESTAMP WITH TIME ZONE NOT NULL,
     PRIMARY KEY (identifier, REV)
 );
 
