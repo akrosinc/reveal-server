@@ -1,7 +1,11 @@
 package com.revealprecision.revealserver.api.v1.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.revealprecision.revealserver.enums.GroupTypeEnum;
+import com.revealprecision.revealserver.api.v1.dto.request.PersonRequest.Gender;
+import com.revealprecision.revealserver.api.v1.dto.request.PersonRequest.Name;
+
+import java.time.LocalDate;
+import java.util.List;
 import lombok.Builder;
 import lombok.Data;
 
@@ -14,7 +18,9 @@ public class PersonResponse {
 
   UUID identifier;
 
-  String name;
-
-  GroupTypeEnum type;
+  boolean active;
+  Name name;
+  Gender gender;
+  LocalDate birthDate;
+  List<Group> groups;
 }

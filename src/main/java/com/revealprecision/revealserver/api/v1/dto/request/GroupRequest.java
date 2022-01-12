@@ -12,6 +12,5 @@ public class GroupRequest {
 
     String name;
     GroupTypeEnum type;
-
-//    UUID locationIdentifier;
+    UUID locationIdentifier;
 }

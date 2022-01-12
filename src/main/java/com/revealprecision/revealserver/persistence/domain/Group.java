@@ -1,6 +1,8 @@
 package com.revealprecision.revealserver.persistence.domain;
 
+import java.util.List;
 import lombok.*;
+import lombok.experimental.FieldNameConstants;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
@@ -15,10 +17,11 @@ import java.util.UUID;
 @Setter
 @SQLDelete(sql = "UPDATE \"group\" SET entity_status = 'DELETED' where identifier=?")
 @Where(clause = "entity_status='ACTIVE'")
-@Table(name = "\"group\"")
+@Table(name = "\"group\"",schema = "public")
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@FieldNameConstants
 public class Group extends AbstractAuditableEntity{
 
     @Id
@@ -34,4 +37,6 @@ public class Group extends AbstractAuditableEntity{
     @JoinColumn(name = "location_identifier",referencedColumnName = "identifier")
     private Location location;
 
+    @OneToMany(cascade = CascadeType.ALL,mappedBy = "group")
+    private List<PersonGroup> personGroups;
 }

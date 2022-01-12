@@ -18,23 +18,9 @@ public class RevealServerApplication {
         SpringApplication.run(RevealServerApplication.class, args);
     }
 
-    @Bean
-    public OpenAPI customOpenApi(@Value("${springdoc.version}") String appVersion) {
 
-        return new OpenAPI()
-            .info(new Info()
-                .title("Reveal Server")
-                .version(appVersion)
-                .description("Reveal Server forms the backend processing of the Reveal Platform")
-                .license(new License()
-                    .name("Reveal Precision")
-                    .url("https://www.revealprecision.com"))
-                .contact(new Contact()
-                    .email("info@akros.com")
-                    .name("Akros Inc.")
-                    .url("https://www.akros.com"))
-        );
 
-    }
+
+
 
 }

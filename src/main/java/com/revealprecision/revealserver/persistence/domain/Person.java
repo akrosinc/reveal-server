@@ -1,9 +1,11 @@
 package com.revealprecision.revealserver.persistence.domain;
 
+import java.util.List;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
+import org.hibernate.envers.AuditJoinTable;
 import org.hibernate.envers.Audited;
 
 import javax.persistence.*;
@@ -26,33 +28,25 @@ public class Person extends AbstractAuditableEntity{
     @GeneratedValue
     private UUID identifier;
 
-//    @ManyToOne
-//    @JoinColumn(name = "location_identifier",referencedColumnName = "identifier")
-//    private Location location;
-
     private boolean active;
 
-    @Column(name = "name_use")
     private String nameUse;
 
-    @Column(name = "name_text")
     private String nameText;
 
-    @Column(name = "name_family")
     private String nameFamily;
 
-    @Column(name = "name_given")
     private String nameGiven;
 
-    @Column(name = "name_prefix")
     private String namePrefix;
 
-    @Column(name = "name_suffix")
     private String nameSuffix;
-
 
     private String gender;
 
     private Date birthDate;
+
+    @OneToMany(cascade = CascadeType.ALL,mappedBy = "person")
+    private List<PersonGroup> personGroups;
 
 }
