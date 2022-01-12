@@ -79,9 +79,9 @@ public class LocationController {
 
   @Operation(summary = "Delete Location", description = "Delete Location", tags = {"Location"})
   @DeleteMapping("/{identifier}")
-  public void deleteLocation(
+  public ResponseEntity<Void> deleteLocation(
       @Parameter(description = "Location identifier") @PathVariable UUID identifier) {
     locationService.deleteLocation(identifier);
-    ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
   }
 }
