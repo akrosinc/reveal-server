@@ -1,6 +1,9 @@
 package com.revealprecision.revealserver.api.v1.dto.factory;
 
 import com.revealprecision.revealserver.api.v1.dto.response.GroupResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.GroupResponse.GroupResponseBuilder;
+import com.revealprecision.revealserver.api.v1.dto.response.GroupResponse.Relationships;
+import com.revealprecision.revealserver.api.v1.dto.response.PersonResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.UserResponse;
 import com.revealprecision.revealserver.enums.GroupTypeEnum;
 import com.revealprecision.revealserver.persistence.domain.Group;
@@ -17,12 +20,24 @@ import java.util.stream.Collectors;
 public class GroupResponseFactory {
 
 
-  public static GroupResponse fromEntity(Group group) {
-    return GroupResponse.builder()
-            .identifier(group.getIdentifier())
-            .name(group.getName())
-            .type(GroupTypeEnum.valueOf(group.getType()))
-            .build();
+  public static GroupResponse fromEntity(Group group,boolean includeRelationships) {
+    GroupResponseBuilder groupResponseBuilder = GroupResponse.builder()
+        .identifier(group.getIdentifier())
+        .name(group.getName())
+        .type(GroupTypeEnum.valueOf(group.getType()))
+        .locationIdentifier(group.getLocation() == null ?null:group.getLocation().getIdentifier());
+
+    if (includeRelationships){
+      var person = group.getPersonGroups().stream().map(
+          personGroup -> PersonResponseFactory
+              .getPersonResponseBuilder(personGroup.getPerson()).build()).collect(Collectors.toList());
+
+      groupResponseBuilder.relationships(Relationships.builder()
+              .person(person)
+          .build());
+    }
+
+    return groupResponseBuilder.build();
   }
 
 

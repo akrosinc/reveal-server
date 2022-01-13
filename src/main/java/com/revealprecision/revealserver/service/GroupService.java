@@ -32,6 +32,9 @@ public class GroupService {
   @Autowired
   private LocationService locationService;
 
+  @Autowired
+  private PersonService personService;
+
 //TODO - TB: Wire in the location if need be
 //    @Autowired
 //    private LocationService locationService;
@@ -67,6 +70,7 @@ public class GroupService {
       throw new NotFoundException("Group with identifier " + groupIdentifier + " not found");
     }
 
+
     return group.get();
   }
 
@@ -91,6 +95,19 @@ public class GroupService {
 
     groupRetrieved.setName(groupRequest.getName());
     groupRetrieved.setType(groupRequest.getType().toString());
+
+    if (groupRequest.getLocationIdentifier() != null) {
+      var location = locationService.findByIdentifier(groupRequest.getLocationIdentifier());
+
+      if (location.isEmpty()){
+        throw new NotFoundException("Cannot create group with locationidentifier " + groupRequest.getLocationIdentifier() + " as location is not found");
+      }
+
+      groupRetrieved.setLocation(location.get());
+    } else {
+      groupRetrieved.setLocation(null);
+    }
+
 
     return groupRepository.save(groupRetrieved);
   }

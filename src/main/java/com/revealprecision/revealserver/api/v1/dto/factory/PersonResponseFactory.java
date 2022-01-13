@@ -23,20 +23,8 @@ public class PersonResponseFactory {
 
   public static PersonResponse fromEntity(Person person) {
 
-    PersonResponseBuilder builder = PersonResponse.builder()
-        .identifier(person.getIdentifier())
-        .name(
-            Name.builder()
-                .family(person.getNameFamily())
-                .given(person.getNameGiven())
-                .text(person.getNameText())
-                .prefix(person.getNamePrefix())
-                .use(Use.valueOf(person.getNameUse()))
-                .suffix(person.getNameSuffix())
-                .build())
-        .active(person.isActive())
-        .birthDate(person.getBirthDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate())
-        .gender(Gender.valueOf(person.getGender()));
+    PersonResponseBuilder builder = getPersonResponseBuilder(
+        person);
 
     if (!person.getPersonGroups().isEmpty()) {
       var groups = person.getPersonGroups()
@@ -51,6 +39,24 @@ public class PersonResponseFactory {
     }
 
     return builder.build();
+  }
+
+  public static PersonResponseBuilder getPersonResponseBuilder(Person person) {
+    return PersonResponse.builder()
+        .identifier(person.getIdentifier())
+        .name(
+            Name.builder()
+                .family(person.getNameFamily())
+                .given(person.getNameGiven())
+                .text(person.getNameText())
+                .prefix(person.getNamePrefix())
+                .use(Use.valueOf(person.getNameUse()))
+                .suffix(person.getNameSuffix())
+                .build())
+        .active(person.isActive())
+        .birthDate(person.getBirthDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate())
+        .gender(Gender.valueOf(person.getGender()));
+
   }
 
 
