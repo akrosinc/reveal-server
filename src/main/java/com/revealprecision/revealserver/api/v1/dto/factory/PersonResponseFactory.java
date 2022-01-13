@@ -26,15 +26,15 @@ public class PersonResponseFactory {
     PersonResponseBuilder builder = getPersonResponseBuilder(
         person);
 
-    if (!person.getPersonGroups().isEmpty()) {
-      var groups = person.getPersonGroups()
-          .stream().map(personGroup ->
-              Group.builder().identifier(personGroup
-                  .getGroup().getIdentifier())
-                  .name(personGroup.getGroup().getName())
-                  .type(personGroup.getGroup().getType())
+    if (!person.getGroups().isEmpty()) {
+      var groups = person.getGroups()
+          .stream().map(group ->
+              Group.builder().identifier(group
+                  .getIdentifier())
+                  .name(group.getName())
+                  .type(group.getType())
                   .build())
-          .collect(Collectors.toList());
+          .collect(Collectors.toSet());
       builder.groups(groups);
     }
 

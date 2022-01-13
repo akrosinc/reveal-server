@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.persistence.domain;
 
 import java.util.List;
+import java.util.Set;
 import lombok.*;
 import lombok.experimental.FieldNameConstants;
 import org.hibernate.annotations.ColumnDefault;
@@ -37,6 +38,9 @@ public class Group extends AbstractAuditableEntity{
     @JoinColumn(name = "location_identifier",referencedColumnName = "identifier")
     private Location location;
 
-    @OneToMany(cascade = CascadeType.ALL,mappedBy = "group")
-    private List<PersonGroup> personGroups;
+//    @OneToMany(cascade = CascadeType.ALL,mappedBy = "group")
+//    private List<PersonGroup> personGroups;
+
+    @ManyToMany(mappedBy = "groups")
+    private Set<Person> persons;
 }
