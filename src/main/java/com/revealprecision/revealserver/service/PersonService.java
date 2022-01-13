@@ -13,7 +13,9 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.ExampleMatcher;
@@ -57,27 +59,28 @@ public class PersonService {
                 .build();
 
         String[] groups = personRequest.getGroups();
-        List<PersonGroup> groupList = new ArrayList<>();
+        Set<Group> groupList = new HashSet<>();
         if (groups != null && groups.length > 0){
             for (String groupIdentifier:groups) {
                 if (!groupIdentifier.isEmpty()){
                     Group group = groupService.getGroupByIdentifier(
                         UUID.fromString(groupIdentifier));
-                    PersonGroup personGroup = new PersonGroup();
-                    PersonGroupKey personGroupKey = new PersonGroupKey();
-                    personGroupKey.setPersonIdentifier(person.getIdentifier());
-                    personGroupKey.setGroupIdentifier(group.getIdentifier());
-                    personGroup.setPersonGroupKey(personGroupKey);
-                    personGroup.setPerson(person);
-                    personGroup.setGroup(group);
-                    personGroup.setEntityStatus(EntityStatus.ACTIVE);
-                    groupList.add(personGroup);
+
+//                    PersonGroup personGroup = new PersonGroup();
+//                    PersonGroupKey personGroupKey = new PersonGroupKey();
+//                    personGroupKey.setPersonIdentifier(person.getIdentifier());
+//                    personGroupKey.setGroupIdentifier(group.getIdentifier());
+//                    personGroup.setPersonGroupKey(personGroupKey);
+//                    personGroup.setPerson(person);
+//                    personGroup.setGroup(group);
+//                    personGroup.setEntityStatus(EntityStatus.ACTIVE);
+                    groupList.add(group);
                 }
             }
         }
 
 
-        person.setPersonGroups(groupList);
+        person.setGroups(groupList);
 
         person.setEntityStatus(EntityStatus.ACTIVE);
         Person save = personRepository.save(person);

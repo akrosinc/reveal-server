@@ -5,6 +5,7 @@ import com.revealprecision.revealserver.api.v1.dto.request.PersonRequest.Gender;
 import com.revealprecision.revealserver.api.v1.dto.request.PersonRequest.Name;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import lombok.Builder;
 import lombok.Data;
@@ -19,5 +20,5 @@ public class PersonResponse {
   Name name;
   Gender gender;
   LocalDate birthDate;
-  List<Group> groups;
+  Set<Group> groups;
 }

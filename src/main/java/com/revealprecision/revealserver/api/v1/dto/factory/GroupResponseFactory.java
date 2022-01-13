@@ -28,9 +28,9 @@ public class GroupResponseFactory {
         .locationIdentifier(group.getLocation() == null ?null:group.getLocation().getIdentifier());
 
     if (includeRelationships){
-      var person = group.getPersonGroups().stream().map(
-          personGroup -> PersonResponseFactory
-              .getPersonResponseBuilder(personGroup.getPerson()).build()).collect(Collectors.toList());
+      var person = group.getPersons().stream().map(
+          person1 -> PersonResponseFactory
+              .getPersonResponseBuilder(person1).build()).collect(Collectors.toList());
 
       groupResponseBuilder.relationships(Relationships.builder()
               .person(person)
