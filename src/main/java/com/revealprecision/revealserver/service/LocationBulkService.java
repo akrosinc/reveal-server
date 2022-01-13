@@ -11,6 +11,8 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 
@@ -37,5 +39,9 @@ public class LocationBulkService {
         .orElseThrow(
             () -> new NotFoundException(Pair.of(UserBulk.Fields.identifier, identifier),
                 UserBulk.class));
+  }
+
+  public Page<LocationBulk> getLocationBulks(Pageable pageable) {
+    return locationBulkRepository.findAll(pageable);
   }
 }

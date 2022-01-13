@@ -25,7 +25,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/")
+@RequestMapping("/api/v1/geographicLevel")
 public class GeographicLevelController {
 
   private GeographicLevelService geographicLevelService;
@@ -39,7 +39,7 @@ public class GeographicLevelController {
       description = "Create a geographicLevel",
       tags = {"Geographic Level"}
   )
-  @PostMapping(value = "/geographicLevel", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<GeographicLevelResponse> create(
       @Valid @RequestBody GeographicLevelRequest geographicLevelRequest) {
     return ResponseEntity.status(HttpStatus.CREATED).body(GeographicLevelResponseFactory.fromEntity(
@@ -51,7 +51,7 @@ public class GeographicLevelController {
       description = "List geographicLevels",
       tags = {"Geographic Level"}
   )
-  @GetMapping(value = "/geographicLevel", produces = MediaType.APPLICATION_JSON_VALUE)
+  @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<Page<GeographicLevelResponse>> getGeographicLevels(
       @PageableDefault(size = 50)
           Pageable pageable) {
@@ -76,7 +76,7 @@ public class GeographicLevelController {
       description = "Update a geographicLevel",
       tags = {"Geographic Level"}
   )
-  @PutMapping(value = "/geographicLevel/{identifier}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  @PutMapping(value = "/{identifier}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<GeographicLevelResponse> updateGeographicLevel(
       @Valid @RequestBody GeographicLevelRequest geographicLevelRequest,
       @Parameter(description = "Identifier of the geographicLevel") @PathVariable UUID identifier) {
@@ -89,7 +89,7 @@ public class GeographicLevelController {
       description = "Delete a geographicLevel",
       tags = {"Geographic Level"}
   )
-  @DeleteMapping(value = "/geographicLevel/{identifier}")
+  @DeleteMapping(value = "/{identifier}")
   public ResponseEntity<Void> deleteGeographicLeve(@PathVariable UUID identifier) {
     geographicLevelService.deleteGeographicLevel(identifier);
     return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
