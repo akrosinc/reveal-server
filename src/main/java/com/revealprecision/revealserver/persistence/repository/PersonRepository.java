@@ -14,4 +14,5 @@ import java.util.UUID;
 public interface PersonRepository extends JpaRepository<Person, UUID> {
      Optional<Person> findByIdentifier(UUID identifier);
 
+//     List<Person> findPersonByNameFamilyLikeOrBAndNameGivenLikeOrNamePrefixLikeOrNameTextLikeOOrNamePrefixOR
 }

@@ -33,19 +33,33 @@ public class PersonController {
     this.personService = personService;
   }
 
-  @Operation(summary = "Fetch all persons",
-      description = "Fetch all persons",
-      tags = {"Person"}
-  )
-  @ResponseStatus(HttpStatus.OK)
-  @GetMapping(value = "/person",
-      produces = "application/json"
-  )
-  public Page<Person> getPersons(
-      @Parameter(description = "Page number to return") @RequestParam(defaultValue = "0", required = false) Integer pageNumber,
-      @Parameter(description = "Number of records per page") @RequestParam(defaultValue = "50", required = false) Integer pageSize) {
-    return personService.getPersons(pageNumber, pageSize);
-  }
+//  @Operation(summary = "Fetch all persons",
+//      description = "Fetch all persons",
+//      tags = {"Person"}
+//  )
+//  @ResponseStatus(HttpStatus.OK)
+//  @GetMapping(value = "/person",
+//      produces = "application/json"
+//  )
+//  public Page<Person> getPersons(
+//      @Parameter(description = "Page number to return") @RequestParam(defaultValue = "0", required = false) Integer pageNumber,
+//      @Parameter(description = "Number of records per page") @RequestParam(defaultValue = "50", required = false) Integer pageSize) {
+//    return personService.getPersons(pageNumber, pageSize);
+//  }
+
+//  @Operation(summary = "Fetch all persons",
+//      description = "Fetch all persons",
+//      tags = {"Person"}
+//  )
+//  @ResponseStatus(HttpStatus.OK)
+//  @GetMapping(value = "/person",
+//      produces = "application/json"
+//  )
+//  public PersonResponse getPersons(
+//      @RequestParam(name = "search",required = false) String searchParam)  {
+//    return personService.getPersons(pageNumber, pageSize);
+//  }
+
 
   @Operation(summary = "Fetch a person by identfier",
       description = "Fetch a person by identfier",

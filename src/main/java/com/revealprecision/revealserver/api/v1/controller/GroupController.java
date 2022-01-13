@@ -62,9 +62,10 @@ public class GroupController {
   @GetMapping(value = "/group/{identifier}",
       produces = MediaType.APPLICATION_JSON_VALUE
   )
-  public Group getGroupByIdentifier(
-      @Parameter(description = "Group identifier") @PathVariable("identifier") UUID groupIdentifier) {
-    return groupService.getGroupByIdentifier(groupIdentifier);
+  public GroupResponse getGroupByIdentifier(
+      @Parameter(description = "Group identifier") @PathVariable("identifier") UUID groupIdentifier
+  ,@RequestParam(name = "_summary",required = false) boolean showSummary) {
+    return GroupResponseFactory.fromEntity(groupService.getGroupByIdentifier(groupIdentifier),showSummary);
   }
 
   @Operation(summary = "Create a group",
@@ -74,14 +75,13 @@ public class GroupController {
   @ResponseStatus(HttpStatus.CREATED)
   @PostMapping(value = "/group", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public GroupResponse createGroup(@Validated @RequestBody GroupRequest groupRequest) {
-    return GroupResponseFactory.fromEntity(groupService.createGroup(groupRequest));
+    return GroupResponseFactory.fromEntity(groupService.createGroup(groupRequest),false);
   }
 
   @Operation(summary = "Delete a group by identfier",
       description = "Delete a group by identfier",
       tags = {"Group"}
   )
-
   @DeleteMapping(value = "/group/{identifier}",
       produces = MediaType.APPLICATION_JSON_VALUE
   )
@@ -91,13 +91,17 @@ public class GroupController {
     return ResponseEntity.noContent().build();
   }
 
+  @Operation(summary = "Update a group by identfier",
+      description = "Update a group by identfier",
+      tags = {"Group"}
+  )
   @PutMapping(value = "/group/{identifier}",
       produces = MediaType.APPLICATION_JSON_VALUE
   )
   public GroupResponse updateGroupByIdentifier(
       @Parameter(description = "Group identifier") @PathVariable("identifier") UUID groupIdentifier,
       @Validated @RequestBody GroupRequest groupRequest) {
-    return GroupResponseFactory.fromEntity(groupService.updateGroup(groupIdentifier, groupRequest));
+    return GroupResponseFactory.fromEntity(groupService.updateGroup(groupIdentifier, groupRequest),false);
   }
 
 }
