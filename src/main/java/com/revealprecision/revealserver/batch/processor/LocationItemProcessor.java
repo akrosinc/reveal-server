@@ -5,7 +5,9 @@ import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.persistence.domain.GeographicLevel;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationBulk;
+import com.revealprecision.revealserver.persistence.domain.LocationBulkException;
 import com.revealprecision.revealserver.persistence.repository.GeographicLevelRepository;
+import com.revealprecision.revealserver.persistence.repository.LocationBulkExceptionRepository;
 import com.revealprecision.revealserver.persistence.repository.LocationBulkRepository;
 import java.util.HashMap;
 import java.util.Map;
@@ -26,6 +28,7 @@ public class LocationItemProcessor implements ItemProcessor<LocationRequest, Loc
 
   private final LocationBulkRepository locationBulkRepository;
   private final GeographicLevelRepository geographicLevelRepository;
+  private final LocationBulkExceptionRepository locationBulkExceptionRepository;
   @Value("#{jobParameters['locationBulkId']}")
   private String locationBulkId;
   private Map<String, GeographicLevel> geographicLevelsMappedByName = new HashMap<>();
@@ -56,7 +59,22 @@ public class LocationItemProcessor implements ItemProcessor<LocationRequest, Loc
   }
 
   private boolean isLocationValid(LocationRequest item) {
-    //TODO validate.
-    return true;
+    var geographicLevelName = item.getProperties().getGeographicLevel();
+    if (!geographicLevelsMappedByName.containsKey(geographicLevelName)) {
+      createLocationBulkException(locationBulk,
+          String.format("GeographicLevel with name %s does not exist", geographicLevelName),
+          item.getProperties().getName());
+      return false;
+    } else {
+      return true;
+    }
+  }
+
+  private void createLocationBulkException(LocationBulk locationBulk, String message,
+      String locationName) {
+    var locationBulkException = LocationBulkException.builder().message(message)
+        .locationBulk(locationBulk).name(locationName).build();
+    locationBulkException.setEntityStatus(EntityStatus.ACTIVE);
+    locationBulkExceptionRepository.save(locationBulkException);
   }
 }
