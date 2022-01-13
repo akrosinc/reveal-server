@@ -30,7 +30,7 @@ public class StorageService {
 
   public String saveJSON(MultipartFile file) {
     //TODO: combine methods for saving file? should we be checking for file extension or MIME type or both?
-    if (file.getContentType().endsWith(MediaType.APPLICATION_JSON_VALUE)) {
+    if (!file.getContentType().endsWith(MediaType.APPLICATION_JSON_VALUE)) {
       throw new FileFormatException("Wrong file format. You can upload only .json file!");
     }
     String path = "src/main/resources/batch/" + file.getOriginalFilename();
