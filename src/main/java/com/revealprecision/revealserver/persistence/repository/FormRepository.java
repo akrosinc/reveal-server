@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.persistence.repository;
 
 import com.revealprecision.revealserver.persistence.domain.Form;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -26,4 +27,7 @@ public interface FormRepository extends JpaRepository<Form, UUID> {
       + "where (lower(f.name) like lower(concat('%', :search, '%')) "
       + "or lower(f.title) like lower(concat('%', :search, '%')))")
   Page<Form> findAllByCriteria(Pageable pageable, @Param("search") String search);
+
+  @Query(value = "select f.name from Form f where f.name IN :forms")
+  List<String> getFormsByName(@Param("forms") List<String> forms);
 }

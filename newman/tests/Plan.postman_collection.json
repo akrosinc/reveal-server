@@ -1,0 +1,47 @@
+{
+	"info": {
+		"_postman_id": "61b85dc2-fe51-426d-a63c-17d278835d99",
+		"name": "Plan",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Plan create",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{auth_bearer_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"name\": \"plan1\",\r\n    \"title\": \"Title for plan1\",\r\n    \"effectivePeriod\": {\r\n        \"start\": \"2022-01-11T00:00:00\",\r\n        \"end\": \"2019-04-13T00:00:00\"\r\n    },\r\n    \"useContext\": [\r\n        {\r\n            \"code\": \"interventionType\",\r\n            \"valueCodableConcept\": \"IRS\"\r\n        }\r\n    ],\r\n    \"goals\": [\r\n        {\r\n            \"identifier\": \"goal1\",\r\n            \"description\": \"Desc for goal1\",\r\n            \"priority\": \"HIGH_PRIORITY\",\r\n            \"targets\": [\r\n                {\r\n                    \"measure\": \"mesaure1\",\r\n                    \"detail\": {\r\n                        \"detailQuantity\": {\r\n                            \"value\": 90,\r\n                            \"comparator\": \"gt;=\",\r\n                            \"unit\": \"PERCENT\"\r\n                        }\r\n                    },\r\n                    \"due\": \"2019-04-13T00:00:00\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"actions\": [\r\n        {\r\n            \"title\": \"action1\",\r\n            \"description\": \"Desc for action1\",\r\n            \"code\": \"code\",\r\n            \"goalId\": \"goal1\",\r\n            \"timingPeriod\": {\r\n                \"start\": \"2019-04-13T00:00:00\",\r\n                \"end\": \"2019-04-13T00:00:00\"\r\n            },\r\n            \"reason\": \"Routine\",\r\n            \"subjectCodableConcept\": {\r\n                \"text\": \"LOCATION\"\r\n            },\r\n            \"definitionUri\": \"form1\",\r\n            \"type\": \"CREATE\"\r\n        }\r\n    ]\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{server_url}}/api/v1/plan",
+					"host": [
+						"{{server_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"plan"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
