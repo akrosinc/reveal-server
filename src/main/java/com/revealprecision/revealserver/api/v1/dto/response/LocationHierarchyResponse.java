@@ -19,6 +19,8 @@ public class LocationHierarchyResponse {
 
   private UUID identifier;
 
+  private String name;
+
   private List<String> nodeOrder;
 
   private List<GeoTreeResponse> geoTree;
