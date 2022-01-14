@@ -16,6 +16,9 @@ import org.hibernate.validator.constraints.UniqueElements;
 @NoArgsConstructor
 public class LocationHierarchyRequest {
 
+  @NotEmpty(message = "location_hierarchy name is required and must not be empty")
+  private String name;
+
   @NotEmpty(message = "node order list  is required and must not be empty")
   @UniqueElements(message = "duplicate nodes in hierarchy")
   private List<String> nodeOrder;

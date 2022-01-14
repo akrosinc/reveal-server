@@ -8,6 +8,7 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.OneToMany;
+import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotEmpty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -41,6 +42,9 @@ public class LocationHierarchy extends AbstractAuditableEntity {
   @Id
   @GeneratedValue
   private UUID identifier;
+
+  @NotBlank(message = "location_hierarchy name is required and must not be blank")
+  private String name;
 
   @NotEmpty(message = "node order list  is required and must not be empty")
   @UniqueElements(message = "duplicate nodes in hierarchy")

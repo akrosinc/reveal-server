@@ -43,22 +43,14 @@ public class LocationHierarchyService {
 
   public LocationHierarchy createLocationHierarchy(
       LocationHierarchyRequest locationHierarchyRequest) {
-    locationHierarchyRequest.getNodeOrder().stream().forEach(nodeName -> {
-      if (!geographicLevelService.findByName(nodeName).isPresent()) {
-        throw new NotFoundException(Pair.of(Fields.name, nodeName), GeographicLevel.class);
-      }
-    });
 
-    List<LocationHierarchy> existingHierarchy = findByNodeOrder(
-        locationHierarchyRequest.getNodeOrder());
-    if (existingHierarchy != null && !existingHierarchy.isEmpty()) {
-      throw new ConflictException(
-          String.format(Error.NON_UNIQUE, LocationHierarchy.Fields.nodeOrder,
-              locationHierarchyRequest.getNodeOrder()));
-    }
+    validateGeographicLevels(locationHierarchyRequest);
+
+    validateLocationHierarchy(locationHierarchyRequest);
 
     var locationHierarchyToSave = LocationHierarchy.builder()
-        .nodeOrder(locationHierarchyRequest.getNodeOrder()).build();
+        .nodeOrder(locationHierarchyRequest.getNodeOrder()).name(locationHierarchyRequest.getName())
+        .build();
     locationHierarchyToSave.setEntityStatus(EntityStatus.ACTIVE);
     var savedLocationHierarchy = locationHierarchyRepository.save(locationHierarchyToSave);
     if (savedLocationHierarchy != null) {
@@ -66,6 +58,24 @@ public class LocationHierarchyService {
           () -> locationRelationshipService.createLocationRelationships(savedLocationHierarchy));
     }
     return savedLocationHierarchy;
+  }
+
+  private void validateLocationHierarchy(LocationHierarchyRequest locationHierarchyRequest) {
+    List<LocationHierarchy> existingHierarchy = findByNodeOrder(
+        locationHierarchyRequest.getNodeOrder());
+    if (existingHierarchy != null && !existingHierarchy.isEmpty()) {
+      throw new ConflictException(
+          String.format(Error.NON_UNIQUE, LocationHierarchy.Fields.nodeOrder,
+              locationHierarchyRequest.getNodeOrder()));
+    }
+  }
+
+  private void validateGeographicLevels(LocationHierarchyRequest locationHierarchyRequest) {
+    locationHierarchyRequest.getNodeOrder().stream().forEach(nodeName -> {
+      if (!geographicLevelService.findByName(nodeName).isPresent()) {
+        throw new NotFoundException(Pair.of(Fields.name, nodeName), GeographicLevel.class);
+      }
+    });
   }
 
   public Page<LocationHierarchy> getLocationHierarchies(Pageable pageable) {

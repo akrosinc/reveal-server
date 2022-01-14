@@ -138,6 +138,7 @@ CREATE TABLE IF NOT EXISTS location_hierarchy
 (
     identifier        UUID UNIQUE              NOT NULL,
     node_order        VARCHAR[]                NOT NULL,
+    name              VARCHAR(36)              NOT NULL,
     entity_status     VARCHAR(36),
     created_by        VARCHAR(36)              NOT NULL,
     created_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -152,6 +153,7 @@ CREATE TABLE IF NOT EXISTS location_hierarchy_aud
     REV               INT                      NOT NULL,
     REVTYPE           INTEGER                  NULL,
     node_order        VARCHAR[]                NOT NULL,
+    name              VARCHAR(36)              NOT NULL,
     entity_status     VARCHAR(36)              NOT NULL,
     created_by        VARCHAR(36)              NOT NULL,
     created_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,
