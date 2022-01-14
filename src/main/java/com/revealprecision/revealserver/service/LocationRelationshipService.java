@@ -72,11 +72,11 @@ public class LocationRelationshipService {
   }
 
   public void deleteLocationRelationshipsForHierarchy(LocationHierarchy locationHierarchy) {
-    Optional<List<LocationRelationship>> locationRelationshipsToDelete = locationRelationshipRepository
-        .findByLocationHierarchyIdentifier(locationHierarchy.getIdentifier());
-    if (locationRelationshipsToDelete.isPresent()) {
-      locationRelationshipRepository.deleteAllById(locationRelationshipsToDelete.get().stream()
-          .map(LocationRelationship::getIdentifier).collect(
+    List<LocationRelationship> locationRelationshipsToDelete = locationHierarchy
+        .getLocationRelationships();
+    if (!locationRelationshipsToDelete.isEmpty()) {
+      locationRelationshipRepository.deleteAllById(
+          locationRelationshipsToDelete.stream().map(LocationRelationship::getIdentifier).collect(
               Collectors.toList()));
     }
   }

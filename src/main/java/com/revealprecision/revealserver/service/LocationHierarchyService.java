@@ -90,10 +90,8 @@ public class LocationHierarchyService {
 
   public void deleteLocationHierarchyAndAssociatedLocationRelationships(UUID identifier) {
     LocationHierarchy locationHierarchy = findByIdentifier(identifier);
+    locationRelationshipService.deleteLocationRelationshipsForHierarchy(locationHierarchy);
     deleteLocationHierarchy(locationHierarchy);
-    jobScheduler.enqueue(() -> locationRelationshipService
-        .deleteLocationRelationshipsForHierarchy(locationHierarchy)
-    );
   }
 
   private void deleteLocationHierarchy(LocationHierarchy locationHierarchy) {
