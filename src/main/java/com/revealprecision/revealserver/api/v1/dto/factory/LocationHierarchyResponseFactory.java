@@ -21,7 +21,8 @@ public class LocationHierarchyResponseFactory {
 
   public static LocationHierarchyResponse fromEntityWithoutTree(
       LocationHierarchy locationHierarchy) {
-    return LocationHierarchyResponse.builder().identifier(locationHierarchy.getIdentifier()).name(locationHierarchy.getName())
+    return LocationHierarchyResponse.builder().identifier(locationHierarchy.getIdentifier())
+        .name(locationHierarchy.getName())
         .nodeOrder(locationHierarchy.getNodeOrder()).build();
   }
 
@@ -41,8 +42,8 @@ public class LocationHierarchyResponseFactory {
 
     List<GeoTreeResponse> geoTree = generateLocationTreeResponse(
         locationHierarchy.getLocationRelationships()); //TODO: cache this type of response
-
-    return LocationHierarchyResponse.builder().identifier(locationHierarchy.getIdentifier()).name(locationHierarchy.getName())
+    return LocationHierarchyResponse.builder().identifier(locationHierarchy.getIdentifier())
+        .name(locationHierarchy.getName())
         .geoTree(geoTree)
         .nodeOrder(locationHierarchy.getNodeOrder()).build();
   }
