@@ -1,8 +1,6 @@
-package com.revealprecision.revealserver.api.v1.dto.response;
+package com.revealprecision.revealserver.batch.dto;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import java.util.Set;
-import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -11,17 +9,17 @@ import lombok.Setter;
 
 @Getter
 @Setter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-@JsonInclude(JsonInclude.Include.NON_NULL)
-public class UserResponse {
+public class UserBatchDTO {
 
-  private UUID identifier;
   private String username;
   private String firstName;
   private String lastName;
   private String email;
-  private Set<OrganizationResponse> organizations;
+  private String password;
+  private Boolean tempPassword;
   private Set<String> securityGroups;
+  private Set<String> organizations;
 }
