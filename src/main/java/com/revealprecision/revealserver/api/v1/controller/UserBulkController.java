@@ -24,7 +24,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -94,12 +93,6 @@ public class UserBulkController {
         .contentType(MediaType.APPLICATION_OCTET_STREAM)
         .header("Content-disposition", "attachment;filename=UserTemplate.xlsx")
         .body(storageService.downloadTemplate());
-  }
-
-  @DeleteMapping("deleteAll")
-  public ResponseEntity<Void> deleteAll() { //only for testing purposes
-    userService.deleteAll();
-    return ResponseEntity.ok().build();
   }
 
 }
