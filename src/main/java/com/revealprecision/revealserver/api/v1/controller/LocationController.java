@@ -1,7 +1,6 @@
 package com.revealprecision.revealserver.api.v1.controller;
 
 import com.revealprecision.revealserver.api.v1.dto.factory.LocationResponseFactory;
-import com.revealprecision.revealserver.api.v1.dto.request.LocationCriteria;
 import com.revealprecision.revealserver.api.v1.dto.request.LocationRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.CountResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationResponse;
@@ -66,15 +65,15 @@ public class LocationController {
   )
   @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<?> getLocations(@PageableDefault(size = 50) Pageable pageable,
-      LocationCriteria criteria,
+      @Parameter(description = "Location Search parameter") @RequestParam(defaultValue = "") String search,
       @Parameter(description = "Toggle summary data") @RequestParam(defaultValue = "true", required = false) SummaryEnum _summary) {
     if (_summary.equals(SummaryEnum.COUNT)) {
       return ResponseEntity.status(HttpStatus.OK)
-          .body(new CountResponse(locationService.getAllCount(criteria)));
+          .body(new CountResponse(locationService.getAllCount(search)));
     } else {
       return ResponseEntity.status(HttpStatus.OK)
           .body(LocationResponseFactory
-              .fromEntityPage(locationService.getLocations(criteria, pageable), pageable,
+              .fromEntityPage(locationService.getLocations(search, pageable), pageable,
                   _summary));
 
     }
