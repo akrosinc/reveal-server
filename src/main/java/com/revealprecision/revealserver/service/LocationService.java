@@ -1,6 +1,5 @@
 package com.revealprecision.revealserver.service;
 
-import com.revealprecision.revealserver.api.v1.dto.request.LocationCriteria;
 import com.revealprecision.revealserver.api.v1.dto.request.LocationRequest;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
@@ -60,12 +59,12 @@ public class LocationService {
             Location.class));
   }
 
-  public Page<Location> getLocations(LocationCriteria criteria, Pageable pageable) {
-    return locationRepository.findAlLByCriteria(criteria.getSearch(), pageable);
+  public Page<Location> getLocations(String search, Pageable pageable) {
+    return locationRepository.findAlLByCriteria(search, pageable);
   }
 
-  public long getAllCount(LocationCriteria criteria) {
-    return locationRepository.findAllCountByCriteria(criteria.getSearch());
+  public long getAllCount(String search) {
+    return locationRepository.findAllCountByCriteria(search);
   }
 
   public void deleteLocation(UUID identifier) {
