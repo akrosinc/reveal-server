@@ -11,7 +11,6 @@ import javax.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -52,9 +51,7 @@ public class GeographicLevelController {
       tags = {"Geographic Level"}
   )
   @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<Page<GeographicLevelResponse>> getGeographicLevels(
-      @PageableDefault(size = 50)
-          Pageable pageable) {
+  public ResponseEntity<Page<GeographicLevelResponse>> getGeographicLevels(Pageable pageable) {
 
     return ResponseEntity.status(HttpStatus.OK).body(
         GeographicLevelResponseFactory.fromEntityPage(
