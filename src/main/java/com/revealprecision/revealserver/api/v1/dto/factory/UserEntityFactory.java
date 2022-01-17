@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.api.v1.dto.factory;
 
 import com.revealprecision.revealserver.api.v1.dto.request.UserRequest;
+import com.revealprecision.revealserver.batch.dto.UserBatchDTO;
 import com.revealprecision.revealserver.persistence.domain.Organization;
 import com.revealprecision.revealserver.persistence.domain.User;
 import java.util.Set;
@@ -12,13 +13,22 @@ public class UserEntityFactory {
 
   public static User toEntity(UserRequest request, Set<Organization> organizations) {
     return User.builder()
-        .userName(request.getUserName())
+        .username(request.getUsername())
         .email(request.getEmail())
         .firstName(request.getFirstName())
         .lastName(request.getLastName())
         .securityGroups(request.getSecurityGroups())
         .organizations(organizations)
-        .securityGroups(request.getSecurityGroups())
+        .build();
+  }
+
+  public static User toEntity(UserBatchDTO userBatchDTO) {
+    return User.builder()
+        .username(userBatchDTO.getUsername())
+        .email(userBatchDTO.getEmail())
+        .firstName(userBatchDTO.getFirstName())
+        .lastName(userBatchDTO.getLastName())
+        .securityGroups(userBatchDTO.getSecurityGroups())
         .build();
   }
 }

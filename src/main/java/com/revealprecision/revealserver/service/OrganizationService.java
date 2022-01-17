@@ -7,24 +7,24 @@ import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.Organization;
 import com.revealprecision.revealserver.persistence.domain.Organization.Fields;
+import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.persistence.repository.OrganizationRepository;
+import com.revealprecision.revealserver.persistence.repository.UserRepository;
 import java.util.Set;
 import java.util.UUID;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+@RequiredArgsConstructor
 @Service
 public class OrganizationService {
 
-  OrganizationRepository organizationRepository;
-
-  @Autowired
-  public OrganizationService(OrganizationRepository organizationRepository) {
-    this.organizationRepository = organizationRepository;
-  }
+  public final OrganizationRepository organizationRepository;
+  public final UserRepository userRepository;
 
   public Organization createOrganization(OrganizationRequest organizationRequest) {
     Organization organization = Organization.builder()
@@ -50,6 +50,7 @@ public class OrganizationService {
   public Page<Organization> findAll(OrganizationCriteria criteria, Pageable pageable) {
     if (criteria.isRoot()) {
       return organizationRepository.getAllByCriteriaWithRoot(criteria.getSearch(), pageable);
+      //TODO update this method, search should apply on children also
     } else {
       return organizationRepository.getAllByCriteriaWithoutRoot(criteria.getSearch(), pageable);
     }
@@ -90,8 +91,13 @@ public class OrganizationService {
     return organizationRepository.save(organization);
   }
 
+  @Transactional
   public void deleteOrganization(UUID identifier) {
     Organization organization = findByIdWithoutChildren(identifier);
+    for (User u : organization.getUsers()) {
+      u.getOrganizations().remove(organization);
+      userRepository.save(u);
+    }
     organizationRepository.delete(organization);
   }
 

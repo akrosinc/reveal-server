@@ -2,7 +2,10 @@ package com.revealprecision.revealserver.service;
 
 import com.cosium.spring.data.jpa.entity.graph.domain.EntityGraphUtils;
 import com.revealprecision.revealserver.api.v1.dto.factory.UserEntityFactory;
+import com.revealprecision.revealserver.api.v1.dto.request.UserPasswordRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.UserRequest;
+import com.revealprecision.revealserver.api.v1.dto.request.UserUpdateRequest;
+import com.revealprecision.revealserver.config.KeycloakConfig;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.exceptions.ConflictException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
@@ -11,8 +14,10 @@ import com.revealprecision.revealserver.persistence.domain.Organization;
 import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.persistence.domain.User.Fields;
 import com.revealprecision.revealserver.persistence.repository.UserRepository;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import org.keycloak.admin.client.resource.UsersResource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -37,12 +42,12 @@ public class UserService {
 
   public User createUser(UserRequest userRequest) {
     if (userRequest.getEmail() == null) {
-      if (userRepository.findByUserName(userRequest.getUserName()).isPresent()) {
+      if (userRepository.getByUsername(userRequest.getUsername()).isPresent()) {
         throw new ConflictException(
-            String.format(Error.NON_UNIQUE, StringUtils.capitalize(Fields.userName),
-                userRequest.getUserName()));
+            String.format(Error.NON_UNIQUE, StringUtils.capitalize(Fields.username),
+                userRequest.getUsername()));
       }
-    } else if (userRepository.findByUserNameOrEmail(userRequest.getUserName(),
+    } else if (userRepository.findByUserNameOrEmail(userRequest.getUsername(),
         userRequest.getEmail()).isPresent()) {
       throw new ConflictException(
           "Username and email must be unique!"); //TODO This could be refactored to be prettier
@@ -80,12 +85,34 @@ public class UserService {
     userRepository.delete(user);
   }
 
-  public void updateUser(UUID identifier, UserRequest userRequest) {
+  public void updateUser(UUID identifier, UserUpdateRequest userRequest) {
     User user = getByIdentifier(identifier);
-    keycloakService.updateUser(user.getSid().toString(), userRequest);
+    if (userRequest.getEmail() != null) {
+      userRepository.findByEmail(userRequest.getEmail()).ifPresent(user1 -> {
+        if (!user1.getIdentifier().equals(user.getIdentifier())) {
+          throw new ConflictException(
+              String.format(Error.NON_UNIQUE, StringUtils.capitalize(Fields.email),
+                  userRequest.getEmail())
+          );
+        }
+      });
+    }
+    Set<String> securityGroups = keycloakService.updateUser(user.getSid().toString(), userRequest);
     user.updateUser(userRequest);
     user.setOrganizations(organizationService.findByIdentifiers(userRequest.getOrganizations()));
+    user.setSecurityGroups(securityGroups);
     userRepository.save(user);
     //TODO Updating user could be upgraded if nedeed
+  }
+
+  public void resetPassword(UUID identifier, UserPasswordRequest passwordRequest) {
+    User user = getByIdentifier(identifier);
+    keycloakService.resetPassword(user.getSid().toString(), passwordRequest);
+  }
+
+  public void deleteAll() {
+    List<User> users = userRepository.findAll();
+    UsersResource userResource = KeycloakConfig.getInstance().realm(KeycloakConfig.realm).users();
+    keycloakService.deleteAll(users, userResource);
   }
 }
