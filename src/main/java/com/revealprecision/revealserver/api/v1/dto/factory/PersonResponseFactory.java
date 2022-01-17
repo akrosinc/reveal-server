@@ -41,6 +41,11 @@ public class PersonResponseFactory {
     return builder.build();
   }
 
+  public static PersonResponse fromCount(Long count) {
+
+    return PersonResponse.builder().count(count).build();
+  }
+
   public static PersonResponseBuilder getPersonResponseBuilder(Person person) {
     return PersonResponse.builder()
         .identifier(person.getIdentifier())

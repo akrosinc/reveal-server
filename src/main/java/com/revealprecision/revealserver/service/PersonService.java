@@ -1,127 +1,214 @@
 package com.revealprecision.revealserver.service;
 
-import com.revealprecision.revealserver.api.v1.dto.request.GroupRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.PersonRequest;
 import com.revealprecision.revealserver.enums.EntityStatus;
+import com.revealprecision.revealserver.exceptions.InvalidDateFormatException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.Group;
 import com.revealprecision.revealserver.persistence.domain.Person;
-import com.revealprecision.revealserver.persistence.domain.PersonGroup;
-import com.revealprecision.revealserver.persistence.domain.PersonGroupKey;
 import com.revealprecision.revealserver.persistence.repository.PersonRepository;
+import com.revealprecision.revealserver.persistence.specification.PersonSpec;
+import java.time.LocalDate;
 import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.time.format.DateTimeParseException;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.ExampleMatcher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
-
-import java.util.Map;
-import java.util.UUID;
 
 @Service
 @Slf4j
 public class PersonService {
 
-    @Autowired
-    private PersonRepository personRepository;
+  PersonRepository personRepository;
+  GroupService groupService;
 
-    @Autowired
-    GroupService groupService;
+  @Autowired
+  public PersonService(GroupService groupService, PersonRepository personRepository) {
+    this.personRepository = personRepository;
+    this.groupService = groupService;
+  }
 
-//TODO - TB: Wire in the location if need be
-//    @Autowired
-//    private LocationService locationService;
+  public Person createPerson(PersonRequest personRequest) {
 
-    public Page<Person> getPersons(Integer pageNumber, Integer pageSize) {
-        return personRepository.findAll(PageRequest.of(pageNumber, pageSize));
-    }
+    var person = Person.builder().nameFamily(personRequest.getName().getFamily())
+        .nameGiven(personRequest.getName().getGiven())
+        .namePrefix(personRequest.getName().getPrefix())
+        .nameSuffix(personRequest.getName().getSuffix()).nameText(personRequest.getName().getText())
+        .nameUse(personRequest.getName().getUse().name()).birthDate(Date.from(
+            personRequest.getBirthDate().atStartOfDay(ZoneId.systemDefault()).toInstant()))
+        .gender(personRequest.getGender().name()).active(personRequest.isActive()).build();
 
-    public Person createPerson(PersonRequest personRequest) {
-
-        var person = Person.builder()
-            .nameFamily(personRequest.getName().getFamily())
-            .nameGiven(personRequest.getName().getGiven())
-            .namePrefix(personRequest.getName().getPrefix())
-            .nameSuffix(personRequest.getName().getSuffix())
-            .nameText(personRequest.getName().getText())
-            .nameUse(personRequest.getName().getUse().name())
-            .birthDate(Date.from(personRequest.getBirthDate().atStartOfDay(ZoneId.systemDefault()).toInstant()))
-            .gender(personRequest.getGender().name())
-            .active(personRequest.isActive())
-                .build();
-
-        String[] groups = personRequest.getGroups();
-        Set<Group> groupList = new HashSet<>();
-        if (groups != null && groups.length > 0){
-            for (String groupIdentifier:groups) {
-                if (!groupIdentifier.isEmpty()){
-                    Group group = groupService.getGroupByIdentifier(
-                        UUID.fromString(groupIdentifier));
-
-//                    PersonGroup personGroup = new PersonGroup();
-//                    PersonGroupKey personGroupKey = new PersonGroupKey();
-//                    personGroupKey.setPersonIdentifier(person.getIdentifier());
-//                    personGroupKey.setGroupIdentifier(group.getIdentifier());
-//                    personGroup.setPersonGroupKey(personGroupKey);
-//                    personGroup.setPerson(person);
-//                    personGroup.setGroup(group);
-//                    personGroup.setEntityStatus(EntityStatus.ACTIVE);
-                    groupList.add(group);
-                }
-            }
+    String[] groups = personRequest.getGroups();
+    Set<Group> groupList = new HashSet<>();
+    if (groups != null && groups.length > 0) {
+      for (String groupIdentifier : groups) {
+        if (!groupIdentifier.isEmpty()) {
+          Group group = groupService.getGroupByIdentifier(UUID.fromString(groupIdentifier));
+          groupList.add(group);
         }
-
-
-        person.setGroups(groupList);
-
-        person.setEntityStatus(EntityStatus.ACTIVE);
-        Person save = personRepository.save(person);
-        log.info("Group saved to database as {}", person);
-
-        return save;
+      }
     }
 
-    public Person getPersonByIdentifier(UUID personIdentifier) {
-        var person = personRepository.findByIdentifier(personIdentifier);
+    person.setGroups(groupList);
 
-        if (person.isEmpty()) {
-            throw new NotFoundException("Person with identifier " + personIdentifier + " not found");
-        }
+    person.setEntityStatus(EntityStatus.ACTIVE);
+    Person save = personRepository.save(person);
+    log.info("Group saved to database as {}", person);
 
-        return person.get();
+    return save;
+  }
+
+  public Person getPersonByIdentifier(UUID personIdentifier) {
+    var person = personRepository.findByIdentifier(personIdentifier);
+
+    if (person.isEmpty()) {
+      throw new NotFoundException("Person with identifier " + personIdentifier + " not found");
     }
 
-    public void removePerson(UUID personIdentifier) {
-        var person = personRepository.findByIdentifier(personIdentifier);
+    return person.get();
+  }
 
-        if (person.isEmpty()) {
-            throw new NotFoundException("Group with identifier " + personIdentifier + " not found");
-        }
+  public void removePerson(UUID personIdentifier) {
+    var person = personRepository.findByIdentifier(personIdentifier);
 
-        personRepository.delete(person.get());
+    if (person.isEmpty()) {
+      throw new NotFoundException("Group with identifier " + personIdentifier + " not found");
     }
 
-    public Person updatePerson(UUID personIdentifier, PersonRequest personRequest) {
-        var person = personRepository.findByIdentifier(personIdentifier);
+    personRepository.delete(person.get());
+  }
 
-        if (person.isEmpty()) {
-            throw new NotFoundException("Person with identifier " + personIdentifier + " not found");
-        }
+  public Person updatePerson(UUID personIdentifier, PersonRequest personRequest) {
+    var person = personRepository.findByIdentifier(personIdentifier);
 
-        var personRetrieved = person.get();
-//
-//        personRetrieved.setName(personRequest.getName());
-//        personRetrieved.setType(personRequest.getType().toString());
-
-        return personRepository.save(personRetrieved);
+    if (person.isEmpty()) {
+      throw new NotFoundException("Person with identifier " + personIdentifier + " not found");
     }
+
+    var personRetrieved = person.get();
+    return personRepository.save(personRetrieved);
+  }
+
+  public Page<Person> searchPersonByOneValueAcrossAllFields(String searchParam, Integer pageNumber,
+      Integer pageSize) {
+
+    Page<Person> persons;
+    try {
+      LocalDate localDate = LocalDate.parse(searchParam);
+      persons = searchPersonByBirthDate(localDate, pageNumber, pageSize);
+    } catch (DateTimeParseException e) {
+      log.info("Search param {} does not match date format and will not be used in search",
+          searchParam);
+      persons = searchPersonByNameLike(searchParam, true, pageNumber, pageSize);
+    }
+    return persons;
+  }
+
+  public Long countPersonByOneValueAcrossAllFields(String searchParam) {
+
+    Long count = 0L;
+    try {
+      LocalDate localDate = LocalDate.parse(searchParam);
+      count = countPersonByBirthDate(localDate);
+    } catch (DateTimeParseException e) {
+      log.info("Search param {} does not match date format and will not be used in search",
+          searchParam);
+      count = countPersonByNameLike(searchParam, true);
+    }
+    return count;
+  }
+
+
+  public Page<Person> searchPersonByNameLike(String searchParam, boolean active, Integer pageNumber,
+      Integer pageSize) {
+
+    Specification<Person> personSpecification = PersonSpec.getPersonSpecification(searchParam,
+        searchParam, searchParam, searchParam, searchParam, null, null, null, false);
+
+    return personRepository.findAll(personSpecification, PageRequest.of(pageNumber, pageSize));
+
+  }
+
+  public Long countPersonByNameLike(String searchParam, boolean active) {
+//TODO: talk about min characters to do a search
+
+    Specification<Person> personSpecification = PersonSpec.getPersonSpecification(searchParam,
+        searchParam, searchParam, searchParam, searchParam, null, null, null, false);
+
+    return personRepository.count(personSpecification);
+
+  }
+
+  public Page<Person> searchPersonByBirthDate(LocalDate date, Integer pageNumber,
+      Integer pageSize) {
+    return personRepository.findPersonByBirthDate(
+        Date.from(date.atStartOfDay(ZoneId.systemDefault()).toInstant()),
+        PageRequest.of(pageNumber, pageSize));
+  }
+
+  public Long countPersonByBirthDate(LocalDate date) {
+    return personRepository.countPersonByBirthDate(
+        Date.from(date.atStartOfDay(ZoneId.systemDefault()).toInstant()));
+  }
+
+  public List<Person> searchPersonByMultipleValuesAcrossFields(String searchFirstName,
+      String searchLastName, String searchGender, String searchLocation, String searchGroup,
+      String searchBirthDate, String searchBirthDateLessThan, String searchBirthDateMoreThan) {
+
+    LocalDate searchBirthLocalDate;
+    LocalDate searchBirthDateLessThanLocalDate;
+    LocalDate searchBirthDateMoreThanLocalDate;
+
+    try {
+      searchBirthLocalDate = searchBirthDate != null ? LocalDate.parse(searchBirthDate) : null;
+      searchBirthDateLessThanLocalDate =
+          searchBirthDateLessThan != null ? LocalDate.parse(searchBirthDateLessThan) : null;
+      searchBirthDateMoreThanLocalDate =
+          searchBirthDateMoreThan != null ? LocalDate.parse(searchBirthDateMoreThan) : null;
+    } catch (DateTimeParseException e) {
+      throw new InvalidDateFormatException(e.getMessage());
+    }
+
+    Specification<Person> personSpecification = PersonSpec.getPersonSpecification(searchFirstName,
+        searchLastName, searchGender, searchLocation, searchGroup, searchBirthLocalDate,
+        searchBirthDateLessThanLocalDate, searchBirthDateMoreThanLocalDate, true);
+
+    return personRepository.findAll(personSpecification);
+
+  }
+
+  public Long countPersonByMultipleValuesAcrossFields(String searchFirstName, String searchLastName,
+      String searchGender, String searchLocation, String searchGroup, String searchBirthDate,
+      String searchBirthDateLessThan, String searchBirthDateMoreThan) {
+
+    LocalDate searchBirthLocalDate;
+    LocalDate searchBirthDateLessThanLocalDate;
+    LocalDate searchBirthDateMoreThanLocalDate;
+    try {
+      searchBirthLocalDate = searchBirthDate != null ? LocalDate.parse(searchBirthDate) : null;
+      searchBirthDateLessThanLocalDate =
+          searchBirthDateLessThan != null ? LocalDate.parse(searchBirthDateLessThan) : null;
+      searchBirthDateMoreThanLocalDate =
+          searchBirthDateMoreThan != null ? LocalDate.parse(searchBirthDateMoreThan) : null;
+    } catch (DateTimeParseException e) {
+      throw new InvalidDateFormatException(e.getMessage());
+    }
+
+    Specification<Person> personSpecification = PersonSpec.getPersonSpecification(searchFirstName,
+        searchLastName, searchGender, searchLocation, searchGroup, searchBirthLocalDate,
+        searchBirthDateLessThanLocalDate, searchBirthDateMoreThanLocalDate, true);
+
+    return personRepository.count(personSpecification);
+
+  }
+
 
 }
