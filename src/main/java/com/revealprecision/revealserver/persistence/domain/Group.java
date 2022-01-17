@@ -38,9 +38,11 @@ public class Group extends AbstractAuditableEntity{
     @JoinColumn(name = "location_identifier",referencedColumnName = "identifier")
     private Location location;
 
-//    @OneToMany(cascade = CascadeType.ALL,mappedBy = "group")
-//    private List<PersonGroup> personGroups;
+    @OneToMany(cascade = CascadeType.ALL,mappedBy = "group")
+    private List<PersonGroup> personGroups;
 
     @ManyToMany(mappedBy = "groups")
     private Set<Person> persons;
+
+
 }

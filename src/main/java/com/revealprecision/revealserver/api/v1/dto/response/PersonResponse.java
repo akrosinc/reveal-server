@@ -16,9 +16,10 @@ import lombok.Data;
 public class PersonResponse {
   UUID identifier;
 
-  boolean active;
+  Boolean active;
   Name name;
   Gender gender;
   LocalDate birthDate;
   Set<Group> groups;
+  Long count;
 }

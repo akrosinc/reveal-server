@@ -10,8 +10,10 @@ import com.revealprecision.revealserver.service.PlanService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -39,19 +41,24 @@ public class GroupController {
   @GetMapping(value = "/group",
       produces = "application/json"
   )
-  public Page<Group> getGroups(
+  public Page<GroupResponse> getGroups(
       @Parameter(description = "Page number to return") @RequestParam(defaultValue = "0", required = false) Integer pageNumber,
-      @Parameter(description = "Number of records per page") @RequestParam(defaultValue = "50", required = false) Integer pageSize) {
-    return groupService.getGroups(pageNumber, pageSize);
+      @Parameter(description = "Number of records per page") @RequestParam(defaultValue = "50", required = false) Integer pageSize,
+      @RequestParam(name = "search", required = false) String searchParam,
+      @RequestParam(name = "location_name", required = false) String locationName,
+      @RequestParam(name = "name", required = false) String groupName,
+      @RequestParam(name = "_summary", defaultValue = "true") String isSummary
+      ) {
+
+    boolean  summary = false;
+    if (isSummary.equals("true")){
+      summary = true;
+    }
+    boolean finalSummary = summary;
+    return new PageImpl<>(groupService.getGroups(searchParam,groupName,locationName,pageNumber, pageSize).stream().map((group) ->
+        GroupResponseFactory.fromEntity(group, finalSummary)).collect(Collectors.toList()));
   }
 
-  @ResponseStatus(HttpStatus.OK)
-  @GetMapping(value = "/groups",
-      produces = "application/json"
-  )
-  public List<Group> getGroups() {
-    return groupService.getAllGroups();
-  }
 
 
   @Operation(summary = "Fetch a group by identfier",
