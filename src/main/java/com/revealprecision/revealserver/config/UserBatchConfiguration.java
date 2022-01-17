@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.config;
 
 import com.revealprecision.revealserver.batch.BatchConstants;
+import com.revealprecision.revealserver.batch.CustomSkipPolicy;
 import com.revealprecision.revealserver.batch.dto.UserBatchDTO;
 import com.revealprecision.revealserver.batch.listener.UserJobCompletionNotificationListener;
 import com.revealprecision.revealserver.batch.mapper.UserFieldSetMapper;
@@ -43,6 +44,7 @@ public class UserBatchConfiguration {
   private final StepBuilderFactory stepBuilderFactory;
   private final UserItemProcessor userItemProcessor;
   private final JobRepository jobRepository;
+  private final CustomSkipPolicy customSkipPolicy;
   private final PlatformTransactionManager platformTransactionManager;
 
 
@@ -115,6 +117,8 @@ public class UserBatchConfiguration {
         .reader(userReader(null))
         .processor(userItemProcessor)
         .writer(userWriter())
+        .faultTolerant()
+        .skipPolicy(customSkipPolicy)
         .taskExecutor(getAsyncExecutor())
         .throttleLimit(20)
         .build();

@@ -15,7 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class StorageService {
 
   public String saveCSV(MultipartFile file) {
-    if (!file.getOriginalFilename().endsWith(".csv")) {
+    if (!file.getContentType().equals("text/csv")) {
       throw new FileFormatException("Wrong file format. You can upload only .csv file!");
     }
     String path = "src/main/resources/batch/" + file.getOriginalFilename();
