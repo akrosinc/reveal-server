@@ -12,7 +12,6 @@ import java.util.UUID;
 import javax.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -64,7 +63,7 @@ public class LocationController {
       tags = {"Location"}
   )
   @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<?> getLocations(@PageableDefault(size = 50) Pageable pageable,
+  public ResponseEntity<?> getLocations(Pageable pageable,
       @Parameter(description = "Location Search parameter") @RequestParam(defaultValue = "") String search,
       @Parameter(description = "Toggle summary data") @RequestParam(defaultValue = "true", required = false) SummaryEnum _summary) {
     if (_summary.equals(SummaryEnum.COUNT)) {
