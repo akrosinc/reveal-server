@@ -62,7 +62,7 @@ public class GeographicLevelController {
       description = "Fetch a geographicLevel",
       tags = {"Geographic Level"}
   )
-  @GetMapping(value = "/geographicLevel/{identifier}", produces = MediaType.APPLICATION_JSON_VALUE)
+  @GetMapping(value = "/{identifier}", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<GeographicLevelResponse> findGeographicLevelByIdentifier(
       @Parameter(description = "Identifier of the geographicLevel") @PathVariable UUID identifier) {
     return ResponseEntity.status(HttpStatus.OK).body(GeographicLevelResponseFactory.fromEntity(
