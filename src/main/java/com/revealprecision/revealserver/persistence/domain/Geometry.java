@@ -8,5 +8,5 @@ import java.util.List;
 @Data
 public class Geometry implements Serializable {
     private String type;
-    List<Double> coordinates;
+    List<Object> coordinates;
 }

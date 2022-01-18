@@ -8,6 +8,9 @@ import com.revealprecision.revealserver.api.v1.dto.response.UserBulkResponse;
 import com.revealprecision.revealserver.batch.runner.UserBatchRunner;
 import com.revealprecision.revealserver.service.StorageService;
 import com.revealprecision.revealserver.service.UserBulkService;
+import com.revealprecision.revealserver.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import java.io.IOException;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -39,21 +42,35 @@ public class UserBulkController {
   private final UserBulkService userBulkService;
   private final UserBatchRunner userBatchRunner;
   private final StorageService storageService;
+  private final UserService userService;
 
+  @Operation(summary = "Get bulk details",
+      description = "Get bulk details",
+      tags = {"User bulk"}
+  )
   @GetMapping("/{identifier}")
   public ResponseEntity<Page<UserBulkDetailResponse>> getBulkDetails(
-      @PathVariable("identifier") UUID identifier, Pageable pageable) {
+      @Parameter(description = "User bulk identifier") @PathVariable("identifier") UUID identifier,
+      Pageable pageable) {
     return ResponseEntity.status(HttpStatus.OK).body(
         UserBulkDetailResponseFactory.fromProjectionPage(
             userBulkService.getUserBulkDetails(identifier, pageable), pageable));
   }
 
+  @Operation(summary = "Get all user bulks",
+      description = "Get all user bulks",
+      tags = {"User bulk"}
+  )
   @GetMapping()
   public ResponseEntity<Page<UserBulkResponse>> getUserBulks(Pageable pageable) {
     return ResponseEntity.status(HttpStatus.OK).body(
         UserBulkResponseFactory.fromEntityPage(userBulkService.getUserBulks(pageable), pageable));
   }
 
+  @Operation(summary = "Import users from CSV",
+      description = "Import users from CSV file",
+      tags = {"User bulk"}
+  )
   @PostMapping()
   public ResponseEntity<IdentifierResponse> importUsers(
       @RequestParam("file") MultipartFile file)
@@ -66,12 +83,16 @@ public class UserBulkController {
         .body(IdentifierResponse.builder().identifier(identifier).build());
   }
 
+  @Operation(summary = "Download excel template for user import",
+      description = "Download excel template for user import",
+      tags = {"User bulk"}
+  )
   @GetMapping("/csv")
   public ResponseEntity<?> downloadTemplate() throws IOException {
     return ResponseEntity.status(HttpStatus.OK)
         .contentType(MediaType.APPLICATION_OCTET_STREAM)
         .header("Content-disposition", "attachment;filename=UserTemplate.xlsx")
-        .body(storageService.downloadTemplate());
+        .body(storageService.downloadTemplate("UserTemplate.xlsx"));
   }
 
 }

@@ -2,7 +2,7 @@ FROM gcr.io/distroless/java:11
 
 ADD src/main/resources/application.properties /application.properties
 
-COPY build/libs/revealserver*-SNAPSHOT.jar reveal-server.jar
+COPY revealserver*-SNAPSHOT.jar reveal-server.jar
 
 WORKDIR /
 

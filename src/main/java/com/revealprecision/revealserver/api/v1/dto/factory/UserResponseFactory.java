@@ -21,9 +21,10 @@ public class UserResponseFactory {
         .identifier(user.getIdentifier())
         .firstName(user.getFirstName())
         .lastName(user.getLastName())
-        .userName(user.getUserName())
+        .username(user.getUsername())
         .email(user.getEmail())
         .organizations(organizations)
+        .securityGroups(user.getSecurityGroups())
         .build();
   }
 

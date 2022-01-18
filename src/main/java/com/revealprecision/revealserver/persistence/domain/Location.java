@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.persistence.domain;
 
+import com.revealprecision.revealserver.api.v1.dto.request.LocationRequest;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import java.util.UUID;
 import javax.persistence.Column;
@@ -9,9 +10,12 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.experimental.FieldNameConstants;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Type;
@@ -19,13 +23,16 @@ import org.hibernate.annotations.TypeDef;
 import org.hibernate.annotations.Where;
 import org.hibernate.envers.Audited;
 
+@FieldNameConstants
 @Entity
 @Audited
 @Getter
 @Setter
-@RequiredArgsConstructor
 @SQLDelete(sql = "UPDATE location SET entity_status = 'DELETED' where identifier=?")
 @Where(clause = "entity_status='ACTIVE'")
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
 @TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
 public class Location extends AbstractAuditableEntity {
 
@@ -44,7 +51,21 @@ public class Location extends AbstractAuditableEntity {
   private String status;
   private UUID externalId;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "geographic_level_id", insertable = false)
+  @ManyToOne(fetch = FetchType.EAGER)
+  @JoinColumn(name = "geographic_level_identifier")
   private GeographicLevel geographicLevel;
+
+  @ManyToOne
+  @JoinColumn(name = "bulk_location_identifier")
+  private LocationBulk locationBulk;
+
+  public Location update(LocationRequest locationRequest, GeographicLevel geographicLevel) {
+    this.type = locationRequest.getType();
+    this.name = locationRequest.getProperties().getName();
+    this.status = locationRequest.getProperties().getStatus();
+    this.externalId = locationRequest.getProperties().getExternalId();
+    this.geometry = locationRequest.getGeometry();
+    this.geographicLevel = geographicLevel;
+    return this;
+  }
 }
