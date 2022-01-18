@@ -55,7 +55,7 @@ public class GroupController {
   @Operation(summary = "Fetch a group by identfier", description = "Fetch a group by identfier", tags = {
       "Group"})
 
-  @GetMapping(value = "/{identifier}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  @GetMapping(value = "/{identifier}", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<GroupResponse> getGroupByIdentifier(
       @Parameter(description = "Group identifier") @PathVariable("identifier") UUID groupIdentifier,
       @Parameter(description = "Show summary or full") @RequestParam(name = "summary", required = false, defaultValue = "TRUE") SummaryEnum summary) {
@@ -67,12 +67,12 @@ public class GroupController {
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<GroupResponse> createGroup(@RequestBody GroupRequest groupRequest) {
     return ResponseEntity.status(HttpStatus.CREATED).body(GroupResponseFactory.fromEntity(groupService.createGroup(groupRequest),
-        SummaryEnum.FALSE));
+        SummaryEnum.TRUE));
   }
 
   @Operation(summary = "Delete a group by identifier", description = "Delete a group by identifier", tags = {
       "Group"})
-  @DeleteMapping(value = "/{identifier}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  @DeleteMapping(value = "/{identifier}")
   public ResponseEntity<?> removeGroupByIdentifier(
       @Parameter(description = "Group identifier") @PathVariable("identifier") UUID groupIdentifier) {
     groupService.removeGroup(groupIdentifier);
@@ -86,7 +86,7 @@ public class GroupController {
       @Parameter(description = "Group identifier") @PathVariable("identifier") UUID groupIdentifier,
       @RequestBody GroupRequest groupRequest) {
     return ResponseEntity.status(HttpStatus.OK).body(GroupResponseFactory.fromEntity(groupService.updateGroup(groupIdentifier, groupRequest),
-        SummaryEnum.FALSE));
+        SummaryEnum.TRUE));
   }
 
 }

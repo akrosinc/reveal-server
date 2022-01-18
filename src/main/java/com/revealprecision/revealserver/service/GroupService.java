@@ -87,13 +87,13 @@ public class GroupService {
   public Group updateGroup(UUID groupIdentifier, GroupRequest groupRequest) {
 
     Group groupRetrieved = getGroupByIdentifier(groupIdentifier);
+
     groupRetrieved.setName(groupRequest.getName());
     groupRetrieved.setType(groupRequest.getType().toString());
 
     if (groupRequest.getLocationIdentifier() != null) {
       Location location = locationService.findByIdentifier(
           groupRequest.getLocationIdentifier());
-
       groupRetrieved.setLocation(location);
     } else {
       groupRetrieved.setLocation(null);
