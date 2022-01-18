@@ -16,9 +16,9 @@ public interface LocationRepository extends JpaRepository<Location, UUID> {
   List<Location> findByGeographicLevelIdentifier(UUID geographicLevelId);
 
   @Query(value =
-      "SELECT * FROM location l WHERE (lower(l.name) like lower(concat('%', :param, '%'))) AND l.entity_status='ACTIVE'", nativeQuery = true)
+      "SELECT l FROM Location l WHERE (lower(l.name) like lower(concat('%', :param, '%'))) AND l.entityStatus='ACTIVE'")
   Page<Location> findAlLByCriteria(@Param("param") String param, Pageable pageable);
 
-  @Query(value = "SELECT COUNT(*) FROM location l WHERE (lower(l.name) like lower(concat('%', :param, '%'))) AND l.entity_status='ACTIVE'", nativeQuery = true)
+  @Query(value = "SELECT COUNT(l) FROM Location l WHERE (lower(l.name) like lower(concat('%', :param, '%'))) AND l.entityStatus='ACTIVE'")
   long findAllCountByCriteria(@Param("param") String param);
 }
