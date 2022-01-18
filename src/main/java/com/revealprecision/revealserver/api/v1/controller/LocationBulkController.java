@@ -8,6 +8,7 @@ import com.revealprecision.revealserver.service.LocationBulkService;
 import com.revealprecision.revealserver.service.StorageService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import java.io.IOException;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.JobParametersInvalidException;
@@ -72,5 +73,17 @@ public class LocationBulkController {
       @Parameter(name = "LocationBulk identifier") @PathVariable UUID identifier) {
     return ResponseEntity.status(HttpStatus.OK)
         .body(LocationBulkResponseFactory.fromEntity(locationBulkService.findById(identifier)));
+  }
+
+  @Operation(summary = "Download .json sample file for Location import",
+      description = "Download .json sample file for Location import",
+      tags = {"Location Bulk"}
+  )
+  @GetMapping("/sample")
+  public ResponseEntity<?> downloadTemplate() throws IOException {
+    return ResponseEntity.status(HttpStatus.OK)
+        .contentType(MediaType.APPLICATION_OCTET_STREAM)
+        .header("Content-disposition", "attachment;filename=LocationUploadSample.json")
+        .body(storageService.downloadTemplate("LocationUploadSample.json"));
   }
 }
