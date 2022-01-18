@@ -6,1751 +6,1755 @@
 	},
 	"item": [
 		{
-			"name": "authenticate",
-			"event": [
+			"name": "organization",
+			"item": [
 				{
-					"listen": "test",
-					"script": {
-						"exec": [
-							"pm.test(\"Status code is 200\", () => {",
-							"  pm.expect(pm.response.code).to.eql(200);",
-							"});",
-							"",
-							"var jsonData = JSON.parse(responseBody);",
-							"pm.globals.set(\"auth_bearer_token\", jsonData.access_token);"
-						],
-						"type": "text/javascript"
-					}
-				}
-			],
-			"request": {
-				"auth": {
-					"type": "noauth"
-				},
-				"method": "POST",
-				"header": [],
-				"body": {
-					"mode": "urlencoded",
-					"urlencoded": [
+					"name": "authenticate",
+					"event": [
 						{
-							"key": "grant_type",
-							"value": "password",
-							"type": "text"
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", () => {",
+									"  pm.expect(pm.response.code).to.eql(200);",
+									"});",
+									"",
+									"var jsonData = JSON.parse(responseBody);",
+									"pm.globals.set(\"auth_bearer_token\", jsonData.access_token);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "grant_type",
+									"value": "password",
+									"type": "text"
+								},
+								{
+									"key": "client_id",
+									"value": "reveal-web",
+									"type": "text"
+								},
+								{
+									"key": "username",
+									"value": "{{username}}",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "{{password}}",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{keycloak_URL}}/auth/realms/{{keycloak_realm}}/protocol/openid-connect/token",
+							"host": [
+								"{{keycloak_URL}}"
+							],
+							"path": [
+								"auth",
+								"realms",
+								"{{keycloak_realm}}",
+								"protocol",
+								"openid-connect",
+								"token"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "create a organization bad enum",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400\", () => {",
+									"  pm.expect(pm.response.code).to.eql(400);",
+									"});",
+									"",
+									"const jsonData = pm.response.json();",
+									"pm.test(\"Test data of the response\", () => {",
+									"  pm.expect(jsonData.message).to.contain(\"SOME MESSAGE HERE\");",
+									"});",
+									"",
+									"// https://revealplatform.atlassian.net/browse/RP-33"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_bearer_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\":\"{{$randomFirstName}}\",\r\n    \"type\":\"pink\",\r\n    \"active\": true,\r\n    \"partOf\": null\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{server_url}}/api/v1/organization",
+							"host": [
+								"{{server_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"organization"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "create a organization bad parent",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400\", () => {",
+									"    pm.expect(pm.response.code).to.eql(400);",
+									"});",
+									"",
+									"const jsonData = pm.response.json();",
+									"pm.test(\"Test data of the response\", () => {",
+									"    pm.expect(jsonData.message).to.contain(\" not found\");",
+									"});",
+									"",
+									"// https://revealplatform.atlassian.net/browse/RP-34"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_bearer_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\":\"{{$randomFirstName}}\",\r\n    \"type\":\"CG\",\r\n    \"active\": true,\r\n    \"partOf\": \"26a59005-f15f-4964-8d75-b60e99dc5474\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{server_url}}/api/v1/organization",
+							"host": [
+								"{{server_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"organization"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "create a root organization",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", () => {",
+									"  pm.expect(pm.response.code).to.eql(201);",
+									"});",
+									"",
+									"const jsonData = pm.response.json();",
+									"pm.environment.set(\"parent_identifier\",jsonData.identifier);",
+									"pm.environment.set(\"parent_name\",jsonData.name);"
+								],
+								"type": "text/javascript"
+							}
 						},
 						{
-							"key": "client_id",
-							"value": "reveal-web",
-							"type": "text"
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.environment.unset(\"parent_identifier\");",
+									"pm.environment.unset(\"parent_name\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_bearer_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\":\"{{$randomFirstName}}\",\r\n    \"type\":\"CG\",\r\n    \"active\": true,\r\n    \"partOf\": null\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{server_url}}/api/v1/organization",
+							"host": [
+								"{{server_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"organization"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "create a duplicate organization",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400\", () => {",
+									"  pm.expect(pm.response.code).to.eql(400);",
+									"});",
+									"",
+									"const jsonData = pm.response.json();",
+									"pm.test(\"Test data of the response\", () => {",
+									"  pm.expect(jsonData.message).to.contain(\"DUPLICATE RESPONSE HERE\");",
+									"});",
+									"",
+									"// https://revealplatform.atlassian.net/browse/RP-35"
+								],
+								"type": "text/javascript"
+							}
 						},
 						{
-							"key": "username",
-							"value": "{{username}}",
-							"type": "text"
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_bearer_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\":\"{{parent_name}}\",\r\n    \"type\":\"CG\",\r\n    \"active\": true,\r\n    \"partOf\": null\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{server_url}}/api/v1/organization",
+							"host": [
+								"{{server_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"organization"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get organization by identifier",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", () => {",
+									"  pm.expect(pm.response.code).to.eql(200);",
+									"});",
+									"",
+									"const jsonData = pm.response.json();",
+									"pm.test(\"Test data of the response\", () => {",
+									"  pm.expect(jsonData.identifier).to.eql(pm.environment.get(\"parent_identifier\"))",
+									"  pm.expect(jsonData.name).to.eql(pm.environment.get(\"parent_name\"));",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_bearer_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{server_url}}/api/v1/organization/{{parent_identifier}}",
+							"host": [
+								"{{server_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"organization",
+								"{{parent_identifier}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get non-existant organization by identifier",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 404\", () => {",
+									"  pm.expect(pm.response.code).to.eql(404);",
+									"});",
+									"",
+									"const jsonData = pm.response.json();",
+									"pm.test(\"Test data of the response\", () => {",
+									"  pm.expect(jsonData.message).to.contains(\" not found\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_bearer_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{server_url}}/api/v1/organization/caf2adb8-c5fd-4e6a-af56-2be85e9622c0",
+							"host": [
+								"{{server_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"organization",
+								"caf2adb8-c5fd-4e6a-af56-2be85e9622c0"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "search organization by name",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", () => {",
+									"  pm.expect(pm.response.code).to.eql(200);",
+									"});",
+									"",
+									"const jsonData = pm.response.json();",
+									"pm.test(\"Test data of the response\", () => {",
+									"  pm.expect(jsonData.totalPages).to.eql(1);",
+									"  pm.expect(jsonData.totalElements).to.eql(1);",
+									"});",
+									"",
+									"// https://revealplatform.atlassian.net/browse/RP-35 will solve this"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_bearer_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{server_url}}/api/v1/organization?name={{parent_name}}",
+							"host": [
+								"{{server_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"organization"
+							],
+							"query": [
+								{
+									"key": "type",
+									"value": null,
+									"disabled": true
+								},
+								{
+									"key": "name",
+									"value": "{{parent_name}}"
+								},
+								{
+									"key": "root",
+									"value": null,
+									"disabled": true
+								},
+								{
+									"key": "_summary",
+									"value": null,
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "search organization by type",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", () => {",
+									"  pm.expect(pm.response.code).to.eql(200);",
+									"});",
+									"",
+									"const jsonData = pm.response.json();",
+									"pm.test(\"Test data of the response\", () => {",
+									"  pm.expect(jsonData.size).to.eql(50);",
+									"  const oranization = jsonData.content.find",
+									"      (m => m.name === pm.environment.get(\"parent_name\"));",
+									"  pm.expect(oranization.identifier).to.eql(pm.environment.get(\"parent_identifier\"));",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_bearer_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{server_url}}/api/v1/organization?type=CG",
+							"host": [
+								"{{server_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"organization"
+							],
+							"query": [
+								{
+									"key": "type",
+									"value": "CG"
+								},
+								{
+									"key": "root",
+									"value": null,
+									"disabled": true
+								},
+								{
+									"key": "_summary",
+									"value": null,
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "search root by name bad summary",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400\", () => {",
+									"  pm.expect(pm.response.code).to.eql(400);",
+									"});",
+									"",
+									"const jsonData = pm.response.json();",
+									"pm.test(\"Test data of the response\", () => {",
+									"  pm.expect(jsonData.message).to.contain(\"SOME MESSAGE ABOUT ENUM\");",
+									"});",
+									"",
+									"// https://revealplatform.atlassian.net/browse/RP-36"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_bearer_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{server_url}}/api/v1/organization?name={{parent_name}}&_summary=pink",
+							"host": [
+								"{{server_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"organization"
+							],
+							"query": [
+								{
+									"key": "type",
+									"value": null,
+									"disabled": true
+								},
+								{
+									"key": "root",
+									"value": null,
+									"disabled": true
+								},
+								{
+									"key": "_summary",
+									"value": null,
+									"disabled": true
+								},
+								{
+									"key": "name",
+									"value": "{{parent_name}}"
+								},
+								{
+									"key": "_summary",
+									"value": "pink"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "update organization name",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", () => {",
+									"  pm.expect(pm.response.code).to.eql(200);",
+									"});",
+									"",
+									"const jsonData = pm.response.json();",
+									"pm.test(\"Test data of the response\", () => {",
+									"  pm.expect(jsonData.name).to.eql(pm.environment.get(\"parent_name\") + \" 2\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_bearer_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\":\"{{parent_name}} 2\",\r\n    \"type\":\"CG\",\r\n    \"active\": true,\r\n    \"partOf\": null\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{server_url}}/api/v1/organization/{{parent_identifier}}",
+							"host": [
+								"{{server_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"organization",
+								"{{parent_identifier}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "update organization active",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", () => {",
+									"  pm.expect(pm.response.code).to.eql(200);",
+									"});",
+									"",
+									"const jsonData = pm.response.json();",
+									"pm.test(\"Test data of the response\", () => {",
+									"  pm.expect(jsonData.name).to.eql(pm.environment.get(\"parent_name\") + \" 2\");",
+									"  pm.expect(jsonData.active).to.eql(false);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_bearer_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\":\"{{parent_name}} 2\",\r\n    \"type\":\"CG\",\r\n    \"active\": false,\r\n    \"partOf\": null\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{server_url}}/api/v1/organization/{{parent_identifier}}",
+							"host": [
+								"{{server_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"organization",
+								"{{parent_identifier}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "update organization bad active",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400\", () => {",
+									"  pm.expect(pm.response.code).to.eql(400);",
+									"});",
+									"",
+									"const jsonData = pm.response.json();",
+									"pm.test(\"Test data of the response\", () => {",
+									"  pm.expect(jsonData.message).to.contain(\"SOME VALIDATION HERE\");",
+									"});",
+									"",
+									"// https://revealplatform.atlassian.net/browse/RP-33 should solve this"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_bearer_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\":\"{{parent_name}} 2\",\r\n    \"type\":\"CG\",\r\n    \"active\": \"pink\",\r\n    \"partOf\": null\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{server_url}}/api/v1/organization/{{parent_identifier}}",
+							"host": [
+								"{{server_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"organization",
+								"{{parent_identifier}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "delete organization",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 204\", () => {",
+									"  pm.expect(pm.response.code).to.eql(204);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{server_url}}/api/v1/organization/{{parent_identifier}}",
+							"host": [
+								"{{server_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"organization",
+								"{{parent_identifier}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "delete organization again",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 404\", () => {",
+									"  pm.expect(pm.response.code).to.eql(404);",
+									"});",
+									"",
+									"const jsonData = pm.response.json();",
+									"pm.test(\"Test data of the response\", () => {",
+									"  pm.expect(jsonData.message).to.contain(\" not found\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{server_url}}/api/v1/organization/{{parent_identifier}}",
+							"host": [
+								"{{server_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"organization",
+								"{{parent_identifier}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "create a child on a non-existant organization",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400\", () => {",
+									"  pm.expect(pm.response.code).to.eql(400);",
+									"});",
+									"",
+									"const jsonData = pm.response.json();",
+									"pm.test(\"Test data of the response\", () => {",
+									"  pm.expect(jsonData.message).to.contain(\" not found\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
 						},
 						{
-							"key": "password",
-							"value": "{{password}}",
-							"type": "text"
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
 						}
-					]
-				},
-				"url": {
-					"raw": "{{keycloak_URL}}/auth/realms/{{keycloak_realm}}/protocol/openid-connect/token",
-					"host": [
-						"{{keycloak_URL}}"
 					],
-					"path": [
-						"auth",
-						"realms",
-						"{{keycloak_realm}}",
-						"protocol",
-						"openid-connect",
-						"token"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "create a organization bad enum",
-			"event": [
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_bearer_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\":\"{{$randomFirstName}}\",\r\n    \"type\":\"CG\",\r\n    \"active\": true,\r\n    \"partOf\": \"{{parent_identifier}}\"\r\n}\r\n\r\n// https://revealplatform.atlassian.net/browse/RP-34 should solve this",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{server_url}}/api/v1/organization",
+							"host": [
+								"{{server_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"organization"
+							]
+						}
+					},
+					"response": []
+				},
 				{
-					"listen": "test",
-					"script": {
-						"exec": [
-							"pm.test(\"Status code is 400\", () => {",
-							"  pm.expect(pm.response.code).to.eql(400);",
-							"});",
-							"",
-							"const jsonData = pm.response.json();",
-							"pm.test(\"Test data of the response\", () => {",
-							"  pm.expect(jsonData.message).to.contain(\"SOME MESSAGE HERE\");",
-							"});",
-							"",
-							"// https://revealplatform.atlassian.net/browse/RP-33"
-						],
-						"type": "text/javascript"
-					}
-				}
-			],
-			"request": {
-				"auth": {
-					"type": "bearer",
-					"bearer": [
+					"name": "create a root organization",
+					"event": [
 						{
-							"key": "token",
-							"value": "{{auth_bearer_token}}",
-							"type": "string"
-						}
-					]
-				},
-				"method": "POST",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\r\n    \"name\":\"{{$randomFirstName}}\",\r\n    \"type\":\"pink\",\r\n    \"active\": true,\r\n    \"partOf\": null\r\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "{{server_url}}/api/v1/organization",
-					"host": [
-						"{{server_url}}"
-					],
-					"path": [
-						"api",
-						"v1",
-						"organization"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "create a organization bad active",
-			"event": [
-				{
-					"listen": "test",
-					"script": {
-						"exec": [
-							"pm.test(\"Status code is 400\", () => {",
-							"  pm.expect(pm.response.code).to.eql(400);",
-							"});",
-							"",
-							"const jsonData = pm.response.json();",
-							"pm.test(\"Test data of the response\", () => {",
-							"  pm.expect(jsonData.message).to.contain(\"SOMETHING HERE\");",
-							"});",
-							"",
-							"// https://revealplatform.atlassian.net/browse/RP-33"
-						],
-						"type": "text/javascript"
-					}
-				}
-			],
-			"request": {
-				"auth": {
-					"type": "bearer",
-					"bearer": [
-						{
-							"key": "token",
-							"value": "{{auth_bearer_token}}",
-							"type": "string"
-						}
-					]
-				},
-				"method": "POST",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\r\n    \"name\":\"{{$randomFirstName}}\",\r\n    \"type\":\"CG\",\r\n    \"active\": pink,\r\n    \"partOf\": null\r\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "{{server_url}}/api/v1/organization",
-					"host": [
-						"{{server_url}}"
-					],
-					"path": [
-						"api",
-						"v1",
-						"organization"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "create a organization bad parent",
-			"event": [
-				{
-					"listen": "test",
-					"script": {
-						"exec": [
-							"pm.test(\"Status code is 400\", () => {",
-							"    pm.expect(pm.response.code).to.eql(400);",
-							"});",
-							"",
-							"const jsonData = pm.response.json();",
-							"pm.test(\"Test data of the response\", () => {",
-							"    pm.expect(jsonData.message).to.contain(\" not found\");",
-							"});",
-							"",
-							"// https://revealplatform.atlassian.net/browse/RP-34"
-						],
-						"type": "text/javascript"
-					}
-				}
-			],
-			"request": {
-				"auth": {
-					"type": "bearer",
-					"bearer": [
-						{
-							"key": "token",
-							"value": "{{auth_bearer_token}}",
-							"type": "string"
-						}
-					]
-				},
-				"method": "POST",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\r\n    \"name\":\"{{$randomFirstName}}\",\r\n    \"type\":\"CG\",\r\n    \"active\": true,\r\n    \"partOf\": \"26a59005-f15f-4964-8d75-b60e99dc5474\"\r\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "{{server_url}}/api/v1/organization",
-					"host": [
-						"{{server_url}}"
-					],
-					"path": [
-						"api",
-						"v1",
-						"organization"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "create a root organization",
-			"event": [
-				{
-					"listen": "test",
-					"script": {
-						"exec": [
-							"pm.test(\"Status code is 201\", () => {",
-							"  pm.expect(pm.response.code).to.eql(201);",
-							"});",
-							"",
-							"const jsonData = pm.response.json();",
-							"pm.environment.set(\"parent_identifier\",jsonData.identifier);",
-							"pm.environment.set(\"parent_name\",jsonData.name);"
-						],
-						"type": "text/javascript"
-					}
-				},
-				{
-					"listen": "prerequest",
-					"script": {
-						"exec": [
-							"pm.environment.unset(\"parent_identifier\");",
-							"pm.environment.unset(\"parent_name\");"
-						],
-						"type": "text/javascript"
-					}
-				}
-			],
-			"request": {
-				"auth": {
-					"type": "bearer",
-					"bearer": [
-						{
-							"key": "token",
-							"value": "{{auth_bearer_token}}",
-							"type": "string"
-						}
-					]
-				},
-				"method": "POST",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\r\n    \"name\":\"{{$randomFirstName}}\",\r\n    \"type\":\"CG\",\r\n    \"active\": true,\r\n    \"partOf\": null\r\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "{{server_url}}/api/v1/organization",
-					"host": [
-						"{{server_url}}"
-					],
-					"path": [
-						"api",
-						"v1",
-						"organization"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "create a duplicate organization",
-			"event": [
-				{
-					"listen": "test",
-					"script": {
-						"exec": [
-							"pm.test(\"Status code is 400\", () => {",
-							"  pm.expect(pm.response.code).to.eql(400);",
-							"});",
-							"",
-							"const jsonData = pm.response.json();",
-							"pm.test(\"Test data of the response\", () => {",
-							"  pm.expect(jsonData.message).to.contain(\"DUPLICATE RESPONSE HERE\");",
-							"});",
-							"",
-							"// https://revealplatform.atlassian.net/browse/RP-35"
-						],
-						"type": "text/javascript"
-					}
-				},
-				{
-					"listen": "prerequest",
-					"script": {
-						"exec": [
-							""
-						],
-						"type": "text/javascript"
-					}
-				}
-			],
-			"request": {
-				"auth": {
-					"type": "bearer",
-					"bearer": [
-						{
-							"key": "token",
-							"value": "{{auth_bearer_token}}",
-							"type": "string"
-						}
-					]
-				},
-				"method": "POST",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\r\n    \"name\":\"{{parent_name}}\",\r\n    \"type\":\"CG\",\r\n    \"active\": true,\r\n    \"partOf\": null\r\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "{{server_url}}/api/v1/organization",
-					"host": [
-						"{{server_url}}"
-					],
-					"path": [
-						"api",
-						"v1",
-						"organization"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "get organization by identifier",
-			"event": [
-				{
-					"listen": "test",
-					"script": {
-						"exec": [
-							"pm.test(\"Status code is 200\", () => {",
-							"  pm.expect(pm.response.code).to.eql(200);",
-							"});",
-							"",
-							"const jsonData = pm.response.json();",
-							"pm.test(\"Test data of the response\", () => {",
-							"  pm.expect(jsonData.identifier).to.eql(pm.environment.get(\"parent_identifier\"))",
-							"  pm.expect(jsonData.name).to.eql(pm.environment.get(\"parent_name\"));",
-							"});"
-						],
-						"type": "text/javascript"
-					}
-				}
-			],
-			"request": {
-				"auth": {
-					"type": "bearer",
-					"bearer": [
-						{
-							"key": "token",
-							"value": "{{auth_bearer_token}}",
-							"type": "string"
-						}
-					]
-				},
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "{{server_url}}/api/v1/organization/{{parent_identifier}}",
-					"host": [
-						"{{server_url}}"
-					],
-					"path": [
-						"api",
-						"v1",
-						"organization",
-						"{{parent_identifier}}"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "get non-existant organization by identifier",
-			"event": [
-				{
-					"listen": "test",
-					"script": {
-						"exec": [
-							"pm.test(\"Status code is 404\", () => {",
-							"  pm.expect(pm.response.code).to.eql(404);",
-							"});",
-							"",
-							"const jsonData = pm.response.json();",
-							"pm.test(\"Test data of the response\", () => {",
-							"  pm.expect(jsonData.message).to.contains(\" not found\");",
-							"});"
-						],
-						"type": "text/javascript"
-					}
-				}
-			],
-			"request": {
-				"auth": {
-					"type": "bearer",
-					"bearer": [
-						{
-							"key": "token",
-							"value": "{{auth_bearer_token}}",
-							"type": "string"
-						}
-					]
-				},
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "{{server_url}}/api/v1/organization/caf2adb8-c5fd-4e6a-af56-2be85e9622c0",
-					"host": [
-						"{{server_url}}"
-					],
-					"path": [
-						"api",
-						"v1",
-						"organization",
-						"caf2adb8-c5fd-4e6a-af56-2be85e9622c0"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "search organization by name",
-			"event": [
-				{
-					"listen": "test",
-					"script": {
-						"exec": [
-							"pm.test(\"Status code is 200\", () => {",
-							"  pm.expect(pm.response.code).to.eql(200);",
-							"});",
-							"",
-							"const jsonData = pm.response.json();",
-							"pm.test(\"Test data of the response\", () => {",
-							"  pm.expect(jsonData.totalPages).to.eql(1);",
-							"  pm.expect(jsonData.totalElements).to.eql(1);",
-							"});",
-							"",
-							"// https://revealplatform.atlassian.net/browse/RP-35 will solve this"
-						],
-						"type": "text/javascript"
-					}
-				}
-			],
-			"request": {
-				"auth": {
-					"type": "bearer",
-					"bearer": [
-						{
-							"key": "token",
-							"value": "{{auth_bearer_token}}",
-							"type": "string"
-						}
-					]
-				},
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "{{server_url}}/api/v1/organization?name={{parent_name}}",
-					"host": [
-						"{{server_url}}"
-					],
-					"path": [
-						"api",
-						"v1",
-						"organization"
-					],
-					"query": [
-						{
-							"key": "type",
-							"value": null,
-							"disabled": true
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", () => {",
+									"  pm.expect(pm.response.code).to.eql(201);",
+									"});",
+									"",
+									"const jsonData = pm.response.json();",
+									"pm.environment.set(\"parent_identifier\",jsonData.identifier);",
+									"pm.environment.set(\"parent_name\",jsonData.name);"
+								],
+								"type": "text/javascript"
+							}
 						},
 						{
-							"key": "name",
-							"value": "{{parent_name}}"
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.variables.unset(\"parent_identifier\");",
+									"pm.variables.unset(\"parent_name\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_bearer_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\":\"{{$randomFirstName}}\",\r\n    \"type\":\"CG\",\r\n    \"active\": true,\r\n    \"partOf\": null\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{server_url}}/api/v1/organization",
+							"host": [
+								"{{server_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"organization"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "create a child1 organization",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", () => {",
+									"  pm.expect(pm.response.code).to.eql(201);",
+									"});",
+									"",
+									"const jsonData = pm.response.json();",
+									"pm.environment.set(\"child1_identifier\",jsonData.identifier);",
+									"pm.environment.set(\"child1_name\",jsonData.name);"
+								],
+								"type": "text/javascript"
+							}
 						},
 						{
-							"key": "root",
-							"value": null,
-							"disabled": true
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.variables.unset(\"child1_identifier\");",
+									"pm.variables.unset(\"child1_name\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_bearer_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\":\"{{$randomFirstName}}\",\r\n    \"type\":\"CG\",\r\n    \"active\": true,\r\n    \"partOf\": \"{{parent_identifier}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{server_url}}/api/v1/organization",
+							"host": [
+								"{{server_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"organization"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "create a child2 organization",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", () => {",
+									"  pm.expect(pm.response.code).to.eql(201);",
+									"});",
+									"",
+									"const jsonData = pm.response.json();",
+									"pm.environment.set(\"child2_identifier\",jsonData.identifier);",
+									"pm.environment.set(\"child2_name\",jsonData.name);"
+								],
+								"type": "text/javascript"
+							}
 						},
 						{
-							"key": "_summary",
-							"value": null,
-							"disabled": true
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.variables.unset(\"child2_identifier\");",
+									"pm.variables.unset(\"child2_name\");"
+								],
+								"type": "text/javascript"
+							}
 						}
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "search organization by type",
-			"event": [
-				{
-					"listen": "test",
-					"script": {
-						"exec": [
-							"pm.test(\"Status code is 200\", () => {",
-							"  pm.expect(pm.response.code).to.eql(200);",
-							"});",
-							"",
-							"const jsonData = pm.response.json();",
-							"pm.test(\"Test data of the response\", () => {",
-							"  pm.expect(jsonData.size).to.eql(50);",
-							"  const oranization = jsonData.content.find",
-							"      (m => m.name === pm.environment.get(\"parent_name\"));",
-							"  pm.expect(oranization.identifier).to.eql(pm.environment.get(\"parent_identifier\"));",
-							"});"
-						],
-						"type": "text/javascript"
-					}
-				}
-			],
-			"request": {
-				"auth": {
-					"type": "bearer",
-					"bearer": [
-						{
-							"key": "token",
-							"value": "{{auth_bearer_token}}",
-							"type": "string"
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_bearer_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\":\"{{$randomFirstName}}\",\r\n    \"type\":\"CG\",\r\n    \"active\": true,\r\n    \"partOf\": \"{{parent_identifier}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{server_url}}/api/v1/organization",
+							"host": [
+								"{{server_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"organization"
+							]
 						}
-					]
+					},
+					"response": []
 				},
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "{{server_url}}/api/v1/organization?type=CG",
-					"host": [
-						"{{server_url}}"
-					],
-					"path": [
-						"api",
-						"v1",
-						"organization"
-					],
-					"query": [
+				{
+					"name": "create a child1a organization",
+					"event": [
 						{
-							"key": "type",
-							"value": "CG"
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", () => {",
+									"  pm.expect(pm.response.code).to.eql(201);",
+									"});",
+									"",
+									"const jsonData = pm.response.json();",
+									"pm.environment.set(\"child1a_identifier\",jsonData.identifier);",
+									"pm.environment.set(\"child1a_name\",jsonData.name);"
+								],
+								"type": "text/javascript"
+							}
 						},
 						{
-							"key": "root",
-							"value": null,
-							"disabled": true
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.variables.unset(\"child1a_identifier\");",
+									"pm.variables.unset(\"child1a_name\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_bearer_token}}",
+									"type": "string"
+								}
+							]
 						},
-						{
-							"key": "_summary",
-							"value": null,
-							"disabled": true
-						}
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "search root by name bad summary",
-			"event": [
-				{
-					"listen": "test",
-					"script": {
-						"exec": [
-							"pm.test(\"Status code is 400\", () => {",
-							"  pm.expect(pm.response.code).to.eql(400);",
-							"});",
-							"",
-							"const jsonData = pm.response.json();",
-							"pm.test(\"Test data of the response\", () => {",
-							"  pm.expect(jsonData.message).to.contain(\"SOME MESSAGE ABOUT ENUM\");",
-							"});",
-							"",
-							"// https://revealplatform.atlassian.net/browse/RP-36"
-						],
-						"type": "text/javascript"
-					}
-				}
-			],
-			"request": {
-				"auth": {
-					"type": "bearer",
-					"bearer": [
-						{
-							"key": "token",
-							"value": "{{auth_bearer_token}}",
-							"type": "string"
-						}
-					]
-				},
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "{{server_url}}/api/v1/organization?name={{parent_name}}&_summary=pink",
-					"host": [
-						"{{server_url}}"
-					],
-					"path": [
-						"api",
-						"v1",
-						"organization"
-					],
-					"query": [
-						{
-							"key": "type",
-							"value": null,
-							"disabled": true
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\":\"{{$randomFirstName}}\",\r\n    \"type\":\"CG\",\r\n    \"active\": true,\r\n    \"partOf\": \"{{child1_identifier}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
 						},
+						"url": {
+							"raw": "{{server_url}}/api/v1/organization",
+							"host": [
+								"{{server_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"organization"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "search root by name without summary",
+					"event": [
 						{
-							"key": "root",
-							"value": null,
-							"disabled": true
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", () => {",
+									"  pm.expect(pm.response.code).to.eql(200);",
+									"});",
+									"",
+									"const jsonData = pm.response.json();",
+									"pm.test(\"Test data of the response\", () => {",
+									"  pm.expect(jsonData.totalPages).to.eql(1);",
+									"  pm.expect(jsonData.totalElements).to.eql(1);",
+									"  pm.expect(jsonData.content[0].headOf[0].identifier).to.oneOf([pm.environment.get(\"child1_identifier\"),pm.environment.get(\"child2_identifier\")]);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_bearer_token}}",
+									"type": "string"
+								}
+							]
 						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{server_url}}/api/v1/organization?name={{parent_name}}&_summary=FALSE",
+							"host": [
+								"{{server_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"organization"
+							],
+							"query": [
+								{
+									"key": "name",
+									"value": "{{parent_name}}"
+								},
+								{
+									"key": "_summary",
+									"value": "FALSE"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "search with summary count",
+					"event": [
 						{
-							"key": "_summary",
-							"value": null,
-							"disabled": true
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", () => {",
+									"  pm.expect(pm.response.code).to.eql(200);",
+									"});",
+									"",
+									"const jsonData = pm.response.json();",
+									"pm.test(\"Test data of the response\", () => {",
+									"  pm.expect(jsonData.count).to.be.a(\"number\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_bearer_token}}",
+									"type": "string"
+								}
+							]
 						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{server_url}}/api/v1/organization?_summary=COUNT",
+							"host": [
+								"{{server_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"organization"
+							],
+							"query": [
+								{
+									"key": "_summary",
+									"value": "COUNT"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "update child1a to self as parent",
+					"event": [
 						{
-							"key": "name",
-							"value": "{{parent_name}}"
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", () => {",
+									"  pm.expect(pm.response.code).to.eql(200);",
+									"});",
+									"",
+									"const jsonData = pm.response.json();",
+									"pm.test(\"Test data of the response\", () => {",
+									"  pm.expect(jsonData.partOf).to.eql(pm.environment.get(\"child2_identifier\"));",
+									"});",
+									"",
+									"// https://revealplatform.atlassian.net/browse/RP-37"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_bearer_token}}",
+									"type": "string"
+								}
+							]
 						},
-						{
-							"key": "_summary",
-							"value": "pink"
-						}
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "update organization name",
-			"event": [
-				{
-					"listen": "test",
-					"script": {
-						"exec": [
-							"pm.test(\"Status code is 200\", () => {",
-							"  pm.expect(pm.response.code).to.eql(200);",
-							"});",
-							"",
-							"const jsonData = pm.response.json();",
-							"pm.test(\"Test data of the response\", () => {",
-							"  pm.expect(jsonData.name).to.eql(pm.environment.get(\"parent_name\") + \" 2\");",
-							"});"
-						],
-						"type": "text/javascript"
-					}
-				}
-			],
-			"request": {
-				"auth": {
-					"type": "bearer",
-					"bearer": [
-						{
-							"key": "token",
-							"value": "{{auth_bearer_token}}",
-							"type": "string"
-						}
-					]
-				},
-				"method": "PUT",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\r\n    \"name\":\"{{parent_name}} 2\",\r\n    \"type\":\"CG\",\r\n    \"active\": true,\r\n    \"partOf\": null\r\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "{{server_url}}/api/v1/organization/{{parent_identifier}}",
-					"host": [
-						"{{server_url}}"
-					],
-					"path": [
-						"api",
-						"v1",
-						"organization",
-						"{{parent_identifier}}"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "update organization active",
-			"event": [
-				{
-					"listen": "test",
-					"script": {
-						"exec": [
-							"pm.test(\"Status code is 200\", () => {",
-							"  pm.expect(pm.response.code).to.eql(200);",
-							"});",
-							"",
-							"const jsonData = pm.response.json();",
-							"pm.test(\"Test data of the response\", () => {",
-							"  pm.expect(jsonData.name).to.eql(pm.environment.get(\"parent_name\") + \" 2\");",
-							"  pm.expect(jsonData.active).to.eql(false);",
-							"});"
-						],
-						"type": "text/javascript"
-					}
-				}
-			],
-			"request": {
-				"auth": {
-					"type": "bearer",
-					"bearer": [
-						{
-							"key": "token",
-							"value": "{{auth_bearer_token}}",
-							"type": "string"
-						}
-					]
-				},
-				"method": "PUT",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\r\n    \"name\":\"{{parent_name}} 2\",\r\n    \"type\":\"CG\",\r\n    \"active\": false,\r\n    \"partOf\": null\r\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "{{server_url}}/api/v1/organization/{{parent_identifier}}",
-					"host": [
-						"{{server_url}}"
-					],
-					"path": [
-						"api",
-						"v1",
-						"organization",
-						"{{parent_identifier}}"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "update organization bad active",
-			"event": [
-				{
-					"listen": "test",
-					"script": {
-						"exec": [
-							"pm.test(\"Status code is 400\", () => {",
-							"  pm.expect(pm.response.code).to.eql(400);",
-							"});",
-							"",
-							"const jsonData = pm.response.json();",
-							"pm.test(\"Test data of the response\", () => {",
-							"  pm.expect(jsonData.message).to.contain(\"SOME VALIDATION HERE\");",
-							"});",
-							"",
-							"// https://revealplatform.atlassian.net/browse/RP-33 should solve this"
-						],
-						"type": "text/javascript"
-					}
-				}
-			],
-			"request": {
-				"auth": {
-					"type": "bearer",
-					"bearer": [
-						{
-							"key": "token",
-							"value": "{{auth_bearer_token}}",
-							"type": "string"
-						}
-					]
-				},
-				"method": "PUT",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\r\n    \"name\":\"{{parent_name}} 2\",\r\n    \"type\":\"CG\",\r\n    \"active\": \"pink\",\r\n    \"partOf\": null\r\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "{{server_url}}/api/v1/organization/{{parent_identifier}}",
-					"host": [
-						"{{server_url}}"
-					],
-					"path": [
-						"api",
-						"v1",
-						"organization",
-						"{{parent_identifier}}"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "delete organization",
-			"event": [
-				{
-					"listen": "test",
-					"script": {
-						"exec": [
-							"pm.test(\"Status code is 204\", () => {",
-							"  pm.expect(pm.response.code).to.eql(204);",
-							"});"
-						],
-						"type": "text/javascript"
-					}
-				}
-			],
-			"request": {
-				"method": "DELETE",
-				"header": [],
-				"url": {
-					"raw": "{{server_url}}/api/v1/organization/{{parent_identifier}}",
-					"host": [
-						"{{server_url}}"
-					],
-					"path": [
-						"api",
-						"v1",
-						"organization",
-						"{{parent_identifier}}"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "delete organization again",
-			"event": [
-				{
-					"listen": "test",
-					"script": {
-						"exec": [
-							"pm.test(\"Status code is 404\", () => {",
-							"  pm.expect(pm.response.code).to.eql(404);",
-							"});",
-							"",
-							"const jsonData = pm.response.json();",
-							"pm.test(\"Test data of the response\", () => {",
-							"  pm.expect(jsonData.message).to.contain(\" not found\");",
-							"});"
-						],
-						"type": "text/javascript"
-					}
-				}
-			],
-			"request": {
-				"method": "DELETE",
-				"header": [],
-				"url": {
-					"raw": "{{server_url}}/api/v1/organization/{{parent_identifier}}",
-					"host": [
-						"{{server_url}}"
-					],
-					"path": [
-						"api",
-						"v1",
-						"organization",
-						"{{parent_identifier}}"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "create a child on a non-existant organization",
-			"event": [
-				{
-					"listen": "test",
-					"script": {
-						"exec": [
-							"pm.test(\"Status code is 400\", () => {",
-							"  pm.expect(pm.response.code).to.eql(400);",
-							"});",
-							"",
-							"const jsonData = pm.response.json();",
-							"pm.test(\"Test data of the response\", () => {",
-							"  pm.expect(jsonData.message).to.contain(\" not found\");",
-							"});"
-						],
-						"type": "text/javascript"
-					}
-				},
-				{
-					"listen": "prerequest",
-					"script": {
-						"exec": [
-							""
-						],
-						"type": "text/javascript"
-					}
-				}
-			],
-			"request": {
-				"auth": {
-					"type": "bearer",
-					"bearer": [
-						{
-							"key": "token",
-							"value": "{{auth_bearer_token}}",
-							"type": "string"
-						}
-					]
-				},
-				"method": "POST",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\r\n    \"name\":\"{{$randomFirstName}}\",\r\n    \"type\":\"CG\",\r\n    \"active\": true,\r\n    \"partOf\": \"{{parent_identifier}}\"\r\n}\r\n\r\n// https://revealplatform.atlassian.net/browse/RP-34 should solve this",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "{{server_url}}/api/v1/organization",
-					"host": [
-						"{{server_url}}"
-					],
-					"path": [
-						"api",
-						"v1",
-						"organization"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "create a root organization",
-			"event": [
-				{
-					"listen": "test",
-					"script": {
-						"exec": [
-							"pm.test(\"Status code is 201\", () => {",
-							"  pm.expect(pm.response.code).to.eql(201);",
-							"});",
-							"",
-							"const jsonData = pm.response.json();",
-							"pm.environment.set(\"parent_identifier\",jsonData.identifier);",
-							"pm.environment.set(\"parent_name\",jsonData.name);"
-						],
-						"type": "text/javascript"
-					}
-				},
-				{
-					"listen": "prerequest",
-					"script": {
-						"exec": [
-							"pm.variables.unset(\"parent_identifier\");",
-							"pm.variables.unset(\"parent_name\");"
-						],
-						"type": "text/javascript"
-					}
-				}
-			],
-			"request": {
-				"auth": {
-					"type": "bearer",
-					"bearer": [
-						{
-							"key": "token",
-							"value": "{{auth_bearer_token}}",
-							"type": "string"
-						}
-					]
-				},
-				"method": "POST",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\r\n    \"name\":\"{{$randomFirstName}}\",\r\n    \"type\":\"CG\",\r\n    \"active\": true,\r\n    \"partOf\": null\r\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "{{server_url}}/api/v1/organization",
-					"host": [
-						"{{server_url}}"
-					],
-					"path": [
-						"api",
-						"v1",
-						"organization"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "create a child1 organization",
-			"event": [
-				{
-					"listen": "test",
-					"script": {
-						"exec": [
-							"pm.test(\"Status code is 201\", () => {",
-							"  pm.expect(pm.response.code).to.eql(201);",
-							"});",
-							"",
-							"const jsonData = pm.response.json();",
-							"pm.environment.set(\"child1_identifier\",jsonData.identifier);",
-							"pm.environment.set(\"child1_name\",jsonData.name);"
-						],
-						"type": "text/javascript"
-					}
-				},
-				{
-					"listen": "prerequest",
-					"script": {
-						"exec": [
-							"pm.variables.unset(\"child1_identifier\");",
-							"pm.variables.unset(\"child1_name\");"
-						],
-						"type": "text/javascript"
-					}
-				}
-			],
-			"request": {
-				"auth": {
-					"type": "bearer",
-					"bearer": [
-						{
-							"key": "token",
-							"value": "{{auth_bearer_token}}",
-							"type": "string"
-						}
-					]
-				},
-				"method": "POST",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\r\n    \"name\":\"{{$randomFirstName}}\",\r\n    \"type\":\"CG\",\r\n    \"active\": true,\r\n    \"partOf\": \"{{parent_identifier}}\"\r\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "{{server_url}}/api/v1/organization",
-					"host": [
-						"{{server_url}}"
-					],
-					"path": [
-						"api",
-						"v1",
-						"organization"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "create a child2 organization",
-			"event": [
-				{
-					"listen": "test",
-					"script": {
-						"exec": [
-							"pm.test(\"Status code is 201\", () => {",
-							"  pm.expect(pm.response.code).to.eql(201);",
-							"});",
-							"",
-							"const jsonData = pm.response.json();",
-							"pm.environment.set(\"child2_identifier\",jsonData.identifier);",
-							"pm.environment.set(\"child2_name\",jsonData.name);"
-						],
-						"type": "text/javascript"
-					}
-				},
-				{
-					"listen": "prerequest",
-					"script": {
-						"exec": [
-							"pm.variables.unset(\"child2_identifier\");",
-							"pm.variables.unset(\"child2_name\");"
-						],
-						"type": "text/javascript"
-					}
-				}
-			],
-			"request": {
-				"auth": {
-					"type": "bearer",
-					"bearer": [
-						{
-							"key": "token",
-							"value": "{{auth_bearer_token}}",
-							"type": "string"
-						}
-					]
-				},
-				"method": "POST",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\r\n    \"name\":\"{{$randomFirstName}}\",\r\n    \"type\":\"CG\",\r\n    \"active\": true,\r\n    \"partOf\": \"{{parent_identifier}}\"\r\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "{{server_url}}/api/v1/organization",
-					"host": [
-						"{{server_url}}"
-					],
-					"path": [
-						"api",
-						"v1",
-						"organization"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "create a child1a organization",
-			"event": [
-				{
-					"listen": "test",
-					"script": {
-						"exec": [
-							"pm.test(\"Status code is 201\", () => {",
-							"  pm.expect(pm.response.code).to.eql(201);",
-							"});",
-							"",
-							"const jsonData = pm.response.json();",
-							"pm.environment.set(\"child1a_identifier\",jsonData.identifier);",
-							"pm.environment.set(\"child1a_name\",jsonData.name);"
-						],
-						"type": "text/javascript"
-					}
-				},
-				{
-					"listen": "prerequest",
-					"script": {
-						"exec": [
-							"pm.variables.unset(\"child1a_identifier\");",
-							"pm.variables.unset(\"child1a_name\");"
-						],
-						"type": "text/javascript"
-					}
-				}
-			],
-			"request": {
-				"auth": {
-					"type": "bearer",
-					"bearer": [
-						{
-							"key": "token",
-							"value": "{{auth_bearer_token}}",
-							"type": "string"
-						}
-					]
-				},
-				"method": "POST",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\r\n    \"name\":\"{{$randomFirstName}}\",\r\n    \"type\":\"CG\",\r\n    \"active\": true,\r\n    \"partOf\": \"{{child1_identifier}}\"\r\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "{{server_url}}/api/v1/organization",
-					"host": [
-						"{{server_url}}"
-					],
-					"path": [
-						"api",
-						"v1",
-						"organization"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "search root by name without summary",
-			"event": [
-				{
-					"listen": "test",
-					"script": {
-						"exec": [
-							"pm.test(\"Status code is 200\", () => {",
-							"  pm.expect(pm.response.code).to.eql(200);",
-							"});",
-							"",
-							"const jsonData = pm.response.json();",
-							"pm.test(\"Test data of the response\", () => {",
-							"  pm.expect(jsonData.totalPages).to.eql(1);",
-							"  pm.expect(jsonData.totalElements).to.eql(1);",
-							"  pm.expect(jsonData.content[0].headOf[0].identifier).to.oneOf([pm.environment.get(\"child1_identifier\"),pm.environment.get(\"child2_identifier\")]);",
-							"});"
-						],
-						"type": "text/javascript"
-					}
-				}
-			],
-			"request": {
-				"auth": {
-					"type": "bearer",
-					"bearer": [
-						{
-							"key": "token",
-							"value": "{{auth_bearer_token}}",
-							"type": "string"
-						}
-					]
-				},
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "{{server_url}}/api/v1/organization?name={{parent_name}}&_summary=FALSE",
-					"host": [
-						"{{server_url}}"
-					],
-					"path": [
-						"api",
-						"v1",
-						"organization"
-					],
-					"query": [
-						{
-							"key": "name",
-							"value": "{{parent_name}}"
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\":\"{{child1a_name}}\",\r\n    \"type\":\"CG\",\r\n    \"active\": true,\r\n    \"partOf\": \"{{child1a_identifier}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
 						},
-						{
-							"key": "_summary",
-							"value": "FALSE"
+						"url": {
+							"raw": "{{server_url}}/api/v1/organization/{{child1a_identifier}}",
+							"host": [
+								"{{server_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"organization",
+								"{{child1a_identifier}}"
+							]
 						}
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "update child1a to self as parent",
-			"event": [
+					},
+					"response": []
+				},
 				{
-					"listen": "test",
-					"script": {
-						"exec": [
-							"pm.test(\"Status code is 200\", () => {",
-							"  pm.expect(pm.response.code).to.eql(200);",
-							"});",
-							"",
-							"const jsonData = pm.response.json();",
-							"pm.test(\"Test data of the response\", () => {",
-							"  pm.expect(jsonData.partOf).to.eql(pm.environment.get(\"child2_identifier\"));",
-							"});",
-							"",
-							"// https://revealplatform.atlassian.net/browse/RP-37"
-						],
-						"type": "text/javascript"
-					}
-				}
-			],
-			"request": {
-				"auth": {
-					"type": "bearer",
-					"bearer": [
+					"name": "update child1a to child2 as parent",
+					"event": [
 						{
-							"key": "token",
-							"value": "{{auth_bearer_token}}",
-							"type": "string"
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", () => {",
+									"  pm.expect(pm.response.code).to.eql(200);",
+									"});",
+									"",
+									"const jsonData = pm.response.json();",
+									"pm.test(\"Test data of the response\", () => {",
+									"  pm.expect(jsonData.partOf).to.eql(pm.environment.get(\"child2_identifier\"));",
+									"});",
+									"",
+									"// https://revealplatform.atlassian.net/browse/RP-37"
+								],
+								"type": "text/javascript"
+							}
 						}
-					]
-				},
-				"method": "PUT",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\r\n    \"name\":\"{{child1a_name}}\",\r\n    \"type\":\"CG\",\r\n    \"active\": true,\r\n    \"partOf\": \"{{child1a_identifier}}\"\r\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "{{server_url}}/api/v1/organization/{{child1a_identifier}}",
-					"host": [
-						"{{server_url}}"
 					],
-					"path": [
-						"api",
-						"v1",
-						"organization",
-						"{{child1a_identifier}}"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "update child1a to child2 as parent",
-			"event": [
-				{
-					"listen": "test",
-					"script": {
-						"exec": [
-							"pm.test(\"Status code is 200\", () => {",
-							"  pm.expect(pm.response.code).to.eql(200);",
-							"});",
-							"",
-							"const jsonData = pm.response.json();",
-							"pm.test(\"Test data of the response\", () => {",
-							"  pm.expect(jsonData.partOf).to.eql(pm.environment.get(\"child2_identifier\"));",
-							"});",
-							"",
-							"// https://revealplatform.atlassian.net/browse/RP-37"
-						],
-						"type": "text/javascript"
-					}
-				}
-			],
-			"request": {
-				"auth": {
-					"type": "bearer",
-					"bearer": [
-						{
-							"key": "token",
-							"value": "{{auth_bearer_token}}",
-							"type": "string"
-						}
-					]
-				},
-				"method": "PUT",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\r\n    \"name\":\"{{child1a_name}}\",\r\n    \"type\":\"CG\",\r\n    \"active\": true,\r\n    \"partOf\": \"{{child2_identifier}}\"\r\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "{{server_url}}/api/v1/organization/{{child1a_identifier}}",
-					"host": [
-						"{{server_url}}"
-					],
-					"path": [
-						"api",
-						"v1",
-						"organization",
-						"{{child1a_identifier}}"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "update parent to child of child",
-			"event": [
-				{
-					"listen": "test",
-					"script": {
-						"exec": [
-							"pm.test(\"Status code is 400\", () => {",
-							"  pm.expect(pm.response.code).to.eql(400);",
-							"});",
-							"",
-							"const jsonData = pm.response.json();",
-							"pm.test(\"Test data of the response\", () => {",
-							"  pm.expect(jsonData.message).to.contain(\"SOMETHING ABOUT IT BEING BAD\");",
-							"});",
-							"",
-							"//FAILS DUE TO RP-??"
-						],
-						"type": "text/javascript"
-					}
-				}
-			],
-			"request": {
-				"auth": {
-					"type": "bearer",
-					"bearer": [
-						{
-							"key": "token",
-							"value": "{{auth_bearer_token}}",
-							"type": "string"
-						}
-					]
-				},
-				"method": "PUT",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\r\n    \"name\":\"{{parent_name}}\",\r\n    \"type\":\"CG\",\r\n    \"active\": true,\r\n    \"partOf\": \"{{child1_identifier}}\"\r\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "{{server_url}}/api/v1/organization/{{parent_identifier}}",
-					"host": [
-						"{{server_url}}"
-					],
-					"path": [
-						"api",
-						"v1",
-						"organization",
-						"{{parent_identifier}}"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "search child1a by name",
-			"event": [
-				{
-					"listen": "test",
-					"script": {
-						"exec": [
-							"pm.test(\"Status code is 200\", () => {",
-							"  pm.expect(pm.response.code).to.eql(200);",
-							"});",
-							"",
-							"const jsonData = pm.response.json();",
-							"pm.test(\"Test data of the response\", () => {",
-							"  pm.expect(jsonData.content[0].headOf).to.be.empty;",
-							"});"
-						],
-						"type": "text/javascript"
-					}
-				}
-			],
-			"request": {
-				"auth": {
-					"type": "bearer",
-					"bearer": [
-						{
-							"key": "token",
-							"value": "{{auth_bearer_token}}",
-							"type": "string"
-						}
-					]
-				},
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "{{server_url}}/api/v1/organization?name={{child1a_name}}&_summary=FALSE",
-					"host": [
-						"{{server_url}}"
-					],
-					"path": [
-						"api",
-						"v1",
-						"organization"
-					],
-					"query": [
-						{
-							"key": "type",
-							"value": null,
-							"disabled": true
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_bearer_token}}",
+									"type": "string"
+								}
+							]
 						},
-						{
-							"key": "root",
-							"value": null,
-							"disabled": true
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\":\"{{child1a_name}}\",\r\n    \"type\":\"CG\",\r\n    \"active\": true,\r\n    \"partOf\": \"{{child2_identifier}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
 						},
-						{
-							"key": "name",
-							"value": "{{child1a_name}}"
-						},
-						{
-							"key": "_summary",
-							"value": "FALSE"
+						"url": {
+							"raw": "{{server_url}}/api/v1/organization/{{child1a_identifier}}",
+							"host": [
+								"{{server_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"organization",
+								"{{child1a_identifier}}"
+							]
 						}
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "delete child2",
-			"event": [
-				{
-					"listen": "test",
-					"script": {
-						"exec": [
-							"pm.test(\"Status code is 204\", () => {",
-							"  pm.expect(pm.response.code).to.eql(204);",
-							"});"
-						],
-						"type": "text/javascript"
-					}
-				}
-			],
-			"request": {
-				"method": "DELETE",
-				"header": [],
-				"url": {
-					"raw": "{{server_url}}/api/v1/organization/{{child2_identifier}}",
-					"host": [
-						"{{server_url}}"
-					],
-					"path": [
-						"api",
-						"v1",
-						"organization",
-						"{{child2_identifier}}"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "search child1a by name",
-			"event": [
-				{
-					"listen": "test",
-					"script": {
-						"exec": [
-							"pm.test(\"Status code is 200\", () => {",
-							"  pm.expect(pm.response.code).to.eql(200);",
-							"});",
-							"",
-							"const jsonData = pm.response.json();",
-							"pm.test(\"Test data of the response\", () => {",
-							"  pm.expect(jsonData.totalPages).to.eql(0);",
-							"  pm.expect(jsonData.totalElements).to.eql(0);",
-							"});"
-						],
-						"type": "text/javascript"
-					}
-				}
-			],
-			"request": {
-				"auth": {
-					"type": "bearer",
-					"bearer": [
-						{
-							"key": "token",
-							"value": "{{auth_bearer_token}}",
-							"type": "string"
-						}
-					]
+					},
+					"response": []
 				},
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "{{server_url}}/api/v1/organization?name={{child1a_name}}",
-					"host": [
-						"{{server_url}}"
-					],
-					"path": [
-						"api",
-						"v1",
-						"organization"
-					],
-					"query": [
-						{
-							"key": "type",
-							"value": null,
-							"disabled": true
-						},
-						{
-							"key": "root",
-							"value": null,
-							"disabled": true
-						},
-						{
-							"key": "_summary",
-							"value": null,
-							"disabled": true
-						},
-						{
-							"key": "name",
-							"value": "{{child1a_name}}"
-						}
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "delete root",
-			"event": [
 				{
-					"listen": "test",
-					"script": {
-						"exec": [
-							"pm.test(\"Status code is 204\", () => {",
-							"  pm.expect(pm.response.code).to.eql(204);",
-							"});"
-						],
-						"type": "text/javascript"
-					}
-				}
-			],
-			"request": {
-				"method": "DELETE",
-				"header": [],
-				"url": {
-					"raw": "{{server_url}}/api/v1/organization/{{parent_identifier}}",
-					"host": [
-						"{{server_url}}"
-					],
-					"path": [
-						"api",
-						"v1",
-						"organization",
-						"{{parent_identifier}}"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "search root by name without summary",
-			"event": [
-				{
-					"listen": "test",
-					"script": {
-						"exec": [
-							"pm.test(\"Status code is 200\", () => {",
-							"  pm.expect(pm.response.code).to.eql(200);",
-							"});",
-							"",
-							"const jsonData = pm.response.json();",
-							"pm.test(\"Test data of the response\", () => {",
-							"  pm.expect(jsonData.totalPages).to.eql(0);",
-							"  pm.expect(jsonData.totalElements).to.eql(0);",
-							"  pm.expect(jsonData.content).to.be.empty;",
-							"});"
-						],
-						"type": "text/javascript"
-					}
-				}
-			],
-			"request": {
-				"auth": {
-					"type": "bearer",
-					"bearer": [
+					"name": "update parent to child of child",
+					"event": [
 						{
-							"key": "token",
-							"value": "{{auth_bearer_token}}",
-							"type": "string"
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400\", () => {",
+									"  pm.expect(pm.response.code).to.eql(400);",
+									"});",
+									"",
+									"const jsonData = pm.response.json();",
+									"pm.test(\"Test data of the response\", () => {",
+									"  pm.expect(jsonData.message).to.contain(\"SOMETHING ABOUT IT BEING BAD\");",
+									"});",
+									"",
+									"//FAILS DUE TO RP-??"
+								],
+								"type": "text/javascript"
+							}
 						}
-					]
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_bearer_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\":\"{{parent_name}}\",\r\n    \"type\":\"CG\",\r\n    \"active\": true,\r\n    \"partOf\": \"{{child1_identifier}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{server_url}}/api/v1/organization/{{parent_identifier}}",
+							"host": [
+								"{{server_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"organization",
+								"{{parent_identifier}}"
+							]
+						}
+					},
+					"response": []
 				},
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "{{server_url}}/api/v1/organization?name={{parent_name}}&_summary=FALSE",
-					"host": [
-						"{{server_url}}"
-					],
-					"path": [
-						"api",
-						"v1",
-						"organization"
-					],
-					"query": [
+				{
+					"name": "search child1a by name",
+					"event": [
 						{
-							"key": "name",
-							"value": "{{parent_name}}"
-						},
-						{
-							"key": "_summary",
-							"value": "FALSE"
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", () => {",
+									"  pm.expect(pm.response.code).to.eql(200);",
+									"});",
+									"",
+									"const jsonData = pm.response.json();",
+									"pm.test(\"Test data of the response\", () => {",
+									"  pm.expect(jsonData.content[0].headOf).to.be.empty;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
 						}
-					]
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_bearer_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{server_url}}/api/v1/organization?name={{child1a_name}}&_summary=FALSE",
+							"host": [
+								"{{server_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"organization"
+							],
+							"query": [
+								{
+									"key": "type",
+									"value": null,
+									"disabled": true
+								},
+								{
+									"key": "root",
+									"value": null,
+									"disabled": true
+								},
+								{
+									"key": "name",
+									"value": "{{child1a_name}}"
+								},
+								{
+									"key": "_summary",
+									"value": "FALSE"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "delete child2",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 204\", () => {",
+									"  pm.expect(pm.response.code).to.eql(204);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{server_url}}/api/v1/organization/{{child2_identifier}}",
+							"host": [
+								"{{server_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"organization",
+								"{{child2_identifier}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "search child1a by name",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", () => {",
+									"  pm.expect(pm.response.code).to.eql(200);",
+									"});",
+									"",
+									"const jsonData = pm.response.json();",
+									"pm.test(\"Test data of the response\", () => {",
+									"  pm.expect(jsonData.totalPages).to.eql(0);",
+									"  pm.expect(jsonData.totalElements).to.eql(0);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_bearer_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{server_url}}/api/v1/organization?name={{child1a_name}}",
+							"host": [
+								"{{server_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"organization"
+							],
+							"query": [
+								{
+									"key": "type",
+									"value": null,
+									"disabled": true
+								},
+								{
+									"key": "root",
+									"value": null,
+									"disabled": true
+								},
+								{
+									"key": "_summary",
+									"value": null,
+									"disabled": true
+								},
+								{
+									"key": "name",
+									"value": "{{child1a_name}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "delete root",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 204\", () => {",
+									"  pm.expect(pm.response.code).to.eql(204);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{server_url}}/api/v1/organization/{{parent_identifier}}",
+							"host": [
+								"{{server_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"organization",
+								"{{parent_identifier}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "search root by name without summary",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", () => {",
+									"  pm.expect(pm.response.code).to.eql(200);",
+									"});",
+									"",
+									"const jsonData = pm.response.json();",
+									"pm.test(\"Test data of the response\", () => {",
+									"  pm.expect(jsonData.totalPages).to.eql(0);",
+									"  pm.expect(jsonData.totalElements).to.eql(0);",
+									"  pm.expect(jsonData.content).to.be.empty;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_bearer_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{server_url}}/api/v1/organization?name={{parent_name}}&_summary=FALSE",
+							"host": [
+								"{{server_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"organization"
+							],
+							"query": [
+								{
+									"key": "name",
+									"value": "{{parent_name}}"
+								},
+								{
+									"key": "_summary",
+									"value": "FALSE"
+								}
+							]
+						}
+					},
+					"response": []
 				}
-			},
-			"response": []
+			]
+		},
+		{
+			"name": "user",
+			"item": []
 		}
 	]
 }
