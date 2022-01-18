@@ -3,6 +3,7 @@ package com.revealprecision.revealserver.persistence.domain;
 import java.util.List;
 import java.util.Set;
 import lombok.*;
+import lombok.experimental.FieldNameConstants;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
@@ -23,6 +24,7 @@ import java.util.UUID;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@FieldNameConstants
 public class Person extends AbstractAuditableEntity{
 
     @Id
@@ -47,8 +49,8 @@ public class Person extends AbstractAuditableEntity{
 
     private Date birthDate;
 
-    @OneToMany(cascade = CascadeType.ALL,mappedBy = "person")
-    private List<PersonGroup> personGroups;
+//    @OneToMany(cascade = CascadeType.ALL,mappedBy = "person")
+//    private List<PersonGroup> personGroups;
 
     @ManyToMany
     @JoinTable(name = "person_group",

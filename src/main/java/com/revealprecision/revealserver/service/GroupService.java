@@ -5,6 +5,7 @@ import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.Group;
 import com.revealprecision.revealserver.persistence.domain.Location;
+import com.revealprecision.revealserver.persistence.domain.Organization.Fields;
 import com.revealprecision.revealserver.persistence.repository.GroupRepository;
 import java.util.Optional;
 import java.util.UUID;
@@ -12,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -27,10 +29,8 @@ public class GroupService {
     this.locationService = locationService;
   }
 
-
-  public Page<Group> getGroups(String searchParam,
-      String groupName,
-      String locationName, Integer pageNumber, Integer pageSize) {
+  public Page<Group> getGroups(String searchParam, String groupName, String locationName,
+      Integer pageNumber, Integer pageSize) {
 
     if (searchParam != null) {
       return groupRepository.findGroupByNameContainingIgnoreCaseOrLocation_NameContainingIgnoreCase(
@@ -38,8 +38,8 @@ public class GroupService {
     }
 
     if (groupName != null && locationName != null) {
-      return groupRepository.findGroupByNameAndLocation_NameIgnoreCase(
-          groupName, locationName, PageRequest.of(pageNumber, pageSize));
+      return groupRepository.findGroupByNameAndLocation_NameIgnoreCase(groupName, locationName,
+          PageRequest.of(pageNumber, pageSize));
     } else {
       if (groupName != null) {
         return groupRepository.findGroupByNameIgnoreCase(groupName,
@@ -56,14 +56,13 @@ public class GroupService {
 
 
   public Group createGroup(GroupRequest groupRequest) {
-    var groupBuilder = Group.builder()
-        .type(groupRequest.getType().toString())
+    Group.GroupBuilder groupBuilder = Group.builder().type(groupRequest.getType().toString())
         .name(groupRequest.getName());
 
     if (groupRequest.getLocationIdentifier() != null) {
-      Optional<Location> locationOptional = locationService.findByIdentifier(
+      Location location = locationService.findByIdentifier(
           groupRequest.getLocationIdentifier());
-      locationOptional.ifPresent(groupBuilder::location);
+      groupBuilder.location(location);
     }
 
     Group group = groupBuilder.build();
@@ -74,52 +73,28 @@ public class GroupService {
     return save;
   }
 
+
   public Group getGroupByIdentifier(UUID groupIdentifier) {
-    //TODO or else
-    var group = groupRepository.findByIdentifier(groupIdentifier);
-
-    if (group.isEmpty()) {
-      //TODO use the exception const
-      throw new NotFoundException("Group with identifier " + groupIdentifier + " not found");
-    }
-
-    return group.get();
+    return groupRepository.findByIdentifier(groupIdentifier).orElseThrow(
+        () -> new NotFoundException(Pair.of(Fields.identifier, groupIdentifier), Group.class));
   }
 
   public void removeGroup(UUID groupIdentifier) {
-    var group = groupRepository.findByIdentifier(groupIdentifier);
-
-    if (group.isEmpty()) {
-      throw new NotFoundException("Group with identifier " + groupIdentifier + " not found");
-    }
-
-    groupRepository.delete(group.get());
+    Group group = getGroupByIdentifier(groupIdentifier);
+    groupRepository.delete(group);
   }
 
   public Group updateGroup(UUID groupIdentifier, GroupRequest groupRequest) {
-    var group = groupRepository.findByIdentifier(groupIdentifier);
 
-    //TODO use get by identifier above
-    if (group.isEmpty()) {
-      throw new NotFoundException("Group with identifier " + groupIdentifier + " not found");
-    }
-
-    var groupRetrieved = group.get();
-
+    Group groupRetrieved = getGroupByIdentifier(groupIdentifier);
     groupRetrieved.setName(groupRequest.getName());
     groupRetrieved.setType(groupRequest.getType().toString());
 
     if (groupRequest.getLocationIdentifier() != null) {
-      //TODO use exception from the location service
-      var location = locationService.findByIdentifier(groupRequest.getLocationIdentifier());
+      Location location = locationService.findByIdentifier(
+          groupRequest.getLocationIdentifier());
 
-      if (location.isEmpty()) {
-        throw new NotFoundException(
-            "Cannot create group with locationidentifier " + groupRequest.getLocationIdentifier()
-                + " as location is not found");
-      }
-
-      groupRetrieved.setLocation(location.get());
+      groupRetrieved.setLocation(location);
     } else {
       groupRetrieved.setLocation(null);
     }
