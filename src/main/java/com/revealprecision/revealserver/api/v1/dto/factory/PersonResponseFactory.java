@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.api.v1.dto.factory;
 
+import com.revealprecision.revealserver.api.v1.dto.request.PersonRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.PersonRequest.Gender;
 import com.revealprecision.revealserver.api.v1.dto.request.PersonRequest.Name;
 import com.revealprecision.revealserver.api.v1.dto.request.PersonRequest.Use;
@@ -30,7 +31,7 @@ public class PersonResponseFactory {
       var groups = person.getGroups()
           .stream().map(group ->
               Group.builder().identifier(group
-                  .getIdentifier())
+                      .getIdentifier())
                   .name(group.getName())
                   .type(group.getType())
                   .build())
@@ -42,7 +43,6 @@ public class PersonResponseFactory {
   }
 
   public static PersonResponse fromCount(Long count) {
-
     return PersonResponse.builder().count(count).build();
   }
 

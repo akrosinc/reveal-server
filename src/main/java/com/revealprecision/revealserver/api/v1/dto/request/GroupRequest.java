@@ -1,11 +1,8 @@
 package com.revealprecision.revealserver.api.v1.dto.request;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.revealprecision.revealserver.enums.GroupTypeEnum;
-import lombok.Builder;
-import lombok.Data;
-
 import java.util.UUID;
+import lombok.Data;
 
 @Data
 public class GroupRequest {
