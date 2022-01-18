@@ -19,4 +19,5 @@ public class GoalResponse {
   private PriorityEnum priority;
   private String description;
   private Set<TargetResponse> targets;
+  private Set<ActionResponse> actions;
 }

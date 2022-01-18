@@ -18,11 +18,17 @@ public class GoalResponseFactory {
         .map(TargetResponseFactory::fromEntity)
         .collect(Collectors.toSet());
 
+    var actions = goal.getActions()
+        .stream()
+        .map(ActionResponseFactory::fromEntity)
+        .collect(Collectors.toSet());
+
     return GoalResponse.builder()
         .identifier(goal.getIdentifier())
         .priority(goal.getPriority())
         .description(goal.getDescription())
         .targets(targets)
+        .actions(actions)
         .build();
   }
 
