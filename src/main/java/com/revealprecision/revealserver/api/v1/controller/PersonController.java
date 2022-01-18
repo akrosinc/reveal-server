@@ -4,16 +4,15 @@ import com.revealprecision.revealserver.api.v1.dto.factory.PersonResponseFactory
 import com.revealprecision.revealserver.api.v1.dto.request.PersonRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.PersonResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.PersonResponse.PersonResponseBuilder;
-import com.revealprecision.revealserver.persistence.domain.Person;
 import com.revealprecision.revealserver.service.PersonService;
+import com.revealprecision.revealserver.service.models.PersonSearchCriteria;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import java.util.List;
+import java.time.LocalDate;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -47,6 +46,8 @@ public class PersonController {
       "Person"})
   @ResponseStatus(HttpStatus.OK)
   @GetMapping(value = "/person", produces = "application/json")
+
+  //TODO use pageable and wrap the request parms
   public ResponseEntity<?> getPersonsSearch(
       @RequestParam(name = "search", required = false) String searchParam,
       @RequestParam(name = "first_name", required = false) String searchFirstName,
@@ -55,73 +56,70 @@ public class PersonController {
       @RequestParam(name = "location", required = false) String searchLocation,
       @RequestParam(name = "group", required = false) String searchGroup,
       @RequestParam(name = "birthDate", required = false) String searchBirthDate,
-      @RequestParam(name = "birthDate_lessThan", required = false) String searchBirthDateLessThan,
-      @RequestParam(name = "birthDate_greaterThan", required = false) String searchBirthDateMoreThan,
+      @RequestParam(name = "fromDate", required = false) String searchFromDate,
+      @RequestParam(name = "toDate", required = false) String searchToDate,
       @RequestParam(name = "_summary", required = false) String searchSummary,
       @RequestParam(defaultValue = "0", required = false) Integer pageNumber,
       @RequestParam(defaultValue = "50", required = false) Integer pageSize) {
 
+
+    //TODO summary enum and use
     String summary = "true";
     if (searchSummary != null) {
       summary = searchSummary;
     }
 
-    if (searchParam != null) {
-      switch (summary) {
-        case "true":
+    if (searchToDate == null && searchFromDate != null){
+      searchToDate = LocalDate.now().toString();
+    }
+
+    PersonSearchCriteria criteria = PersonSearchCriteria.builder()
+        .firstName(searchFirstName)
+        .lastName(searchLastName)
+        .birthdate(searchBirthDate)
+        .fromDate(searchFromDate)
+        .toDate(searchToDate)
+        .gender(searchGender)
+        .location(searchLocation)
+        .group(searchGroup).build();
+
+    switch (summary) {
+      case "true":
+        if (searchParam != null) {
           return new ResponseEntity<>(new PageImpl<>(
-              personService.searchPersonByOneValueAcrossAllFields(searchParam, pageNumber, pageSize)
-                  .stream()
+              personService.searchPersonByOneValueAcrossAllFields(searchParam, pageNumber, pageSize).stream()
                   .map(PersonResponseFactory::getPersonResponseBuilder)
-                  .map(PersonResponseBuilder::build)
-                  .collect(Collectors.toList())), HttpStatus.OK);
-
-        case "false":
-          Page<Person> people = personService.searchPersonByOneValueAcrossAllFields(
-              searchParam, pageNumber, pageSize);
-
-          Page<PersonResponse> personResponses = new PageImpl<>(people.stream()
-              .map(PersonResponseFactory::fromEntity)
-              .collect(Collectors.toList()));
-
-          return new ResponseEntity<>(
-              personResponses, HttpStatus.OK);
-
-        case "count":
-          return new ResponseEntity<>(
-              personService.countPersonByOneValueAcrossAllFields(searchParam), HttpStatus.OK);
-
-      }
-    } else {
-      switch (summary) {
-        case "true":
-          return new ResponseEntity<>(
-              new PageImpl<>(personService.searchPersonByMultipleValuesAcrossFields(searchFirstName,
-                      searchLastName, searchGender,
-                      searchLocation, searchGroup, searchBirthDate, searchBirthDateLessThan,
-                      searchBirthDateMoreThan).stream()
+                  .map(PersonResponseBuilder::build).collect(Collectors.toList())), HttpStatus.OK);
+        } else {
+          return new ResponseEntity<>(new PageImpl<>(
+              personService.searchPersonByMultipleValuesAcrossFields(criteria, pageNumber, pageSize).stream()
                   .map(person -> PersonResponseFactory.getPersonResponseBuilder(person).build())
                   .collect(Collectors.toList())), HttpStatus.OK);
+        }
 
-        case "false":
+      case "false":
+        if (searchParam != null) {
+          return new ResponseEntity<>(new PageImpl<>(
+              personService.searchPersonByOneValueAcrossAllFields(searchParam, pageNumber, pageSize).stream()
+                  .map(PersonResponseFactory::fromEntity).collect(Collectors.toList())),
+              HttpStatus.OK);
+        } else {
+          return new ResponseEntity<>(new PageImpl<>(
+              personService.searchPersonByMultipleValuesAcrossFields(criteria, pageNumber, pageSize).stream()
+                  .map(PersonResponseFactory::fromEntity).collect(Collectors.toList())),
+              HttpStatus.OK);
+        }
+
+      case "count":
+        if (searchParam != null) {
           return new ResponseEntity<>(
-              new PageImpl<>(personService.searchPersonByMultipleValuesAcrossFields(searchFirstName,
-                      searchLastName, searchGender,
-                      searchLocation, searchGroup, searchBirthDate, searchBirthDateLessThan,
-                      searchBirthDateMoreThan).stream()
-                  .map(PersonResponseFactory::fromEntity)
-                  .collect(Collectors.toList())), HttpStatus.OK);
-
-        case "count":
+              personService.countPersonByOneValueAcrossAllFields(searchParam), HttpStatus.OK);
+        } else {
           return new ResponseEntity<>(PersonResponseFactory.fromCount(
-              personService.countPersonByMultipleValuesAcrossFields(searchFirstName,
-                  searchLastName, searchGender,
-                  searchLocation, searchGroup, searchBirthDate, searchBirthDateLessThan,
-                  searchBirthDateMoreThan)), HttpStatus.OK);
-
-      }
+              personService.countPersonByMultipleValuesAcrossFields(criteria)), HttpStatus.OK);
+        }
     }
-    return null;
+    return new ResponseEntity<>(personService.getAllPersons(pageNumber, pageSize), HttpStatus.OK);
   }
 
 
@@ -148,7 +146,7 @@ public class PersonController {
       @Parameter(description = "Person identifier") @PathVariable("identifier") UUID personIdentifier) {
     personService.removePerson(personIdentifier);
     return ResponseEntity.status(HttpStatus.NO_CONTENT)
-        .body("Person with identifier " + personIdentifier + " deleted");
+        .body("Person with identifier " + personIdentifier + " removed");
   }
 
   @Operation(summary = "Update a person by identfier", description = "Update a person by identfier", tags = {

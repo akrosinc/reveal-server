@@ -24,6 +24,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/")
+//TODO add group mapping here and remove below
 public class GroupController {
 
   private final GroupService groupService;
@@ -41,6 +42,7 @@ public class GroupController {
   @GetMapping(value = "/group",
       produces = "application/json"
   )
+  //TODO fix response
   public Page<GroupResponse> getGroups(
       @Parameter(description = "Page number to return") @RequestParam(defaultValue = "0", required = false) Integer pageNumber,
       @Parameter(description = "Number of records per page") @RequestParam(defaultValue = "50", required = false) Integer pageSize,
@@ -69,6 +71,7 @@ public class GroupController {
   @GetMapping(value = "/group/{identifier}",
       produces = MediaType.APPLICATION_JSON_VALUE
   )
+  //TODO use summary enum
   public GroupResponse getGroupByIdentifier(
       @Parameter(description = "Group identifier") @PathVariable("identifier") UUID groupIdentifier
   ,@RequestParam(name = "_summary",required = false) boolean showSummary) {

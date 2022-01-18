@@ -18,9 +18,4 @@ public class RevealServerApplication {
         SpringApplication.run(RevealServerApplication.class, args);
     }
 
-
-
-
-
-
 }

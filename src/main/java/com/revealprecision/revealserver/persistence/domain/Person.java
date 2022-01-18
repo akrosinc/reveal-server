@@ -47,8 +47,8 @@ public class Person extends AbstractAuditableEntity{
 
     private Date birthDate;
 
-//    @OneToMany(cascade = CascadeType.ALL,mappedBy = "person")
-//    private List<PersonGroup> personGroups;
+    @OneToMany(cascade = CascadeType.ALL,mappedBy = "person")
+    private List<PersonGroup> personGroups;
 
     @ManyToMany
     @JoinTable(name = "person_group",
