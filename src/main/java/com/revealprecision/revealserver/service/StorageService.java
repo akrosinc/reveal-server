@@ -14,6 +14,8 @@ import org.springframework.web.multipart.MultipartFile;
 @Service
 public class StorageService {
 
+  public static final String TEMPLATE_BASE_PATH = "src/main/resources/template/";
+
   public String saveCSV(MultipartFile file) {
     if (!file.getContentType().equals("text/csv")) {
       throw new FileFormatException("Wrong file format. You can upload only .csv file!");
@@ -29,8 +31,7 @@ public class StorageService {
   }
 
   public String saveJSON(MultipartFile file) {
-    //TODO: combine methods for saving file? should we be checking for file extension or MIME type or both?
-    if (!file.getContentType().endsWith(MediaType.APPLICATION_JSON_VALUE)) {
+    if (!MediaType.APPLICATION_JSON_VALUE.equals(file.getContentType())) {
       throw new FileFormatException("Wrong file format. You can upload only .json file!");
     }
     String path = "src/main/resources/batch/" + file.getOriginalFilename();
@@ -48,8 +49,8 @@ public class StorageService {
     file.delete();
   }
 
-  public ByteArrayResource downloadTemplate() throws IOException {
-    Path path = Paths.get("src/main/resources/template/AkrosTemplate.xlsx");
+  public ByteArrayResource downloadTemplate(String fileName) throws IOException {
+    Path path = Paths.get(TEMPLATE_BASE_PATH + fileName);
     ByteArrayResource resource = new ByteArrayResource(Files.readAllBytes(path));
 
     return resource;
