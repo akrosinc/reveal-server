@@ -1,8 +1,9 @@
 package com.revealprecision.revealserver.persistence.domain;
 
-import com.revealprecision.revealserver.api.v1.dto.request.UserRequest;
+import com.revealprecision.revealserver.api.v1.dto.request.UserUpdateRequest;
 import java.util.Set;
 import java.util.UUID;
+import javax.persistence.CascadeType;
 import javax.persistence.CollectionTable;
 import javax.persistence.Column;
 import javax.persistence.ElementCollection;
@@ -38,7 +39,7 @@ import org.hibernate.envers.Audited;
 @Where(clause = "entity_status='ACTIVE'")
 public class User extends AbstractAuditableEntity {
 
-  @ManyToMany
+  @ManyToMany(cascade = CascadeType.ALL)
   @JoinTable(
       name = "user_organization",
       joinColumns = @JoinColumn(name = "user_identifier"),
@@ -54,7 +55,7 @@ public class User extends AbstractAuditableEntity {
   @Column(nullable = false)
   private String lastName;
   @Column(nullable = false)
-  private String userName;
+  private String username;
   @Column(nullable = false)
   @Email
   private String email;
@@ -69,11 +70,10 @@ public class User extends AbstractAuditableEntity {
 
   private String apiResponse;
 
-  public User updateUser(UserRequest request) {
+  public User updateUser(UserUpdateRequest request) {
     this.firstName = request.getFirstName();
     this.lastName = request.getLastName();
     this.email = request.getEmail();
-    this.securityGroups = request.getSecurityGroups();
     return this;
   }
 }

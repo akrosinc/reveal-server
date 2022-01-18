@@ -33,7 +33,7 @@ public class UserJobCompletionNotificationListener implements JobExecutionListen
     userBulk.setStatus(BulkStatusEnum.COMPLETE);
     userBulkRepository.save(userBulk);
     try {
-      storageService.deleteCSV(filePath);
+      storageService.deleteFile(filePath);
     } catch (IOException e) {
       e.printStackTrace();
     }

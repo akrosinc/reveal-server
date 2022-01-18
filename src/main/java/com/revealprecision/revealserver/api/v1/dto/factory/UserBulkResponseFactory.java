@@ -16,7 +16,7 @@ public class UserBulkResponseFactory {
     return UserBulkResponse.builder()
         .filename(userBulk.getFilename())
         .identifier(userBulk.getIdentifier())
-        .uploadDatetime(userBulk.getUploadDatetime())
+        .uploadDatetime(userBulk.getUploadedDatetime())
         .status(userBulk.getStatus()).build();
   }
 

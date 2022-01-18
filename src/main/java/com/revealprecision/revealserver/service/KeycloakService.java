@@ -1,12 +1,17 @@
 package com.revealprecision.revealserver.service;
 
+import com.revealprecision.revealserver.api.v1.dto.request.UserPasswordRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.UserRequest;
+import com.revealprecision.revealserver.api.v1.dto.request.UserUpdateRequest;
 import com.revealprecision.revealserver.config.KeycloakConfig;
 import com.revealprecision.revealserver.exceptions.ConflictException;
 import com.revealprecision.revealserver.exceptions.KeycloakException;
+import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.persistence.repository.UserRepository;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -20,6 +25,7 @@ import org.keycloak.admin.client.resource.UsersResource;
 import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.GroupRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -50,7 +56,7 @@ public class KeycloakService {
         userRequest.getPassword(), userRequest.isTempPassword());
 
     UserRepresentation kcUser = new UserRepresentation();
-    kcUser.setUsername(userRequest.getUserName());
+    kcUser.setUsername(userRequest.getUsername());
     kcUser.setCredentials(Collections.singletonList(credentialRepresentation));
     kcUser.setFirstName(userRequest.getFirstName());
     kcUser.setLastName(userRequest.getLastName());
@@ -66,7 +72,7 @@ public class KeycloakService {
 
     response.close();
     if (response.getStatus() == 201) {
-      UserRepresentation kcCreatedUser = usersResource.search(userRequest.getUserName()).get(0);
+      UserRepresentation kcCreatedUser = usersResource.search(userRequest.getUsername()).get(0);
       return kcCreatedUser.getId();
     } else if (response.getStatus() == 409) {
       JSONObject error = new JSONObject(output);
@@ -92,7 +98,7 @@ public class KeycloakService {
     }
   }
 
-  public void updateUser(String kcId, UserRequest userRequest) {
+  public Set<String> updateUser(String kcId, UserUpdateRequest userRequest) {
     UserResource userResource = KeycloakConfig.getInstance().realm(KeycloakConfig.realm).users()
         .get(kcId);
 
@@ -100,15 +106,16 @@ public class KeycloakService {
       UserRepresentation kcUser = userResource.toRepresentation();
       kcUser.setFirstName(userRequest.getFirstName());
       kcUser.setLastName(userRequest.getLastName());
-      kcUser.setEmail(userRequest.getEmail());
+      kcUser.setEmail(userRequest.getEmail() == null ? "" : userRequest.getEmail());
       userResource.update(kcUser);
-      updateGroups(kcId, userRequest.getSecurityGroups());
+      return updateGroups(kcId, userRequest.getSecurityGroups());
     } else {
       throw new KeycloakException("User not found in Keycloak");
     }
   }
 
-  private void updateGroups(String kcId, Set<String> newGroups) {
+  private Set<String> updateGroups(String kcId, Set<String> newGroups) {
+    Set<String> response = new HashSet<>();
     Map<String, GroupRepresentation> groups = KeycloakConfig.getInstance()
         .realm(KeycloakConfig.realm)
         .groups().groups().stream()
@@ -118,11 +125,34 @@ public class KeycloakService {
 
     groups.forEach(
         (s, groupRepresentation) -> userResource.leaveGroup(groupRepresentation.getId()));
-    newGroups.stream().forEach(s -> {
-      GroupRepresentation representation = groups.get(s);
-      if (representation != null) {
-        userResource.joinGroup(representation.getId());
+    newGroups.stream()
+        .filter(groups::containsKey)
+        .forEach(s -> {
+          GroupRepresentation representation = groups.get(s);
+          userResource.joinGroup(representation.getId());
+          response.add(s);
+        });
+    return response;
+  }
+
+  public void resetPassword(String kcId, UserPasswordRequest request) {
+    UserResource userResource = KeycloakConfig.getInstance().realm(KeycloakConfig.realm).users()
+        .get(kcId);
+
+    CredentialRepresentation credentialRepresentation = createPasswordCredentials(
+        request.getPassword(), request.isTempPassword());
+
+    userResource.resetPassword(credentialRepresentation);
+  }
+
+  @Async
+  public void deleteAll(List<User> users, UsersResource resource) {
+    int i = 0;
+    for (User u : users) {
+      if (u.getSid() != null) {
+        resource.delete(u.getSid().toString());
+        System.out.println(++i);
       }
-    });
+    }
   }
 }

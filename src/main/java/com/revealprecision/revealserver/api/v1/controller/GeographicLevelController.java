@@ -11,7 +11,6 @@ import javax.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -25,7 +24,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/")
+@RequestMapping("/api/v1/geographicLevel")
 public class GeographicLevelController {
 
   private GeographicLevelService geographicLevelService;
@@ -37,9 +36,9 @@ public class GeographicLevelController {
 
   @Operation(summary = "Create a geographicLevel",
       description = "Create a geographicLevel",
-      tags = {"Location"}
+      tags = {"Geographic Level"}
   )
-  @PostMapping(value = "/geographicLevel", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<GeographicLevelResponse> create(
       @Valid @RequestBody GeographicLevelRequest geographicLevelRequest) {
     return ResponseEntity.status(HttpStatus.CREATED).body(GeographicLevelResponseFactory.fromEntity(
@@ -49,12 +48,10 @@ public class GeographicLevelController {
 
   @Operation(summary = "List geographicLevels",
       description = "List geographicLevels",
-      tags = {"Location"}
+      tags = {"Geographic Level"}
   )
-  @GetMapping(value = "/geographicLevel", produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<Page<GeographicLevelResponse>> getGeographicLevels(
-      @PageableDefault(size = 50)
-          Pageable pageable) {
+  @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<Page<GeographicLevelResponse>> getGeographicLevels(Pageable pageable) {
 
     return ResponseEntity.status(HttpStatus.OK).body(
         GeographicLevelResponseFactory.fromEntityPage(
@@ -63,9 +60,9 @@ public class GeographicLevelController {
 
   @Operation(summary = "Fetch a geographicLevel",
       description = "Fetch a geographicLevel",
-      tags = {"Location"}
+      tags = {"Geographic Level"}
   )
-  @GetMapping(value = "/geographicLevel/{identifier}", produces = MediaType.APPLICATION_JSON_VALUE)
+  @GetMapping(value = "/{identifier}", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<GeographicLevelResponse> findGeographicLevelByIdentifier(
       @Parameter(description = "Identifier of the geographicLevel") @PathVariable UUID identifier) {
     return ResponseEntity.status(HttpStatus.OK).body(GeographicLevelResponseFactory.fromEntity(
@@ -74,9 +71,9 @@ public class GeographicLevelController {
 
   @Operation(summary = "Update a geographicLevel",
       description = "Update a geographicLevel",
-      tags = {"Location"}
+      tags = {"Geographic Level"}
   )
-  @PutMapping(value = "/geographicLevel/{identifier}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  @PutMapping(value = "/{identifier}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<GeographicLevelResponse> updateGeographicLevel(
       @Valid @RequestBody GeographicLevelRequest geographicLevelRequest,
       @Parameter(description = "Identifier of the geographicLevel") @PathVariable UUID identifier) {
@@ -87,9 +84,9 @@ public class GeographicLevelController {
 
   @Operation(summary = "Delete a geographicLevel",
       description = "Delete a geographicLevel",
-      tags = {"Location"}
+      tags = {"Geographic Level"}
   )
-  @DeleteMapping(value = "/geographicLevel/{identifier}")
+  @DeleteMapping(value = "/{identifier}")
   public ResponseEntity<Void> deleteGeographicLeve(@PathVariable UUID identifier) {
     geographicLevelService.deleteGeographicLevel(identifier);
     return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
