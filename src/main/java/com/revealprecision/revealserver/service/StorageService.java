@@ -6,21 +6,26 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import lombok.RequiredArgsConstructor;
+import org.springframework.core.env.Environment;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
+@RequiredArgsConstructor
 public class StorageService {
 
-  public static final String TEMPLATE_BASE_PATH = "src/main/resources/template/";
+
+  private final Environment environment;
+
 
   public String saveCSV(MultipartFile file) {
     if (!file.getContentType().equals("text/csv")) {
       throw new FileFormatException("Wrong file format. You can upload only .csv file!");
     }
-    String path = "src/main/resources/batch/" + file.getOriginalFilename();
+    String path = environment.getProperty("batch.location") + file.getOriginalFilename();
     Path filePath = Paths.get(path);
     try {
       file.transferTo(filePath);
@@ -34,7 +39,7 @@ public class StorageService {
     if (!MediaType.APPLICATION_JSON_VALUE.equals(file.getContentType())) {
       throw new FileFormatException("Wrong file format. You can upload only .json file!");
     }
-    String path = "src/main/resources/batch/" + file.getOriginalFilename();
+    String path = environment.getProperty("batch.location") + file.getOriginalFilename();
     Path filePath = Paths.get(path);
     try {
       file.transferTo(filePath);
@@ -50,7 +55,7 @@ public class StorageService {
   }
 
   public ByteArrayResource downloadTemplate(String fileName) throws IOException {
-    Path path = Paths.get(TEMPLATE_BASE_PATH + fileName);
+    Path path = Paths.get(environment.getProperty("batch.template") + fileName);
     ByteArrayResource resource = new ByteArrayResource(Files.readAllBytes(path));
 
     return resource;
