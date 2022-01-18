@@ -14,15 +14,19 @@ import lombok.NoArgsConstructor;
 public class GroupResponseFactory {
 
   public static GroupResponse fromEntity(Group group, SummaryEnum summary) {
+
     GroupResponseBuilder groupResponseBuilder = GroupResponse.builder()
         .identifier(group.getIdentifier()).name(group.getName())
         .type(GroupTypeEnum.valueOf(group.getType())).locationIdentifier(
             group.getLocation() == null ? null : group.getLocation().getIdentifier());
 
     if (summary.equals(SummaryEnum.FALSE)) {
-      groupResponseBuilder.relationships(Relationships.builder().person(group.getPersons().stream()
-          .map(person1 -> PersonResponseFactory.getPersonResponseBuilder(person1).build())
-          .collect(Collectors.toList())).build());
+      if (group.getPersons() != null) {
+        groupResponseBuilder.relationships(
+            Relationships.builder().person(group.getPersons().stream()
+                .map(person1 -> PersonResponseFactory.getPersonResponseBuilder(person1).build())
+                .collect(Collectors.toList())).build());
+      }
     }
 
     return groupResponseBuilder.build();
