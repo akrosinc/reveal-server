@@ -43,7 +43,7 @@ public class OrganizationController {
   )
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<OrganizationResponse> createOrganization(
-      @RequestBody OrganizationRequest organizationRequest) {
+      @Valid @RequestBody OrganizationRequest organizationRequest) {
     return ResponseEntity.status(HttpStatus.CREATED)
         .body(OrganizationResponseFactory.fromEntityWithoutChild(
             organizationService.createOrganization(organizationRequest)));
