@@ -8,12 +8,12 @@ import com.revealprecision.revealserver.persistence.domain.Group;
 import com.revealprecision.revealserver.persistence.domain.Person;
 import com.revealprecision.revealserver.persistence.repository.PersonRepository;
 import com.revealprecision.revealserver.persistence.specification.PersonSpec;
+import com.revealprecision.revealserver.service.models.PersonSearchCriteria;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
 import java.util.Date;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
@@ -37,7 +37,7 @@ public class PersonService {
   }
 
   public Person createPerson(PersonRequest personRequest) {
-
+//TODO Use factory
     var person = Person.builder().nameFamily(personRequest.getName().getFamily())
         .nameGiven(personRequest.getName().getGiven())
         .namePrefix(personRequest.getName().getPrefix())
@@ -85,7 +85,7 @@ public class PersonService {
 
     personRepository.delete(person.get());
   }
-
+//TODO fix person update
   public Person updatePerson(UUID personIdentifier, PersonRequest personRequest) {
     var person = personRepository.findByIdentifier(personIdentifier);
 
@@ -138,7 +138,6 @@ public class PersonService {
   }
 
   public Long countPersonByNameLike(String searchParam, boolean active) {
-//TODO: talk about min characters to do a search
 
     Specification<Person> personSpecification = PersonSpec.getPersonSpecification(searchParam,
         searchParam, searchParam, searchParam, searchParam, null, null, null, false);
@@ -159,56 +158,105 @@ public class PersonService {
         Date.from(date.atStartOfDay(ZoneId.systemDefault()).toInstant()));
   }
 
-  public List<Person> searchPersonByMultipleValuesAcrossFields(String searchFirstName,
-      String searchLastName, String searchGender, String searchLocation, String searchGroup,
-      String searchBirthDate, String searchBirthDateLessThan, String searchBirthDateMoreThan) {
 
-    LocalDate searchBirthLocalDate;
-    LocalDate searchBirthDateLessThanLocalDate;
-    LocalDate searchBirthDateMoreThanLocalDate;
+  public Page<Person> searchPersonByMultipleValuesAcrossFields(PersonSearchCriteria criteria, Integer pageNumber,
+      Integer pageSize) {
 
-    try {
-      searchBirthLocalDate = searchBirthDate != null ? LocalDate.parse(searchBirthDate) : null;
-      searchBirthDateLessThanLocalDate =
-          searchBirthDateLessThan != null ? LocalDate.parse(searchBirthDateLessThan) : null;
-      searchBirthDateMoreThanLocalDate =
-          searchBirthDateMoreThan != null ? LocalDate.parse(searchBirthDateMoreThan) : null;
-    } catch (DateTimeParseException e) {
-      throw new InvalidDateFormatException(e.getMessage());
-    }
+    Specification<Person> personSpecification = getPersonSearchQuery(
+        criteria);
 
-    Specification<Person> personSpecification = PersonSpec.getPersonSpecification(searchFirstName,
-        searchLastName, searchGender, searchLocation, searchGroup, searchBirthLocalDate,
-        searchBirthDateLessThanLocalDate, searchBirthDateMoreThanLocalDate, true);
-
-    return personRepository.findAll(personSpecification);
+    return personRepository.findAll(personSpecification,PageRequest.of(pageNumber, pageSize));
 
   }
 
-  public Long countPersonByMultipleValuesAcrossFields(String searchFirstName, String searchLastName,
-      String searchGender, String searchLocation, String searchGroup, String searchBirthDate,
-      String searchBirthDateLessThan, String searchBirthDateMoreThan) {
+  public Page<Person> getAllPersons(Integer pageNumber,
+      Integer pageSize) {
+    return personRepository.findAll(PageRequest.of(pageNumber, pageSize));
+  }
 
-    LocalDate searchBirthLocalDate;
-    LocalDate searchBirthDateLessThanLocalDate;
-    LocalDate searchBirthDateMoreThanLocalDate;
-    try {
-      searchBirthLocalDate = searchBirthDate != null ? LocalDate.parse(searchBirthDate) : null;
-      searchBirthDateLessThanLocalDate =
-          searchBirthDateLessThan != null ? LocalDate.parse(searchBirthDateLessThan) : null;
-      searchBirthDateMoreThanLocalDate =
-          searchBirthDateMoreThan != null ? LocalDate.parse(searchBirthDateMoreThan) : null;
-    } catch (DateTimeParseException e) {
-      throw new InvalidDateFormatException(e.getMessage());
-    }
+  public Long countPersonByMultipleValuesAcrossFields(PersonSearchCriteria criteria) {
 
-    Specification<Person> personSpecification = PersonSpec.getPersonSpecification(searchFirstName,
-        searchLastName, searchGender, searchLocation, searchGroup, searchBirthLocalDate,
-        searchBirthDateLessThanLocalDate, searchBirthDateMoreThanLocalDate, true);
+    Specification<Person> personSpecification = getPersonSearchQuery(
+        criteria);
 
     return personRepository.count(personSpecification);
 
   }
+
+  private Specification<Person> getPersonSearchQuery(PersonSearchCriteria criteria) {
+    LocalDate searchBirthLocalDate;
+    LocalDate searchFromDateLocalDate;
+    LocalDate searchToDateLocalDate;
+
+    try {
+      searchBirthLocalDate = criteria.getBirthdate() != null ? LocalDate.parse(criteria.getBirthdate()) : null;
+      searchFromDateLocalDate =
+          criteria.getFromDate() != null ? LocalDate.parse(criteria.getFromDate()) : null;
+      searchToDateLocalDate =
+          criteria.getToDate() != null ? LocalDate.parse(criteria.getToDate()) : null;
+    } catch (DateTimeParseException e) {
+      throw new InvalidDateFormatException(e.getMessage());
+    }
+
+    Specification<Person> personSpecification = PersonSpec.getPersonSpecification(criteria.getFirstName(),
+        criteria.getLastName(), criteria.getGender(), criteria.getLocation(), criteria.getGroup(), searchBirthLocalDate,
+        searchFromDateLocalDate, searchToDateLocalDate, true);
+    return personSpecification;
+  }
+
+//  public Page<Person> searchPersonByMultipleValuesAcrossFields(String searchFirstName,
+//      String searchLastName, String searchGender, String searchLocation, String searchGroup,
+//      String searchBirthDate, String searchBirthDateLessThan, String searchBirthDateMoreThan, Integer pageNumber,
+//      Integer pageSize) {
+//
+//    LocalDate searchBirthLocalDate;
+//    LocalDate searchBirthDateLessThanLocalDate;
+//    LocalDate searchBirthDateMoreThanLocalDate;
+//
+//    try {
+//      searchBirthLocalDate = searchBirthDate != null ? LocalDate.parse(searchBirthDate) : null;
+//      searchBirthDateLessThanLocalDate =
+//          searchBirthDateLessThan != null ? LocalDate.parse(searchBirthDateLessThan) : null;
+//      searchBirthDateMoreThanLocalDate =
+//          searchBirthDateMoreThan != null ? LocalDate.parse(searchBirthDateMoreThan) : null;
+//    } catch (DateTimeParseException e) {
+//      throw new InvalidDateFormatException(e.getMessage());
+//    }
+//
+//    Specification<Person> personSpecification = PersonSpec.getPersonSpecification(searchFirstName,
+//        searchLastName, searchGender, searchLocation, searchGroup, searchBirthLocalDate,
+//        searchBirthDateLessThanLocalDate, searchBirthDateMoreThanLocalDate, true);
+//
+//    return personRepository.findAll(personSpecification,PageRequest.of(pageNumber, pageSize));
+//
+//  }
+
+
+
+//  public Long countPersonByMultipleValuesAcrossFields(String searchFirstName, String searchLastName,
+//      String searchGender, String searchLocation, String searchGroup, String searchBirthDate,
+//      String searchBirthDateLessThan, String searchBirthDateMoreThan) {
+//
+//    LocalDate searchBirthLocalDate;
+//    LocalDate searchBirthDateLessThanLocalDate;
+//    LocalDate searchBirthDateMoreThanLocalDate;
+//    try {
+//      searchBirthLocalDate = searchBirthDate != null ? LocalDate.parse(searchBirthDate) : null;
+//      searchBirthDateLessThanLocalDate =
+//          searchBirthDateLessThan != null ? LocalDate.parse(searchBirthDateLessThan) : null;
+//      searchBirthDateMoreThanLocalDate =
+//          searchBirthDateMoreThan != null ? LocalDate.parse(searchBirthDateMoreThan) : null;
+//    } catch (DateTimeParseException e) {
+//      throw new InvalidDateFormatException(e.getMessage());
+//    }
+//
+//    Specification<Person> personSpecification = PersonSpec.getPersonSpecification(searchFirstName,
+//        searchLastName, searchGender, searchLocation, searchGroup, searchBirthLocalDate,
+//        searchBirthDateLessThanLocalDate, searchBirthDateMoreThanLocalDate, true);
+//
+//    return personRepository.count(personSpecification);
+//
+//  }
 
 
 }

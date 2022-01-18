@@ -10,6 +10,7 @@ import com.revealprecision.revealserver.persistence.domain.Person;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.UUID;
 import javax.persistence.criteria.JoinType;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.SetJoin;
@@ -19,63 +20,77 @@ import org.springframework.data.jpa.domain.Specification;
 @Slf4j
 public class PersonSpec {
 
-  public static Specification<Person> getPersonSpecification(String searchFirstName,
-      String searchLastName, String searchGender, String searchLocation, String searchGroup,
-      LocalDate searchBirthDate, LocalDate searchBirthDateLessThan,
-      LocalDate searchBirthDateMoreThan, boolean andSearch) {
+  public static Specification<Person> getPersonSpecification(String firstName,
+      String lastName, String gender, String location, String group,
+      LocalDate birthDate, LocalDate fromDate,
+      LocalDate toDate, boolean andSearch) {
 
     Specification<Person> personSpecification = Specification.where(null);
 
     StringSearchType searchType = andSearch ? EQUALS : LIKE;
 
-    if (searchGroup != null) {
-      if (searchLocation != null) {
+    boolean searchLocationByIdentifier = false;
+    UUID locationIdentifier = null;
+    try{
+      locationIdentifier = UUID.fromString(location);
+      searchLocationByIdentifier = true;
+    } catch (IllegalArgumentException illegalArgumentException){
+      log.info("Location: {} passed is not a uuid and therefore a name search will be done",location);
+    }
+
+    if (group != null) {
+      if (location != null) {
         personSpecification = PersonSpec.getSpecification(
             personSpecification,
-            PersonSpec.whereGroupAndLocationName(searchType, searchGroup)
+            PersonSpec.whereGroupAndLocationName(searchType, group)
             , searchType);
       } else {
         personSpecification = PersonSpec.getSpecification(personSpecification,
-            PersonSpec.whereGroupName(searchType, searchGroup), searchType);
+            PersonSpec.whereGroupName(searchType, group), searchType);
       }
     } else {
-      if (searchLocation != null) {
-        personSpecification = PersonSpec.getSpecification(personSpecification,
-            PersonSpec.whereLocationName(searchType, searchLocation), searchType);
+      if (location != null) {
+        if (searchLocationByIdentifier){
+          personSpecification = PersonSpec.getSpecification(personSpecification,
+              PersonSpec.whereLocationByIdentifier(locationIdentifier), searchType);
+        } else{
+          personSpecification = PersonSpec.getSpecification(personSpecification,
+              PersonSpec.whereLocationName(searchType, location), searchType);
+        }
       }
     }
 
-    if (searchFirstName != null) {
+    if (firstName != null) {
       personSpecification = PersonSpec.getSpecification(personSpecification,
-          PersonSpec.whereGivenNameOrTextName(searchType, searchFirstName), searchType);
+          PersonSpec.whereGivenNameOrTextName(searchType, firstName), searchType);
     }
 
-    if (searchLastName != null) {
+    if (lastName != null) {
       personSpecification = PersonSpec.getSpecification(personSpecification,
-          PersonSpec.whereFamilyNameOrNameSuffix(searchType, searchLastName), searchType);
+          PersonSpec.whereFamilyNameOrNameSuffix(searchType, lastName), searchType);
     }
 
-    if (searchGender != null) {
+    if (gender != null) {
       personSpecification = PersonSpec.getSpecification(personSpecification,
-          PersonSpec.whereGender(searchType, searchGender), searchType);
+          PersonSpec.whereGender(searchType, gender), searchType);
     }
 
-    if (searchBirthDate != null) {
+    if (birthDate != null) {
       personSpecification = PersonSpec.getSpecification(personSpecification,
           PersonSpec.whereBirthDateEquals(
-              Date.from(searchBirthDate.atStartOfDay(ZoneId.systemDefault()).toInstant())),
+              Date.from(birthDate.atStartOfDay(ZoneId.systemDefault()).toInstant())),
           searchType);
 
-    } else if (searchBirthDateLessThan != null && searchBirthDateMoreThan != null) {
-      var fromDate = Date.from(
-          searchBirthDateLessThan.atStartOfDay(ZoneId.systemDefault()).toInstant());
-      var toDate = Date.from(
-          searchBirthDateMoreThan.atStartOfDay(ZoneId.systemDefault()).toInstant());
-      personSpecification = personSpecification.and(
-          PersonSpec.whereBirthDateBetween(fromDate, toDate));
     } else {
-      //TODO add Exception
-      log.info("Both parameters");
+
+      if (fromDate != null && toDate != null) {
+        var from = Date.from(
+            fromDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
+        var to = Date.from(
+            toDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
+        personSpecification = personSpecification.and(
+            PersonSpec.whereBirthDateBetween(from, to));
+      }
     }
     return personSpecification;
   }
@@ -108,15 +123,14 @@ public class PersonSpec {
                   groups.join("location", JoinType.LEFT).<Location>get("name").as(String.class)),
               "%".concat(locationName).concat("%").toLowerCase());
         };
-//      case LIKE:
-//        return (root, query, criteriaBuilder) -> criteriaBuilder.like(
-//            criteriaBuilder.lower(
-//                root.joinList("personGroups", JoinType.LEFT)
-//                        .join("group",JoinType.LEFT)
-//                    .join("location",JoinType.LEFT).<Location>get("name").as(String.class)),
-//            "%".concat(locationName).concat("%").toLowerCase());
     }
     return null;
+  }
+
+  private static Specification<Person> whereLocationByIdentifier(UUID locationIdentifier) {
+
+    return (root, query, criteriaBuilder) -> criteriaBuilder.equal(
+        root.join("groups").join("location").<Location>get("identifer"), locationIdentifier);
   }
 
   private static Specification<Person> whereGroupAndLocationNameV1(StringSearchType type,
@@ -173,8 +187,9 @@ public class PersonSpec {
           Predicate locationPredicateLike =
               criteriaBuilder.like(
                   criteriaBuilder.lower(
-                  groups.join("location", JoinType.LEFT).<Location>get("name").as(String.class)),
-              pattern);
+                      groups.join("location", JoinType.LEFT).<Location>get("name")
+                          .as(String.class)),
+                  pattern);
           Predicate groupPredicateLike = criteriaBuilder.like(criteriaBuilder.lower(
               criteriaBuilder.lower(groups.<Group>get("name").as(String.class))), pattern);
           return criteriaBuilder.or(locationPredicateLike, groupPredicateLike);
@@ -194,6 +209,7 @@ public class PersonSpec {
         return (root, query, criteriaBuilder) -> criteriaBuilder.or(
             criteriaBuilder.equal(root.get("nameText"), firstName),
             criteriaBuilder.equal(root.get("nameGiven"), firstName));
+
       // where person.nameText like "%?%" or group.nameGiven = "%?%"
       case LIKE:
         return (root, query, criteriaBuilder) -> criteriaBuilder.or(
@@ -213,6 +229,7 @@ public class PersonSpec {
         return (root, query, criteriaBuilder) -> criteriaBuilder.or(
             criteriaBuilder.equal(root.get("nameFamily"), lastname),
             criteriaBuilder.equal(root.get("nameSuffix"), lastname));
+
       case LIKE:
         return (root, query, criteriaBuilder) -> criteriaBuilder.or(
             criteriaBuilder.like(criteriaBuilder.lower(root.get("nameFamily")),
@@ -234,6 +251,7 @@ public class PersonSpec {
     switch (type) {
       case EQUALS:
         return (root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("gender"), gender);
+
       case LIKE:
         return (root, query, criteriaBuilder) -> criteriaBuilder.like(
             criteriaBuilder.lower(root.get("gender")),
@@ -242,10 +260,10 @@ public class PersonSpec {
     return null;
   }
 
-  private static Specification<Person> whereBirthDateBetween(Date birthdateBefore,
-      Date birthdateAfter) {
+  private static Specification<Person> whereBirthDateBetween(Date fromDate,
+      Date toDate) {
     return (root, query, criteriaBuilder) -> criteriaBuilder.and(
-        criteriaBuilder.between(root.get("birthDate"), birthdateBefore, birthdateAfter));
+        criteriaBuilder.between(root.get("birthDate"), fromDate, toDate));
   }
 
   private static Specification<Person> getSpecification(
