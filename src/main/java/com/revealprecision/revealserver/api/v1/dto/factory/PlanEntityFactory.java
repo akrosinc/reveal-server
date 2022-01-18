@@ -5,7 +5,7 @@ import com.revealprecision.revealserver.enums.LookupUtil;
 import com.revealprecision.revealserver.enums.PlanInterventionTypeEnum;
 import com.revealprecision.revealserver.enums.PlanStatusEnum;
 import com.revealprecision.revealserver.persistence.domain.Plan;
-import java.util.Date;
+import java.time.LocalDate;
 import java.util.stream.Collectors;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -28,7 +28,7 @@ public class PlanEntityFactory {
     Plan plan = Plan.builder()
         .name(planRequest.getName())
         .title(planRequest.getTitle())
-        .date(new Date())
+        .date(LocalDate.now())
         .effectivePeriodStart(planRequest.getEffectivePeriod().getStart())
         .effectivePeriodEnd(planRequest.getEffectivePeriod().getEnd())
         .status(PlanStatusEnum.DRAFT)
@@ -38,9 +38,7 @@ public class PlanEntityFactory {
     if (planRequest.getGoals() != null) {
       var goals = planRequest.getGoals()
           .stream()
-          .map(request -> {
-            return GoalEntityFactory.toEntity(request, plan, planRequest.getActions());
-          })
+          .map(request -> GoalEntityFactory.toEntity(request, plan, planRequest.getActions()))
           .collect(Collectors.toSet());
       plan.setGoals(goals);
     }

@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.persistence.domain;
 
+import com.revealprecision.revealserver.api.v1.dto.request.TargetRequest;
 import com.revealprecision.revealserver.enums.UnitEnum;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -50,4 +51,13 @@ public class Target extends AbstractAuditableEntity {
   @ManyToOne
   @JoinColumn(name = "goal_identifier")
   private Goal goal;
+
+  public Target update(TargetRequest targetRequest) {
+    this.measure = targetRequest.getMeasure();
+    this.value = targetRequest.getDetail().getDetailQuantity().getValue();
+    this.comparator = targetRequest.getDetail().getDetailQuantity().getComparator();
+    this.unit = targetRequest.getDetail().getDetailQuantity().getUnit();
+    this.due = targetRequest.getDue();
+    return this;
+  }
 }

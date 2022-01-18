@@ -3,7 +3,6 @@ package com.revealprecision.revealserver.persistence.domain;
 import com.revealprecision.revealserver.enums.PlanInterventionTypeEnum;
 import com.revealprecision.revealserver.enums.PlanStatusEnum;
 import java.time.LocalDate;
-import java.util.Date;
 import java.util.Set;
 import java.util.UUID;
 import javax.persistence.CascadeType;
@@ -40,7 +39,7 @@ public class Plan extends AbstractAuditableEntity {
   private UUID identifier;
   private String name;
   private String title;
-  private Date date;
+  private LocalDate date;
   private LocalDate effectivePeriodStart;
   private LocalDate effectivePeriodEnd;
   @Enumerated(EnumType.STRING)
