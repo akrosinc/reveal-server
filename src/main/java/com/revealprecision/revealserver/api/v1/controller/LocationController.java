@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.api.v1.controller;
 
+import com.revealprecision.revealserver.annotation.AllowedSortProperties;
 import com.revealprecision.revealserver.api.v1.dto.factory.LocationResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.LocationRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.CountResponse;
@@ -63,7 +64,7 @@ public class LocationController {
       tags = {"Location"}
   )
   @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<?> getLocations(Pageable pageable,
+  public ResponseEntity<?> getLocations(@AllowedSortProperties(value = {"name"}) Pageable pageable,
       @Parameter(description = "Location Search parameter") @RequestParam(defaultValue = "") String search,
       @Parameter(description = "Toggle summary data") @RequestParam(defaultValue = "true", required = false) SummaryEnum _summary) {
     if (_summary.equals(SummaryEnum.COUNT)) {

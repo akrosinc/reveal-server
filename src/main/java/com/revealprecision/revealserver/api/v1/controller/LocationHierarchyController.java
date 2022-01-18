@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.api.v1.controller;
 
+import com.revealprecision.revealserver.annotation.AllowedSortProperties;
 import com.revealprecision.revealserver.api.v1.dto.factory.LocationHierarchyResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.LocationHierarchyRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationHierarchyResponse;
@@ -65,7 +66,8 @@ public class LocationHierarchyController {
       tags = {"Location Hierarchy"}
   )
   @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<Page<LocationHierarchyResponse>> getLocationHierarchies(Pageable pageable) {
+  public ResponseEntity<Page<LocationHierarchyResponse>> getLocationHierarchies(
+      @AllowedSortProperties(value = {"name"}) Pageable pageable) {
     return ResponseEntity.status(HttpStatus.OK).body(LocationHierarchyResponseFactory
         .fromEntityPage(locationHierarchyService.getLocationHierarchies(pageable), pageable));
   }
