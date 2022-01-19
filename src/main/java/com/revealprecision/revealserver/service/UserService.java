@@ -110,6 +110,11 @@ public class UserService {
     keycloakService.resetPassword(user.getSid().toString(), passwordRequest);
   }
 
+  public User getByKeycloakId(UUID id) {
+    return userRepository.findBySid(id)
+        .orElseThrow(() -> new NotFoundException(Pair.of(Fields.sid, id), User.class));
+  }
+
   public void deleteAll() {
     List<User> users = userRepository.findAll();
     UsersResource userResource = KeycloakConfig.getInstance().realm(KeycloakConfig.realm).users();
