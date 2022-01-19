@@ -201,13 +201,13 @@ CREATE TABLE IF NOT EXISTS location
     external_id                 UUID,
     geographic_level_identifier UUID                     NOT NULL,
     entity_status               VARCHAR(36)              NOT NULL,
-    bulk_location_identifier    UUID,
+    location_bulk_identifier    UUID,
     created_by                  VARCHAR(36)              NOT NULL,
     created_datetime            TIMESTAMP WITH TIME ZONE NOT NULL,
     modified_by                 VARCHAR(36)              NOT NULL,
     modified_datetime           TIMESTAMP WITH TIME ZONE NOT NULL,
     PRIMARY KEY (identifier),
-    FOREIGN KEY (bulk_location_identifier) REFERENCES location_bulk (identifier)
+    FOREIGN KEY (location_bulk_identifier) REFERENCES location_bulk (identifier)
 
 );
 
@@ -223,7 +223,7 @@ CREATE TABLE IF NOT EXISTS location_aud
     external_id                 UUID,
     geographic_level_identifier UUID                     NOT NULL,
     entity_status               VARCHAR(36)              NOT NULL,
-    bulk_location_identifier    UUID,
+    location_bulk_identifier    UUID,
     created_by                  VARCHAR(36)              NOT NULL,
     created_datetime            TIMESTAMP WITH TIME ZONE NOT NULL,
     modified_by                 VARCHAR(36)              NOT NULL,

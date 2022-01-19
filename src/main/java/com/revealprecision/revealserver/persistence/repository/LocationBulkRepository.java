@@ -19,14 +19,14 @@ public interface LocationBulkRepository extends JpaRepository<LocationBulk, UUID
           "WHERE  lbe.location_bulk_identifier = :identifier " +
           "UNION " +
           "SELECT l.name as name, l.entity_status as entityStatus " +
-          "FROM location l WHERE l.bulk_location_identifier = :identifier",
+          "FROM location l WHERE l.location_bulk_identifier = :identifier",
       countQuery =
           "SELECT COUNT(*) FROM (SELECT lbe.name as name, null as entityStatus " +
               "FROM location_bulk_exception lbe " +
               "WHERE  lbe.location_bulk_identifier = :identifier " +
               "UNION " +
               "SELECT l.name as name, l.entity_status as entityStatus " +
-              "FROM location l WHERE l.bulk_location_identifier = :identifier) bulk", nativeQuery = true)
+              "FROM location l WHERE l.location_bulk_identifier = :identifier) bulk", nativeQuery = true)
   Page<LocationBulkProjection> findBulkById(@Param("identifier") UUID identifier,
       Pageable pageable);
 }
