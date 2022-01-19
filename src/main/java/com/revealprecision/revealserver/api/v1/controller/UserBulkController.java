@@ -92,7 +92,7 @@ public class UserBulkController {
     return ResponseEntity.status(HttpStatus.OK)
         .contentType(MediaType.APPLICATION_OCTET_STREAM)
         .header("Content-disposition", "attachment;filename=UserTemplate.xlsx")
-        .body(storageService.downloadTemplate());
+        .body(storageService.downloadTemplate("UserTemplate.xlsx"));
   }
 
 }
