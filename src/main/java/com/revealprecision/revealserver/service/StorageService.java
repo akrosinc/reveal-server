@@ -22,7 +22,8 @@ public class StorageService {
 
 
   public String saveCSV(MultipartFile file) {
-    if (!file.getContentType().equals("text/csv")) {
+    if (!file.getContentType().equals("text/csv") && !(file.getContentType()
+        .equals("application/vnd.ms-excel"))) {
       throw new FileFormatException("Wrong file format. You can upload only .csv file!");
     }
     String path = environment.getProperty("batch.location") + file.getOriginalFilename();
