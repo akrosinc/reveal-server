@@ -1,5 +1,0 @@
-ALTER TABLE IF EXISTS  person_group
-    ADD COLUMN created_by VARCHAR(36) NOT NULL,
-    ADD COLUMN    created_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
-    ADD COLUMN   modified_by VARCHAR(36) NOT NULL,
-    ADD COLUMN    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL;
