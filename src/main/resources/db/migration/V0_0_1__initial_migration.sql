@@ -528,38 +528,6 @@ CREATE TABLE IF NOT EXISTS person_aud
     CONSTRAINT person_aud_pkey PRIMARY KEY (identifier, rev)
 );
 
-CREATE TABLE IF NOT EXISTS person_group
-(
-    person_identifier uuid NOT NULL,
-    group_identifier uuid NOT NULL,
-    CONSTRAINT person_group_pkey PRIMARY KEY (person_identifier, group_identifier),
-    CONSTRAINT person_group_group_identifier_fkey FOREIGN KEY (group_identifier)
-        REFERENCES "group" (identifier) MATCH SIMPLE
-        ON UPDATE NO ACTION
-        ON DELETE NO ACTION,
-    CONSTRAINT person_group_person_identifier_fkey FOREIGN KEY (person_identifier)
-        REFERENCES person (identifier) MATCH SIMPLE
-        ON UPDATE NO ACTION
-        ON DELETE NO ACTION
-);
-
-CREATE TABLE IF NOT EXISTS person_group_aud
-(
-    rev integer NOT NULL,
-    revtype integer,
-    person_identifier uuid NOT NULL,
-    group_identifier uuid NOT NULL,
-    CONSTRAINT person_group_aud_pkey PRIMARY KEY (person_identifier, group_identifier, rev),
-    CONSTRAINT person_group_aud_group_identifier_fkey FOREIGN KEY (group_identifier)
-        REFERENCES "group" (identifier) MATCH SIMPLE
-        ON UPDATE NO ACTION
-        ON DELETE NO ACTION,
-    CONSTRAINT person_group_aud_person_identifier_fkey FOREIGN KEY (person_identifier)
-        REFERENCES person (identifier) MATCH SIMPLE
-        ON UPDATE NO ACTION
-        ON DELETE NO ACTION
-);
-
 CREATE TABLE IF NOT EXISTS "group"
 (
     identifier uuid NOT NULL,
@@ -597,3 +565,37 @@ CREATE TABLE IF NOT EXISTS group_aud
         ON UPDATE NO ACTION
         ON DELETE NO ACTION
 );
+
+CREATE TABLE IF NOT EXISTS person_group
+(
+    person_identifier uuid NOT NULL,
+    group_identifier uuid NOT NULL,
+    CONSTRAINT person_group_pkey PRIMARY KEY (person_identifier, group_identifier),
+    CONSTRAINT person_group_group_identifier_fkey FOREIGN KEY (group_identifier)
+        REFERENCES "group" (identifier) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION,
+    CONSTRAINT person_group_person_identifier_fkey FOREIGN KEY (person_identifier)
+        REFERENCES person (identifier) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+);
+
+CREATE TABLE IF NOT EXISTS person_group_aud
+(
+    rev integer NOT NULL,
+    revtype integer,
+    person_identifier uuid NOT NULL,
+    group_identifier uuid NOT NULL,
+    CONSTRAINT person_group_aud_pkey PRIMARY KEY (person_identifier, group_identifier, rev),
+    CONSTRAINT person_group_aud_group_identifier_fkey FOREIGN KEY (group_identifier)
+        REFERENCES "group" (identifier) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION,
+    CONSTRAINT person_group_aud_person_identifier_fkey FOREIGN KEY (person_identifier)
+        REFERENCES person (identifier) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+);
+
+
