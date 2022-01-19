@@ -22,8 +22,6 @@ public class GroupResponseFactory {
         .type(GroupTypeEnum.getEnum(group.getType())).locationIdentifier(
             group.getLocation() == null ? null : group.getLocation().getIdentifier());
 
-
-
     if (summary.equals(SummaryEnum.FALSE)) {
       if (group.getPersons() != null) {
         groupResponseBuilder.relationships(
@@ -35,6 +33,7 @@ public class GroupResponseFactory {
 
     return groupResponseBuilder.build();
   }
+
   public static Page<GroupResponse> getPageFromEntityList(Page<Group> groups, SummaryEnum summary) {
 
     return new PageImpl<>(groups.stream().map((group) -> fromEntity(group, summary))

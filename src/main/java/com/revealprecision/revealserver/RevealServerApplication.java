@@ -14,16 +14,17 @@ public class RevealServerApplication {
   public static void main(String[] args) {
     SpringApplication.run(RevealServerApplication.class, args);
   }
-    @Bean //Bean definition of component that generates Validator for Bean Validation
-    static LocalValidatorFactoryBean localValidatorFactoryBean() {
-        return new LocalValidatorFactoryBean();
-    }
 
-    @Bean // Method Validation(AOP)Bean definition of the component to which
-    static MethodValidationPostProcessor methodValidationPostProcessor(
-        LocalValidatorFactoryBean localValidatorFactoryBean) {
-        MethodValidationPostProcessor processor = new MethodValidationPostProcessor();
-        processor.setValidator(localValidatorFactoryBean);
-        return processor;
-    }
+  @Bean //Bean definition of component that generates Validator for Bean Validation
+  static LocalValidatorFactoryBean localValidatorFactoryBean() {
+    return new LocalValidatorFactoryBean();
+  }
+
+  @Bean // Method Validation(AOP)Bean definition of the component to which
+  static MethodValidationPostProcessor methodValidationPostProcessor(
+      LocalValidatorFactoryBean localValidatorFactoryBean) {
+    MethodValidationPostProcessor processor = new MethodValidationPostProcessor();
+    processor.setValidator(localValidatorFactoryBean);
+    return processor;
+  }
 }

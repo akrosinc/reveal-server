@@ -29,7 +29,6 @@ public class PersonSpec {
 
     Specification<Person> personSpecification = Specification.where(null);
 
-
     if (groupName != null) {
       personSpecification = PersonSpec.getSpecification(personSpecification,
           PersonSpec.whereGroupNameIgnoreCase(EQUALS, groupName), AND);
@@ -86,7 +85,6 @@ public class PersonSpec {
 
     Specification<Person> personSpecification = Specification.where(null);
 
-
     if (firstName != null) {
       personSpecification = PersonSpec.getSpecification(personSpecification,
           PersonSpec.whereGivenNameOrTextNameIgnoreCase(LIKE, firstName), OR);
@@ -101,11 +99,13 @@ public class PersonSpec {
   }
 
 
-  private static Specification<Person> whereGroupNameIgnoreCase(SearchTypeEnum type, String groupName) {
+  private static Specification<Person> whereGroupNameIgnoreCase(SearchTypeEnum type,
+      String groupName) {
     switch (type) {
       case EQUALS:
         return (root, query, criteriaBuilder) -> criteriaBuilder.equal(
-            criteriaBuilder.lower(root.join("groups").<Group>get("name").as(String.class)), groupName.toLowerCase());
+            criteriaBuilder.lower(root.join("groups").<Group>get("name").as(String.class)),
+            groupName.toLowerCase());
       case LIKE:
         return (root, query, criteriaBuilder) -> criteriaBuilder.like(
             criteriaBuilder.lower(root.join("groups").<Group>get("name").as(String.class)),
@@ -127,7 +127,9 @@ public class PersonSpec {
     switch (type) {
       case EQUALS:
         return (root, query, criteriaBuilder) -> criteriaBuilder.equal(
-            criteriaBuilder.lower(root.join("groups").join("location").<Location>get("name").as(String.class)), locationName.toLowerCase());
+            criteriaBuilder.lower(
+                root.join("groups").join("location").<Location>get("name").as(String.class)),
+            locationName.toLowerCase());
       case LIKE:
         return (root, query, criteriaBuilder) -> {
           SetJoin<Object, Object> groups = root.joinSet("groups", JoinType.LEFT);
@@ -153,8 +155,10 @@ public class PersonSpec {
       // where lower(person.nameText) = lower("?") or lower(group.nameGiven) = lower("?")
       case EQUALS:
         return (root, query, criteriaBuilder) -> criteriaBuilder.or(
-            criteriaBuilder.equal(criteriaBuilder.lower(root.get("nameText").as(String.class)), firstName.toLowerCase()),
-            criteriaBuilder.equal(criteriaBuilder.lower(root.get("nameGiven").as(String.class)), firstName.toLowerCase()));
+            criteriaBuilder.equal(criteriaBuilder.lower(root.get("nameText").as(String.class)),
+                firstName.toLowerCase()),
+            criteriaBuilder.equal(criteriaBuilder.lower(root.get("nameGiven").as(String.class)),
+                firstName.toLowerCase()));
 
       // where person.nameText like "%?%" or group.nameGiven = "%?%"
       case LIKE:
@@ -173,8 +177,10 @@ public class PersonSpec {
     switch (type) {
       case EQUALS:
         return (root, query, criteriaBuilder) -> criteriaBuilder.or(
-            criteriaBuilder.equal(criteriaBuilder.lower(root.get("nameFamily").as(String.class)), lastname.toLowerCase()),
-            criteriaBuilder.equal(criteriaBuilder.lower(root.get("nameSuffix").as(String.class)), lastname.toLowerCase()));
+            criteriaBuilder.equal(criteriaBuilder.lower(root.get("nameFamily").as(String.class)),
+                lastname.toLowerCase()),
+            criteriaBuilder.equal(criteriaBuilder.lower(root.get("nameSuffix").as(String.class)),
+                lastname.toLowerCase()));
 
       case LIKE:
         return (root, query, criteriaBuilder) -> criteriaBuilder.or(
@@ -196,7 +202,9 @@ public class PersonSpec {
 
     switch (type) {
       case EQUALS:
-        return (root, query, criteriaBuilder) -> criteriaBuilder.equal(criteriaBuilder.lower(root.get("gender").as(String.class)), gender.name().toLowerCase());
+        return (root, query, criteriaBuilder) -> criteriaBuilder.equal(
+            criteriaBuilder.lower(root.get("gender").as(String.class)),
+            gender.name().toLowerCase());
 
       case LIKE:
         return (root, query, criteriaBuilder) -> criteriaBuilder.like(

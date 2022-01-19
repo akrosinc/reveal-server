@@ -1,16 +1,24 @@
 package com.revealprecision.revealserver.persistence.domain;
 
-import java.util.List;
 import java.util.Set;
-import lombok.*;
+import java.util.UUID;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToMany;
+import javax.persistence.ManyToOne;
+import javax.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.experimental.FieldNameConstants;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 import org.hibernate.envers.Audited;
-
-import javax.persistence.*;
-import java.util.UUID;
 
 @Entity
 @Audited
@@ -18,29 +26,29 @@ import java.util.UUID;
 @Setter
 @SQLDelete(sql = "UPDATE \"group\" SET entity_status = 'DELETED' where identifier=?")
 @Where(clause = "entity_status='ACTIVE'")
-@Table(name = "\"group\"",schema = "public")
+@Table(name = "\"group\"", schema = "public")
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
 @FieldNameConstants
-public class Group extends AbstractAuditableEntity{
+public class Group extends AbstractAuditableEntity {
 
-    @Id
-    @GeneratedValue
-    private UUID identifier;
+  @Id
+  @GeneratedValue
+  private UUID identifier;
 
-    private String name;
+  private String name;
 
-    @ColumnDefault(value = "family")
-    private String type;
+  @ColumnDefault(value = "family")
+  private String type;
 
-    @ManyToOne
-    @JoinColumn(name = "location_identifier",referencedColumnName = "identifier")
-    private Location location;
+  @ManyToOne
+  @JoinColumn(name = "location_identifier", referencedColumnName = "identifier")
+  private Location location;
 
 
-    @ManyToMany(mappedBy = "groups")
-    private Set<Person> persons;
+  @ManyToMany(mappedBy = "groups")
+  private Set<Person> persons;
 
 
 }

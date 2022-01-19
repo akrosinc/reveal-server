@@ -153,7 +153,6 @@ public class PersonService {
   }
 
 
-
   public Page<Person> searchPersonByMultipleValuesAcrossFields(PersonSearchCriteria criteria,
       Pageable pageable) {
 
@@ -191,7 +190,8 @@ public class PersonService {
       }
 
       return PersonSpec.getPersonSpecification(criteria.getFirstName(), criteria.getLastName(),
-          criteria.getGender(), criteria.getLocationName(),criteria.getLocationIdentifier(), criteria.getGroupName(),criteria.getGroupIdentifier(), searchBirthLocalDate,
+          criteria.getGender(), criteria.getLocationName(), criteria.getLocationIdentifier(),
+          criteria.getGroupName(), criteria.getGroupIdentifier(), searchBirthLocalDate,
           searchFromDateLocalDate, searchToDateLocalDate);
     } else {
       return PersonSpec.getBlankPredicate();

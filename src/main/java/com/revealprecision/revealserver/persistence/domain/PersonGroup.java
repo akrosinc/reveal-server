@@ -12,8 +12,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.Where;
 import org.hibernate.envers.Audited;
 
 @Entity
@@ -24,18 +22,18 @@ import org.hibernate.envers.Audited;
 @AllArgsConstructor
 @NoArgsConstructor
 @Audited
-public class PersonGroup  {
+public class PersonGroup {
 
   @EmbeddedId
   PersonGroupKey personGroupKey;
 
   @ManyToOne(cascade = CascadeType.ALL)
   @MapsId("groupIdentifier")
-  @JoinColumn(name = "group_identifier",referencedColumnName = "identifier")
+  @JoinColumn(name = "group_identifier", referencedColumnName = "identifier")
   Group group;
 
   @ManyToOne(cascade = CascadeType.ALL)
   @MapsId("personIdentifier")
-  @JoinColumn(name = "person_identifier",referencedColumnName = "identifier")
+  @JoinColumn(name = "person_identifier", referencedColumnName = "identifier")
   Person person;
 }
