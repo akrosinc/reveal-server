@@ -11,6 +11,8 @@ import java.util.UUID;
 @Data
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@NoArgsConstructor
+@AllArgsConstructor
 public class GroupResponse {
 
   UUID identifier;

@@ -1,6 +1,6 @@
 package com.revealprecision.revealserver.enums;
 
-public enum StringSearchType {
+public enum SearchTypeEnum {
   EQUALS,
   LIKE
 }

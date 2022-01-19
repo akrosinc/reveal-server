@@ -7,12 +7,12 @@ import com.revealprecision.revealserver.persistence.domain.Group;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.Organization.Fields;
 import com.revealprecision.revealserver.persistence.repository.GroupRepository;
-import java.util.Optional;
+import com.revealprecision.revealserver.service.models.GroupSearchCriteria;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 
@@ -29,50 +29,45 @@ public class GroupService {
     this.locationService = locationService;
   }
 
-  public Page<Group> getGroups(String searchParam, String groupName, String locationName,
-      Integer pageNumber, Integer pageSize) {
+  public Page<Group> getGroups(String searchParam, GroupSearchCriteria criteria,
+      Pageable pageable) {
 
     if (searchParam != null) {
-      return groupRepository.findGroupByNameContainingIgnoreCaseOrLocation_NameContainingIgnoreCase(
-          searchParam, searchParam, PageRequest.of(pageNumber, pageSize));
+      return groupRepository.findGroupByNameContainingIgnoreCase(searchParam, pageable);
     }
 
-    if (groupName != null && locationName != null) {
-      return groupRepository.findGroupByNameAndLocation_NameIgnoreCase(groupName, locationName,
-          PageRequest.of(pageNumber, pageSize));
-    } else {
-      if (groupName != null) {
-        return groupRepository.findGroupByNameIgnoreCase(groupName,
-            PageRequest.of(pageNumber, pageSize));
-      }
+    if (criteria != null) {
+      if (criteria.getGroupName() != null && criteria.getGroupType() != null) {
+        return groupRepository.findGroupByNameIgnoreCaseAndTypeIgnoreCase(criteria.getGroupName(),
+            criteria.getGroupType().getValue(), pageable);
+      } else {
+        if (criteria.getGroupName() != null) {
+          return groupRepository.findGroupByNameIgnoreCase(criteria.getGroupName(), pageable);
+        }
+        if (criteria.getGroupType() != null) {
+          return groupRepository.findGroupByTypeIgnoreCase(criteria.getGroupType().getValue(),
+              pageable);
 
-      if (locationName != null) {
-        return groupRepository.findGroupByLocation_NameIgnoreCase(locationName,
-            PageRequest.of(pageNumber, pageSize));
+        }
       }
     }
-    return groupRepository.findAll(PageRequest.of(pageNumber, pageSize));
+    return groupRepository.findAll(pageable);
   }
-
 
   public Group createGroup(GroupRequest groupRequest) {
     Group.GroupBuilder groupBuilder = Group.builder().type(groupRequest.getType().toString())
         .name(groupRequest.getName());
 
     if (groupRequest.getLocationIdentifier() != null) {
-      Location location = locationService.findByIdentifier(
-          groupRequest.getLocationIdentifier());
+      Location location = locationService.findByIdentifier(groupRequest.getLocationIdentifier());
       groupBuilder.location(location);
     }
 
     Group group = groupBuilder.build();
     group.setEntityStatus(EntityStatus.ACTIVE);
-    Group save = groupRepository.save(group);
-    log.info("Group saved to database as {}", group);
 
-    return save;
+    return groupRepository.save(group);
   }
-
 
   public Group getGroupByIdentifier(UUID groupIdentifier) {
     return groupRepository.findByIdentifier(groupIdentifier).orElseThrow(
@@ -92,12 +87,10 @@ public class GroupService {
     groupRetrieved.setType(groupRequest.getType().toString());
 
     if (groupRequest.getLocationIdentifier() != null) {
-      Location location = locationService.findByIdentifier(
-          groupRequest.getLocationIdentifier());
+      Location location = locationService.findByIdentifier(groupRequest.getLocationIdentifier());
       groupRetrieved.setLocation(location);
-    } else {
-      groupRetrieved.setLocation(null);
     }
+
     return groupRepository.save(groupRetrieved);
   }
 

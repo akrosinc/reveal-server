@@ -1,19 +1,13 @@
 package com.revealprecision.revealserver.api.v1.dto.factory;
 
-import com.revealprecision.revealserver.api.v1.dto.request.PersonRequest;
-import com.revealprecision.revealserver.api.v1.dto.request.PersonRequest.Gender;
 import com.revealprecision.revealserver.api.v1.dto.request.PersonRequest.Name;
-import com.revealprecision.revealserver.api.v1.dto.request.PersonRequest.Use;
 import com.revealprecision.revealserver.api.v1.dto.response.Group;
-import com.revealprecision.revealserver.api.v1.dto.response.GroupResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.PersonResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.PersonResponse.PersonResponseBuilder;
-import com.revealprecision.revealserver.enums.GroupTypeEnum;
+import com.revealprecision.revealserver.enums.GenderEnum;
+import com.revealprecision.revealserver.enums.NameUseEnum;
 import com.revealprecision.revealserver.persistence.domain.Person;
-import com.revealprecision.revealserver.persistence.domain.PersonGroup;
-import java.time.LocalDate;
 import java.time.ZoneId;
-import java.util.Date;
 import java.util.stream.Collectors;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -55,12 +49,12 @@ public class PersonResponseFactory {
                 .given(person.getNameGiven())
                 .text(person.getNameText())
                 .prefix(person.getNamePrefix())
-                .use(Use.valueOf(person.getNameUse()))
+                .use(NameUseEnum.getEnum(person.getNameUse()))
                 .suffix(person.getNameSuffix())
                 .build())
         .active(person.isActive())
         .birthDate(person.getBirthDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate())
-        .gender(Gender.valueOf(person.getGender()));
+        .gender(GenderEnum.getEnum(person.getGender()));
 
   }
 

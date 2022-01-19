@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.persistence.domain;
 
+import com.revealprecision.revealserver.enums.GenderEnum;
 import java.util.List;
 import java.util.Set;
 import lombok.*;
@@ -48,9 +49,6 @@ public class Person extends AbstractAuditableEntity{
     private String gender;
 
     private Date birthDate;
-
-//    @OneToMany(cascade = CascadeType.ALL,mappedBy = "person")
-//    private List<PersonGroup> personGroups;
 
     @ManyToMany
     @JoinTable(name = "person_group",

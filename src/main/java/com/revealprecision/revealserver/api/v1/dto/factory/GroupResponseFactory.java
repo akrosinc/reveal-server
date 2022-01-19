@@ -17,8 +17,10 @@ public class GroupResponseFactory {
 
     GroupResponseBuilder groupResponseBuilder = GroupResponse.builder()
         .identifier(group.getIdentifier()).name(group.getName())
-        .type(GroupTypeEnum.valueOf(group.getType())).locationIdentifier(
+        .type(GroupTypeEnum.getEnum(group.getType())).locationIdentifier(
             group.getLocation() == null ? null : group.getLocation().getIdentifier());
+
+
 
     if (summary.equals(SummaryEnum.FALSE)) {
       if (group.getPersons() != null) {

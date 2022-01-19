@@ -11,13 +11,14 @@ import java.util.UUID;
 
 @Repository
 public interface GroupRepository extends JpaRepository<Group, UUID> {
+
      Optional<Group> findByIdentifier(UUID identifier);
 
      Page<Group> findGroupByNameIgnoreCase(String name, Pageable pageable);
 
-     Page<Group> findGroupByNameAndLocation_NameIgnoreCase(String name, String locationName, Pageable pageable);
+     Page<Group> findGroupByTypeIgnoreCase(String name, Pageable pageable);
 
-     Page<Group> findGroupByNameContainingIgnoreCaseOrLocation_NameContainingIgnoreCase(String name, String locationName, Pageable pageable);
+     Page<Group> findGroupByNameIgnoreCaseAndTypeIgnoreCase(String name, String type, Pageable pageable);
 
-     Page<Group> findGroupByLocation_NameIgnoreCase( String locationName, Pageable pageable);
+     Page<Group> findGroupByNameContainingIgnoreCase(String name, Pageable pageable);
 }
