@@ -3,10 +3,11 @@ package com.revealprecision.revealserver.api.v1.dto.response;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.revealprecision.revealserver.enums.GroupTypeEnum;
 import java.util.List;
-import lombok.*;
-
-import java.util.Set;
 import java.util.UUID;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @Builder
@@ -27,7 +28,8 @@ public class GroupResponse {
 
   @Data
   @Builder
-  public static class Relationships{
+  public static class Relationships {
+
     List<PersonResponse> person;
   }
 }

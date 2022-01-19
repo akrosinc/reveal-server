@@ -1,19 +1,24 @@
 package com.revealprecision.revealserver.persistence.domain;
 
-import com.revealprecision.revealserver.enums.GenderEnum;
-import java.util.List;
+import java.util.Date;
 import java.util.Set;
-import lombok.*;
+import java.util.UUID;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.ManyToMany;
+import javax.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.experimental.FieldNameConstants;
-import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
-import org.hibernate.envers.AuditJoinTable;
 import org.hibernate.envers.Audited;
-
-import javax.persistence.*;
-import java.util.Date;
-import java.util.UUID;
 
 @Entity
 @Audited
@@ -26,35 +31,35 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 @FieldNameConstants
-public class Person extends AbstractAuditableEntity{
+public class Person extends AbstractAuditableEntity {
 
-    @Id
-    @GeneratedValue
-    private UUID identifier;
+  @Id
+  @GeneratedValue
+  private UUID identifier;
 
-    private boolean active;
+  private boolean active;
 
-    private String nameUse;
+  private String nameUse;
 
-    private String nameText;
+  private String nameText;
 
-    private String nameFamily;
+  private String nameFamily;
 
-    private String nameGiven;
+  private String nameGiven;
 
-    private String namePrefix;
+  private String namePrefix;
 
-    private String nameSuffix;
+  private String nameSuffix;
 
-    private String gender;
+  private String gender;
 
-    private Date birthDate;
+  private Date birthDate;
 
-    @ManyToMany
-    @JoinTable(name = "person_group",
-        joinColumns = @JoinColumn(name = "person_identifier"),
-        inverseJoinColumns = @JoinColumn(name = "group_identifier")
-    )
-    private Set<Group> groups;
+  @ManyToMany
+  @JoinTable(name = "person_group",
+      joinColumns = @JoinColumn(name = "person_identifier"),
+      inverseJoinColumns = @JoinColumn(name = "group_identifier")
+  )
+  private Set<Group> groups;
 
 }

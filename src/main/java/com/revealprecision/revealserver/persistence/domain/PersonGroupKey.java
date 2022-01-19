@@ -15,6 +15,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 public class PersonGroupKey implements Serializable {
+
   @Column(name = "person_identifier")
   UUID personIdentifier;
   @Column(name = "group_identifier")

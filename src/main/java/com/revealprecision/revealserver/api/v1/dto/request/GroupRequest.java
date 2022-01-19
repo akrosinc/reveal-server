@@ -7,7 +7,7 @@ import lombok.Data;
 @Data
 public class GroupRequest {
 
-    String name;
-    GroupTypeEnum type;
-    UUID locationIdentifier;
+  String name;
+  GroupTypeEnum type;
+  UUID locationIdentifier;
 }

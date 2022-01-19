@@ -13,6 +13,7 @@ import lombok.Data;
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class PersonResponse {
+
   UUID identifier;
 
   Boolean active;

@@ -10,8 +10,6 @@ import com.revealprecision.revealserver.service.models.PersonSearchCriteria;
 import io.micrometer.core.lang.Nullable;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.enums.Explode;
-import java.time.LocalDate;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -48,7 +46,7 @@ public class PersonController {
   @Operation(summary = "Search person across fields", description = "Search person across fields", tags = {
       "Person"})
   @ResponseStatus(HttpStatus.OK)
-  @GetMapping( produces = MediaType.APPLICATION_JSON_VALUE)
+  @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
 
   public ResponseEntity<?> getPersonsSearch(
       @Parameter(description = "Single value search across values") @RequestParam(name = "search", required = false) String searchParam,
@@ -106,7 +104,7 @@ public class PersonController {
 
   @Operation(summary = "Create a person", description = "Create a Person", tags = {"Person"})
   @ResponseStatus(HttpStatus.CREATED)
-  @PostMapping( consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public PersonResponse createPerson(@RequestBody PersonRequest personRequest) {
     return PersonResponseFactory.fromEntity(personService.createPerson(personRequest));
   }

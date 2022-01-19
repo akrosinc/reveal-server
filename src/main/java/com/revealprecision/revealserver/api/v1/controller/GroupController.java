@@ -55,17 +55,16 @@ public class GroupController {
   public ResponseEntity<GroupResponse> getGroupByIdentifier(
       @Parameter(description = "Group identifier") @PathVariable("identifier") UUID groupIdentifier,
       @Parameter(description = "Show summary or full") @RequestParam(name = "summary", required = false, defaultValue = "TRUE") SummaryEnum summary) {
-    return ResponseEntity.status(HttpStatus.OK)
-        .body(GroupResponseFactory.fromEntity(groupService.getGroupByIdentifier(groupIdentifier),
+    return ResponseEntity.status(HttpStatus.OK).body(
+        GroupResponseFactory.fromEntity(groupService.getGroupByIdentifier(groupIdentifier),
             summary));
   }
 
   @Operation(summary = "Create a group", description = "Create a Group", tags = {"Group"})
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<GroupResponse> createGroup(@RequestBody GroupRequest groupRequest) {
-    return ResponseEntity.status(HttpStatus.CREATED)
-        .body(GroupResponseFactory.fromEntity(groupService.createGroup(groupRequest),
-            SummaryEnum.TRUE));
+    return ResponseEntity.status(HttpStatus.CREATED).body(
+        GroupResponseFactory.fromEntity(groupService.createGroup(groupRequest), SummaryEnum.TRUE));
   }
 
   @Operation(summary = "Delete a group by identifier", description = "Delete a group by identifier", tags = {
