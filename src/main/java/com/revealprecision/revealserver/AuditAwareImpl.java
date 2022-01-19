@@ -18,6 +18,6 @@ public class AuditAwareImpl implements AuditorAware<String> {
             KeycloakPrincipal principal = (KeycloakPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
             return Optional.of(principal.getName());
         }
-       return  null;
+       return  Optional.empty();
     }
 }
