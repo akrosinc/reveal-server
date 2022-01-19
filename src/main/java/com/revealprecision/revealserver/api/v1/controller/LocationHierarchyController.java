@@ -59,6 +59,7 @@ public class LocationHierarchyController {
   public ResponseEntity<LocationHierarchyResponse> getLocationHierarchy(
       @Parameter(description = "LocationHierarchy identifier") @PathVariable UUID identifier,
       @Parameter(description = "Toggle summary data") @RequestParam(defaultValue = "true", required = false) boolean _summary) {
+    //TODO: we need to update specification for this endpoint and it's intention.
     var locationHierarchy = locationHierarchyService.findByIdentifier(identifier);
     return ResponseEntity.status(HttpStatus.OK).body((_summary) ? LocationHierarchyResponseFactory
         .fromEntityWithoutTree(locationHierarchy)
@@ -73,13 +74,13 @@ public class LocationHierarchyController {
   @GetMapping("/{identifier}/location")
   public ResponseEntity<List<GeoTreeResponse>> getLocationsForHierarchy(
       @Parameter(description = "LocationHierarchy identifier") @PathVariable UUID identifier,
-      Pageable pageable,
       @Parameter(description = "Toggle summary data") @RequestParam(defaultValue = "TRUE", required = false) SummaryEnum _summary) {
     LocationHierarchy locationHierarchy = locationHierarchyService.findByIdentifier(identifier);
+    Boolean includeGeometry = _summary.equals(SummaryEnum.FALSE);
     return ResponseEntity.status(HttpStatus.OK).body(LocationHierarchyResponseFactory
         .generateGeoTreeResponseFromTree(
             locationHierarchyService.getGeoTreeFromLocationHierarchy(locationHierarchy)
-                .getLocationsHierarchy(), false));
+                .getLocationsHierarchy(), includeGeometry));
   }
 
 
