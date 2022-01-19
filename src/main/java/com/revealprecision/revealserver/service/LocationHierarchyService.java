@@ -3,6 +3,7 @@ package com.revealprecision.revealserver.service;
 import static java.util.stream.Collectors.joining;
 
 import com.revealprecision.revealserver.api.v1.dto.request.LocationHierarchyRequest;
+import com.revealprecision.revealserver.api.v1.dto.response.GeoTree;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.exceptions.ConflictException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
@@ -104,10 +105,12 @@ public class LocationHierarchyService {
             LocationHierarchy.class));
   }
 
-  public List<LocationHierarchy> findHierarchiesContainingGeographicLevel(
-      String geographicLevelName) {
-    return locationHierarchyRepository
-        .findLocationHierarchiesByNodeOrderContaining(geographicLevelName);
+  public GeoTree getGeoTreeFromLocationHierarchy(LocationHierarchy locationHierarchy) {
+    Optional<List<LocationRelationship>> locationRelationshipOptional = getLocationRelationshipsForLocationHierarchy(
+        locationHierarchy);
+    GeoTree geoTree = new GeoTree();
+    geoTree.buildTreeFromList(locationRelationshipOptional.get());
+    return geoTree;
   }
 
   public Optional<List<LocationRelationship>> getLocationRelationshipsForLocationHierarchy(
