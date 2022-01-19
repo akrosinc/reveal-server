@@ -33,8 +33,8 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class PersonService {
 
-  PersonRepository personRepository;
-  GroupService groupService;
+  final PersonRepository personRepository;
+  final GroupService groupService;
 
   @Autowired
   public PersonService(GroupService groupService, PersonRepository personRepository) {

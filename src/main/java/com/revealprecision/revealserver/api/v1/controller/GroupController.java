@@ -9,10 +9,8 @@ import com.revealprecision.revealserver.service.models.GroupSearchCriteria;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -46,10 +44,8 @@ public class GroupController {
       @Nullable GroupSearchCriteria criteria,
       @RequestParam(name = "_summary", defaultValue = "true") SummaryEnum summary,
       Pageable pageable) {
-    return  ResponseEntity.status(HttpStatus.OK).body( new PageImpl<>(
-        groupService.getGroups(searchParam, criteria,pageable).stream()
-            .map((group) -> GroupResponseFactory.fromEntity(group, summary))
-            .collect(Collectors.toList())));
+    return ResponseEntity.status(HttpStatus.OK).body(GroupResponseFactory.getPageFromEntityList(
+        groupService.getGroups(searchParam, criteria, pageable), summary));
   }
 
 
@@ -59,15 +55,17 @@ public class GroupController {
   public ResponseEntity<GroupResponse> getGroupByIdentifier(
       @Parameter(description = "Group identifier") @PathVariable("identifier") UUID groupIdentifier,
       @Parameter(description = "Show summary or full") @RequestParam(name = "summary", required = false, defaultValue = "TRUE") SummaryEnum summary) {
-    return  ResponseEntity.status(HttpStatus.OK).body(GroupResponseFactory.fromEntity(groupService.getGroupByIdentifier(groupIdentifier),
-        summary));
+    return ResponseEntity.status(HttpStatus.OK)
+        .body(GroupResponseFactory.fromEntity(groupService.getGroupByIdentifier(groupIdentifier),
+            summary));
   }
 
   @Operation(summary = "Create a group", description = "Create a Group", tags = {"Group"})
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<GroupResponse> createGroup(@RequestBody GroupRequest groupRequest) {
-    return ResponseEntity.status(HttpStatus.CREATED).body(GroupResponseFactory.fromEntity(groupService.createGroup(groupRequest),
-        SummaryEnum.TRUE));
+    return ResponseEntity.status(HttpStatus.CREATED)
+        .body(GroupResponseFactory.fromEntity(groupService.createGroup(groupRequest),
+            SummaryEnum.TRUE));
   }
 
   @Operation(summary = "Delete a group by identifier", description = "Delete a group by identifier", tags = {
@@ -85,8 +83,9 @@ public class GroupController {
   public ResponseEntity<GroupResponse> updateGroupByIdentifier(
       @Parameter(description = "Group identifier") @PathVariable("identifier") UUID groupIdentifier,
       @RequestBody GroupRequest groupRequest) {
-    return ResponseEntity.status(HttpStatus.OK).body(GroupResponseFactory.fromEntity(groupService.updateGroup(groupIdentifier, groupRequest),
-        SummaryEnum.TRUE));
+    return ResponseEntity.status(HttpStatus.OK).body(
+        GroupResponseFactory.fromEntity(groupService.updateGroup(groupIdentifier, groupRequest),
+            SummaryEnum.TRUE));
   }
 
 }

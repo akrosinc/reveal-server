@@ -9,6 +9,8 @@ import com.revealprecision.revealserver.persistence.domain.Group;
 import java.util.stream.Collectors;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class GroupResponseFactory {
@@ -33,6 +35,10 @@ public class GroupResponseFactory {
 
     return groupResponseBuilder.build();
   }
+  public static Page<GroupResponse> getPageFromEntityList(Page<Group> groups, SummaryEnum summary) {
 
+    return new PageImpl<>(groups.stream().map((group) -> fromEntity(group, summary))
+        .collect(Collectors.toList()));
+  }
 
 }

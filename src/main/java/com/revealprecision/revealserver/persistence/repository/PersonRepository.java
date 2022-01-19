@@ -15,36 +15,10 @@ import java.util.UUID;
 @Repository
 public interface PersonRepository extends JpaRepository<Person, UUID>,
     JpaSpecificationExecutor<Person> {
-     Optional<Person> findByIdentifier(UUID identifier);
 
-//     List<Person> findPersonByNameFamilyContainingIgnoreCaseOrNameGivenContainingIgnoreCaseOrNameTextContainingIgnoreCaseOrNamePrefixContainingIgnoreCaseOrNameSuffixContainingIgnoreCaseOrNameUseContainingIgnoreCaseOrGenderContainingIgnoreCase(
-//         String family,
-//         String given,
-//         String text,
-//         String prefix,
-//         String Suffix,
-//         String use,
-//         String gender);
+  Optional<Person> findByIdentifier(UUID identifier);
 
+  Page<Person> findPersonByBirthDate(Date date, Pageable pageable);
 
-
-     Page<Person> findPersonByBirthDate(
-         Date date, Pageable pageable
-     );
-
-     Long countPersonByBirthDate(
-         Date date
-     );
-     //    searchFirstName -> name_given, name_text
-//    searchLastName -> name_family, name_suffix
-//    searchLocation -> Person.Group.location.name
-//    searchGroup -> Person.Group.name
-
-//     List<Person> findPersonByNameGivenOrNameTextAndNameFamilyOrNameSuffix();
-     List<Person> findPersonByGroups_NameAndGroups_Location_NameAndNameGivenOrNameTextAndNameFamilyOrNameSuffix(String groupName, String locationName,
-         String givenName, String textName, String familyName, String suffix);
-
-
-
-
+  Long countPersonByBirthDate(Date date);
 }
