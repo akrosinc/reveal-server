@@ -59,7 +59,7 @@ public class LocationHierarchyController {
   public ResponseEntity<LocationHierarchyResponse> getLocationHierarchy(
       @Parameter(description = "LocationHierarchy identifier") @PathVariable UUID identifier,
       @Parameter(description = "Toggle summary data") @RequestParam(defaultValue = "true", required = false) boolean _summary) {
-    //TODO: we need to update specification for this endpoint and it's intention.
+    //TODO: we need to update specification for this endpoint and it's intention. which might cause this to change
     var locationHierarchy = locationHierarchyService.findByIdentifier(identifier);
     return ResponseEntity.status(HttpStatus.OK).body((_summary) ? LocationHierarchyResponseFactory
         .fromEntityWithoutTree(locationHierarchy)
@@ -67,8 +67,8 @@ public class LocationHierarchyController {
   }
 
 
-  @Operation(summary = "Get Locations for given Hierarchy by identifier",
-      description = "Get Locations for given Hierarchy by identifier",
+  @Operation(summary = "Get Locations  and their children for given Hierarchy by identifier",
+      description = "Get Locations and their children for given Hierarchy by identifier",
       tags = {"Location Hierarchy"}
   )
   @GetMapping("/{identifier}/location")
