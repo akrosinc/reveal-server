@@ -55,7 +55,7 @@ public class GroupService {
   }
 
   public Group createGroup(GroupRequest groupRequest) {
-    Group.GroupBuilder groupBuilder = Group.builder().type(groupRequest.getType().toString())
+    Group.GroupBuilder groupBuilder = Group.builder().type(groupRequest.getType().getValue())
         .name(groupRequest.getName());
 
     if (groupRequest.getLocationIdentifier() != null) {
@@ -84,7 +84,7 @@ public class GroupService {
     Group groupRetrieved = getGroupByIdentifier(groupIdentifier);
 
     groupRetrieved.setName(groupRequest.getName());
-    groupRetrieved.setType(groupRequest.getType().toString());
+    groupRetrieved.setType(groupRequest.getType().getValue());
 
     if (groupRequest.getLocationIdentifier() != null) {
       Location location = locationService.findByIdentifier(groupRequest.getLocationIdentifier());
