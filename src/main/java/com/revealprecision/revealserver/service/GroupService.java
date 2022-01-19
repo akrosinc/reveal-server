@@ -20,8 +20,8 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class GroupService {
 
-  GroupRepository groupRepository;
-  LocationService locationService;
+  final GroupRepository groupRepository;
+  final LocationService locationService;
 
   @Autowired
   public GroupService(GroupRepository groupRepository, LocationService locationService) {
