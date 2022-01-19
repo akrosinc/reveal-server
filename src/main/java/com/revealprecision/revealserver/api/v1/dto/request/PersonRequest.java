@@ -1,22 +1,25 @@
 package com.revealprecision.revealserver.api.v1.dto.request;
 
+import com.revealprecision.revealserver.enums.GenderEnum;
+import com.revealprecision.revealserver.enums.NameUseEnum;
 import java.time.LocalDate;
 import lombok.Builder;
 import lombok.Data;
+import org.springframework.lang.Nullable;
 
 @Data
 public class PersonRequest {
 
     boolean active;
     Name name;
-    Gender gender;
+    GenderEnum gender;
     LocalDate birthDate;
     String[] groups;
 
     @Data
     @Builder
     public static class Name{
-        Use use;
+        NameUseEnum use;
         String text;
         String family;
         String given;
@@ -25,21 +28,5 @@ public class PersonRequest {
     }
 
 
-    public enum Use{
-        usual,
-        official,
-        temp,
-        nickname,
-        anonymous,
-        old,
-        maiden
-    }
-
-    public enum Gender{
-        male,
-        female,
-        other,
-        unknown
-    }
 }
 

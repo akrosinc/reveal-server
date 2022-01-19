@@ -1,20 +1,25 @@
 package com.revealprecision.revealserver.service.models;
 
+import com.revealprecision.revealserver.enums.GenderEnum;
+import com.revealprecision.revealserver.enums.GroupTypeEnum;
+import java.util.UUID;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
-import org.springframework.web.bind.annotation.RequestParam;
 
 @Builder
 @Getter
 @Setter
+
 public class PersonSearchCriteria {
 
   String firstName;
   String lastName;
-  String gender;
-  String location;
-  String group;
+  GenderEnum gender;
+  String locationName;
+  UUID locationIdentifier;
+  String groupName;
+  UUID groupIdentifier;
   String birthdate;
   String fromDate;
   String toDate;

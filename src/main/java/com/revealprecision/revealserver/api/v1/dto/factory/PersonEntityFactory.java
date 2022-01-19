@@ -17,7 +17,7 @@ public class PersonEntityFactory {
         .nameSuffix(personRequest.getName().getSuffix()).nameText(personRequest.getName().getText())
         .nameUse(personRequest.getName().getUse().name()).birthDate(Date.from(
             personRequest.getBirthDate().atStartOfDay(ZoneId.systemDefault()).toInstant()))
-        .gender(personRequest.getGender().name()).active(personRequest.isActive()).build();
+        .gender(personRequest.getGender().getValue()).active(personRequest.isActive()).build();
   }
 
 }
