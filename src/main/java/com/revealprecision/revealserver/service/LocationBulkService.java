@@ -6,6 +6,7 @@ import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.LocationBulk;
 import com.revealprecision.revealserver.persistence.domain.UserBulk;
+import com.revealprecision.revealserver.persistence.projection.LocationBulkProjection;
 import com.revealprecision.revealserver.persistence.repository.LocationBulkRepository;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -39,6 +40,10 @@ public class LocationBulkService {
         .orElseThrow(
             () -> new NotFoundException(Pair.of(UserBulk.Fields.identifier, identifier),
                 UserBulk.class));
+  }
+
+  public Page<LocationBulkProjection> getLocationBulkDetails(UUID identifier, Pageable pageable) {
+    return locationBulkRepository.findBulkById(identifier, pageable);
   }
 
   public Page<LocationBulk> getLocationBulks(Pageable pageable) {
