@@ -3,7 +3,6 @@ package com.revealprecision.revealserver.persistence.domain;
 import com.revealprecision.revealserver.api.v1.dto.request.UserUpdateRequest;
 import java.util.Set;
 import java.util.UUID;
-import javax.persistence.CascadeType;
 import javax.persistence.CollectionTable;
 import javax.persistence.Column;
 import javax.persistence.ElementCollection;
@@ -39,7 +38,7 @@ import org.hibernate.envers.Audited;
 @Where(clause = "entity_status='ACTIVE'")
 public class User extends AbstractAuditableEntity {
 
-  @ManyToMany(cascade = CascadeType.ALL)
+  @ManyToMany
   @JoinTable(
       name = "user_organization",
       joinColumns = @JoinColumn(name = "user_identifier"),
