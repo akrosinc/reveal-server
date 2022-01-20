@@ -32,7 +32,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/locationHierarchy")
 public class LocationHierarchyController {
 
-  private LocationHierarchyService locationHierarchyService;
+  private final LocationHierarchyService locationHierarchyService;
 
   @Autowired
   public LocationHierarchyController(LocationHierarchyService locationHierarchyService) {
