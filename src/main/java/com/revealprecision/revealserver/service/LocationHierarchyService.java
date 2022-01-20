@@ -55,10 +55,8 @@ public class LocationHierarchyService {
         .build();
     locationHierarchyToSave.setEntityStatus(EntityStatus.ACTIVE);
     var savedLocationHierarchy = locationHierarchyRepository.save(locationHierarchyToSave);
-    if (savedLocationHierarchy != null) {
-      jobScheduler.enqueue(
-          () -> locationRelationshipService.createLocationRelationships(savedLocationHierarchy));
-    }
+    jobScheduler.enqueue(
+        () -> locationRelationshipService.createLocationRelationships(savedLocationHierarchy));
     return savedLocationHierarchy;
   }
 
