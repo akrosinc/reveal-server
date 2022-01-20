@@ -15,22 +15,14 @@ import org.springframework.data.domain.Pageable;
 public class LocationBulkDetailResponseFactory {
 
   public static LocationBulkDetailResponse fromProjection(LocationBulkProjection projection) {
-    String name;
+    String name = projection.getName();
     BulkEntryStatus status;
     String message = null;
-    if (projection.getEntityStatus() == null) {
-      status = BulkEntryStatus.ERROR;
-      name = projection.getName();
-      message = projection.getMessage();
+    if (projection.getEntityStatus() == EntityStatus.ACTIVE) {
+      status = BulkEntryStatus.SUCCESSFUL;
     } else {
-      if (projection.getEntityStatus() == EntityStatus.ACTIVE) {
-        status = BulkEntryStatus.SUCCESSFUL;
-        name = projection.getName();
-      } else {
-        status = BulkEntryStatus.ERROR;
-        message = projection.getMessage();
-        name = projection.getName();
-      }
+      status = BulkEntryStatus.ERROR;
+      message = projection.getMessage();
     }
     return LocationBulkDetailResponse.builder().name(name).message(message)
         .status(status)
