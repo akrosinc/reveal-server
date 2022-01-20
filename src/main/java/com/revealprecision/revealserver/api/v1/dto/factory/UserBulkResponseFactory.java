@@ -17,7 +17,9 @@ public class UserBulkResponseFactory {
         .filename(userBulk.getFilename())
         .identifier(userBulk.getIdentifier())
         .uploadDatetime(userBulk.getUploadedDatetime())
-        .status(userBulk.getStatus()).build();
+        .status(userBulk.getStatus())
+        .uploadedBy(userBulk.getUploadedBy())
+        .build();
   }
 
   public static Page<UserBulkResponse> fromEntityPage(Page<UserBulk> bulks, Pageable pageable) {

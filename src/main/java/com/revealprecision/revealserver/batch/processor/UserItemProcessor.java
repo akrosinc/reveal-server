@@ -78,14 +78,20 @@ public class UserItemProcessor implements ItemProcessor<UserBatchDTO, User> {
     alreadyAddedUsernames.add(user.getUsername());
     setOrganizations(user, item.getOrganizations());
     user.setUserBulk(userBulk);
-    createUserKeycloak(item, user);
-    user.setEntityStatus(EntityStatus.ACTIVE);
+    if (createUserKeycloak(item, user) == 201) {
+      user.setEntityStatus(EntityStatus.ACTIVE);
+    }
     return user;
   }
 
   public boolean isUserValid(final UserBatchDTO userBatchDTO) {
+    if (userBatchDTO.getUsername().isBlank()) {
+      saveUserBulkException("Username can not be empty", userBatchDTO.getUsername());
+      return false;
+    }
     if (!userBatchDTO.getUsername().matches(BatchConstants.Constraint.USERNAME_REGEX)) {
-      saveUserBulkException("Username must match regex", userBatchDTO.getUsername());
+      saveUserBulkException("Username can not contain special characters",
+          userBatchDTO.getUsername());
       return false;
     } else if (userBatchDTO.getFirstName().isBlank() || userBatchDTO.getLastName().isBlank()
         || userBatchDTO.getPassword().isBlank()) {
@@ -131,7 +137,7 @@ public class UserItemProcessor implements ItemProcessor<UserBatchDTO, User> {
     user.setOrganizations(userOrgs);
   }
 
-  public void createUserKeycloak(UserBatchDTO userBatchDTO, User user) {
+  public int createUserKeycloak(UserBatchDTO userBatchDTO, User user) {
     UsersResource usersResource = KeycloakConfig.getInstance().realm(KeycloakConfig.realm).users();
     CredentialRepresentation credentialRepresentation = keycloakService.createPasswordCredentials(
         userBatchDTO.getPassword(), userBatchDTO.getTempPassword());
@@ -166,5 +172,6 @@ public class UserItemProcessor implements ItemProcessor<UserBatchDTO, User> {
       user.setEntityStatus(EntityStatus.CREATING);
       user.setApiResponse("Unknown error on Keycloak");
     }
+    return response.getStatus();
   }
 }
