@@ -13,6 +13,8 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 public class LocationBulkDetailResponse {
-    private String name;
-    private BulkEntryStatus status;
+
+  private String name;
+  private String message;
+  private BulkEntryStatus status;
 }
