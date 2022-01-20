@@ -487,3 +487,117 @@ CREATE SEQUENCE IF NOT EXISTS hibernate_sequence
 
 CREATE INDEX IF NOT EXISTS raster_store_idx ON raster_store (id);
 CREATE INDEX raster_store_rast_st_convexhull_idx ON raster_store USING gist (public.ST_ConvexHull(rast));
+
+CREATE TABLE IF NOT EXISTS person
+(
+    identifier        uuid                     NOT NULL,
+    active            boolean           DEFAULT true,
+    name_use          character varying        NOT NULL,
+    name_text         character varying        NOT NULL,
+    name_family       character varying        NOT NULL,
+    name_given        character varying        NOT NULL,
+    name_prefix       character varying(30)    NOT NULL,
+    name_suffix       character varying DEFAULT ''::character varying,
+    gender            character varying(30)    NOT NULL,
+    birth_date        date                     NOT NULL,
+    entity_status     character varying(36)    NOT NULL,
+    created_by        character varying(36)    NOT NULL,
+    created_datetime  timestamp with time zone NOT NULL,
+    modified_by       character varying(36)    NOT NULL,
+    modified_datetime timestamp with time zone NOT NULL,
+    CONSTRAINT person_pkey PRIMARY KEY (identifier)
+);
+
+CREATE TABLE IF NOT EXISTS person_aud
+(
+    identifier        uuid                     NOT NULL,
+    rev               integer                  NOT NULL,
+    revtype           integer,
+    active            boolean           DEFAULT true,
+    name_use          character varying        NOT NULL,
+    name_text         character varying        NOT NULL,
+    name_family       character varying        NOT NULL,
+    name_given        character varying        NOT NULL,
+    name_prefix       character varying(30)    NOT NULL,
+    name_suffix       character varying DEFAULT ''::character varying,
+    gender            character varying(30)    NOT NULL,
+    birth_date        date                     NOT NULL,
+    created_by        character varying(36)    NOT NULL,
+    created_datetime  timestamp with time zone NOT NULL,
+    modified_by       character varying(36)    NOT NULL,
+    modified_datetime timestamp with time zone NOT NULL,
+    entity_status     character varying(36)    NOT NULL,
+    CONSTRAINT person_aud_pkey PRIMARY KEY (identifier, rev)
+);
+
+CREATE TABLE IF NOT EXISTS "group"
+(
+    identifier          uuid                     NOT NULL,
+    name                character varying(255)   NOT NULL,
+    type                character varying(255)   NOT NULL,
+    location_identifier uuid,
+    entity_status       character varying(36)    NOT NULL,
+    created_by          character varying(36)    NOT NULL,
+    created_datetime    timestamp with time zone NOT NULL,
+    modified_by         character varying(36)    NOT NULL,
+    modified_datetime   timestamp with time zone NOT NULL,
+    CONSTRAINT group_pkey PRIMARY KEY (identifier),
+    CONSTRAINT group_location_identifier_fkey FOREIGN KEY (location_identifier)
+        REFERENCES location (identifier) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+);
+
+CREATE TABLE IF NOT EXISTS group_aud
+(
+    identifier          uuid                     NOT NULL,
+    name                character varying(255)   NOT NULL,
+    type                character varying(255)   NOT NULL,
+    rev                 integer                  NOT NULL,
+    revtype             integer,
+    location_identifier uuid,
+    created_by          character varying(36)    NOT NULL,
+    created_datetime    timestamp with time zone NOT NULL,
+    modified_by         character varying(36)    NOT NULL,
+    modified_datetime   timestamp with time zone NOT NULL,
+    entity_status       character varying(36)    NOT NULL,
+    CONSTRAINT group_aud_pkey PRIMARY KEY (identifier, rev),
+    CONSTRAINT group_aud_location_identifier_fkey FOREIGN KEY (location_identifier)
+        REFERENCES location (identifier) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+);
+
+CREATE TABLE IF NOT EXISTS person_group
+(
+    person_identifier uuid NOT NULL,
+    group_identifier  uuid NOT NULL,
+    CONSTRAINT person_group_pkey PRIMARY KEY (person_identifier, group_identifier),
+    CONSTRAINT person_group_group_identifier_fkey FOREIGN KEY (group_identifier)
+        REFERENCES "group" (identifier) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION,
+    CONSTRAINT person_group_person_identifier_fkey FOREIGN KEY (person_identifier)
+        REFERENCES person (identifier) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+);
+
+CREATE TABLE IF NOT EXISTS person_group_aud
+(
+    rev               integer NOT NULL,
+    revtype           integer,
+    person_identifier uuid    NOT NULL,
+    group_identifier  uuid    NOT NULL,
+    CONSTRAINT person_group_aud_pkey PRIMARY KEY (person_identifier, group_identifier, rev),
+    CONSTRAINT person_group_aud_group_identifier_fkey FOREIGN KEY (group_identifier)
+        REFERENCES "group" (identifier) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION,
+    CONSTRAINT person_group_aud_person_identifier_fkey FOREIGN KEY (person_identifier)
+        REFERENCES person (identifier) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+);
+
+
