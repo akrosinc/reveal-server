@@ -13,6 +13,7 @@ import com.revealprecision.revealserver.persistence.domain.GeographicLevel.Field
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
 import com.revealprecision.revealserver.persistence.repository.LocationHierarchyRepository;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -109,7 +110,9 @@ public class LocationHierarchyService {
     Optional<List<LocationRelationship>> locationRelationshipOptional = getLocationRelationshipsForLocationHierarchy(
         locationHierarchy);
     GeoTree geoTree = new GeoTree();
-    geoTree.buildTreeFromList(locationRelationshipOptional.get());
+    geoTree.buildTreeFromList(
+        locationRelationshipOptional.isPresent() ? locationRelationshipOptional.get() :
+            Collections.emptyList());
     return geoTree;
   }
 
