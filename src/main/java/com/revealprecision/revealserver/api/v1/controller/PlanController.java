@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/")
 public class PlanController {
 
-  private PlanService planService;
+  private final PlanService planService;
 
   @Autowired
   public PlanController(PlanService planService) {

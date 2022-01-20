@@ -4,8 +4,8 @@ import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
 import com.revealprecision.revealserver.util.Tree;
 import com.revealprecision.revealserver.util.TreeNode;
-import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public class GeoTree {
@@ -19,9 +19,12 @@ public class GeoTree {
   public void addLocation(LocationRelationship locationRelationship) {
     if (!locationsHierarchy.hasNode(locationRelationship.getLocation().getIdentifier())) {
       if (locationRelationship.getParentLocation() == null) {
-        locationsHierarchy.addNode(locationRelationship.getLocation().getIdentifier(), locationRelationship.getLocation().getName(), locationRelationship.getLocation(), null);
+        locationsHierarchy.addNode(locationRelationship.getLocation().getIdentifier(),
+            locationRelationship.getLocation().getName(), locationRelationship.getLocation(), null);
       } else {
-        locationsHierarchy.addNode(locationRelationship.getLocation().getIdentifier(), locationRelationship.getLocation().getName(), locationRelationship.getLocation(), locationRelationship.getParentLocation().getIdentifier());
+        locationsHierarchy.addNode(locationRelationship.getLocation().getIdentifier(),
+            locationRelationship.getLocation().getName(), locationRelationship.getLocation(),
+            locationRelationship.getParentLocation().getIdentifier());
       }
     }
   }
@@ -31,7 +34,8 @@ public class GeoTree {
       addLocation(locationRelationship);
     }
   }
-  public LinkedHashMap<UUID, TreeNode<UUID, Location>> getLocationsHierarchy() {
+
+  public Map<UUID, TreeNode<UUID, Location>> getLocationsHierarchy() {
     return locationsHierarchy.getTree();
   }
 }
