@@ -3,10 +3,14 @@ package com.revealprecision.revealserver.api.v1.controller;
 import com.revealprecision.revealserver.annotation.AllowedSortProperties;
 import com.revealprecision.revealserver.api.v1.dto.factory.LocationHierarchyResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.LocationHierarchyRequest;
+import com.revealprecision.revealserver.api.v1.dto.response.GeoTreeResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationHierarchyResponse;
+import com.revealprecision.revealserver.enums.SummaryEnum;
+import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.service.LocationHierarchyService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import java.util.List;
 import java.util.UUID;
 import javax.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,7 +32,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/locationHierarchy")
 public class LocationHierarchyController {
 
-  private LocationHierarchyService locationHierarchyService;
+  private final LocationHierarchyService locationHierarchyService;
 
   @Autowired
   public LocationHierarchyController(LocationHierarchyService locationHierarchyService) {
@@ -55,11 +59,30 @@ public class LocationHierarchyController {
   public ResponseEntity<LocationHierarchyResponse> getLocationHierarchy(
       @Parameter(description = "LocationHierarchy identifier") @PathVariable UUID identifier,
       @Parameter(description = "Toggle summary data") @RequestParam(defaultValue = "true", required = false) boolean _summary) {
+    //TODO: we need to update specification for this endpoint and it's intention. which might cause this to change
     var locationHierarchy = locationHierarchyService.findByIdentifier(identifier);
     return ResponseEntity.status(HttpStatus.OK).body((_summary) ? LocationHierarchyResponseFactory
         .fromEntityWithoutTree(locationHierarchy)
-        : LocationHierarchyResponseFactory.fromEntityWithTree(locationHierarchy));
+        : LocationHierarchyResponseFactory.fromEntityWithTree(locationHierarchy, true));
   }
+
+
+  @Operation(summary = "Get Locations  and their children for given Hierarchy by identifier",
+      description = "Get Locations and their children for given Hierarchy by identifier",
+      tags = {"Location Hierarchy"}
+  )
+  @GetMapping("/{identifier}/location")
+  public ResponseEntity<List<GeoTreeResponse>> getLocationsForHierarchy(
+      @Parameter(description = "LocationHierarchy identifier") @PathVariable UUID identifier,
+      @Parameter(description = "Toggle summary data") @RequestParam(defaultValue = "TRUE", required = false) SummaryEnum _summary) {
+    LocationHierarchy locationHierarchy = locationHierarchyService.findByIdentifier(identifier);
+    Boolean includeGeometry = _summary.equals(SummaryEnum.FALSE);
+    return ResponseEntity.status(HttpStatus.OK).body(LocationHierarchyResponseFactory
+        .generateGeoTreeResponseFromTree(
+            locationHierarchyService.getGeoTreeFromLocationHierarchy(locationHierarchy)
+                .getLocationsHierarchy(), includeGeometry));
+  }
+
 
   @Operation(summary = "Get List of Location Hierarchy",
       description = "Get List of Location Hierarchy",

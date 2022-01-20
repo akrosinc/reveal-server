@@ -24,7 +24,8 @@ public class LocationBulkResponseFactory {
   public static LocationBulkResponse fromEntity(LocationBulk locationBulk) {
     return LocationBulkResponse.builder().identifier(locationBulk.getIdentifier())
         .status(locationBulk.getStatus()).filename(locationBulk.getFilename())
-        .uploadDatetime(locationBulk.getUploadedDatetime()).build();
+        .uploadDatetime(locationBulk.getUploadedDatetime())
+        .uploadedBy(locationBulk.getUploadedBy()).build();
   }
 
 }

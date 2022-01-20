@@ -38,10 +38,10 @@ public class LocationHierarchyResponseFactory {
         locationHierarchies.getTotalElements());
   }
 
-  public static LocationHierarchyResponse fromEntityWithTree(LocationHierarchy locationHierarchy) {
+  public static LocationHierarchyResponse fromEntityWithTree(LocationHierarchy locationHierarchy,Boolean includeGeometry) {
 
     List<GeoTreeResponse> geoTree = generateLocationTreeResponse(
-        locationHierarchy.getLocationRelationships()); //TODO: cache this type of response
+        locationHierarchy.getLocationRelationships(),includeGeometry); //TODO: cache this type of response
     return LocationHierarchyResponse.builder().identifier(locationHierarchy.getIdentifier())
         .name(locationHierarchy.getName())
         .geoTree(geoTree)
@@ -49,7 +49,7 @@ public class LocationHierarchyResponseFactory {
   }
 
   private static List<GeoTreeResponse> generateLocationTreeResponse(
-      List<LocationRelationship> locationRelationships) {
+      List<LocationRelationship> locationRelationships,Boolean includeGeometry) {
     var rootLocations = locationRelationships.stream()
         .filter(locationRelationship -> locationRelationship.getParentLocation() == null)
         .map(locationRelationship -> locationRelationship.getLocation()).collect(
@@ -64,7 +64,7 @@ public class LocationHierarchyResponseFactory {
           Collectors.toList());
       geoTree.buildTreeFromList(locationRelationshipsSplitByRootLocation);
       List<GeoTreeResponse> geoTreeResponse = generateGeoTreeResponseFromTree(
-          geoTree.getLocationsHierarchy());
+          geoTree.getLocationsHierarchy(),includeGeometry);
       if (!geoTreeResponse.isEmpty()) {
         locationHierarchies.add(geoTreeResponse.get(0));
       }
@@ -72,12 +72,12 @@ public class LocationHierarchyResponseFactory {
     return locationHierarchies;
   }
 
-  private static List<GeoTreeResponse> generateGeoTreeResponseFromTree(
-      Map<UUID, TreeNode<UUID, Location>> map) {
+  public static List<GeoTreeResponse> generateGeoTreeResponseFromTree(
+      Map<UUID, TreeNode<UUID, Location>> map,Boolean includeGeometry) {
     List<GeoTreeResponse> geoTreeResponses = new ArrayList<>();
 
     for (Map.Entry<UUID, TreeNode<UUID, Location>> entry : map.entrySet()) {
-      List<GeoTreeResponse> foundLocations = buildGeoResponseFromNode(entry.getValue());
+      List<GeoTreeResponse> foundLocations = buildGeoResponseFromNode(entry.getValue(),includeGeometry);
       if (!foundLocations.isEmpty()) {
         geoTreeResponses.addAll(foundLocations);
       }
@@ -87,18 +87,19 @@ public class LocationHierarchyResponseFactory {
     return geoTreeResponses;
   }
 
-  private static List<GeoTreeResponse> buildGeoResponseFromNode(TreeNode<UUID, Location> node) {
+  public static List<GeoTreeResponse> buildGeoResponseFromNode(TreeNode<UUID, Location> node,Boolean includeGeometry) {
     List<GeoTreeResponse> allLocationData = new ArrayList<>();
 
     var locationPropertyResponse = LocationPropertyResponse.builder().name(node.getNode().getName())
         .externalId(node.getNode().getExternalId()).status(node.getNode().getStatus())
         .geographicLevel(node.getNode().getGeographicLevel().getName()).build();
     var geoTreeResponse = GeoTreeResponse.builder().identifier(node.getId())
-        .geometry(node.getNode().getGeometry()).properties(locationPropertyResponse).build();
+       .geometry(includeGeometry ? node.getNode().getGeometry() : null)
+        .properties(locationPropertyResponse).build();
     List<GeoTreeResponse> children = new ArrayList<>();
     if (node.getChildren() != null) {
       for (Map.Entry<UUID, TreeNode<UUID, Location>> childEntry : node.getChildren().entrySet()) {
-        List<GeoTreeResponse> childLocations = buildGeoResponseFromNode(childEntry.getValue());
+        List<GeoTreeResponse> childLocations = buildGeoResponseFromNode(childEntry.getValue(),includeGeometry);
         if (!childLocations.isEmpty()) {
           children.addAll(childLocations);
         }
