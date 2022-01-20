@@ -39,6 +39,10 @@ public class UserBulk extends AbstractAuditableEntity {
   @Column(nullable = false)
   private String filename;
 
+
+  @Column(nullable = false)
+  private String uploadedBy;
+
   @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS[X]", timezone = "${spring.jackson.time-zone}")
   @Column(nullable = false)
   private LocalDateTime uploadedDatetime;
