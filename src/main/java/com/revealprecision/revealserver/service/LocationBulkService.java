@@ -6,7 +6,9 @@ import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.LocationBulk;
 import com.revealprecision.revealserver.persistence.domain.UserBulk;
+import com.revealprecision.revealserver.persistence.projection.LocationBulkProjection;
 import com.revealprecision.revealserver.persistence.repository.LocationBulkRepository;
+import com.revealprecision.revealserver.util.UserUtils;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import javax.transaction.Transactional;
@@ -21,6 +23,7 @@ import org.springframework.stereotype.Service;
 public class LocationBulkService {
 
   private final LocationBulkRepository locationBulkRepository;
+  private final UserService userService;
 
   public UUID saveBulk(String file) {
     var locationBulk = LocationBulk.builder()
@@ -29,6 +32,9 @@ public class LocationBulkService {
         .uploadedDatetime(LocalDateTime.now())
         .build();
     locationBulk.setEntityStatus(EntityStatus.ACTIVE);
+    locationBulk.setUploadedBy(
+        userService.getByKeycloakId(UUID.fromString(UserUtils.getKeyCloakPrincipal().getName()))
+            .getUsername());
     locationBulk = locationBulkRepository.save(locationBulk);
     return locationBulk.getIdentifier();
   }
@@ -41,7 +47,13 @@ public class LocationBulkService {
                 UserBulk.class));
   }
 
+  public Page<LocationBulkProjection> getLocationBulkDetails(UUID identifier, Pageable pageable) {
+    return locationBulkRepository.findBulkById(identifier, pageable);
+  }
+
   public Page<LocationBulk> getLocationBulks(Pageable pageable) {
     return locationBulkRepository.findAll(pageable);
   }
+
+
 }
