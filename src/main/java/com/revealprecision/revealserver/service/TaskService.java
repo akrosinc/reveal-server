@@ -13,44 +13,62 @@ import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.Task;
 import com.revealprecision.revealserver.persistence.domain.Task.Fields;
 import com.revealprecision.revealserver.persistence.repository.TaskRepository;
+import com.revealprecision.revealserver.persistence.specification.TaskSpec;
+import com.revealprecision.revealserver.service.models.TaskSearchCriteria;
 import java.sql.Date;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.List;
 import java.util.UUID;
-
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
 import org.springframework.data.util.Pair;
+import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
 public class TaskService {
 
   private final TaskRepository taskRepository;
-  private final ObjectMapper objectMapper;
   private final FormService formService;
   private final PlanService planService;
   private final ActionService actionService;
 
   @Autowired
   public TaskService(TaskRepository taskRepository, ProducerService producerService,
-      ObjectMapper objectMapper, FormService formService, PlanService planService, ActionService actionService) {
+      ObjectMapper objectMapper, FormService formService, PlanService planService,
+      ActionService actionService) {
     this.taskRepository = taskRepository;
-    this.objectMapper = objectMapper;
     this.formService = formService;
     this.planService = planService;
     this.actionService = actionService;
   }
 
+  public Page<Task> searchTasks(TaskSearchCriteria taskSearchCriteria, Pageable pageable) {
+    return taskRepository.findAll(TaskSpec.getTaskSpecification(taskSearchCriteria), pageable);
+  }
+
+  public Long countTasksBySearchCriteria(TaskSearchCriteria taskSearchCriteria) {
+    return taskRepository.count(TaskSpec.getTaskSpecification(taskSearchCriteria));
+  }
+
   public Page<Task> getTasks(Pageable pageable) {
     return taskRepository.findAll(pageable);
+  }
+
+  public Long getAllTaskCount() {
+    return taskRepository.count();
+  }
+
+  public Page<Task> getTasksPageByPlanIdentifier(UUID planIdentifier, Pageable pageable) {
+    return taskRepository.findTasksByPlan_Identifier(planIdentifier, pageable);
+  }
+
+
+  public List<Task> getTasksPageByPlanIdentifier(UUID planIdentifier) {
+    return taskRepository.findTasksByPlan_Identifier(planIdentifier);
   }
 
   public Task createTask(TaskRequest taskRequest) {
@@ -61,8 +79,9 @@ public class TaskService {
     Action action = actionService.getByIdentifier(UUID.fromString(taskRequest.getCode()));
     //Action exists
 
-    if (!taskRepository.findTaskByCode(action.getIdentifier().toString()).isEmpty()){
-      throw new DuplicateTaskCreationException("Task for action id".concat(taskRequest.getCode()).concat(" already exists"));
+    if (!taskRepository.findTaskByCode(action.getIdentifier().toString()).isEmpty()) {
+      throw new DuplicateTaskCreationException(
+          "Task for action id".concat(taskRequest.getCode()).concat(" already exists"));
     }
 
     Task task = TaskEntityFactory.entityFromRequestObj(taskRequest, form, plan);
@@ -71,8 +90,9 @@ public class TaskService {
   }
 
   public Task getTaskByIdentifier(UUID identifier) {
-    return taskRepository.findByIdentifier(identifier).orElseThrow(()->new NotFoundException(Pair.of(
-        Fields.identifier,identifier),Task.class));
+    return taskRepository.findByIdentifier(identifier)
+        .orElseThrow(() -> new NotFoundException(Pair.of(
+            Fields.identifier, identifier), Task.class));
   }
 
   public Task updateTask(UUID identifier, TaskUpdateRequest taskUpdateRequest) {
@@ -83,10 +103,12 @@ public class TaskService {
     taskToUpdate.setBusinessStatus(taskUpdateRequest.getBusinessStatus());
     taskToUpdate.setLastModified(LocalDateTime.now());
     taskToUpdate.setDescription(taskUpdateRequest.getDescription());
-    taskToUpdate.setExecutionPeriodStart(Date.from(taskUpdateRequest.getExecutionPeriodStart().atStartOfDay(
-        ZoneId.systemDefault()).toInstant()));
-    taskToUpdate.setExecutionPeriodEnd(Date.from(taskUpdateRequest.getExecutionPeriodEnd().atStartOfDay(
-        ZoneId.systemDefault()).toInstant()));
+    taskToUpdate.setExecutionPeriodStart(
+        Date.from(taskUpdateRequest.getExecutionPeriodStart().atStartOfDay(
+            ZoneId.systemDefault()).toInstant()));
+    taskToUpdate.setExecutionPeriodEnd(
+        Date.from(taskUpdateRequest.getExecutionPeriodEnd().atStartOfDay(
+            ZoneId.systemDefault()).toInstant()));
     taskToUpdate.setPriority(taskUpdateRequest.getPriority());
     taskToUpdate.setInstantiatesUriForm(form);
 

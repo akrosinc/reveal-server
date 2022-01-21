@@ -3,17 +3,23 @@ package com.revealprecision.revealserver.persistence.repository;
 import com.revealprecision.revealserver.persistence.domain.Task;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
-import java.util.UUID;
-
 @Repository
-public interface TaskRepository extends JpaRepository<Task, UUID> {
-    Optional<Task> findByIdentifier(UUID identifier);
+public interface TaskRepository extends JpaRepository<Task, UUID>,
+    JpaSpecificationExecutor<Task> {
 
-    List<Task> findTaskByCode(String identifier);
+  Optional<Task> findByIdentifier(UUID identifier);
 
-//    Page<Task> findByPlanIdentifier(UUID planIdentifier, Integer pageNumber, Integer pageSize);
+  List<Task> findTaskByCode(String identifier);
+
+  List<Task> findTasksByPlan_Identifier(UUID identifier);
+
+  Page<Task> findTasksByPlan_Identifier(UUID identifier, Pageable pageable);
+
 }

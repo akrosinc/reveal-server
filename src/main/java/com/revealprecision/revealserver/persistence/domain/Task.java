@@ -82,6 +82,7 @@ public class Task extends AbstractAuditableEntity {
   @NotNull(message = "groupIdentifier can not be null")
   private String groupIdentifier;
 
+
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "plan_identifier", referencedColumnName = "identifier", nullable = false)
   private Plan plan;
