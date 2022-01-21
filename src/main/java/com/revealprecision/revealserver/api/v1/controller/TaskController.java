@@ -65,11 +65,6 @@ public class TaskController {
   )
   public TaskResponse getTaskByIdentifier(
       @Parameter(description = "Task identifier") @PathVariable("identifier") UUID taskIdentifier) {
-
-    Task taskByIdentifier = taskService.getTaskByIdentifier(taskIdentifier);
-
-    TaskResponse taskResponse = TaskResponseFactory.fromEntity(taskByIdentifier);
-
     return TaskResponseFactory.fromEntity(taskService.getTaskByIdentifier(taskIdentifier));
   }
 
