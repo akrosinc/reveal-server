@@ -30,7 +30,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/organization")
 public class OrganizationController {
 
-  private OrganizationService organizationService;
+  private final OrganizationService organizationService;
 
   @Autowired
   public OrganizationController(OrganizationService organizationService) {

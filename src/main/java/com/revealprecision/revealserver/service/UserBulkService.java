@@ -6,6 +6,7 @@ import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.UserBulk;
 import com.revealprecision.revealserver.persistence.projection.UserBulkProjection;
 import com.revealprecision.revealserver.persistence.repository.UserBulkRepository;
+import com.revealprecision.revealserver.util.UserUtils;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import javax.transaction.Transactional;
@@ -14,7 +15,6 @@ import org.keycloak.KeycloakPrincipal;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 @RequiredArgsConstructor
@@ -26,8 +26,7 @@ public class UserBulkService {
 
   public UUID saveBulk(String file) {
 
-    KeycloakPrincipal principal = (KeycloakPrincipal) SecurityContextHolder.getContext()
-        .getAuthentication().getPrincipal();
+    KeycloakPrincipal principal = UserUtils.getKeyCloakPrincipal();
 
     UserBulk userBulk = new UserBulk();
     userBulk.setFilename(file);
