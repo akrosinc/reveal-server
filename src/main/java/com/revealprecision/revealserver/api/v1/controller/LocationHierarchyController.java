@@ -72,15 +72,18 @@ public class LocationHierarchyController {
       tags = {"Location Hierarchy"}
   )
   @GetMapping("/{identifier}/location")
-  public ResponseEntity<List<GeoTreeResponse>> getLocationsForHierarchy(
+  public ResponseEntity<Page<GeoTreeResponse>> getLocationsForHierarchy(
       @Parameter(description = "LocationHierarchy identifier") @PathVariable UUID identifier,
+      Pageable pageable,
+      @Parameter(description = "Location Search parameter") @RequestParam(defaultValue = "") String search,
       @Parameter(description = "Toggle summary data") @RequestParam(defaultValue = "TRUE", required = false) SummaryEnum _summary) {
     LocationHierarchy locationHierarchy = locationHierarchyService.findByIdentifier(identifier);
     Boolean includeGeometry = _summary.equals(SummaryEnum.FALSE);
-    return ResponseEntity.status(HttpStatus.OK).body(LocationHierarchyResponseFactory
-        .generateGeoTreeResponseFromTree(
-            locationHierarchyService.getGeoTreeFromLocationHierarchy(locationHierarchy)
-                .getLocationsHierarchy(), includeGeometry));
+    List<GeoTreeResponse> geoTreeResponses = LocationHierarchyResponseFactory.generateGeoTreeResponseFromTree(
+        locationHierarchyService.getGeoTreeFromLocationHierarchy(locationHierarchy)
+            .getLocationsHierarchy(), includeGeometry);
+    Page<GeoTreeResponse> pageableGeoTreeResponse = LocationHierarchyResponseFactory.generatePageableGeoTreeResponse(geoTreeResponses,pageable, search);
+    return ResponseEntity.status(HttpStatus.OK).body(pageableGeoTreeResponse);
   }
 
 

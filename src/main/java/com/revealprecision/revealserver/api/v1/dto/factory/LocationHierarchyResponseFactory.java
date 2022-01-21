@@ -72,6 +72,16 @@ public class LocationHierarchyResponseFactory {
     return locationHierarchies;
   }
 
+
+
+  public  static Page<GeoTreeResponse> generatePageableGeoTreeResponse(List<GeoTreeResponse> geoTreeResponses,Pageable pageable,String search){
+
+      final int start = (int)pageable.getOffset();
+      final int end = Math.min((start + pageable.getPageSize()), geoTreeResponses.size());
+      return new PageImpl<>(geoTreeResponses.subList(start,end).stream().filter(geoTreeResponse -> geoTreeResponse.getProperties().getName().contains(search)).collect(
+          Collectors.toList()),pageable,geoTreeResponses.size());
+  }
+
   public static List<GeoTreeResponse> generateGeoTreeResponseFromTree(
       Map<UUID, TreeNode<UUID, Location>> map,Boolean includeGeometry) {
     List<GeoTreeResponse> geoTreeResponses = new ArrayList<>();
