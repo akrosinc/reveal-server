@@ -1,5 +1,9 @@
 package com.revealprecision.revealserver;
 
+import com.revealprecision.revealserver.service.ActionService;
+import java.util.UUID;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
@@ -10,6 +14,7 @@ import org.springframework.validation.beanvalidation.MethodValidationPostProcess
 @SpringBootApplication
 @EnableJpaAuditing
 public class RevealServerApplication {
+
 
   public static void main(String[] args) {
     SpringApplication.run(RevealServerApplication.class, args);
@@ -27,4 +32,6 @@ public class RevealServerApplication {
     processor.setValidator(localValidatorFactoryBean);
     return processor;
   }
+
+
 }

@@ -12,61 +12,6 @@ CREATE TABLE revinfo
     timestamp TIMESTAMP NOT NULL  DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS task
-(
-    identifier             VARCHAR(36)              NOT NULL,
-    entity_status          VARCHAR(36)              NOT NULL,
-    created_by             VARCHAR(36)              NOT NULL,
-    created_datetime       TIMESTAMP WITH TIME ZONE NOT NULL,
-    modified_by            VARCHAR(36)              NOT NULL,
-    modified_datetime      TIMESTAMP WITH TIME ZONE NOT NULL,
-    plan_identifier        VARCHAR(36)              NOT NULL,
-    focus                  VARCHAR(36)              NOT NULL,
-    code                   VARCHAR(36)              NOT NULL,
-    status                 VARCHAR(36)              NOT NULL,
-    priority               VARCHAR(36)              NOT NULL,
-    authored_on            TIMESTAMP WITH TIME ZONE NOT NULL,
-    description            VARCHAR(255)             NOT NULL,
-    last_modified          TIMESTAMP WITH TIME ZONE NOT NULL,
-    business_status        VARCHAR(36)              NOT NULL,
-    execution_period_start TIMESTAMP WITH TIME ZONE NOT NULL,
-    execution_period_end   TIMESTAMP WITH TIME ZONE NOT NULL,
-    group_identifier       VARCHAR(36)              NOT NULL,
-    instantiates_uri       VARCHAR(36)              NOT NULL,
-    PRIMARY KEY (identifier)
-);
-
-CREATE INDEX IF NOT EXISTS task_idx ON task (identifier);
-CREATE INDEX IF NOT EXISTS task_plan_identifier_idx ON task (plan_identifier);
-CREATE INDEX IF NOT EXISTS task_status_idx ON task (status);
-CREATE INDEX IF NOT EXISTS task_business_status_idx ON task (business_status);
-
-CREATE TABLE IF NOT EXISTS task_aud
-(
-    identifier             VARCHAR(36)              NOT NULL,
-    REV                    INT                      NOT NULL,
-    REVTYPE                INTEGER                  NULL,
-    entity_status          VARCHAR(36)              NOT NULL,
-    created_by             VARCHAR(36)              NOT NULL,
-    created_datetime       TIMESTAMP WITH TIME ZONE NOT NULL,
-    modified_by            VARCHAR(36)              NOT NULL,
-    modified_datetime      TIMESTAMP WITH TIME ZONE NOT NULL,
-    plan_identifier        VARCHAR(36)              NOT NULL,
-    focus                  VARCHAR(36)              NOT NULL,
-    code                   VARCHAR(36)              NOT NULL,
-    status                 VARCHAR(36)              NOT NULL,
-    priority               VARCHAR(36)              NOT NULL,
-    authored_on            TIMESTAMP WITH TIME ZONE NOT NULL,
-    description            VARCHAR(255)             NOT NULL,
-    last_modified          TIMESTAMP WITH TIME ZONE NOT NULL,
-    business_status        VARCHAR(36)              NOT NULL,
-    execution_period_start TIMESTAMP WITH TIME ZONE NOT NULL,
-    execution_period_end   TIMESTAMP WITH TIME ZONE NOT NULL,
-    group_identifier       VARCHAR(36)              NOT NULL,
-    instantiates_uri       VARCHAR(36)              NOT NULL,
-    PRIMARY KEY (identifier)
-);
-
 CREATE TABLE IF NOT EXISTS plan
 (
     identifier             UUID UNIQUE              NOT NULL,
@@ -105,36 +50,6 @@ CREATE TABLE IF NOT EXISTS plan_aud
     PRIMARY KEY (identifier, REV)
 );
 
-CREATE TABLE IF NOT EXISTS goal
-(
-    identifier        VARCHAR(64) UNIQUE       NOT NULL,
-    description       VARCHAR(255),
-    priority          VARCHAR(64)              NOT NULL,
-    plan_identifier   UUID,
-    entity_status     VARCHAR(36)              NOT NULL,
-    created_by        VARCHAR(36)              NOT NULL,
-    created_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,
-    modified_by       VARCHAR(36)              NOT NULL,
-    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
-    PRIMARY KEY (identifier)
-);
-
-CREATE TABLE IF NOT EXISTS goal_aud
-(
-    identifier        VARCHAR(64)              NOT NULL,
-    REV               INT                      NOT NULL,
-    REVTYPE           INTEGER                  NULL,
-    description       VARCHAR(255),
-    priority          VARCHAR(64)              NOT NULL,
-    plan_identifier   UUID,
-    entity_status     VARCHAR(36)              NOT NULL,
-    created_by        VARCHAR(36)              NOT NULL,
-    created_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,
-    modified_by       VARCHAR(36)              NOT NULL,
-    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
-    PRIMARY KEY (identifier, REV)
-);
-
 CREATE TABLE IF NOT EXISTS form
 (
     identifier        UUID                     NOT NULL,
@@ -159,6 +74,102 @@ CREATE TABLE IF NOT EXISTS form_aud
     title             VARCHAR(255)             NOT NULL,
     template          boolean                  NOT NULL,
     payload           jsonb                    NOT NULL,
+    entity_status     VARCHAR(36)              NOT NULL,
+    created_by        VARCHAR(36)              NOT NULL,
+    created_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by       VARCHAR(36)              NOT NULL,
+    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    PRIMARY KEY (identifier, REV)
+);
+CREATE TABLE IF NOT EXISTS task
+(
+    identifier uuid  NOT NULL,
+    entity_status character varying(36)  NOT NULL,
+    created_by character varying(36)  NOT NULL,
+    created_datetime timestamp with time zone NOT NULL,
+    modified_by character varying(36)  NOT NULL,
+    modified_datetime timestamp with time zone NOT NULL,
+    focus character varying(36)  NOT NULL,
+    code character varying(36)  NOT NULL,
+    status character varying(36)  NOT NULL,
+    priority character varying(36)  NOT NULL,
+    authored_on timestamp with time zone NOT NULL,
+    description character varying(255)  NOT NULL,
+    last_modified timestamp with time zone NOT NULL,
+    business_status character varying(36)  NOT NULL,
+    execution_period_start timestamp with time zone NOT NULL,
+    execution_period_end timestamp with time zone NOT NULL,
+    group_identifier character varying(36)  NOT NULL,
+    instantiates_uri uuid NOT NULL,
+    plan_identifier uuid NOT NULL,
+    CONSTRAINT task_pkey PRIMARY KEY (identifier),
+    CONSTRAINT task_form_fk FOREIGN KEY (instantiates_uri)
+        REFERENCES form (identifier) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+        NOT VALID,
+    CONSTRAINT task_plan_fk FOREIGN KEY (plan_identifier)
+        REFERENCES plan (identifier) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+        NOT VALID
+);
+
+
+CREATE INDEX IF NOT EXISTS task_idx ON task (identifier);
+CREATE INDEX IF NOT EXISTS task_plan_identifier_idx ON task (plan_identifier);
+CREATE INDEX IF NOT EXISTS task_status_idx ON task (status);
+CREATE INDEX IF NOT EXISTS task_business_status_idx ON task (business_status);
+
+CREATE TABLE IF NOT EXISTS task_aud
+(
+    identifier uuid NOT NULL,
+    rev integer NOT NULL,
+    revtype integer,
+    entity_status character varying(36)  NOT NULL,
+    created_by character varying(36)  NOT NULL,
+    created_datetime timestamp with time zone NOT NULL,
+    modified_by character varying(36)  NOT NULL,
+    modified_datetime timestamp with time zone NOT NULL,
+    plan_identifier uuid  NOT NULL,
+    focus character varying(36)  NOT NULL,
+    code character varying(36)  NOT NULL,
+    status character varying(36)  NOT NULL,
+    priority character varying(36)  NOT NULL,
+    authored_on timestamp with time zone NOT NULL,
+    description character varying(255)  NOT NULL,
+    last_modified timestamp with time zone NOT NULL,
+    business_status character varying(36)  NOT NULL,
+    execution_period_start timestamp with time zone NOT NULL,
+    execution_period_end timestamp with time zone NOT NULL,
+    group_identifier character varying(36)  NOT NULL,
+    instantiates_uri uuid  NOT NULL,
+    CONSTRAINT task_aud_pkey PRIMARY KEY (identifier, rev)
+);
+
+
+CREATE TABLE IF NOT EXISTS goal
+(
+    identifier        VARCHAR(64) UNIQUE       NOT NULL,
+    description       VARCHAR(255),
+    priority          VARCHAR(64)              NOT NULL,
+    plan_identifier   UUID,
+    entity_status     VARCHAR(36)              NOT NULL,
+    created_by        VARCHAR(36)              NOT NULL,
+    created_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by       VARCHAR(36)              NOT NULL,
+    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    PRIMARY KEY (identifier)
+);
+
+CREATE TABLE IF NOT EXISTS goal_aud
+(
+    identifier        VARCHAR(64)              NOT NULL,
+    REV               INT                      NOT NULL,
+    REVTYPE           INTEGER                  NULL,
+    description       VARCHAR(255),
+    priority          VARCHAR(64)              NOT NULL,
+    plan_identifier   UUID,
     entity_status     VARCHAR(36)              NOT NULL,
     created_by        VARCHAR(36)              NOT NULL,
     created_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,

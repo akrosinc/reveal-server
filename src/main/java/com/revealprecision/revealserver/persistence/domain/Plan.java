@@ -3,6 +3,7 @@ package com.revealprecision.revealserver.persistence.domain;
 import com.revealprecision.revealserver.enums.PlanInterventionTypeEnum;
 import com.revealprecision.revealserver.enums.PlanStatusEnum;
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.Set;
 import java.util.UUID;
 import javax.persistence.CascadeType;
@@ -17,9 +18,11 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 import lombok.experimental.FieldNameConstants;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
+import org.hibernate.engine.internal.Cascade;
 import org.hibernate.envers.Audited;
 
 @Entity
@@ -49,4 +52,7 @@ public class Plan extends AbstractAuditableEntity {
 
   @OneToMany(mappedBy = "plan", cascade = CascadeType.ALL)
   private Set<Goal> goals;
+
+  @OneToMany(mappedBy = "plan")
+  private Set<Task> tasks;
 }

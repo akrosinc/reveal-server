@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.exceptions.handler;
 
 import com.revealprecision.revealserver.exceptions.ConflictException;
+import com.revealprecision.revealserver.exceptions.DuplicateTaskCreationException;
 import com.revealprecision.revealserver.exceptions.FileFormatException;
 import com.revealprecision.revealserver.exceptions.InvalidDateFormatException;
 import com.revealprecision.revealserver.exceptions.KeycloakException;
@@ -114,5 +115,13 @@ public class CustomExceptionHandler {
     return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
   }
 
-
+  @ExceptionHandler(DuplicateTaskCreationException.class)
+  protected ResponseEntity<ApiErrorResponse> handleDuplicateTaskException(DuplicateTaskCreationException ex) {
+    ApiErrorResponse response = ApiErrorResponse.builder()
+        .statusCode(HttpStatus.BAD_REQUEST.value())
+        .timestamp(LocalDateTime.now())
+        .message(ex.getMessage())
+        .build();
+    return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+  }
 }

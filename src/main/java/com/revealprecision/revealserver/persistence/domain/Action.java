@@ -57,7 +57,7 @@ public class Action extends AbstractAuditableEntity {
   @ManyToOne
   @JoinColumn(name = "goal_identifier")
   private Goal goal;
-
+  @Enumerated(EnumType.STRING)
   private ActionTypeEnum type;
 
   private String definitionUri;
