@@ -1,12 +1,8 @@
 package com.revealprecision.revealserver.api.v1.dto.factory;
 
-import com.revealprecision.revealserver.api.v1.dto.request.TaskRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.TaskResponse;
-import com.revealprecision.revealserver.persistence.domain.Form;
-import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.Task;
 import java.time.ZoneId;
-import java.util.Date;
 import java.util.stream.Collectors;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
