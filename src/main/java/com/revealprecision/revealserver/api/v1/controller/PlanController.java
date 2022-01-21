@@ -41,7 +41,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class PlanController {
 
   private final PlanService planService;
-  private final PlanService planService;
   private final GoalService goalService;
   private final ActionService actionService;
   private final TargetService targetService;
