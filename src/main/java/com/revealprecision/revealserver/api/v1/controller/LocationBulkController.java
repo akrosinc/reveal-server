@@ -68,15 +68,6 @@ public class LocationBulkController {
         .fromEntityPage(locationBulkService.getLocationBulks(pageable), pageable));
   }
 
-  @Operation(summary = "Get LocationBulk operation by identifier", description = "Get LocationBulk operation by identifier",
-      tags = {"Location Bulk"})
-  @GetMapping(value = "/{identifier}", produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<LocationBulkResponse> getLocationBulk(
-      @Parameter(name = "LocationBulk identifier") @PathVariable UUID identifier) {
-    return ResponseEntity.status(HttpStatus.OK)
-        .body(LocationBulkResponseFactory.fromEntity(locationBulkService.findById(identifier)));
-  }
-
   @Operation(summary = "Download .json sample file for Location import",
       description = "Download .json sample file for Location import",
       tags = {"Location Bulk"}
@@ -96,7 +87,7 @@ public class LocationBulkController {
   )
   @GetMapping("/{identifier}")
   public ResponseEntity<Page<LocationBulkDetailResponse>> getBulkDetails(
-      @Parameter(description = "User bulk identifier") @PathVariable("identifier") UUID identifier,
+      @Parameter(description = "Location Bulk identifier") @PathVariable("identifier") UUID identifier,
       Pageable pageable) {
     return ResponseEntity.status(HttpStatus.OK).body(LocationBulkDetailResponseFactory
         .fromProjectionPage(locationBulkService.getLocationBulkDetails(identifier, pageable),
