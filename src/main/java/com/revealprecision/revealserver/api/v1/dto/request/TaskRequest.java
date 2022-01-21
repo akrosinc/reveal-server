@@ -3,11 +3,7 @@ package com.revealprecision.revealserver.api.v1.dto.request;
 import com.revealprecision.revealserver.enums.BusinessStatusEnum;
 import com.revealprecision.revealserver.enums.TaskPriorityEnum;
 import com.revealprecision.revealserver.enums.TaskStatusEnum;
-import com.revealprecision.revealserver.persistence.domain.Form;
-import com.revealprecision.revealserver.persistence.domain.Plan;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.Date;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -31,7 +27,6 @@ public class TaskRequest {
   private TaskPriorityEnum priority;
 
   private String description;
-
 
   private BusinessStatusEnum businessStatus;
 
