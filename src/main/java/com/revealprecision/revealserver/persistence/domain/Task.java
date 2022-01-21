@@ -10,12 +10,19 @@ import java.util.UUID;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
 import javax.persistence.NamedNativeQuery;
 import javax.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.experimental.FieldNameConstants;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 import org.hibernate.envers.Audited;
@@ -24,19 +31,18 @@ import org.hibernate.envers.Audited;
 @Audited
 @Getter
 @Setter
-
-@NamedNativeQuery(name = "Task.findByPlanIdentifier", query = "select * from task where plan_identifier = ? where entity_status='ACTIVE'", resultClass = Task.class)
+@Builder
 @SQLDelete(sql = "UPDATE task SET entity_status = 'DELETED' where identifier=?")
 @Where(clause = "entity_status='ACTIVE'")
+@FieldNameConstants
+@NoArgsConstructor
+@AllArgsConstructor
 public class Task extends AbstractAuditableEntity {
 
   @Id
   @GeneratedValue
   @NotNull(message = "identifier can not be null")
   private UUID identifier;
-
-  @NotNull(message = "planIdentifier can not be null")
-  private String planIdentifier;
 
   @NotNull(message = "focus can not be null")
   private String focus;
@@ -77,6 +83,11 @@ public class Task extends AbstractAuditableEntity {
   @NotNull(message = "groupIdentifier can not be null")
   private String groupIdentifier;
 
-  @NotNull(message = "instantiatesUri can not be null")
-  private String instantiatesUri;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "plan_identifier", referencedColumnName = "identifier", nullable = false)
+  private Plan plan;
+  @ManyToOne
+  @JoinColumn(name = "instantiates_uri", referencedColumnName = "identifier", nullable = false)
+  private Form instantiatesUriForm;
+
 }
