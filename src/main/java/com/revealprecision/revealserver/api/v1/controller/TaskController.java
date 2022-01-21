@@ -4,10 +4,6 @@ import com.revealprecision.revealserver.api.v1.dto.factory.TaskResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.TaskRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.TaskUpdateRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.TaskResponse;
-import com.revealprecision.revealserver.persistence.domain.Goal;
-import com.revealprecision.revealserver.persistence.domain.Plan;
-import com.revealprecision.revealserver.persistence.domain.Task;
-import com.revealprecision.revealserver.persistence.repository.TaskRepository;
 import com.revealprecision.revealserver.service.TaskService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -15,8 +11,6 @@ import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
@@ -26,7 +20,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -52,7 +45,7 @@ public class TaskController {
   )
   public Page<TaskResponse> getTasks(
       Pageable pageable) {
-    return  TaskResponseFactory.fromPageOfEntity( taskService.getTasks(pageable));
+    return TaskResponseFactory.fromPageOfEntity(taskService.getTasks(pageable));
   }
 
   @Operation(summary = "Fetch a Task by identifier",
