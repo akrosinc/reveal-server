@@ -77,6 +77,7 @@ CREATE TABLE IF NOT EXISTS plan
     effective_period_start DATE                     NOT NULL,
     effective_period_end   DATE                     NOT NULL,
     intervention_type      VARCHAR(36),
+    hierarchy_identifier   UUID,
     entity_status          VARCHAR(36)              NOT NULL,
     created_by             VARCHAR(36)              NOT NULL,
     created_datetime       TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -97,6 +98,7 @@ CREATE TABLE IF NOT EXISTS plan_aud
     effective_period_start DATE                     NOT NULL,
     effective_period_end   DATE                     NOT NULL,
     intervention_type      VARCHAR(36),
+    hierarchy_identifier   UUID,
     entity_status          VARCHAR(36)              NOT NULL,
     created_by             VARCHAR(36)              NOT NULL,
     created_datetime       TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -439,6 +441,23 @@ CREATE TABLE IF NOT EXISTS location_relationship_aud
     PRIMARY KEY (identifier, REV)
 );
 
+CREATE TABLE IF NOT EXISTS plan_locations
+(
+    plan_identifier     UUID NOT NULL,
+    location_identifier UUID NOT NULL,
+    PRIMARY KEY (plan_identifier, location_identifier)
+);
+
+CREATE TABLE IF NOT EXISTS plan_locations_aud
+(
+    plan_identifier     UUID    NOT NULL,
+    location_identifier UUID    NOT NULL,
+    REV                 INT     NOT NULL,
+    REVTYPE             INTEGER NULL,
+    PRIMARY KEY (plan_identifier, location_identifier, REV)
+);
+
+
 CREATE TABLE IF NOT EXISTS raster_store
 (
     id                BIGINT                   NOT NULL,
@@ -446,7 +465,8 @@ CREATE TABLE IF NOT EXISTS raster_store
     created_by        VARCHAR(36)              NOT NULL,
     created_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,
     modified_by       VARCHAR(36)              NOT NULL,
-    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_datetime TIMESTAMP
+                          WITH TIME ZONE       NOT NULL,
     rid               serial primary key,
     rast              raster,
     file_name         VARCHAR(36)

@@ -50,6 +50,7 @@ dependencies {
     implementation 'org.keycloak:keycloak-admin-client:15.0.2'
     implementation 'org.jboss.resteasy:resteasy-client:5.0.1.Final'
     implementation 'org.jboss.resteasy:resteasy-jaxb-provider:5.0.1.Final'
+    implementation 'org.apache.commons:commons-collections4:4.4'
     implementation 'org.json:json:20211205'
     implementation 'com.vladmihalcea:hibernate-types-52:2.14.0'
     compileOnly 'org.projectlombok:lombok:1.18.22'

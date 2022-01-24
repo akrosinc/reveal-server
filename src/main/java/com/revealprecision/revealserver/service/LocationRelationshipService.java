@@ -3,6 +3,7 @@ package com.revealprecision.revealserver.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.revealprecision.revealserver.enums.EntityStatus;
+import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.GeographicLevel;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
@@ -13,10 +14,12 @@ import com.revealprecision.revealserver.persistence.repository.LocationRelations
 import com.revealprecision.revealserver.persistence.repository.LocationRepository;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -175,5 +178,15 @@ public class LocationRelationshipService {
       LocationHierarchy locationHierarchy) {
     return locationRelationshipRepository
         .findByLocationHierarchyIdentifier(locationHierarchy.getIdentifier());
+  }
+
+  public void validateLocationsBelonging(UUID hierarchyIdentifier, Set<UUID> locations) {
+    Set<UUID> checkLocations = new HashSet<>(locations);
+    List<UUID> foundLocations = locationRelationshipRepository.findLocationsInHierarchy(
+        hierarchyIdentifier, locations);
+    checkLocations.removeAll(foundLocations);
+    if (checkLocations.size() > 0) {
+      throw new NotFoundException("Locations: " + locations + " not found");
+    }
   }
 }

@@ -1,9 +1,9 @@
 package com.revealprecision.revealserver.api.v1.dto.factory;
 
 import com.revealprecision.revealserver.api.v1.dto.request.PlanRequest;
-import com.revealprecision.revealserver.enums.LookupUtil;
 import com.revealprecision.revealserver.enums.PlanInterventionTypeEnum;
 import com.revealprecision.revealserver.enums.PlanStatusEnum;
+import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import java.time.LocalDate;
 import java.util.stream.Collectors;
@@ -13,17 +13,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class PlanEntityFactory {
 
-  public static Plan toEntity(PlanRequest planRequest) {
-    var wrapper = new Object() {
-      PlanInterventionTypeEnum type;
-    };
-    planRequest.getUseContext().forEach(context -> {
-      switch (context.getCode()) {
-        case "interventionType":
-          wrapper.type = LookupUtil.lookup(PlanInterventionTypeEnum.class,
-              context.getValueCodableConcept());
-      }
-    });
+  public static Plan toEntity(PlanRequest planRequest, PlanInterventionTypeEnum type,
+      LocationHierarchy locationHierarchy) {
 
     Plan plan = Plan.builder()
         .name(planRequest.getName())
@@ -32,7 +23,8 @@ public class PlanEntityFactory {
         .effectivePeriodStart(planRequest.getEffectivePeriod().getStart())
         .effectivePeriodEnd(planRequest.getEffectivePeriod().getEnd())
         .status(PlanStatusEnum.DRAFT)
-        .interventionType(wrapper.type)
+        .interventionType(type)
+        .locationHierarchy(locationHierarchy)
         .build();
 
     if (planRequest.getGoals() != null) {

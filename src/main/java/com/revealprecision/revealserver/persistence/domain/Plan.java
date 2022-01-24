@@ -11,6 +11,10 @@ import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.ManyToMany;
+import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -46,6 +50,17 @@ public class Plan extends AbstractAuditableEntity {
   private PlanStatusEnum status;
   @Enumerated(EnumType.STRING)
   private PlanInterventionTypeEnum interventionType;
+
+  @ManyToOne
+  @JoinColumn(name = "hierarchy_identifier")
+  private LocationHierarchy locationHierarchy;
+
+  @ManyToMany(cascade = CascadeType.PERSIST)
+  @JoinTable(
+      name = "plan_locations",
+      joinColumns = @JoinColumn(name = "plan_identifier"),
+      inverseJoinColumns = @JoinColumn(name = "location_identifier"))
+  private Set<Location> locations;
 
   @OneToMany(mappedBy = "plan", cascade = CascadeType.ALL)
   private Set<Goal> goals;
