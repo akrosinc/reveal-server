@@ -20,4 +20,5 @@ public class UserBulkResponse {
   private String filename;
   private LocalDateTime uploadDatetime;
   private BulkStatusEnum status;
+  private String uploadedBy;
 }
