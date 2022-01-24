@@ -119,6 +119,108 @@
 			"response": []
 		},
 		{
+			"name": "Create reveal-web",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"tests[\"test: response_code\"] = (responseCode.code === 201 || responseCode.code === 409);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{auth_bearer_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"clientId\": \"reveal-web\",\n    \"rootUrl\": \"https://reveal-{{keycloak_prefix}}.akros.online\",\n    \"adminUrl\": \"http://localhost:3000\",\n    \"surrogateAuthRequired\": false,\n    \"enabled\": true,\n    \"alwaysDisplayInConsole\": false,\n    \"clientAuthenticatorType\": \"client-secret\",\n    \"redirectUris\": [\n        \"http://localhost:3000/*\",\n        \"https://reveal-{{keycloak_prefix}}.akros.online/*\"\n    ],\n    \"webOrigins\": [\n        \"https://reveal-{{keycloak_prefix}}.akros.online\",\n        \"http://localhost\",\n        \"http://localhost:3000\"\n    ],\n    \"notBefore\": 0,\n    \"bearerOnly\": false,\n    \"consentRequired\": false,\n    \"standardFlowEnabled\": true,\n    \"implicitFlowEnabled\": false,\n    \"directAccessGrantsEnabled\": true,\n    \"serviceAccountsEnabled\": false,\n    \"publicClient\": true,\n    \"frontchannelLogout\": false,\n    \"protocol\": \"openid-connect\",\n    \"attributes\": {\n        \"id.token.as.detached.signature\": \"false\",\n        \"saml.assertion.signature\": \"false\",\n        \"saml.force.post.binding\": \"false\",\n        \"saml.multivalued.roles\": \"false\",\n        \"saml.encrypt\": \"false\",\n        \"oauth2.device.authorization.grant.enabled\": \"false\",\n        \"backchannel.logout.revoke.offline.tokens\": \"false\",\n        \"saml.server.signature\": \"false\",\n        \"saml.server.signature.keyinfo.ext\": \"false\",\n        \"use.refresh.tokens\": \"true\",\n        \"exclude.session.state.from.auth.response\": \"false\",\n        \"oidc.ciba.grant.enabled\": \"false\",\n        \"saml.artifact.binding\": \"false\",\n        \"backchannel.logout.session.required\": \"true\",\n        \"client_credentials.use_refresh_token\": \"false\",\n        \"saml_force_name_id_format\": \"false\",\n        \"require.pushed.authorization.requests\": \"false\",\n        \"saml.client.signature\": \"false\",\n        \"tls.client.certificate.bound.access.tokens\": \"false\",\n        \"saml.authnstatement\": \"false\",\n        \"display.on.consent.screen\": \"false\",\n        \"saml.onetimeuse.condition\": \"false\"\n    },\n    \"authenticationFlowBindingOverrides\": {},\n    \"fullScopeAllowed\": true,\n    \"nodeReRegistrationTimeout\": -1,\n    \"defaultClientScopes\": [\n        \"web-origins\",\n        \"profile\",\n        \"roles\",\n        \"email\"\n    ],\n    \"optionalClientScopes\": [\n        \"address\",\n        \"phone\",\n        \"offline_access\",\n        \"microprofile-jwt\"\n    ],\n    \"access\": {\n        \"view\": true,\n        \"configure\": true,\n        \"manage\": true\n    }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{keycloak_URL}}/auth/admin/realms/{{keycloak_realm}}/clients",
+					"host": [
+						"{{keycloak_URL}}"
+					],
+					"path": [
+						"auth",
+						"admin",
+						"realms",
+						"{{keycloak_realm}}",
+						"clients"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create reveal-server",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"tests[\"test: response_code\"] = (responseCode.code === 201 || responseCode.code === 409);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{auth_bearer_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"clientId\": \"reveal-server\",\n    \"surrogateAuthRequired\": false,\n    \"enabled\": true,\n    \"alwaysDisplayInConsole\": false,\n    \"clientAuthenticatorType\": \"client-secret\",\n    \"redirectUris\": [\n        \"http://localhost:8080/*\",\n        \"https://reveal-{{keycloak_prefix}}.akros.online\",\n        \"http://localhost\"\n    ],\n    \"webOrigins\": [\n        \"http://localhost:3000\"\n    ],\n    \"notBefore\": 0,\n    \"bearerOnly\": false,\n    \"consentRequired\": false,\n    \"standardFlowEnabled\": true,\n    \"implicitFlowEnabled\": false,\n    \"directAccessGrantsEnabled\": true,\n    \"serviceAccountsEnabled\": true,\n    \"authorizationServicesEnabled\": true,\n    \"publicClient\": false,\n    \"frontchannelLogout\": false,\n    \"protocol\": \"openid-connect\",\n    \"attributes\": {\n        \"id.token.as.detached.signature\": \"false\",\n        \"saml.assertion.signature\": \"false\",\n        \"saml.force.post.binding\": \"false\",\n        \"saml.multivalued.roles\": \"false\",\n        \"saml.encrypt\": \"false\",\n        \"oauth2.device.authorization.grant.enabled\": \"false\",\n        \"backchannel.logout.revoke.offline.tokens\": \"false\",\n        \"saml.server.signature\": \"false\",\n        \"saml.server.signature.keyinfo.ext\": \"false\",\n        \"use.refresh.tokens\": \"true\",\n        \"exclude.session.state.from.auth.response\": \"false\",\n        \"oidc.ciba.grant.enabled\": \"false\",\n        \"saml.artifact.binding\": \"false\",\n        \"backchannel.logout.session.required\": \"true\",\n        \"client_credentials.use_refresh_token\": \"false\",\n        \"saml_force_name_id_format\": \"false\",\n        \"require.pushed.authorization.requests\": \"false\",\n        \"saml.client.signature\": \"false\",\n        \"tls.client.certificate.bound.access.tokens\": \"false\",\n        \"saml.authnstatement\": \"false\",\n        \"display.on.consent.screen\": \"false\",\n        \"saml.onetimeuse.condition\": \"false\"\n    },\n    \"authenticationFlowBindingOverrides\": {},\n    \"fullScopeAllowed\": true,\n    \"nodeReRegistrationTimeout\": -1,\n    \"protocolMappers\": [\n        {\n            \"name\": \"Client IP Address\",\n            \"protocol\": \"openid-connect\",\n            \"protocolMapper\": \"oidc-usersessionmodel-note-mapper\",\n            \"consentRequired\": false,\n            \"config\": {\n                \"user.session.note\": \"clientAddress\",\n                \"id.token.claim\": \"true\",\n                \"access.token.claim\": \"true\",\n                \"claim.name\": \"clientAddress\",\n                \"jsonType.label\": \"String\"\n            }\n        },\n        {\n            \"name\": \"Client ID\",\n            \"protocol\": \"openid-connect\",\n            \"protocolMapper\": \"oidc-usersessionmodel-note-mapper\",\n            \"consentRequired\": false,\n            \"config\": {\n                \"user.session.note\": \"clientId\",\n                \"id.token.claim\": \"true\",\n                \"access.token.claim\": \"true\",\n                \"claim.name\": \"clientId\",\n                \"jsonType.label\": \"String\"\n            }\n        },\n        {\n            \"name\": \"Client Host\",\n            \"protocol\": \"openid-connect\",\n            \"protocolMapper\": \"oidc-usersessionmodel-note-mapper\",\n            \"consentRequired\": false,\n            \"config\": {\n                \"user.session.note\": \"clientHost\",\n                \"id.token.claim\": \"true\",\n                \"access.token.claim\": \"true\",\n                \"claim.name\": \"clientHost\",\n                \"jsonType.label\": \"String\"\n            }\n        }\n    ],\n    \"defaultClientScopes\": [\n        \"web-origins\",\n        \"profile\",\n        \"roles\",\n        \"email\"\n    ],\n    \"optionalClientScopes\": [\n        \"address\",\n        \"phone\",\n        \"offline_access\",\n        \"microprofile-jwt\"\n    ],\n    \"access\": {\n        \"view\": true,\n        \"configure\": true,\n        \"manage\": true\n    }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{keycloak_URL}}/auth/admin/realms/{{keycloak_realm}}/clients",
+					"host": [
+						"{{keycloak_URL}}"
+					],
+					"path": [
+						"auth",
+						"admin",
+						"realms",
+						"{{keycloak_realm}}",
+						"clients"
+					]
+				}
+			},
+			"response": []
+		},
+		{
 			"name": "Check for keycloak user group",
 			"event": [
 				{
@@ -424,7 +526,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"createdTimestamp\": \"{{$timestamp}}\",\n    \"username\": \"akros.admin\",\n    \"enabled\": true,\n    \"totp\": false,\n    \"emailVerified\": true,\n    \"firstName\": \"Akros\",\n    \"lastName\": \"Administrator\",\n    \"disableableCredentialTypes\": [],\n    \"requiredActions\": [],\n    \"notBefore\": 0,\n    \"access\": {\n        \"manageGroupMembership\": true,\n        \"view\": true,\n        \"mapRoles\": true,\n        \"impersonate\": true,\n        \"manage\": true\n    },\n    \"credentials\":[\n        {\n     \t\t\"type\": \"password\",\n     \t\t\"value\": \"{{keycloak_password}}\",\n     \t\t\"temporary\": false\n     \t}\n    ]\n}",
+					"raw": "{\n    \"createdTimestamp\": \"{{$timestamp}}\",\n    \"username\": \"{{keycloak_username}}\",\n    \"enabled\": true,\n    \"totp\": false,\n    \"emailVerified\": true,\n    \"firstName\": \"Akros\",\n    \"lastName\": \"Administrator\",\n    \"disableableCredentialTypes\": [],\n    \"requiredActions\": [],\n    \"notBefore\": 0,\n    \"access\": {\n        \"manageGroupMembership\": true,\n        \"view\": true,\n        \"mapRoles\": true,\n        \"impersonate\": true,\n        \"manage\": true\n    },\n    \"credentials\":[\n        {\n     \t\t\"type\": \"password\",\n     \t\t\"value\": \"{{keycloak_password}}\",\n     \t\t\"temporary\": false\n     \t}\n    ]\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -459,7 +561,7 @@
 							"var jsonData = JSON.parse(responseBody);",
 							"",
 							"if (jsonData.length > 0) {",
-							"    if (jsonData[0].username === \"akros.admin\") {",
+							"    if (jsonData[0].username === pm.environment.get(\"keycloak_username\")) {",
 							"        postman.setEnvironmentVariable(\"keycloak_user_id\", jsonData[0].id)",
 							"    }",
 							"    else {",
@@ -492,7 +594,7 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "{{keycloak_URL}}/auth/admin/realms/{{keycloak_realm}}/users?username=akros.admin",
+					"raw": "{{keycloak_URL}}/auth/admin/realms/{{keycloak_realm}}/users?username={{keycloak_username}}",
 					"host": [
 						"{{keycloak_URL}}"
 					],
@@ -506,7 +608,7 @@
 					"query": [
 						{
 							"key": "username",
-							"value": "akros.admin"
+							"value": "{{keycloak_username}}"
 						}
 					]
 				}
@@ -576,19 +678,7 @@
 			],
 			"request": {
 				"auth": {
-					"type": "basic",
-					"basic": [
-						{
-							"key": "password",
-							"value": "{{keycloak_client_secret}}",
-							"type": "string"
-						},
-						{
-							"key": "username",
-							"value": "{{keycloak_client_id}}",
-							"type": "string"
-						}
-					]
+					"type": "noauth"
 				},
 				"method": "POST",
 				"header": [],
@@ -602,12 +692,17 @@
 						},
 						{
 							"key": "username",
-							"value": "{{username}}",
+							"value": "{{keycloak_username}}",
 							"type": "text"
 						},
 						{
 							"key": "password",
-							"value": "{{password}}",
+							"value": "{{keycloak_password}}",
+							"type": "text"
+						},
+						{
+							"key": "client_id",
+							"value": "reveal-web",
 							"type": "text"
 						}
 					]
