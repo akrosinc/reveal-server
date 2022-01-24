@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.api.v1.dto.request;
 
+import java.util.List;
 import java.util.Set;
 import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
@@ -29,7 +30,10 @@ public class PlanRequest {
   private EffectivePeriod effectivePeriod;
 
   @NotEmpty
+  @Valid
   private Set<Context> useContext;
+
+  private List<Jurisdiction> jurisdictions;
 
   @Valid
   private Set<GoalRequest> goals;

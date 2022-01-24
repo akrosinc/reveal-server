@@ -27,6 +27,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -146,6 +147,13 @@ public class PlanController {
       @Parameter(description = "Target identifier") @PathVariable("targetIdentifier") UUID targetIdentifier,
       @Valid @RequestBody TargetRequest targetRequest) {
     targetService.updateTarget(targetRequest, planIdentifier, goalIdentifier, targetIdentifier);
+    return ResponseEntity.status(HttpStatus.OK).build();
+  }
+
+  @PatchMapping("/{planIdentifier}")
+  public ResponseEntity<Void> activatePlan(
+      @Parameter(description = "Plan identifier") @PathVariable("planIdentifier") UUID planIdentifier) {
+    planService.activatePlan(planIdentifier);
     return ResponseEntity.status(HttpStatus.OK).build();
   }
 }

@@ -7,6 +7,7 @@ import com.revealprecision.revealserver.persistence.domain.GeographicLevel;
 import com.revealprecision.revealserver.persistence.domain.GeographicLevel.Fields;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.repository.LocationRepository;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.jobrunr.scheduling.JobScheduler;
@@ -84,5 +85,7 @@ public class LocationService {
     return locationRepository.save(location.update(locationRequest, geographicLevel));
   }
 
-
+  public List<Location> getAllByIdentifiers(List<UUID> identifiers) {
+    return locationRepository.getAllByIdentifiers(identifiers);
+  }
 }
