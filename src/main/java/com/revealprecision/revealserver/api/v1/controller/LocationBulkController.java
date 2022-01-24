@@ -1,13 +1,16 @@
 package com.revealprecision.revealserver.api.v1.controller;
 
+import com.revealprecision.revealserver.api.v1.dto.factory.LocationBulkDetailResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.LocationBulkResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.response.IdentifierResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.LocationBulkDetailResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationBulkResponse;
 import com.revealprecision.revealserver.batch.runner.LocationBatchRunner;
 import com.revealprecision.revealserver.service.LocationBulkService;
 import com.revealprecision.revealserver.service.StorageService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import java.io.IOException;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.JobParametersInvalidException;
@@ -65,12 +68,29 @@ public class LocationBulkController {
         .fromEntityPage(locationBulkService.getLocationBulks(pageable), pageable));
   }
 
-  @Operation(summary = "Get LocationBulk operation by identifier", description = "Get LocationBulk operation by identifier",
-      tags = {"Location Bulk"})
-  @GetMapping(value = "/{identifier}", produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<LocationBulkResponse> getLocationBulk(
-      @Parameter(name = "LocationBulk identifier") @PathVariable UUID identifier) {
+  @Operation(summary = "Download .json sample file for Location import",
+      description = "Download .json sample file for Location import",
+      tags = {"Location Bulk"}
+  )
+  @GetMapping("/sample")
+  public ResponseEntity<?> downloadTemplate() throws IOException {
     return ResponseEntity.status(HttpStatus.OK)
-        .body(LocationBulkResponseFactory.fromEntity(locationBulkService.findById(identifier)));
+        .contentType(MediaType.APPLICATION_OCTET_STREAM)
+        .header("Content-disposition", "attachment;filename=LocationUploadSample.json")
+        .body(storageService.downloadTemplate("LocationUploadSample.json"));
+  }
+
+
+  @Operation(summary = "Get Location Bulk details",
+      description = "Get Location Bulk details",
+      tags = {"User bulk"}
+  )
+  @GetMapping("/{identifier}")
+  public ResponseEntity<Page<LocationBulkDetailResponse>> getBulkDetails(
+      @Parameter(description = "Location Bulk identifier") @PathVariable("identifier") UUID identifier,
+      Pageable pageable) {
+    return ResponseEntity.status(HttpStatus.OK).body(LocationBulkDetailResponseFactory
+        .fromProjectionPage(locationBulkService.getLocationBulkDetails(identifier, pageable),
+            pageable));
   }
 }

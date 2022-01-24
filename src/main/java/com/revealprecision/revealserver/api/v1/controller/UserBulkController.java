@@ -8,7 +8,6 @@ import com.revealprecision.revealserver.api.v1.dto.response.UserBulkResponse;
 import com.revealprecision.revealserver.batch.runner.UserBatchRunner;
 import com.revealprecision.revealserver.service.StorageService;
 import com.revealprecision.revealserver.service.UserBulkService;
-import com.revealprecision.revealserver.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import java.io.IOException;
@@ -42,7 +41,6 @@ public class UserBulkController {
   private final UserBulkService userBulkService;
   private final UserBatchRunner userBatchRunner;
   private final StorageService storageService;
-  private final UserService userService;
 
   @Operation(summary = "Get bulk details",
       description = "Get bulk details",
@@ -92,7 +90,7 @@ public class UserBulkController {
     return ResponseEntity.status(HttpStatus.OK)
         .contentType(MediaType.APPLICATION_OCTET_STREAM)
         .header("Content-disposition", "attachment;filename=UserTemplate.xlsx")
-        .body(storageService.downloadTemplate());
+        .body(storageService.downloadTemplate("UserTemplate.xlsx"));
   }
 
 }
