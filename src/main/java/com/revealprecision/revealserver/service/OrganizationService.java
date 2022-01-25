@@ -1,19 +1,30 @@
 package com.revealprecision.revealserver.service;
 
 import com.cosium.spring.data.jpa.entity.graph.domain.EntityGraphUtils;
+import com.revealprecision.revealserver.api.v1.dto.factory.OrganizationResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.OrganizationCriteria;
 import com.revealprecision.revealserver.api.v1.dto.request.OrganizationRequest;
+import com.revealprecision.revealserver.api.v1.dto.response.OrganizationResponse;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.Organization;
 import com.revealprecision.revealserver.persistence.domain.Organization.Fields;
 import com.revealprecision.revealserver.persistence.domain.User;
+import com.revealprecision.revealserver.persistence.projection.OrganizationProjection;
 import com.revealprecision.revealserver.persistence.repository.OrganizationRepository;
 import com.revealprecision.revealserver.persistence.repository.UserRepository;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.MapUtils;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
@@ -47,13 +58,18 @@ public class OrganizationService {
     }
   }
 
-  public Page<Organization> findAll(OrganizationCriteria criteria, Pageable pageable) {
-    if (criteria.isRoot()) {
-      return organizationRepository.getAllByCriteriaWithRoot(criteria.getSearch(), pageable);
-      //TODO update this method, search should apply on children also
-    } else {
-      return organizationRepository.getAllByCriteriaWithoutRoot(criteria.getSearch(), pageable);
-    }
+  public Page<Organization> findAllWithoutTreeView(OrganizationCriteria criteria,
+      Pageable pageable) {
+    return organizationRepository.getAllByCriteriaWithoutRoot(criteria.getSearch(), pageable);
+  }
+
+  public Page<OrganizationResponse> findAllTreeView(OrganizationCriteria criteria,
+      Pageable pageable) {
+    List<OrganizationProjection> organizations = organizationRepository.searchTreeOrganiztions(
+        criteria.getSearch());
+    List<OrganizationResponse> content = createTreeView(organizations);
+    addChildrenToFoundOrganizations(organizations, content);
+    return new PageImpl<>(content, pageable, content.size());
   }
 
   public long getCountFindAll(OrganizationCriteria criteria) {
@@ -103,5 +119,66 @@ public class OrganizationService {
 
   public Set<Organization> findByIdentifiers(Set<UUID> identifiers) {
     return organizationRepository.findByIdentifiers(identifiers);
+  }
+
+  private List<OrganizationResponse> createTreeView(List<OrganizationProjection> organizations) {
+
+    List<OrganizationResponse> response = new ArrayList<>();
+    Map<OrganizationProjection, Set<OrganizationProjection>> parentChilds = new HashMap<>();
+    organizations.forEach(organizationProjection -> {
+      Set<OrganizationProjection> children = new HashSet<>();
+      for (OrganizationProjection org : organizations) {
+        if (org.getParentId() != null) {
+          if (org.getParentId().equals(organizationProjection.getIdentifier())) {
+            children.add(org);
+          }
+        }
+      }
+      parentChilds.put(organizationProjection, children);
+    });
+    parentChilds.entrySet()
+        .removeIf(entry -> (entry.getValue().isEmpty() && entry.getKey().getParentId() != null));
+
+    for (Map.Entry<OrganizationProjection, Set<OrganizationProjection>> entry : parentChilds.entrySet()) {
+      if (entry.getKey().getParentId() == null) {
+        OrganizationResponse parent = OrganizationResponseFactory.fromProjection(entry.getKey());
+        for (OrganizationProjection child : entry.getValue()) {
+          parent.getHeadOf()
+              .add(OrganizationResponseFactory.buildOrganizationResponse(child, parentChilds));
+        }
+        response.add(parent);
+      }
+    }
+    return response;
+  }
+
+  private void addChildrenToFoundOrganizations(List<OrganizationProjection> projections,
+      List<OrganizationResponse> orgs) {
+    var identifiers = projections.stream()
+        .filter(organizationProjection -> organizationProjection.getLvl() == 1)
+        .map(organizationProjection -> UUID.fromString(organizationProjection.getIdentifier()))
+        .collect(Collectors.toList());
+
+    List<Organization> organizations = organizationRepository.getAllByIdentifiers(identifiers,
+        EntityGraphUtils.fromAttributePaths(Fields.children));
+    List<OrganizationResponse> foundOrgsResponse = organizations.stream()
+        .map(OrganizationResponseFactory::fromEntityWithChild).collect(
+            Collectors.toList());
+    Map<UUID, OrganizationResponse> foundOrgsMap = new HashMap<>();
+    MapUtils.populateMap(foundOrgsMap, foundOrgsResponse, OrganizationResponse::getIdentifier);
+
+    orgs.stream()
+        .forEach(organizationResponse -> setChildrenTreeView(organizationResponse, foundOrgsMap));
+  }
+
+  private void setChildrenTreeView(OrganizationResponse organizationResponse,
+      Map<UUID, OrganizationResponse> orgsMap) {
+    if (orgsMap.containsKey(organizationResponse.getIdentifier())) {
+      organizationResponse.setHeadOf(orgsMap.get(organizationResponse.getIdentifier()).getHeadOf());
+    } else {
+      for (OrganizationResponse child : organizationResponse.getHeadOf()) {
+        setChildrenTreeView(child, orgsMap);
+      }
+    }
   }
 }
