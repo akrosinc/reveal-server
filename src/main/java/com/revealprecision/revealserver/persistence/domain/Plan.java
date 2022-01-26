@@ -53,6 +53,4 @@ public class Plan extends AbstractAuditableEntity {
   @OneToMany(mappedBy = "plan", cascade = CascadeType.ALL)
   private Set<Goal> goals;
 
-  @OneToMany(mappedBy = "plan")
-  private Set<Task> tasks;
 }

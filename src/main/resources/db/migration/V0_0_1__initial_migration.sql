@@ -81,71 +81,6 @@ CREATE TABLE IF NOT EXISTS form_aud
     modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
     PRIMARY KEY (identifier, REV)
 );
-CREATE TABLE IF NOT EXISTS task
-(
-    identifier             uuid                     NOT NULL,
-    entity_status          character varying(36)    NOT NULL,
-    created_by             character varying(36)    NOT NULL,
-    created_datetime       timestamp with time zone NOT NULL,
-    modified_by            character varying(36)    NOT NULL,
-    modified_datetime      timestamp with time zone NOT NULL,
-    focus                  character varying(36)    NOT NULL,
-    code                   character varying(36)    NOT NULL,
-    status                 character varying(36)    NOT NULL,
-    priority               character varying(36)    NOT NULL,
-    authored_on            timestamp with time zone NOT NULL,
-    description            character varying(255)   NOT NULL,
-    last_modified          timestamp with time zone NOT NULL,
-    business_status        character varying(36)    NOT NULL,
-    execution_period_start timestamp with time zone NOT NULL,
-    execution_period_end   timestamp with time zone NOT NULL,
-    group_identifier       character varying(36)    NOT NULL,
-    instantiates_uri       uuid                     NOT NULL,
-    plan_identifier        uuid                     NOT NULL,
-    CONSTRAINT task_pkey PRIMARY KEY (identifier),
-    CONSTRAINT task_form_fk FOREIGN KEY (instantiates_uri)
-        REFERENCES form (identifier) MATCH SIMPLE
-        ON UPDATE NO ACTION
-        ON DELETE NO ACTION
-        NOT VALID,
-    CONSTRAINT task_plan_fk FOREIGN KEY (plan_identifier)
-        REFERENCES plan (identifier) MATCH SIMPLE
-        ON UPDATE NO ACTION
-        ON DELETE NO ACTION
-        NOT VALID
-);
-
-
-CREATE INDEX IF NOT EXISTS task_idx ON task (identifier);
-CREATE INDEX IF NOT EXISTS task_plan_identifier_idx ON task (plan_identifier);
-CREATE INDEX IF NOT EXISTS task_status_idx ON task (status);
-CREATE INDEX IF NOT EXISTS task_business_status_idx ON task (business_status);
-
-CREATE TABLE IF NOT EXISTS task_aud
-(
-    identifier             uuid                     NOT NULL,
-    rev                    integer                  NOT NULL,
-    revtype                integer,
-    entity_status          character varying(36)    NOT NULL,
-    created_by             character varying(36)    NOT NULL,
-    created_datetime       timestamp with time zone NOT NULL,
-    modified_by            character varying(36)    NOT NULL,
-    modified_datetime      timestamp with time zone NOT NULL,
-    plan_identifier        uuid                     NOT NULL,
-    focus                  character varying(36)    NOT NULL,
-    code                   character varying(36)    NOT NULL,
-    status                 character varying(36)    NOT NULL,
-    priority               character varying(36)    NOT NULL,
-    authored_on            timestamp with time zone NOT NULL,
-    description            character varying(255)   NOT NULL,
-    last_modified          timestamp with time zone NOT NULL,
-    business_status        character varying(36)    NOT NULL,
-    execution_period_start timestamp with time zone NOT NULL,
-    execution_period_end   timestamp with time zone NOT NULL,
-    group_identifier       character varying(36)    NOT NULL,
-    instantiates_uri       uuid                     NOT NULL,
-    CONSTRAINT task_aud_pkey PRIMARY KEY (identifier, rev)
-);
 
 
 CREATE TABLE IF NOT EXISTS goal
@@ -221,6 +156,68 @@ CREATE TABLE IF NOT EXISTS action_aud
     modified_by         VARCHAR(36)              NOT NULL,
     modified_datetime   TIMESTAMP WITH TIME ZONE NOT NULL,
     PRIMARY KEY (identifier, REV)
+);
+
+CREATE TABLE lookup_task_status
+(
+    identifier uuid NOT NULL,
+    entity_status character varying(36)  NOT NULL,
+    name character varying NOT NULL,
+    code character varying NOT NULL,
+    PRIMARY KEY (identifier)
+);
+
+CREATE TABLE IF NOT EXISTS task
+(
+    identifier uuid NOT NULL,
+    entity_status character varying(36)  NOT NULL,
+    created_by character varying(36)  NOT NULL,
+    created_datetime timestamp with time zone NOT NULL,
+    modified_by character varying(36)  NOT NULL,
+    modified_datetime timestamp with time zone NOT NULL,
+    priority character varying(36)  NOT NULL,
+    authored_on timestamp with time zone NOT NULL,
+    description character varying(255)  NOT NULL,
+    last_modified timestamp with time zone NOT NULL,
+    execution_period_start timestamp with time zone NOT NULL,
+    execution_period_end timestamp with time zone NOT NULL,
+    lookup_task_status_identifier uuid NOT NULL,
+    action_identifier uuid NOT NULL,
+    CONSTRAINT task_pkey PRIMARY KEY (identifier),
+    CONSTRAINT action_identifier_fk FOREIGN KEY (action_identifier)
+        REFERENCES action (identifier) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+        NOT VALID,
+    CONSTRAINT lookup_task_status_fk FOREIGN KEY (lookup_task_status_identifier)
+        REFERENCES lookup_task_status (identifier) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+);
+
+CREATE INDEX IF NOT EXISTS task_idx
+    ON task USING btree
+        (identifier ASC NULLS LAST);
+
+CREATE TABLE IF NOT EXISTS task_aud
+(
+    identifier             uuid                     NOT NULL,
+    rev                    integer                  NOT NULL,
+    revtype                integer,
+    entity_status character varying(36)  NOT NULL,
+    created_by character varying(36)  NOT NULL,
+    created_datetime timestamp with time zone NOT NULL,
+    modified_by character varying(36)  NOT NULL,
+    modified_datetime timestamp with time zone NOT NULL,
+    priority character varying(36)  NOT NULL,
+    authored_on timestamp with time zone NOT NULL,
+    description character varying(255)  NOT NULL,
+    last_modified timestamp with time zone NOT NULL,
+    execution_period_start timestamp with time zone NOT NULL,
+    execution_period_end timestamp with time zone NOT NULL,
+    lookup_task_status_identifier uuid NOT NULL,
+    action_identifier uuid NOT NULL,
+    CONSTRAINT task_aud_pkey PRIMARY KEY (identifier, rev)
 );
 
 CREATE TABLE IF NOT EXISTS target
@@ -418,6 +415,28 @@ CREATE TABLE IF NOT EXISTS location_bulk_exception_aud
     modified_by              VARCHAR(36)              NOT NULL,
     modified_datetime        TIMESTAMP WITH TIME ZONE NOT NULL,
     PRIMARY KEY (identifier, REV)
+);
+
+CREATE TABLE IF NOT EXISTS task_location
+(
+    identifier uuid NOT NULL DEFAULT uuid_generate_v4 (),
+    task_identifier uuid NOT NULL,
+    location_identifier uuid NOT NULL,
+    CONSTRAINT task_location_pkey PRIMARY KEY (identifier),
+    CONSTRAINT task_fk FOREIGN KEY (task_identifier)
+        REFERENCES task (identifier) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+);
+
+CREATE TABLE IF NOT EXISTS task_location_aud
+(
+    identifier uuid NOT NULL  DEFAULT uuid_generate_v4 (),
+    REV                           INT                      NOT NULL,
+    REVTYPE                       INTEGER                  NULL,
+    task_identifier uuid NOT NULL,
+    location_identifier uuid NOT NULL,
+    CONSTRAINT task_location_aud_pkey PRIMARY KEY (identifier,REV)
 );
 
 CREATE TABLE IF NOT EXISTS location_relationship
@@ -756,5 +775,9 @@ CREATE TABLE IF NOT EXISTS person_group_aud
         ON UPDATE NO ACTION
         ON DELETE NO ACTION
 );
-
+INSERT INTO lookup_task_status(
+    identifier, entity_status, name, code)
+VALUES (uuid_generate_v4(), 'ACTIVE', 'READY', 'READY'),
+       (uuid_generate_v4(), 'ACTIVE', 'COMPLETED', 'COMPLETED'),
+       (uuid_generate_v4(), 'ACTIVE', 'CANCELLED', 'CANCELLED');
 

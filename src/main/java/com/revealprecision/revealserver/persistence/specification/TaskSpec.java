@@ -2,12 +2,16 @@ package com.revealprecision.revealserver.persistence.specification;
 
 import static com.revealprecision.revealserver.enums.WhereClauseEnum.AND;
 
-import com.revealprecision.revealserver.enums.TaskStatusEnum;
 import com.revealprecision.revealserver.enums.WhereClauseEnum;
+import com.revealprecision.revealserver.persistence.domain.Action;
+import com.revealprecision.revealserver.persistence.domain.Goal;
+import com.revealprecision.revealserver.persistence.domain.Location;
+import com.revealprecision.revealserver.persistence.domain.LookupTaskStatus;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.Task;
 import com.revealprecision.revealserver.service.models.TaskSearchCriteria;
 import java.util.UUID;
+import javax.persistence.criteria.JoinType;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -22,34 +26,39 @@ public class TaskSpec {
       taskSpecification = getSpecification(taskSpecification
           , wherePlanIdentifierEquals(taskSearchCriteria.getPlanIdentifier()), AND);
     }
-    if (taskSearchCriteria.getCode() != null) {
+    if (taskSearchCriteria.getTaskStatusIdentifier() != null) {
       taskSpecification = getSpecification(taskSpecification
-          , whereCodeEquals(taskSearchCriteria.getCode()), AND);
+          , whereTaskStatusIdentifierEquals(taskSearchCriteria.getTaskStatusIdentifier()), AND);
     }
-    if (taskSearchCriteria.getCode() != null) {
+    if (taskSearchCriteria.getActionIdentifier() != null) {
       taskSpecification = getSpecification(taskSpecification
-          , whereCodeEquals(taskSearchCriteria.getCode()), AND);
+          , whereActionIdentifierEquals(taskSearchCriteria.getActionIdentifier()), AND);
     }
-    if (taskSearchCriteria.getTaskStatus() != null) {
+    if (taskSearchCriteria.getLocationIdentifier() != null) {
       taskSpecification = getSpecification(taskSpecification
-          , whereStatusEquals(taskSearchCriteria.getTaskStatus()), AND);
+          , whereLocationIdentifierEquals(taskSearchCriteria.getLocationIdentifier()), AND);
     }
     return taskSpecification;
   }
 
   private static Specification<Task> wherePlanIdentifierEquals(UUID planIdentifier) {
     return (root, query, criteriaBuilder) -> criteriaBuilder.equal(
-        root.get("plan").<Plan>get("identifier"), planIdentifier);
+        root.get("action").<Action>get("goal").<Goal>get("plan").<Plan>get("identifier"), planIdentifier);
   }
 
-  private static Specification<Task> whereCodeEquals(String code) {
+  private static Specification<Task> whereLocationIdentifierEquals(UUID planIdentifier) {
     return (root, query, criteriaBuilder) -> criteriaBuilder.equal(
-        root.get("code"), code);
+        root.join("locations", JoinType.INNER).<Location>get("identifier"), planIdentifier);
   }
 
-  private static Specification<Task> whereStatusEquals(TaskStatusEnum statusEnum) {
+  private static Specification<Task> whereActionIdentifierEquals(UUID actionIdentifier) {
     return (root, query, criteriaBuilder) -> criteriaBuilder.equal(
-        root.get("status"), statusEnum);
+        root.get("actionIdentifier"), actionIdentifier);
+  }
+
+  private static Specification<Task> whereTaskStatusIdentifierEquals(UUID identifier) {
+    return (root, query, criteriaBuilder) -> criteriaBuilder.equal(
+        root.get("lookupTaskStatus").<LookupTaskStatus>get("identifier"), identifier);
   }
 
 

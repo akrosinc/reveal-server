@@ -1,7 +1,5 @@
 package com.revealprecision.revealserver.service.models;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
-import com.revealprecision.revealserver.enums.TaskStatusEnum;
 import java.util.UUID;
 import lombok.Builder;
 import lombok.Getter;
@@ -14,9 +12,10 @@ public class TaskSearchCriteria {
 
   private UUID planIdentifier;
 
-  private TaskStatusEnum taskStatus;
+  private UUID taskStatusIdentifier;
 
-  private String code;
+  private UUID actionIdentifier;
 
-  private String groupIdentifier;
+  private UUID locationIdentifier;
+
 }

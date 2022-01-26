@@ -1,10 +1,8 @@
 package com.revealprecision.revealserver.api.v1.dto.request;
 
-import com.revealprecision.revealserver.enums.BusinessStatusEnum;
 import com.revealprecision.revealserver.enums.TaskPriorityEnum;
-import com.revealprecision.revealserver.enums.TaskStatusEnum;
+import com.revealprecision.revealserver.persistence.domain.LookupTaskStatus;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -19,19 +17,14 @@ import lombok.Setter;
 @NoArgsConstructor
 public class TaskUpdateRequest {
 
-  private TaskStatusEnum status;
-
   private TaskPriorityEnum priority;
 
   private String description;
 
-  private BusinessStatusEnum businessStatus;
+  private UUID lookupTaskStatus;
 
   private LocalDate executionPeriodStart;
 
   private LocalDate executionPeriodEnd;
 
-  private String groupIdentifier;
-
-  private UUID intstantiatesUri;
 }

@@ -5,14 +5,17 @@ import com.revealprecision.revealserver.enums.ActionSubjectEnum;
 import com.revealprecision.revealserver.enums.ActionTypeEnum;
 import com.revealprecision.revealserver.enums.LookupUtil;
 import java.time.LocalDate;
+import java.util.Set;
 import java.util.UUID;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -61,6 +64,9 @@ public class Action extends AbstractAuditableEntity {
   private ActionTypeEnum type;
 
   private String definitionUri;
+
+  @OneToMany(fetch = FetchType.LAZY,mappedBy = "action")
+  private Set<Task> tasks;
 
   public Action update(ActionRequest actionRequest) {
     this.title = actionRequest.getTitle();
