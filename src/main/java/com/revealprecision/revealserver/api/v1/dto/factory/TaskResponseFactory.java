@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.api.v1.dto.factory;
 
+import com.revealprecision.revealserver.api.v1.dto.response.LookupTaskStatusResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.TaskResponse;
 import com.revealprecision.revealserver.persistence.domain.Task;
 import java.time.ZoneId;
@@ -11,15 +12,20 @@ public class TaskResponseFactory {
 
   public static TaskResponse fromEntity(Task task) {
     return TaskResponse.builder().identifier(task.getIdentifier())
-        .intstantiatesUri(task.getInstantiatesUriForm().getIdentifier()).focus(task.getFocus())
-        .code(task.getCode()).status(task.getStatus()).priority(task.getPriority())
+
+        .taskStatus(LookupTaskStatusResponse.builder()
+            .identifier(task.getLookupTaskStatus().getIdentifier())
+            .code(task.getLookupTaskStatus().getCode())
+            .name(task.getLookupTaskStatus().getName())
+            .build())
+        .priority(task.getPriority())
         .authoredOn(task.getAuthoredOn()).description(task.getDescription())
-        .lastModified(task.getLastModified()).businessStatus(task.getBusinessStatus())
+        .lastModified(task.getLastModified())
         .executionPeriodStart(
             task.getExecutionPeriodStart().toInstant().atZone(ZoneId.systemDefault()).toLocalDate())
         .executionPeriodEnd(
             task.getExecutionPeriodEnd().toInstant().atZone(ZoneId.systemDefault()).toLocalDate())
-        .groupIdentifier(task.getGroupIdentifier()).planIdentifier(task.getPlan().getIdentifier())
+        .actionIdentifier(task.getAction().getIdentifier())
         .build();
   }
 

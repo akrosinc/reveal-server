@@ -1,12 +1,12 @@
 package com.revealprecision.revealserver.persistence.domain;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.revealprecision.revealserver.enums.BusinessStatusEnum;
 import com.revealprecision.revealserver.enums.TaskPriorityEnum;
-import com.revealprecision.revealserver.enums.TaskStatusEnum;
 import java.time.LocalDateTime;
 import java.util.Date;
+import java.util.Set;
 import java.util.UUID;
+import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
@@ -14,7 +14,11 @@ import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
+import javax.persistence.OneToOne;
 import javax.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -43,15 +47,13 @@ public class Task extends AbstractAuditableEntity {
   @NotNull(message = "identifier can not be null")
   private UUID identifier;
 
-  @NotNull(message = "focus can not be null")
-  private String focus;
+  @ManyToOne(fetch = FetchType.EAGER,cascade = CascadeType.ALL)
+  @JoinColumn(name = "lookup_task_status_identifier", referencedColumnName = "identifier", nullable = false)
+  private LookupTaskStatus lookupTaskStatus;
 
-  @NotNull(message = "code can not be null")
-  private String code;
-
-  @NotNull(message = "status can not be null")
-  @Enumerated(EnumType.STRING)
-  private TaskStatusEnum status;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "action_identifier", referencedColumnName = "identifier", nullable = false)
+  private Action action;
 
   @NotNull(message = "priority can not be null")
   @Enumerated(EnumType.STRING)
@@ -67,10 +69,6 @@ public class Task extends AbstractAuditableEntity {
   @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS[X]", timezone = "${spring.jackson.time-zone}")
   private LocalDateTime lastModified;
 
-  @NotNull(message = "businessStatus can not be null")
-  @Enumerated(EnumType.STRING)
-  private BusinessStatusEnum businessStatus;
-
   @NotNull(message = "executionPeriodStart can not be null")
   @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
   private Date executionPeriodStart;
@@ -79,15 +77,11 @@ public class Task extends AbstractAuditableEntity {
   @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
   private Date executionPeriodEnd;
 
-  @NotNull(message = "groupIdentifier can not be null")
-  private String groupIdentifier;
-
-
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "plan_identifier", referencedColumnName = "identifier", nullable = false)
-  private Plan plan;
-  @ManyToOne
-  @JoinColumn(name = "instantiates_uri", referencedColumnName = "identifier", nullable = false)
-  private Form instantiatesUriForm;
+  @OneToOne(fetch = FetchType.LAZY)
+  @JoinTable(name = "task_location",
+      joinColumns = @JoinColumn(name = "task_identifier"),
+      inverseJoinColumns = @JoinColumn(name = "location_identifier")
+  )
+  private Location location;
 
 }

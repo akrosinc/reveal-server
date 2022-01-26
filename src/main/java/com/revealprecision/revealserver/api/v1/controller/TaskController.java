@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.api.v1.controller;
 
 import com.revealprecision.revealserver.api.v1.dto.factory.TaskResponseFactory;
+import com.revealprecision.revealserver.api.v1.dto.request.TaskCreateRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.TaskRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.TaskUpdateRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.CountResponse;
@@ -80,7 +81,7 @@ public class TaskController {
   @Operation(summary = "Create a task", description = "Create a Task", tags = {"Task"})
   @ResponseStatus(HttpStatus.CREATED)
   @PostMapping(value = "/task", consumes = "application/json", produces = "application/json")
-  public TaskResponse createTask(@Validated @RequestBody TaskRequest taskRequest) {
+  public TaskResponse createTask(@Validated @RequestBody TaskCreateRequest taskRequest) {
     return TaskResponseFactory.fromEntity(taskService.createTask(taskRequest));
   }
 

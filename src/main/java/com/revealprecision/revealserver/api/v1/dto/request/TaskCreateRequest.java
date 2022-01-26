@@ -1,8 +1,7 @@
-package com.revealprecision.revealserver.api.v1.dto.response;
+package com.revealprecision.revealserver.api.v1.dto.request;
 
 import com.revealprecision.revealserver.enums.TaskPriorityEnum;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -15,24 +14,22 @@ import lombok.Setter;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class TaskResponse {
-
-  private UUID identifier;
-
-  private LookupTaskStatusResponse taskStatus;
+public class TaskCreateRequest {
 
   private TaskPriorityEnum priority;
 
-  private LocalDateTime authoredOn;
-
   private String description;
 
-  private LocalDateTime lastModified;
-
+  private UUID actionIdentifier;
 
   private LocalDate executionPeriodStart;
 
   private LocalDate executionPeriodEnd;
 
-  private UUID actionIdentifier;
+  private UUID lookupTaskStatusIdentifier;
+
+  private UUID locationIdentifier;
+
+//  private LocationRequest locationRequest;
+
 }
