@@ -16,12 +16,12 @@ public interface PlanRepository extends EntityGraphJpaRepository<Plan, UUID> {
   @Query(value = "select p from Plan p "
       + "where lower(p.title) like lower(concat('%', :param, '%')) "
       + "OR lower(p.status) like lower(concat('%', :param, '%')) "
-      + "OR lower(p.interventionType) like lower(concat('%', :param, '%'))")
+      + "OR lower(p.interventionType.name) like lower(concat('%', :param, '%'))")
   Page<Plan> getAll(@Param("param") String param, Pageable pageable, EntityGraph entityGraph);
 
   @Query(value = "select count(p) from Plan p "
       + "where lower(p.title) like lower(concat('%', :param, '%')) "
       + "OR lower(p.status) like lower(concat('%', :param, '%')) "
-      + "OR lower(p.interventionType) like lower(concat('%', :param, '%'))")
+      + "OR lower(p.interventionType.name) like lower(concat('%', :param, '%'))")
   long getAllCount(@Param("param") String param);
 }
