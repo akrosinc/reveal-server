@@ -26,6 +26,7 @@ public class PlanResponse {
   private PlanStatusEnum status;
   private LocalDate date;
   private EffectivePeriod effectivePeriod;
+  private LocationHierarchyResponse locationHierarchy;
   private LookupInterventionTypeResponse interventionType;
   private Set<GoalResponse> goals;
 
