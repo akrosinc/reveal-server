@@ -67,43 +67,99 @@ CREATE TABLE IF NOT EXISTS task_aud
     PRIMARY KEY (identifier)
 );
 
+CREATE TABLE IF NOT EXISTS lookup_plan_status
+(
+    identifier        UUID                     NOT NULL,
+    name              VARCHAR(64)              NOT NULL,
+    description       VARCHAR(255),
+    entity_status     VARCHAR(36)              NOT NULL,
+    created_by        VARCHAR(36)              NOT NULL,
+    created_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by       VARCHAR(36)              NOT NULL,
+    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    PRIMARY KEY (identifier)
+);
+
+CREATE TABLE IF NOT EXISTS lookup_plan_status_aud
+(
+    identifier        UUID                     NOT NULL,
+    REV               INT                      NOT NULL,
+    REVTYPE           INTEGER                  NULL,
+    name              VARCHAR(64)              NOT NULL,
+    description       VARCHAR(255),
+    entity_status     VARCHAR(36)              NOT NULL,
+    created_by        VARCHAR(36)              NOT NULL,
+    created_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by       VARCHAR(36)              NOT NULL,
+    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    PRIMARY KEY (identifier, REV)
+);
+
+CREATE TABLE IF NOT EXISTS lookup_intervention_type
+(
+    identifier        UUID                     NOT NULL,
+    name              VARCHAR(64)              NOT NULL,
+    code              VARCHAR(128),
+    entity_status     VARCHAR(36)              NOT NULL,
+    created_by        VARCHAR(36)              NOT NULL,
+    created_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by       VARCHAR(36)              NOT NULL,
+    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    PRIMARY KEY (identifier)
+);
+
+CREATE TABLE IF NOT EXISTS lookup_intervention_type_aud
+(
+    identifier        UUID                     NOT NULL,
+    REV               INT                      NOT NULL,
+    REVTYPE           INTEGER                  NULL,
+    name              VARCHAR(64)              NOT NULL,
+    code              VARCHAR(128),
+    entity_status     VARCHAR(36)              NOT NULL,
+    created_by        VARCHAR(36)              NOT NULL,
+    created_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by       VARCHAR(36)              NOT NULL,
+    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    PRIMARY KEY (identifier, REV)
+);
+
 CREATE TABLE IF NOT EXISTS plan
 (
-    identifier             UUID UNIQUE              NOT NULL,
-    name                   VARCHAR(36)              NOT NULL,
-    title                  VARCHAR(36)              NOT NULL,
-    status                 VARCHAR(36)              NOT NULL,
-    date                   DATE,
-    effective_period_start DATE                     NOT NULL,
-    effective_period_end   DATE                     NOT NULL,
-    intervention_type      VARCHAR(36),
-    hierarchy_identifier   UUID,
-    entity_status          VARCHAR(36)              NOT NULL,
-    created_by             VARCHAR(36)              NOT NULL,
-    created_datetime       TIMESTAMP WITH TIME ZONE NOT NULL,
-    modified_by            VARCHAR(36)              NOT NULL,
-    modified_datetime      TIMESTAMP WITH TIME ZONE NOT NULL,
+    identifier                          UUID UNIQUE              NOT NULL,
+    name                                VARCHAR(36)              NOT NULL,
+    title                               VARCHAR(36)              NOT NULL,
+    status                              VARCHAR(64)              NOT NULL,
+    date                                DATE,
+    effective_period_start              DATE                     NOT NULL,
+    effective_period_end                DATE                     NOT NULL,
+    lookup_intervention_type_identifier UUID                     NOT NULL,
+    hierarchy_identifier                UUID,
+    entity_status                       VARCHAR(36)              NOT NULL,
+    created_by                          VARCHAR(36)              NOT NULL,
+    created_datetime                    TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by                         VARCHAR(36)              NOT NULL,
+    modified_datetime                   TIMESTAMP WITH TIME ZONE NOT NULL,
     PRIMARY KEY (identifier)
 );
 
 CREATE TABLE IF NOT EXISTS plan_aud
 (
-    identifier             UUID                     NOT NULL,
-    REV                    INT                      NOT NULL,
-    REVTYPE                INTEGER                  NULL,
-    name                   VARCHAR(36)              NOT NULL,
-    title                  VARCHAR(36)              NOT NULL,
-    status                 VARCHAR(36)              NOT NULL,
-    date                   DATE,
-    effective_period_start DATE                     NOT NULL,
-    effective_period_end   DATE                     NOT NULL,
-    intervention_type      VARCHAR(36),
-    hierarchy_identifier   UUID,
-    entity_status          VARCHAR(36)              NOT NULL,
-    created_by             VARCHAR(36)              NOT NULL,
-    created_datetime       TIMESTAMP WITH TIME ZONE NOT NULL,
-    modified_by            VARCHAR(36)              NOT NULL,
-    modified_datetime      TIMESTAMP WITH TIME ZONE NOT NULL,
+    identifier                          UUID                     NOT NULL,
+    REV                                 INT                      NOT NULL,
+    REVTYPE                             INTEGER                  NULL,
+    name                                VARCHAR(36)              NOT NULL,
+    title                               VARCHAR(36)              NOT NULL,
+    status                              VARCHAR(64)              NOT NULL,
+    date                                DATE,
+    effective_period_start              DATE                     NOT NULL,
+    effective_period_end                DATE                     NOT NULL,
+    lookup_intervention_type_identifier UUID                     NOT NULL,
+    hierarchy_identifier                UUID,
+    entity_status                       VARCHAR(36)              NOT NULL,
+    created_by                          VARCHAR(36)              NOT NULL,
+    created_datetime                    TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by                         VARCHAR(36)              NOT NULL,
+    modified_datetime                   TIMESTAMP WITH TIME ZONE NOT NULL,
     PRIMARY KEY (identifier, REV)
 );
 
@@ -174,12 +230,10 @@ CREATE TABLE IF NOT EXISTS action
     identifier          UUID UNIQUE              NOT NULL,
     title               VARCHAR(64)              NOT NULL,
     description         VARCHAR(255),
-    code                VARCHAR(255),
     timing_period_start DATE                     NOT NULL,
     timing_period_end   DATE                     NOT NULL,
     reason              VARCHAR(255),
-    subject             VARCHAR(255),
-    definition_uri      VARCHAR(255),
+    form_identifier     UUID,
     goal_identifier     VARCHAR(64)              NOT NULL,
     type                VARCHAR(36)              NOT NULL,
     entity_status       VARCHAR(36)              NOT NULL,
@@ -198,12 +252,10 @@ CREATE TABLE IF NOT EXISTS action_aud
     REVTYPE             INTEGER                  NULL,
     title               VARCHAR(64)              NOT NULL,
     description         VARCHAR(255),
-    code                VARCHAR(255),
     timing_period_start DATE                     NOT NULL,
     timing_period_end   DATE                     NOT NULL,
     reason              VARCHAR(255),
-    subject             VARCHAR(255),
-    definition_uri      VARCHAR(255),
+    form_identifier     UUID,
     goal_identifier     VARCHAR(64)              NOT NULL,
     type                VARCHAR(36)              NOT NULL,
     entity_status       VARCHAR(36)              NOT NULL,

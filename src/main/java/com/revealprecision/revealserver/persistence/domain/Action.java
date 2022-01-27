@@ -1,14 +1,10 @@
 package com.revealprecision.revealserver.persistence.domain;
 
 import com.revealprecision.revealserver.api.v1.dto.request.ActionRequest;
-import com.revealprecision.revealserver.enums.ActionSubjectEnum;
 import com.revealprecision.revealserver.enums.ActionTypeEnum;
-import com.revealprecision.revealserver.enums.LookupUtil;
 import java.time.LocalDate;
 import java.util.UUID;
 import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
@@ -43,16 +39,11 @@ public class Action extends AbstractAuditableEntity {
 
   private String description;
 
-  private String code;
-
   private LocalDate timingPeriodStart;
 
   private LocalDate timingPeriodEnd;
 
   private String reason;
-
-  @Enumerated(EnumType.STRING)
-  private ActionSubjectEnum subject;
 
   @ManyToOne
   @JoinColumn(name = "goal_identifier")
@@ -60,16 +51,16 @@ public class Action extends AbstractAuditableEntity {
 
   private ActionTypeEnum type;
 
-  private String definitionUri;
+  @ManyToOne
+  @JoinColumn(name = "form_identifier")
+  private Form form;
 
-  public Action update(ActionRequest actionRequest) {
+  public Action update(ActionRequest actionRequest, Form form) {
     this.title = actionRequest.getTitle();
     this.description = actionRequest.getDescription();
     this.timingPeriodStart = actionRequest.getTimingPeriod().getStart();
     this.timingPeriodEnd = actionRequest.getTimingPeriod().getEnd();
-    this.subject = LookupUtil.lookup(ActionSubjectEnum.class,
-        actionRequest.getSubjectCodableConcept().getText());
-    this.definitionUri = actionRequest.getDefinitionUri();
+    this.form = form;
     this.type = actionRequest.getType();
     return this;
   }

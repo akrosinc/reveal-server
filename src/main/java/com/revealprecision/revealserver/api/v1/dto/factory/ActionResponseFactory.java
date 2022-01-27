@@ -17,12 +17,9 @@ public class ActionResponseFactory {
         .identifier(action.getIdentifier())
         .title(action.getTitle())
         .description(action.getDescription())
-        .code(action.getCode())
         .timingPeriodStart(action.getTimingPeriodStart())
         .timingPeriodEnd(action.getTimingPeriodEnd())
         .reason(action.getReason())
-        .subject(action.getSubject())
-        .definitionUri(action.getDefinitionUri())
         .type(action.getType())
         .build();
   }
