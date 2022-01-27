@@ -78,7 +78,7 @@ public class FormService {
             .map(Form::getIdentifier)
             .collect(Collectors.toList()));
     if (identifiers.size() > 0) {
-      throw new ConflictException("Forms: [" + identifiers + "] does not exist");
+      throw new ConflictException("Forms: " + identifiers + " does not exist");
     } else {
       Map<UUID, Form> response = new HashMap<>();
       MapUtils.populateMap(response, foundForms, Form::getIdentifier);
