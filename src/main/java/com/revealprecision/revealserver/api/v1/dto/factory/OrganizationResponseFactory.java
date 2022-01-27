@@ -4,6 +4,11 @@ import com.revealprecision.revealserver.api.v1.dto.response.OrganizationResponse
 import com.revealprecision.revealserver.api.v1.dto.response.TypeResponse;
 import com.revealprecision.revealserver.enums.SummaryEnum;
 import com.revealprecision.revealserver.persistence.domain.Organization;
+import com.revealprecision.revealserver.persistence.projection.OrganizationProjection;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -70,5 +75,38 @@ public class OrganizationResponseFactory {
         .collect(Collectors.toList());
     return new PageImpl<>(organizationContent, pageable,
         organizations.getTotalElements());
+  }
+
+  public static OrganizationResponse buildOrganizationResponse(
+      OrganizationProjection organizationProjection,
+      Map<OrganizationProjection, Set<OrganizationProjection>> parentChilds) {
+    Set<OrganizationResponse> childs = new HashSet<>();
+    if (parentChilds.containsKey(organizationProjection)) {
+      for (OrganizationProjection projection : parentChilds.get(organizationProjection)) {
+        childs.add(buildOrganizationResponse(projection, parentChilds));
+      }
+    }
+    return OrganizationResponse.builder()
+        .identifier(UUID.fromString(organizationProjection.getIdentifier()))
+        .name(organizationProjection.getName())
+        .type(TypeResponse.builder()
+            .code(organizationProjection.getType())
+            .valueCodableConcept(organizationProjection.getType().getOrganizationType()).build())
+        .active(organizationProjection.getActive())
+        .headOf(childs)
+        .build();
+
+  }
+
+  public static OrganizationResponse fromProjection(OrganizationProjection organizationProjection) {
+    return OrganizationResponse.builder()
+        .identifier(UUID.fromString(organizationProjection.getIdentifier()))
+        .name(organizationProjection.getName())
+        .type(TypeResponse.builder()
+            .code(organizationProjection.getType())
+            .valueCodableConcept(organizationProjection.getType().getOrganizationType()).build())
+        .active(organizationProjection.getActive())
+        .headOf(new HashSet<>())
+        .build();
   }
 }

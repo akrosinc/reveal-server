@@ -4,7 +4,6 @@ import com.revealprecision.revealserver.api.v1.dto.factory.UserEntityFactory;
 import com.revealprecision.revealserver.batch.BatchConstants;
 import com.revealprecision.revealserver.batch.BatchConstants.Constraint;
 import com.revealprecision.revealserver.batch.dto.UserBatchDTO;
-import com.revealprecision.revealserver.config.KeycloakConfig;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.persistence.domain.Organization;
 import com.revealprecision.revealserver.persistence.domain.User;
@@ -26,6 +25,7 @@ import java.util.stream.Collectors;
 import javax.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
 import org.json.JSONObject;
+import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.UsersResource;
 import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
@@ -45,13 +45,15 @@ public class UserItemProcessor implements ItemProcessor<UserBatchDTO, User> {
   private final UserRepository userRepository;
   private final OrganizationRepository organizationRepository;
   private final KeycloakService keycloakService;
+  private final Keycloak keycloak;
+  @Value("${keycloak.realm}")
+  private String realm;
   private Set<String> alreadyAddedEmails = new HashSet<>();
   private Set<String> alreadyAddedUsernames = new HashSet<>();
   private List<String> listOfExistingUsernames;
   private List<String> listOfExistingEmails;
   private Map<UUID, Organization> organizations = new HashMap<>();
   private UserBulk userBulk;
-
   @Value("#{jobParameters['userBulkId']}")
   private String userBulkId;
 
@@ -138,7 +140,7 @@ public class UserItemProcessor implements ItemProcessor<UserBatchDTO, User> {
   }
 
   public int createUserKeycloak(UserBatchDTO userBatchDTO, User user) {
-    UsersResource usersResource = KeycloakConfig.getInstance().realm(KeycloakConfig.realm).users();
+    UsersResource usersResource = keycloak.realm(realm).users();
     CredentialRepresentation credentialRepresentation = keycloakService.createPasswordCredentials(
         userBatchDTO.getPassword(), userBatchDTO.getTempPassword());
 
