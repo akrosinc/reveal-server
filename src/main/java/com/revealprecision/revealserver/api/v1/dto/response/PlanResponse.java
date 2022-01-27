@@ -2,7 +2,8 @@ package com.revealprecision.revealserver.api.v1.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.revealprecision.revealserver.api.v1.dto.request.EffectivePeriod;
-import com.revealprecision.revealserver.enums.PlanInterventionTypeEnum;
+import com.revealprecision.revealserver.enums.PlanStatusEnum;
+import java.time.LocalDate;
 import java.util.Set;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -22,9 +23,10 @@ public class PlanResponse {
   private UUID identifier;
   private String name;
   private String title;
+  private PlanStatusEnum status;
+  private LocalDate date;
   private EffectivePeriod effectivePeriod;
-  private PlanInterventionTypeEnum interventionType;
+  private LookupInterventionTypeResponse interventionType;
   private Set<GoalResponse> goals;
-  private Set<ActionResponse> actions;
 
 }

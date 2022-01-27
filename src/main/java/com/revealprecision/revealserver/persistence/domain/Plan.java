@@ -1,28 +1,27 @@
 package com.revealprecision.revealserver.persistence.domain;
 
-import com.revealprecision.revealserver.enums.PlanInterventionTypeEnum;
 import com.revealprecision.revealserver.enums.PlanStatusEnum;
 import java.time.LocalDate;
-import java.util.Collection;
 import java.util.Set;
 import java.util.UUID;
 import javax.persistence.CascadeType;
 import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.ManyToMany;
+import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
+import javax.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.ToString;
 import lombok.experimental.FieldNameConstants;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
-import org.hibernate.engine.internal.Cascade;
 import org.hibernate.envers.Audited;
 
 @Entity
@@ -45,12 +44,30 @@ public class Plan extends AbstractAuditableEntity {
   private LocalDate date;
   private LocalDate effectivePeriodStart;
   private LocalDate effectivePeriodEnd;
-  @Enumerated(EnumType.STRING)
-  private PlanStatusEnum status;
-  @Enumerated(EnumType.STRING)
-  private PlanInterventionTypeEnum interventionType;
+
+  @ManyToOne
+  @JoinColumn(name = "hierarchy_identifier")
+  private LocationHierarchy locationHierarchy;
+
+  @ManyToMany(cascade = CascadeType.PERSIST)
+  @JoinTable(
+      name = "plan_locations",
+      joinColumns = @JoinColumn(name = "plan_identifier"),
+      inverseJoinColumns = @JoinColumn(name = "location_identifier"))
+  private Set<Location> locations;
 
   @OneToMany(mappedBy = "plan", cascade = CascadeType.ALL)
   private Set<Goal> goals;
+
+//  @ManyToOne
+//  @JoinColumn(name = "lookup_plan_status_identifier")
+//  private LookupPlanStatus status;
+
+  @NotNull
+  private PlanStatusEnum status;
+
+  @ManyToOne
+  @JoinColumn(name = "lookup_intervention_type_identifier")
+  private LookupInterventionType interventionType;
 
 }

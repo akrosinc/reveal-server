@@ -28,6 +28,6 @@ public interface FormRepository extends JpaRepository<Form, UUID> {
       + "or lower(f.title) like lower(concat('%', :search, '%')))")
   Page<Form> findAllByCriteria(Pageable pageable, @Param("search") String search);
 
-  @Query(value = "select f.name from Form f where f.name IN :forms")
-  List<String> getFormsByName(@Param("forms") List<String> forms);
+  @Query(value = "select f from Form f where f.identifier IN :identifiers")
+  List<Form> getFormsByIdentifiers(@Param("identifiers") List<UUID> identifiers);
 }

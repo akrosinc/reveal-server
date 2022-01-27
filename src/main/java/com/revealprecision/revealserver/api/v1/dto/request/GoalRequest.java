@@ -27,4 +27,7 @@ public class GoalRequest {
 
   @Valid
   private Set<TargetRequest> targets;
+
+  @Valid
+  private Set<ActionRequest> actions;
 }

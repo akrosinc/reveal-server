@@ -1,7 +1,5 @@
 package com.revealprecision.revealserver.persistence.domain;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import java.util.Set;
 import java.util.UUID;
 import javax.persistence.Column;
@@ -16,23 +14,20 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.FieldNameConstants;
 import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.Type;
-import org.hibernate.annotations.TypeDef;
 import org.hibernate.annotations.Where;
 import org.hibernate.envers.Audited;
 
-@FieldNameConstants
+@Entity
 @Audited
 @Getter
 @Setter
-@Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Entity
-@SQLDelete(sql = "UPDATE form SET entity_status = 'DELETED' where identifier=?")
+@Builder
+@FieldNameConstants
+@SQLDelete(sql = "UPDATE lookup_intervention_type SET entity_status = 'DELETED' where identifier=?")
 @Where(clause = "entity_status='ACTIVE'")
-@TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
-public class Form extends AbstractAuditableEntity {
+public class LookupInterventionType extends AbstractAuditableEntity {
 
   @Id
   @GeneratedValue
@@ -42,15 +37,8 @@ public class Form extends AbstractAuditableEntity {
   private String name;
 
   @Column(nullable = false)
-  private String title;
+  private String code;
 
-  @Column(nullable = false)
-  private boolean template;
-
-  @Type(type = "jsonb")
-  @Column(nullable = false)
-  private JsonNode payload;
-
-  @OneToMany(mappedBy = "form")
-  private Set<Action> actions;
+  @OneToMany(mappedBy = "interventionType")
+  private Set<Plan> plans;
 }

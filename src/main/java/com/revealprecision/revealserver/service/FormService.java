@@ -11,8 +11,15 @@ import com.revealprecision.revealserver.exceptions.constant.Error;
 import com.revealprecision.revealserver.persistence.domain.Form;
 import com.revealprecision.revealserver.persistence.domain.Form.Fields;
 import com.revealprecision.revealserver.persistence.repository.FormRepository;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.MapUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
@@ -59,5 +66,23 @@ public class FormService {
   public void deleteForm(UUID identifier) {
     Form form = findById(identifier);
     formRepository.delete(form);
+  }
+
+  public Map<UUID, Form> findByIdentifiers(Set<UUID> identifiers) {
+    List<UUID> findForms = new ArrayList<>(identifiers);
+
+    List<Form> foundForms = formRepository.getFormsByIdentifiers(findForms);
+    identifiers.removeAll(
+        foundForms
+            .stream()
+            .map(Form::getIdentifier)
+            .collect(Collectors.toList()));
+    if (identifiers.size() > 0) {
+      throw new ConflictException("Forms: " + identifiers + " does not exist");
+    } else {
+      Map<UUID, Form> response = new HashMap<>();
+      MapUtils.populateMap(response, foundForms, Form::getIdentifier);
+      return response;
+    }
   }
 }
