@@ -1,7 +1,9 @@
 package com.revealprecision.revealserver.api.v1.controller;
 
+import com.revealprecision.revealserver.api.v1.dto.factory.LocationBulkDetailResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.LocationBulkResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.response.IdentifierResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.LocationBulkDetailResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationBulkResponse;
 import com.revealprecision.revealserver.batch.runner.LocationBatchRunner;
 import com.revealprecision.revealserver.service.LocationBulkService;
@@ -66,15 +68,6 @@ public class LocationBulkController {
         .fromEntityPage(locationBulkService.getLocationBulks(pageable), pageable));
   }
 
-  @Operation(summary = "Get LocationBulk operation by identifier", description = "Get LocationBulk operation by identifier",
-      tags = {"Location Bulk"})
-  @GetMapping(value = "/{identifier}", produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<LocationBulkResponse> getLocationBulk(
-      @Parameter(name = "LocationBulk identifier") @PathVariable UUID identifier) {
-    return ResponseEntity.status(HttpStatus.OK)
-        .body(LocationBulkResponseFactory.fromEntity(locationBulkService.findById(identifier)));
-  }
-
   @Operation(summary = "Download .json sample file for Location import",
       description = "Download .json sample file for Location import",
       tags = {"Location Bulk"}
@@ -85,5 +78,19 @@ public class LocationBulkController {
         .contentType(MediaType.APPLICATION_OCTET_STREAM)
         .header("Content-disposition", "attachment;filename=LocationUploadSample.json")
         .body(storageService.downloadTemplate("LocationUploadSample.json"));
+  }
+
+
+  @Operation(summary = "Get Location Bulk details",
+      description = "Get Location Bulk details",
+      tags = {"User bulk"}
+  )
+  @GetMapping("/{identifier}")
+  public ResponseEntity<Page<LocationBulkDetailResponse>> getBulkDetails(
+      @Parameter(description = "Location Bulk identifier") @PathVariable("identifier") UUID identifier,
+      Pageable pageable) {
+    return ResponseEntity.status(HttpStatus.OK).body(LocationBulkDetailResponseFactory
+        .fromProjectionPage(locationBulkService.getLocationBulkDetails(identifier, pageable),
+            pageable));
   }
 }

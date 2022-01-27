@@ -3,7 +3,6 @@ package com.revealprecision.revealserver.service;
 import com.revealprecision.revealserver.api.v1.dto.request.UserPasswordRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.UserRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.UserUpdateRequest;
-import com.revealprecision.revealserver.config.KeycloakConfig;
 import com.revealprecision.revealserver.exceptions.ConflictException;
 import com.revealprecision.revealserver.exceptions.KeycloakException;
 import com.revealprecision.revealserver.persistence.domain.User;
@@ -20,11 +19,13 @@ import java.util.stream.Collectors;
 import javax.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
 import org.json.JSONObject;
+import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.UserResource;
 import org.keycloak.admin.client.resource.UsersResource;
 import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.GroupRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -40,6 +41,9 @@ public class KeycloakService {
       "manage", false
   );
   private final UserRepository userRepository;
+  private final Keycloak keycloak;
+  @Value("${keycloak.realm}")
+  private String realm;
 
   public static CredentialRepresentation createPasswordCredentials(String password,
       boolean temporary) {
@@ -51,7 +55,7 @@ public class KeycloakService {
   }
 
   public String addUser(UserRequest userRequest, UUID identifier) {
-    UsersResource usersResource = KeycloakConfig.getInstance().realm(KeycloakConfig.realm).users();
+    UsersResource usersResource = keycloak.realm(realm).users();
     CredentialRepresentation credentialRepresentation = createPasswordCredentials(
         userRequest.getPassword(), userRequest.isTempPassword());
 
@@ -85,7 +89,7 @@ public class KeycloakService {
   }
 
   public void deleteUser(String kcId, UUID identifier) {
-    UsersResource usersResource = KeycloakConfig.getInstance().realm(KeycloakConfig.realm).users();
+    UsersResource usersResource = keycloak.realm(realm).users();
     Response response = usersResource.delete(kcId);
     if (response.getStatus() == 404) {
       userRepository.setApiResponse(identifier, "User not found on Keycloak");
@@ -99,7 +103,7 @@ public class KeycloakService {
   }
 
   public Set<String> updateUser(String kcId, UserUpdateRequest userRequest) {
-    UserResource userResource = KeycloakConfig.getInstance().realm(KeycloakConfig.realm).users()
+    UserResource userResource = keycloak.realm(realm).users()
         .get(kcId);
 
     if (userResource != null) {
@@ -116,11 +120,11 @@ public class KeycloakService {
 
   private Set<String> updateGroups(String kcId, Set<String> newGroups) {
     Set<String> response = new HashSet<>();
-    Map<String, GroupRepresentation> groups = KeycloakConfig.getInstance()
-        .realm(KeycloakConfig.realm)
+    Map<String, GroupRepresentation> groups = keycloak
+        .realm(realm)
         .groups().groups().stream()
         .collect(Collectors.toMap(GroupRepresentation::getName, Function.identity()));
-    UserResource userResource = KeycloakConfig.getInstance().realm(KeycloakConfig.realm).users()
+    UserResource userResource = keycloak.realm(realm).users()
         .get(kcId);
 
     groups.forEach(
@@ -136,7 +140,7 @@ public class KeycloakService {
   }
 
   public void resetPassword(String kcId, UserPasswordRequest request) {
-    UserResource userResource = KeycloakConfig.getInstance().realm(KeycloakConfig.realm).users()
+    UserResource userResource = keycloak.realm(realm).users()
         .get(kcId);
 
     CredentialRepresentation credentialRepresentation = createPasswordCredentials(

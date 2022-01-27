@@ -43,6 +43,9 @@ public class LocationBulk extends AbstractAuditableEntity {
   @Column(nullable = false)
   private LocalDateTime uploadedDatetime;
 
+  @Column(nullable = false)
+  private String uploadedBy;
+
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
   private BulkStatusEnum status;

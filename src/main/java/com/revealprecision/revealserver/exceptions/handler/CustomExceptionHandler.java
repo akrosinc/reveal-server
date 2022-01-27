@@ -2,6 +2,7 @@ package com.revealprecision.revealserver.exceptions.handler;
 
 import com.revealprecision.revealserver.exceptions.ConflictException;
 import com.revealprecision.revealserver.exceptions.FileFormatException;
+import com.revealprecision.revealserver.exceptions.InvalidDateFormatException;
 import com.revealprecision.revealserver.exceptions.KeycloakException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.exceptions.WrongEnumException;
@@ -97,6 +98,15 @@ public class CustomExceptionHandler {
 
   @ExceptionHandler(WrongEnumException.class)
   protected ResponseEntity<ApiErrorResponse> wrongEnumException(WrongEnumException ex) {
+    ApiErrorResponse response = ApiErrorResponse.builder()
+        .statusCode(HttpStatus.BAD_REQUEST.value())
+        .timestamp(LocalDateTime.now())
+        .message(ex.getMessage()).build();
+    return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+  }
+
+  @ExceptionHandler(InvalidDateFormatException.class)
+  protected ResponseEntity<ApiErrorResponse> handleKeycloakException(InvalidDateFormatException ex) {
     ApiErrorResponse response = ApiErrorResponse.builder()
         .statusCode(HttpStatus.BAD_REQUEST.value())
         .timestamp(LocalDateTime.now())

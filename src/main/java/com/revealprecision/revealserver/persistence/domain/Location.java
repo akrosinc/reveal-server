@@ -58,7 +58,7 @@ public class Location extends AbstractAuditableEntity {
   private GeographicLevel geographicLevel;
 
   @ManyToOne
-  @JoinColumn(name = "bulk_location_identifier")
+  @JoinColumn(name = "location_bulk_identifier")
   private LocationBulk locationBulk;
 
   @ManyToMany(mappedBy = "locations")
