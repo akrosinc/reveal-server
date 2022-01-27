@@ -30,7 +30,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/organization")
 public class OrganizationController {
 
-  private OrganizationService organizationService;
+  private final OrganizationService organizationService;
 
   @Autowired
   public OrganizationController(OrganizationService organizationService) {
@@ -62,12 +62,16 @@ public class OrganizationController {
     if (_summary.equals(SummaryEnum.COUNT)) {
       return ResponseEntity.status(HttpStatus.OK)
           .body(new CountResponse(organizationService.getCountFindAll(criteria)));
-
     } else {
-      return ResponseEntity.status(HttpStatus.OK).body(
-          OrganizationResponseFactory.fromEntityPage(
-              organizationService.findAll(criteria, pageable),
-              pageable, _summary));
+      if (criteria.isRoot()) {
+        return ResponseEntity.status(HttpStatus.OK)
+            .body(organizationService.findAllTreeView(criteria, pageable));
+      } else {
+        return ResponseEntity.status(HttpStatus.OK).body(
+            OrganizationResponseFactory.fromEntityPage(
+                organizationService.findAllWithoutTreeView(criteria, pageable),
+                pageable, _summary));
+      }
     }
   }
 

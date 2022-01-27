@@ -20,5 +20,6 @@ public class LocationBulkResponse {
   private UUID identifier;
   private String filename;
   private LocalDateTime uploadDatetime;
+  private String uploadedBy;
   private BulkStatusEnum status;
 }

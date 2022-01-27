@@ -148,20 +148,3 @@ jobs:
         context: .
         push: true
         tags: akrosinc/reveal-server:v3.0.${{ github.run_number }}
-
-  deploy:
-
-    runs-on: ubuntu-latest
-    needs: [container]
-    # needs: [build]
-
-    steps:
-
-    - name: Checkout reveal-operations
-      uses: actions/checkout@v2
-      with:
-        repository: akrosinc/reveal-operations
-        ref: main
-
-    - name: Touch the build number
-      run: echo ${{ github.run_number }}

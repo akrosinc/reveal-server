@@ -49,6 +49,8 @@ public interface UserRepository extends EntityGraphJpaRepository<User, UUID> {
 
   Optional<User> findByIdentifier(UUID identifier);
 
+  Optional<User> findBySid(UUID sid);
+
   @Transactional
   @Modifying
   @Query("UPDATE User usr SET usr.apiResponse = :message WHERE usr.identifier = :id")

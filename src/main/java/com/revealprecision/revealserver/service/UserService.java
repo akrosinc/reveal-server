@@ -5,7 +5,6 @@ import com.revealprecision.revealserver.api.v1.dto.factory.UserEntityFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.UserPasswordRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.UserRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.UserUpdateRequest;
-import com.revealprecision.revealserver.config.KeycloakConfig;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.exceptions.ConflictException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
@@ -17,8 +16,10 @@ import com.revealprecision.revealserver.persistence.repository.UserRepository;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.UsersResource;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
@@ -26,19 +27,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 @Service
+@RequiredArgsConstructor
 public class UserService {
 
-  private UserRepository userRepository;
-  private KeycloakService keycloakService;
-  private OrganizationService organizationService;
-
-  @Autowired
-  public UserService(UserRepository userRepository, KeycloakService keycloakService,
-      OrganizationService organizationService) {
-    this.userRepository = userRepository;
-    this.keycloakService = keycloakService;
-    this.organizationService = organizationService;
-  }
+  private final UserRepository userRepository;
+  private final KeycloakService keycloakService;
+  private final OrganizationService organizationService;
+  private final Keycloak keycloak;
+  @Value("${keycloak.realm}")
+  private String realm;
 
   public User createUser(UserRequest userRequest) {
     if (userRequest.getEmail() == null) {
@@ -110,9 +107,14 @@ public class UserService {
     keycloakService.resetPassword(user.getSid().toString(), passwordRequest);
   }
 
+  public User getByKeycloakId(UUID id) {
+    return userRepository.findBySid(id)
+        .orElseThrow(() -> new NotFoundException(Pair.of(Fields.sid, id), User.class));
+  }
+
   public void deleteAll() {
     List<User> users = userRepository.findAll();
-    UsersResource userResource = KeycloakConfig.getInstance().realm(KeycloakConfig.realm).users();
+    UsersResource userResource = keycloak.realm(realm).users();
     keycloakService.deleteAll(users, userResource);
   }
 }
