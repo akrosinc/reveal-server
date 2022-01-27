@@ -6,6 +6,68 @@
 	},
 	"item": [
 		{
+			"name": "Lookup Intervention Type",
+			"item": [
+				{
+					"name": "Create Intervention Type",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_bearer_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\": \"IRS\",\r\n    \"code\": \"IRS\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{server_url}}/api/v1/lookupInterventionType",
+							"host": [
+								"{{server_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"lookupInterventionType"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Intervention types",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{server_url}}/api/v1/lookupInterventionType",
+							"host": [
+								"{{server_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"lookupInterventionType"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
 			"name": "Plan create",
 			"request": {
 				"auth": {
@@ -22,7 +84,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"name\": \"plan1\",\r\n    \"title\": \"Title for plan1\",\r\n    \"effectivePeriod\": {\r\n        \"start\": \"2022-01-11T00:00:00\",\r\n        \"end\": \"2019-04-13T00:00:00\"\r\n    },\r\n    \"useContext\": [\r\n        {\r\n            \"code\": \"interventionType\",\r\n            \"valueCodableConcept\": \"IRS\"\r\n        }\r\n    ],\r\n    \"goals\": [\r\n        {\r\n            \"identifier\": \"goal1\",\r\n            \"description\": \"Desc for goal1\",\r\n            \"priority\": \"HIGH_PRIORITY\",\r\n            \"targets\": [\r\n                {\r\n                    \"measure\": \"mesaure1\",\r\n                    \"detail\": {\r\n                        \"detailQuantity\": {\r\n                            \"value\": 90,\r\n                            \"comparator\": \"gt;=\",\r\n                            \"unit\": \"PERCENT\"\r\n                        }\r\n                    },\r\n                    \"due\": \"2019-04-13T00:00:00\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"actions\": [\r\n        {\r\n            \"title\": \"action1\",\r\n            \"description\": \"Desc for action1\",\r\n            \"code\": \"code\",\r\n            \"goalId\": \"goal1\",\r\n            \"timingPeriod\": {\r\n                \"start\": \"2019-04-13T00:00:00\",\r\n                \"end\": \"2019-04-13T00:00:00\"\r\n            },\r\n            \"reason\": \"Routine\",\r\n            \"subjectCodableConcept\": {\r\n                \"text\": \"LOCATION\"\r\n            },\r\n            \"definitionUri\": \"form1\",\r\n            \"type\": \"CREATE\"\r\n        }\r\n    ]\r\n}",
+					"raw": "{\r\n    \"name\": \"plan1\",\r\n    \"title\": \"Title for plan1\",\r\n    \"effectivePeriod\": {\r\n        \"start\": \"2022-01-31\",\r\n        \"end\": \"2022-01-31\"\r\n    },\r\n    \"locationHierarchy\": \"5de091a1-478d-45c6-a694-5faf91502f9d\",\r\n    \"interventionType\": \"142b11a8-8a8d-49c8-9da0-4c0fabf26553\",\r\n    \"jurisdictions\": [\r\n        \"2b6ec0f8-1980-4226-b8a3-6848bd681dde\"\r\n    ],\r\n    \"goals\": [\r\n        {\r\n            \"identifier\": \"goal1\",\r\n            \"description\": \"Desc for goal1\",\r\n            \"priority\": \"HIGH_PRIORITY\",\r\n            \"targets\": [\r\n                {\r\n                    \"measure\": \"mesaure1\",\r\n                    \"detail\": {\r\n                        \"detailQuantity\": {\r\n                            \"value\": 90,\r\n                            \"comparator\": \"gt;=\",\r\n                            \"unit\": \"PERCENT\"\r\n                        }\r\n                    },\r\n                    \"due\": \"2022-01-31\"\r\n                }\r\n            ],\r\n            \"actions\": [\r\n                {\r\n                    \"title\": \"action1\",\r\n                    \"description\": \"Desc for action1\",\r\n                    \"timingPeriod\": {\r\n                        \"start\": \"2022-01-31\",\r\n                        \"end\": \"2022-01-31\"\r\n                    },\r\n                    \"reason\": \"Routine\",\r\n                    \"formIdentifier\": \"00c2f2e5-f43f-40d9-8d5f-e101fe4c8f8a\",\r\n                    \"type\": \"CREATE\"\r\n                }\r\n            ]\r\n        }\r\n    ]\r\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -38,6 +100,418 @@
 						"api",
 						"v1",
 						"plan"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create Goal",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{auth_bearer_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"identifier\": \"goal3\",\r\n    \"description\": \"Desc for goal1\",\r\n    \"priority\": \"HIGH_PRIORITY\",\r\n    \"targets\": [\r\n        {\r\n            \"measure\": \"mesaure1\",\r\n            \"detail\": {\r\n                \"detailQuantity\": {\r\n                    \"value\": 90,\r\n                    \"comparator\": \"gt;=\",\r\n                    \"unit\": \"PERCENT\"\r\n                }\r\n            },\r\n            \"due\": \"2022-01-13\"\r\n        }\r\n    ]\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{server_url}}/api/v1/plan/8960ace1-0585-4d91-a0ab-03801bc8183b/goal",
+					"host": [
+						"{{server_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"plan",
+						"8960ace1-0585-4d91-a0ab-03801bc8183b",
+						"goal"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Goals",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{auth_bearer_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"identifier\": \"goal3\",\r\n    \"description\": \"Desc for goal1\",\r\n    \"priority\": \"HIGH_PRIORITY\",\r\n    \"targets\": [\r\n        {\r\n            \"measure\": \"mesaure1\",\r\n            \"detail\": {\r\n                \"detailQuantity\": {\r\n                    \"value\": 90,\r\n                    \"comparator\": \"gt;=\",\r\n                    \"unit\": \"PERCENT\"\r\n                }\r\n            },\r\n            \"due\": \"2022-01-13\"\r\n        }\r\n    ]\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{server_url}}/api/v1/plan/070bbc3e-1ddf-4457-9e70-0bffc9db7bed/goal",
+					"host": [
+						"{{server_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"plan",
+						"070bbc3e-1ddf-4457-9e70-0bffc9db7bed",
+						"goal"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update Goal",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{auth_bearer_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"description\": \"NEW DESC\",\r\n    \"priority\": \"HIGH_PRIORITY\",\r\n    \"targets\": [\r\n        {\r\n            \"measure\": \"mesaure1\",\r\n            \"detail\": {\r\n                \"detailQuantity\": {\r\n                    \"value\": 90,\r\n                    \"comparator\": \"gt;=\",\r\n                    \"unit\": \"PERCENT\"\r\n                }\r\n            },\r\n            \"due\": \"2022-01-13\"\r\n        }\r\n    ]\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{server_url}}/api/v1/plan/8ffb5ba3-3885-4332-aa6d-2cdc5b15b8b7/goal/goal3",
+					"host": [
+						"{{server_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"plan",
+						"8ffb5ba3-3885-4332-aa6d-2cdc5b15b8b7",
+						"goal",
+						"goal3"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create action",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{auth_bearer_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"title\": \"action2\",\r\n    \"description\": \"Desc for action1\",\r\n    \"code\": \"code\",\r\n    \"goalId\": \"goal3\",\r\n    \"timingPeriod\": {\r\n        \"start\": \"2022-01-18\",\r\n        \"end\": \"2022-01-18\"\r\n    },\r\n    \"reason\": \"Routine\",\r\n    \"subjectCodableConcept\": {\r\n        \"text\": \"LOCATION\"\r\n    },\r\n    \"definitionUri\": \"form1\",\r\n    \"type\": \"CREATE\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{server_url}}/api/v1/plan/aad6f38f-b34c-4386-997a-ee84005f8ed8/goal/goal2/action",
+					"host": [
+						"{{server_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"plan",
+						"aad6f38f-b34c-4386-997a-ee84005f8ed8",
+						"goal",
+						"goal2",
+						"action"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Actions",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{auth_bearer_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{server_url}}/api/v1/plan/aad6f38f-b34c-4386-997a-ee84005f8ed8/goal/goal2/action",
+					"host": [
+						"{{server_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"plan",
+						"aad6f38f-b34c-4386-997a-ee84005f8ed8",
+						"goal",
+						"goal2",
+						"action"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update action",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{auth_bearer_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"title\": \"action2\",\r\n    \"description\": \"Desc for action3\",\r\n    \"code\": \"code\",\r\n    \"goalId\": \"goal1\",\r\n    \"timingPeriod\": {\r\n        \"start\": \"2022-01-19\",\r\n        \"end\": \"2022-01-19\"\r\n    },\r\n    \"reason\": \"Routine\",\r\n    \"subjectCodableConcept\": {\r\n        \"text\": \"PERSON\"\r\n    },\r\n    \"definitionUri\": \"form1\",\r\n    \"type\": \"CREATE\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{server_url}}/api/v1/plan/aad6f38f-b34c-4386-997a-ee84005f8ed8/goal/goal2/action/5f258d30-711e-4e27-956f-2474e1a539fc",
+					"host": [
+						"{{server_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"plan",
+						"aad6f38f-b34c-4386-997a-ee84005f8ed8",
+						"goal",
+						"goal2",
+						"action",
+						"5f258d30-711e-4e27-956f-2474e1a539fc"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Plans",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{auth_bearer_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{server_url}}/api/v1/plan?_summary=false",
+					"host": [
+						"{{server_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"plan"
+					],
+					"query": [
+						{
+							"key": "_summary",
+							"value": "false"
+						},
+						{
+							"key": "search",
+							"value": "",
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Targets",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{auth_bearer_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{server_url}}/api/v1/plan/aad6f38f-b34c-4386-997a-ee84005f8ed8/goal/goal1/target",
+					"host": [
+						"{{server_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"plan",
+						"aad6f38f-b34c-4386-997a-ee84005f8ed8",
+						"goal",
+						"goal1",
+						"target"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create Target",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{auth_bearer_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"measure\": \"mesaure3\",\r\n    \"detail\": {\r\n        \"detailQuantity\": {\r\n            \"value\": 90,\r\n            \"comparator\": \"gt;=\",\r\n            \"unit\": \"PERCENT\"\r\n        }\r\n    },\r\n    \"due\": \"2022-01-19\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{server_url}}/api/v1/plan/aad6f38f-b34c-4386-997a-ee84005f8ed8/goal/goal1/target",
+					"host": [
+						"{{server_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"plan",
+						"aad6f38f-b34c-4386-997a-ee84005f8ed8",
+						"goal",
+						"goal1",
+						"target"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update Target",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{auth_bearer_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"measure\": \"mesaure4\",\r\n    \"detail\": {\r\n        \"detailQuantity\": {\r\n            \"value\": 20,\r\n            \"comparator\": \"gt;=\",\r\n            \"unit\": \"PERCENT\"\r\n        }\r\n    },\r\n    \"due\": \"2022-01-19\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{server_url}}/api/v1/plan/aad6f38f-b34c-4386-997a-ee84005f8ed8/goal/goal1/target/e0f7b880-7a04-4b2c-8f5e-2b9fe71e007d",
+					"host": [
+						"{{server_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"plan",
+						"aad6f38f-b34c-4386-997a-ee84005f8ed8",
+						"goal",
+						"goal1",
+						"target",
+						"e0f7b880-7a04-4b2c-8f5e-2b9fe71e007d"
 					]
 				}
 			},
