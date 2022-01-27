@@ -26,7 +26,7 @@ public class PlanResponseFactory {
             .end(plan.getEffectivePeriodEnd()).build())
         .name(plan.getName())
         .title(plan.getTitle())
-        .interventionType(plan.getInterventionType())
+        //.interventionType(plan.getInterventionType())
         .goals(goals)
         .build();
   }
@@ -39,7 +39,7 @@ public class PlanResponseFactory {
             .end(plan.getEffectivePeriodEnd()).build())
         .name(plan.getName())
         .title(plan.getTitle())
-        .interventionType(plan.getInterventionType())
+        //.interventionType(plan.getInterventionType())
         .build();
   }
 

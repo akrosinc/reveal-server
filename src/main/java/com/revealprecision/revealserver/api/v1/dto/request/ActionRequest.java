@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.api.v1.dto.request;
 
 import com.revealprecision.revealserver.enums.ActionTypeEnum;
+import java.util.UUID;
 import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
@@ -21,24 +22,16 @@ public class ActionRequest {
   @NotBlank
   private String description;
 
-  @NotBlank
-  private String code;
-
   @Valid
   private EffectivePeriod timingPeriod;
 
   @NotBlank
   private String reason;
 
-  @NotBlank
-  private String definitionUri;
-
-  @NotBlank
-  private String goalId;
+  @NotNull
+  private UUID formIdentifier;
 
   @NotNull
   private ActionTypeEnum type;
 
-  @Valid
-  private SubjectCodableConcept subjectCodableConcept;
 }

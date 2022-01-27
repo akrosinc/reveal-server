@@ -1,11 +1,12 @@
 package com.revealprecision.revealserver.api.v1.dto.factory;
 
-import com.revealprecision.revealserver.api.v1.dto.request.ActionRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.GoalRequest;
 import com.revealprecision.revealserver.enums.EntityStatus;
+import com.revealprecision.revealserver.persistence.domain.Form;
 import com.revealprecision.revealserver.persistence.domain.Goal;
 import com.revealprecision.revealserver.persistence.domain.Plan;
-import java.util.Set;
+import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -13,7 +14,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class GoalEntityFactory {
 
-  public static Goal toEntity(GoalRequest request, Plan plan, Set<ActionRequest> actions) {
+  public static Goal toEntity(GoalRequest request, Plan plan, Map<UUID, Form> forms) {
     Goal goal = Goal.builder()
         .identifier(request.getIdentifier())
         .description(request.getDescription())
@@ -21,23 +22,26 @@ public class GoalEntityFactory {
         .plan(plan)
         .build();
 
-    var targets = request.getTargets()
-        .stream()
-        .map(targetRequest -> {
-          return TargetEntityFactory.toEntity(targetRequest, goal);
-        })
-        .collect(Collectors.toSet());
+    if (request.getTargets() != null) {
+      var targets = request.getTargets()
+          .stream()
+          .map(targetRequest -> {
+            return TargetEntityFactory.toEntity(targetRequest, goal);
+          })
+          .collect(Collectors.toSet());
+      goal.setTargets(targets);
+    }
 
-    var addActions = actions
-        .stream()
-        .filter(actionRequest -> actionRequest.getGoalId().equals(request.getIdentifier()))
-        .map(actionRequest -> {
-          return ActionEntityFactory.toEntity(actionRequest, goal);
-        })
-        .collect(Collectors.toSet());
+    if (request.getActions() != null) {
+      var actions = request.getActions()
+          .stream()
+          .map(actionRequest -> {
+            return ActionEntityFactory.toEntity(actionRequest, goal, forms);
+          })
+          .collect(Collectors.toSet());
+      goal.setActions(actions);
+    }
 
-    goal.setTargets(targets);
-    goal.setActions(addActions);
     goal.setEntityStatus(EntityStatus.ACTIVE);
     return goal;
   }
