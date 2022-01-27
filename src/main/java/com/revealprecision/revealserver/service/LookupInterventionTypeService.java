@@ -7,6 +7,7 @@ import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.LookupInterventionType;
 import com.revealprecision.revealserver.persistence.domain.LookupInterventionType.Fields;
 import com.revealprecision.revealserver.persistence.repository.LookupInterventionTypeRepository;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.util.Pair;
@@ -34,5 +35,9 @@ public class LookupInterventionTypeService {
         .build();
     interventionType.setEntityStatus(EntityStatus.ACTIVE);
     interventionTypeRepository.save(interventionType);
+  }
+
+  public List<LookupInterventionType> findAll() {
+    return interventionTypeRepository.findAll();
   }
 }
