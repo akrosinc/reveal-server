@@ -22,7 +22,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"name\":\"form1\",\r\n    \"title\":\"title for form 1\",\r\n    \"template\": true\r\n}",
+					"raw": "{\r\n    \"name\":\"form1\",\r\n    \"title\":\"title for form 1\",\r\n    \"template\": true,\r\n    \"payload\":{}\r\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -67,8 +67,7 @@
 			"name": "Get all forms by criteria",
 			"request": {
 				"method": "GET",
-				"header": [],
-				"url": null
+				"header": []
 			},
 			"response": []
 		},

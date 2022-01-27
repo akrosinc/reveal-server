@@ -10,7 +10,6 @@ import com.revealprecision.revealserver.persistence.domain.Form;
 import com.revealprecision.revealserver.persistence.domain.Goal;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.repository.ActionRepository;
-import com.revealprecision.revealserver.persistence.repository.FormRepository;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -25,7 +24,7 @@ public class ActionService {
   private final ActionRepository actionRepository;
   private final GoalService goalService;
   private final PlanService planService;
-  private final FormRepository formRepository;
+  private final FormService formService;
 
   public Action getByIdentifier(UUID identifier) {
     return actionRepository.findById(identifier).orElseThrow(() -> new NotFoundException(Pair.of(
@@ -36,9 +35,9 @@ public class ActionService {
       ActionRequest actionRequest) {
     Plan plan = planService.getPlanByIdentifier(planIdentifier);
     Goal goal = goalService.findByIdentifier(goalIdentifier);
-    validateData(plan, goal, actionRequest.getDefinitionUri());
+    Form form = formService.findById(actionRequest.getFormIdentifier());
 
-    Action action = ActionEntityFactory.toEntity(actionRequest, goal);
+    Action action = ActionEntityFactory.toEntity(actionRequest, goal, form);
     actionRepository.save(action);
   }
 
@@ -46,10 +45,10 @@ public class ActionService {
       ActionRequest actionRequest, UUID actionIdentifier) {
     Plan plan = planService.getPlanByIdentifier(planIdentifier);
     Goal goal = goalService.findByIdentifier(goalIdentifier);
-    validateData(plan, goal, actionRequest.getDefinitionUri());
+    Form form = formService.findById(actionRequest.getFormIdentifier());
 
     Action action = getByIdentifier(actionIdentifier);
-    action.update(actionRequest);
+    action.update(actionRequest, form);
     actionRepository.save(action);
   }
 
@@ -61,15 +60,5 @@ public class ActionService {
           plan.getIdentifier());
     }
     return actionRepository.getActions(goalIdentifier, pageable);
-  }
-
-  public void validateData(Plan plan, Goal goal, String formName) {
-    formRepository.findByName(formName)
-        .orElseThrow(() -> new NotFoundException(Pair.of(
-            Form.Fields.name, formName), Form.class));
-    if (!plan.getGoals().contains(goal)) {
-      throw new ConflictException(Goal.class, goal.getIdentifier(), Plan.class,
-          plan.getIdentifier());
-    }
   }
 }

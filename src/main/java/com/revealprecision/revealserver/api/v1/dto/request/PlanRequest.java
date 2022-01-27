@@ -1,9 +1,9 @@
 package com.revealprecision.revealserver.api.v1.dto.request;
 
 import java.util.Set;
+import java.util.UUID;
 import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -28,12 +28,21 @@ public class PlanRequest {
   @Valid
   private EffectivePeriod effectivePeriod;
 
-  @NotEmpty
-  private Set<Context> useContext;
+//  @NotEmpty
+//  @Valid
+//  private Set<Context> useContext;
+
+  @NotNull
+  private UUID interventionType;
+
+  @NotNull
+  private UUID locationHierarchy;
+
+//  private List<Jurisdiction> jurisdictions;
+
+  @NotNull
+  private Set<UUID> jurisdictions;
 
   @Valid
   private Set<GoalRequest> goals;
-
-  @Valid
-  private Set<ActionRequest> actions;
 }

@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.api.v1.dto.factory;
 
 import com.revealprecision.revealserver.api.v1.dto.response.ActionResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.FormResponse;
 import com.revealprecision.revealserver.persistence.domain.Action;
 import java.util.stream.Collectors;
 import lombok.AccessLevel;
@@ -17,13 +18,14 @@ public class ActionResponseFactory {
         .identifier(action.getIdentifier())
         .title(action.getTitle())
         .description(action.getDescription())
-        .code(action.getCode())
         .timingPeriodStart(action.getTimingPeriodStart())
         .timingPeriodEnd(action.getTimingPeriodEnd())
         .reason(action.getReason())
-        .subject(action.getSubject())
-        .definitionUri(action.getDefinitionUri())
         .type(action.getType())
+        .form(FormResponse.builder()
+            .identifier(action.getForm().getIdentifier())
+            .name(action.getForm().getName())
+            .build())
         .build();
   }
 
