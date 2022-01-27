@@ -12,60 +12,6 @@ CREATE TABLE revinfo
     timestamp TIMESTAMP NOT NULL  DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS task
-(
-    identifier             VARCHAR(36)              NOT NULL,
-    entity_status          VARCHAR(36)              NOT NULL,
-    created_by             VARCHAR(36)              NOT NULL,
-    created_datetime       TIMESTAMP WITH TIME ZONE NOT NULL,
-    modified_by            VARCHAR(36)              NOT NULL,
-    modified_datetime      TIMESTAMP WITH TIME ZONE NOT NULL,
-    plan_identifier        VARCHAR(36)              NOT NULL,
-    focus                  VARCHAR(36)              NOT NULL,
-    code                   VARCHAR(36)              NOT NULL,
-    status                 VARCHAR(36)              NOT NULL,
-    priority               VARCHAR(36)              NOT NULL,
-    authored_on            TIMESTAMP WITH TIME ZONE NOT NULL,
-    description            VARCHAR(255)             NOT NULL,
-    last_modified          TIMESTAMP WITH TIME ZONE NOT NULL,
-    business_status        VARCHAR(36)              NOT NULL,
-    execution_period_start TIMESTAMP WITH TIME ZONE NOT NULL,
-    execution_period_end   TIMESTAMP WITH TIME ZONE NOT NULL,
-    group_identifier       VARCHAR(36)              NOT NULL,
-    instantiates_uri       VARCHAR(36)              NOT NULL,
-    PRIMARY KEY (identifier)
-);
-
-CREATE INDEX IF NOT EXISTS task_idx ON task (identifier);
-CREATE INDEX IF NOT EXISTS task_plan_identifier_idx ON task (plan_identifier);
-CREATE INDEX IF NOT EXISTS task_status_idx ON task (status);
-CREATE INDEX IF NOT EXISTS task_business_status_idx ON task (business_status);
-
-CREATE TABLE IF NOT EXISTS task_aud
-(
-    identifier             VARCHAR(36)              NOT NULL,
-    REV                    INT                      NOT NULL,
-    REVTYPE                INTEGER                  NULL,
-    entity_status          VARCHAR(36)              NOT NULL,
-    created_by             VARCHAR(36)              NOT NULL,
-    created_datetime       TIMESTAMP WITH TIME ZONE NOT NULL,
-    modified_by            VARCHAR(36)              NOT NULL,
-    modified_datetime      TIMESTAMP WITH TIME ZONE NOT NULL,
-    plan_identifier        VARCHAR(36)              NOT NULL,
-    focus                  VARCHAR(36)              NOT NULL,
-    code                   VARCHAR(36)              NOT NULL,
-    status                 VARCHAR(36)              NOT NULL,
-    priority               VARCHAR(36)              NOT NULL,
-    authored_on            TIMESTAMP WITH TIME ZONE NOT NULL,
-    description            VARCHAR(255)             NOT NULL,
-    last_modified          TIMESTAMP WITH TIME ZONE NOT NULL,
-    business_status        VARCHAR(36)              NOT NULL,
-    execution_period_start TIMESTAMP WITH TIME ZONE NOT NULL,
-    execution_period_end   TIMESTAMP WITH TIME ZONE NOT NULL,
-    group_identifier       VARCHAR(36)              NOT NULL,
-    instantiates_uri       VARCHAR(36)              NOT NULL,
-    PRIMARY KEY (identifier)
-);
 
 CREATE TABLE IF NOT EXISTS lookup_plan_status
 (
