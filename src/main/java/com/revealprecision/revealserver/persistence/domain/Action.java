@@ -63,7 +63,7 @@ public class Action extends AbstractAuditableEntity {
   @OneToMany(fetch = FetchType.LAZY,mappedBy = "action")
   private Set<Task> tasks;
 
-  public Action update(ActionRequest actionRequest) {
+
   public Action update(ActionRequest actionRequest, Form form) {
     this.title = actionRequest.getTitle();
     this.description = actionRequest.getDescription();
