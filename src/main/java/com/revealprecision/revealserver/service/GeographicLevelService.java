@@ -8,7 +8,8 @@ import com.revealprecision.revealserver.exceptions.constant.Error;
 import com.revealprecision.revealserver.persistence.domain.GeographicLevel;
 import com.revealprecision.revealserver.persistence.domain.GeographicLevel.Fields;
 import com.revealprecision.revealserver.persistence.repository.GeographicLevelRepository;
-import java.util.Optional;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -28,11 +29,7 @@ public class GeographicLevelService {
   }
 
   public GeographicLevel createGeographicLevel(GeographicLevelRequest geographicLevelRequest) {
-    if (findByName(geographicLevelRequest.getName()).isPresent()) {
-      throw new ConflictException(
-          String.format(Error.NON_UNIQUE, StringUtils.capitalize(Fields.name),
-              geographicLevelRequest.getName()));
-    }
+    isDuplicate(geographicLevelRequest.getName());
     GeographicLevel geographicLevel = GeographicLevel.builder()
         .name(geographicLevelRequest.getName())
         .title(geographicLevelRequest.getTitle()).build();
@@ -52,12 +49,8 @@ public class GeographicLevelService {
   }
 
   public GeographicLevel update(UUID identifier, GeographicLevelRequest geographicLevelRequest) {
-    if (findByName(geographicLevelRequest.getName()).isPresent()) {
-      throw new ConflictException(
-          String.format(Error.NON_UNIQUE, StringUtils.capitalize(Fields.name),
-              geographicLevelRequest.getName()));
-    }
     GeographicLevel updateGeographicLevel = findGeographicLevelByIdentifier(identifier);
+    updateGeographicLevel.setTitle(geographicLevelRequest.getTitle());
     return geographicLevelRepository.save(updateGeographicLevel.update(geographicLevelRequest));
   }
 
@@ -66,7 +59,26 @@ public class GeographicLevelService {
     geographicLevelRepository.delete(deleteGeographicLevel);
   }
 
-  public Optional<GeographicLevel> findByName(String name) {
-    return geographicLevelRepository.findByName(name);
+  public GeographicLevel findByName(String name) {
+    return geographicLevelRepository.findByName(name)
+        .orElseThrow(() -> new NotFoundException(Pair.of(GeographicLevel.Fields.name, name),
+            GeographicLevel.class));
+  }
+
+  public void isDuplicate(String name) {
+    geographicLevelRepository.findByName(name).ifPresent(geographicLevel -> {
+      throw new ConflictException(
+          String.format(Error.NON_UNIQUE, StringUtils.capitalize(Fields.name),
+              name));
+    });
+  }
+
+  public void validateGeographyLevels(List<String> names) {
+    List<String> findLevels = new ArrayList<>(names);
+    List<String> foundLevels = geographicLevelRepository.getNames(findLevels);
+    findLevels.removeAll(foundLevels);
+    if (!findLevels.isEmpty()) {
+      throw new NotFoundException("Geography levels: " + findLevels + " does not exist");
+    }
   }
 }

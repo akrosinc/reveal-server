@@ -101,7 +101,7 @@ public class LocationRelationshipService {
 
       Integer nodePosition =
           locationHierarchy.getNodeOrder().indexOf(location.getGeographicLevel().getName()) - 1;
-      if (nodePosition < locationHierarchy.getNodeOrder().size() && nodePosition > 0) {
+      if (nodePosition < locationHierarchy.getNodeOrder().size() && nodePosition >= 0) {
         var parentGeographicLevelName = locationHierarchy.getNodeOrder()
             .get(nodePosition);
 
@@ -114,6 +114,8 @@ public class LocationRelationshipService {
         upperGeographicLevelLocations.stream().forEach(
             parentLocation -> createParentChildRelationship(parentLocation, location,
                 locationHierarchy));
+      } else if (nodePosition == -1) {
+        createRelationshipForRoot(location, locationHierarchy);
       }
 
       nodePosition =
@@ -155,6 +157,19 @@ public class LocationRelationshipService {
       locationRelationshipToSave.setEntityStatus(EntityStatus.ACTIVE);
       locationRelationshipRepository.save(locationRelationshipToSave);
     }
+  }
+
+
+  private void createRelationshipForRoot(Location location, LocationHierarchy locationHierarchy) {
+    List<UUID> ancestry = new ArrayList<>();
+    ancestry.add(location.getIdentifier());
+    LocationRelationship locationRelationship = LocationRelationship.builder()
+        .location(location)
+        .locationHierarchy(locationHierarchy)
+        .ancestry(ancestry)
+        .build();
+    locationRelationship.setEntityStatus(EntityStatus.ACTIVE);
+    locationRelationshipRepository.save(locationRelationship);
   }
 
 
