@@ -12,6 +12,7 @@ import com.revealprecision.revealserver.api.v1.dto.request.TargetRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.ActionResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.CountResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.GoalResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.PlanResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.TargetResponse;
 import com.revealprecision.revealserver.enums.SummaryEnum;
 import com.revealprecision.revealserver.service.ActionService;
@@ -62,6 +63,12 @@ public class PlanController {
     }
   }
 
+  @GetMapping("/{identifier}")
+  public ResponseEntity<PlanResponse> getByIdentifier(@PathVariable("identifier") UUID identifier) {
+    return ResponseEntity
+        .status(HttpStatus.OK)
+        .body(PlanResponseFactory.fromEntity(planService.getPlanByIdentifier(identifier)));
+  }
 
   @PostMapping
   public ResponseEntity<Void> createPlan(@Valid @RequestBody PlanRequest planRequest) {
