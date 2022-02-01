@@ -51,7 +51,7 @@ public class GeographicLevelService {
   public GeographicLevel update(UUID identifier, GeographicLevelRequest geographicLevelRequest) {
     GeographicLevel updateGeographicLevel = findGeographicLevelByIdentifier(identifier);
     updateGeographicLevel.setTitle(geographicLevelRequest.getTitle());
-    return geographicLevelRepository.save(updateGeographicLevel.update(geographicLevelRequest));
+    return geographicLevelRepository.save(updateGeographicLevel);
   }
 
   public void deleteGeographicLevel(UUID identifier) {
