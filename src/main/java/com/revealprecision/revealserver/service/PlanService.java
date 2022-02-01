@@ -15,7 +15,6 @@ import com.revealprecision.revealserver.persistence.domain.LookupInterventionTyp
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.Plan.Fields;
 import com.revealprecision.revealserver.persistence.repository.PlanRepository;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -97,22 +96,22 @@ public class PlanService {
   public void activatePlan(UUID planIdentifier) {
     Plan plan = getPlanByIdentifier(planIdentifier);
     boolean valid = true;
-    if (isNullOrEmpty(plan.getGoals())) {
-      valid = false;
-    } else {
-      for (Goal goal : plan.getGoals()) {
-        if (isNullOrEmpty(goal.getActions())) {
-          valid = false;
-        }
-      }
-    }
-
-    if (!((LocalDate.now().isAfter(plan.getEffectivePeriodStart()) || LocalDate.now()
-        .isEqual(plan.getEffectivePeriodStart())) && (
-        LocalDate.now().isBefore(plan.getEffectivePeriodEnd()) || LocalDate.now()
-            .isEqual(plan.getEffectivePeriodEnd())))) {
-      valid = false;
-    }
+//    if (isNullOrEmpty(plan.getGoals())) {
+//      valid = false;
+//    } else {
+//      for (Goal goal : plan.getGoals()) {
+//        if (isNullOrEmpty(goal.getActions())) {
+//          valid = false;
+//        }
+//      }
+//    }
+//
+//    if (!((LocalDate.now().isAfter(plan.getEffectivePeriodStart()) || LocalDate.now()
+//        .isEqual(plan.getEffectivePeriodStart())) && (
+//        LocalDate.now().isBefore(plan.getEffectivePeriodEnd()) || LocalDate.now()
+//            .isEqual(plan.getEffectivePeriodEnd())))) {
+//      valid = false;
+//    }
     if (valid) {
       plan.setStatus(PlanStatusEnum.ACTIVE);
       planRepository.save(plan);
