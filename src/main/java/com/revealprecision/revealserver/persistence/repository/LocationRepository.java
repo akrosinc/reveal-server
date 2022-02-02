@@ -13,8 +13,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface LocationRepository extends JpaRepository<Location, UUID> {
 
-//  List<Location> findByGeographicLevelIdentifier(UUID geographicLevelId);
-
   @Query(value = "select l from Location l where l.geographicLevel.identifier = :identifier")
   List<Location> findByGeographicLevelIdentifier(@Param("identifier") UUID identifier);
 
