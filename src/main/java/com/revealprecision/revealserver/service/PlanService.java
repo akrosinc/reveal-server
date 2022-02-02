@@ -96,22 +96,6 @@ public class PlanService {
   public void activatePlan(UUID planIdentifier) {
     Plan plan = getPlanByIdentifier(planIdentifier);
     boolean valid = true;
-//    if (isNullOrEmpty(plan.getGoals())) {
-//      valid = false;
-//    } else {
-//      for (Goal goal : plan.getGoals()) {
-//        if (isNullOrEmpty(goal.getActions())) {
-//          valid = false;
-//        }
-//      }
-//    }
-//
-//    if (!((LocalDate.now().isAfter(plan.getEffectivePeriodStart()) || LocalDate.now()
-//        .isEqual(plan.getEffectivePeriodStart())) && (
-//        LocalDate.now().isBefore(plan.getEffectivePeriodEnd()) || LocalDate.now()
-//            .isEqual(plan.getEffectivePeriodEnd())))) {
-//      valid = false;
-//    }
     if (valid) {
       plan.setStatus(PlanStatusEnum.ACTIVE);
       planRepository.save(plan);

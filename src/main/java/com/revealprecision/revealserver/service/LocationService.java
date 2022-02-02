@@ -42,8 +42,6 @@ public class LocationService {
         .externalId(locationRequest.getProperties().getExternalId()).build();
     locationToSave.setEntityStatus(EntityStatus.ACTIVE);
     var savedLocation = locationRepository.save(locationToSave);
-//    jobScheduler.enqueue(
-//        () -> locationRelationshipService.updateLocationRelationshipsForNewLocation(savedLocation));
     locationRelationshipService.updateLocationRelationshipsForNewLocation(savedLocation);
     return savedLocation;
   }
