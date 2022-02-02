@@ -5,11 +5,13 @@ import com.revealprecision.revealserver.exceptions.FileFormatException;
 import com.revealprecision.revealserver.exceptions.InvalidDateFormatException;
 import com.revealprecision.revealserver.exceptions.KeycloakException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
+import com.revealprecision.revealserver.exceptions.WrongEnumException;
 import com.revealprecision.revealserver.exceptions.dto.ApiErrorResponse;
 import com.revealprecision.revealserver.exceptions.dto.ValidationErrorResponse;
 import java.time.LocalDateTime;
 import java.util.stream.Collectors;
 import javax.validation.ConstraintViolationException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -84,6 +86,25 @@ public class CustomExceptionHandler {
     return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
   }
 
+  @ExceptionHandler(DataIntegrityViolationException.class)
+  protected ResponseEntity<ApiErrorResponse> handleDataIntegrityException(
+      DataIntegrityViolationException ex) {
+    ApiErrorResponse response = ApiErrorResponse.builder()
+        .statusCode(HttpStatus.CONFLICT.value())
+        .timestamp(LocalDateTime.now())
+        .message(ex.getCause().getCause().getMessage().split("Detail:")[1].trim()).build();
+    return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+  }
+
+  @ExceptionHandler(WrongEnumException.class)
+  protected ResponseEntity<ApiErrorResponse> wrongEnumException(WrongEnumException ex) {
+    ApiErrorResponse response = ApiErrorResponse.builder()
+        .statusCode(HttpStatus.BAD_REQUEST.value())
+        .timestamp(LocalDateTime.now())
+        .message(ex.getMessage()).build();
+    return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+  }
+
   @ExceptionHandler(InvalidDateFormatException.class)
   protected ResponseEntity<ApiErrorResponse> handleKeycloakException(InvalidDateFormatException ex) {
     ApiErrorResponse response = ApiErrorResponse.builder()
@@ -92,6 +113,4 @@ public class CustomExceptionHandler {
         .message(ex.getMessage()).build();
     return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
   }
-
-
 }

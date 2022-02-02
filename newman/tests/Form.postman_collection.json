@@ -1,0 +1,134 @@
+{
+	"info": {
+		"_postman_id": "357842a6-737f-4b4d-94ec-0078cf1a958f",
+		"name": "Form",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Create form",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{auth_bearer_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"name\":\"form1\",\r\n    \"title\":\"title for form 1\",\r\n    \"template\": true,\r\n    \"payload\":{}\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{server_url}}/api/v1/form",
+					"host": [
+						"{{server_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"form"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get form by identifier",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{server_url}}/api/v1/form/890740d4-a99d-488d-abd2-918f39b0ac98",
+					"host": [
+						"{{server_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"form",
+						"890740d4-a99d-488d-abd2-918f39b0ac98"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get all forms by criteria",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		},
+		{
+			"name": "Delete form",
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "{{server_url}}/api/v1/form/c8434921-85b4-48da-8154-ff458f51cef9",
+					"host": [
+						"{{server_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"form",
+						"c8434921-85b4-48da-8154-ff458f51cef9"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update form",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{auth_bearer_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"title\":\"title for form 2\",\r\n    \"payload\":{\r\n        \"nickName\": \"Milan7\"\r\n    }\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{server_url}}/api/v1/form/c8434921-85b4-48da-8154-ff458f51cef9",
+					"host": [
+						"{{server_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"form",
+						"c8434921-85b4-48da-8154-ff458f51cef9"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

@@ -3,6 +3,7 @@ package com.revealprecision.revealserver.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.revealprecision.revealserver.enums.EntityStatus;
+import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.GeographicLevel;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
@@ -13,10 +14,12 @@ import com.revealprecision.revealserver.persistence.repository.LocationRelations
 import com.revealprecision.revealserver.persistence.repository.LocationRepository;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -98,7 +101,7 @@ public class LocationRelationshipService {
 
       Integer nodePosition =
           locationHierarchy.getNodeOrder().indexOf(location.getGeographicLevel().getName()) - 1;
-      if (nodePosition < locationHierarchy.getNodeOrder().size() && nodePosition > 0) {
+      if (nodePosition < locationHierarchy.getNodeOrder().size() && nodePosition >= 0) {
         var parentGeographicLevelName = locationHierarchy.getNodeOrder()
             .get(nodePosition);
 
@@ -111,6 +114,8 @@ public class LocationRelationshipService {
         upperGeographicLevelLocations.stream().forEach(
             parentLocation -> createParentChildRelationship(parentLocation, location,
                 locationHierarchy));
+      } else if (nodePosition == -1) {
+        createRelationshipForRoot(location, locationHierarchy);
       }
 
       nodePosition =
@@ -155,6 +160,17 @@ public class LocationRelationshipService {
   }
 
 
+  private void createRelationshipForRoot(Location location, LocationHierarchy locationHierarchy) {
+    LocationRelationship locationRelationship = LocationRelationship.builder()
+        .location(location)
+        .locationHierarchy(locationHierarchy)
+        .ancestry(new ArrayList<>())
+        .build();
+    locationRelationship.setEntityStatus(EntityStatus.ACTIVE);
+    locationRelationshipRepository.save(locationRelationship);
+  }
+
+
   private List<UUID> getAncestryFromParentLocation(Location parentLocation,
       LocationHierarchy locationHierarchy) {
     List<UUID> ancestry = new ArrayList<>();
@@ -175,5 +191,15 @@ public class LocationRelationshipService {
       LocationHierarchy locationHierarchy) {
     return locationRelationshipRepository
         .findByLocationHierarchyIdentifier(locationHierarchy.getIdentifier());
+  }
+
+  public void validateLocationsBelonging(UUID hierarchyIdentifier, Set<UUID> locations) {
+    Set<UUID> checkLocations = new HashSet<>(locations);
+    List<UUID> foundLocations = locationRelationshipRepository.findLocationsInHierarchy(
+        hierarchyIdentifier, locations);
+    checkLocations.removeAll(foundLocations);
+    if (checkLocations.size() > 0) {
+      throw new NotFoundException("Locations: " + locations + " not found");
+    }
   }
 }

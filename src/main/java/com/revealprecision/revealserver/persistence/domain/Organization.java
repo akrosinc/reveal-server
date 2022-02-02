@@ -4,7 +4,6 @@ import com.revealprecision.revealserver.api.v1.dto.request.OrganizationRequest;
 import com.revealprecision.revealserver.enums.OrganizationTypeEnum;
 import java.util.Set;
 import java.util.UUID;
-import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
@@ -16,6 +15,7 @@ import javax.persistence.JoinColumn;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
+import javax.persistence.PreRemove;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -53,7 +53,7 @@ public class Organization extends AbstractAuditableEntity {
   @Column(nullable = false)
   private OrganizationTypeEnum type;
 
-  @OneToMany(mappedBy = "parent", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+  @OneToMany(mappedBy = "parent", fetch = FetchType.LAZY)
   private Set<Organization> children;
 
   @ManyToOne
@@ -69,5 +69,10 @@ public class Organization extends AbstractAuditableEntity {
     this.type = organizationRequest.getType();
     this.parent = parent;
     return this;
+  }
+
+  @PreRemove
+  private void preRemove() {
+    children.forEach(organization -> organization.setParent(null));
   }
 }
