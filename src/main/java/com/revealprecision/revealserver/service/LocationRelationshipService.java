@@ -161,12 +161,10 @@ public class LocationRelationshipService {
 
 
   private void createRelationshipForRoot(Location location, LocationHierarchy locationHierarchy) {
-    List<UUID> ancestry = new ArrayList<>();
-    ancestry.add(location.getIdentifier());
     LocationRelationship locationRelationship = LocationRelationship.builder()
         .location(location)
         .locationHierarchy(locationHierarchy)
-        .ancestry(ancestry)
+        .ancestry(new ArrayList<>())
         .build();
     locationRelationship.setEntityStatus(EntityStatus.ACTIVE);
     locationRelationshipRepository.save(locationRelationship);
