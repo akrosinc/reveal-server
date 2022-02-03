@@ -88,16 +88,16 @@ public class UserItemProcessor implements ItemProcessor<UserBatchDTO, User> {
 
   public boolean isUserValid(final UserBatchDTO userBatchDTO) {
     if (userBatchDTO.getUsername().isBlank()) {
-      saveUserBulkException("Username can not be empty", userBatchDTO.getUsername());
+      saveUserBulkException("Username cannot be empty", userBatchDTO.getUsername());
       return false;
     }
     if (!userBatchDTO.getUsername().matches(BatchConstants.Constraint.USERNAME_REGEX)) {
-      saveUserBulkException("Username can not contain special characters",
+      saveUserBulkException("Username cannot contain special characters",
           userBatchDTO.getUsername());
       return false;
     } else if (userBatchDTO.getFirstName().isBlank() || userBatchDTO.getLastName().isBlank()
         || userBatchDTO.getPassword().isBlank()) {
-      saveUserBulkException("Fist name, last name and password are mandatory",
+      saveUserBulkException("Fist name, Last name and password are mandatory",
           userBatchDTO.getUsername());
       return false;
     } else if (listOfExistingUsernames.contains(userBatchDTO.getUsername())
