@@ -21,7 +21,7 @@ public class LocationBulkDetailResponseFactory {
     if (projection.getEntityStatus() == EntityStatus.ACTIVE) {
       status = BulkEntryStatus.SUCCESSFUL;
     } else {
-      status = BulkEntryStatus.ERROR;
+      status = BulkEntryStatus.FAILED;
       message = projection.getMessage();
     }
     return LocationBulkDetailResponse.builder().name(name).message(message)
