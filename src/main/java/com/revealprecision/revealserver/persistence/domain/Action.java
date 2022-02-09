@@ -3,12 +3,15 @@ package com.revealprecision.revealserver.persistence.domain;
 import com.revealprecision.revealserver.api.v1.dto.request.ActionRequest;
 import com.revealprecision.revealserver.enums.ActionTypeEnum;
 import java.time.LocalDate;
+import java.util.Set;
 import java.util.UUID;
+import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -55,13 +58,15 @@ public class Action extends AbstractAuditableEntity {
   @JoinColumn(name = "form_identifier")
   private Form form;
 
+  @OneToMany(mappedBy = "action", cascade = CascadeType.PERSIST)
+  private Set<Condition> conditions;
+
   public Action update(ActionRequest actionRequest, Form form) {
     this.title = actionRequest.getTitle();
     this.description = actionRequest.getDescription();
     this.timingPeriodStart = actionRequest.getTimingPeriod().getStart();
     this.timingPeriodEnd = actionRequest.getTimingPeriod().getEnd();
     this.form = form;
-    this.type = actionRequest.getType();
     return this;
   }
 }
