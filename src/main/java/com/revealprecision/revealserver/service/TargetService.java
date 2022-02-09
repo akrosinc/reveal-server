@@ -1,8 +1,6 @@
 package com.revealprecision.revealserver.service;
 
-import com.revealprecision.revealserver.api.v1.dto.factory.TargetEntityFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.TargetRequest;
-import com.revealprecision.revealserver.exceptions.ConflictException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.Goal;
 import com.revealprecision.revealserver.persistence.domain.Plan;
@@ -34,9 +32,9 @@ public class TargetService {
     Plan plan = planService.getPlanByIdentifier(planIdentifier);
     Goal goal = goalService.findByIdentifier(goalIdentifier);
     validateData(plan, goal, null);
-
-    Target target = TargetEntityFactory.toEntity(targetRequest, goal);
-    targetRepository.save(target);
+    //TODO: finish this
+//    Target target = TargetEntityFactory.toEntity(targetRequest, goal);
+//    targetRepository.save(target);
   }
 
   public void updateTarget(TargetRequest targetRequest, UUID planIdentifier, String goalIdentifier,
@@ -55,19 +53,20 @@ public class TargetService {
     Goal goal = goalService.findByIdentifier(goalIdentifier);
     validateData(plan, goal, null);
 
-    return targetRepository.getAll(goalIdentifier, pageable);
+    //return targetRepository.getAll(goalIdentifier, pageable);
+    return null;
   }
 
   public void validateData(Plan plan, Goal goal, Target target) {
-    if (!plan.getGoals().contains(goal)) {
-      throw new ConflictException(Goal.class, goal.getIdentifier(), Plan.class,
-          plan.getIdentifier());
-    }
-    if (target != null) {
-      if (!goal.getTargets().contains(target)) {
-        throw new ConflictException(Target.class, target.getIdentifier(), Goal.class,
-            goal.getIdentifier());
-      }
-    }
+//    if (!plan.getGoals().contains(goal)) {
+//      throw new ConflictException(Goal.class, goal.getIdentifier(), Plan.class,
+//          plan.getIdentifier());
+//    }
+//    if (target != null) {
+//      if (!goal.getTargets().contains(target)) {
+//        throw new ConflictException(Target.class, target.getIdentifier(), Goal.class,
+//            goal.getIdentifier());
+//      }
+//    }
   }
 }

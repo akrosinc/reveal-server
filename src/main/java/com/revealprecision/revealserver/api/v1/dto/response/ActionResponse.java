@@ -1,8 +1,8 @@
 package com.revealprecision.revealserver.api.v1.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.revealprecision.revealserver.enums.ActionSubjectEnum;
 import com.revealprecision.revealserver.enums.ActionTypeEnum;
+import com.revealprecision.revealserver.enums.EntityPropertiesEnum;
 import java.time.LocalDate;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -25,7 +25,7 @@ public class ActionResponse {
   private LocalDate timingPeriodStart;
   private LocalDate timingPeriodEnd;
   private String reason;
-  private ActionSubjectEnum subject;
+  private EntityPropertiesEnum subject;
   private ActionTypeEnum type;
   private FormResponse form;
 }

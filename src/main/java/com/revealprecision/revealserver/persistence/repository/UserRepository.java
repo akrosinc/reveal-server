@@ -47,6 +47,9 @@ public interface UserRepository extends EntityGraphJpaRepository<User, UUID> {
   Page<User> searchByParameter(@Param("param") String param, Pageable pageable,
       EntityGraph entityGraph);
 
+  @Query(value = "select count(u) from User u")
+  long getNumberOfUsers();
+
   Optional<User> findByIdentifier(UUID identifier);
 
   Optional<User> findBySid(UUID sid);

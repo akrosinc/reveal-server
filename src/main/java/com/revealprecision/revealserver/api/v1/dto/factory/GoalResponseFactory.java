@@ -13,10 +13,6 @@ import org.springframework.data.domain.Pageable;
 public class GoalResponseFactory {
 
   public static GoalResponse fromEntity(Goal goal) {
-    var targets = goal.getTargets()
-        .stream()
-        .map(TargetResponseFactory::fromEntity)
-        .collect(Collectors.toSet());
 
     var actions = goal.getActions()
         .stream()
@@ -24,10 +20,8 @@ public class GoalResponseFactory {
         .collect(Collectors.toSet());
 
     return GoalResponse.builder()
-        .identifier(goal.getIdentifier())
         .priority(goal.getPriority())
         .description(goal.getDescription())
-        .targets(targets)
         .actions(actions)
         .build();
   }

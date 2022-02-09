@@ -5,7 +5,6 @@ import com.revealprecision.revealserver.api.v1.dto.request.GoalRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.GoalUpdateRequest;
 import com.revealprecision.revealserver.exceptions.ConflictException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
-import com.revealprecision.revealserver.exceptions.constant.Error;
 import com.revealprecision.revealserver.persistence.domain.Goal;
 import com.revealprecision.revealserver.persistence.domain.Goal.Fields;
 import com.revealprecision.revealserver.persistence.domain.Plan;
@@ -30,10 +29,6 @@ public class GoalService {
   }
 
   public void createGoal(UUID identifier, GoalRequest goalRequest) {
-    if (goalRepository.findById(goalRequest.getIdentifier()).isPresent()) {
-      throw new ConflictException(
-          String.format(Error.NON_UNIQUE, Fields.identifier, goalRequest.getIdentifier()));
-    }
     Plan plan = planService.getPlanByIdentifier(identifier);
     Goal goal = GoalEntityFactory.toEntityWithoutAction(goalRequest, plan);
     goalRepository.save(goal);

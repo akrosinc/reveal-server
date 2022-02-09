@@ -22,7 +22,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"userName\": \"milan.kaaatic\",\r\n    \"firstName\": \"Milan\",\r\n    \"lastName\": \"Katic\",\r\n    \"email\": \"\",\r\n    \"password\": \"Mila\",\r\n    \"tempPassword\": false,\r\n    \"organizations\": [],\r\n    \"securityGroups\": []\r\n}\r\n",
+					"raw": "{\r\n    \"username\": \"milan.kattic\",\r\n    \"firstName\": \"Milan\",\r\n    \"lastName\": \"Katic\",\r\n    \"email\": null,\r\n    \"password\": \"Milannn\",\r\n    \"tempPassword\": false,\r\n    \"organizations\": [\"bd6cbe6a-8ea5-41b6-9841-a0ae32610641\"],\r\n    \"securityGroups\": []\r\n}\r\n",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -70,8 +70,8 @@
 					],
 					"query": [
 						{
-							"key": "search",
-							"value": "vic",
+							"key": "count",
+							"value": "true",
 							"disabled": true
 						}
 					]

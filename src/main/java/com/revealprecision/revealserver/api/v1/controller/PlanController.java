@@ -70,8 +70,9 @@ public class PlanController {
         .body(PlanResponseFactory.fromEntity(planService.getPlanByIdentifier(identifier)));
   }
 
-  @PostMapping
+  @PostMapping("")
   public ResponseEntity<Void> createPlan(@Valid @RequestBody PlanRequest planRequest) {
+    System.out.println("DSADAS");
     planService.createPlan(planRequest);
     return ResponseEntity.status(HttpStatus.CREATED).build();
   }
