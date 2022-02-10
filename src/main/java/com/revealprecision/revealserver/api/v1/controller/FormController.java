@@ -78,8 +78,10 @@ public class FormController {
   public ResponseEntity<List<FormResponse>> getAllForDropdown() {
     return ResponseEntity
         .status(HttpStatus.OK)
-        .body(formService.getAllForDropdown().stream().map(FormResponseFactory::fromEntity).collect(
-            Collectors.toList()));
+        .body(
+            formService.getAllForDropdown().stream().map(FormResponseFactory::fromEntityForDropdown)
+                .collect(
+                    Collectors.toList()));
   }
 
   @Operation(summary = "Update form",

@@ -22,6 +22,13 @@ public class FormResponseFactory {
         .build();
   }
 
+  public static FormResponse fromEntityForDropdown(Form form) {
+    return FormResponse.builder()
+        .identifier(form.getIdentifier())
+        .name(form.getName())
+        .build();
+  }
+
   public static Page<FormResponse> fromEntityPage(Page<Form> forms, Pageable pageable) {
     var response = forms.getContent().stream()
         .map(FormResponseFactory::fromEntity)
