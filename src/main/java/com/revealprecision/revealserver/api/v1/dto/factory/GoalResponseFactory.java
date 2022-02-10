@@ -20,6 +20,7 @@ public class GoalResponseFactory {
         .collect(Collectors.toSet());
 
     return GoalResponse.builder()
+        .identifier(goal.getIdentifier())
         .priority(goal.getPriority())
         .description(goal.getDescription())
         .actions(actions)
