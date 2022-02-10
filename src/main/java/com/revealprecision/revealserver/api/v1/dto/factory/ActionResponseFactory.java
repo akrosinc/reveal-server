@@ -20,7 +20,6 @@ public class ActionResponseFactory {
         .description(action.getDescription())
         .timingPeriodStart(action.getTimingPeriodStart())
         .timingPeriodEnd(action.getTimingPeriodEnd())
-        .reason(action.getReason())
         .type(action.getType())
         .form(FormResponse.builder()
             .identifier(action.getForm().getIdentifier())
