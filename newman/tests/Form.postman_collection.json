@@ -67,7 +67,18 @@
 			"name": "Get all forms by criteria",
 			"request": {
 				"method": "GET",
-				"header": []
+				"header": [],
+				"url": {
+					"raw": "{{server_url}}/api/v1/form",
+					"host": [
+						"{{server_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"form"
+					]
+				}
 			},
 			"response": []
 		},
@@ -125,6 +136,26 @@
 						"v1",
 						"form",
 						"c8434921-85b4-48da-8154-ff458f51cef9"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get forms for dropdown",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{server_url}}/api/v1/form/dropdown",
+					"host": [
+						"{{server_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"form",
+						"dropdown"
 					]
 				}
 			},

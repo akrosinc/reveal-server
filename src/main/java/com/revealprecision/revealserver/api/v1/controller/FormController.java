@@ -8,7 +8,9 @@ import com.revealprecision.revealserver.enums.FlagEnum;
 import com.revealprecision.revealserver.service.FormService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -66,6 +68,18 @@ public class FormController {
         .body(FormResponseFactory
             .fromEntityPage(formService.getAll(search, pageable, template),
                 pageable));
+  }
+
+  @Operation(summary = "Get all forms by criteria",
+      description = "Get all forms by criteria",
+      tags = {"Form"}
+  )
+  @GetMapping(value = "/dropdown", produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<List<FormResponse>> getAllForDropdown() {
+    return ResponseEntity
+        .status(HttpStatus.OK)
+        .body(formService.getAllForDropdown().stream().map(FormResponseFactory::fromEntity).collect(
+            Collectors.toList()));
   }
 
   @Operation(summary = "Update form",
