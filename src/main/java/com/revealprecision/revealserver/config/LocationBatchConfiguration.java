@@ -31,7 +31,6 @@ public class LocationBatchConfiguration {
   private final EntityManagerFactory entityManagerFactory;
   private final LocationItemProcessor locationItemProcessor;
 
-
   @Bean
   @StepScope
   public JsonItemReader<LocationRequest> locationReader(
