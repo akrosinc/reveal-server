@@ -27,9 +27,17 @@ public class GoalResponseFactory {
         .build();
   }
 
+  public static GoalResponse fromEntitySummary(Goal goal) {
+    return GoalResponse.builder()
+        .identifier(goal.getIdentifier())
+        .priority(goal.getPriority())
+        .description(goal.getDescription())
+        .build();
+  }
+
   public static Page<GoalResponse> fromEntityPage(Page<Goal> goals, Pageable pageable) {
     var response = goals.getContent().stream()
-        .map(GoalResponseFactory::fromEntity)
+        .map(GoalResponseFactory::fromEntitySummary)
         .collect(Collectors.toList());
     return new PageImpl<>(response, pageable, goals.getTotalElements());
   }

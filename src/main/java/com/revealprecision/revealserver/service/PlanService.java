@@ -3,9 +3,8 @@ package com.revealprecision.revealserver.service;
 import com.cosium.spring.data.jpa.entity.graph.domain.EntityGraphUtils;
 import com.revealprecision.revealserver.api.v1.dto.factory.PlanEntityFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.PlanRequest;
+import com.revealprecision.revealserver.api.v1.dto.response.ErrorResponse;
 import com.revealprecision.revealserver.enums.EntityStatus;
-import com.revealprecision.revealserver.enums.PlanStatusEnum;
-import com.revealprecision.revealserver.exceptions.ConflictException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.Action;
 import com.revealprecision.revealserver.persistence.domain.Condition;
@@ -89,11 +88,13 @@ public class PlanService {
   public void activatePlan(UUID planIdentifier) {
     Plan plan = getPlanByIdentifier(planIdentifier);
     boolean valid = true;
-    if (valid) {
-      plan.setStatus(PlanStatusEnum.ACTIVE);
-      planRepository.save(plan);
-    } else {
-      throw new ConflictException("Plan could not be activated");
-    }
+    ErrorResponse errorResponse = new ErrorResponse();
+
+
+  }
+
+  public void checkPlanDetails(Plan plan, ErrorResponse errorResponse) {
+    //TODO check validation for Dates
+    
   }
 }

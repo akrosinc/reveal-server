@@ -28,7 +28,7 @@ public class TargetService {
   }
 
   public void createTarget(TargetRequest targetRequest, UUID planIdentifier,
-      String goalIdentifier) {
+      UUID goalIdentifier) {
     Plan plan = planService.getPlanByIdentifier(planIdentifier);
     Goal goal = goalService.findByIdentifier(goalIdentifier);
     validateData(plan, goal, null);
@@ -37,7 +37,7 @@ public class TargetService {
 //    targetRepository.save(target);
   }
 
-  public void updateTarget(TargetRequest targetRequest, UUID planIdentifier, String goalIdentifier,
+  public void updateTarget(TargetRequest targetRequest, UUID planIdentifier, UUID goalIdentifier,
       UUID targetIdentifier) {
     Target target = getByIdentifier(targetIdentifier);
     Plan plan = planService.getPlanByIdentifier(planIdentifier);
@@ -48,7 +48,7 @@ public class TargetService {
     targetRepository.save(target);
   }
 
-  public Page<Target> getAll(UUID planIdentifier, String goalIdentifier, Pageable pageable) {
+  public Page<Target> getAll(UUID planIdentifier, UUID goalIdentifier, Pageable pageable) {
     Plan plan = planService.getPlanByIdentifier(planIdentifier);
     Goal goal = goalService.findByIdentifier(goalIdentifier);
     validateData(plan, goal, null);

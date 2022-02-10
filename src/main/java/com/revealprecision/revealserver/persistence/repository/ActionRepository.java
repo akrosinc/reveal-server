@@ -13,5 +13,5 @@ import org.springframework.stereotype.Repository;
 public interface ActionRepository extends EntityGraphJpaRepository<Action, UUID> {
 
   @Query(value = "select a from Action a where a.goal.identifier = :identifier")
-  Page<Action> getActions(@Param("identifier") String identifier, Pageable pageable);
+  Page<Action> getActions(@Param("identifier") UUID identifier, Pageable pageable);
 }
