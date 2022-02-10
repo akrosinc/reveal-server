@@ -46,8 +46,6 @@ public class Action extends AbstractAuditableEntity {
 
   private LocalDate timingPeriodEnd;
 
-  private String reason;
-
   @ManyToOne
   @JoinColumn(name = "goal_identifier")
   private Goal goal;

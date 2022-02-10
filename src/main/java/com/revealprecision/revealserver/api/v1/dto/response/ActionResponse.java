@@ -24,7 +24,6 @@ public class ActionResponse {
   private String description;
   private LocalDate timingPeriodStart;
   private LocalDate timingPeriodEnd;
-  private String reason;
   private EntityPropertiesEnum subject;
   private ActionTypeEnum type;
   private FormResponse form;
