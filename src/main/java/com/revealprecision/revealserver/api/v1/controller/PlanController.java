@@ -70,14 +70,13 @@ public class PlanController {
         .body(PlanResponseFactory.fromEntity(planService.getPlanByIdentifier(identifier)));
   }
 
-  @PostMapping("")
+  @PostMapping
   public ResponseEntity<Void> createPlan(@Valid @RequestBody PlanRequest planRequest) {
-    System.out.println("DSADAS");
     planService.createPlan(planRequest);
     return ResponseEntity.status(HttpStatus.CREATED).build();
   }
 
-  @GetMapping("/{identifier}/goal")
+  @GetMapping("/{identifier}/goal") //done
   public ResponseEntity<Page<GoalResponse>> getGoals(
       @Parameter(description = "Plan identifier") @PathVariable("identifier") UUID identifier,
       Pageable pageable) {
@@ -96,7 +95,7 @@ public class PlanController {
   @PutMapping("/{planIdentifier}/goal/{identifier}")
   public ResponseEntity<Void> updateGoal(
       @Parameter(description = "Plan identifier") @PathVariable("planIdentifier") UUID planIdentifier,
-      @Parameter(description = "Goal identifier") @PathVariable("identifier") String identifier,
+      @Parameter(description = "Goal identifier") @PathVariable("identifier") UUID identifier,
       @Valid @RequestBody GoalUpdateRequest goalUpdateRequest) {
     goalService.updateGoal(identifier, planIdentifier, goalUpdateRequest);
     return ResponseEntity.status(HttpStatus.OK).build();
@@ -105,7 +104,7 @@ public class PlanController {
   @GetMapping("/{planIdentifier}/goal/{goalIdentifier}/action")
   public ResponseEntity<Page<ActionResponse>> getActions(
       @Parameter(description = "Plan identifier") @PathVariable("planIdentifier") UUID planIdentifier,
-      @Parameter(description = "Goal identifier") @PathVariable("goalIdentifier") String goalIdentifier,
+      @Parameter(description = "Goal identifier") @PathVariable("goalIdentifier") UUID goalIdentifier,
       Pageable pageable) {
     return ResponseEntity.status(HttpStatus.OK).body(ActionResponseFactory.fromEntityPage(
         actionService.getActions(planIdentifier, goalIdentifier, pageable), pageable));
@@ -114,7 +113,7 @@ public class PlanController {
   @PostMapping("/{planIdentifier}/goal/{goalIdentifier}/action")
   public ResponseEntity<Void> createAction(
       @Parameter(description = "Plan identifier") @PathVariable("planIdentifier") UUID planIdentifier,
-      @Parameter(description = "Goal identifier") @PathVariable("goalIdentifier") String goalIdentifier,
+      @Parameter(description = "Goal identifier") @PathVariable("goalIdentifier") UUID goalIdentifier,
       @Valid @RequestBody ActionRequest actionRequest) {
     actionService.createAction(planIdentifier, goalIdentifier, actionRequest);
     return ResponseEntity.status(HttpStatus.CREATED).build();
@@ -123,7 +122,7 @@ public class PlanController {
   @PutMapping("/{planIdentifier}/goal/{goalIdentifier}/action/{actionIdentifier}")
   public ResponseEntity<Void> updateAction(
       @Parameter(description = "Plan identifier") @PathVariable("planIdentifier") UUID planIdentifier,
-      @Parameter(description = "Goal identifier") @PathVariable("goalIdentifier") String goalIdentifier,
+      @Parameter(description = "Goal identifier") @PathVariable("goalIdentifier") UUID goalIdentifier,
       @Parameter(description = "Action identifier") @PathVariable("actionIdentifier") UUID actionIdentifier,
       @Valid @RequestBody ActionRequest actionRequest) {
     actionService.updateAction(planIdentifier, goalIdentifier, actionRequest, actionIdentifier);
@@ -133,7 +132,7 @@ public class PlanController {
   @GetMapping("/{planIdentifier}/goal/{goalIdentifier}/target")
   public ResponseEntity<Page<TargetResponse>> getTargets(
       @Parameter(description = "Plan identifier") @PathVariable("planIdentifier") UUID planIdentifier,
-      @Parameter(description = "Goal identifier") @PathVariable("goalIdentifier") String goalIdentifier,
+      @Parameter(description = "Goal identifier") @PathVariable("goalIdentifier") UUID goalIdentifier,
       Pageable pageable) {
     return ResponseEntity.status(HttpStatus.OK).body(TargetResponseFactory.fromEntityPage(
         targetService.getAll(planIdentifier, goalIdentifier, pageable), pageable));
@@ -142,7 +141,7 @@ public class PlanController {
   @PostMapping("/{planIdentifier}/goal/{goalIdentifier}/target")
   public ResponseEntity<Void> createTarget(
       @Parameter(description = "Plan identifier") @PathVariable("planIdentifier") UUID planIdentifier,
-      @Parameter(description = "Goal identifier") @PathVariable("goalIdentifier") String goalIdentifier,
+      @Parameter(description = "Goal identifier") @PathVariable("goalIdentifier") UUID goalIdentifier,
       @Valid @RequestBody TargetRequest targetRequest) {
     targetService.createTarget(targetRequest, planIdentifier, goalIdentifier);
     return ResponseEntity.status(HttpStatus.CREATED).build();
@@ -151,7 +150,7 @@ public class PlanController {
   @PutMapping("/{planIdentifier}/goal/{goalIdentifier}/target/{targetIdentifier}")
   public ResponseEntity<Void> updateTarget(
       @Parameter(description = "Plan identifier") @PathVariable("planIdentifier") UUID planIdentifier,
-      @Parameter(description = "Goal identifier") @PathVariable("goalIdentifier") String goalIdentifier,
+      @Parameter(description = "Goal identifier") @PathVariable("goalIdentifier") UUID goalIdentifier,
       @Parameter(description = "Target identifier") @PathVariable("targetIdentifier") UUID targetIdentifier,
       @Valid @RequestBody TargetRequest targetRequest) {
     targetService.updateTarget(targetRequest, planIdentifier, goalIdentifier, targetIdentifier);

@@ -23,7 +23,7 @@ public class GoalService {
   private final GoalRepository goalRepository;
   private final PlanService planService;
 
-  public Goal findByIdentifier(String identifier) {
+  public Goal findByIdentifier(UUID identifier) {
     return goalRepository.findById(identifier).orElseThrow(() -> new NotFoundException(Pair.of(
         Fields.identifier, identifier), Goal.class));
   }
@@ -34,7 +34,7 @@ public class GoalService {
     goalRepository.save(goal);
   }
 
-  public void updateGoal(String identifier, UUID planIdentifier,
+  public void updateGoal(UUID identifier, UUID planIdentifier,
       GoalUpdateRequest goalUpdateRequest) {
     Plan plan = planService.getPlanByIdentifier(planIdentifier);
     Goal goal = findByIdentifier(identifier);
