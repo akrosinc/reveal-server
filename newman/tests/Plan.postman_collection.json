@@ -616,7 +616,7 @@
 				"method": "DELETE",
 				"header": [],
 				"url": {
-					"raw": "{{server_url}}/api/v1/plan/7e3795ed-1735-418f-b7e8-ba976c674652/goal/634c79da-a637-4a5a-953c-a15ce6ad0ef0",
+					"raw": "{{server_url}}/api/v1/plan/7e3795ed-1735-418f-b7e8-ba976c674652/goal/9a636f01-7357-4f7e-8563-5ce690afbe2a",
 					"host": [
 						"{{server_url}}"
 					],
@@ -626,7 +626,7 @@
 						"plan",
 						"7e3795ed-1735-418f-b7e8-ba976c674652",
 						"goal",
-						"634c79da-a637-4a5a-953c-a15ce6ad0ef0"
+						"9a636f01-7357-4f7e-8563-5ce690afbe2a"
 					]
 				}
 			},
@@ -687,6 +687,45 @@
 						"9a636f01-7357-4f7e-8563-5ce690afbe2a",
 						"action",
 						"94cd0ccb-26e6-4d32-8085-1960f46764e6"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update Plan details",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{auth_bearer_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"name\": \"plan12\",\r\n    \"title\": \"Title for plan12\",\r\n    \"effectivePeriod\": {\r\n        \"start\": \"2022-05-31\",\r\n        \"end\": \"2022-05-31\"\r\n    }\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{server_url}}/api/v1/plan/7e3795ed-1735-418f-b7e8-ba976c674652",
+					"host": [
+						"{{server_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"plan",
+						"7e3795ed-1735-418f-b7e8-ba976c674652"
 					]
 				}
 			},

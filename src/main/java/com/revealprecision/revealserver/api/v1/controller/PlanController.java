@@ -82,6 +82,14 @@ public class PlanController {
     return ResponseEntity.status(HttpStatus.CREATED).build();
   }
 
+  @PutMapping("/{identifier}")
+  public ResponseEntity<Void> updatePlan(@PathVariable("identifier") UUID identifier,
+      @RequestBody PlanRequest request) {
+    planService.updatePlan(request, identifier);
+    return ResponseEntity.status(HttpStatus.OK).build();
+  }
+
+
   @GetMapping("/{identifier}/goal") //done
   public ResponseEntity<Page<GoalResponse>> getGoals(
       @Parameter(description = "Plan identifier") @PathVariable("identifier") UUID identifier,
