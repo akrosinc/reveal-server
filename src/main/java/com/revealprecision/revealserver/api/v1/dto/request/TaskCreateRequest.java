@@ -30,6 +30,4 @@ public class TaskCreateRequest {
 
   private UUID locationIdentifier;
 
-//  private LocationRequest locationRequest;
-
 }

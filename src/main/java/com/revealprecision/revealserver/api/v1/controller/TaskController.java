@@ -2,7 +2,6 @@ package com.revealprecision.revealserver.api.v1.controller;
 
 import com.revealprecision.revealserver.api.v1.dto.factory.TaskResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.TaskCreateRequest;
-import com.revealprecision.revealserver.api.v1.dto.request.TaskRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.TaskUpdateRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.CountResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.TaskResponse;
@@ -44,12 +43,13 @@ public class TaskController {
 
   @Operation(summary = "Search for Tasks", description = "Search for Tasks", tags = {"Task"})
   @GetMapping(value = "/task", produces = "application/json")
-  public ResponseEntity<Page<TaskResponse>> getTasks(@Nullable TaskSearchCriteria search, @Nullable Pageable pageable) {
+  public ResponseEntity<Page<TaskResponse>> getTasks(@Nullable TaskSearchCriteria search,
+      @Nullable Pageable pageable) {
 
     if (search != null) {
       return ResponseEntity.status(HttpStatus.OK)
           .body(TaskResponseFactory.fromPageOfEntity(taskService.searchTasks(search, pageable)));
-    } else{
+    } else {
       return ResponseEntity.status(HttpStatus.OK)
           .body(TaskResponseFactory.fromPageOfEntity(taskService.getTasks(pageable)));
     }
@@ -63,7 +63,7 @@ public class TaskController {
     if (search != null) {
       return ResponseEntity.status(HttpStatus.OK)
           .body(new CountResponse(taskService.countTasksBySearchCriteria(search)));
-    } else{
+    } else {
       return ResponseEntity.status(HttpStatus.OK)
           .body(new CountResponse(taskService.getAllTaskCount()));
     }

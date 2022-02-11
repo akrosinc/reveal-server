@@ -215,29 +215,29 @@ CREATE TABLE IF NOT EXISTS action_aud
 
 CREATE TABLE lookup_task_status
 (
-    identifier uuid NOT NULL,
-    entity_status character varying(36)  NOT NULL,
-    name character varying NOT NULL,
-    code character varying NOT NULL,
+    identifier    uuid                  NOT NULL,
+    entity_status character varying(36) NOT NULL,
+    name          character varying     NOT NULL,
+    code          character varying     NOT NULL,
     PRIMARY KEY (identifier)
 );
 
 CREATE TABLE IF NOT EXISTS task
 (
-    identifier uuid NOT NULL,
-    entity_status character varying(36)  NOT NULL,
-    created_by character varying(36)  NOT NULL,
-    created_datetime timestamp with time zone NOT NULL,
-    modified_by character varying(36)  NOT NULL,
-    modified_datetime timestamp with time zone NOT NULL,
-    priority character varying(36)  NOT NULL,
-    authored_on timestamp with time zone NOT NULL,
-    description character varying(255)  NOT NULL,
-    last_modified timestamp with time zone NOT NULL,
-    execution_period_start timestamp with time zone NOT NULL,
-    execution_period_end timestamp with time zone NOT NULL,
-    lookup_task_status_identifier uuid NOT NULL,
-    action_identifier uuid NOT NULL,
+    identifier                    uuid                     NOT NULL,
+    entity_status                 character varying(36)    NOT NULL,
+    created_by                    character varying(36)    NOT NULL,
+    created_datetime              timestamp with time zone NOT NULL,
+    modified_by                   character varying(36)    NOT NULL,
+    modified_datetime             timestamp with time zone NOT NULL,
+    priority                      character varying(36)    NOT NULL,
+    authored_on                   timestamp with time zone NOT NULL,
+    description                   character varying(255)   NOT NULL,
+    last_modified                 timestamp with time zone NOT NULL,
+    execution_period_start        timestamp with time zone NOT NULL,
+    execution_period_end          timestamp with time zone NOT NULL,
+    lookup_task_status_identifier uuid                     NOT NULL,
+    action_identifier             uuid                     NOT NULL,
     CONSTRAINT task_pkey PRIMARY KEY (identifier),
     CONSTRAINT action_identifier_fk FOREIGN KEY (action_identifier)
         REFERENCES action (identifier) MATCH SIMPLE
@@ -256,22 +256,22 @@ CREATE INDEX IF NOT EXISTS task_idx
 
 CREATE TABLE IF NOT EXISTS task_aud
 (
-    identifier             uuid                     NOT NULL,
-    rev                    integer                  NOT NULL,
-    revtype                integer,
-    entity_status character varying(36)  NOT NULL,
-    created_by character varying(36)  NOT NULL,
-    created_datetime timestamp with time zone NOT NULL,
-    modified_by character varying(36)  NOT NULL,
-    modified_datetime timestamp with time zone NOT NULL,
-    priority character varying(36)  NOT NULL,
-    authored_on timestamp with time zone NOT NULL,
-    description character varying(255)  NOT NULL,
-    last_modified timestamp with time zone NOT NULL,
-    execution_period_start timestamp with time zone NOT NULL,
-    execution_period_end timestamp with time zone NOT NULL,
-    lookup_task_status_identifier uuid NOT NULL,
-    action_identifier uuid NOT NULL,
+    identifier                    uuid                     NOT NULL,
+    rev                           integer                  NOT NULL,
+    revtype                       integer,
+    entity_status                 character varying(36)    NOT NULL,
+    created_by                    character varying(36)    NOT NULL,
+    created_datetime              timestamp with time zone NOT NULL,
+    modified_by                   character varying(36)    NOT NULL,
+    modified_datetime             timestamp with time zone NOT NULL,
+    priority                      character varying(36)    NOT NULL,
+    authored_on                   timestamp with time zone NOT NULL,
+    description                   character varying(255)   NOT NULL,
+    last_modified                 timestamp with time zone NOT NULL,
+    execution_period_start        timestamp with time zone NOT NULL,
+    execution_period_end          timestamp with time zone NOT NULL,
+    lookup_task_status_identifier uuid                     NOT NULL,
+    action_identifier             uuid                     NOT NULL,
     CONSTRAINT task_aud_pkey PRIMARY KEY (identifier, rev)
 );
 
@@ -474,8 +474,8 @@ CREATE TABLE IF NOT EXISTS location_bulk_exception_aud
 
 CREATE TABLE IF NOT EXISTS task_location
 (
-    identifier uuid NOT NULL DEFAULT uuid_generate_v4 (),
-    task_identifier uuid NOT NULL,
+    identifier          uuid NOT NULL DEFAULT uuid_generate_v4(),
+    task_identifier     uuid NOT NULL,
     location_identifier uuid NOT NULL,
     CONSTRAINT task_location_pkey PRIMARY KEY (identifier),
     CONSTRAINT task_fk FOREIGN KEY (task_identifier)
@@ -486,12 +486,12 @@ CREATE TABLE IF NOT EXISTS task_location
 
 CREATE TABLE IF NOT EXISTS task_location_aud
 (
-    identifier uuid NOT NULL  DEFAULT uuid_generate_v4 (),
-    REV                           INT                      NOT NULL,
-    REVTYPE                       INTEGER                  NULL,
-    task_identifier uuid NOT NULL,
-    location_identifier uuid NOT NULL,
-    CONSTRAINT task_location_aud_pkey PRIMARY KEY (identifier,REV)
+    identifier          uuid    NOT NULL DEFAULT uuid_generate_v4(),
+    REV                 INT     NOT NULL,
+    REVTYPE             INTEGER NULL,
+    task_identifier     uuid    NOT NULL,
+    location_identifier uuid    NOT NULL,
+    CONSTRAINT task_location_aud_pkey PRIMARY KEY (identifier, REV)
 );
 
 CREATE TABLE IF NOT EXISTS location_relationship
@@ -848,8 +848,7 @@ CREATE TABLE IF NOT EXISTS person_group_aud
         ON UPDATE NO ACTION
         ON DELETE NO ACTION
 );
-INSERT INTO lookup_task_status(
-    identifier, entity_status, name, code)
+INSERT INTO lookup_task_status(identifier, entity_status, name, code)
 VALUES (uuid_generate_v4(), 'ACTIVE', 'READY', 'READY'),
        (uuid_generate_v4(), 'ACTIVE', 'COMPLETED', 'COMPLETED'),
        (uuid_generate_v4(), 'ACTIVE', 'CANCELLED', 'CANCELLED');
