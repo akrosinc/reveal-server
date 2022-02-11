@@ -671,8 +671,24 @@
 		{
 			"name": "Delete Action",
 			"request": {
-				"method": "GET",
-				"header": []
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "{{server_url}}/api/v1/plan/7e3795ed-1735-418f-b7e8-ba976c674652/goal/9a636f01-7357-4f7e-8563-5ce690afbe2a/action/94cd0ccb-26e6-4d32-8085-1960f46764e6",
+					"host": [
+						"{{server_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"plan",
+						"7e3795ed-1735-418f-b7e8-ba976c674652",
+						"goal",
+						"9a636f01-7357-4f7e-8563-5ce690afbe2a",
+						"action",
+						"94cd0ccb-26e6-4d32-8085-1960f46764e6"
+					]
+				}
 			},
 			"response": []
 		}
