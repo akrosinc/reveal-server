@@ -41,7 +41,7 @@ public class Condition extends AbstractAuditableEntity {
 
   private String implicit_query;
 
-  @OneToMany(mappedBy = "condition", cascade = CascadeType.PERSIST)
+  @OneToMany(mappedBy = "condition", cascade = {CascadeType.PERSIST, CascadeType.REMOVE})
   private Set<Target> targets;
 
   @ManyToOne

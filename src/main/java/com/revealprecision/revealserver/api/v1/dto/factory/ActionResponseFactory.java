@@ -14,6 +14,11 @@ import org.springframework.data.domain.Pageable;
 public class ActionResponseFactory {
 
   public static ActionResponse fromEntity(Action action) {
+    var conditions = action.getConditions()
+        .stream()
+        .map(ConditionResponseFactory::fromEntity)
+        .collect(Collectors.toSet());
+
     return ActionResponse.builder()
         .identifier(action.getIdentifier())
         .title(action.getTitle())
@@ -23,6 +28,7 @@ public class ActionResponseFactory {
             .end(action.getTimingPeriodEnd())
             .build())
         .type(action.getType())
+        .conditions(conditions)
         .formIdentifier(action.getForm().getIdentifier())
         .build();
   }

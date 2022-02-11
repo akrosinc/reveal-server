@@ -1,8 +1,6 @@
 package com.revealprecision.revealserver.api.v1.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.revealprecision.revealserver.api.v1.dto.request.EffectivePeriod;
-import com.revealprecision.revealserver.enums.ActionTypeEnum;
 import com.revealprecision.revealserver.enums.EntityPropertiesEnum;
 import java.util.Set;
 import java.util.UUID;
@@ -18,14 +16,12 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class ActionResponse {
+public class ConditionResponse {
 
   private UUID identifier;
-  private String title;
-  private String description;
-  private EffectivePeriod timingPeriod;
-  private EntityPropertiesEnum subject;
-  private ActionTypeEnum type;
-  private Set<ConditionResponse> conditions;
-  private UUID formIdentifier;
+  private EntityPropertiesEnum entity;
+  private String operator;
+  private String filterValue;
+  private String entityProperty;
+  private Set<TargetResponse> targets;
 }

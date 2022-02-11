@@ -52,6 +52,14 @@ public class ActionService {
     actionRepository.save(action);
   }
 
+  public void deleteAction(UUID planIdentifier, UUID goalIdentifier, UUID actionIdentifier) {
+    Plan plan = planService.getPlanByIdentifier(planIdentifier);
+    Goal goal = goalService.findByIdentifier(goalIdentifier);
+    Action action = getByIdentifier(actionIdentifier);
+
+    actionRepository.delete(action);
+  }
+
   public Page<Action> getActions(UUID planIdentifier, UUID goalIdentifier, Pageable pageable) {
     Plan plan = planService.getPlanByIdentifier(planIdentifier);
     Goal goal = goalService.findByIdentifier(goalIdentifier);

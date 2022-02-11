@@ -56,7 +56,7 @@ public class Action extends AbstractAuditableEntity {
   @JoinColumn(name = "form_identifier")
   private Form form;
 
-  @OneToMany(mappedBy = "action", cascade = CascadeType.PERSIST)
+  @OneToMany(mappedBy = "action", cascade = {CascadeType.PERSIST, CascadeType.REMOVE})
   private Set<Condition> conditions;
 
   public Action update(ActionRequest actionRequest, Form form) {

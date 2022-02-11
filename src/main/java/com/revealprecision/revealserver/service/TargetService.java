@@ -2,6 +2,8 @@ package com.revealprecision.revealserver.service;
 
 import com.revealprecision.revealserver.api.v1.dto.request.TargetRequest;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
+import com.revealprecision.revealserver.persistence.domain.Action;
+import com.revealprecision.revealserver.persistence.domain.Condition;
 import com.revealprecision.revealserver.persistence.domain.Goal;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.Target;
@@ -21,6 +23,8 @@ public class TargetService {
   private final TargetRepository targetRepository;
   private final PlanService planService;
   private final GoalService goalService;
+  private final ActionService actionService;
+  private final ConditionService conditionService;
 
   public Target getByIdentifier(UUID identifier) {
     return targetRepository.findById(identifier).orElseThrow(() -> new NotFoundException(Pair.of(
@@ -48,13 +52,15 @@ public class TargetService {
     targetRepository.save(target);
   }
 
-  public Page<Target> getAll(UUID planIdentifier, UUID goalIdentifier, Pageable pageable) {
+  public Page<Target> getAll(UUID planIdentifier, UUID goalIdentifier, UUID actionIdentifier,
+      UUID conditionIdentifier, Pageable pageable) {
     Plan plan = planService.getPlanByIdentifier(planIdentifier);
     Goal goal = goalService.findByIdentifier(goalIdentifier);
+    Action action = actionService.getByIdentifier(actionIdentifier);
+    Condition condition = conditionService.getCondition(conditionIdentifier);
     validateData(plan, goal, null);
 
-    //return targetRepository.getAll(goalIdentifier, pageable);
-    return null;
+    return targetRepository.getAll(conditionIdentifier, pageable);
   }
 
   public void validateData(Plan plan, Goal goal, Target target) {

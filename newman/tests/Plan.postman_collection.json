@@ -84,7 +84,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"name\": \"plan1\",\r\n    \"title\": \"Title for plan1\",\r\n    \"effectivePeriod\": {\r\n        \"start\": \"2022-03-31\",\r\n        \"end\": \"2022-03-31\"\r\n    },\r\n    \"locationHierarchy\": \"afafc49a-8bec-4324-845b-a4481df485eb\",\r\n    \"interventionType\": \"a55fd499-3aff-485a-b647-7697e4af3eda\",\r\n    \"goals\": [\r\n        {\r\n            \"description\": \"Desc for goal1\",\r\n            \"priority\": \"HIGH_PRIORITY\",\r\n            \"actions\": [\r\n                {\r\n                    \"title\": \"action1\",\r\n                    \"description\": \"Desc for action1\", \r\n                    \"timingPeriod\": {\r\n                        \"start\": \"2022-03-31\",\r\n                        \"end\": \"2022-03-31\"\r\n                    },\r\n                    \"formIdentifier\": \"eb55e9e1-31ce-41cb-848a-9e40e4c782a1\",\r\n                    \"type\": \"CREATE\",\r\n                    \"conditions\": [\r\n                        {\r\n                            \"entity\": \"PERSON\",\r\n                            \"filterValue\": \"test\",\r\n                            \"operator\":\"test\",\r\n                            \"entityProperty\":\"test\",\r\n                            \"targets\": [\r\n                                {\r\n                                    \"measure\": \"mesaure1\",\r\n                                    \"detail\": {\r\n                                        \"detailQuantity\": {\r\n                                            \"value\": 90,\r\n                                            \"comparator\": \"gt;=\",\r\n                                            \"unit\": \"PERCENT\"\r\n                                        }\r\n                                    },\r\n                                    \"due\": \"2022-03-31\"\r\n                                }\r\n                            ]\r\n                        }\r\n                    ]\r\n                }\r\n            ]\r\n        }\r\n    ]\r\n}",
+					"raw": "{\r\n    \"name\": \"plan1\",\r\n    \"title\": \"Title for plan1\",\r\n    \"effectivePeriod\": {\r\n        \"start\": \"2022-03-31\",\r\n        \"end\": \"2022-03-31\"\r\n    },\r\n    \"locationHierarchy\": \"48cd6478-59c1-4467-8e02-531553cfb33f\",\r\n    \"interventionType\": \"db979426-4591-4348-b5f2-e199c531095d\",\r\n    \"goals\": [\r\n        {\r\n            \"description\": \"Desc for goal1\",\r\n            \"priority\": \"HIGH_PRIORITY\",\r\n            \"actions\": [\r\n                {\r\n                    \"title\": \"action1\",\r\n                    \"description\": \"Desc for action1\", \r\n                    \"timingPeriod\": {\r\n                        \"start\": \"2022-03-31\",\r\n                        \"end\": \"2022-03-31\"\r\n                    },\r\n                    \"formIdentifier\": \"569f772a-44c6-40ea-9958-39c5a811f45b\",\r\n                    \"type\": \"CREATE\",\r\n                    \"conditions\": [\r\n                        {\r\n                            \"entity\": \"PERSON\",\r\n                            \"filterValue\": \"test\",\r\n                            \"operator\":\"test\",\r\n                            \"entityProperty\":\"test\",\r\n                            \"targets\": [\r\n                                {\r\n                                    \"measure\": \"mesaure1\",\r\n                                    \"detail\": {\r\n                                        \"detailQuantity\": {\r\n                                            \"value\": 90,\r\n                                            \"comparator\": \"gt;=\",\r\n                                            \"unit\": \"PERCENT\"\r\n                                        }\r\n                                    },\r\n                                    \"due\": \"2022-03-31\"\r\n                                }\r\n                            ]\r\n                        }\r\n                    ]\r\n                }\r\n            ]\r\n        }\r\n    ]\r\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -122,7 +122,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"identifier\": \"goal3\",\r\n    \"description\": \"Desc for goal1\",\r\n    \"priority\": \"HIGH_PRIORITY\",\r\n    \"targets\": [\r\n        {\r\n            \"measure\": \"mesaure1\",\r\n            \"detail\": {\r\n                \"detailQuantity\": {\r\n                    \"value\": 90,\r\n                    \"comparator\": \"gt;=\",\r\n                    \"unit\": \"PERCENT\"\r\n                }\r\n            },\r\n            \"due\": \"2022-01-13\"\r\n        }\r\n    ]\r\n}",
+					"raw": "{\r\n    \"description\": \"Desc for goal1\",\r\n    \"priority\": \"HIGH_PRIORITY\"\r\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -130,7 +130,7 @@
 					}
 				},
 				"url": {
-					"raw": "{{server_url}}/api/v1/plan/8960ace1-0585-4d91-a0ab-03801bc8183b/goal",
+					"raw": "{{server_url}}/api/v1/plan/7e3795ed-1735-418f-b7e8-ba976c674652/goal",
 					"host": [
 						"{{server_url}}"
 					],
@@ -138,7 +138,7 @@
 						"api",
 						"v1",
 						"plan",
-						"8960ace1-0585-4d91-a0ab-03801bc8183b",
+						"7e3795ed-1735-418f-b7e8-ba976c674652",
 						"goal"
 					]
 				}
@@ -173,7 +173,7 @@
 					}
 				},
 				"url": {
-					"raw": "{{server_url}}/api/v1/plan/070bbc3e-1ddf-4457-9e70-0bffc9db7bed/goal",
+					"raw": "{{server_url}}/api/v1/plan/7e3795ed-1735-418f-b7e8-ba976c674652/goal",
 					"host": [
 						"{{server_url}}"
 					],
@@ -181,7 +181,7 @@
 						"api",
 						"v1",
 						"plan",
-						"070bbc3e-1ddf-4457-9e70-0bffc9db7bed",
+						"7e3795ed-1735-418f-b7e8-ba976c674652",
 						"goal"
 					]
 				}
@@ -205,7 +205,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"description\": \"NEW DESC\",\r\n    \"priority\": \"HIGH_PRIORITY\",\r\n    \"targets\": [\r\n        {\r\n            \"measure\": \"mesaure1\",\r\n            \"detail\": {\r\n                \"detailQuantity\": {\r\n                    \"value\": 90,\r\n                    \"comparator\": \"gt;=\",\r\n                    \"unit\": \"PERCENT\"\r\n                }\r\n            },\r\n            \"due\": \"2022-01-13\"\r\n        }\r\n    ]\r\n}",
+					"raw": "{\r\n    \"description\": \"Desc for goal2\",\r\n    \"priority\": \"LOW_PRIORITY\"\r\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -213,7 +213,7 @@
 					}
 				},
 				"url": {
-					"raw": "{{server_url}}/api/v1/plan/8ffb5ba3-3885-4332-aa6d-2cdc5b15b8b7/goal/goal3",
+					"raw": "{{server_url}}/api/v1/plan/7e3795ed-1735-418f-b7e8-ba976c674652/goal/634c79da-a637-4a5a-953c-a15ce6ad0ef0",
 					"host": [
 						"{{server_url}}"
 					],
@@ -221,9 +221,9 @@
 						"api",
 						"v1",
 						"plan",
-						"8ffb5ba3-3885-4332-aa6d-2cdc5b15b8b7",
+						"7e3795ed-1735-418f-b7e8-ba976c674652",
 						"goal",
-						"goal3"
+						"634c79da-a637-4a5a-953c-a15ce6ad0ef0"
 					]
 				}
 			},
@@ -246,7 +246,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"title\": \"action2\",\r\n    \"description\": \"Desc for action1\",\r\n    \"code\": \"code\",\r\n    \"goalId\": \"goal3\",\r\n    \"timingPeriod\": {\r\n        \"start\": \"2022-01-18\",\r\n        \"end\": \"2022-01-18\"\r\n    },\r\n    \"reason\": \"Routine\",\r\n    \"subjectCodableConcept\": {\r\n        \"text\": \"LOCATION\"\r\n    },\r\n    \"definitionUri\": \"form1\",\r\n    \"type\": \"CREATE\"\r\n}",
+					"raw": "{\r\n    \"title\": \"action4\",\r\n    \"description\": \"Desc for action4\",\r\n    \"timingPeriod\": {\r\n        \"start\": \"2022-03-31\",\r\n        \"end\": \"2022-03-31\"\r\n    },\r\n    \"formIdentifier\": \"569f772a-44c6-40ea-9958-39c5a811f45b\",\r\n    \"type\": \"CREATE\"\r\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -254,7 +254,7 @@
 					}
 				},
 				"url": {
-					"raw": "{{server_url}}/api/v1/plan/aad6f38f-b34c-4386-997a-ee84005f8ed8/goal/goal2/action",
+					"raw": "{{server_url}}/api/v1/plan/7e3795ed-1735-418f-b7e8-ba976c674652/goal/634c79da-a637-4a5a-953c-a15ce6ad0ef0/action",
 					"host": [
 						"{{server_url}}"
 					],
@@ -262,9 +262,9 @@
 						"api",
 						"v1",
 						"plan",
-						"aad6f38f-b34c-4386-997a-ee84005f8ed8",
+						"7e3795ed-1735-418f-b7e8-ba976c674652",
 						"goal",
-						"goal2",
+						"634c79da-a637-4a5a-953c-a15ce6ad0ef0",
 						"action"
 					]
 				}
@@ -299,7 +299,7 @@
 					}
 				},
 				"url": {
-					"raw": "{{server_url}}/api/v1/plan/aad6f38f-b34c-4386-997a-ee84005f8ed8/goal/goal2/action",
+					"raw": "{{server_url}}/api/v1/plan/7e3795ed-1735-418f-b7e8-ba976c674652/goal/9a636f01-7357-4f7e-8563-5ce690afbe2a/action",
 					"host": [
 						"{{server_url}}"
 					],
@@ -307,9 +307,9 @@
 						"api",
 						"v1",
 						"plan",
-						"aad6f38f-b34c-4386-997a-ee84005f8ed8",
+						"7e3795ed-1735-418f-b7e8-ba976c674652",
 						"goal",
-						"goal2",
+						"9a636f01-7357-4f7e-8563-5ce690afbe2a",
 						"action"
 					]
 				}
@@ -341,7 +341,7 @@
 					}
 				},
 				"url": {
-					"raw": "{{server_url}}/api/v1/plan/aad6f38f-b34c-4386-997a-ee84005f8ed8/goal/goal2/action/5f258d30-711e-4e27-956f-2474e1a539fc",
+					"raw": "{{server_url}}/api/v1/plan/7e3795ed-1735-418f-b7e8-ba976c674652/goal/634c79da-a637-4a5a-953c-a15ce6ad0ef0/action/",
 					"host": [
 						"{{server_url}}"
 					],
@@ -349,11 +349,11 @@
 						"api",
 						"v1",
 						"plan",
-						"aad6f38f-b34c-4386-997a-ee84005f8ed8",
+						"7e3795ed-1735-418f-b7e8-ba976c674652",
 						"goal",
-						"goal2",
+						"634c79da-a637-4a5a-953c-a15ce6ad0ef0",
 						"action",
-						"5f258d30-711e-4e27-956f-2474e1a539fc"
+						""
 					]
 				}
 			},
@@ -415,7 +415,7 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "{{server_url}}/api/v1/plan/aad6f38f-b34c-4386-997a-ee84005f8ed8/goal/goal1/target",
+					"raw": "{{server_url}}/api/v1/plan/7e3795ed-1735-418f-b7e8-ba976c674652/goal/9a636f01-7357-4f7e-8563-5ce690afbe2a/action/94cd0ccb-26e6-4d32-8085-1960f46764e6/condition/d1e80167-02e9-40d3-af6a-4de1aaab72c0/target",
 					"host": [
 						"{{server_url}}"
 					],
@@ -423,9 +423,13 @@
 						"api",
 						"v1",
 						"plan",
-						"aad6f38f-b34c-4386-997a-ee84005f8ed8",
+						"7e3795ed-1735-418f-b7e8-ba976c674652",
 						"goal",
-						"goal1",
+						"9a636f01-7357-4f7e-8563-5ce690afbe2a",
+						"action",
+						"94cd0ccb-26e6-4d32-8085-1960f46764e6",
+						"condition",
+						"d1e80167-02e9-40d3-af6a-4de1aaab72c0",
 						"target"
 					]
 				}
@@ -514,6 +518,161 @@
 						"e0f7b880-7a04-4b2c-8f5e-2b9fe71e007d"
 					]
 				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Conditions",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{server_url}}/api/v1/plan/7e3795ed-1735-418f-b7e8-ba976c674652/goal/9a636f01-7357-4f7e-8563-5ce690afbe2a/action/94cd0ccb-26e6-4d32-8085-1960f46764e6/condition",
+					"host": [
+						"{{server_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"plan",
+						"7e3795ed-1735-418f-b7e8-ba976c674652",
+						"goal",
+						"9a636f01-7357-4f7e-8563-5ce690afbe2a",
+						"action",
+						"94cd0ccb-26e6-4d32-8085-1960f46764e6",
+						"condition"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Plan By Identifier",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{server_url}}/api/v1/plan/7e3795ed-1735-418f-b7e8-ba976c674652",
+					"host": [
+						"{{server_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"plan",
+						"7e3795ed-1735-418f-b7e8-ba976c674652"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create Condition",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{auth_bearer_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"entity\": \"PERSON\",\r\n    \"filterValue\": \"test\",\r\n    \"operator\": \"test\",\r\n    \"entityProperty\": \"test\",\r\n    \"targets\": [\r\n        {\r\n            \"measure\": \"mesaure2\",\r\n            \"detail\": {\r\n                \"detailQuantity\": {\r\n                    \"value\": 90,\r\n                    \"comparator\": \"gt;=\",\r\n                    \"unit\": \"PERCENT\"\r\n                }\r\n            },\r\n            \"due\": \"2022-03-31\"\r\n        }\r\n    ]\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{server_url}}/api/v1/plan/7e3795ed-1735-418f-b7e8-ba976c674652/goal/9a636f01-7357-4f7e-8563-5ce690afbe2a/action/94cd0ccb-26e6-4d32-8085-1960f46764e6/condition",
+					"host": [
+						"{{server_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"plan",
+						"7e3795ed-1735-418f-b7e8-ba976c674652",
+						"goal",
+						"9a636f01-7357-4f7e-8563-5ce690afbe2a",
+						"action",
+						"94cd0ccb-26e6-4d32-8085-1960f46764e6",
+						"condition"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete Goal",
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "{{server_url}}/api/v1/plan/7e3795ed-1735-418f-b7e8-ba976c674652/goal/634c79da-a637-4a5a-953c-a15ce6ad0ef0",
+					"host": [
+						"{{server_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"plan",
+						"7e3795ed-1735-418f-b7e8-ba976c674652",
+						"goal",
+						"634c79da-a637-4a5a-953c-a15ce6ad0ef0"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete Condition",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{auth_bearer_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "{{server_url}}/api/v1/plan/7e3795ed-1735-418f-b7e8-ba976c674652/goal/9a636f01-7357-4f7e-8563-5ce690afbe2a/action/94cd0ccb-26e6-4d32-8085-1960f46764e6/condition/af0cfef7-d0b6-4801-99dd-6ab1eaa4798a",
+					"host": [
+						"{{server_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"plan",
+						"7e3795ed-1735-418f-b7e8-ba976c674652",
+						"goal",
+						"9a636f01-7357-4f7e-8563-5ce690afbe2a",
+						"action",
+						"94cd0ccb-26e6-4d32-8085-1960f46764e6",
+						"condition",
+						"af0cfef7-d0b6-4801-99dd-6ab1eaa4798a"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete Action",
+			"request": {
+				"method": "GET",
+				"header": []
 			},
 			"response": []
 		}
