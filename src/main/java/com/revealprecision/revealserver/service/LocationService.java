@@ -4,11 +4,9 @@ import com.revealprecision.revealserver.api.v1.dto.request.LocationRequest;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.GeographicLevel;
-import com.revealprecision.revealserver.persistence.domain.GeographicLevel.Fields;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.repository.LocationRepository;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import org.jobrunr.scheduling.JobScheduler;
 import org.springframework.data.domain.Page;
@@ -35,22 +33,16 @@ public class LocationService {
   }
 
   public Location createLocation(LocationRequest locationRequest) {
-    Optional<GeographicLevel> geographicLevel = geographicLevelService
-        .findByName(locationRequest.getProperties().getGeographicLevel());
-    if (!geographicLevel.isPresent()) {
-      throw new NotFoundException(
-          Pair.of(Fields.name, locationRequest.getProperties().getGeographicLevel()),
-          GeographicLevel.class);
-    }
-    var locationToSave = Location.builder().geographicLevel(geographicLevel.get())
+    GeographicLevel geographicLevel = geographicLevelService.findByName(
+        locationRequest.getProperties().getGeographicLevel());
+    var locationToSave = Location.builder().geographicLevel(geographicLevel)
         .type(locationRequest.getType())
         .geometry(locationRequest.getGeometry()).name(locationRequest.getProperties().getName())
         .status(locationRequest.getProperties().getStatus())
         .externalId(locationRequest.getProperties().getExternalId()).build();
     locationToSave.setEntityStatus(EntityStatus.ACTIVE);
     var savedLocation = locationRepository.save(locationToSave);
-    jobScheduler.enqueue(
-        () -> locationRelationshipService.updateLocationRelationshipsForNewLocation(savedLocation));
+    locationRelationshipService.updateLocationRelationshipsForNewLocation(savedLocation);
     return savedLocation;
   }
 
@@ -78,10 +70,7 @@ public class LocationService {
   public Location updateLocation(UUID identifier, LocationRequest locationRequest) {
     Location location = findByIdentifier(identifier);
     GeographicLevel geographicLevel = geographicLevelService
-        .findByName(locationRequest.getProperties().getGeographicLevel())
-        .orElseThrow(() -> new NotFoundException(
-            Pair.of(Fields.name, locationRequest.getProperties().getGeographicLevel()),
-            GeographicLevel.class));
+        .findByName(locationRequest.getProperties().getGeographicLevel());
     return locationRepository.save(location.update(locationRequest, geographicLevel));
   }
 

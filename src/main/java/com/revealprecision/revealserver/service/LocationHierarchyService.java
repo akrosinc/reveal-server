@@ -8,8 +8,6 @@ import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.exceptions.ConflictException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.exceptions.constant.Error;
-import com.revealprecision.revealserver.persistence.domain.GeographicLevel;
-import com.revealprecision.revealserver.persistence.domain.GeographicLevel.Fields;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
 import com.revealprecision.revealserver.persistence.repository.LocationHierarchyRepository;
@@ -46,7 +44,7 @@ public class LocationHierarchyService {
   public LocationHierarchy createLocationHierarchy(
       LocationHierarchyRequest locationHierarchyRequest) {
 
-    validateGeographicLevels(locationHierarchyRequest);
+    geographicLevelService.validateGeographyLevels(locationHierarchyRequest.getNodeOrder());
 
     validateLocationHierarchy(locationHierarchyRequest);
 
@@ -55,8 +53,7 @@ public class LocationHierarchyService {
         .build();
     locationHierarchyToSave.setEntityStatus(EntityStatus.ACTIVE);
     var savedLocationHierarchy = locationHierarchyRepository.save(locationHierarchyToSave);
-    jobScheduler.enqueue(
-        () -> locationRelationshipService.createLocationRelationships(savedLocationHierarchy));
+    locationRelationshipService.createLocationRelationships(savedLocationHierarchy);
     return savedLocationHierarchy;
   }
 
@@ -68,14 +65,6 @@ public class LocationHierarchyService {
           String.format(Error.NON_UNIQUE, LocationHierarchy.Fields.nodeOrder,
               locationHierarchyRequest.getNodeOrder()));
     }
-  }
-
-  private void validateGeographicLevels(LocationHierarchyRequest locationHierarchyRequest) {
-    locationHierarchyRequest.getNodeOrder().stream().forEach(nodeName -> {
-      if (!geographicLevelService.findByName(nodeName).isPresent()) {
-        throw new NotFoundException(Pair.of(Fields.name, nodeName), GeographicLevel.class);
-      }
-    });
   }
 
   public Page<LocationHierarchy> getLocationHierarchies(Pageable pageable) {

@@ -23,6 +23,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -43,6 +44,8 @@ public class LocationRelationshipService {
     this.locationHierarchyRepository = locationHierarchyRepository;
   }
 
+
+  @Async
   public void createLocationRelationships(LocationHierarchy locationHierarchy) {
 
     List<String> nodes = locationHierarchy.getNodeOrder();
@@ -101,7 +104,7 @@ public class LocationRelationshipService {
 
       Integer nodePosition =
           locationHierarchy.getNodeOrder().indexOf(location.getGeographicLevel().getName()) - 1;
-      if (nodePosition < locationHierarchy.getNodeOrder().size() && nodePosition > 0) {
+      if (nodePosition < locationHierarchy.getNodeOrder().size() && nodePosition >= 0) {
         var parentGeographicLevelName = locationHierarchy.getNodeOrder()
             .get(nodePosition);
 
@@ -114,6 +117,8 @@ public class LocationRelationshipService {
         upperGeographicLevelLocations.stream().forEach(
             parentLocation -> createParentChildRelationship(parentLocation, location,
                 locationHierarchy));
+      } else if (nodePosition == -1) {
+        createRelationshipForRoot(location, locationHierarchy);
       }
 
       nodePosition =
@@ -158,6 +163,17 @@ public class LocationRelationshipService {
   }
 
 
+  private void createRelationshipForRoot(Location location, LocationHierarchy locationHierarchy) {
+    LocationRelationship locationRelationship = LocationRelationship.builder()
+        .location(location)
+        .locationHierarchy(locationHierarchy)
+        .ancestry(new ArrayList<>())
+        .build();
+    locationRelationship.setEntityStatus(EntityStatus.ACTIVE);
+    locationRelationshipRepository.save(locationRelationship);
+  }
+
+
   private List<UUID> getAncestryFromParentLocation(Location parentLocation,
       LocationHierarchy locationHierarchy) {
     List<UUID> ancestry = new ArrayList<>();
@@ -187,6 +203,33 @@ public class LocationRelationshipService {
     checkLocations.removeAll(foundLocations);
     if (checkLocations.size() > 0) {
       throw new NotFoundException("Locations: " + locations + " not found");
+    }
+  }
+
+  @Async
+  public void createRelationshipForImportedLocation(Location location) {
+    var locationHierarchies = locationHierarchyRepository
+        .findLocationHierarchiesByNodeOrderContaining(location.getGeographicLevel().getName());
+    for (var locationHierarchy : locationHierarchies) {
+
+      Integer nodePosition =
+          locationHierarchy.getNodeOrder().indexOf(location.getGeographicLevel().getName()) - 1;
+      if (nodePosition < locationHierarchy.getNodeOrder().size() && nodePosition >= 0) {
+        var parentGeographicLevelName = locationHierarchy.getNodeOrder()
+            .get(nodePosition);
+
+        var parentGeographicLevel = geographicLevelRepository.findByName(parentGeographicLevelName);
+
+        var upperGeographicLevelLocations = locationRepository
+            .findByGeographicLevelIdentifier(parentGeographicLevel.get()
+                .getIdentifier());
+
+        upperGeographicLevelLocations.stream().forEach(
+            parentLocation -> createParentChildRelationship(parentLocation, location,
+                locationHierarchy));
+      } else if (nodePosition == -1) {
+        createRelationshipForRoot(location, locationHierarchy);
+      }
     }
   }
 }

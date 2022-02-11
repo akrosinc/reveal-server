@@ -59,10 +59,6 @@ public class Plan extends AbstractAuditableEntity {
   @OneToMany(mappedBy = "plan", cascade = CascadeType.ALL)
   private Set<Goal> goals;
 
-//  @ManyToOne
-//  @JoinColumn(name = "lookup_plan_status_identifier")
-//  private LookupPlanStatus status;
-
   @NotNull
   private PlanStatusEnum status;
 
