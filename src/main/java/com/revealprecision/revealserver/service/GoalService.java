@@ -45,6 +45,13 @@ public class GoalService {
     goalRepository.save(goal);
   }
 
+  public void deleteGoal(UUID identifier, UUID planIdentifier) {
+    Plan plan = planService.getPlanByIdentifier(planIdentifier);
+    Goal goal = findByIdentifier(identifier);
+
+    goalRepository.delete(goal);
+  }
+
   public Page<Goal> getGoals(UUID identifier, Pageable pageable) {
     return goalRepository.getAllFromPlan(identifier, pageable);
   }
