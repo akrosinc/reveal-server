@@ -96,7 +96,11 @@ public class PlanService {
 
   public void updatePlan(PlanRequest request, UUID identifier) {
     Plan plan = getPlanByIdentifier(identifier);
-    plan.update(request);
+    LocationHierarchy hierarchy = locationHierarchyService.findByIdentifier(
+        request.getLocationHierarchy());
+    LookupInterventionType interventionType = lookupInterventionTypeService.findByIdentifier(
+        request.getInterventionType());
+    plan.update(request, hierarchy, interventionType);
     planRepository.save(plan);
   }
 
