@@ -28,17 +28,11 @@ public class PlanRequest {
   @Valid
   private EffectivePeriod effectivePeriod;
 
-//  @NotEmpty
-//  @Valid
-//  private Set<Context> useContext;
-
   @NotNull
   private UUID interventionType;
 
   @NotNull
   private UUID locationHierarchy;
-
-//  private List<Jurisdiction> jurisdictions;
 
   @NotNull
   private Set<UUID> jurisdictions;

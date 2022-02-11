@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.api.v1.dto.factory;
 
 import com.revealprecision.revealserver.api.v1.dto.request.EffectivePeriod;
+import com.revealprecision.revealserver.api.v1.dto.response.LocationHierarchyResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.PlanResponse;
 import com.revealprecision.revealserver.enums.SummaryEnum;
 import com.revealprecision.revealserver.persistence.domain.Plan;
@@ -26,7 +27,14 @@ public class PlanResponseFactory {
             .end(plan.getEffectivePeriodEnd()).build())
         .name(plan.getName())
         .title(plan.getTitle())
-        //.interventionType(plan.getInterventionType())
+        .locationHierarchy(
+            LocationHierarchyResponse.builder()
+                .identifier(plan.getLocationHierarchy().getIdentifier())
+                .name(plan.getLocationHierarchy().getName())
+                .build())
+        .status(plan.getStatus())
+        .interventionType(
+            LookupInterventionTypeResponseFactory.fromEntity(plan.getInterventionType()))
         .goals(goals)
         .build();
   }
@@ -39,7 +47,14 @@ public class PlanResponseFactory {
             .end(plan.getEffectivePeriodEnd()).build())
         .name(plan.getName())
         .title(plan.getTitle())
-        //.interventionType(plan.getInterventionType())
+        .locationHierarchy(
+            LocationHierarchyResponse.builder()
+                .identifier(plan.getLocationHierarchy().getIdentifier())
+                .name(plan.getLocationHierarchy().getName())
+                .build())
+        .status(plan.getStatus())
+        .interventionType(
+            LookupInterventionTypeResponseFactory.fromEntity(plan.getInterventionType()))
         .build();
   }
 

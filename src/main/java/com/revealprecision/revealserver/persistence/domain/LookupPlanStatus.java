@@ -34,7 +34,4 @@ public class LookupPlanStatus extends AbstractAuditableEntity {
 
   @Column(nullable = false)
   private String description;
-
-//  @OneToMany(mappedBy = "status")
-//  private Set<Plan> plans;
 }
