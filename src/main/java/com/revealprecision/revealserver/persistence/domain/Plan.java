@@ -70,12 +70,15 @@ public class Plan extends AbstractAuditableEntity {
   @JoinColumn(name = "lookup_intervention_type_identifier")
   private LookupInterventionType interventionType;
 
-  public Plan update(PlanRequest request) {
+  public Plan update(PlanRequest request, LocationHierarchy hierarchy,
+      LookupInterventionType interventionType) {
     this.title = request.getTitle();
     this.name = request.getName();
     this.date = LocalDate.now();
     this.effectivePeriodStart = request.getEffectivePeriod().getStart();
     this.effectivePeriodEnd = request.getEffectivePeriod().getEnd();
+    this.locationHierarchy = hierarchy;
+    this.interventionType = interventionType;
     return this;
   }
 }
