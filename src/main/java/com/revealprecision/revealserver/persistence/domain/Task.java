@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.revealprecision.revealserver.enums.TaskPriorityEnum;
 import java.time.LocalDateTime;
 import java.util.Date;
-import java.util.Set;
 import java.util.UUID;
 import javax.persistence.CascadeType;
 import javax.persistence.Entity;
@@ -15,9 +14,7 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
-import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
 import javax.persistence.OneToOne;
 import javax.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -47,7 +44,7 @@ public class Task extends AbstractAuditableEntity {
   @NotNull(message = "identifier can not be null")
   private UUID identifier;
 
-  @ManyToOne(fetch = FetchType.EAGER,cascade = CascadeType.ALL)
+  @ManyToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
   @JoinColumn(name = "lookup_task_status_identifier", referencedColumnName = "identifier", nullable = false)
   private LookupTaskStatus lookupTaskStatus;
 

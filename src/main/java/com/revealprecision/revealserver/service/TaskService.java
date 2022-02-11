@@ -19,9 +19,7 @@ import com.revealprecision.revealserver.service.models.TaskSearchCriteria;
 import java.sql.Date;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -77,14 +75,14 @@ public class TaskService {
     LookupTaskStatus lookupTaskStatus = lookupTaskStatusRepository.getById(
         taskRequest.getLookupTaskStatusIdentifier());
 
-
     List<Task> tasks = taskRepository.findTasksByAction_IdentifierAndLocation_Identifier(
         taskRequest.getActionIdentifier(), taskRequest.getLocationIdentifier());
 
-    if (!tasks.isEmpty()){
+    if (!tasks.isEmpty()) {
       throw new DuplicateTaskCreationException(
           "Task for action id ".concat(taskRequest.getActionIdentifier().toString())
-              .concat(" and ").concat(taskRequest.getLocationIdentifier().toString()).concat(" already exists"));
+              .concat(" and ").concat(taskRequest.getLocationIdentifier().toString())
+              .concat(" already exists"));
     }
 
     Task task = TaskEntityFactory.entityFromRequestObj(taskRequest, action, lookupTaskStatus);
