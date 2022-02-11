@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.persistence.domain;
 
+import com.revealprecision.revealserver.api.v1.dto.request.PlanRequest;
 import com.revealprecision.revealserver.enums.PlanStatusEnum;
 import java.time.LocalDate;
 import java.util.Set;
@@ -68,4 +69,13 @@ public class Plan extends AbstractAuditableEntity {
   @ManyToOne
   @JoinColumn(name = "lookup_intervention_type_identifier")
   private LookupInterventionType interventionType;
+
+  public Plan update(PlanRequest request) {
+    this.title = request.getTitle();
+    this.name = request.getName();
+    this.date = LocalDate.now();
+    this.effectivePeriodStart = request.getEffectivePeriod().getStart();
+    this.effectivePeriodEnd = request.getEffectivePeriod().getEnd();
+    return this;
+  }
 }

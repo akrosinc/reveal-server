@@ -5,6 +5,7 @@ import com.revealprecision.revealserver.api.v1.dto.factory.PlanEntityFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.PlanRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.ErrorResponse;
 import com.revealprecision.revealserver.enums.EntityStatus;
+import com.revealprecision.revealserver.enums.PlanStatusEnum;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.Action;
 import com.revealprecision.revealserver.persistence.domain.Condition;
@@ -89,12 +90,18 @@ public class PlanService {
     Plan plan = getPlanByIdentifier(planIdentifier);
     boolean valid = true;
     ErrorResponse errorResponse = new ErrorResponse();
+    plan.setStatus(PlanStatusEnum.ACTIVE);
+    planRepository.save(plan);
+  }
 
-
+  public void updatePlan(PlanRequest request, UUID identifier) {
+    Plan plan = getPlanByIdentifier(identifier);
+    plan.update(request);
+    planRepository.save(plan);
   }
 
   public void checkPlanDetails(Plan plan, ErrorResponse errorResponse) {
     //TODO check validation for Dates
-    
+
   }
 }
