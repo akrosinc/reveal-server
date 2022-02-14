@@ -122,4 +122,8 @@ public class TaskService {
 
     return taskRepository.save(taskToUpdate);
   }
+
+  public List<LookupTaskStatus> getAllTaskStatus(){
+    return lookupTaskStatusRepository.findAll();
+  }
 }

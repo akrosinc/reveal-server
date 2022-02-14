@@ -215,7 +215,7 @@ CREATE TABLE IF NOT EXISTS action_aud
 
 CREATE TABLE lookup_task_status
 (
-    identifier    uuid                  NOT NULL,
+    identifier    uuid                  NOT NULL DEFAULT uuid_generate_v4(),
     entity_status character varying(36) NOT NULL,
     name          character varying     NOT NULL,
     code          character varying     NOT NULL,

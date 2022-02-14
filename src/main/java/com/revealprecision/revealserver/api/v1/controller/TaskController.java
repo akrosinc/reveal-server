@@ -6,11 +6,15 @@ import com.revealprecision.revealserver.api.v1.dto.request.TaskUpdateRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.CountResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.TaskResponse;
 import com.revealprecision.revealserver.enums.SummaryEnum;
+import com.revealprecision.revealserver.persistence.domain.LookupTaskStatus;
 import com.revealprecision.revealserver.service.TaskService;
 import com.revealprecision.revealserver.service.models.TaskSearchCriteria;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -30,7 +34,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/")
+@RequestMapping("/api/v1/task/")
 @Slf4j
 public class TaskController {
 
@@ -42,7 +46,7 @@ public class TaskController {
   }
 
   @Operation(summary = "Search for Tasks", description = "Search for Tasks", tags = {"Task"})
-  @GetMapping(value = "/task", produces = "application/json")
+  @GetMapping(produces = "application/json")
   public ResponseEntity<Page<TaskResponse>> getTasks(@Nullable TaskSearchCriteria search,
       @Nullable Pageable pageable) {
 
@@ -56,7 +60,7 @@ public class TaskController {
   }
 
   @Operation(summary = "Search for Tasks", description = "Search for Tasks", tags = {"Task"})
-  @GetMapping(value = "/task", produces = "application/json", params = {"_summary=COUNT"})
+  @GetMapping(produces = "application/json", params = {"_summary=COUNT"})
   public ResponseEntity<CountResponse> getTaskCount(@Nullable TaskSearchCriteria search,
       @RequestParam("_summary") @Nullable SummaryEnum summaryEnum) {
 
@@ -68,11 +72,18 @@ public class TaskController {
           .body(new CountResponse(taskService.getAllTaskCount()));
     }
   }
+  @Operation(summary = "Retrieve all Task Statuses", description = "Retrieve all Task Statuses", tags = {"Task"})
+  @GetMapping(value = "/status",produces = "application/json")
+  public ResponseEntity<List<LookupTaskStatus>> getAllTaskStatuses() {
+
+    return ResponseEntity.status(HttpStatus.OK).body(taskService.getAllTaskStatus());
+
+  }
 
   @Operation(summary = "Fetch a Task by identifier", description = "Fetch a Task by identifier", tags = {
       "Task"})
   @ResponseStatus(HttpStatus.OK)
-  @GetMapping(value = "/task/{identifier}", produces = "application/json")
+  @GetMapping(value = "/{identifier}", produces = "application/json")
   public TaskResponse getTaskByIdentifier(
       @Parameter(description = "Task identifier") @PathVariable("identifier") UUID taskIdentifier) {
     return TaskResponseFactory.fromEntity(taskService.getTaskByIdentifier(taskIdentifier));
@@ -80,14 +91,14 @@ public class TaskController {
 
   @Operation(summary = "Create a task", description = "Create a Task", tags = {"Task"})
   @ResponseStatus(HttpStatus.CREATED)
-  @PostMapping(value = "/task", consumes = "application/json", produces = "application/json")
+  @PostMapping( consumes = "application/json", produces = "application/json")
   public TaskResponse createTask(@Validated @RequestBody TaskCreateRequest taskRequest) {
     return TaskResponseFactory.fromEntity(taskService.createTask(taskRequest));
   }
 
   @Operation(summary = "Update a task", description = "Update a Task", tags = {"Task"})
   @ResponseStatus(HttpStatus.CREATED)
-  @PutMapping(value = "/task/{identifier}", consumes = "application/json", produces = "application/json")
+  @PutMapping(value = "/{identifier}", consumes = "application/json", produces = "application/json")
   public TaskResponse updateTask(
       @Parameter(description = "GUID task identifier") @PathVariable("identifier") UUID identifier,
       @Validated @RequestBody TaskUpdateRequest taskUpdateRequest) {
