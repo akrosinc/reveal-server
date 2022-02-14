@@ -1,7 +1,7 @@
 package com.revealprecision.revealserver.api.v1.dto.factory;
 
+import com.revealprecision.revealserver.api.v1.dto.request.EffectivePeriod;
 import com.revealprecision.revealserver.api.v1.dto.response.ActionResponse;
-import com.revealprecision.revealserver.api.v1.dto.response.FormResponse;
 import com.revealprecision.revealserver.persistence.domain.Action;
 import java.util.stream.Collectors;
 import lombok.AccessLevel;
@@ -14,18 +14,22 @@ import org.springframework.data.domain.Pageable;
 public class ActionResponseFactory {
 
   public static ActionResponse fromEntity(Action action) {
+    var conditions = action.getConditions()
+        .stream()
+        .map(ConditionResponseFactory::fromEntity)
+        .collect(Collectors.toSet());
+
     return ActionResponse.builder()
         .identifier(action.getIdentifier())
         .title(action.getTitle())
         .description(action.getDescription())
-        .timingPeriodStart(action.getTimingPeriodStart())
-        .timingPeriodEnd(action.getTimingPeriodEnd())
-        .reason(action.getReason())
-        .type(action.getType())
-        .form(FormResponse.builder()
-            .identifier(action.getForm().getIdentifier())
-            .name(action.getForm().getName())
+        .timingPeriod(EffectivePeriod.builder()
+            .start(action.getTimingPeriodStart())
+            .end(action.getTimingPeriodEnd())
             .build())
+        .type(action.getType())
+        .conditions(conditions)
+        .formIdentifier(action.getForm().getIdentifier())
         .build();
   }
 

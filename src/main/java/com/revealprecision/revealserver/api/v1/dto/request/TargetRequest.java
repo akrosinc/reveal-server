@@ -1,7 +1,6 @@
 package com.revealprecision.revealserver.api.v1.dto.request;
 
 import java.time.LocalDate;
-import javax.validation.Valid;
 import javax.validation.constraints.FutureOrPresent;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
@@ -18,8 +17,7 @@ public class TargetRequest {
 
   @NotBlank
   private String measure;
-
-  @Valid
+  
   private Detail detail;
 
   @FutureOrPresent

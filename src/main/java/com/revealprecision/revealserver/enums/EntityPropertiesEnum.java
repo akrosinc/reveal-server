@@ -1,6 +1,6 @@
 package com.revealprecision.revealserver.enums;
 
-public enum ActionSubjectEnum {
+public enum EntityPropertiesEnum {
   LOCATION,
   PERSON
 }

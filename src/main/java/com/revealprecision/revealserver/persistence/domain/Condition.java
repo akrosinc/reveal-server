@@ -1,13 +1,9 @@
 package com.revealprecision.revealserver.persistence.domain;
 
-import com.revealprecision.revealserver.api.v1.dto.request.GoalUpdateRequest;
-import com.revealprecision.revealserver.enums.PriorityEnum;
 import java.util.Set;
 import java.util.UUID;
 import javax.persistence.CascadeType;
 import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
@@ -18,7 +14,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.ToString;
 import lombok.experimental.FieldNameConstants;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
@@ -32,29 +27,24 @@ import org.hibernate.envers.Audited;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@SQLDelete(sql = "UPDATE goal SET entity_status = 'DELETED' where identifier=?")
+@SQLDelete(sql = "UPDATE condition SET entity_status = 'DELETED' where identifier=?")
 @Where(clause = "entity_status='ACTIVE'")
-public class Goal extends AbstractAuditableEntity {
+public class Condition extends AbstractAuditableEntity {
 
   @Id
   @GeneratedValue
   private UUID identifier;
 
-  private String description;
+  private String name;
 
-  @Enumerated(EnumType.STRING)
-  private PriorityEnum priority;
+  private String query;
+
+  private String implicit_query;
+
+  @OneToMany(mappedBy = "condition", cascade = {CascadeType.PERSIST, CascadeType.REMOVE})
+  private Set<Target> targets;
 
   @ManyToOne
-  @JoinColumn(name = "plan_identifier", nullable = false)
-  private Plan plan;
-
-  @OneToMany(mappedBy = "goal", cascade = CascadeType.ALL)
-  private Set<Action> actions;
-
-  public Goal update(GoalUpdateRequest request) {
-    this.description = request.getDescription();
-    this.priority = request.getPriority();
-    return this;
-  }
+  @JoinColumn(name = "action_identifier")
+  private Action action;
 }

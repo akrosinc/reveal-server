@@ -7,6 +7,7 @@ import com.revealprecision.revealserver.persistence.domain.Form;
 import com.revealprecision.revealserver.persistence.domain.Goal;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
@@ -22,9 +23,19 @@ public class ActionEntityFactory {
         .goal(goal)
         .form(forms.get(actionRequest.getFormIdentifier()))
         .type(actionRequest.getType())
-        .reason(actionRequest.getReason())
         .build();
     action.setEntityStatus(EntityStatus.ACTIVE);
+
+    if (actionRequest.getConditions() != null) {
+      var conditions = actionRequest.getConditions()
+          .stream()
+          .map(conditionRequest -> {
+            return ConditionEntityFactory.toEntity(conditionRequest, action);
+          })
+          .collect(Collectors.toSet());
+      action.setConditions(conditions);
+    }
+
     return action;
   }
 
@@ -37,7 +48,6 @@ public class ActionEntityFactory {
         .goal(goal)
         .form(form)
         .type(actionRequest.getType())
-        .reason(actionRequest.getReason())
         .build();
     action.setEntityStatus(EntityStatus.ACTIVE);
     return action;
