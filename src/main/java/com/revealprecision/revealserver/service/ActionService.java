@@ -31,7 +31,7 @@ public class ActionService {
         Fields.identifier, identifier), Action.class));
   }
 
-  public void createAction(UUID planIdentifier, String goalIdentifier,
+  public void createAction(UUID planIdentifier, UUID goalIdentifier,
       ActionRequest actionRequest) {
     Plan plan = planService.getPlanByIdentifier(planIdentifier);
     Goal goal = goalService.findByIdentifier(goalIdentifier);
@@ -41,7 +41,7 @@ public class ActionService {
     actionRepository.save(action);
   }
 
-  public void updateAction(UUID planIdentifier, String goalIdentifier,
+  public void updateAction(UUID planIdentifier, UUID goalIdentifier,
       ActionRequest actionRequest, UUID actionIdentifier) {
     Plan plan = planService.getPlanByIdentifier(planIdentifier);
     Goal goal = goalService.findByIdentifier(goalIdentifier);
@@ -52,7 +52,15 @@ public class ActionService {
     actionRepository.save(action);
   }
 
-  public Page<Action> getActions(UUID planIdentifier, String goalIdentifier, Pageable pageable) {
+  public void deleteAction(UUID planIdentifier, UUID goalIdentifier, UUID actionIdentifier) {
+    Plan plan = planService.getPlanByIdentifier(planIdentifier);
+    Goal goal = goalService.findByIdentifier(goalIdentifier);
+    Action action = getByIdentifier(actionIdentifier);
+
+    actionRepository.delete(action);
+  }
+
+  public Page<Action> getActions(UUID planIdentifier, UUID goalIdentifier, Pageable pageable) {
     Plan plan = planService.getPlanByIdentifier(planIdentifier);
     Goal goal = goalService.findByIdentifier(goalIdentifier);
     if (!plan.getGoals().contains(goal)) {

@@ -34,9 +34,6 @@ public class PlanRequest {
   @NotNull
   private UUID locationHierarchy;
 
-  @NotNull
-  private Set<UUID> jurisdictions;
-
   @Valid
   private Set<GoalRequest> goals;
 }

@@ -56,6 +56,10 @@ public class FormService {
     }
   }
 
+  public List<Form> getAllForDropdown() {
+    return formRepository.findAll();
+  }
+
   public void updateForm(FormUpdateRequest updateRequest, UUID identifier) {
     Form form = findById(identifier);
     form.setPayload(updateRequest.getPayload());

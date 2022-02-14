@@ -13,10 +13,6 @@ import org.springframework.data.domain.Pageable;
 public class GoalResponseFactory {
 
   public static GoalResponse fromEntity(Goal goal) {
-    var targets = goal.getTargets()
-        .stream()
-        .map(TargetResponseFactory::fromEntity)
-        .collect(Collectors.toSet());
 
     var actions = goal.getActions()
         .stream()
@@ -27,14 +23,21 @@ public class GoalResponseFactory {
         .identifier(goal.getIdentifier())
         .priority(goal.getPriority())
         .description(goal.getDescription())
-        .targets(targets)
         .actions(actions)
+        .build();
+  }
+
+  public static GoalResponse fromEntitySummary(Goal goal) {
+    return GoalResponse.builder()
+        .identifier(goal.getIdentifier())
+        .priority(goal.getPriority())
+        .description(goal.getDescription())
         .build();
   }
 
   public static Page<GoalResponse> fromEntityPage(Page<Goal> goals, Pageable pageable) {
     var response = goals.getContent().stream()
-        .map(GoalResponseFactory::fromEntity)
+        .map(GoalResponseFactory::fromEntitySummary)
         .collect(Collectors.toList());
     return new PageImpl<>(response, pageable, goals.getTotalElements());
   }

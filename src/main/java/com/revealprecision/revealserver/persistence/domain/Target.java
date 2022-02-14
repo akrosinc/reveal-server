@@ -49,8 +49,8 @@ public class Target extends AbstractAuditableEntity {
   private LocalDate due;
 
   @ManyToOne
-  @JoinColumn(name = "goal_identifier")
-  private Goal goal;
+  @JoinColumn(name = "condition_identifier")
+  private Condition condition;
 
   public Target update(TargetRequest targetRequest) {
     this.measure = targetRequest.getMeasure();
