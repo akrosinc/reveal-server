@@ -109,6 +109,37 @@ CREATE TABLE IF NOT EXISTS plan_aud
     PRIMARY KEY (identifier, REV)
 );
 
+CREATE TABLE IF NOT EXISTS goal
+(
+    identifier        UUID                     NOT NULL,
+    description       VARCHAR(255),
+    priority          VARCHAR(64),
+    plan_identifier   UUID,
+    entity_status     VARCHAR(36)              NOT NULL,
+    created_by        VARCHAR(36)              NOT NULL,
+    created_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by       VARCHAR(36)              NOT NULL,
+    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    PRIMARY KEY (identifier)
+);
+
+CREATE TABLE IF NOT EXISTS goal_aud
+(
+    identifier        UUID                     NOT NULL,
+    REV               INT                      NOT NULL,
+    REVTYPE           INTEGER                  NULL,
+    description       VARCHAR(255),
+    priority          VARCHAR(64),
+    plan_identifier   UUID,
+    entity_status     VARCHAR(36)              NOT NULL,
+    created_by        VARCHAR(36)              NOT NULL,
+    created_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by       VARCHAR(36)              NOT NULL,
+    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    PRIMARY KEY (identifier, REV)
+);
+
+
 CREATE TABLE IF NOT EXISTS form
 (
     identifier        UUID                     NOT NULL,
@@ -141,48 +172,16 @@ CREATE TABLE IF NOT EXISTS form_aud
     PRIMARY KEY (identifier, REV)
 );
 
-
-CREATE TABLE IF NOT EXISTS goal
-(
-    identifier        VARCHAR(64) UNIQUE       NOT NULL,
-    description       VARCHAR(255),
-    priority          VARCHAR(64)              NOT NULL,
-    plan_identifier   UUID,
-    entity_status     VARCHAR(36)              NOT NULL,
-    created_by        VARCHAR(36)              NOT NULL,
-    created_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,
-    modified_by       VARCHAR(36)              NOT NULL,
-    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
-    PRIMARY KEY (identifier)
-);
-
-CREATE TABLE IF NOT EXISTS goal_aud
-(
-    identifier        VARCHAR(64)              NOT NULL,
-    REV               INT                      NOT NULL,
-    REVTYPE           INTEGER                  NULL,
-    description       VARCHAR(255),
-    priority          VARCHAR(64)              NOT NULL,
-    plan_identifier   UUID,
-    entity_status     VARCHAR(36)              NOT NULL,
-    created_by        VARCHAR(36)              NOT NULL,
-    created_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,
-    modified_by       VARCHAR(36)              NOT NULL,
-    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
-    PRIMARY KEY (identifier, REV)
-);
-
 CREATE TABLE IF NOT EXISTS action
 (
     identifier          UUID UNIQUE              NOT NULL,
     title               VARCHAR(64)              NOT NULL,
-    description         VARCHAR(255),
-    timing_period_start DATE                     NOT NULL,
-    timing_period_end   DATE                     NOT NULL,
-    reason              VARCHAR(255),
+    description         VARCHAR(255)             NOT NULL,
+    timing_period_start DATE,
+    timing_period_end   DATE,
     form_identifier     UUID,
-    goal_identifier     VARCHAR(64)              NOT NULL,
-    type                VARCHAR(36)              NOT NULL,
+    goal_identifier     UUID                     NOT NULL,
+    type                VARCHAR(36),
     entity_status       VARCHAR(36)              NOT NULL,
     created_by          VARCHAR(36)              NOT NULL,
     created_datetime    TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -199,17 +198,48 @@ CREATE TABLE IF NOT EXISTS action_aud
     REVTYPE             INTEGER                  NULL,
     title               VARCHAR(64)              NOT NULL,
     description         VARCHAR(255),
-    timing_period_start DATE                     NOT NULL,
-    timing_period_end   DATE                     NOT NULL,
-    reason              VARCHAR(255),
+    timing_period_start DATE,
+    timing_period_end   DATE,
     form_identifier     UUID,
-    goal_identifier     VARCHAR(64)              NOT NULL,
-    type                VARCHAR(36)              NOT NULL,
+    goal_identifier     UUID                     NOT NULL,
+    type                VARCHAR(36),
     entity_status       VARCHAR(36)              NOT NULL,
     created_by          VARCHAR(36)              NOT NULL,
     created_datetime    TIMESTAMP WITH TIME ZONE NOT NULL,
     modified_by         VARCHAR(36)              NOT NULL,
     modified_datetime   TIMESTAMP WITH TIME ZONE NOT NULL,
+    PRIMARY KEY (identifier, REV)
+);
+
+CREATE TABLE IF NOT EXISTS condition
+(
+    identifier        UUID                     NOT NULL,
+    name              varchar(255)             NOT NULL,
+    query             VARCHAR(255),
+    implicit_query    varchar(255),
+    action_identifier UUID                     NOT NULL,
+    entity_status     VARCHAR(36)              NOT NULL,
+    created_by        VARCHAR(36)              NOT NULL,
+    created_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by       VARCHAR(36)              NOT NULL,
+    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    PRIMARY KEY (identifier)
+);
+
+CREATE TABLE IF NOT EXISTS condition_aud
+(
+    identifier        UUID                     NOT NULL,
+    REV               INT                      NOT NULL,
+    REVTYPE           INTEGER                  NULL,
+    name              varchar(255)             NOT NULL,
+    query             VARCHAR(255),
+    implicit_query    varchar(255),
+    action_identifier UUID                     NOT NULL,
+    entity_status     VARCHAR(36)              NOT NULL,
+    created_by        VARCHAR(36)              NOT NULL,
+    created_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by       VARCHAR(36)              NOT NULL,
+    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
     PRIMARY KEY (identifier, REV)
 );
 
@@ -277,38 +307,38 @@ CREATE TABLE IF NOT EXISTS task_aud
 
 CREATE TABLE IF NOT EXISTS target
 (
-    identifier        UUID UNIQUE              NOT NULL,
-    measure           VARCHAR(255)             NOT NULL,
-    value             INT                      NOT NULL,
-    comparator        VARCHAR(36)              NOT NULL,
-    unit              VARCHAR(36)              NOT NULL,
-    due               DATE                     NOT NULL,
-    goal_identifier   VARCHAR(64)              NOT NULL,
-    entity_status     VARCHAR(36)              NOT NULL,
-    created_by        VARCHAR(36)              NOT NULL,
-    created_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,
-    modified_by       VARCHAR(36)              NOT NULL,
-    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    identifier           UUID UNIQUE              NOT NULL,
+    measure              VARCHAR(255),
+    value                INT,
+    comparator           VARCHAR(36),
+    unit                 VARCHAR(36),
+    due                  DATE,
+    condition_identifier UUID                     NOT NULL,
+    entity_status        VARCHAR(36)              NOT NULL,
+    created_by           VARCHAR(36)              NOT NULL,
+    created_datetime     TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by          VARCHAR(36)              NOT NULL,
+    modified_datetime    TIMESTAMP WITH TIME ZONE NOT NULL,
     PRIMARY KEY (identifier),
-    FOREIGN KEY (goal_identifier) REFERENCES goal (identifier)
+    FOREIGN KEY (condition_identifier) REFERENCES condition (identifier)
 );
 
 CREATE TABLE IF NOT EXISTS target_aud
 (
-    identifier        UUID                     NOT NULL,
-    REV               INT                      NOT NULL,
-    REVTYPE           INTEGER                  NULL,
-    measure           VARCHAR(255)             NOT NULL,
-    value             INT                      NOT NULL,
-    comparator        VARCHAR(36)              NOT NULL,
-    unit              VARCHAR(36)              NOT NULL,
-    due               DATE                     NOT NULL,
-    goal_identifier   VARCHAR(64)              NOT NULL,
-    entity_status     VARCHAR(36)              NOT NULL,
-    created_by        VARCHAR(36)              NOT NULL,
-    created_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,
-    modified_by       VARCHAR(36)              NOT NULL,
-    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    identifier           UUID                     NOT NULL,
+    REV                  INT                      NOT NULL,
+    REVTYPE              INTEGER                  NULL,
+    measure              VARCHAR(255),
+    value                INT,
+    comparator           VARCHAR(36),
+    unit                 VARCHAR(36),
+    due                  DATE,
+    condition_identifier UUID                     NOT NULL,
+    entity_status        VARCHAR(36)              NOT NULL,
+    created_by           VARCHAR(36)              NOT NULL,
+    created_datetime     TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by          VARCHAR(36)              NOT NULL,
+    modified_datetime    TIMESTAMP WITH TIME ZONE NOT NULL,
     PRIMARY KEY (identifier, REV)
 );
 

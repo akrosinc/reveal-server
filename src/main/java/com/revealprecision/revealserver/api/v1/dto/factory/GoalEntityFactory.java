@@ -16,21 +16,10 @@ public class GoalEntityFactory {
 
   public static Goal toEntity(GoalRequest request, Plan plan, Map<UUID, Form> forms) {
     Goal goal = Goal.builder()
-        .identifier(request.getIdentifier())
         .description(request.getDescription())
         .priority(request.getPriority())
         .plan(plan)
         .build();
-
-    if (request.getTargets() != null) {
-      var targets = request.getTargets()
-          .stream()
-          .map(targetRequest -> {
-            return TargetEntityFactory.toEntity(targetRequest, goal);
-          })
-          .collect(Collectors.toSet());
-      goal.setTargets(targets);
-    }
 
     if (request.getActions() != null) {
       var actions = request.getActions()
@@ -49,18 +38,11 @@ public class GoalEntityFactory {
   public static Goal toEntityWithoutAction(GoalRequest goalRequest, Plan plan) {
 
     Goal goal = Goal.builder()
-        .identifier(goalRequest.getIdentifier())
         .description(goalRequest.getDescription())
         .priority(goalRequest.getPriority())
         .plan(plan)
         .build();
 
-    var targets = goalRequest.getTargets()
-        .stream()
-        .map(targetRequest -> TargetEntityFactory.toEntity(targetRequest, goal))
-        .collect(Collectors.toSet());
-
-    goal.setTargets(targets);
     goal.setEntityStatus(EntityStatus.ACTIVE);
     return goal;
   }

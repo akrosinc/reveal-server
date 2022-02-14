@@ -1,11 +1,14 @@
 package com.revealprecision.revealserver.persistence.domain;
 
+import com.revealprecision.revealserver.api.v1.dto.request.PlanRequest;
 import com.revealprecision.revealserver.enums.PlanStatusEnum;
 import java.time.LocalDate;
 import java.util.Set;
 import java.util.UUID;
 import javax.persistence.CascadeType;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
@@ -60,10 +63,23 @@ public class Plan extends AbstractAuditableEntity {
   private Set<Goal> goals;
 
   @NotNull
+  @Enumerated(EnumType.STRING)
   private PlanStatusEnum status;
 
   @ManyToOne
   @JoinColumn(name = "lookup_intervention_type_identifier")
   private LookupInterventionType interventionType;
+
+  public Plan update(PlanRequest request, LocationHierarchy hierarchy,
+      LookupInterventionType interventionType) {
+    this.title = request.getTitle();
+    this.name = request.getName();
+    this.date = LocalDate.now();
+    this.effectivePeriodStart = request.getEffectivePeriod().getStart();
+    this.effectivePeriodEnd = request.getEffectivePeriod().getEnd();
+    this.locationHierarchy = hierarchy;
+    this.interventionType = interventionType;
+    return this;
+  }
 
 }

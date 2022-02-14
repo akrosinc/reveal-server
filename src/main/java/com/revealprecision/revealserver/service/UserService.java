@@ -74,6 +74,10 @@ public class UserService {
             Fields.organizations));
   }
 
+  public long getUsersNumber() {
+    return userRepository.getNumberOfUsers();
+  }
+
   public void deleteUser(UUID identifier) {
     User user = getByIdentifier(identifier);
     user.setEntityStatus(EntityStatus.DELETING);

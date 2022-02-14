@@ -10,7 +10,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface GoalRepository extends JpaRepository<Goal, String> {
+public interface GoalRepository extends JpaRepository<Goal, UUID> {
 
   @Query(value = "select g from Goal g where g.plan.identifier = :identifier")
   Page<Goal> getAllFromPlan(@Param("identifier") UUID identifier, Pageable pageable);

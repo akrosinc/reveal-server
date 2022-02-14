@@ -5,6 +5,7 @@ import com.revealprecision.revealserver.enums.ActionTypeEnum;
 import java.time.LocalDate;
 import java.util.Set;
 import java.util.UUID;
+import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
@@ -48,8 +49,6 @@ public class Action extends AbstractAuditableEntity {
 
   private LocalDate timingPeriodEnd;
 
-  private String reason;
-
   @ManyToOne
   @JoinColumn(name = "goal_identifier")
   private Goal goal;
@@ -64,13 +63,15 @@ public class Action extends AbstractAuditableEntity {
   private Set<Task> tasks;
 
 
+  @OneToMany(mappedBy = "action", cascade = {CascadeType.PERSIST, CascadeType.REMOVE})
+  private Set<Condition> conditions;
+
   public Action update(ActionRequest actionRequest, Form form) {
     this.title = actionRequest.getTitle();
     this.description = actionRequest.getDescription();
     this.timingPeriodStart = actionRequest.getTimingPeriod().getStart();
     this.timingPeriodEnd = actionRequest.getTimingPeriod().getEnd();
     this.form = form;
-    this.type = actionRequest.getType();
     return this;
   }
 }

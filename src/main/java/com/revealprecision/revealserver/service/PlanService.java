@@ -5,20 +5,18 @@ import com.revealprecision.revealserver.api.v1.dto.factory.PlanEntityFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.PlanRequest;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.enums.PlanStatusEnum;
-import com.revealprecision.revealserver.exceptions.ConflictException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
+import com.revealprecision.revealserver.persistence.domain.Action;
+import com.revealprecision.revealserver.persistence.domain.Condition;
 import com.revealprecision.revealserver.persistence.domain.Form;
 import com.revealprecision.revealserver.persistence.domain.Goal;
-import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.LookupInterventionType;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.Plan.Fields;
 import com.revealprecision.revealserver.persistence.repository.PlanRepository;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -51,8 +49,8 @@ public class PlanService {
   public Page<Plan> getAll(String search, Pageable pageable) {
     return planRepository.getAll(search, pageable,
         EntityGraphUtils.fromAttributePaths(
-            String.join(".", Fields.goals, Goal.Fields.actions),
-            String.join(".", Fields.goals, Goal.Fields.targets)));
+            String.join(".", Fields.goals, Goal.Fields.actions, Action.Fields.conditions,
+                Condition.Fields.targets)));
   }
 
   public long getAllCount(String search) {
@@ -61,12 +59,6 @@ public class PlanService {
 
   public void createPlan(PlanRequest planRequest) {
 
-    Set<Location> locations = null;
-    if (!isNullOrEmpty(planRequest.getJurisdictions())) {
-      List<Location> foundLocations = locationService.getAllByIdentifiers(
-          new ArrayList<>(planRequest.getJurisdictions()));
-      locations = new HashSet<>(foundLocations);
-    }
     LookupInterventionType interventionType = lookupInterventionTypeService.findByIdentifier(
         planRequest.getInterventionType());
     LocationHierarchy locationHierarchy = locationHierarchyService.findByIdentifier(
@@ -87,7 +79,6 @@ public class PlanService {
 
     Plan plan = PlanEntityFactory.toEntity(planRequest, interventionType, locationHierarchy,
         foundForms);
-    plan.setLocations(locations);
     plan.setEntityStatus(EntityStatus.ACTIVE);
     planRepository.save(plan);
 
@@ -95,12 +86,17 @@ public class PlanService {
 
   public void activatePlan(UUID planIdentifier) {
     Plan plan = getPlanByIdentifier(planIdentifier);
-    boolean valid = true;
-    if (valid) {
-      plan.setStatus(PlanStatusEnum.ACTIVE);
-      planRepository.save(plan);
-    } else {
-      throw new ConflictException("Plan could not be activated");
-    }
+    plan.setStatus(PlanStatusEnum.ACTIVE);
+    planRepository.save(plan);
+  }
+
+  public void updatePlan(PlanRequest request, UUID identifier) {
+    Plan plan = getPlanByIdentifier(identifier);
+    LocationHierarchy hierarchy = locationHierarchyService.findByIdentifier(
+        request.getLocationHierarchy());
+    LookupInterventionType interventionType = lookupInterventionTypeService.findByIdentifier(
+        request.getInterventionType());
+    plan.update(request, hierarchy, interventionType);
+    planRepository.save(plan);
   }
 }
