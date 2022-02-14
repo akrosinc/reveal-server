@@ -3,7 +3,6 @@ package com.revealprecision.revealserver.service;
 import com.cosium.spring.data.jpa.entity.graph.domain.EntityGraphUtils;
 import com.revealprecision.revealserver.api.v1.dto.factory.PlanEntityFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.PlanRequest;
-import com.revealprecision.revealserver.api.v1.dto.response.ErrorResponse;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.enums.PlanStatusEnum;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
@@ -48,7 +47,6 @@ public class PlanService {
   }
 
   public Page<Plan> getAll(String search, Pageable pageable) {
-    System.out.println("search" + search);
     return planRepository.getAll(search, pageable,
         EntityGraphUtils.fromAttributePaths(
             String.join(".", Fields.goals, Goal.Fields.actions, Action.Fields.conditions,
@@ -88,8 +86,6 @@ public class PlanService {
 
   public void activatePlan(UUID planIdentifier) {
     Plan plan = getPlanByIdentifier(planIdentifier);
-    boolean valid = true;
-    ErrorResponse errorResponse = new ErrorResponse();
     plan.setStatus(PlanStatusEnum.ACTIVE);
     planRepository.save(plan);
   }
@@ -102,10 +98,5 @@ public class PlanService {
         request.getInterventionType());
     plan.update(request, hierarchy, interventionType);
     planRepository.save(plan);
-  }
-
-  public void checkPlanDetails(Plan plan, ErrorResponse errorResponse) {
-    //TODO check validation for Dates
-
   }
 }

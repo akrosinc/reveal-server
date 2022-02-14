@@ -90,7 +90,7 @@ public class PlanController {
   }
 
 
-  @GetMapping("/{identifier}/goal") //done
+  @GetMapping("/{identifier}/goal")
   public ResponseEntity<Page<GoalResponse>> getGoals(
       @Parameter(description = "Plan identifier") @PathVariable("identifier") UUID identifier,
       Pageable pageable) {
@@ -123,7 +123,7 @@ public class PlanController {
     return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
   }
 
-  @GetMapping("/{planIdentifier}/goal/{goalIdentifier}/action")//done
+  @GetMapping("/{planIdentifier}/goal/{goalIdentifier}/action")
   public ResponseEntity<Page<ActionResponse>> getActions(
       @Parameter(description = "Plan identifier") @PathVariable("planIdentifier") UUID planIdentifier,
       @Parameter(description = "Goal identifier") @PathVariable("goalIdentifier") UUID goalIdentifier,
@@ -160,7 +160,7 @@ public class PlanController {
     return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
   }
 
-  @GetMapping("/{planIdentifier}/goal/{goalIdentifier}/action/{actionIdentifier}/condition")//done
+  @GetMapping("/{planIdentifier}/goal/{goalIdentifier}/action/{actionIdentifier}/condition")
   public ResponseEntity<Page<ConditionResponse>> getConditions(
       @Parameter(description = "Plan identifier") @PathVariable("planIdentifier") UUID planIdentifier,
       @Parameter(description = "Goal identifier") @PathVariable("goalIdentifier") UUID goalIdentifier,
