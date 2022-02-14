@@ -1,7 +1,6 @@
 package com.revealprecision.revealserver.persistence.domain;
 
 import com.vladmihalcea.hibernate.type.array.ListArrayType;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -54,7 +53,7 @@ public class LocationHierarchy extends AbstractAuditableEntity {
   private List<String> nodeOrder;
 
   @OneToMany(mappedBy = "locationHierarchy")
-  private List<LocationRelationship> locationRelationships = new ArrayList<>();
+  private List<LocationRelationship> locationRelationships;
 
   @OneToMany(mappedBy = "locationHierarchy", cascade = CascadeType.REMOVE)
   private Set<Plan> plans;

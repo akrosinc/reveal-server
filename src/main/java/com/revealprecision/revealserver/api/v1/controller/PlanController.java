@@ -1,21 +1,25 @@
 package com.revealprecision.revealserver.api.v1.controller;
 
 import com.revealprecision.revealserver.api.v1.dto.factory.ActionResponseFactory;
+import com.revealprecision.revealserver.api.v1.dto.factory.ConditionResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.GoalResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.PlanResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.TargetResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.ActionRequest;
+import com.revealprecision.revealserver.api.v1.dto.request.ConditionRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.GoalRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.GoalUpdateRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.PlanRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.TargetRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.ActionResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.ConditionResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.CountResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.GoalResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.PlanResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.TargetResponse;
 import com.revealprecision.revealserver.enums.SummaryEnum;
 import com.revealprecision.revealserver.service.ActionService;
+import com.revealprecision.revealserver.service.ConditionService;
 import com.revealprecision.revealserver.service.GoalService;
 import com.revealprecision.revealserver.service.PlanService;
 import com.revealprecision.revealserver.service.TargetService;
@@ -27,6 +31,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -46,6 +51,7 @@ public class PlanController {
   private final GoalService goalService;
   private final ActionService actionService;
   private final TargetService targetService;
+  private final ConditionService conditionService;
 
   @GetMapping
   public ResponseEntity<?> getPlans(
@@ -76,6 +82,14 @@ public class PlanController {
     return ResponseEntity.status(HttpStatus.CREATED).build();
   }
 
+  @PutMapping("/{identifier}")
+  public ResponseEntity<Void> updatePlan(@PathVariable("identifier") UUID identifier,
+      @RequestBody PlanRequest request) {
+    planService.updatePlan(request, identifier);
+    return ResponseEntity.status(HttpStatus.OK).build();
+  }
+
+
   @GetMapping("/{identifier}/goal")
   public ResponseEntity<Page<GoalResponse>> getGoals(
       @Parameter(description = "Plan identifier") @PathVariable("identifier") UUID identifier,
@@ -95,16 +109,24 @@ public class PlanController {
   @PutMapping("/{planIdentifier}/goal/{identifier}")
   public ResponseEntity<Void> updateGoal(
       @Parameter(description = "Plan identifier") @PathVariable("planIdentifier") UUID planIdentifier,
-      @Parameter(description = "Goal identifier") @PathVariable("identifier") String identifier,
+      @Parameter(description = "Goal identifier") @PathVariable("identifier") UUID identifier,
       @Valid @RequestBody GoalUpdateRequest goalUpdateRequest) {
     goalService.updateGoal(identifier, planIdentifier, goalUpdateRequest);
     return ResponseEntity.status(HttpStatus.OK).build();
   }
 
+  @DeleteMapping("/{planIdentifier}/goal/{identifier}")
+  public ResponseEntity<Void> deleteGoal(
+      @Parameter(description = "Plan identifier") @PathVariable("planIdentifier") UUID planIdentifier,
+      @Parameter(description = "Goal identifier") @PathVariable("identifier") UUID identifier) {
+    goalService.deleteGoal(identifier, planIdentifier);
+    return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+  }
+
   @GetMapping("/{planIdentifier}/goal/{goalIdentifier}/action")
   public ResponseEntity<Page<ActionResponse>> getActions(
       @Parameter(description = "Plan identifier") @PathVariable("planIdentifier") UUID planIdentifier,
-      @Parameter(description = "Goal identifier") @PathVariable("goalIdentifier") String goalIdentifier,
+      @Parameter(description = "Goal identifier") @PathVariable("goalIdentifier") UUID goalIdentifier,
       Pageable pageable) {
     return ResponseEntity.status(HttpStatus.OK).body(ActionResponseFactory.fromEntityPage(
         actionService.getActions(planIdentifier, goalIdentifier, pageable), pageable));
@@ -113,7 +135,7 @@ public class PlanController {
   @PostMapping("/{planIdentifier}/goal/{goalIdentifier}/action")
   public ResponseEntity<Void> createAction(
       @Parameter(description = "Plan identifier") @PathVariable("planIdentifier") UUID planIdentifier,
-      @Parameter(description = "Goal identifier") @PathVariable("goalIdentifier") String goalIdentifier,
+      @Parameter(description = "Goal identifier") @PathVariable("goalIdentifier") UUID goalIdentifier,
       @Valid @RequestBody ActionRequest actionRequest) {
     actionService.createAction(planIdentifier, goalIdentifier, actionRequest);
     return ResponseEntity.status(HttpStatus.CREATED).build();
@@ -122,26 +144,71 @@ public class PlanController {
   @PutMapping("/{planIdentifier}/goal/{goalIdentifier}/action/{actionIdentifier}")
   public ResponseEntity<Void> updateAction(
       @Parameter(description = "Plan identifier") @PathVariable("planIdentifier") UUID planIdentifier,
-      @Parameter(description = "Goal identifier") @PathVariable("goalIdentifier") String goalIdentifier,
+      @Parameter(description = "Goal identifier") @PathVariable("goalIdentifier") UUID goalIdentifier,
       @Parameter(description = "Action identifier") @PathVariable("actionIdentifier") UUID actionIdentifier,
       @Valid @RequestBody ActionRequest actionRequest) {
     actionService.updateAction(planIdentifier, goalIdentifier, actionRequest, actionIdentifier);
     return ResponseEntity.status(HttpStatus.OK).build();
   }
 
-  @GetMapping("/{planIdentifier}/goal/{goalIdentifier}/target")
+  @DeleteMapping("/{planIdentifier}/goal/{goalIdentifier}/action/{actionIdentifier}")
+  public ResponseEntity<Void> deleteAction(
+      @Parameter(description = "Plan identifier") @PathVariable("planIdentifier") UUID planIdentifier,
+      @Parameter(description = "Goal identifier") @PathVariable("goalIdentifier") UUID goalIdentifier,
+      @Parameter(description = "Action identifier") @PathVariable("actionIdentifier") UUID actionIdentifier) {
+    actionService.deleteAction(planIdentifier, goalIdentifier, actionIdentifier);
+    return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+  }
+
+  @GetMapping("/{planIdentifier}/goal/{goalIdentifier}/action/{actionIdentifier}/condition")
+  public ResponseEntity<Page<ConditionResponse>> getConditions(
+      @Parameter(description = "Plan identifier") @PathVariable("planIdentifier") UUID planIdentifier,
+      @Parameter(description = "Goal identifier") @PathVariable("goalIdentifier") UUID goalIdentifier,
+      @Parameter(description = "Action identifier") @PathVariable("actionIdentifier") UUID actionIdentifier,
+      Pageable pageable) {
+    return ResponseEntity.status(HttpStatus.OK)
+        .body(ConditionResponseFactory.fromEntityPage(
+            conditionService.getConditions(planIdentifier, goalIdentifier, actionIdentifier,
+                pageable), pageable));
+  }
+
+  @PostMapping("/{planIdentifier}/goal/{goalIdentifier}/action/{actionIdentifier}/condition")
+  public ResponseEntity<Void> createCondition(
+      @Parameter(description = "Plan identifier") @PathVariable("planIdentifier") UUID planIdentifier,
+      @Parameter(description = "Goal identifier") @PathVariable("goalIdentifier") UUID goalIdentifier,
+      @Parameter(description = "Action identifier") @PathVariable("actionIdentifier") UUID actionIdentifier,
+      @RequestBody ConditionRequest request) {
+    conditionService.createCondition(planIdentifier, goalIdentifier, actionIdentifier, request);
+    return ResponseEntity.status(HttpStatus.CREATED).build();
+  }
+
+  @DeleteMapping("/{planIdentifier}/goal/{goalIdentifier}/action/{actionIdentifier}/condition/{conditionIdentifier}")
+  public ResponseEntity<Void> deleteCondition(
+      @Parameter(description = "Plan identifier") @PathVariable("planIdentifier") UUID planIdentifier,
+      @Parameter(description = "Goal identifier") @PathVariable("goalIdentifier") UUID goalIdentifier,
+      @Parameter(description = "Action identifier") @PathVariable("actionIdentifier") UUID actionIdentifier,
+      @Parameter(description = "Condition identifier") @PathVariable("conditionIdentifier") UUID conditionIdentifier) {
+    conditionService.deleteCondition(planIdentifier, goalIdentifier, actionIdentifier,
+        conditionIdentifier);
+    return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+  }
+
+  @GetMapping("/{planIdentifier}/goal/{goalIdentifier}/action/{actionIdentifier}/condition/{conditionIdentifier}/target")
   public ResponseEntity<Page<TargetResponse>> getTargets(
       @Parameter(description = "Plan identifier") @PathVariable("planIdentifier") UUID planIdentifier,
-      @Parameter(description = "Goal identifier") @PathVariable("goalIdentifier") String goalIdentifier,
+      @Parameter(description = "Goal identifier") @PathVariable("goalIdentifier") UUID goalIdentifier,
+      @Parameter(description = "Action identifier") @PathVariable("actionIdentifier") UUID actionIdentifier,
+      @Parameter(description = "Condition identifier") @PathVariable("conditionIdentifier") UUID conditionIdentifier,
       Pageable pageable) {
     return ResponseEntity.status(HttpStatus.OK).body(TargetResponseFactory.fromEntityPage(
-        targetService.getAll(planIdentifier, goalIdentifier, pageable), pageable));
+        targetService.getAll(planIdentifier, goalIdentifier, actionIdentifier, conditionIdentifier,
+            pageable), pageable));
   }
 
   @PostMapping("/{planIdentifier}/goal/{goalIdentifier}/target")
   public ResponseEntity<Void> createTarget(
       @Parameter(description = "Plan identifier") @PathVariable("planIdentifier") UUID planIdentifier,
-      @Parameter(description = "Goal identifier") @PathVariable("goalIdentifier") String goalIdentifier,
+      @Parameter(description = "Goal identifier") @PathVariable("goalIdentifier") UUID goalIdentifier,
       @Valid @RequestBody TargetRequest targetRequest) {
     targetService.createTarget(targetRequest, planIdentifier, goalIdentifier);
     return ResponseEntity.status(HttpStatus.CREATED).build();
@@ -150,7 +217,7 @@ public class PlanController {
   @PutMapping("/{planIdentifier}/goal/{goalIdentifier}/target/{targetIdentifier}")
   public ResponseEntity<Void> updateTarget(
       @Parameter(description = "Plan identifier") @PathVariable("planIdentifier") UUID planIdentifier,
-      @Parameter(description = "Goal identifier") @PathVariable("goalIdentifier") String goalIdentifier,
+      @Parameter(description = "Goal identifier") @PathVariable("goalIdentifier") UUID goalIdentifier,
       @Parameter(description = "Target identifier") @PathVariable("targetIdentifier") UUID targetIdentifier,
       @Valid @RequestBody TargetRequest targetRequest) {
     targetService.updateTarget(targetRequest, planIdentifier, goalIdentifier, targetIdentifier);
