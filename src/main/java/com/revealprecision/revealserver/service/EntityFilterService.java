@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.service;
 
+import com.revealprecision.revealserver.exceptions.QueryGenerationException;
 import com.revealprecision.revealserver.persistence.domain.actioncondition.Condition;
 import com.revealprecision.revealserver.persistence.domain.actioncondition.Query;
 import com.revealprecision.revealserver.props.ConditionQueryProperties;
@@ -32,7 +33,7 @@ public class EntityFilterService {
     this.jdbcTemplate = jdbcTemplate;
   }
 
-  public List<UUID> filterEntities(Query query, UUID planIdentifier) {
+  public List<UUID> filterEntities(Query query, UUID planIdentifier) throws QueryGenerationException{
 
     List<String> locations = queryDBAndRetrieveListOfLocationsLinkedToPlanJurisdiction(
         planIdentifier);
@@ -76,7 +77,9 @@ public class EntityFilterService {
               + WHERE
               + locationJurisdictionsPart;
     }
-
+    if (queryFinal == null){
+      throw new QueryGenerationException("Postgres query cannot be built for Query Object: "+query.toString());
+    }
     return new ArrayList<>(jdbcTemplate.query(queryFinal,
         (rs, rowNum) -> ((UUID) rs.getObject("identifier"))));
   }
@@ -124,7 +127,7 @@ public class EntityFilterService {
     List<String> groupedOrConditions = new ArrayList<>();
 
     whereOrConditions.forEach((k, v) -> {
-      String str = "(" + v.stream().collect(Collectors.joining(" OR ")) + ")";
+      String str = "(" + String.join(" OR ", v) + ")";
       groupedOrConditions.add(str);
     });
     return groupedOrConditions;
