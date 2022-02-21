@@ -3,7 +3,6 @@ package com.revealprecision.revealserver.api.v1.dto.factory;
 import com.revealprecision.revealserver.api.v1.dto.response.LookupTaskStatusResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.TaskResponse;
 import com.revealprecision.revealserver.persistence.domain.Task;
-import java.time.ZoneId;
 import java.util.stream.Collectors;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -22,9 +21,9 @@ public class TaskResponseFactory {
         .authoredOn(task.getAuthoredOn()).description(task.getDescription())
         .lastModified(task.getLastModified())
         .executionPeriodStart(
-            task.getExecutionPeriodStart().toInstant().atZone(ZoneId.systemDefault()).toLocalDate())
+            task.getExecutionPeriodStart())
         .executionPeriodEnd(
-            task.getExecutionPeriodEnd().toInstant().atZone(ZoneId.systemDefault()).toLocalDate())
+            task.getExecutionPeriodEnd())
         .actionIdentifier(task.getAction().getIdentifier())
         .build();
   }

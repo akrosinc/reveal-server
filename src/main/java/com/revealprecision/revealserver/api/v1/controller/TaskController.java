@@ -11,10 +11,8 @@ import com.revealprecision.revealserver.service.TaskService;
 import com.revealprecision.revealserver.service.models.TaskSearchCriteria;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -72,8 +70,10 @@ public class TaskController {
           .body(new CountResponse(taskService.getAllTaskCount()));
     }
   }
-  @Operation(summary = "Retrieve all Task Statuses", description = "Retrieve all Task Statuses", tags = {"Task"})
-  @GetMapping(value = "/status",produces = "application/json")
+
+  @Operation(summary = "Retrieve all Task Statuses", description = "Retrieve all Task Statuses", tags = {
+      "Task"})
+  @GetMapping(value = "/status", produces = "application/json")
   public ResponseEntity<List<LookupTaskStatus>> getAllTaskStatuses() {
 
     return ResponseEntity.status(HttpStatus.OK).body(taskService.getAllTaskStatus());
@@ -91,7 +91,7 @@ public class TaskController {
 
   @Operation(summary = "Create a task", description = "Create a Task", tags = {"Task"})
   @ResponseStatus(HttpStatus.CREATED)
-  @PostMapping( consumes = "application/json", produces = "application/json")
+  @PostMapping(consumes = "application/json", produces = "application/json")
   public TaskResponse createTask(@Validated @RequestBody TaskCreateRequest taskRequest) {
     return TaskResponseFactory.fromEntity(taskService.createTask(taskRequest));
   }
@@ -104,4 +104,5 @@ public class TaskController {
       @Validated @RequestBody TaskUpdateRequest taskUpdateRequest) {
     return TaskResponseFactory.fromEntity(taskService.updateTask(identifier, taskUpdateRequest));
   }
+
 }
