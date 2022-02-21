@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.api.v1.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.revealprecision.revealserver.api.v1.dto.request.PersonRequest.Name;
 import com.revealprecision.revealserver.enums.GenderEnum;
 import java.time.LocalDate;
@@ -22,4 +23,5 @@ public class PersonResponse {
   LocalDate birthDate;
   Set<Group> groups;
   Long count;
+  JsonNode meta;
 }

@@ -2,8 +2,8 @@ package com.revealprecision.revealserver.persistence.domain;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.revealprecision.revealserver.enums.TaskPriorityEnum;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Date;
 import java.util.UUID;
 import javax.persistence.CascadeType;
 import javax.persistence.Entity;
@@ -68,11 +68,11 @@ public class Task extends AbstractAuditableEntity {
 
   @NotNull(message = "executionPeriodStart can not be null")
   @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
-  private Date executionPeriodStart;
+  private LocalDate executionPeriodStart;
 
   @NotNull(message = "executionPeriodEnd can not be null")
   @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
-  private Date executionPeriodEnd;
+  private LocalDate executionPeriodEnd;
 
   @OneToOne(fetch = FetchType.LAZY)
   @JoinTable(name = "task_location",
@@ -80,5 +80,13 @@ public class Task extends AbstractAuditableEntity {
       inverseJoinColumns = @JoinColumn(name = "location_identifier")
   )
   private Location location;
+
+  @OneToOne(fetch = FetchType.LAZY)
+  @JoinTable(name = "task_person",
+      joinColumns = @JoinColumn(name = "task_identifier"),
+      inverseJoinColumns = @JoinColumn(name = "person_identifier")
+  )
+  private Person person;
+
 
 }

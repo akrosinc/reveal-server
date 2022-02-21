@@ -64,6 +64,9 @@ public class Location extends AbstractAuditableEntity {
   @ManyToMany(mappedBy = "locations")
   private Set<Plan> plans;
 
+  @ManyToMany(mappedBy = "locations")
+  private Set<Person> people;
+
   public Location update(LocationRequest locationRequest, GeographicLevel geographicLevel) {
     this.type = locationRequest.getType();
     this.name = locationRequest.getProperties().getName();

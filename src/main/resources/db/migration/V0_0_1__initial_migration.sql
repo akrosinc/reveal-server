@@ -171,43 +171,79 @@ CREATE TABLE IF NOT EXISTS form_aud
     modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
     PRIMARY KEY (identifier, REV)
 );
+CREATE TABLE IF NOT EXISTS lookup_entity_type
+(
+    identifier        uuid                     NOT NULL,
+    code              character varying        NOT NULL,
+    table_name        character varying        NOT NULL,
+    entity_status     VARCHAR(36)              NOT NULL,
+    created_by        VARCHAR(36)              NOT NULL,
+    created_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by       VARCHAR(36)              NOT NULL,
+    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    CONSTRAINT lookup_entity_type_pkey PRIMARY KEY (identifier)
+);
+
+CREATE TABLE IF NOT EXISTS lookup_entity_type_aud
+(
+    identifier        uuid                     NOT NULL,
+    REV               INT                      NOT NULL,
+    REVTYPE           INTEGER                  NULL,
+    code              character varying        NOT NULL,
+    entity_status     VARCHAR(36)              NOT NULL,
+    created_by        VARCHAR(36)              NOT NULL,
+    created_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by       VARCHAR(36)              NOT NULL,
+    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    CONSTRAINT lookup_entity_type_aud_pkey PRIMARY KEY (identifier, REV)
+);
 
 CREATE TABLE IF NOT EXISTS action
 (
-    identifier          UUID UNIQUE              NOT NULL,
-    title               VARCHAR(64)              NOT NULL,
-    description         VARCHAR(255)             NOT NULL,
-    timing_period_start DATE,
-    timing_period_end   DATE,
-    form_identifier     UUID,
-    goal_identifier     UUID                     NOT NULL,
-    type                VARCHAR(36),
-    entity_status       VARCHAR(36)              NOT NULL,
-    created_by          VARCHAR(36)              NOT NULL,
-    created_datetime    TIMESTAMP WITH TIME ZONE NOT NULL,
-    modified_by         VARCHAR(36)              NOT NULL,
-    modified_datetime   TIMESTAMP WITH TIME ZONE NOT NULL,
-    PRIMARY KEY (identifier),
-    FOREIGN KEY (goal_identifier) REFERENCES goal (identifier)
+    identifier                    uuid                     NOT NULL,
+    title                         character varying(64)    NOT NULL,
+    description                   character varying(255)   NOT NULL,
+    timing_period_start           date,
+    timing_period_end             date,
+    form_identifier               uuid,
+    goal_identifier               uuid                     NOT NULL,
+    type                          character varying(36),
+    entity_status                 character varying(36)    NOT NULL,
+    created_by                    character varying(36)    NOT NULL,
+    created_datetime              timestamp with time zone NOT NULL,
+    modified_by                   character varying(36)    NOT NULL,
+    modified_datetime             timestamp with time zone NOT NULL,
+    lookup_entity_type_identifier uuid                     NOT NULL,
+    CONSTRAINT action_pkey PRIMARY KEY (identifier),
+    CONSTRAINT action_entity_type_fkey FOREIGN KEY (lookup_entity_type_identifier)
+        REFERENCES lookup_entity_type (identifier) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+        NOT VALID,
+    CONSTRAINT action_goal_identifier_fkey FOREIGN KEY (goal_identifier)
+        REFERENCES goal (identifier) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
 );
 
 CREATE TABLE IF NOT EXISTS action_aud
 (
-    identifier          UUID                     NOT NULL,
-    REV                 INT                      NOT NULL,
-    REVTYPE             INTEGER                  NULL,
-    title               VARCHAR(64)              NOT NULL,
-    description         VARCHAR(255),
-    timing_period_start DATE,
-    timing_period_end   DATE,
-    form_identifier     UUID,
-    goal_identifier     UUID                     NOT NULL,
-    type                VARCHAR(36),
-    entity_status       VARCHAR(36)              NOT NULL,
-    created_by          VARCHAR(36)              NOT NULL,
-    created_datetime    TIMESTAMP WITH TIME ZONE NOT NULL,
-    modified_by         VARCHAR(36)              NOT NULL,
-    modified_datetime   TIMESTAMP WITH TIME ZONE NOT NULL,
+    identifier                    UUID                     NOT NULL,
+    REV                           INT                      NOT NULL,
+    REVTYPE                       INTEGER                  NULL,
+    title                         VARCHAR(64)              NOT NULL,
+    description                   VARCHAR(255),
+    timing_period_start           DATE,
+    timing_period_end             DATE,
+    form_identifier               UUID,
+    goal_identifier               UUID                     NOT NULL,
+    type                          VARCHAR(36),
+    lookup_entity_type_identifier uuid                     NOT NULL,
+    entity_status                 VARCHAR(36)              NOT NULL,
+    created_by                    VARCHAR(36)              NOT NULL,
+    created_datetime              TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by                   VARCHAR(36)              NOT NULL,
+    modified_datetime             TIMESTAMP WITH TIME ZONE NOT NULL,
     PRIMARY KEY (identifier, REV)
 );
 
@@ -245,11 +281,30 @@ CREATE TABLE IF NOT EXISTS condition_aud
 
 CREATE TABLE lookup_task_status
 (
-    identifier    uuid                  NOT NULL DEFAULT uuid_generate_v4(),
-    entity_status character varying(36) NOT NULL,
-    name          character varying     NOT NULL,
-    code          character varying     NOT NULL,
+    identifier        uuid                     NOT NULL DEFAULT uuid_generate_v4(),
+    name              character varying        NOT NULL,
+    code              character varying        NOT NULL,
+    entity_status     VARCHAR(36)              NOT NULL,
+    created_by        VARCHAR(36)              NOT NULL,
+    created_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by       VARCHAR(36)              NOT NULL,
+    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
     PRIMARY KEY (identifier)
+);
+
+CREATE TABLE lookup_task_status_aud
+(
+    identifier        uuid                     NOT NULL DEFAULT uuid_generate_v4(),
+    REV               INT                      NOT NULL,
+    REVTYPE           INTEGER                  NULL,
+    entity_status     character varying(36)    NOT NULL,
+    name              character varying        NOT NULL,
+    code              character varying        NOT NULL,
+    created_by        VARCHAR(36)              NOT NULL,
+    created_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by       VARCHAR(36)              NOT NULL,
+    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    PRIMARY KEY (identifier, REV)
 );
 
 CREATE TABLE IF NOT EXISTS task
@@ -868,18 +923,125 @@ CREATE TABLE IF NOT EXISTS person_group_aud
     revtype           integer,
     person_identifier uuid    NOT NULL,
     group_identifier  uuid    NOT NULL,
-    CONSTRAINT person_group_aud_pkey PRIMARY KEY (person_identifier, group_identifier, rev),
-    CONSTRAINT person_group_aud_group_identifier_fkey FOREIGN KEY (group_identifier)
-        REFERENCES "group" (identifier) MATCH SIMPLE
+    CONSTRAINT person_group_aud_pkey PRIMARY KEY (person_identifier, group_identifier, rev)
+);
+CREATE TABLE IF NOT EXISTS entity_tags
+(
+    identifier                    uuid                     NOT NULL,
+    tag                           character varying        NOT NULL,
+    value_type                    character varying        NOT NULL,
+    lookup_entity_type_identifier uuid                     NOT NULL,
+    entity_status                 character varying(36)    NOT NULL,
+    created_by                    character varying(36)    NOT NULL,
+    created_datetime              timestamp with time zone NOT NULL,
+    modified_by                   character varying(36)    NOT NULL,
+    modified_datetime             timestamp with time zone NOT NULL,
+    CONSTRAINT entity_tags_pkey PRIMARY KEY (identifier),
+    CONSTRAINT entity_tags_lookup_entity_type_fkey FOREIGN KEY (lookup_entity_type_identifier)
+        REFERENCES lookup_entity_type (identifier) MATCH SIMPLE
         ON UPDATE NO ACTION
-        ON DELETE NO ACTION,
-    CONSTRAINT person_group_aud_person_identifier_fkey FOREIGN KEY (person_identifier)
+        ON DELETE NO ACTION
+        NOT VALID
+);
+
+CREATE TABLE IF NOT EXISTS entity_tags_aud
+(
+    identifier                    uuid                     NOT NULL,
+    rev                           integer                  NOT NULL,
+    revtype                       integer,
+    tag                           character varying        NOT NULL,
+    value_type                    character varying        NOT NULL,
+    lookup_entity_type_identifier uuid                     NOT NULL,
+    entity_status                 character varying(36)    NOT NULL,
+    created_by                    character varying(36)    NOT NULL,
+    created_datetime              timestamp with time zone NOT NULL,
+    modified_by                   character varying(36)    NOT NULL,
+    modified_datetime             timestamp with time zone NOT NULL,
+    CONSTRAINT entity_tags_aud_pkey PRIMARY KEY (identifier, rev)
+);
+
+CREATE TABLE person_location
+(
+    identifier          uuid NOT NULL,
+    person_identifier   uuid NOT NULL,
+    location_identifier uuid NOT NULL,
+    PRIMARY KEY (identifier),
+    CONSTRAINT person_location_person_fkey FOREIGN KEY (person_identifier)
         REFERENCES person (identifier) MATCH SIMPLE
         ON UPDATE NO ACTION
         ON DELETE NO ACTION
+        NOT VALID,
+    CONSTRAINT person_location_location_fkey FOREIGN KEY (location_identifier)
+        REFERENCES location (identifier) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+        NOT VALID
 );
-INSERT INTO lookup_task_status(identifier, entity_status, name, code)
-VALUES (uuid_generate_v4(), 'ACTIVE', 'READY', 'READY'),
-       (uuid_generate_v4(), 'ACTIVE', 'COMPLETED', 'COMPLETED'),
-       (uuid_generate_v4(), 'ACTIVE', 'CANCELLED', 'CANCELLED');
 
+CREATE TABLE IF NOT EXISTS person_metadata
+(
+    identifier        uuid                     NOT NULL,
+    entity_value      jsonb                    NOT NULL,
+    person_identifier uuid                     NOT NULL,
+    entity_status     VARCHAR(36)              NOT NULL,
+    created_by        VARCHAR(36)              NOT NULL,
+    created_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by       VARCHAR(36)              NOT NULL,
+    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    CONSTRAINT person_metadata_pkey PRIMARY KEY (identifier),
+    CONSTRAINT person_identifier_fkey FOREIGN KEY (person_identifier)
+        REFERENCES person (identifier) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+        NOT VALID
+);
+
+CREATE TABLE IF NOT EXISTS person_metadata_AUD
+(
+    identifier        uuid                     NOT NULL,
+    entity_value      jsonb                    NOT NULL,
+    person_identifier uuid                     NOT NULL,
+    rev               integer                  NOT NULL,
+    revtype           integer,
+    entity_status     VARCHAR(36)              NOT NULL,
+    created_by        VARCHAR(36)              NOT NULL,
+    created_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by       VARCHAR(36)              NOT NULL,
+    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    PRIMARY KEY (identifier, REV)
+);
+
+CREATE TABLE IF NOT EXISTS location_metadata
+(
+    identifier          uuid  NOT NULL,
+    entity_value        jsonb NOT NULL,
+    location_identifier uuid  NOT NULL,
+    CONSTRAINT location_metadata_pkey PRIMARY KEY (identifier),
+    CONSTRAINT location_identifier_fkey FOREIGN KEY (location_identifier)
+        REFERENCES location (identifier) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+        NOT VALID
+);
+
+CREATE TABLE IF NOT EXISTS task_person
+(
+    identifier        uuid NOT NULL DEFAULT uuid_generate_v4(),
+    task_identifier   uuid NOT NULL,
+    person_identifier uuid NOT NULL,
+    CONSTRAINT task_person_pkey PRIMARY KEY (identifier),
+    CONSTRAINT task_fk FOREIGN KEY (task_identifier)
+        REFERENCES task (identifier) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+);
+
+CREATE TABLE IF NOT EXISTS task_person_aud
+(
+    identifier        uuid    NOT NULL DEFAULT uuid_generate_v4(),
+    REV               INT     NOT NULL,
+    REVTYPE           INTEGER NULL,
+    task_identifier   uuid    NOT NULL,
+    person_identifier uuid    NOT NULL,
+    CONSTRAINT task_person_aud_pkey PRIMARY KEY (identifier, REV)
+);
