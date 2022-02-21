@@ -4,6 +4,7 @@ import com.revealprecision.revealserver.api.v1.dto.factory.TaskEntityFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.TaskCreateRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.TaskUpdateRequest;
 import com.revealprecision.revealserver.enums.EntityStatus;
+import com.revealprecision.revealserver.enums.PlanStatusEnum;
 import com.revealprecision.revealserver.enums.TaskPriorityEnum;
 import com.revealprecision.revealserver.exceptions.DuplicateTaskCreationException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
@@ -39,14 +40,14 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class TaskService {
 
+  private static final String LOCATION = "Location";
+  private static final String PERSON = "Person";
   private final TaskRepository taskRepository;
-  private final FormService formService;
   private final PlanService planService;
   private final ActionService actionService;
   private final PersonService personService;
   private final LocationService locationService;
   private final LookupTaskStatusRepository lookupTaskStatusRepository;
-  private final JdbcTemplate jdbcTemplate;
   private final EntityFilterService entityFilterService;
 
   @Autowired
@@ -56,13 +57,11 @@ public class TaskService {
       LookupTaskStatusRepository lookupTaskStatusRepository, PersonService personService,
       JdbcTemplate jdbcTemplate, EntityFilterService entityFilterService) {
     this.taskRepository = taskRepository;
-    this.formService = formService;
     this.planService = planService;
     this.actionService = actionService;
     this.locationService = locationService;
     this.lookupTaskStatusRepository = lookupTaskStatusRepository;
     this.personService = personService;
-    this.jdbcTemplate = jdbcTemplate;
     this.entityFilterService = entityFilterService;
   }
 
@@ -126,12 +125,9 @@ public class TaskService {
     taskToUpdate.setLookupTaskStatus(lookupTaskStatus);
     taskToUpdate.setLastModified(LocalDateTime.now());
     taskToUpdate.setDescription(taskUpdateRequest.getDescription());
-//    taskToUpdate.setExecutionPeriodStart(
-//        Date.from(taskUpdateRequest.getExecutionPeriodStart().atStartOfDay(
-//            ZoneId.systemDefault()).toInstant()));
-//    taskToUpdate.setExecutionPeriodEnd(
-//        Date.from(taskUpdateRequest.getExecutionPeriodEnd().atStartOfDay(
-//            ZoneId.systemDefault()).toInstant()));
+    taskToUpdate.setExecutionPeriodStart(taskUpdateRequest.getExecutionPeriodStart());
+    taskToUpdate.setExecutionPeriodEnd(
+        taskUpdateRequest.getExecutionPeriodEnd());
     taskToUpdate.setPriority(taskUpdateRequest.getPriority());
 
     return taskRepository.save(taskToUpdate);
@@ -141,33 +137,25 @@ public class TaskService {
     return lookupTaskStatusRepository.findAll();
   }
 
-  public void testPlanGeneration() {
-
-    var plan = jdbcTemplate.query(
-            "SELECT identifier from plan WHERE name = 'OnePlan'",
-            (rs, rowNum) -> (java.util.UUID) rs.getObject("identifier")).stream()
-        .findFirst();
-
-    generateTasksByPlanId(plan.get());
-
-  }
-
   public void generateTasksByPlanId(UUID planIdentifier) {
 
     Plan plan = planService.getPlanByIdentifier(planIdentifier);
-    Set<Goal> goals = plan.getGoals();
+    if (plan.getStatus().equals(PlanStatusEnum.ACTIVE)) {
+      Set<Goal> goals = plan.getGoals();
 
-    Set<Action> actions = new HashSet<>();
-    for (Goal goal : goals) {
-      actions.addAll(goal.getActions());
+      Set<Action> actions = new HashSet<>();
+      for (Goal goal : goals) {
+        actions.addAll(goal.getActions());
+      }
+
+      actions.forEach(action -> generateTasksByActionAndPlanIdentifier(action, planIdentifier));
+    } else {
+      log.info("Cannot generate tasks for plan with identifier: {} as it not yet been activated" ,planIdentifier);
     }
-
-    actions.forEach(action -> generateTasksByAction(action, planIdentifier));
   }
 
-  public void generateTasksByAction(Action action, UUID planIdentifier) {
-
-    actionService.getByIdentifier(action.getIdentifier())
+  public void generateTasksByActionAndPlanIdentifier(Action action, UUID planIdentifier) {
+    action
         .getConditions()
         .forEach(
             condition -> generateTasksByActionConditionQuery(action, condition, planIdentifier));
@@ -182,7 +170,7 @@ public class TaskService {
     List<Task> tasks = new ArrayList<>();
     for (UUID entityUUID : uuids) {
 
-      if (action.getLookupEntityType().getCode().equals("Location")) {
+      if (action.getLookupEntityType().getCode().equals(LOCATION)) {
         if (taskRepository.findTasksByAction_IdentifierAndLocation_Identifier(
             action.getIdentifier(), entityUUID).size() > 0) {
           log.info("task for location: {} already exists", entityUUID);
@@ -190,7 +178,7 @@ public class TaskService {
         }
       }
 
-      if (action.getLookupEntityType().getCode().equals("Person")) {
+      if (action.getLookupEntityType().getCode().equals(PERSON)) {
         if (taskRepository.findTasksByAction_IdentifierAndPerson_Identifier(action.getIdentifier(),
             entityUUID).size() > 0) {
           log.info("task for person: {} already exists", entityUUID);
@@ -213,11 +201,11 @@ public class TaskService {
           .build();
       task.setEntityStatus(EntityStatus.ACTIVE);
 
-      if (action.getLookupEntityType().getCode().equals("Location")) {
+      if (action.getLookupEntityType().getCode().equals(LOCATION)) {
         Location location = locationService.findByIdentifier(entityUUID);
         task.setLocation(location);
       }
-      if (action.getLookupEntityType().getCode().equals("Person")) {
+      if (action.getLookupEntityType().getCode().equals(PERSON)) {
         Person person = personService.getPersonByIdentifier(entityUUID);
         task.setPerson(person);
       }
