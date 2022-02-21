@@ -8,8 +8,8 @@ import com.revealprecision.revealserver.enums.PlanStatusEnum;
 import com.revealprecision.revealserver.enums.TaskPriorityEnum;
 import com.revealprecision.revealserver.exceptions.DuplicateTaskCreationException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
+import com.revealprecision.revealserver.exceptions.QueryGenerationException;
 import com.revealprecision.revealserver.persistence.domain.Action;
-import com.revealprecision.revealserver.persistence.domain.Goal;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LookupTaskStatus;
 import com.revealprecision.revealserver.persistence.domain.Person;
@@ -24,9 +24,7 @@ import com.revealprecision.revealserver.service.models.TaskSearchCriteria;
 import com.revealprecision.revealserver.util.ConditionQueryUtil;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -137,35 +135,37 @@ public class TaskService {
     return lookupTaskStatusRepository.findAll();
   }
 
-  public void generateTasksByPlanId(UUID planIdentifier) {
+  public void generateTasksByPlanId(UUID planIdentifier) throws QueryGenerationException {
 
     Plan plan = planService.getPlanByIdentifier(planIdentifier);
     if (plan.getStatus().equals(PlanStatusEnum.ACTIVE)) {
-      Set<Goal> goals = plan.getGoals();
 
-      Set<Action> actions = new HashSet<>();
-      for (Goal goal : goals) {
-        actions.addAll(goal.getActions());
-      }
+      plan.getGoals().stream().forEach(goal ->
+          goal.getActions().forEach(action ->
+              action.getConditions()
+                  .forEach(
+                      condition -> {
+                        try {
+                          generateTasksByActionConditionQuery(action, condition,
+                              planIdentifier);
+                        } catch (QueryGenerationException e) {
+                          log.error("Cannot generate tasks for condition: {}, action: {}, plan: {}",condition,action,plan);
+                        }
+                      }))
+      );
 
-      actions.forEach(action -> generateTasksByActionAndPlanIdentifier(action, planIdentifier));
     } else {
-      log.info("Cannot generate tasks for plan with identifier: {} as it not yet been activated" ,planIdentifier);
+      log.info("Cannot generate tasks for plan with identifier: {} as it not yet been activated",
+          planIdentifier);
     }
-  }
-
-  public void generateTasksByActionAndPlanIdentifier(Action action, UUID planIdentifier) {
-    action
-        .getConditions()
-        .forEach(
-            condition -> generateTasksByActionConditionQuery(action, condition, planIdentifier));
   }
 
   public void generateTasksByActionConditionQuery(Action action,
       com.revealprecision.revealserver.persistence.domain.Condition condition,
-      UUID planIdentifier) {
+      UUID planIdentifier) throws QueryGenerationException {
     Query query = ConditionQueryUtil.getQueryObject(condition.getQuery(),
         action.getLookupEntityType().getCode());
+
     List<UUID> uuids = entityFilterService.filterEntities(query, planIdentifier);
     List<Task> tasks = new ArrayList<>();
     for (UUID entityUUID : uuids) {
@@ -179,7 +179,8 @@ public class TaskService {
       }
 
       if (action.getLookupEntityType().getCode().equals(PERSON)) {
-        if (taskRepository.findTasksByAction_IdentifierAndPerson_Identifier(action.getIdentifier(),
+        if (taskRepository.findTasksByAction_IdentifierAndPerson_Identifier(
+            action.getIdentifier(),
             entityUUID).size() > 0) {
           log.info("task for person: {} already exists", entityUUID);
           continue;
