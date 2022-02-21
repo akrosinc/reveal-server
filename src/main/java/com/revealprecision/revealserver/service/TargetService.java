@@ -35,10 +35,7 @@ public class TargetService {
       UUID goalIdentifier) {
     Plan plan = planService.getPlanByIdentifier(planIdentifier);
     Goal goal = goalService.findByIdentifier(goalIdentifier);
-    validateData(plan, goal, null);
-    //TODO: finish this
-//    Target target = TargetEntityFactory.toEntity(targetRequest, goal);
-//    targetRepository.save(target);
+    //TODO: finish target creation
   }
 
   public void updateTarget(TargetRequest targetRequest, UUID planIdentifier, UUID goalIdentifier,
@@ -46,7 +43,6 @@ public class TargetService {
     Target target = getByIdentifier(targetIdentifier);
     Plan plan = planService.getPlanByIdentifier(planIdentifier);
     Goal goal = goalService.findByIdentifier(goalIdentifier);
-    validateData(plan, goal, target);
 
     target.update(targetRequest);
     targetRepository.save(target);
@@ -58,21 +54,8 @@ public class TargetService {
     Goal goal = goalService.findByIdentifier(goalIdentifier);
     Action action = actionService.getByIdentifier(actionIdentifier);
     Condition condition = conditionService.getCondition(conditionIdentifier);
-    validateData(plan, goal, null);
 
     return targetRepository.getAll(conditionIdentifier, pageable);
   }
 
-  public void validateData(Plan plan, Goal goal, Target target) {
-//    if (!plan.getGoals().contains(goal)) {
-//      throw new ConflictException(Goal.class, goal.getIdentifier(), Plan.class,
-//          plan.getIdentifier());
-//    }
-//    if (target != null) {
-//      if (!goal.getTargets().contains(target)) {
-//        throw new ConflictException(Target.class, target.getIdentifier(), Goal.class,
-//            goal.getIdentifier());
-//      }
-//    }
-  }
 }
