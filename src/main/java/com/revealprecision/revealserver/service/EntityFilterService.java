@@ -19,11 +19,11 @@ public class EntityFilterService {
   private final JdbcTemplate jdbcTemplate;
   private final ConditionQueryProperties conditionQueryProperties;
 
-  final static String WHERE = " WHERE ";
+  private final static String WHERE = " WHERE ";
 
-  final static String PERSON = "person";
+  private final static String PERSON_TABLE = "person";
 
-  final static String LOCATION = "location";
+  private final static String LOCATION_TABLE = "location";
 
   @Autowired
   public EntityFilterService(JdbcTemplate jdbcTemplate,
@@ -53,7 +53,7 @@ public class EntityFilterService {
       String wherePartBeforeLocationJurisdiction = combineGroupedOrConditionsAndAndConditions(
           groupedOrConditions, andConditionList);
 
-      if (query.getEntity().equalsIgnoreCase(LOCATION)) {
+      if (query.getEntity().equalsIgnoreCase(LOCATION_TABLE)) {
 
         queryFinal = conditionQueryProperties.getLocationWithConditionsQuery() + "\n"
             + WHERE
@@ -62,7 +62,7 @@ public class EntityFilterService {
             + locationJurisdictionsPart;
       }
 
-      if (query.getEntity().equalsIgnoreCase(PERSON)) {
+      if (query.getEntity().equalsIgnoreCase(PERSON_TABLE)) {
         queryFinal =
             conditionQueryProperties.getPersonWithConditionQueryWithinALocationJurisdiction() + "\n"
                 + WHERE
