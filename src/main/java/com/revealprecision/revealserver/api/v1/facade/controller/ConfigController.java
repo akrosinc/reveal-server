@@ -1,12 +1,14 @@
 package com.revealprecision.revealserver.api.v1.facade.controller;
 
 
+import java.text.MessageFormat;
 import lombok.RequiredArgsConstructor;
 import org.keycloak.adapters.KeycloakDeployment;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestTemplate;
 
 @RestController
 @RequestMapping("/rest/config")
@@ -17,7 +19,9 @@ public class ConfigController {
 
   @GetMapping("/keycloak")
   public ResponseEntity<String> getKeyCloakDetails() {
-    String tokenURL = keycloakDeployment.getTokenUrl();
-    return ResponseEntity.ok(tokenURL);
+    String url = MessageFormat.format("{0}/realms/{1}/.well-known/openid-configuration",
+        keycloakDeployment.getAuthServerBaseUrl(),
+        keycloakDeployment.getRealm());
+    return new RestTemplate().getForEntity(url, String.class);
   }
 }
