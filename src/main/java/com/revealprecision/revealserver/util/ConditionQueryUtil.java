@@ -37,7 +37,8 @@ import lombok.extern.slf4j.Slf4j;
  * 7. Between includes the highest and lowest values specified in the search i.e. >= lowvalue and <= highvalue
  * 8. OR conditions can only be within parenthesis and reference the same field -> Person.[tag_string]eye_color="brown" OR Person.[tag_integer]weight=10 is NOT allowed
  *     correct use: ( Person.[tag_string]eye_color="brown" OR Person.[tag_string]eye_color="brown" ) AND Person.[tag_integer]weight=10
- * 9. AND conditions must ALWAYS be outside of parenthesis
+ * 9. Nested OR conditions are not supported
+ * 10. AND conditions must ALWAYS be outside of parenthesis
  */
 @Slf4j
 public class ConditionQueryUtil {
@@ -69,31 +70,17 @@ public class ConditionQueryUtil {
 
     if (!queryStr.equals("")) {
 
-      Pattern pattern = Pattern.compile("\\([^()]*\\)");
-      Matcher matcher = pattern.matcher(queryStr);
-      Map<String, List<String>> queryMap = new HashMap<>();
 
-      int groupCount = 0;
+      Map<String, List<String>> queryMap = getQueryMapObjectOfOrConditions(queryStr);  //Or Conditions are added to map with keys "group<some integer>"
 
-      while (matcher.find() ) {
+      String queryStrWithoutBracketedOrConditions = extractAndRemoveOrConditionsWithinParenthesis(queryStr); //Or Conditions are replaced from the string with the "group" name
 
-        String foundStr = matcher.group();
-        List<String> orStrings = splitByOR(foundStr);
-
-        String key = "#group" + groupCount;
-        queryMap.put(key, orStrings);
-
-        queryStr = queryStr.replace(foundStr, key);
-
-        matcher = pattern.matcher(queryStr);
-        groupCount++;
-      }
-      List<String> andConditions = splitByAND(queryStr);
+      List<String> andConditions = splitByAND(queryStrWithoutBracketedOrConditions);
 
       for (String andCondition : andConditions) {
         String criteria = andCondition.trim();
-        if (criteria.startsWith("#")) {
-          List<String> orConditions = queryMap.get(criteria);
+        if (criteria.startsWith("#")) {                       //this implies that the list has encountered a grouped list of Or Conditions
+          List<String> orConditions = queryMap.get(criteria); //the Or Condition List are looked up from the HashMap and collected as Condition Objects
           for (String orCondition : orConditions) {
             Condition query = getQuery(orCondition, criteria);
             orConditionList.add(query);
@@ -112,13 +99,52 @@ public class ConditionQueryUtil {
     return query;
   }
 
+  private static String extractAndRemoveOrConditionsWithinParenthesis(String queryStr) {
+
+    int groupCount = 0;
+
+    Pattern pattern = Pattern.compile("\\([^()]*\\)"); // pattern check for conditions in parenthesis
+    Matcher matcher = pattern.matcher(queryStr);
+
+    while (matcher.find() ) {
+
+      String foundStr = matcher.group();
+      String key = "#group" + groupCount;
+      queryStr = queryStr.replace(foundStr, key);
+      matcher = pattern.matcher(queryStr);
+      groupCount++;
+    }
+    return queryStr;
+  }
+
+  private static Map<String, List<String>> getQueryMapObjectOfOrConditions(String queryStr){
+
+    Map<String, List<String>> queryMap = new HashMap<>();
+
+    int groupCount = 0;
+
+    Pattern pattern = Pattern.compile("\\([^()]*\\)"); // pattern check for conditions in parenthesis
+    Matcher matcher = pattern.matcher(queryStr);
+
+    while (matcher.find() ) {
+      String foundStr = matcher.group();
+      List<String> orStrings = splitByOR(foundStr);
+      String key = "#group" + groupCount;
+      queryMap.put(key, orStrings);
+      queryStr = queryStr.replace(foundStr, key);
+      matcher = pattern.matcher(queryStr);
+      groupCount++;
+    }
+    return queryMap;
+  }
+
   /**
    * Given a Reveal frontend condition the method will build Condition Object
    *
-   * Results
-   * @param condition=Person.[tag_string]eye_color = "brown"
-   * @param group=#group0
-   * @return Condition(entity=Person, type=tag, dataType=string, operator="==",group=#group1)
+   * Example:
+   * condition=Person.[tag_string]eye_color = "brown"
+   * group=#group0
+   * returns Condition(entity=Person, type=tag, dataType=string, operator="==",group=#group1)
    *
    * Where the operator BETWEEN is used the method will expect a comma separated value representing a range
    * example value = 10,10
@@ -127,10 +153,10 @@ public class ConditionQueryUtil {
 
     Pattern tagPattern = Pattern.compile("\\[[^()]*\\]"); // Extract the field type eg. tag or core within and including brackets' [...]
 
-    Condition andConditions = new Condition();
+    Condition conditionObj = new Condition();
     List<String> strings = Arrays.asList(condition.trim().split(" "));
     String entity = strings.get(0).split("\\.")[0]; // as per example above entity = person
-    andConditions.setEntity(entity);
+    conditionObj.setEntity(entity);
     String property = strings.get(0).split("\\.")[1]; // as per example above property = birth_date
     Matcher tagMatcher = tagPattern.matcher(property);
 
@@ -139,13 +165,13 @@ public class ConditionQueryUtil {
       String cleanedTag = tagFound.replace("[", "").replace("]", "");
       List<String> typeAndDataType = Arrays.asList(cleanedTag.split("_"));
 
-      andConditions.setType(typeAndDataType.get(0)); // as per example above type = core
-      andConditions.setDataType(typeAndDataType.get(1)); // as per example above dataType = date
+      conditionObj.setType(typeAndDataType.get(0)); // as per example above type = core
+      conditionObj.setDataType(typeAndDataType.get(1)); // as per example above dataType = date
       String regex = "\\" + tagFound + "\\b";
-      andConditions.setProperty(property.replaceAll(regex, ""));
+      conditionObj.setProperty(property.replaceAll(regex, ""));
     }
     if (group != null) {
-      andConditions.setGroup(group);
+      conditionObj.setGroup(group);
     }
 
     for (String s : strings) {
@@ -155,16 +181,16 @@ public class ConditionQueryUtil {
           s.contains(">") ||
           s.contains("<") ||
           s.contains("BETWEEN")) {
-        andConditions.setOperator(s);
+        conditionObj.setOperator(s);
 
         if (s.equals("BETWEEN")) {
-          andConditions.setValue(Arrays.asList(strings.get(strings.size() - 1).split(",")));
+          conditionObj.setValue(Arrays.asList(strings.get(strings.size() - 1).split(","))); //get comma separated range value set for between cases
         } else {
-          andConditions.setValue(Arrays.asList(strings.get(strings.size() - 1)));
+          conditionObj.setValue(List.of(strings.get(strings.size() - 1)));
         }
       }
     }
-    return andConditions;
+    return conditionObj;
   }
 
   static List<String> splitByOR(String query) {
