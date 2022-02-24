@@ -48,7 +48,7 @@ public class Task extends AbstractAuditableEntity {
   @JoinColumn(name = "lookup_task_status_identifier", referencedColumnName = "identifier", nullable = false)
   private LookupTaskStatus lookupTaskStatus;
 
-  @ManyToOne(fetch = FetchType.LAZY)
+  @ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "action_identifier", referencedColumnName = "identifier", nullable = false)
   private Action action;
 
