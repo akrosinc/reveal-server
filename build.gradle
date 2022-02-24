@@ -57,6 +57,7 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok:1.18.22'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.jobrunr:jobrunr-spring-boot-starter:4.0.3'
+    annotationProcessor "org.springframework.boot:spring-boot-configuration-processor:2.5.6"
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test:2.5.6'
     testImplementation 'org.springframework.batch:spring-batch-test:4.3.3'

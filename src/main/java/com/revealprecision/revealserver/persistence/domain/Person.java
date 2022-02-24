@@ -9,7 +9,7 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
-import javax.persistence.Table;
+import javax.persistence.OneToOne;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -60,5 +60,20 @@ public class Person extends AbstractAuditableEntity {
       inverseJoinColumns = @JoinColumn(name = "group_identifier")
   )
   private Set<Group> groups;
+
+  @ManyToMany
+  @JoinTable(name = "person_location",
+      joinColumns = @JoinColumn(name = "person_identifier"),
+      inverseJoinColumns = @JoinColumn(name = "location_identifier")
+  )
+  private Set<Location> locations;
+
+  @OneToOne(mappedBy = "person")
+  private PersonMetadata personMetadata;
+
+  public Person(UUID identifier, String name) {
+    this.identifier = identifier;
+    this.nameText = name;
+  }
 
 }

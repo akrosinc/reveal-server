@@ -81,4 +81,5 @@ public class Plan extends AbstractAuditableEntity {
     this.interventionType = interventionType;
     return this;
   }
+
 }

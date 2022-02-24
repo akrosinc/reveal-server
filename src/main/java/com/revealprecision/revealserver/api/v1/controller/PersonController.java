@@ -60,7 +60,8 @@ public class PersonController {
           return new ResponseEntity<>(new PageImpl<>(
               personService.searchPersonByOneValueAcrossAllFields(searchParam, pageable).stream()
                   .map(PersonResponseFactory::getPersonResponseBuilder)
-                  .map(PersonResponseBuilder::build).collect(Collectors.toList())), HttpStatus.OK);
+                  .map(PersonResponseBuilder::build).collect(Collectors.toList()))
+              , HttpStatus.OK);
         } else {
           return new ResponseEntity<>(new PageImpl<>(
               personService.searchPersonByMultipleValuesAcrossFields(criteria, pageable).stream()
