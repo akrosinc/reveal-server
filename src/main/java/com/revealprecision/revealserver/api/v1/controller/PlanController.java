@@ -1,22 +1,13 @@
 package com.revealprecision.revealserver.api.v1.controller;
 
-import com.revealprecision.revealserver.api.v1.dto.factory.ActionResponseFactory;
-import com.revealprecision.revealserver.api.v1.dto.factory.ConditionResponseFactory;
-import com.revealprecision.revealserver.api.v1.dto.factory.GoalResponseFactory;
-import com.revealprecision.revealserver.api.v1.dto.factory.PlanResponseFactory;
-import com.revealprecision.revealserver.api.v1.dto.factory.TargetResponseFactory;
+import com.revealprecision.revealserver.api.v1.dto.factory.*;
 import com.revealprecision.revealserver.api.v1.dto.request.ActionRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.ConditionRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.GoalRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.GoalUpdateRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.PlanRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.TargetRequest;
-import com.revealprecision.revealserver.api.v1.dto.response.ActionResponse;
-import com.revealprecision.revealserver.api.v1.dto.response.ConditionResponse;
-import com.revealprecision.revealserver.api.v1.dto.response.CountResponse;
-import com.revealprecision.revealserver.api.v1.dto.response.GoalResponse;
-import com.revealprecision.revealserver.api.v1.dto.response.PlanResponse;
-import com.revealprecision.revealserver.api.v1.dto.response.TargetResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.*;
 import com.revealprecision.revealserver.enums.SummaryEnum;
 import com.revealprecision.revealserver.service.ActionService;
 import com.revealprecision.revealserver.service.ConditionService;
@@ -24,10 +15,13 @@ import com.revealprecision.revealserver.service.GoalService;
 import com.revealprecision.revealserver.service.PlanService;
 import com.revealprecision.revealserver.service.TargetService;
 import io.swagger.v3.oas.annotations.Parameter;
+
+import java.util.List;
 import java.util.UUID;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -74,6 +68,15 @@ public class PlanController {
     return ResponseEntity
         .status(HttpStatus.OK)
         .body(PlanResponseFactory.fromEntity(planService.getPlanByIdentifier(identifier)));
+  }
+
+  @GetMapping("/{identifier}/locationHierarchy")
+  public ResponseEntity<Page<GeoTreeResponse>> getHierarchyByPlanIdentifier(@PathVariable("identifier") UUID identifier, Pageable pageable) {
+    List<GeoTreeResponse> geoTreeResponseList = planService.getHierarchyByPlanIdentifier(identifier);
+    Page<GeoTreeResponse> pageableGeoTreeResponse = LocationHierarchyResponseFactory.generatePageableGeoTreeResponse(geoTreeResponseList,pageable, "");
+    return ResponseEntity
+            .status(HttpStatus.OK)
+            .body(pageableGeoTreeResponse);
   }
 
   @PostMapping

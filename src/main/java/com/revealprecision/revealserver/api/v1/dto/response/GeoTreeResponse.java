@@ -22,4 +22,5 @@ public class GeoTreeResponse {
   private Geometry geometry;
   private LocationPropertyResponse properties;
   private List<GeoTreeResponse> children;
+  private Boolean active;
 }

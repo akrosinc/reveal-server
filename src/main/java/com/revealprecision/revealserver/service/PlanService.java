@@ -1,25 +1,21 @@
 package com.revealprecision.revealserver.service;
 
 import com.cosium.spring.data.jpa.entity.graph.domain.EntityGraphUtils;
+import com.revealprecision.revealserver.api.v1.dto.factory.LocationHierarchyResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.PlanEntityFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.PlanRequest;
+import com.revealprecision.revealserver.api.v1.dto.response.GeoTree;
+import com.revealprecision.revealserver.api.v1.dto.response.GeoTreeResponse;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.enums.PlanStatusEnum;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
-import com.revealprecision.revealserver.persistence.domain.Action;
-import com.revealprecision.revealserver.persistence.domain.Condition;
-import com.revealprecision.revealserver.persistence.domain.Form;
-import com.revealprecision.revealserver.persistence.domain.Goal;
-import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
-import com.revealprecision.revealserver.persistence.domain.LookupInterventionType;
-import com.revealprecision.revealserver.persistence.domain.Plan;
+import com.revealprecision.revealserver.persistence.domain.*;
 import com.revealprecision.revealserver.persistence.domain.Plan.Fields;
 import com.revealprecision.revealserver.persistence.repository.PlanRepository;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+
+import java.util.*;
+import java.util.stream.Collectors;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -98,5 +94,29 @@ public class PlanService {
         request.getInterventionType());
     plan.update(request, hierarchy, interventionType);
     planRepository.save(plan);
+  }
+
+  public List<GeoTreeResponse> getHierarchyByPlanIdentifier(UUID identifier) {
+    Plan plan = getPlanByIdentifier((identifier));
+    LocationHierarchy locationHierarchy = locationHierarchyService.findByIdentifier(plan.getLocationHierarchy().getIdentifier());
+    GeoTree geoTree = locationHierarchyService.getGeoTreeFromLocationHierarchy(locationHierarchy);
+    List<GeoTreeResponse> geoTreeResponses = LocationHierarchyResponseFactory.generateGeoTreeResponseFromTree(
+            locationHierarchyService.getGeoTreeFromLocationHierarchy(locationHierarchy)
+                    .getLocationsHierarchy(), false);
+    Set<Location> locations = plan.getLocations();
+    Map<UUID, Location> locationMap = locations.stream().collect(Collectors.toMap(Location::getIdentifier, location -> location));
+    geoTreeResponses.forEach(el -> {
+        assignLocations(locationMap, el);
+    });
+    return geoTreeResponses;
+  }
+
+  public void assignLocations(Map<UUID, Location> locationMap, GeoTreeResponse geoTreeResponse) {
+    if(locationMap.containsKey(geoTreeResponse.getIdentifier())) {
+      geoTreeResponse.setActive(true);
+    } else {
+      geoTreeResponse.setActive(false);
+    }
+    geoTreeResponse.getChildren().forEach(el -> assignLocations(locationMap, el));
   }
 }
