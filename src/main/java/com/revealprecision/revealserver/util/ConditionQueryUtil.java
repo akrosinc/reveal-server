@@ -45,7 +45,7 @@ public class ConditionQueryUtil {
 
   /**
    * Returns a Query object given a Reveal frontend query and the entity type
-   *
+   * <p>
    * Given a Reveal frontend query Example:
    *
    * ( Person.[tag_string]eye_color = "brown" OR Person.[tag_string]eye_color = "black" ) AND Person.[tag_integer]weight>10
@@ -70,17 +70,20 @@ public class ConditionQueryUtil {
 
     if (!queryStr.equals("")) {
 
+      Map<String, List<String>> queryMap = getQueryMapObjectOfOrConditions(
+          queryStr);  //Or Conditions are added to map with keys "group<some integer>"
 
-      Map<String, List<String>> queryMap = getQueryMapObjectOfOrConditions(queryStr);  //Or Conditions are added to map with keys "group<some integer>"
-
-      String queryStrWithoutBracketedOrConditions = extractAndRemoveOrConditionsWithinParenthesis(queryStr); //Or Conditions are replaced from the string with the "group" name
+      String queryStrWithoutBracketedOrConditions = extractAndRemoveOrConditionsWithinParenthesis(
+          queryStr); //Or Conditions are replaced from the string with the "group" name
 
       List<String> andConditions = splitByAND(queryStrWithoutBracketedOrConditions);
 
       for (String andCondition : andConditions) {
         String criteria = andCondition.trim();
-        if (criteria.startsWith("#")) {                       //this implies that the list has encountered a grouped list of Or Conditions
-          List<String> orConditions = queryMap.get(criteria); //the Or Condition List are looked up from the HashMap and collected as Condition Objects
+        if (criteria.startsWith(
+            "#")) {                       //this implies that the list has encountered a grouped list of Or Conditions
+          List<String> orConditions = queryMap.get(
+              criteria); //the Or Condition List are looked up from the HashMap and collected as Condition Objects
           for (String orCondition : orConditions) {
             Condition query = getQuery(orCondition, criteria);
             orConditionList.add(query);
@@ -103,10 +106,11 @@ public class ConditionQueryUtil {
 
     int groupCount = 0;
 
-    Pattern pattern = Pattern.compile("\\([^()]*\\)"); // pattern check for conditions in parenthesis
+    Pattern pattern = Pattern.compile(
+        "\\([^()]*\\)"); // pattern check for conditions in parenthesis
     Matcher matcher = pattern.matcher(queryStr);
 
-    while (matcher.find() ) {
+    while (matcher.find()) {
 
       String foundStr = matcher.group();
       String key = "#group" + groupCount;
@@ -117,16 +121,17 @@ public class ConditionQueryUtil {
     return queryStr;
   }
 
-  private static Map<String, List<String>> getQueryMapObjectOfOrConditions(String queryStr){
+  private static Map<String, List<String>> getQueryMapObjectOfOrConditions(String queryStr) {
 
     Map<String, List<String>> queryMap = new HashMap<>();
 
     int groupCount = 0;
 
-    Pattern pattern = Pattern.compile("\\([^()]*\\)"); // pattern check for conditions in parenthesis
+    Pattern pattern = Pattern.compile(
+        "\\([^()]*\\)"); // pattern check for conditions in parenthesis
     Matcher matcher = pattern.matcher(queryStr);
 
-    while (matcher.find() ) {
+    while (matcher.find()) {
       String foundStr = matcher.group();
       List<String> orStrings = splitByOR(foundStr);
       String key = "#group" + groupCount;
@@ -140,18 +145,17 @@ public class ConditionQueryUtil {
 
   /**
    * Given a Reveal frontend condition the method will build Condition Object
-   *
-   * Example:
-   * condition=Person.[tag_string]eye_color = "brown"
-   * group=#group0
-   * returns Condition(entity=Person, type=tag, dataType=string, operator="==",group=#group1)
-   *
-   * Where the operator BETWEEN is used the method will expect a comma separated value representing a range
-   * example value = 10,10
+   * <p>
+   * Example: condition=Person.[tag_string]eye_color = "brown" group=#group0 returns
+   * Condition(entity=Person, type=tag, dataType=string, operator="==",group=#group1)
+   * <p>
+   * Where the operator BETWEEN is used the method will expect a comma separated value representing
+   * a range example value = 10,10
    */
   private static Condition getQuery(String condition, String group) {
 
-    Pattern tagPattern = Pattern.compile("\\[[^()]*\\]"); // Extract the field type eg. tag or core within and including brackets' [...]
+    Pattern tagPattern = Pattern.compile(
+        "\\[[^()]*\\]"); // Extract the field type eg. tag or core within and including brackets' [...]
 
     Condition conditionObj = new Condition();
     List<String> strings = Arrays.asList(condition.trim().split(" "));
@@ -175,16 +179,13 @@ public class ConditionQueryUtil {
     }
 
     for (String s : strings) {
-      if (s.contains("==") ||
-          s.contains(">=") ||
-          s.contains("<=") ||
-          s.contains(">") ||
-          s.contains("<") ||
-          s.contains("BETWEEN")) {
+      if (s.contains("==") || s.contains(">=") || s.contains("<=") || s.contains(">") || s.contains(
+          "<") || s.contains("BETWEEN")) {
         conditionObj.setOperator(s);
 
         if (s.equals("BETWEEN")) {
-          conditionObj.setValue(Arrays.asList(strings.get(strings.size() - 1).split(","))); //get comma separated range value set for between cases
+          conditionObj.setValue(Arrays.asList(strings.get(strings.size() - 1)
+              .split(","))); //get comma separated range value set for between cases
         } else {
           conditionObj.setValue(List.of(strings.get(strings.size() - 1)));
         }
@@ -213,8 +214,7 @@ public class ConditionQueryUtil {
   private static String removeLast(String s, String search) {
     int pos = s.lastIndexOf(search);
     if (pos > -1) {
-      return s.substring(0, pos)
-          + s.substring(pos + search.length());
+      return s.substring(0, pos) + s.substring(pos + search.length());
     }
     return s;
   }
