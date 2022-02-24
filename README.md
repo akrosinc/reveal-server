@@ -23,3 +23,7 @@ This will generate a report in `build/reports/dependency-check-report.html`
 ```bash
 ./gradlew dependencyCheckAnalyze --info
 ```
+## Swagger
+```text
+/swagger-ui/index.html?configUrl=/api-docs/swagger-config
+```

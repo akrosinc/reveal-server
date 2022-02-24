@@ -1,0 +1,967 @@
+{
+	"info": {
+		"_postman_id": "5f358afc-602e-4c2b-83a2-86c7d549e799",
+		"name": "task",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "authenticate Copy",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", () => {",
+							"  pm.expect(pm.response.code).to.eql(200);",
+							"});",
+							"",
+							"var jsonData = JSON.parse(responseBody);",
+							"pm.globals.set(\"auth_bearer_token\", jsonData.access_token);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{
+							"key": "grant_type",
+							"value": "password",
+							"type": "text"
+						},
+						{
+							"key": "client_id",
+							"value": "reveal-web",
+							"type": "text"
+						},
+						{
+							"key": "username",
+							"value": "{{username}}",
+							"type": "text"
+						},
+						{
+							"key": "password",
+							"value": "{{password}}",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{keycloak_URL}}/auth/realms/{{keycloak_realm}}/protocol/openid-connect/token",
+					"host": [
+						"{{keycloak_URL}}"
+					],
+					"path": [
+						"auth",
+						"realms",
+						"{{keycloak_realm}}",
+						"protocol",
+						"openid-connect",
+						"token"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "create form Copy",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"pm.collectionVariables.set(\"form_name\", pm.variables.replaceIn('{{$randomBsBuzz}}'));"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{auth_bearer_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"name\": \"{{form_name}}\",\r\n  \"title\":  \"{{form_name}}\",\r\n  \"template\": false,\r\n  \"payload\": {}\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{server_url}}/api/v1/form",
+					"host": [
+						"{{server_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"form"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "create geographicLevel country",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 201\", () => {",
+							"  pm.expect(pm.response.code).to.oneOf([201,409]);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"pm.collectionVariables.set(\"geoLevelUP\", pm.variables.replaceIn('{{$randomBsBuzz}}'));"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{auth_bearer_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"name\": \"{{geoLevelUP}}\",\n    \"title\": \"{{geoLevelUP}}\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{server_url}}/api/v1/geographicLevel",
+					"host": [
+						"{{server_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"geographicLevel"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "create geographicLevel structure",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 201\", () => {",
+							"  pm.expect(pm.response.code).to.oneOf([201,409]);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"pm.collectionVariables.set(\"geoLevelDOWN\", pm.variables.replaceIn('{{$randomBsBuzz}}'));"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{auth_bearer_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"name\": \"{{geoLevelDOWN}}\",\n    \"title\": \"{{geoLevelDOWN}}\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{server_url}}/api/v1/geographicLevel",
+					"host": [
+						"{{server_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"geographicLevel"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "create locationHierarchy",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"tests[\"test: response_code\"] = (responseCode.code === 201 || responseCode.code === 409)"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"pm.collectionVariables.set(\"location_heirarchyName\", pm.variables.replaceIn('{{$randomBsBuzz}}'));"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{auth_bearer_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n   \"name\": \"{{location_heirarchyName}}\",\n  \"nodeOrder\": [\"{{geoLevelUP}}\",\"{{geoLevelDOWN}}\"]\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{server_url}}/api/v1/locationHierarchy",
+					"host": [
+						"{{server_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"locationHierarchy"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "fetch location hierarchy",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"\r",
+							"const jsonData = pm.response.json();\r",
+							"console.log(jsonData.content);\r",
+							" for (var i=0; i<jsonData.content.length;i++){\r",
+							"     console.log(jsonData.content[i]);\r",
+							"        if (jsonData.content[i].name == pm.collectionVariables.get(\"location_heirarchyName\")){\r",
+							"            console.info(\"found \",jsonData.content[i].name);\r",
+							"            found = true;\r",
+							"            pm.collectionVariables.set(\"location_heirarchyIdentifier\",jsonData.content[i].identifier);\r",
+							"        } \r",
+							"    }\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{auth_bearer_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{server_url}}/api/v1/locationHierarchy?pageSize=50&pageNumber=0",
+					"host": [
+						"{{server_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"locationHierarchy"
+					],
+					"query": [
+						{
+							"key": "pageSize",
+							"value": "50"
+						},
+						{
+							"key": "pageNumber",
+							"value": "0"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "create form",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"const jsonData = pm.response.json();\r",
+							"pm.collectionVariables.set(\"formIdentifier\",jsonData.content[0].identifier);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{auth_bearer_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{server_url}}/api/v1/form?pageNumber=0&pageSize=50&template=FALSE&search={{form_name}}",
+					"host": [
+						"{{server_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"form"
+					],
+					"query": [
+						{
+							"key": "pageNumber",
+							"value": "0"
+						},
+						{
+							"key": "pageSize",
+							"value": "50"
+						},
+						{
+							"key": "template",
+							"value": "FALSE"
+						},
+						{
+							"key": "search",
+							"value": "{{form_name}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create Intervention Type",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"pm.collectionVariables.set(\"interventionName\", pm.variables.replaceIn('{{$randomBsBuzz}}'));\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{auth_bearer_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"name\": \"{{interventionName}}\",\r\n    \"code\": \"{{interventionName}}\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{server_url}}/api/v1/lookupInterventionType",
+					"host": [
+						"{{server_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"lookupInterventionType"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Intervention types",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"\r",
+							"const jsonData = pm.response.json();\r",
+							"console.log(jsonData[0]);\r",
+							" for (var i=0; i<jsonData.length;i++){\r",
+							"        if (jsonData[i].name == pm.collectionVariables.get(\"interventionName\")){\r",
+							"            console.info(\"found \",jsonData[i].name);\r",
+							"            found = true;\r",
+							"            pm.collectionVariables.set(\"interventionIdentifier\",jsonData[0].identifier);\r",
+							"        } \r",
+							"    }\r",
+							"\r",
+							"\r",
+							"\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{server_url}}/api/v1/lookupInterventionType",
+					"host": [
+						"{{server_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"lookupInterventionType"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "create geographicLevel Copy",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 201\", () => {",
+							"  pm.expect(pm.response.code).to.eql(201);",
+							"});",
+							"",
+							"const jsonData = pm.response.json();",
+							"pm.collectionVariables.set(\"geographicLevel_identifier\",jsonData.identifier);",
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"pm.environment.unset(\"geographicLevel_identifier\");",
+							"pm.environment.unset(\"geographicLevel_name\");",
+							"",
+							"pm.collectionVariables.set(\"geographicLevel_name\", pm.variables.replaceIn('{{$randomBsBuzz}}'));",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{auth_bearer_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"name\": \"{{geographicLevel_name}}\",\n    \"title\": \"title for {{geographicLevel_name}}\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{server_url}}/api/v1/geographicLevel",
+					"host": [
+						"{{server_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"geographicLevel"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "create location for person testing Copy",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 201\", () => {",
+							"  pm.expect(pm.response.code).to.eql(201);",
+							"});",
+							"",
+							"const jsonData = pm.response.json();",
+							"pm.test(\"Test data of the response\", () => {",
+							"  pm.expect(jsonData.properties.name).to.eq(pm.collectionVariables.get(\"location_name\"));",
+							"  pm.expect(jsonData.properties.geographicLevel).to.eq(pm.collectionVariables.get(\"geographicLevel_name\"));",
+							"});",
+							"",
+							"pm.collectionVariables.set(\"location_identifier\",jsonData.identifier);"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"pm.collectionVariables.set(\"location_name\", pm.variables.replaceIn('{{$randomStreetName}}'));"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{auth_bearer_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"type\": \"Feature\",\n  \"properties\": {\n    \"name\": \"{{location_name}}\",\n    \"status\": \"ACTIVE\",\n    \"geographicLevel\": \"{{geographicLevel_name}}\"\n  },\n  \"geometry\": { \"type\": \"MultiPolygon\", \"coordinates\": [ [ [ [ 28.707147432408135, -15.528596871248567 ], [ 28.624546442664268, -15.727465012899984 ], [ 28.176560099369169, -15.698416522304626 ], [ 28.240278078070901, -15.6651332024353 ], [ 28.409887473028505, -15.456732560958869 ], [ 28.561896999746807, -15.180963999988535 ], [ 28.619814508632714, -15.180983902884748 ], [ 28.736883786557541, -15.297669462575584 ], [ 28.707147432408135, -15.528596871248567 ] ] ] ] }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{server_url}}/api/v1/location",
+					"host": [
+						"{{server_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"location"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Plan create Copy",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"\r",
+							"\r",
+							"var moment = require('moment');\r",
+							"const futureDate = moment().add(1,'months').format('YYYY-MM-DDTHH:mm:ss');\r",
+							"pm.variables.set(\"futureDate\",futureDate);\r",
+							"\r",
+							"const futureDate2Months = moment().add(2,'months').format('YYYY-MM-DDTHH:mm:ss');\r",
+							"pm.variables.set(\"futureDate2Months\",futureDate2Months);\r",
+							"\r",
+							"var goalname = pm.variables.replaceIn(\"{{$randomBsBuzz}}\") + pm.variables.replaceIn(\"{{$guid}}\");\r",
+							"pm.collectionVariables.set(\"goalId\",goalname.substring(0,20));\r",
+							"\r",
+							"var actionname = pm.variables.replaceIn(\"{{$randomBsBuzz}}\") + pm.variables.replaceIn(\"{{$guid}}\");\r",
+							"pm.collectionVariables.set(\"actionName\",actionname.substring(0,20));\r",
+							"\r",
+							"var planname = pm.variables.replaceIn(\"{{$randomBsBuzz}}\") + pm.variables.replaceIn(\"{{$guid}}\");\r",
+							"pm.collectionVariables.set(\"planName\",planname.substring(0,20));"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 201\", () => {\r",
+							"  pm.expect(pm.response.code).to.eql(201);\r",
+							"});\r",
+							"\r",
+							"\r",
+							"\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{auth_bearer_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"name\": \"{{planName}}\",\r\n    \"title\": \"Title for {{planName}}\",\r\n    \"effectivePeriod\": {\r\n        \"start\": \"{{futureDate}}\",\r\n        \"end\": \"{{futureDate2Months}}\"\r\n    },\r\n    \"locationHierarchy\": \"{{location_heirarchyIdentifier}}\",\r\n    \"interventionType\": \"{{interventionIdentifier}}\",\r\n    \"jurisdictions\": [\r\n        \"2b6ec0f8-1980-4226-b8a3-6848bd681dde\"\r\n    ],\r\n\t \"goals\": [\r\n        {\r\n            \"identifier\": \"{{goalId}}\",\r\n            \"description\": \"Desc for {{goalId}}\",\r\n            \"priority\": \"HIGH_PRIORITY\",\r\n            \"targets\": [\r\n                {\r\n                    \"measure\": \"mesaure1\",\r\n                    \"detail\": {\r\n                        \"detailQuantity\": {\r\n                            \"value\": 90,\r\n                            \"comparator\": \"gt;=\",\r\n                            \"unit\": \"PERCENT\"\r\n                        }\r\n                    },\r\n                    \"due\": \"2022-01-31\"\r\n                }\r\n            ],\r\n            \"actions\": [\r\n                {\r\n                    \"title\": \"{{actionName}}\",\r\n                    \"description\": \"Desc for {{actionName}}\",\r\n                    \"timingPeriod\": {\r\n                        \"start\": \"{{futureDate}}\",\r\n\t\t\t\t\t\t\"end\": \"{{futureDate2Months}}\"\r\n                    },\r\n                    \"reason\": \"Routine\",\r\n                    \"formIdentifier\": \"{{formIdentifier}}\",\r\n                    \"type\": \"CREATE\"\r\n                }\r\n            ]\r\n        }\r\n    ]\r\n\t\r\n}\r\n\r\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{server_url}}/api/v1/plan",
+					"host": [
+						"{{server_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"plan"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Plan search",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", () => {\r",
+							"  pm.expect(pm.response.code).to.eql(200);\r",
+							"});\r",
+							"\r",
+							"const jsonData = pm.response.json();\r",
+							"\r",
+							"console.log(jsonData.content[0]);\r",
+							"pm.collectionVariables.set(\"planIdentifier\",jsonData.content[0].identifier);\r",
+							"console.log(jsonData.content[0].goals[0].actions[0].identifier);\r",
+							"pm.collectionVariables.set(\"actionIdentifier\",jsonData.content[0].goals[0].actions[0].identifier);\r",
+							"console.log(jsonData.content[0].goals[0].actions[0].title);\r",
+							"pm.collectionVariables.set(\"actionName\",jsonData.content[0].goals[0].actions[0].title);\r",
+							"console.log(jsonData.content[0].goals[0].actions[0].description);\r",
+							"pm.collectionVariables.set(\"actionDescription\",jsonData.content[0].goals[0].actions[0].description);\r",
+							"console.log(jsonData.content[0].goals[0].actions[0].subject);\r",
+							"pm.collectionVariables.set(\"actionSubject\",jsonData.content[0].goals[0].actions[0].subject);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{auth_bearer_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{server_url}}/api/v1/plan?search={{planName}}&_summary=FALSE&pageNumber=0&pageSize=50",
+					"host": [
+						"{{server_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"plan"
+					],
+					"query": [
+						{
+							"key": "search",
+							"value": "{{planName}}"
+						},
+						{
+							"key": "_summary",
+							"value": "FALSE"
+						},
+						{
+							"key": "pageNumber",
+							"value": "0"
+						},
+						{
+							"key": "pageSize",
+							"value": "50"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "task create",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"var moment = require('moment');\r",
+							"const futureDate = moment().add(1,'months').format('YYYY-MM-DDTHH:mm:ss');\r",
+							"pm.variables.set(\"futureDate\",futureDate);\r",
+							"\r",
+							"const futureDate2Months = moment().add(2,'months').format('YYYY-MM-DDTHH:mm:ss');\r",
+							"pm.variables.set(\"futureDate2Months\",futureDate2Months);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{auth_bearer_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "\r\n{\r\n  \"priority\": \"ROUTINE\",\r\n  \"description\": \"{{actionDescription}}\",\r\n  \"actionIdentifier\": \"{{actionIdentifier}}\",\r\n  \"executionPeriodStart\": \"{{futureDate}}\",\r\n  \"executionPeriodEnd\": \"{{futureDate2Months}}\",\r\n  \"lookupTaskStatusIdentifier\": \"81606d30-84bf-4da8-a141-ec06af525089\",\r\n  \"locationIdentifier\":\"{{location_identifier}}\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{server_url}}/api/v1/task",
+					"host": [
+						"{{server_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"task"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "geographicLevel_name",
+			"value": ""
+		},
+		{
+			"key": "geographicLevel_identifier",
+			"value": ""
+		},
+		{
+			"key": "location_name",
+			"value": ""
+		},
+		{
+			"key": "location_identifier",
+			"value": ""
+		},
+		{
+			"key": "form_name",
+			"value": ""
+		},
+		{
+			"key": "planIdentifier",
+			"value": ""
+		},
+		{
+			"key": "goalId",
+			"value": ""
+		},
+		{
+			"key": "planName",
+			"value": ""
+		},
+		{
+			"key": "formIdentifier",
+			"value": ""
+		},
+		{
+			"key": "actionIdentifier",
+			"value": ""
+		},
+		{
+			"key": "actionName",
+			"value": ""
+		},
+		{
+			"key": "actionDescription",
+			"value": ""
+		},
+		{
+			"key": "actionSubject",
+			"value": ""
+		},
+		{
+			"key": "interventionIdentifier",
+			"value": ""
+		},
+		{
+			"key": "locationHierarchy_identifier",
+			"value": ""
+		},
+		{
+			"key": "interventionName",
+			"value": ""
+		},
+		{
+			"key": "location_heirarchyName",
+			"value": ""
+		},
+		{
+			"key": "geoLevelUP",
+			"value": ""
+		},
+		{
+			"key": "geoLevelDOWN",
+			"value": ""
+		},
+		{
+			"key": "location_heirarchyIdentifier",
+			"value": ""
+		}
+	]
+}

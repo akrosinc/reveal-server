@@ -8,6 +8,7 @@ import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.Group;
 import com.revealprecision.revealserver.persistence.domain.Organization.Fields;
 import com.revealprecision.revealserver.persistence.domain.Person;
+import com.revealprecision.revealserver.persistence.repository.PersonMetadataRepository;
 import com.revealprecision.revealserver.persistence.repository.PersonRepository;
 import com.revealprecision.revealserver.persistence.specification.PersonSpec;
 import com.revealprecision.revealserver.service.models.PersonSearchCriteria;
@@ -34,12 +35,15 @@ import org.springframework.stereotype.Service;
 public class PersonService {
 
   final PersonRepository personRepository;
+  final PersonMetadataRepository personMetadataRepository;
   final GroupService groupService;
 
   @Autowired
-  public PersonService(GroupService groupService, PersonRepository personRepository) {
+  public PersonService(GroupService groupService, PersonRepository personRepository,
+      PersonMetadataRepository personMetadataRepository) {
     this.personRepository = personRepository;
     this.groupService = groupService;
+    this.personMetadataRepository = personMetadataRepository;
   }
 
   public Person createPerson(PersonRequest personRequest) {
