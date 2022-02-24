@@ -1,9 +1,11 @@
 package com.revealprecision.revealserver.api.v1.controller;
 
+import com.revealprecision.revealserver.api.v1.dto.factory.LookupTaskStatusResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.TaskResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.TaskCreateRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.TaskUpdateRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.CountResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.LookupTaskStatusResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.TaskResponse;
 import com.revealprecision.revealserver.enums.SummaryEnum;
 import com.revealprecision.revealserver.persistence.domain.LookupTaskStatus;
@@ -13,11 +15,13 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import java.util.List;
 import java.util.UUID;
+import javax.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.lang.Nullable;
 import org.springframework.validation.annotation.Validated;
@@ -46,7 +50,7 @@ public class TaskController {
   @Operation(summary = "Search for Tasks", description = "Search for Tasks", tags = {"Task"})
   @GetMapping(produces = "application/json")
   public ResponseEntity<Page<TaskResponse>> getTasks(@Nullable TaskSearchCriteria search,
-      @Nullable Pageable pageable) {
+       Pageable pageable) {
 
     if (search != null) {
       return ResponseEntity.status(HttpStatus.OK)
@@ -74,16 +78,17 @@ public class TaskController {
   @Operation(summary = "Retrieve all Task Statuses", description = "Retrieve all Task Statuses", tags = {
       "Task"})
   @GetMapping(value = "/status", produces = "application/json")
-  public ResponseEntity<List<LookupTaskStatus>> getAllTaskStatuses() {
+  public ResponseEntity<List<LookupTaskStatusResponse>> getAllTaskStatuses() {
 
-    return ResponseEntity.status(HttpStatus.OK).body(taskService.getAllTaskStatus());
+    return ResponseEntity.status(HttpStatus.OK).body(
+        LookupTaskStatusResponseFactory.fromEntityList(taskService.getAllTaskStatus()));
 
   }
 
   @Operation(summary = "Fetch a Task by identifier", description = "Fetch a Task by identifier", tags = {
       "Task"})
   @ResponseStatus(HttpStatus.OK)
-  @GetMapping(value = "/{identifier}", produces = "application/json")
+  @GetMapping(value = "/{identifier}", produces = MediaType.APPLICATION_JSON_VALUE)
   public TaskResponse getTaskByIdentifier(
       @Parameter(description = "Task identifier") @PathVariable("identifier") UUID taskIdentifier) {
     return TaskResponseFactory.fromEntity(taskService.getTaskByIdentifier(taskIdentifier));
@@ -92,7 +97,7 @@ public class TaskController {
   @Operation(summary = "Create a task", description = "Create a Task", tags = {"Task"})
   @ResponseStatus(HttpStatus.CREATED)
   @PostMapping(consumes = "application/json", produces = "application/json")
-  public TaskResponse createTask(@Validated @RequestBody TaskCreateRequest taskRequest) {
+  public TaskResponse createTask(@Valid @RequestBody TaskCreateRequest taskRequest) {
     return TaskResponseFactory.fromEntity(taskService.createTask(taskRequest));
   }
 
@@ -101,7 +106,7 @@ public class TaskController {
   @PutMapping(value = "/{identifier}", consumes = "application/json", produces = "application/json")
   public TaskResponse updateTask(
       @Parameter(description = "GUID task identifier") @PathVariable("identifier") UUID identifier,
-      @Validated @RequestBody TaskUpdateRequest taskUpdateRequest) {
+      @Valid @RequestBody TaskUpdateRequest taskUpdateRequest) {
     return TaskResponseFactory.fromEntity(taskService.updateTask(identifier, taskUpdateRequest));
   }
 
