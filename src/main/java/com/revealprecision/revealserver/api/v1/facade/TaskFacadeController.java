@@ -11,6 +11,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -23,14 +24,21 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 public class TaskFacadeController {
 
-  @Autowired
-  TaskFacadeService taskFacadeService;
+  public static final String TOTAL_RECORDS = "total_records";
+  public final TaskFacadeService taskFacadeService;
 
-  @Operation(summary = "Create a task", description = "Create a Task", tags = {"Task"})
+  @Autowired
+  public TaskFacadeController(TaskFacadeService taskFacadeService) {
+    this.taskFacadeService = taskFacadeService;
+  }
+
+  @Operation(summary = "Facade for Android Task Resource", description = "Sync Tasks", tags = {
+      "Task"})
   @ResponseStatus(HttpStatus.CREATED)
-  @PostMapping(value = "/task/v2/sync", consumes = "application/json", produces = "application/json")
+  @PostMapping(value = "/task/v2/sync", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   @Transactional
-  public ResponseEntity<List<TaskFacade>> taskSync(@RequestBody TaskSyncRequestWrapper taskSyncRequestWrapper) {
+  public ResponseEntity<List<TaskFacade>> taskSync(
+      @RequestBody TaskSyncRequestWrapper taskSyncRequestWrapper) {
 
     String plan = StringUtils.join(taskSyncRequestWrapper.getPlan(), ",");
     String group = StringUtils.join(taskSyncRequestWrapper.getGroup(), ",");
@@ -40,9 +48,9 @@ public class TaskFacadeController {
 
     if (returnCount) {
       HttpHeaders headers = new HttpHeaders();
-      headers.add("total_records", String.valueOf(taskFacades.size()));
+      headers.add(TOTAL_RECORDS, String.valueOf(taskFacades.size()));
       return ResponseEntity.ok().headers(headers).body(taskFacades);
-    }else{
+    } else {
       return ResponseEntity.ok().body(taskFacades);
     }
 

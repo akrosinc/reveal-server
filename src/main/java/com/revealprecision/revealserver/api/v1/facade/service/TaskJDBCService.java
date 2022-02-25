@@ -170,17 +170,16 @@ public class TaskJDBCService {
     Action action = getAction(rs, lookupEntityType);
     action.setGoal(goal);
 
-
     LookupTaskStatus lookupTaskStatus = getLookupTaskStatus(rs);
 
     Task task = getTask(rs);
     task.setAction(action);
     task.setLookupTaskStatus(lookupTaskStatus);
 
-    if (action.getLookupEntityType().getCode().equals("Person")){
+    if (action.getLookupEntityType().getCode().equals("Person")) {
       task.setPerson(getPerson(rs));
     }
-    if (action.getLookupEntityType().getCode().equals("Location")){
+    if (action.getLookupEntityType().getCode().equals("Location")) {
       task.setLocation(getLocation(rs));
     }
 
@@ -189,13 +188,13 @@ public class TaskJDBCService {
 
   private Person getPerson(ResultSet rs) throws SQLException {
     return Person.builder()
-        .identifier((UUID)rs.getObject("entity_identifier"))
+        .identifier((UUID) rs.getObject("entity_identifier"))
         .build();
   }
 
   private Location getLocation(ResultSet rs) throws SQLException {
     return Location.builder()
-        .identifier((UUID)rs.getObject("entity_identifier"))
+        .identifier((UUID) rs.getObject("entity_identifier"))
         .build();
   }
 

@@ -12,7 +12,7 @@ public class Period implements Serializable {
   private String start;
   private String end;
 
-  public static Period between(String start,String end){
-    return new Period(start,end);
+  public static Period between(String start, String end) {
+    return new Period(start, end);
   }
 }

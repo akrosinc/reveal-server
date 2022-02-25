@@ -15,7 +15,8 @@ import lombok.Setter;
 import lombok.experimental.FieldNameConstants;
 
 @Data
-@Setter @Getter
+@Setter
+@Getter
 @Builder
 @FieldNameConstants
 @JsonInclude(value = Include.NON_NULL)
@@ -69,8 +70,9 @@ public class TaskFacade implements Serializable {
     ROUTINE;
 
     public static TaskPriority get(String priority) {
-      if (priority == null)
+      if (priority == null) {
         throw new IllegalArgumentException("Value is required");
+      }
       switch (priority) {
         case "routine":
           return ROUTINE;
@@ -87,8 +89,8 @@ public class TaskFacade implements Serializable {
     }
   }
 
-  public static final String[] INACTIVE_TASK_STATUS = new String[] { TaskStatus.CANCELLED.name(),
-      TaskStatus.ARCHIVED.name() };
+  public static final String[] INACTIVE_TASK_STATUS = new String[]{TaskStatus.CANCELLED.name(),
+      TaskStatus.ARCHIVED.name()};
 
   private String identifier;
 
