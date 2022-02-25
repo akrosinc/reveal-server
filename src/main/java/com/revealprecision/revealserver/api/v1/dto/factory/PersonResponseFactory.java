@@ -53,6 +53,7 @@ public class PersonResponseFactory {
                 .suffix(person.getNameSuffix())
                 .build())
         .active(person.isActive())
+        .meta(person.getPersonMetadata().getEntityValue())
         .birthDate(person.getBirthDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate())
         .gender(GenderEnum.getEnum(person.getGender()));
 

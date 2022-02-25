@@ -18,6 +18,8 @@ import java.util.UUID;
 import javax.persistence.criteria.JoinType;
 import javax.persistence.criteria.SetJoin;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.Session;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.domain.Specification;
 
 @Slf4j

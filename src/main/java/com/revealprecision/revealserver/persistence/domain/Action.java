@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.UUID;
 import javax.persistence.CascadeType;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
@@ -46,7 +47,7 @@ public class Action extends AbstractAuditableEntity {
 
   private LocalDate timingPeriodEnd;
 
-  @ManyToOne
+  @ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "goal_identifier")
   private Goal goal;
 
@@ -56,8 +57,16 @@ public class Action extends AbstractAuditableEntity {
   @JoinColumn(name = "form_identifier")
   private Form form;
 
+  @OneToMany(fetch = FetchType.LAZY, mappedBy = "action")
+  private Set<Task> tasks;
+
+
   @OneToMany(mappedBy = "action", cascade = {CascadeType.PERSIST, CascadeType.REMOVE})
   private Set<Condition> conditions;
+
+  @ManyToOne
+  @JoinColumn(name = "lookup_entity_type_identifier")
+  private LookupEntityType lookupEntityType;
 
   public Action update(ActionRequest actionRequest, Form form) {
     this.title = actionRequest.getTitle();
