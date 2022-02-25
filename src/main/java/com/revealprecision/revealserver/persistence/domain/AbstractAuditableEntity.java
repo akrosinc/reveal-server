@@ -13,7 +13,6 @@ import javax.persistence.PostRemove;
 import javax.persistence.PrePersist;
 import javax.persistence.PreUpdate;
 import lombok.Getter;
-import lombok.Setter;
 import org.hibernate.envers.Audited;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.LastModifiedBy;
