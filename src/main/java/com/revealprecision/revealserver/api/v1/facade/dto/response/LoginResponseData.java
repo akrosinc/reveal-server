@@ -1,7 +1,5 @@
 package com.revealprecision.revealserver.api.v1.facade.dto.response;
 
-import com.revealprecision.revealserver.api.v1.dto.response.GeoTree;
-import com.revealprecision.revealserver.persistence.domain.User;
 import java.util.List;
 import java.util.Set;
 import lombok.Builder;
