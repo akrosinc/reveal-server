@@ -119,4 +119,14 @@ public class PlanService {
     }
     geoTreeResponse.getChildren().forEach(el -> assignLocations(locationMap, el));
   }
+
+  public void assignSelectedLocations(UUID identifier, Set<UUID> locations) {
+    Plan plan = getPlanByIdentifier(identifier);
+    Set<Location> locationSet = new HashSet<>();
+    locations.forEach(uuid -> {
+      locationSet.add(locationService.findByIdentifier(uuid));
+    });
+    plan.setLocations(locationSet);
+    planRepository.save(plan);
+  }
 }

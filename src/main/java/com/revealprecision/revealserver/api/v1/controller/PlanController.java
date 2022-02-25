@@ -1,12 +1,7 @@
 package com.revealprecision.revealserver.api.v1.controller;
 
 import com.revealprecision.revealserver.api.v1.dto.factory.*;
-import com.revealprecision.revealserver.api.v1.dto.request.ActionRequest;
-import com.revealprecision.revealserver.api.v1.dto.request.ConditionRequest;
-import com.revealprecision.revealserver.api.v1.dto.request.GoalRequest;
-import com.revealprecision.revealserver.api.v1.dto.request.GoalUpdateRequest;
-import com.revealprecision.revealserver.api.v1.dto.request.PlanRequest;
-import com.revealprecision.revealserver.api.v1.dto.request.TargetRequest;
+import com.revealprecision.revealserver.api.v1.dto.request.*;
 import com.revealprecision.revealserver.api.v1.dto.response.*;
 import com.revealprecision.revealserver.enums.SummaryEnum;
 import com.revealprecision.revealserver.service.ActionService;
@@ -21,7 +16,6 @@ import java.util.UUID;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -78,6 +72,13 @@ public class PlanController {
             .status(HttpStatus.OK)
             .body(pageableGeoTreeResponse);
   }
+
+  @PostMapping("/{identifier}/assignLocations")
+  public ResponseEntity<Void> assignPlanLocations(@PathVariable("identifier") UUID identifier, @Valid @RequestBody AssignLocationRequest assignLocationRequest) {
+    planService.assignSelectedLocations(identifier, assignLocationRequest.getLocations());
+    return ResponseEntity.status(HttpStatus.CREATED).build();
+  }
+
 
   @PostMapping
   public ResponseEntity<Void> createPlan(@Valid @RequestBody PlanRequest planRequest) {
