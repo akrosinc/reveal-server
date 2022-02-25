@@ -27,7 +27,7 @@ These columns deal with the metadata used by Hibernate envers and other auditing
 @MappedSuperclass
 @EntityListeners(AuditingEntityListener.class)
 @Audited
-@Setter @Getter
+@Getter
 public abstract class AbstractAuditableEntity {
 
   @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS[X]", timezone = "${spring.jackson.time-zone}")
