@@ -99,4 +99,12 @@ public class PlanService {
     plan.update(request, hierarchy, interventionType);
     planRepository.save(plan);
   }
+
+
+  //Temporary as I'm testing
+  public void assignAllLocationsToPlan(UUID planIdentifier) {
+    var plan = getPlanByIdentifier(planIdentifier);
+    //get location hierarchy
+    //get the locations and assign them to plan.
+  }
 }

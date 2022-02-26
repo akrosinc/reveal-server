@@ -8,13 +8,13 @@ import java.util.List;
 
 public class LocationTree {
 
-  private Tree<String, Location> locationsHierarchy;
+  private Tree<String, LocationFacade> locationsHierarchy;
 
   public LocationTree() {
-    this.locationsHierarchy = new Tree<String, Location>();
+    this.locationsHierarchy = new Tree<String, LocationFacade>();
   }
 
-  public void addLocation(Location l) {
+  public void addLocation(LocationFacade l) {
     if (!locationsHierarchy.hasNode(l.getLocationId())) {
       if (l.getParentLocation() == null) {
         locationsHierarchy.addNode(l.getLocationId(), l.getName(), l, null);
@@ -27,15 +27,15 @@ public class LocationTree {
   /**
    * WARNING: Overrides existing locations
    *
-   * @param locations
+   * @param locationFaces
    */
-  public void buildTreeFromList(List<Location> locations) {
-    for (Location location : locations) {
-      addLocation(location);
+  public void buildTreeFromList(List<LocationFacade> locationFaces) {
+    for (LocationFacade locationFace : locationFaces) {
+      addLocation(locationFace);
     }
   }
 
-  public Location findLocation(String locationId) {
+  public LocationFacade findLocation(String locationId) {
     return locationsHierarchy.getNode(locationId).getNode();
   }
 
@@ -47,7 +47,7 @@ public class LocationTree {
     return locationsHierarchy.getNode(locationId).findChild(childLocationId) != null;
   }
 
-  public LinkedHashMap<String, TreeNode<String, Location>> getLocationsHierarchy() {
+  public LinkedHashMap<String, TreeNode<String, LocationFacade>> getLocationsHierarchy() {
     return locationsHierarchy.getTree();
   }
 

@@ -1,14 +1,24 @@
 package com.revealprecision.revealserver.api.v1.facade.controller;
 
+import com.revealprecision.revealserver.api.v1.dto.factory.LocationHierarchyResponseFactory;
+import com.revealprecision.revealserver.api.v1.dto.response.GeoTreeResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.LocationHierarchyResponse;
+import com.revealprecision.revealserver.api.v1.facade.dto.factory.TeamMemberResponseFactory;
+import com.revealprecision.revealserver.api.v1.facade.dto.factory.TeamResponseFactory;
+import com.revealprecision.revealserver.api.v1.facade.dto.factory.UserFacadeResponseFactory;
 import com.revealprecision.revealserver.api.v1.facade.dto.response.LoginResponseData;
-import com.revealprecision.revealserver.api.v1.facade.dto.response.Team;
-import com.revealprecision.revealserver.api.v1.facade.dto.response.TeamMember;
-import com.revealprecision.revealserver.api.v1.facade.dto.response.UserFacadeResponse;
+import com.revealprecision.revealserver.api.v1.facade.dto.service.UserFacadeService;
+import com.revealprecision.revealserver.persistence.domain.Location;
+import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.Organization;
+import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.service.UserService;
-import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +30,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class UserFacadeController {
 
   private final UserService userService;
+  private final UserFacadeService userFacadeService;
 
   @RequestMapping("/security/authenticate")
   public ResponseEntity<LoginResponseData> authenticate() {
@@ -29,22 +40,32 @@ public class UserFacadeController {
       //handle case when user is not assgined
     }
     Organization organization = organizationOptional.get();
+    var userFacadeResponse = UserFacadeResponseFactory.fromEntity(user);
+    var team = TeamResponseFactory.fromEntity(organization);
+    var teamMember = TeamMemberResponseFactory.fromEntities(organization,user);
+    teamMember.setTeam(team);
 
-    UserFacadeResponse userFacadeResponse = UserFacadeResponse.builder()
-        .baseEntityId(user.getIdentifier().toString())
-        .username(user.getUsername()).firstName(user.getFirstName()).lastName(user.getLastName())
-        .build();
+    List<Plan> plansAssignedToUser = userFacadeService.geAssignedPlans(user);
+    Set<Location> assignedLocationSet = new HashSet<>();
+    plansAssignedToUser.forEach(plan -> assignedLocationSet.addAll(plan.getLocations()));
 
-    Team team = Team.builder().teamName(organization.getName()).display(organization.getName())
-        .uuid(organization.getIdentifier().toString())
-        .organizationIds(Arrays.asList(organization.getIdentifier())).build();
+    Set<String> jurisdictionIds = assignedLocationSet.stream().map(location -> location.getIdentifier().toString()).collect(
+        Collectors.toSet());
+    List<String> locationNames = assignedLocationSet.stream().map(location -> location.getName()).collect(
+        Collectors.toList());
 
-    TeamMember teamMember = TeamMember.builder().identifier(organization.getIdentifier().toString())
-        .uuid(user.getIdentifier().toString()).team(team).build();
-    //TODO: 1. solve for getting the assigned jurisdictions for the user(where jurisdiction are operational areas above structure)
+
+    //We pick one hierarchy for now:
+    LocationHierarchy locationHierarchy = plansAssignedToUser.get(0).getLocationHierarchy();
+    LocationHierarchyResponse locationHierarchyResponse = LocationHierarchyResponseFactory.fromEntityWithTree(locationHierarchy,true)
+    List<GeoTreeResponse> geoTreeResponses = locationHierarchyResponse.getGeoTree();
+
+    //TODO: Now we will map the locationHierarchyResponse tree to match LocationTree
+
+
 
     LoginResponseData loginResponseData = LoginResponseData.builder().user(userFacadeResponse)
-        .team(teamMember)
+        .team(teamMember).jurisdictionIds(jurisdictionIds).jurisdictions(locationNames).locations(null)
         .build();
     return ResponseEntity.status(HttpStatus.OK).body(loginResponseData);
   }

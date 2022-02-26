@@ -4,42 +4,24 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
-/**
- * The registered teamLocation which needs to be identified uniquely across the system
- */
-public class Location extends BaseDataObject {
+
+@Builder
+@RequiredArgsConstructor
+@AllArgsConstructor
+public class LocationFacade extends BaseDataObject {
 
   private String locationId;
   private String name;
   private Address address;
   private Map<String, String> identifiers;
-  private Location parentLocation;
+  private LocationFacade parentLocationFacade;
   private Set<String> tags;
   private Map<String, Object> attributes;
-
-  public Location() {
-  }
-
-  public Location(String locationId, String name, Address address, Location parentLocation) {
-    this.locationId = locationId;
-    this.name = name;
-    this.address = address;
-    this.parentLocation = parentLocation;
-  }
-
-  public Location(String locationId, String name, Address address,
-      Map<String, String> identifiers, Location parentLocation,
-      Set<String> tags, Map<String, Object> attributes) {
-    this.locationId = locationId;
-    this.name = name;
-    this.address = address;
-    this.identifiers = identifiers;
-    this.parentLocation = parentLocation;
-    this.tags = tags;
-    this.attributes = attributes;
-  }
 
   public String getLocationId() {
     return locationId;
@@ -95,12 +77,12 @@ public class Location extends BaseDataObject {
     identifiers.remove(identifierType);
   }
 
-  public Location getParentLocation() {
-    return parentLocation;
+  public LocationFacade getParentLocation() {
+    return parentLocationFacade;
   }
 
-  public void setParentLocation(Location parentLocation) {
-    this.parentLocation = parentLocation;
+  public void setParentLocation(LocationFacade parentLocationFace) {
+    this.parentLocationFacade = parentLocationFace;
   }
 
   public Set<String> getTags() {
@@ -163,17 +145,17 @@ public class Location extends BaseDataObject {
     attributes.remove(name);
   }
 
-  public Location withLocationId(String locationId) {
+  public LocationFacade withLocationId(String locationId) {
     this.locationId = locationId;
     return this;
   }
 
-  public Location withName(String name) {
+  public LocationFacade withName(String name) {
     this.name = name;
     return this;
   }
 
-  public Location withAddress(Address address) {
+  public LocationFacade withAddress(Address address) {
     this.address = address;
     return this;
   }
@@ -184,12 +166,12 @@ public class Location extends BaseDataObject {
    * @param identifiers
    * @return
    */
-  public Location withIdentifiers(Map<String, String> identifiers) {
+  public LocationFacade withIdentifiers(Map<String, String> identifiers) {
     this.identifiers = identifiers;
     return this;
   }
 
-  public Location withIdentifier(String identifierType, String identifier) {
+  public LocationFacade withIdentifier(String identifierType, String identifier) {
     if (identifiers == null) {
       identifiers = new HashMap<>();
     }
@@ -198,8 +180,8 @@ public class Location extends BaseDataObject {
     return this;
   }
 
-  public Location withParentLocation(Location parentLocation) {
-    this.parentLocation = parentLocation;
+  public LocationFacade withParentLocation(LocationFacade parentLocationFace) {
+    this.parentLocationFacade = parentLocationFace;
     return this;
   }
 
@@ -209,12 +191,12 @@ public class Location extends BaseDataObject {
    * @param tags
    * @return
    */
-  public Location withTags(Set<String> tags) {
+  public LocationFacade withTags(Set<String> tags) {
     this.tags = tags;
     return this;
   }
 
-  public Location withTag(String tag) {
+  public LocationFacade withTag(String tag) {
     if (tags == null) {
       tags = new HashSet<>();
     }
@@ -229,12 +211,12 @@ public class Location extends BaseDataObject {
    * @param attributes
    * @return
    */
-  public Location withAttributes(Map<String, Object> attributes) {
+  public LocationFacade withAttributes(Map<String, Object> attributes) {
     this.attributes = attributes;
     return this;
   }
 
-  public Location withAttribute(String name, Object value) {
+  public LocationFacade withAttribute(String name, Object value) {
     if (attributes == null) {
       attributes = new HashMap<>();
     }
