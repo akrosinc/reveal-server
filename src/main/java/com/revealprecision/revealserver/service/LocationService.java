@@ -8,7 +8,6 @@ import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.repository.LocationRepository;
 import java.util.List;
 import java.util.UUID;
-import org.jobrunr.scheduling.JobScheduler;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
@@ -20,16 +19,13 @@ public class LocationService {
   private LocationRepository locationRepository;
   private GeographicLevelService geographicLevelService;
   private LocationRelationshipService locationRelationshipService;
-  private JobScheduler jobScheduler;
 
   public LocationService(LocationRepository locationRepository,
       GeographicLevelService geographicLevelService,
-      LocationRelationshipService locationRelationshipService,
-      JobScheduler jobScheduler) {
+      LocationRelationshipService locationRelationshipService) {
     this.locationRepository = locationRepository;
     this.geographicLevelService = geographicLevelService;
     this.locationRelationshipService = locationRelationshipService;
-    this.jobScheduler = jobScheduler;
   }
 
   public Location createLocation(LocationRequest locationRequest) {
