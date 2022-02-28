@@ -1,15 +1,16 @@
 package com.revealprecision.revealserver.api.v1.facade.controller;
 
-import com.revealprecision.revealserver.api.v1.dto.factory.LocationHierarchyResponseFactory;
-import com.revealprecision.revealserver.api.v1.dto.response.GeoTreeResponse;
-import com.revealprecision.revealserver.api.v1.dto.response.LocationHierarchyResponse;
+import com.revealprecision.revealserver.api.v1.facade.dto.factory.LocationFacadeResponseFactory;
 import com.revealprecision.revealserver.api.v1.facade.dto.factory.TeamMemberResponseFactory;
 import com.revealprecision.revealserver.api.v1.facade.dto.factory.TeamResponseFactory;
 import com.revealprecision.revealserver.api.v1.facade.dto.factory.UserFacadeResponseFactory;
+import com.revealprecision.revealserver.api.v1.facade.dto.response.LocationFacade;
+import com.revealprecision.revealserver.api.v1.facade.dto.response.LocationTree;
 import com.revealprecision.revealserver.api.v1.facade.dto.response.LoginResponseData;
 import com.revealprecision.revealserver.api.v1.facade.dto.service.UserFacadeService;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
+import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
 import com.revealprecision.revealserver.persistence.domain.Organization;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.User;
@@ -46,26 +47,27 @@ public class UserFacadeController {
     teamMember.setTeam(team);
 
     List<Plan> plansAssignedToUser = userFacadeService.geAssignedPlans(user);
-    Set<Location> assignedLocationSet = new HashSet<>();
-    plansAssignedToUser.forEach(plan -> assignedLocationSet.addAll(plan.getLocations()));
+    Set<Location> assignedLocations = new HashSet<>();
 
-    Set<String> jurisdictionIds = assignedLocationSet.stream().map(location -> location.getIdentifier().toString()).collect(
+    plansAssignedToUser.forEach(plan -> assignedLocations.addAll(plan.getLocations()));
+
+    Set<String> jurisdictionIds = assignedLocations.stream().map(location -> location.getIdentifier().toString()).collect(
         Collectors.toSet());
-    List<String> locationNames = assignedLocationSet.stream().map(location -> location.getName()).collect(
+    List<String> locationNames = assignedLocations.stream().map(location -> location.getName()).collect(
         Collectors.toList());
-
 
     //We pick one hierarchy for now:
     LocationHierarchy locationHierarchy = plansAssignedToUser.get(0).getLocationHierarchy();
-    LocationHierarchyResponse locationHierarchyResponse = LocationHierarchyResponseFactory.fromEntityWithTree(locationHierarchy,true)
-    List<GeoTreeResponse> geoTreeResponses = locationHierarchyResponse.getGeoTree();
+    List<LocationRelationship> locationRelationships = locationHierarchy.getLocationRelationships();
 
-    //TODO: Now we will map the locationHierarchyResponse tree to match LocationTree
+    List<LocationFacade> locationFacades = assignedLocations.stream().map(location -> LocationFacadeResponseFactory.fromLocationEntityAndLocationRelationship(location,locationRelationships)).collect(
+        Collectors.toList());
 
-
+    LocationTree locationTree = new LocationTree();
+    locationTree.buildTreeFromList(locationFacades);
 
     LoginResponseData loginResponseData = LoginResponseData.builder().user(userFacadeResponse)
-        .team(teamMember).jurisdictionIds(jurisdictionIds).jurisdictions(locationNames).locations(null)
+        .team(teamMember).jurisdictionIds(jurisdictionIds).jurisdictions(locationNames).locations(locationTree)
         .build();
     return ResponseEntity.status(HttpStatus.OK).body(loginResponseData);
   }
