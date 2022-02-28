@@ -1,6 +1,6 @@
-package com.revealprecision.revealserver.api.v1.facade.dto.factory;
+package com.revealprecision.revealserver.api.v1.facade.factory;
 
-import com.revealprecision.revealserver.api.v1.facade.dto.response.LocationFacade;
+import com.revealprecision.revealserver.api.v1.facade.models.LocationFacade;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
 import java.util.List;

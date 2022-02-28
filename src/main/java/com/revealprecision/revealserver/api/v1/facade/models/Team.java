@@ -1,4 +1,4 @@
-package com.revealprecision.revealserver.api.v1.facade.dto.response;
+package com.revealprecision.revealserver.api.v1.facade.models;
 
 import java.util.List;
 import java.util.UUID;

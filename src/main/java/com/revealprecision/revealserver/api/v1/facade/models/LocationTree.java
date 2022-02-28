@@ -1,4 +1,4 @@
-package com.revealprecision.revealserver.api.v1.facade.dto.response;
+package com.revealprecision.revealserver.api.v1.facade.models;
 
 import com.revealprecision.revealserver.util.Tree;
 import com.revealprecision.revealserver.util.TreeNode;

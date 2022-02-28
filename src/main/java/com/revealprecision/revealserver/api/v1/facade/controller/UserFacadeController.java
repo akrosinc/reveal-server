@@ -1,14 +1,14 @@
 package com.revealprecision.revealserver.api.v1.facade.controller;
 
-import com.revealprecision.revealserver.api.v1.facade.dto.factory.LocationFacadeResponseFactory;
-import com.revealprecision.revealserver.api.v1.facade.dto.factory.TeamMemberResponseFactory;
-import com.revealprecision.revealserver.api.v1.facade.dto.factory.TeamResponseFactory;
-import com.revealprecision.revealserver.api.v1.facade.dto.factory.UserFacadeResponseFactory;
-import com.revealprecision.revealserver.api.v1.facade.dto.response.LocationFacade;
-import com.revealprecision.revealserver.api.v1.facade.dto.response.LocationTree;
-import com.revealprecision.revealserver.api.v1.facade.dto.response.LoginResponseData;
-import com.revealprecision.revealserver.api.v1.facade.dto.response.UserAssignmentResponse;
-import com.revealprecision.revealserver.api.v1.facade.dto.service.UserFacadeService;
+import com.revealprecision.revealserver.api.v1.facade.factory.LocationFacadeResponseFactory;
+import com.revealprecision.revealserver.api.v1.facade.factory.TeamMemberResponseFactory;
+import com.revealprecision.revealserver.api.v1.facade.factory.TeamResponseFactory;
+import com.revealprecision.revealserver.api.v1.facade.factory.UserFacadeResponseFactory;
+import com.revealprecision.revealserver.api.v1.facade.models.LocationFacade;
+import com.revealprecision.revealserver.api.v1.facade.models.LocationTree;
+import com.revealprecision.revealserver.api.v1.facade.models.LoginResponseData;
+import com.revealprecision.revealserver.api.v1.facade.models.UserAssignmentResponse;
+import com.revealprecision.revealserver.api.v1.facade.service.UserFacadeService;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.LocationRelationship;

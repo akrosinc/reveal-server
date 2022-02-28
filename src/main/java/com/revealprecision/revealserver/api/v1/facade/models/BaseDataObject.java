@@ -1,4 +1,4 @@
-package com.revealprecision.revealserver.api.v1.facade.dto.response;
+package com.revealprecision.revealserver.api.v1.facade.models;
 
 
 import org.apache.james.mime4j.field.datetime.DateTime;

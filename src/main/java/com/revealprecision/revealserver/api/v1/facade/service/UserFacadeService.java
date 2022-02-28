@@ -1,4 +1,4 @@
-package com.revealprecision.revealserver.api.v1.facade.dto.service;
+package com.revealprecision.revealserver.api.v1.facade.service;
 
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.User;

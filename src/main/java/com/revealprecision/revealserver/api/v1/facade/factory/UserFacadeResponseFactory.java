@@ -1,6 +1,6 @@
-package com.revealprecision.revealserver.api.v1.facade.dto.factory;
+package com.revealprecision.revealserver.api.v1.facade.factory;
 
-import com.revealprecision.revealserver.api.v1.facade.dto.response.UserFacadeResponse;
+import com.revealprecision.revealserver.api.v1.facade.models.UserFacadeResponse;
 import com.revealprecision.revealserver.persistence.domain.User;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;

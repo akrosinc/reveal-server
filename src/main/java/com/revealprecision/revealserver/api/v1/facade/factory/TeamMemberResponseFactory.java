@@ -1,7 +1,7 @@
-package com.revealprecision.revealserver.api.v1.facade.dto.factory;
+package com.revealprecision.revealserver.api.v1.facade.factory;
 
 
-import com.revealprecision.revealserver.api.v1.facade.dto.response.TeamMember;
+import com.revealprecision.revealserver.api.v1.facade.models.TeamMember;
 import com.revealprecision.revealserver.persistence.domain.Organization;
 import com.revealprecision.revealserver.persistence.domain.User;
 import lombok.AccessLevel;
