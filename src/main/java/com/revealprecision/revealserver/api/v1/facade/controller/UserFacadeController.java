@@ -24,6 +24,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -35,11 +36,10 @@ public class UserFacadeController {
   private final UserService userService;
   private final UserFacadeService userFacadeService;
 
-  @GetMapping("/security/authenticate")
+  @GetMapping(value = "/security/authenticate",produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<LoginResponseData> authenticate() {
     User user = userService.getCurrentUser();
     Optional<Organization> organizationOptional = user.getOrganizations().stream().findFirst();
-    ; //Assumption that practioner always assigned to one org.
     if (organizationOptional.isEmpty()) {
       //handle case when user is not assgined
     }
@@ -80,7 +80,7 @@ public class UserFacadeController {
     return ResponseEntity.status(HttpStatus.OK).body(loginResponseData);
   }
 
-  @GetMapping("rest/organization/user-assignment")
+  @GetMapping(value = "/rest/organization/user-assignment",produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<UserAssignmentResponse> getUserAssignedLocationsAndPlans() {
     User user = userService.getCurrentUser();
     List<Plan> plansAssignedToUser = userFacadeService.geAssignedPlans(user);

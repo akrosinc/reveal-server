@@ -19,14 +19,13 @@ public class LocationFacadeResponseFactory {
 
   public static LocationFacade fromLocationEntityAndLocationRelationship(Location location,
       List<LocationRelationship> locationRelationships) {
-    Optional<Location> parentLocationOptional = locationRelationships.stream()
-        .filter(lr -> lr.getLocation().equals(location)).map(lr -> lr.getParentLocation())
-        .findFirst();
     Location parentLocation = null;
+    Optional<Location> parentLocationOptional = locationRelationships.stream()
+        .filter(lr -> lr.getLocation().equals(location) && lr.getParentLocation()!= null).map(LocationRelationship::getLocation).findFirst();
     if (parentLocationOptional.isPresent()) {
       parentLocation = parentLocationOptional.get();
     }
-    LocationFacade parentLocationFacade = fromEntity(parentLocation);
+    LocationFacade parentLocationFacade = parentLocation != null ? fromEntity(parentLocation) : null;
     LocationFacade locationFacade = fromEntity(location);
     locationFacade.setParentLocation(parentLocationFacade);
     return locationFacade;

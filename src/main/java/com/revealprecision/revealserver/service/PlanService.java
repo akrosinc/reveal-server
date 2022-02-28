@@ -10,6 +10,7 @@ import com.revealprecision.revealserver.persistence.domain.Action;
 import com.revealprecision.revealserver.persistence.domain.Condition;
 import com.revealprecision.revealserver.persistence.domain.Form;
 import com.revealprecision.revealserver.persistence.domain.Goal;
+import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.LookupInterventionType;
 import com.revealprecision.revealserver.persistence.domain.Plan;
@@ -33,7 +34,6 @@ public class PlanService {
   private final PlanRepository planRepository;
   private final FormService formService;
   private final LocationHierarchyService locationHierarchyService;
-  private final LocationRelationshipService locationRelationshipService;
   private final LocationService locationService;
   private final LookupInterventionTypeService lookupInterventionTypeService;
 
@@ -100,11 +100,12 @@ public class PlanService {
     planRepository.save(plan);
   }
 
-
   //Temporary as I'm testing
   public void assignAllLocationsToPlan(UUID planIdentifier) {
     var plan = getPlanByIdentifier(planIdentifier);
-    //get location hierarchy
-    //get the locations and assign them to plan.
+    Set<Location> locations = new HashSet<>();
+    locations.addAll(locationService.getAllLocations());
+    plan.setLocations(locations);
+    planRepository.save(plan);
   }
 }

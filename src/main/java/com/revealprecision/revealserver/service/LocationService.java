@@ -73,4 +73,9 @@ public class LocationService {
   public List<Location> getAllByIdentifiers(List<UUID> identifiers) {
     return locationRepository.getAllByIdentifiers(identifiers);
   }
+
+  public List<Location> getAllLocations(){
+    //TODO: to be removed just here for testing
+    return locationRepository.findAll();
+  }
 }
