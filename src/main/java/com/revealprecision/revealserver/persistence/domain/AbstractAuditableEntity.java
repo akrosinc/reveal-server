@@ -12,6 +12,8 @@ import javax.persistence.MappedSuperclass;
 import javax.persistence.PostRemove;
 import javax.persistence.PrePersist;
 import javax.persistence.PreUpdate;
+import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.envers.Audited;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.LastModifiedBy;
@@ -25,6 +27,7 @@ These columns deal with the metadata used by Hibernate envers and other auditing
 @MappedSuperclass
 @EntityListeners(AuditingEntityListener.class)
 @Audited
+@Getter @Setter
 public abstract class AbstractAuditableEntity {
 
   @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS[X]", timezone = "${spring.jackson.time-zone}")
