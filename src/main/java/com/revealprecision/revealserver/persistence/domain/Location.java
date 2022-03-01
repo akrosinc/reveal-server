@@ -61,7 +61,7 @@ public class Location extends AbstractAuditableEntity {
   @JoinColumn(name = "location_bulk_identifier")
   private LocationBulk locationBulk;
 
-  @ManyToMany(mappedBy = "locations")
+  @ManyToMany(mappedBy = "planLocations")
   private Set<Plan> plans;
 
   @ManyToMany(mappedBy = "locations")
