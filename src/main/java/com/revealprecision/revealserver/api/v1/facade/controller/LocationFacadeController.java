@@ -4,9 +4,12 @@ import com.revealprecision.revealserver.api.v1.facade.factory.PhysicalLocationRe
 import com.revealprecision.revealserver.api.v1.facade.models.PhysicalLocation;
 import com.revealprecision.revealserver.api.v1.facade.request.LocationSyncRequest;
 import com.revealprecision.revealserver.api.v1.facade.service.LocationFacadeService;
+import com.revealprecision.revealserver.persistence.domain.Location;
+import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
+import com.revealprecision.revealserver.service.LocationHierarchyService;
 import io.swagger.v3.oas.annotations.Operation;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -23,17 +26,18 @@ import org.springframework.web.bind.annotation.RestController;
 public class LocationFacadeController {
 
   private final LocationFacadeService locationFacadeService;
+  private  final LocationHierarchyService locationHierarchyService;
 
   @Operation(summary = "Sync Locations for Android app", description = "Sync Locations for Android app", tags = {
       "Location Sync Facade"})
   @PostMapping(value = "/sync", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<List<PhysicalLocation>> getLocations(
       @RequestBody LocationSyncRequest locationSyncRequest) {
-    List<PhysicalLocation> physicalLocations;
+    LocationHierarchy locationHierarchy = locationHierarchyService.findByIdentifier(UUID.fromString(locationSyncRequest.getHierarchyIdentifier()));
+    List<Location> locations = locationFacadeService.syncLocations(locationSyncRequest,locationHierarchy);
+    List<PhysicalLocation> physicalLocations = PhysicalLocationResponseFactory
+        .fromLocationsAndHierarchy(locations, locationHierarchy);
     HttpHeaders headers = new HttpHeaders();
-    physicalLocations = PhysicalLocationResponseFactory
-        .fromLocationsAndRelationship(locationFacadeService.syncLocations(locationSyncRequest),
-            new ArrayList<>()); //TODO: how do determine hierarchy
     headers = locationFacadeService.addCountToHeaders(physicalLocations.stream().count(), headers);
     return ResponseEntity.status(HttpStatus.OK).headers(headers).body(physicalLocations);
   }

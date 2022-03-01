@@ -2,6 +2,7 @@ package com.revealprecision.revealserver.api.v1.facade.service;
 
 import com.revealprecision.revealserver.api.v1.facade.request.LocationSyncRequest;
 import com.revealprecision.revealserver.persistence.domain.Location;
+import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.service.LocationService;
 import java.util.List;
 import java.util.UUID;
@@ -18,7 +19,7 @@ public class LocationFacadeService {
 
   private final LocationService locationService;
 
-  public List<Location> syncLocations(LocationSyncRequest locationSyncRequest) {
+  public List<Location> syncLocations(LocationSyncRequest locationSyncRequest, LocationHierarchy hierarchy) {
     boolean isJurisdiction = locationSyncRequest.getIsJurisdiction();
     List<Location> locations = null;
     if (isJurisdiction) {
@@ -40,7 +41,7 @@ public class LocationFacadeService {
             .map(UUID::fromString).collect(
                 Collectors.toList());
         locations = locationService
-            .getLocationsByParentIdentifiers(parentIdentifiers, null);//TODO: we need the hierarchy
+            .getLocationsByParentIdentifiers(parentIdentifiers, hierarchy);
       }
     }
     return locations;

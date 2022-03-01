@@ -3,6 +3,7 @@ package com.revealprecision.revealserver.api.v1.facade.factory;
 import com.revealprecision.revealserver.api.v1.facade.models.LocationPropertyFacade;
 import com.revealprecision.revealserver.api.v1.facade.models.PhysicalLocation;
 import com.revealprecision.revealserver.persistence.domain.Location;
+import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
 import java.util.List;
 import java.util.Optional;
@@ -37,10 +38,10 @@ public class PhysicalLocationResponseFactory {
     return physicalLocation;
   }
 
-  public static List<PhysicalLocation> fromLocationsAndRelationship(List<Location> locations,
-      List<LocationRelationship> locationRelationships) {
+  public static List<PhysicalLocation> fromLocationsAndHierarchy(List<Location> locations,
+      LocationHierarchy locationHierarchy) {
     return locations.stream()
-        .map(location -> fromEntityLocationAndRelationship(location, locationRelationships))
+        .map(location -> fromEntityLocationAndRelationship(location, locationHierarchy.getLocationRelationships()))
         .collect(
             Collectors.toList());
   }
