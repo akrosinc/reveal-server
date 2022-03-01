@@ -10,6 +10,7 @@ import com.revealprecision.revealserver.persistence.domain.Form;
 import com.revealprecision.revealserver.persistence.domain.Goal;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.repository.ActionRepository;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -68,5 +69,8 @@ public class ActionService {
           plan.getIdentifier());
     }
     return actionRepository.getActions(goalIdentifier, pageable);
+  }
+  public List<Action> getActionsByGoalIdentifier(UUID goalIdentifier){
+    return actionRepository.findActionsByGoal_Identifier(goalIdentifier);
   }
 }

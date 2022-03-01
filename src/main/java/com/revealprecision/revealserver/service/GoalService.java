@@ -9,6 +9,7 @@ import com.revealprecision.revealserver.persistence.domain.Goal;
 import com.revealprecision.revealserver.persistence.domain.Goal.Fields;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.repository.GoalRepository;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -54,5 +55,9 @@ public class GoalService {
 
   public Page<Goal> getGoals(UUID identifier, Pageable pageable) {
     return goalRepository.getAllFromPlan(identifier, pageable);
+  }
+
+  public List<Goal> getGoalsByPlanIdentifier(UUID planIdentifier){
+   return goalRepository.findGoalsByPlan_Identifier(planIdentifier);
   }
 }

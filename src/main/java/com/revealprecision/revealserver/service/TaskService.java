@@ -10,10 +10,14 @@ import com.revealprecision.revealserver.exceptions.DuplicateTaskCreationExceptio
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.exceptions.QueryGenerationException;
 import com.revealprecision.revealserver.persistence.domain.Action;
+import com.revealprecision.revealserver.persistence.domain.Goal;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LookupTaskStatus;
+import com.revealprecision.revealserver.persistence.domain.Organization;
 import com.revealprecision.revealserver.persistence.domain.Person;
 import com.revealprecision.revealserver.persistence.domain.Plan;
+import com.revealprecision.revealserver.persistence.domain.PlanAssignment;
+import com.revealprecision.revealserver.persistence.domain.PlanLocations;
 import com.revealprecision.revealserver.persistence.domain.Task;
 import com.revealprecision.revealserver.persistence.domain.Task.Fields;
 import com.revealprecision.revealserver.persistence.domain.actioncondition.Query;
@@ -26,34 +30,43 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
 public class TaskService {
 
-  private static final String LOCATION = "Location";
-  private static final String PERSON = "Person";
+  private static final String ENTITY_LOCATION = "Location";
+  private static final String ENTITY_PERSON = "Person";
+  public static final String TASK_STATUS_READY = "READY";
+  public static final String TASK_STATUS_CANCELLED = "CANCELLED";
   private final TaskRepository taskRepository;
+  private final PlanLocationsService planLocationsService;
+
   private final PlanService planService;
   private final ActionService actionService;
   private final PersonService personService;
+  private final GoalService goalService;
+  private final ConditionService conditionService;
+
   private final LocationService locationService;
   private final LookupTaskStatusRepository lookupTaskStatusRepository;
   private final EntityFilterService entityFilterService;
 
   @Autowired
-  public TaskService(TaskRepository taskRepository, FormService formService,
+  public TaskService(TaskRepository taskRepository,
       PlanService planService,
       ActionService actionService, LocationService locationService,
       LookupTaskStatusRepository lookupTaskStatusRepository, PersonService personService,
-      JdbcTemplate jdbcTemplate, EntityFilterService entityFilterService) {
+      EntityFilterService entityFilterService, GoalService goalService,
+      ConditionService conditionService,
+      PlanLocationsService planLocationsService) {
     this.taskRepository = taskRepository;
     this.planService = planService;
     this.actionService = actionService;
@@ -61,6 +74,10 @@ public class TaskService {
     this.lookupTaskStatusRepository = lookupTaskStatusRepository;
     this.personService = personService;
     this.entityFilterService = entityFilterService;
+    this.goalService = goalService;
+    this.conditionService = conditionService;
+    this.planLocationsService = planLocationsService;
+
   }
 
   public Page<Task> searchTasks(TaskSearchCriteria taskSearchCriteria, Pageable pageable) {
@@ -135,21 +152,23 @@ public class TaskService {
     return lookupTaskStatusRepository.findAll();
   }
 
-  public void generateTasksByPlanId(UUID planIdentifier) throws QueryGenerationException {
+  public void generateTasksByPlanId(UUID planIdentifier) {
 
     Plan plan = planService.getPlanByIdentifier(planIdentifier);
     if (plan.getStatus().equals(PlanStatusEnum.ACTIVE)) {
+      List<Goal> goals = goalService.getGoalsByPlanIdentifier(planIdentifier);
 
-      plan.getGoals().stream().forEach(goal ->
-          goal.getActions().forEach(action ->
-              action.getConditions()
+      goals.forEach(goal ->
+          actionService.getActionsByGoalIdentifier(goal.getIdentifier()).forEach(action ->
+              conditionService.getConditionsByActionIdentifier(action.getIdentifier())
                   .forEach(
                       condition -> {
                         try {
                           generateTasksByActionConditionQuery(action, condition,
-                              planIdentifier);
+                              plan);
                         } catch (QueryGenerationException e) {
-                          log.error("Cannot generate tasks for condition: {}, action: {}, plan: {}",condition,action,plan);
+                          log.error("Cannot generate tasks for condition: {}, action: {}, plan: {}",
+                              condition, action, plan);
                         }
                       }))
       );
@@ -162,53 +181,18 @@ public class TaskService {
 
   public void generateTasksByActionConditionQuery(Action action,
       com.revealprecision.revealserver.persistence.domain.Condition condition,
-      UUID planIdentifier) throws QueryGenerationException {
+      Plan plan) throws QueryGenerationException {
     Query query = ConditionQueryUtil.getQueryObject(condition.getQuery(),
         action.getLookupEntityType().getCode());
 
-    List<UUID> uuids = entityFilterService.filterEntities(query, planIdentifier);
+    List<UUID> uuids = entityFilterService.filterEntities(query, plan.getIdentifier());
     List<Task> tasks = new ArrayList<>();
     for (UUID entityUUID : uuids) {
 
-      if (action.getLookupEntityType().getCode().equals(LOCATION)) {
-        if (taskRepository.findTasksByAction_IdentifierAndLocation_Identifier(
-            action.getIdentifier(), entityUUID).size() > 0) {
-          log.info("task for location: {} already exists", entityUUID);
-          continue;
-        }
-      }
-
-      if (action.getLookupEntityType().getCode().equals(PERSON)) {
-        if (taskRepository.findTasksByAction_IdentifierAndPerson_Identifier(
-            action.getIdentifier(),
-            entityUUID).size() > 0) {
-          log.info("task for person: {} already exists", entityUUID);
-          continue;
-        }
-      }
-
-      Task task = Task.builder()
-          .lookupTaskStatus(lookupTaskStatusRepository.findByCode("READY").orElseThrow(
-              () -> new NotFoundException(Pair.of(LookupTaskStatus.Fields.code, "READY"),
-                  LookupTaskStatus.class)))
-          .priority(TaskPriorityEnum.ROUTINE)
-          .description(action.getDescription())
-          .lastModified(LocalDateTime.now())
-          .authoredOn(LocalDateTime.now())
-          .action(action)
-          .executionPeriodStart(
-              action.getTimingPeriodStart())
-          .executionPeriodEnd(action.getTimingPeriodEnd())
-          .build();
-      task.setEntityStatus(EntityStatus.ACTIVE);
-
-      if (action.getLookupEntityType().getCode().equals(LOCATION)) {
-        Location location = locationService.findByIdentifier(entityUUID);
-        task.setLocation(location);
-      }
-      if (action.getLookupEntityType().getCode().equals(PERSON)) {
-        Person person = personService.getPersonByIdentifier(entityUUID);
-        task.setPerson(person);
+      Task task = createTaskObjectFromActionAndEntityId(action, entityUUID,
+          plan);
+      if (task == null) {
+        continue;
       }
 
       tasks.add(task);
@@ -216,5 +200,108 @@ public class TaskService {
     log.info("no of tasks to be generate for action: {} and condition: {} is: {}",
         action.getTitle(), condition.getName(), tasks.size());
     taskRepository.saveAll(tasks);
+  }
+
+  private Task createTaskObjectFromActionAndEntityId(Action action,
+      UUID entityUUID, Plan plan) {
+    if (action.getLookupEntityType().getCode().equals(ENTITY_LOCATION)) {
+      if (taskRepository.findTasksByAction_IdentifierAndLocation_Identifier(
+          action.getIdentifier(), entityUUID).size() > 0) {
+        log.info("task for location: {} already exists", entityUUID);
+        return null;
+      }
+    }
+
+    if (action.getLookupEntityType().getCode().equals(ENTITY_PERSON)) {
+      if (taskRepository.findTasksByAction_IdentifierAndPerson_Identifier(
+          action.getIdentifier(),
+          entityUUID).size() > 0) {
+        log.info("task for person: {} already exists", entityUUID);
+        return null;
+      }
+    }
+
+    Task task = Task.builder()
+        .lookupTaskStatus(lookupTaskStatusRepository.findByCode(TASK_STATUS_READY).orElseThrow(
+            () -> new NotFoundException(Pair.of(LookupTaskStatus.Fields.code, TASK_STATUS_READY),
+                LookupTaskStatus.class)))
+        .priority(TaskPriorityEnum.ROUTINE)
+        .description(action.getDescription())
+        .lastModified(LocalDateTime.now())
+        .authoredOn(LocalDateTime.now())
+        .action(action)
+        .executionPeriodStart(
+            action.getTimingPeriodStart())
+        .executionPeriodEnd(action.getTimingPeriodEnd())
+        .plan(plan)
+        .build();
+    task.setEntityStatus(EntityStatus.ACTIVE);
+
+    if (action.getLookupEntityType().getCode().equals(ENTITY_LOCATION)) {
+      Location location = locationService.findByIdentifier(entityUUID);
+      task.setLocation(location);
+    }
+    if (action.getLookupEntityType().getCode().equals(ENTITY_PERSON)) {
+      Person person = personService.getPersonByIdentifier(entityUUID);
+      task.setPerson(person);
+    }
+    return task;
+  }
+
+  public void updateTasks(UUID planIdentifier) {
+
+    List<Task> tasksByPlan = taskRepository.findTasksByPlan_Identifier(planIdentifier);
+
+    LookupTaskStatus lookupTaskStatus = lookupTaskStatusRepository.findByCode(TASK_STATUS_CANCELLED)
+        .orElseThrow(()->new NotFoundException(
+            Pair.of(LookupTaskStatus.Fields.code, TASK_STATUS_CANCELLED), LookupTaskStatus.class));
+
+    for (Task task : tasksByPlan) {
+
+      Action action = task.getAction();
+      List<PlanLocations> planLocationsForLocation = new ArrayList<>();
+      if (action.getLookupEntityType().getCode().equals(ENTITY_LOCATION)) {
+        if (task.getLocation() != null) {
+          planLocationsForLocation = planLocationsService.getPlanLocationsByLocationIdentifier(
+              task.getLocation().getIdentifier());
+        }
+      }
+
+      List<PlanLocations> planLocationsForPerson = new ArrayList<>();
+      if (action.getLookupEntityType().getCode().equals(ENTITY_PERSON)) {
+        if (task.getPerson() != null) {
+          planLocationsForPerson = planLocationsService.getPlanLocationsByLocationIdentifierList(
+              task.getPerson().getLocations().stream()
+                  .map(Location::getIdentifier)
+                  .collect(Collectors.toList()));
+        }
+      }
+
+      if (planLocationsForLocation.isEmpty() && planLocationsForPerson.isEmpty()) {
+        task.setLookupTaskStatus(lookupTaskStatus);
+      } else {
+        if (action.getLookupEntityType().getCode().equals(ENTITY_LOCATION)) {
+          if (planLocationsForLocation.size() > 0) {
+            List<Organization> organizations = planLocationsForLocation.stream().filter(
+                    planLocations1 -> planLocations1.getPlan().getIdentifier().equals(planIdentifier))
+                .flatMap(planLocation -> planLocation.getPlanAssignments().stream())
+                .map(PlanAssignment::getOrganization)
+                .collect(Collectors.toList());
+            task.setOrganizations(organizations);
+          }
+        }
+        if (action.getLookupEntityType().getCode().equals(ENTITY_PERSON)) {
+          if (planLocationsForPerson.size() > 0) {
+            List<Organization> organizations = planLocationsForPerson.stream().filter(
+                    planLocations1 -> planLocations1.getPlan().getIdentifier().equals(planIdentifier))
+                .flatMap(planLocation -> planLocation.getPlanAssignments().stream())
+                .map(PlanAssignment::getOrganization)
+                .collect(Collectors.toList());
+            task.setOrganizations(organizations);
+          }
+        }
+      }
+      taskRepository.save(task);
+    }
   }
 }

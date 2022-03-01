@@ -12,5 +12,7 @@ public class Condition {
   String property;
   List<String> value;
   String group;
+  boolean isJoinCondition;
+  String joinedEntity;
 }
 
