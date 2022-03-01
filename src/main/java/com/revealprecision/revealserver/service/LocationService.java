@@ -5,9 +5,12 @@ import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.GeographicLevel;
 import com.revealprecision.revealserver.persistence.domain.Location;
+import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
+import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
 import com.revealprecision.revealserver.persistence.repository.LocationRepository;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
@@ -74,7 +77,23 @@ public class LocationService {
     return locationRepository.getAllByIdentifiers(identifiers);
   }
 
-  public List<Location> getAllLocations(){
+  public List<Location> getAllByNames(List<String> names) {
+    return locationRepository.getAllByNames(names);
+  }
+
+  public List<Location> getLocationsByParentIdentifiers(List<UUID> parentIdentifiers,
+      LocationHierarchy locationHierarchy) {
+    List<LocationRelationship> locationRelationships = locationHierarchy.getLocationRelationships();
+    List<Location> locations = locationRelationships.stream().filter(
+        locationRelationship -> parentIdentifiers
+            .contains(locationRelationship.getParentLocation()))
+        .map(locationRelationship -> locationRelationship.getLocation()).collect(
+            Collectors.toList());
+
+    return locations;
+  }
+
+  public List<Location> getAllLocations() {
     //TODO: to be removed just here for testing
     return locationRepository.findAll();
   }

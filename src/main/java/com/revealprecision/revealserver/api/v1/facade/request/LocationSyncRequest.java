@@ -23,5 +23,4 @@ public class LocationSyncRequest {
 
   @JsonProperty("return_count")
   private boolean returnCount;
-
 }
