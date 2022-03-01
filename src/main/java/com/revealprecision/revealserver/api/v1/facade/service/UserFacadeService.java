@@ -18,7 +18,7 @@ public class UserFacadeService {
     //here we will return the plans assigned to the user:
     //TODO: final logic for finding the plans assigned to user once we know assignment (maybe obtain via organization assigned to user)00
 
-    UUID planIdentifier = UUID.fromString("0f2c048a-762b-4067-9ab1-8031cbf87a0b");
+    UUID planIdentifier = UUID.fromString("028290a5-cc4b-48cd-a041-75415fb4b0c1");
     return Arrays.asList(planService.getPlanByIdentifier(planIdentifier));
   }
 
