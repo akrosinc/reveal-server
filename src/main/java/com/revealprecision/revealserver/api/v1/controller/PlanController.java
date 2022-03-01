@@ -65,16 +65,28 @@ public class PlanController {
   }
 
   @GetMapping("/{identifier}/locationHierarchy")
-  public ResponseEntity<Page<GeoTreeResponse>> getHierarchyByPlanIdentifier(@PathVariable("identifier") UUID identifier, Pageable pageable) {
-    List<GeoTreeResponse> geoTreeResponseList = planService.getHierarchyByPlanIdentifier(identifier);
-    Page<GeoTreeResponse> pageableGeoTreeResponse = LocationHierarchyResponseFactory.generatePageableGeoTreeResponse(geoTreeResponseList,pageable, "");
+  public ResponseEntity<?> getHierarchyByPlanIdentifier(
+      @PathVariable("identifier") UUID identifier,
+      @RequestParam(name = "_summary", defaultValue = "TRUE", required = false) SummaryEnum summary,
+      Pageable pageable) {
+    if (summary == SummaryEnum.COUNT) {
+      return ResponseEntity
+          .status(HttpStatus.OK)
+          .body(
+              new CountResponse(planService.getPlanByIdentifier(identifier).getLocations().size()));
+    }
+    List<GeoTreeResponse> geoTreeResponseList = planService.getHierarchyByPlanIdentifier(
+        identifier);
+    Page<GeoTreeResponse> pageableGeoTreeResponse = LocationHierarchyResponseFactory.generatePageableGeoTreeResponse(
+        geoTreeResponseList, pageable, "");
     return ResponseEntity
-            .status(HttpStatus.OK)
-            .body(pageableGeoTreeResponse);
+        .status(HttpStatus.OK)
+        .body(pageableGeoTreeResponse);
   }
 
   @PostMapping("/{identifier}/assignLocations")
-  public ResponseEntity<Void> assignPlanLocations(@PathVariable("identifier") UUID identifier, @Valid @RequestBody AssignLocationRequest assignLocationRequest) {
+  public ResponseEntity<Void> assignPlanLocations(@PathVariable("identifier") UUID identifier,
+      @Valid @RequestBody AssignLocationRequest assignLocationRequest) {
     planService.assignSelectedLocations(identifier, assignLocationRequest.getLocations());
     return ResponseEntity.status(HttpStatus.CREATED).build();
   }
