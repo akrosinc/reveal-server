@@ -1,6 +1,5 @@
 package com.revealprecision.revealserver.api.v1.facade.service;
 
-import static com.revealprecision.revealserver.api.v1.facade.constants.JDBCHelperConstants.BUSINESS_STATUS;
 import static com.revealprecision.revealserver.api.v1.facade.constants.JDBCHelperConstants.LOCATION;
 import static com.revealprecision.revealserver.api.v1.facade.constants.JDBCHelperConstants.PERSON;
 
