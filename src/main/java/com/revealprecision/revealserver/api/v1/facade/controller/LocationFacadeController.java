@@ -26,15 +26,24 @@ import org.springframework.web.bind.annotation.RestController;
 public class LocationFacadeController {
 
   private final LocationFacadeService locationFacadeService;
-  private  final LocationHierarchyService locationHierarchyService;
+  private final LocationHierarchyService locationHierarchyService;
 
   @Operation(summary = "Sync Locations for Android app", description = "Sync Locations for Android app", tags = {
       "Location Sync Facade"})
   @PostMapping(value = "/sync", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<List<PhysicalLocation>> getLocations(
       @RequestBody LocationSyncRequest locationSyncRequest) {
-    LocationHierarchy locationHierarchy = locationHierarchyService.findByIdentifier(UUID.fromString(locationSyncRequest.getHierarchyIdentifier()));
-    List<Location> locations = locationFacadeService.syncLocations(locationSyncRequest,locationHierarchy);
+
+    String hierarchyIdentifier = locationSyncRequest.getHierarchyIdentifier();
+    LocationHierarchy locationHierarchy;
+    if (hierarchyIdentifier != null) {
+      locationHierarchy = locationHierarchyService
+          .findByIdentifier(UUID.fromString(hierarchyIdentifier));
+    } else {
+      locationHierarchy = locationHierarchyService.findByName("default").get(0);
+    }
+    List<Location> locations = locationFacadeService
+        .syncLocations(locationSyncRequest, locationHierarchy);
     List<PhysicalLocation> physicalLocations = PhysicalLocationResponseFactory
         .fromLocationsAndHierarchy(locations, locationHierarchy);
     HttpHeaders headers = new HttpHeaders();

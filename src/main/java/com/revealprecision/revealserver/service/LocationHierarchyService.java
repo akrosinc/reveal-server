@@ -109,4 +109,7 @@ public class LocationHierarchyService {
         .getLocationRelationshipsForLocationHierarchy(locationHierarchy);
   }
 
+  public List<LocationHierarchy> findByName(String name) {
+    return locationHierarchyRepository.findByName(name);
+  }
 }
