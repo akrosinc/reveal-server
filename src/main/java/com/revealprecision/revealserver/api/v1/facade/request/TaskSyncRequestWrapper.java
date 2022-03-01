@@ -7,9 +7,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * @author Samuel Githengi created on 11/18/20
- */
 public class TaskSyncRequestWrapper {
 
   @JsonProperty
