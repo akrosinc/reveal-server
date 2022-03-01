@@ -2,8 +2,6 @@ package com.revealprecision.revealserver.api.v1.facade.constants;
 
 public class JDBCHelperConstants {
 
-  public static final String BUSINESS_STATUS = "business_status";
-
   public static final String PERSON = "person";
   public static final String LOCATION = "location";
 
