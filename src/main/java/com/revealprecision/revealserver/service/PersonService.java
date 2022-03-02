@@ -114,7 +114,7 @@ public class PersonService {
     }
 
     if (personRequest.getGender() != null) {
-      personRetrieved.setGender(personRequest.getGender().getValue());
+      personRetrieved.setGender(personRequest.getGender().name());
     }
 
     return personRepository.save(personRetrieved);
