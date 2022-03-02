@@ -98,21 +98,29 @@ public class PlanService {
 
   public List<GeoTreeResponse> getHierarchyByPlanIdentifier(UUID identifier) {
     Plan plan = getPlanByIdentifier((identifier));
-    LocationHierarchy locationHierarchy = locationHierarchyService.findByIdentifier(plan.getLocationHierarchy().getIdentifier());
+    LocationHierarchy locationHierarchy = locationHierarchyService.findByIdentifier(
+        plan.getLocationHierarchy().getIdentifier());
     GeoTree geoTree = locationHierarchyService.getGeoTreeFromLocationHierarchy(locationHierarchy);
     List<GeoTreeResponse> geoTreeResponses = LocationHierarchyResponseFactory.generateGeoTreeResponseFromTree(
-            locationHierarchyService.getGeoTreeFromLocationHierarchy(locationHierarchy)
-                    .getLocationsHierarchy(), false);
-    Set<Location> locations = plan.getLocations();
-    Map<UUID, Location> locationMap = locations.stream().collect(Collectors.toMap(Location::getIdentifier, location -> location));
+        locationHierarchyService.getGeoTreeFromLocationHierarchy(locationHierarchy)
+            .getLocationsHierarchy(), false);
+    Set<Location> locations = plan.getLocations().stream().map(PlanLocations::getLocation).collect(
+        Collectors.toSet());
+    Map<UUID, Location> locationMap = locations.stream()
+        .collect(Collectors.toMap(Location::getIdentifier, location -> location));
     geoTreeResponses.forEach(el -> {
-        assignLocations(locationMap, el);
+      assignLocations(locationMap, el);
     });
     return geoTreeResponses;
   }
 
+  public Set<Location> getPlanLocationsByPlanId(UUID identifier) {
+    Plan plan = getPlanByIdentifier((identifier));
+    return plan.getLocations().stream().map(PlanLocations::getLocation).collect(Collectors.toSet());
+  }
+
   public void assignLocations(Map<UUID, Location> locationMap, GeoTreeResponse geoTreeResponse) {
-    if(locationMap.containsKey(geoTreeResponse.getIdentifier())) {
+    if (locationMap.containsKey(geoTreeResponse.getIdentifier())) {
       geoTreeResponse.setActive(true);
     } else {
       geoTreeResponse.setActive(false);
@@ -122,11 +130,24 @@ public class PlanService {
 
   public void assignSelectedLocations(UUID identifier, Set<UUID> locations) {
     Plan plan = getPlanByIdentifier(identifier);
-    Set<Location> locationSet = new HashSet<>();
-    locations.forEach(uuid -> {
-      locationSet.add(locationService.findByIdentifier(uuid));
+    Set<UUID> currentLocations = plan.getLocations().stream()
+        .map(el -> el.getLocation().getIdentifier()).collect(Collectors.toSet());
+    Set<UUID> locationsToAdd = new HashSet<>(locations);
+    locationsToAdd.removeAll(currentLocations);
+    locationsToAdd.forEach(el -> {
+      plan.addLocation(new PlanLocations(plan, locationService.findByIdentifier((el))));
     });
-    plan.setLocations(locationSet);
+    currentLocations.removeAll(locations);
+    currentLocations.forEach(el -> {
+      plan.removeLocation(
+          plan.getLocations().stream().filter(planEl -> planEl.getLocation().getIdentifier() == el)
+              .collect(Collectors.toList()).get(0));
+    });
     planRepository.save(plan);
+  }
+
+  public void assignOrganizationsToLocation(Set<UUID> organizationIdentifiers,
+      UUID locationIdentifier, UUID planId) {
+    Set<Location> planLocations = getPlanLocationsByPlanId(planId);
   }
 }
