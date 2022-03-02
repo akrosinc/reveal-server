@@ -34,7 +34,7 @@ public class PlanAssignment extends AbstractAuditableEntity {
   private UUID identifier;
 
 
-  @OneToOne
+  @ManyToOne
   @JoinColumn(name = "organization_identifier",referencedColumnName = "identifier")
   private Organization organization;
 
