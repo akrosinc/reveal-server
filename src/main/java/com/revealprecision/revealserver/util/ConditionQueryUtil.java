@@ -16,7 +16,7 @@ import lombok.extern.slf4j.Slf4j;
  * Processes a Reveal frontend query string to build a Query Object
  *
  * Notation:
- *     query = {Person|Location}.[{tag|core}_{integer|date|string|boolean}]SPACE{"=" | "<" | ">" | "<=" | ">=" | "BETWEEN"}SPACE{value}
+ *     query = {Person|Location}.[{tag|core|coreJoin}_{integer|date|string|boolean}]{property}SPACE{"=" | "<" | ">" | "<=" | ">=" | "BETWEEN"}SPACE{value}
  *
  *
  *    Above SPACE refers to a real space.
@@ -29,7 +29,7 @@ import lombok.extern.slf4j.Slf4j;
  * 3. Only the following data types are allowed
  *     "integer", "string", "boolean", "date"
  * 4. Only the following field types are allowed
- *     "core", "tag"
+ *     "core", "tag", "coreJoin"
  * 5. Where the operator "BETWEEN" is used, it must be preceded with a comma seperated pair
  *      example -> 10,20 for between 10 and 20
  *      or example -> 2012-10-01,2012-11-01 for between 2012-10-01 and 2012-11-01
@@ -39,6 +39,13 @@ import lombok.extern.slf4j.Slf4j;
  *     correct use: ( Person.[tag_string]eye_color="brown" OR Person.[tag_string]eye_color="brown" ) AND Person.[tag_integer]weight=10
  * 9. Nested OR conditions are not supported
  * 10. AND conditions must ALWAYS be outside of parenthesis
+ * 11. Joins are supported but only at one level i.e Location join location_heirarchy or Location join geographic_level is supported....Person join person_location join location is not supported
+ * 12. Joins assume that the entity joining to has a primary key "identifier" and the root entity has a foreign key named <entity>_identifier
+ *    e.g. Location join Geographic_Level -> location.geographic_level_identifier joins on Geographic_Level.identifier
+ * 13. Joins only allow LEFT JOIN in the query generated
+ * 14. Join property must iis represented by notation: <entity>.<property>
+ *    e.g. Location[coreJoin_string]geographic_level.name == 'Structure'
+ *        Here Location will be joined with Geographic Level and filtered on Locations where the Geographic Level = 'Structure'
  */
 @Slf4j
 public class ConditionQueryUtil {
@@ -54,12 +61,12 @@ public class ConditionQueryUtil {
    * Query(
    *    orConditionList = {
    *         List.of [
-   *                Condition(entity=Person, type=tag, dataType=string, operator="==", property=eye_color, value="brown",group=#group1),
-   *                Condition(entity=Person, type=tag, dataType=string, operator="==", property=eye_color, value="black",group=#group1 )]
+   *                Condition(entity=Person, type=tag, dataType=string, operator="==", property=eye_color, value="brown",group=#group1, isJoinCondition=false, joinedEntity=null),
+   *                Condition(entity=Person, type=tag, dataType=string, operator="==", property=eye_color, value="black",group=#group1, isJoinCondition=false, joinedEntity=null )]
    *    },
    *    andConditionList = {
    *        List.of [
-   *                Condition(entity=Person, type=tag, dataType=integer, operator=">", property=weight, value=10 ,group=null)
+   *                Condition(entity=Person, type=tag, dataType=integer, operator=">", property=weight, value=10 ,group=null, isJoinCondition=false, joinedEntity=null)
    *    },
    *    entity = Person
    */
@@ -67,6 +74,7 @@ public class ConditionQueryUtil {
 
     List<Condition> andConditionList = new ArrayList<>();
     List<Condition> orConditionList = new ArrayList<>();
+    List<Condition> joinConditions = new ArrayList<>();
 
     if (!queryStr.equals("")) {
 
@@ -91,13 +99,18 @@ public class ConditionQueryUtil {
 
         } else {
           Condition query = getQuery(andCondition, null);
-          andConditionList.add(query);
+          if (query.isJoinCondition()){
+            joinConditions.add(query);
+          } else {
+            andConditionList.add(query);
+          }
         }
       }
     }
     Query query = new Query();
     query.setAndConditions(andConditionList);
     query.setOrConditions(orConditionList);
+    query.setJoinConditions(joinConditions);
     query.setEntity(entityType);
     return query;
   }
@@ -147,7 +160,10 @@ public class ConditionQueryUtil {
    * Given a Reveal frontend condition the method will build Condition Object
    * <p>
    * Example: condition=Person.[tag_string]eye_color = "brown" group=#group0 returns
-   * Condition(entity=Person, type=tag, dataType=string, operator="==",group=#group1)
+   * Condition(entity=Person, type=tag, dataType=string, operator="==",group=#group1, property=eye_color, isJoinCondition=false, joinedEntity=null)
+   *
+   * Example: condition=Location.[coreJoin_string]geographic_level.name = "Structure"
+   * Condition(entity=Location, type=coreJoin_string, dataType=string, operator="==",group=null, property=name, isJoinCondition=true, joinedEntity=geographic_level)
    * <p>
    * Where the operator BETWEEN is used the method will expect a comma separated value representing
    * a range example value = 10,10
@@ -171,8 +187,20 @@ public class ConditionQueryUtil {
 
       conditionObj.setType(typeAndDataType.get(0)); // as per example above type = core
       conditionObj.setDataType(typeAndDataType.get(1)); // as per example above dataType = date
+
       String regex = "\\" + tagFound + "\\b";
-      conditionObj.setProperty(property.replaceAll(regex, ""));
+      if (typeAndDataType.get(0).equals("coreJoin")){
+        conditionObj.setJoinCondition(true);
+
+        String[] joinedProperty = property.replaceAll(regex, "").split("-");
+        conditionObj.setJoinedEntity(joinedProperty[0]);
+        conditionObj.setProperty(joinedProperty[1]);
+      } else{
+        conditionObj.setJoinCondition(false);
+        conditionObj.setProperty(property.replaceAll(regex, ""));
+      }
+
+
     }
     if (group != null) {
       conditionObj.setGroup(group);

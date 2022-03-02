@@ -63,6 +63,9 @@ public class Organization extends AbstractAuditableEntity {
   @ManyToMany(mappedBy = "organizations")
   private Set<User> users;
 
+  @OneToMany(mappedBy = "organization")
+  private Set<PlanAssignment> planAssignments;
+
   public Organization update(OrganizationRequest organizationRequest, Organization parent) {
     this.name = organizationRequest.getName();
     this.active = organizationRequest.isActive();
