@@ -38,9 +38,14 @@ public class EntityFilterService {
     List<String> locations = queryDBAndRetrieveListOfLocationsLinkedToPlanJurisdiction(
         planIdentifier);
 
-    String locationJurisdictionsPart = getConditionFragmentsForPlanLocationJurisdictions(locations);
+    String planLocations = getConditionFragmentsForPlanLocations(locations);
 
     String queryFinal = null;
+
+    List<Condition> joinConditions = query.getJoinConditions();
+    String joinTableFragment = getJoinFragment(joinConditions);
+
+    List<String> joinedConditionList = getQueryFragmentListJoinedConditions(joinConditions);
 
     if (!(query.getAndConditions().size() == 0 && query.getOrConditions().size() == 0)) {
 
@@ -52,30 +57,39 @@ public class EntityFilterService {
       List<String> andConditionList = getQueryFragmentListForAndConditions(andConditions);
 
       String wherePartBeforeLocationJurisdiction = combineGroupedOrConditionsAndAndConditions(
-          groupedOrConditions, andConditionList);
+          groupedOrConditions, andConditionList,joinedConditionList);
 
       if (query.getEntity().equalsIgnoreCase(LOCATION_TABLE)) {
 
         queryFinal = conditionQueryProperties.getLocationWithConditionsQuery() + "\n"
+            + joinTableFragment
             + WHERE
             + (wherePartBeforeLocationJurisdiction.equals("") ? " "
             : wherePartBeforeLocationJurisdiction + " AND \n")
-            + locationJurisdictionsPart;
+            + planLocations;
       }
 
       if (query.getEntity().equalsIgnoreCase(PERSON_TABLE)) {
         queryFinal =
             conditionQueryProperties.getPersonWithConditionQueryWithinALocationJurisdiction() + "\n"
+                + joinTableFragment
                 + WHERE
                 + (wherePartBeforeLocationJurisdiction.equals("") ? " "
                 : wherePartBeforeLocationJurisdiction + " AND \n")
-                + locationJurisdictionsPart;
+                + planLocations;
       }
     } else {
+
+      String wherePartBeforeLocationJurisdiction = combineGroupedOrConditionsAndAndConditions(
+          new ArrayList<>(), new ArrayList<>(),joinedConditionList);
+
       queryFinal =
           conditionQueryProperties.getLocationWithoutConditionQuery() + "\n"
+              + joinTableFragment
               + WHERE
-              + locationJurisdictionsPart;
+              + (wherePartBeforeLocationJurisdiction.equals("") ? " "
+              : wherePartBeforeLocationJurisdiction + " AND \n")
+              + planLocations;
     }
     if (queryFinal == null){
       throw new QueryGenerationException("Postgres query cannot be built for Query Object: "+query.toString());
@@ -84,11 +98,23 @@ public class EntityFilterService {
         (rs, rowNum) -> ((UUID) rs.getObject("identifier"))));
   }
 
+  private String getJoinFragment(List<Condition> joinConditions) {
+    //LEFT JOIN condition.joinentity joinenetity_join on "joinenetity_join".identifier = a.joinentity_identifier
+    return joinConditions.stream().map(condition ->
+        "LEFT JOIN ".concat(condition.getJoinedEntity()).concat(" ")
+            .concat(condition.getJoinedEntity()).concat("_join").concat(" ON ")
+            .concat(condition.getJoinedEntity()).concat("_join").concat(".").concat("identifier").concat("=")
+            .concat("a.").concat(condition.getJoinedEntity()).concat("_identifier")
+        ).collect(Collectors.joining("\n"));
+  }
+
   private String combineGroupedOrConditionsAndAndConditions(List<String> groupedOrConditions,
-      List<String> andConditionList) {
+      List<String> andConditionList,List<String> joinConditions) {
     return String.join(" AND ", groupedOrConditions) +
         ((!groupedOrConditions.isEmpty() && !andConditionList.isEmpty()) ? " AND " : "")
-        + String.join(" AND ", andConditionList);
+        + String.join(" AND ", andConditionList)
+        + ((!groupedOrConditions.isEmpty() && !andConditionList.isEmpty()) ? " AND " : "")
+        + String.join(" AND ", joinConditions);
   }
 
   private List<String> getQueryFragmentListForAndConditions(List<Condition> andConditions) {
@@ -99,17 +125,17 @@ public class EntityFilterService {
     return andConditionList;
   }
 
-  /**
-   * Given a list of Grouped Or conditions the method will create the condition query fragments with the applicable data types and either reference the
-   * core fields (table attributes) or the tagged values
-   *
-   * Example:
-   *  Given
-   *  #group0 -> List.of [ (am.entity_value->'eye_color' = 'brown' ), (am.entity_value->'eye_color' = 'black' )]
-   *
-   *  Results
-   *
-   */
+  private List<String> getQueryFragmentListJoinedConditions(List<Condition> joinConditions) {
+    List<String> joinedConditions = new ArrayList<>();
+    for (Condition joinCondition : joinConditions) {
+      joinedConditions = getConditionQueryParts(joinCondition,joinedConditions);
+    }
+
+    return joinedConditions;
+  }
+
+
+
   private List<String> getQueryFragmentListForGroupedOrConditions(List<Condition> orConditions) {
     Map<String, List<String>> whereOrConditions = new HashMap<>();
     for (Condition orCondition : orConditions) {
@@ -134,6 +160,13 @@ public class EntityFilterService {
   }
 
 
+  private String getConditionFragmentsForPlanLocations(List<String> locations) {
+
+    return "lr.location_identifier in (".concat(locations.stream()
+        .map(planLocation -> "'".concat(planLocation).concat("'"))
+        .collect(Collectors.joining(" , "))).concat(")");
+  }
+
   /**
    * Returns query condition segments given a list of location uuid with the placement of parenthesis
    * Example give List of ["9f34814c-fc38-4ddb-9cac-a9b2890fea9f","36e8d03e-23d9-41bd-b2c0-45dd8bcdd8ee"]:
@@ -149,10 +182,9 @@ public class EntityFilterService {
 
   private List<String> queryDBAndRetrieveListOfLocationsLinkedToPlanJurisdiction(
       UUID planIdentifier) {
-    List<String> location_identifier = jdbcTemplate.query(
+    return jdbcTemplate.query(
         conditionQueryProperties.getPlanLocationsQuery() + "'" + planIdentifier + "'",
         (rs, rowNum) -> rs.getObject("location_identifier").toString());
-    return location_identifier;
   }
 
   /**
@@ -179,6 +211,9 @@ public class EntityFilterService {
         break;
       case "core":
         con = "a." + condition.getProperty();
+        break;
+      case "coreJoin":
+        con = condition.getJoinedEntity().concat("_join.").concat(condition.getProperty());
         break;
     }
 

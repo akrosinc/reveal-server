@@ -5,6 +5,7 @@ import com.revealprecision.revealserver.api.v1.dto.response.Group;
 import com.revealprecision.revealserver.api.v1.dto.response.PersonResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.PersonResponse.PersonResponseBuilder;
 import com.revealprecision.revealserver.enums.GenderEnum;
+import com.revealprecision.revealserver.enums.LookupUtil;
 import com.revealprecision.revealserver.enums.NameUseEnum;
 import com.revealprecision.revealserver.persistence.domain.Person;
 import java.time.ZoneId;
@@ -49,13 +50,13 @@ public class PersonResponseFactory {
                 .given(person.getNameGiven())
                 .text(person.getNameText())
                 .prefix(person.getNamePrefix())
-                .use(NameUseEnum.getEnum(person.getNameUse()))
+                .use(LookupUtil.lookup(NameUseEnum.class,person.getNameUse()))
                 .suffix(person.getNameSuffix())
                 .build())
         .active(person.isActive())
         .meta(person.getPersonMetadata().getEntityValue())
         .birthDate(person.getBirthDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate())
-        .gender(GenderEnum.getEnum(person.getGender()));
+        .gender(LookupUtil.lookup(GenderEnum.class,person.getGender()));
 
   }
 

@@ -22,4 +22,6 @@ public interface TaskRepository extends JpaRepository<Task, UUID>,
   List<Task> findTasksByAction_IdentifierAndPerson_Identifier(UUID actionIdentifier,
       UUID personIdentifier);
 
+  List<Task> findTasksByPlan_Identifier(UUID planIdentifier);
+
 }

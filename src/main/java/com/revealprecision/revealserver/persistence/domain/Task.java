@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.revealprecision.revealserver.enums.TaskPriorityEnum;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 import javax.persistence.CascadeType;
 import javax.persistence.Entity;
@@ -14,6 +15,7 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
+import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToOne;
 import javax.validation.constraints.NotNull;
@@ -74,19 +76,29 @@ public class Task extends AbstractAuditableEntity {
   @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
   private LocalDate executionPeriodEnd;
 
-  @OneToOne(fetch = FetchType.LAZY)
+  @OneToOne(fetch = FetchType.EAGER)
   @JoinTable(name = "task_location",
       joinColumns = @JoinColumn(name = "task_identifier"),
       inverseJoinColumns = @JoinColumn(name = "location_identifier")
   )
   private Location location;
 
-  @OneToOne(fetch = FetchType.LAZY)
+  @OneToOne(fetch = FetchType.EAGER)
   @JoinTable(name = "task_person",
       joinColumns = @JoinColumn(name = "task_identifier"),
       inverseJoinColumns = @JoinColumn(name = "person_identifier")
   )
   private Person person;
 
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "plan_identifier", referencedColumnName = "identifier", nullable = false)
+  private Plan plan;
+
+  @ManyToMany(fetch = FetchType.LAZY)
+  @JoinTable(name = "task_organization",
+      joinColumns = @JoinColumn(name = "task_identifier"),
+      inverseJoinColumns = @JoinColumn(name = "organization_identifier")
+  )
+  private List<Organization> organizations;
 
 }
