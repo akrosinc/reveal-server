@@ -9,6 +9,7 @@ import com.revealprecision.revealserver.persistence.domain.Condition.Fields;
 import com.revealprecision.revealserver.persistence.domain.Goal;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.repository.ConditionRepository;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -57,5 +58,8 @@ public class ConditionService {
     Condition condition = getCondition(conditionIdentifier);
 
     conditionRepository.delete(condition);
+  }
+  public List<Condition> getConditionsByActionIdentifier(UUID actionIdentifier){
+   return conditionRepository.findConditionByAction_Identifier(actionIdentifier);
   }
 }

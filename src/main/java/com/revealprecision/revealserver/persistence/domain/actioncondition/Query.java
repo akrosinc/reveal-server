@@ -9,4 +9,5 @@ public class Query{
   String entity;
   List<Condition> andConditions;
   List<Condition> orConditions;
+  List<Condition> joinConditions;
 }

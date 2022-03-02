@@ -9,11 +9,10 @@ import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
-import javax.persistence.JoinTable;
-import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 import javax.validation.constraints.NotNull;
@@ -52,8 +51,8 @@ public class Plan extends AbstractAuditableEntity {
   @JoinColumn(name = "hierarchy_identifier")
   private LocationHierarchy locationHierarchy;
 
-  @OneToMany(mappedBy = "plan", cascade = CascadeType.ALL, orphanRemoval = true)
-  private Set<PlanLocations> locations;
+  @OneToMany(cascade = CascadeType.PERSIST,fetch = FetchType.LAZY)
+  private Set<PlanLocations> planLocations;
 
   @OneToMany(mappedBy = "plan", cascade = CascadeType.ALL)
   private Set<Goal> goals;
@@ -65,15 +64,6 @@ public class Plan extends AbstractAuditableEntity {
   @ManyToOne
   @JoinColumn(name = "lookup_intervention_type_identifier")
   private LookupInterventionType interventionType;
-
-  public void addLocation(PlanLocations planLocations) {
-    this.locations.add(planLocations);
-  }
-
-  public void removeLocation(PlanLocations planLocations) {
-    this.locations.remove(planLocations);
-  }
-
 
   public Plan update(PlanRequest request, LocationHierarchy hierarchy,
       LookupInterventionType interventionType) {

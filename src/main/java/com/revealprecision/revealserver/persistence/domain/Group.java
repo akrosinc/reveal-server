@@ -26,7 +26,7 @@ import org.hibernate.envers.Audited;
 @Setter
 @SQLDelete(sql = "UPDATE \"group\" SET entity_status = 'DELETED' where identifier=?")
 @Where(clause = "entity_status='ACTIVE'")
-@Table(name = "\"group\"", schema = "public")
+@Table(name = "\"group\"")
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
