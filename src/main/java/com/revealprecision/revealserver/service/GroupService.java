@@ -39,13 +39,13 @@ public class GroupService {
     if (criteria != null) {
       if (criteria.getGroupName() != null && criteria.getGroupType() != null) {
         return groupRepository.findGroupByNameIgnoreCaseAndTypeIgnoreCase(criteria.getGroupName(),
-            criteria.getGroupType().getValue(), pageable);
+            criteria.getGroupType().name(), pageable);
       } else {
         if (criteria.getGroupName() != null) {
           return groupRepository.findGroupByNameIgnoreCase(criteria.getGroupName(), pageable);
         }
         if (criteria.getGroupType() != null) {
-          return groupRepository.findGroupByTypeIgnoreCase(criteria.getGroupType().getValue(),
+          return groupRepository.findGroupByTypeIgnoreCase(criteria.getGroupType().name(),
               pageable);
 
         }
@@ -55,7 +55,7 @@ public class GroupService {
   }
 
   public Group createGroup(GroupRequest groupRequest) {
-    Group.GroupBuilder groupBuilder = Group.builder().type(groupRequest.getType().getValue())
+    Group.GroupBuilder groupBuilder = Group.builder().type(groupRequest.getType().name())
         .name(groupRequest.getName());
 
     if (groupRequest.getLocationIdentifier() != null) {
@@ -84,7 +84,7 @@ public class GroupService {
     Group groupRetrieved = getGroupByIdentifier(groupIdentifier);
 
     groupRetrieved.setName(groupRequest.getName());
-    groupRetrieved.setType(groupRequest.getType().getValue());
+    groupRetrieved.setType(groupRequest.getType().name());
 
     if (groupRequest.getLocationIdentifier() != null) {
       Location location = locationService.findByIdentifier(groupRequest.getLocationIdentifier());
