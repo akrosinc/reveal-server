@@ -2,6 +2,7 @@ package com.revealprecision.revealserver.api.v1.facade.service;
 
 import com.revealprecision.revealserver.enums.ActionTypeEnum;
 import com.revealprecision.revealserver.enums.EntityStatus;
+import com.revealprecision.revealserver.enums.LookupUtil;
 import com.revealprecision.revealserver.enums.PlanStatusEnum;
 import com.revealprecision.revealserver.enums.PriorityEnum;
 import com.revealprecision.revealserver.enums.TaskPriorityEnum;
@@ -258,7 +259,7 @@ public class TaskJDBCService {
         .title(rs.getString("action_title")).identifier((UUID) rs.getObject("action_identifier"))
         .timingPeriodEnd(rs.getDate("action_timing_period_end").toLocalDate())
         .timingPeriodStart(rs.getDate("action_timing_period_start").toLocalDate())
-        .type(ActionTypeEnum.getEnum(rs.getString("action_type")))
+        .type(LookupUtil.lookup(ActionTypeEnum.class,rs.getString("action_type")))
         .lookupEntityType(lookupEntityType)
         .build();
   }

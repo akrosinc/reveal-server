@@ -4,6 +4,7 @@ import com.revealprecision.revealserver.api.v1.dto.response.GroupResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.GroupResponse.GroupResponseBuilder;
 import com.revealprecision.revealserver.api.v1.dto.response.GroupResponse.Relationships;
 import com.revealprecision.revealserver.enums.GroupTypeEnum;
+import com.revealprecision.revealserver.enums.LookupUtil;
 import com.revealprecision.revealserver.enums.SummaryEnum;
 import com.revealprecision.revealserver.persistence.domain.Group;
 import java.util.stream.Collectors;
@@ -19,7 +20,7 @@ public class GroupResponseFactory {
 
     GroupResponseBuilder groupResponseBuilder = GroupResponse.builder()
         .identifier(group.getIdentifier()).name(group.getName())
-        .type(GroupTypeEnum.getEnum(group.getType())).locationIdentifier(
+        .type(LookupUtil.lookup(GroupTypeEnum.class,group.getType())).locationIdentifier(
             group.getLocation() == null ? null : group.getLocation().getIdentifier());
 
     if (summary.equals(SummaryEnum.FALSE)) {
