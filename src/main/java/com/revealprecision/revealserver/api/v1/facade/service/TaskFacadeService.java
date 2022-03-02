@@ -5,7 +5,7 @@ import static com.revealprecision.revealserver.api.v1.facade.constants.JDBCHelpe
 
 import com.revealprecision.revealserver.api.v1.facade.factory.TaskFacadeFactory;
 import com.revealprecision.revealserver.api.v1.facade.models.TaskFacade;
-import com.revealprecision.revealserver.api.v1.facade.properties.TasKFacadeProperties;
+import com.revealprecision.revealserver.api.v1.facade.properties.TaskFacadeProperties;
 import com.revealprecision.revealserver.persistence.domain.Task;
 import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.service.UserService;
@@ -27,11 +27,11 @@ public class TaskFacadeService {
 
   private final TaskJDBCService taskJDBCService;
 
-  private final TasKFacadeProperties taskFacadeProperties;
+  private final TaskFacadeProperties taskFacadeProperties;
 
   @Autowired
   public TaskFacadeService(MetaDataJdbcService metaDataJdbcService, UserService userService,
-      TaskJDBCService taskJDBCService, TasKFacadeProperties taskFacadeProperties) {
+      TaskJDBCService taskJDBCService, TaskFacadeProperties taskFacadeProperties) {
     this.metaDataJdbcService = metaDataJdbcService;
     this.userService = userService;
     this.taskJDBCService = taskJDBCService;
