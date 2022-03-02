@@ -29,10 +29,10 @@ import org.springframework.stereotype.Service;
 @Service
 public class LocationRelationshipService {
 
-  private LocationRelationshipRepository locationRelationshipRepository;
-  private GeographicLevelRepository geographicLevelRepository;
-  private LocationRepository locationRepository;
-  private LocationHierarchyRepository locationHierarchyRepository;
+  final private LocationRelationshipRepository locationRelationshipRepository;
+  final private GeographicLevelRepository geographicLevelRepository;
+  final private LocationRepository locationRepository;
+  final private LocationHierarchyRepository locationHierarchyRepository;
 
   @Autowired
   public LocationRelationshipService(LocationRelationshipRepository locationRelationshipRepository,
@@ -204,6 +204,10 @@ public class LocationRelationshipService {
     if (checkLocations.size() > 0) {
       throw new NotFoundException("Locations: " + locations + " not found");
     }
+  }
+
+  public List<UUID> findLocationRelationshipUiidsByParentLocationIdentifier(UUID parentLocationIdentifier){
+    return locationRelationshipRepository.findLocationRelationshipUuidsByParentLocation_Identifier(parentLocationIdentifier);
   }
 
   @Async

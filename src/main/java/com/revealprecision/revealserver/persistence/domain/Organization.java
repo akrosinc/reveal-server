@@ -12,7 +12,6 @@ import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
-import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
@@ -64,12 +63,8 @@ public class Organization extends AbstractAuditableEntity {
   @ManyToMany(mappedBy = "organizations")
   private Set<User> users;
 
-  @ManyToMany
-  @JoinTable(
-      name = "plan_assignment",
-      joinColumns = @JoinColumn(name = "organization_identifier"),
-      inverseJoinColumns = @JoinColumn(name = "plan_location_identifier"))
-  private Set<PlanLocations> planLocations;
+  @OneToMany(mappedBy = "organization")
+  private Set<PlanAssignment> planAssignments;
 
   public Organization update(OrganizationRequest organizationRequest, Organization parent) {
     this.name = organizationRequest.getName();

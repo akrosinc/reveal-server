@@ -4,7 +4,6 @@ import com.revealprecision.revealserver.api.v1.dto.request.LocationRequest;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import java.util.Set;
 import java.util.UUID;
-import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
@@ -13,7 +12,6 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -63,8 +61,8 @@ public class Location extends AbstractAuditableEntity {
   @JoinColumn(name = "location_bulk_identifier")
   private LocationBulk locationBulk;
 
-  @OneToMany(mappedBy = "location", cascade = CascadeType.ALL)
-  private Set<PlanLocations> plans;
+  @ManyToMany(mappedBy = "planLocations")
+  private Set<Plan> plans;
 
   @ManyToMany(mappedBy = "locations")
   private Set<Person> people;

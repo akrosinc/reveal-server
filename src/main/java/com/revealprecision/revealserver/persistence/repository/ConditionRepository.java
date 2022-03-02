@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.persistence.repository;
 
 import com.revealprecision.revealserver.persistence.domain.Condition;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -15,4 +16,6 @@ public interface ConditionRepository extends JpaRepository<Condition, UUID> {
   @Query(value = "select c from Condition c where c.action.identifier = :actionIdentifier")
   Page<Condition> getAllByPlanId(@Param("actionIdentifier") UUID actionIdentifier,
       Pageable pageable);
+
+  List<Condition> findConditionByAction_Identifier(UUID actionIdentifier);
 }
