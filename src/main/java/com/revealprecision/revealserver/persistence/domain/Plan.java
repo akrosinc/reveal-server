@@ -52,12 +52,8 @@ public class Plan extends AbstractAuditableEntity {
   @JoinColumn(name = "hierarchy_identifier")
   private LocationHierarchy locationHierarchy;
 
-  @ManyToMany(cascade = CascadeType.PERSIST)
-  @JoinTable(
-      name = "plan_locations",
-      joinColumns = @JoinColumn(name = "plan_identifier"),
-      inverseJoinColumns = @JoinColumn(name = "location_identifier"))
-  private Set<Location> locations;
+  @OneToMany(mappedBy = "plan", cascade = CascadeType.ALL, orphanRemoval = true)
+  private Set<PlanLocations> locations;
 
   @OneToMany(mappedBy = "plan", cascade = CascadeType.ALL)
   private Set<Goal> goals;
@@ -69,6 +65,15 @@ public class Plan extends AbstractAuditableEntity {
   @ManyToOne
   @JoinColumn(name = "lookup_intervention_type_identifier")
   private LookupInterventionType interventionType;
+
+  public void addLocation(PlanLocations planLocations) {
+    this.locations.add(planLocations);
+  }
+
+  public void removeLocation(PlanLocations planLocations) {
+    this.locations.remove(planLocations);
+  }
+
 
   public Plan update(PlanRequest request, LocationHierarchy hierarchy,
       LookupInterventionType interventionType) {
