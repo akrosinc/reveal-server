@@ -10,6 +10,7 @@ import com.revealprecision.revealserver.persistence.domain.Organization;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -25,16 +26,22 @@ public class UserFacadeController {
   private final UserService userService;
   private final UserFacadeService userFacadeService;
 
+  @Operation(summary = "Used by reveal-client to get UserContext", description = "Returns LoginResponse which contains user details, LocationTree, Team details,assigned jurisdictions", tags = {
+      "UserContext"})
   @GetMapping(value = "/security/authenticate", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<LoginResponse> authenticate() {
     User user = userService.getCurrentUser();
-    Organization organization = userFacadeService.getOrganizationsAssignedToCurrentUser().stream().findFirst().get();
+    Organization organization = userFacadeService.getOrganizationsAssignedToCurrentUser().stream()
+        .findFirst().get();
     Set<Plan> plansAssignedToUser = userFacadeService.getPlansAssignedToCurrentUser();
     Set<Location> assignedLocations = userFacadeService.getLocationsAssignedToCurrentUser();
-    LoginResponse loginResponseData = LoginResponseFactory.fromEntities(user,organization,assignedLocations,plansAssignedToUser);
+    LoginResponse loginResponseData = LoginResponseFactory
+        .fromEntities(user, organization, assignedLocations, plansAssignedToUser);
     return ResponseEntity.status(HttpStatus.OK).body(loginResponseData);
   }
 
+  @Operation(summary = "Used by reveal-client to get data that is assigned to User", description = "Used by reveal-client to get data that is assigned to User", tags = {
+      "UserAssignment"})
   @GetMapping(value = "/rest/organization/user-assignment", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<UserAssignmentResponse> getUserAssignedLocationsAndPlans() {
     Set<Plan> plansAssignedToUser = userFacadeService.getPlansAssignedToCurrentUser();
