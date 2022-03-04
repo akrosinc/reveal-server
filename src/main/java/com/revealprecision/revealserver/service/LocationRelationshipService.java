@@ -192,8 +192,6 @@ public class LocationRelationshipService {
 
   public Optional<List<LocationRelationship>> getLocationRelationshipsForLocationHierarchy(
       LocationHierarchy locationHierarchy) {
-    var a = locationRelationshipRepository
-        .findByLocationHierarchyIdentifier(locationHierarchy.getIdentifier());
     return locationRelationshipRepository
         .findByLocationHierarchyIdentifier(locationHierarchy.getIdentifier());
   }

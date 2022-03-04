@@ -4,7 +4,6 @@ import com.revealprecision.revealserver.api.v1.dto.factory.*;
 import com.revealprecision.revealserver.api.v1.dto.request.*;
 import com.revealprecision.revealserver.api.v1.dto.response.*;
 import com.revealprecision.revealserver.enums.SummaryEnum;
-import com.revealprecision.revealserver.persistence.domain.PlanAssignment;
 import com.revealprecision.revealserver.service.ActionService;
 import com.revealprecision.revealserver.service.ConditionService;
 import com.revealprecision.revealserver.service.GoalService;
@@ -114,9 +113,9 @@ public class PlanController {
       @PathVariable("locationIdentifier") UUID locationIdentifier) {
     return ResponseEntity.status(HttpStatus.OK).body(
         planAssignmentService.getPlanAssignmentByPlanLocationIdentifier(identifier,
-            locationIdentifier).stream().map(el -> {
-              return OrganizationResponseFactory.fromEntityWithoutChild(el.getOrganization());
-        }).collect(Collectors.toList()));
+                locationIdentifier).stream()
+            .map(el -> OrganizationResponseFactory.fromEntityWithoutChild(el.getOrganization()))
+            .collect(Collectors.toList()));
   }
 
 
