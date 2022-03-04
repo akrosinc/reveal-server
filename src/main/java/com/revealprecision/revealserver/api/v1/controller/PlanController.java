@@ -4,15 +4,19 @@ import com.revealprecision.revealserver.api.v1.dto.factory.*;
 import com.revealprecision.revealserver.api.v1.dto.request.*;
 import com.revealprecision.revealserver.api.v1.dto.response.*;
 import com.revealprecision.revealserver.enums.SummaryEnum;
+import com.revealprecision.revealserver.persistence.domain.PlanAssignment;
 import com.revealprecision.revealserver.service.ActionService;
 import com.revealprecision.revealserver.service.ConditionService;
 import com.revealprecision.revealserver.service.GoalService;
+import com.revealprecision.revealserver.service.PlanAssignmentService;
+import com.revealprecision.revealserver.service.PlanLocationsService;
 import com.revealprecision.revealserver.service.PlanService;
 import com.revealprecision.revealserver.service.TargetService;
 import io.swagger.v3.oas.annotations.Parameter;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -36,6 +40,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class PlanController {
 
   private final PlanService planService;
+  private final PlanLocationsService planLocationsService;
+  private final PlanAssignmentService planAssignmentService;
   private final GoalService goalService;
   private final ActionService actionService;
   private final TargetService targetService;
@@ -73,9 +79,10 @@ public class PlanController {
       return ResponseEntity
           .status(HttpStatus.OK)
           .body(
-              new CountResponse(planService.getPlanByIdentifier(identifier).getLocations().size()));
+              new CountResponse(
+                  planService.getPlanByIdentifier(identifier).getPlanLocations().size()));
     }
-    List<GeoTreeResponse> geoTreeResponseList = planService.getHierarchyByPlanIdentifier(
+    List<GeoTreeResponse> geoTreeResponseList = planLocationsService.getHierarchyByPlanIdentifier(
         identifier);
     Page<GeoTreeResponse> pageableGeoTreeResponse = LocationHierarchyResponseFactory.generatePageableGeoTreeResponse(
         geoTreeResponseList, pageable, "");
@@ -85,10 +92,31 @@ public class PlanController {
   }
 
   @PostMapping("/{identifier}/assignLocations")
-  public ResponseEntity<Void> assignPlanLocations(@PathVariable("identifier") UUID identifier,
+  public ResponseEntity<Void> selectPlanLocations(@PathVariable("identifier") UUID identifier,
       @Valid @RequestBody AssignLocationRequest assignLocationRequest) {
-    planService.assignSelectedLocations(identifier, assignLocationRequest.getLocations());
+    planLocationsService.selectPlanLocations(identifier, assignLocationRequest.getLocations());
     return ResponseEntity.status(HttpStatus.CREATED).build();
+  }
+
+  @PostMapping("/{identifier}/{locationIdentifier}/assignTeams")
+  public ResponseEntity<Void> assignOrganizationsToLocationsByPlanId(
+      @PathVariable("identifier") UUID planIdentifier,
+      @PathVariable("locationIdentifier") UUID locationIdentifier,
+      @Valid @RequestBody AssignTeamsRequest assignTeamsRequest) {
+    planAssignmentService.assignOrganizationsToLocation(assignTeamsRequest.getTeams(),
+        locationIdentifier, planIdentifier);
+    return ResponseEntity.status(HttpStatus.CREATED).build();
+  }
+
+  @GetMapping("/{identifier}/{locationIdentifier}/teams")
+  public ResponseEntity<?> getAssignedTeamToPLanLocation(
+      @Parameter(description = "Plan identifier") @PathVariable("identifier") UUID identifier,
+      @PathVariable("locationIdentifier") UUID locationIdentifier) {
+    return ResponseEntity.status(HttpStatus.OK).body(
+        planAssignmentService.getPlanAssignmentByPlanLocationIdentifier(identifier,
+            locationIdentifier).stream().map(el -> {
+              return OrganizationResponseFactory.fromEntityWithoutChild(el.getOrganization());
+        }).collect(Collectors.toList()));
   }
 
 
