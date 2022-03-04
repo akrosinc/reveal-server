@@ -35,3 +35,5 @@ out/
 
 ### VS Code ###
 .vscode/
+.github\workflows\main_build.yml
+.github\workflows\branch_build.yml
