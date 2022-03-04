@@ -1,27 +1,16 @@
 package com.revealprecision.revealserver.api.v1.facade.controller;
 
-import com.revealprecision.revealserver.api.v1.facade.factory.LocationFacadeResponseFactory;
-import com.revealprecision.revealserver.api.v1.facade.factory.TeamMemberResponseFactory;
-import com.revealprecision.revealserver.api.v1.facade.factory.TeamResponseFactory;
-import com.revealprecision.revealserver.api.v1.facade.factory.UserFacadeResponseFactory;
-import com.revealprecision.revealserver.api.v1.facade.models.LocationFacade;
-import com.revealprecision.revealserver.api.v1.facade.models.LocationTree;
-import com.revealprecision.revealserver.api.v1.facade.models.LoginResponseData;
+import com.revealprecision.revealserver.api.v1.facade.factory.LoginResponseFactory;
+import com.revealprecision.revealserver.api.v1.facade.factory.UserAssignmentResponseFactory;
+import com.revealprecision.revealserver.api.v1.facade.models.LoginResponse;
 import com.revealprecision.revealserver.api.v1.facade.models.UserAssignmentResponse;
 import com.revealprecision.revealserver.api.v1.facade.service.UserFacadeService;
 import com.revealprecision.revealserver.persistence.domain.Location;
-import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
-import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
 import com.revealprecision.revealserver.persistence.domain.Organization;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.service.UserService;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -36,74 +25,23 @@ public class UserFacadeController {
   private final UserService userService;
   private final UserFacadeService userFacadeService;
 
-  @GetMapping(value = "/security/authenticate",produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<LoginResponseData> authenticate() {
+  @GetMapping(value = "/security/authenticate", produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<LoginResponse> authenticate() {
     User user = userService.getCurrentUser();
-    Optional<Organization> organizationOptional = user.getOrganizations().stream().findFirst();
-    if (organizationOptional.isEmpty()) {
-      //handle case when user is not assgined
-    }
-    Organization organization = organizationOptional.get();
-    var userFacadeResponse = UserFacadeResponseFactory.fromEntity(user);
-    var team = TeamResponseFactory.fromEntity(organization);
-    var teamMember = TeamMemberResponseFactory.fromEntities(organization, user);
-    teamMember.setTeam(team);
-
-    List<Plan> plansAssignedToUser = userFacadeService.geAssignedPlans(user);
-    Set<Location> assignedLocations = new HashSet<>();
-
-    plansAssignedToUser.forEach(plan -> assignedLocations.addAll(plan.getLocations()));
-
-    Set<String> jurisdictionIds = assignedLocations.stream()
-        .map(location -> location.getIdentifier().toString()).collect(
-            Collectors.toSet());
-    List<String> locationNames = assignedLocations.stream().map(location -> location.getName())
-        .collect(
-            Collectors.toList());
-
-    //We pick one hierarchy for now:
-    LocationHierarchy locationHierarchy = plansAssignedToUser.get(0).getLocationHierarchy();
-    List<LocationRelationship> locationRelationships = locationHierarchy.getLocationRelationships();
-
-    List<LocationFacade> locationFacades = assignedLocations.stream().map(
-        location -> LocationFacadeResponseFactory
-            .fromLocationEntityAndLocationRelationship(location, locationRelationships)).collect(
-        Collectors.toList());
-
-    LocationTree locationTree = new LocationTree();
-    locationTree.buildTreeFromList(locationFacades);
-
-    LoginResponseData loginResponseData = LoginResponseData.builder().user(userFacadeResponse)
-        .team(teamMember).jurisdictionIds(jurisdictionIds).jurisdictions(locationNames)
-        .locations(locationTree)
-        .build();
+    Organization organization = userFacadeService.getOrganizationsAssignedToCurrentUser().stream().findFirst().get();
+    Set<Plan> plansAssignedToUser = userFacadeService.getPlansAssignedToCurrentUser();
+    Set<Location> assignedLocations = userFacadeService.getLocationsAssignedToCurrentUser();
+    LoginResponse loginResponseData = LoginResponseFactory.fromEntities(user,organization,assignedLocations,plansAssignedToUser);
     return ResponseEntity.status(HttpStatus.OK).body(loginResponseData);
   }
 
-  @GetMapping(value = "/rest/organization/user-assignment",produces = MediaType.APPLICATION_JSON_VALUE)
+  @GetMapping(value = "/rest/organization/user-assignment", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<UserAssignmentResponse> getUserAssignedLocationsAndPlans() {
-    User user = userService.getCurrentUser();
-    List<Plan> plansAssignedToUser = userFacadeService.geAssignedPlans(user);
-    Set<String> plans = plansAssignedToUser.stream().map(plan -> plan.getIdentifier().toString())
-        .collect(
-            Collectors.toSet());
-
-    Set<Location> assignedLocations = new HashSet<>();
-    plansAssignedToUser.forEach(plan -> assignedLocations.addAll(plan.getLocations()));
-
-    Set<String> jurisdictionIds = assignedLocations.stream()
-        .map(location -> location.getIdentifier().toString()).collect(
-            Collectors.toSet());
-    Optional<Organization> organizationOptional = user.getOrganizations().stream().findFirst();
-    ; //Assumption that practioner always assigned to one org.
-    if (organizationOptional.isEmpty()) {
-      //handle case when user is not assgined
-    }
-    Organization organization = organizationOptional.get();
-    Set<UUID> organizationIds = new HashSet<>();
-    organizationIds.add(organization.getIdentifier());
-    UserAssignmentResponse userAssignmentResponse = UserAssignmentResponse.builder().plans(plans)
-        .jurisdictions(jurisdictionIds).organizationIds(organizationIds).build();
-    return ResponseEntity.status(HttpStatus.OK).body(userAssignmentResponse);
+    Set<Plan> plansAssignedToUser = userFacadeService.getPlansAssignedToCurrentUser();
+    Set<Location> assignedLocations = userFacadeService.getLocationsAssignedToCurrentUser();
+    Set<Organization> organizations = userFacadeService.getOrganizationsAssignedToCurrentUser();
+    return ResponseEntity.status(HttpStatus.OK)
+        .body(UserAssignmentResponseFactory.fromEntities(plansAssignedToUser,
+            organizations, assignedLocations));
   }
 }

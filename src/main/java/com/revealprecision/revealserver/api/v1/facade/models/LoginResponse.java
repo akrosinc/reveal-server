@@ -9,7 +9,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @Builder
-public class LoginResponseData {
+public class LoginResponse {
   public UserFacadeResponse user;
   public LocationTree locations;
   public TeamMember team;

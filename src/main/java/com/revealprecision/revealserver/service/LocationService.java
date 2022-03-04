@@ -7,8 +7,11 @@ import com.revealprecision.revealserver.persistence.domain.GeographicLevel;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
+import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.repository.LocationRepository;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.data.domain.Page;
@@ -91,6 +94,12 @@ public class LocationService {
             Collectors.toList());
 
     return locations;
+  }
+
+  public Set<Location> getAssignedLocationsFromPlans(Set<Plan> assignedPlans){
+    Set<Location> assignedLocations  = new HashSet<>();
+    assignedPlans.stream().forEach(plan -> assignedLocations.addAll(plan.getLocations()));
+    return assignedLocations;
   }
 
   public List<Location> getAllLocations() {
