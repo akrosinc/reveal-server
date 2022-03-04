@@ -50,7 +50,7 @@ public class SettingsController {
 
   @Operation(summary = "Update setting values", description = "Update setting values", tags = {
       "Settings"})
-  @PutMapping(value = "{identifier}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  @PutMapping(value = "/{identifier}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<SettingResponse> updateSetting(@PathVariable UUID identifier,
       @RequestBody SettingRequest settingRequest) {
     return ResponseEntity.status(HttpStatus.OK).body(SettingResponseFactory
