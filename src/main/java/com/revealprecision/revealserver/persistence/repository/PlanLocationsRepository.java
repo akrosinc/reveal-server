@@ -15,7 +15,9 @@ public interface PlanLocationsRepository extends EntityGraphJpaRepository<PlanLo
 
   List<PlanLocations> findByLocation_IdentifierIn(List<UUID> locationIdentifiers);
 
-  PlanLocations findByPlan_IdentifierAndLocation_Identifier(UUID planIdentifier, UUID locationIdentifier);
+  PlanLocations findByPlan_IdentifierAndLocation_Identifier(UUID planIdentifier,
+      UUID locationIdentifier);
 
-  List<PlanLocations> findByPlan_IdentifierAndLocation_IdentifierIn(UUID planIdentifier, List<UUID> locationIdentifier);
+  List<PlanLocations> findByPlan_IdentifierAndLocation_IdentifierIn(UUID planIdentifier,
+      List<UUID> locationIdentifier);
 }

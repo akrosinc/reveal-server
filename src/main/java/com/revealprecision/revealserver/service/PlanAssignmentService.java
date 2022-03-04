@@ -30,7 +30,8 @@ public class PlanAssignmentService {
         planIdentifier);
   }
 
-  public List<PlanAssignment> getPlanAssignmentByPlanLocationIdentifier(UUID planIdentifier, UUID locationIdentifier) {
+  public List<PlanAssignment> getPlanAssignmentByPlanLocationIdentifier(UUID planIdentifier,
+      UUID locationIdentifier) {
     return planAssignmentRepository.findPlanAssignmentsByPlanLocations_Plan_IdentifierAndPlanLocations_Location_Identifier(
         planIdentifier, locationIdentifier);
   }
@@ -40,7 +41,8 @@ public class PlanAssignmentService {
       UUID locationId, UUID planId) {
     PlanLocations planLocation = planLocationsService.getPlanLocationByPlanIdentifierAndLocationIdentifier(
         planId, locationId);
-    planAssignmentRepository.deletePlanAssignmentsByPlanLocations_Plan_IdentifierAndPlanLocations_Location_Identifier(planId, locationId);
+    planAssignmentRepository.deletePlanAssignmentsByPlanLocations_Plan_IdentifierAndPlanLocations_Location_Identifier(
+        planId, locationId);
     organizationIdentifiers.forEach(org -> {
       Organization organization = organizationService.findById(org, true);
       planAssignmentRepository.save(new PlanAssignment(organization, planLocation));
