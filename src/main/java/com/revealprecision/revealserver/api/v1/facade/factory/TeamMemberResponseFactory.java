@@ -10,9 +10,10 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class TeamMemberResponseFactory {
 
-  public static TeamMember fromEntities(Organization organization, User user){
+  public static TeamMember fromEntities(Organization organization, User user) {
     TeamMember teamMember = TeamMember.builder().identifier(organization.getIdentifier().toString())
-        .uuid(user.getIdentifier().toString()).build();
-    return  teamMember;
+        .uuid(user.getIdentifier().toString()).team(TeamResponseFactory.fromEntity(organization))
+        .build();
+    return teamMember;
   }
 }

@@ -41,7 +41,8 @@ public class PhysicalLocationResponseFactory {
   public static List<PhysicalLocation> fromLocationsAndHierarchy(List<Location> locations,
       LocationHierarchy locationHierarchy) {
     return locations.stream()
-        .map(location -> fromEntityLocationAndRelationship(location, locationHierarchy.getLocationRelationships()))
+        .map(location -> fromEntityLocationAndRelationship(location,
+            locationHierarchy.getLocationRelationships()))
         .collect(
             Collectors.toList());
   }

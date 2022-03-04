@@ -4,7 +4,6 @@ package com.revealprecision.revealserver.api.v1.facade.factory;
 import com.revealprecision.revealserver.api.v1.facade.models.LocationFacade;
 import com.revealprecision.revealserver.api.v1.facade.models.LocationTree;
 import com.revealprecision.revealserver.api.v1.facade.models.LoginResponse;
-import com.revealprecision.revealserver.api.v1.facade.models.Team;
 import com.revealprecision.revealserver.api.v1.facade.models.TeamMember;
 import com.revealprecision.revealserver.api.v1.facade.models.UserFacadeResponse;
 import com.revealprecision.revealserver.persistence.domain.Location;
@@ -25,9 +24,7 @@ public class LoginResponseFactory {
   public static LoginResponse fromEntities(User user, Organization organization,
       Set<Location> assignedLocations, Set<Plan> plans) {
     UserFacadeResponse userFacadeResponse = UserFacadeResponseFactory.fromEntity(user);
-    Team team = TeamResponseFactory.fromEntity(organization);
     TeamMember teamMember = TeamMemberResponseFactory.fromEntities(organization, user);
-    teamMember.setTeam(team);
     Set<String> jurisdictionIds = extractJurisdictionIdentifiers(assignedLocations);
     List<String> jurisdictionNames = extractJurisdictionNames(assignedLocations);
 
@@ -50,7 +47,7 @@ public class LoginResponseFactory {
   }
 
   private static List<String> extractJurisdictionNames(Set<Location> assignedLocations) {
-    return assignedLocations.stream().map(location -> location.getName())
+    return assignedLocations.stream().map(Location::getName)
         .collect(
             Collectors.toList());
   }
