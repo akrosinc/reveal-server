@@ -27,30 +27,14 @@ public class LocationFacadeService {
 
   private final LocationService locationService;
 
-  public List<Location> syncLocations(LocationSyncRequest locationSyncRequest, LocationHierarchy hierarchy) {
+  public List<Location> syncLocations(LocationSyncRequest locationSyncRequest,
+      LocationHierarchy hierarchy) {
     boolean isJurisdiction = locationSyncRequest.getIsJurisdiction();
-    List<Location> locations = null;
+    List<Location> locations;
     if (isJurisdiction) {
-
-      if (locationSyncRequest.getLocationIds() != null && !locationSyncRequest.getLocationIds()
-          .isEmpty()) {
-        List<UUID> locationIds = locationSyncRequest.getLocationIds().stream().map(UUID::fromString)
-            .collect(
-                Collectors.toList());
-        locations = locationService.getAllByIdentifiers(locationIds);
-      } else {
-        locations = locationService.getAllByNames(locationSyncRequest.getLocationNames());
-      }
+      locations = getLocationsByJurisdictions(locationSyncRequest);
     } else {
-
-      if (locationSyncRequest.getParentId() != null && !locationSyncRequest.getParentId()
-          .isEmpty()) {
-        List<UUID> parentIdentifiers = locationSyncRequest.getParentId().stream()
-            .map(UUID::fromString).collect(
-                Collectors.toList());
-        locations = locationService
-            .getLocationsByParentIdentifiers(parentIdentifiers, hierarchy);
-      }
+      locations = geStructures(locationSyncRequest, hierarchy);
     }
     return locations;
   }
@@ -61,18 +45,52 @@ public class LocationFacadeService {
     return headers;
   }
 
-  public Set<String> saveSyncedLocations(List<PhysicalLocation> physicalLocationRequests){
+  public Set<String> saveSyncedLocations(List<PhysicalLocation> physicalLocationRequests) {
     Set<String> locationRequestsWithErrors = new HashSet<>();
-    List<LocationRequest> locationRequests = LocationRequestFactory.fromPhysicalLocationRequests(physicalLocationRequests);
-    for(LocationRequest locationRequest:locationRequests){
-        try {
-          locationService.createLocation(locationRequest);
-        }catch (Exception e){
-          log.error(e.getMessage(), e);
-          locationRequestsWithErrors.add(locationRequest.getProperties().getExternalId().toString());
-        }
+    List<LocationRequest> locationRequests = LocationRequestFactory
+        .fromPhysicalLocationRequests(physicalLocationRequests);
+    for (LocationRequest locationRequest : locationRequests) {
+      try {
+        locationService.createLocation(locationRequest);
+      } catch (Exception e) {
+        log.error(e.getMessage(), e);
+        locationRequestsWithErrors.add(locationRequest.getProperties().getExternalId().toString());
+      }
     }
-    return  locationRequestsWithErrors;
+    return locationRequestsWithErrors;
+  }
+
+
+  private List<Location> geStructures(LocationSyncRequest locationSyncRequest,
+      LocationHierarchy hierarchy) {
+    List<Location> locations = new ArrayList<>();
+    List<String> requestParentIds = locationSyncRequest.getParentId();
+    if (requestParentIds != null && !requestParentIds.isEmpty()) {
+      List<UUID> parentIdentifiers = extractLocationIdentifiers(
+          locationSyncRequest.getParentId());
+      locations = locationService
+          .getLocationsByParentIdentifiers(parentIdentifiers, hierarchy);
+    }
+    return locations;
+  }
+
+  private List<Location> getLocationsByJurisdictions(LocationSyncRequest locationSyncRequest) {
+    List<Location> locations;
+    List<String> requestLocationIds = locationSyncRequest.getLocationIds();
+    if (requestLocationIds != null && !requestLocationIds.isEmpty()) {
+      List<UUID> locationIdentifiers = extractLocationIdentifiers(
+          locationSyncRequest.getLocationIds());
+      locations = locationService.getAllByIdentifiers(locationIdentifiers);
+    } else {
+      locations = locationService.getAllByNames(locationSyncRequest.getLocationNames());
+    }
+    return locations;
+  }
+
+  private List<UUID> extractLocationIdentifiers(List<String> locationIds) {
+    return locationIds.stream().map(UUID::fromString)
+        .collect(
+            Collectors.toList());
   }
 
 }

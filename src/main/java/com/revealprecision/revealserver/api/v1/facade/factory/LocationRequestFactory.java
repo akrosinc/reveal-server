@@ -12,7 +12,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class LocationRequestFactory {
 
-
   public static LocationRequest fromPhysicalLocationRequest(PhysicalLocation physicalLocation) {
     LocationProperty locationPropertyRequest = LocationProperty.builder()
         .name(physicalLocation.getProperties().getName()).externalId(
@@ -21,13 +20,16 @@ public class LocationRequestFactory {
         .status(physicalLocation.getProperties().getStatus().name()).build();
 
     LocationRequest locationRequest = LocationRequest.builder()
-        .geometry(physicalLocation.getGeometry()).type(physicalLocation.getType()).properties(locationPropertyRequest)
+        .geometry(physicalLocation.getGeometry()).type(physicalLocation.getType())
+        .properties(locationPropertyRequest)
         .build();
-    return  locationRequest;
+    return locationRequest;
   }
 
-  public static List<LocationRequest> fromPhysicalLocationRequests(List<PhysicalLocation> physicalLocationRequest){
-   return  physicalLocationRequest.stream().map(LocationRequestFactory::fromPhysicalLocationRequest).collect(
-        Collectors.toList());
+  public static List<LocationRequest> fromPhysicalLocationRequests(
+      List<PhysicalLocation> physicalLocationRequest) {
+    return physicalLocationRequest.stream().map(LocationRequestFactory::fromPhysicalLocationRequest)
+        .collect(
+            Collectors.toList());
   }
 }
