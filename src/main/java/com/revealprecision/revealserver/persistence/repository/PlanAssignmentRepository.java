@@ -8,6 +8,11 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface PlanAssignmentRepository extends EntityGraphJpaRepository<PlanAssignment, UUID> {
-  List<PlanAssignment> findPlanAssignmentByOrganization_Identifier(UUID organizationIdentifier);
-  List<PlanAssignment> findPlanAssignmentByPlanLocations_Plan_Identifier(UUID planIdentifier);
+  List<PlanAssignment> findPlanAssignmentsByOrganization_Identifier(UUID organizationIdentifier);
+
+  List<PlanAssignment> findPlanAssignmentsByPlanLocations_Plan_Identifier(UUID planIdentifier);
+
+  Integer deletePlanAssignmentsByPlanLocations_Plan_IdentifierAndPlanLocations_Location_Identifier(UUID planIdentifier, UUID locationIdentifier);
+
+  List<PlanAssignment> findPlanAssignmentsByPlanLocations_Plan_IdentifierAndPlanLocations_Location_Identifier(UUID planIdentifier, UUID locationIdentifier);
 }
