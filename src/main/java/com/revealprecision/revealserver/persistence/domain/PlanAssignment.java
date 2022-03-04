@@ -1,12 +1,14 @@
 package com.revealprecision.revealserver.persistence.domain;
 
+import com.revealprecision.revealserver.enums.EntityStatus;
+import com.revealprecision.revealserver.util.UserUtils;
+import java.time.LocalDateTime;
 import java.util.UUID;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
-import javax.persistence.OneToOne;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -25,7 +27,7 @@ import org.hibernate.envers.Audited;
 @AllArgsConstructor
 @Builder
 @FieldNameConstants
-@SQLDelete(sql = "UPDATE plan SET entity_status = 'DELETED' where identifier=?")
+@SQLDelete(sql = "UPDATE plan_assignment SET entity_status = 'DELETED' where identifier=?")
 @Where(clause = "entity_status='ACTIVE'")
 public class PlanAssignment extends AbstractAuditableEntity {
 
@@ -33,13 +35,22 @@ public class PlanAssignment extends AbstractAuditableEntity {
   @GeneratedValue
   private UUID identifier;
 
-
   @ManyToOne
-  @JoinColumn(name = "organization_identifier",referencedColumnName = "identifier")
+  @JoinColumn(name = "organization_identifier", referencedColumnName = "identifier")
   private Organization organization;
 
   @ManyToOne
-  @JoinColumn(name = "plan_locations_identifier",referencedColumnName = "identifier")
+  @JoinColumn(name = "plan_locations_identifier", referencedColumnName = "identifier")
   private PlanLocations planLocations;
+
+  public PlanAssignment(Organization organization, PlanLocations planLocations) {
+    this.organization = organization;
+    this.planLocations = planLocations;
+    this.setEntityStatus(EntityStatus.ACTIVE);
+    this.setCreatedBy(UserUtils.getKeyCloakPrincipal().getName());
+    this.setCreatedDatetime(LocalDateTime.now());
+    this.setModifiedBy(UserUtils.getKeyCloakPrincipal().getName());
+    this.setModifiedDatetime(LocalDateTime.now());
+  }
 
 }
