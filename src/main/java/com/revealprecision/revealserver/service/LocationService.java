@@ -8,8 +8,9 @@ import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
 import com.revealprecision.revealserver.persistence.domain.Plan;
+import com.revealprecision.revealserver.persistence.domain.PlanLocations;
 import com.revealprecision.revealserver.persistence.repository.LocationRepository;
-import java.util.HashSet;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -96,14 +97,9 @@ public class LocationService {
     return locations;
   }
 
-  public Set<Location> getAssignedLocationsFromPlans(Set<Plan> assignedPlans){
-    Set<Location> assignedLocations  = new HashSet<>();
-    assignedPlans.stream().forEach(plan -> assignedLocations.addAll(plan.getLocations()));
+  public Set<Location> getAssignedLocationsFromPlans(Set<Plan> assignedPlans) {
+    Set<Location> assignedLocations = assignedPlans.stream().map(Plan::getPlanLocations).flatMap(
+        Collection::stream).map(PlanLocations::getLocation).collect(Collectors.toSet());
     return assignedLocations;
-  }
-
-  public List<Location> getAllLocations() {
-    //TODO: to be removed just here for testing
-    return locationRepository.findAll();
   }
 }

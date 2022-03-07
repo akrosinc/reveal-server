@@ -2,6 +2,7 @@ package com.revealprecision.revealserver.persistence.domain;
 
 import com.revealprecision.revealserver.api.v1.dto.request.SettingRequest;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
+import java.util.List;
 import java.util.UUID;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -18,7 +19,6 @@ import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 import org.hibernate.annotations.Where;
 import org.hibernate.envers.Audited;
-import org.json.JSONArray;
 
 @Entity
 @Audited
@@ -42,7 +42,7 @@ public class Setting extends AbstractAuditableEntity {
   private String value;
   @Type(type = "jsonb")
   @Column(columnDefinition = "jsonb")
-  private JSONArray values;
+  private List<Object> values;
   private String label;
   private String description;
 

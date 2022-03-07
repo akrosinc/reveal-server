@@ -3,7 +3,6 @@ package com.revealprecision.revealserver.api.v1.facade.models;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.io.Serializable;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Map;
 import lombok.Builder;
 import lombok.Getter;
@@ -50,6 +49,6 @@ public class LocationPropertyFacade implements Serializable {
 
   private String username;
 
-  private transient Map<String, String> customProperties = new HashMap<>();
+  private transient Map<String, String> customProperties;
 
 }

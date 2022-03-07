@@ -34,7 +34,7 @@ public class SettingsController {
   @GetMapping(value = "/sync", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<SettingConfigurationResponse> getSettings(
       @Parameter(description = "used to filter the type of configs to fetch") @RequestParam(name = "identifier", defaultValue = "global_configs") String identifier,
-      @Parameter(description = "Required by previous implementation, currently not used") @RequestParam(name = "serverVersion") String serverVersion) {
+      @Parameter(description = "Required by previous implementation, currently not used") @RequestParam(name = "serverVersion", defaultValue = "0") String serverVersion) {
     return ResponseEntity.status(HttpStatus.OK).body(SettingConfigurationResponseFactory
         .fromSettingsAndSettingTypeIdentifier(
             settingService.findExistingSettingsByTypeIdentifier(identifier), identifier));
