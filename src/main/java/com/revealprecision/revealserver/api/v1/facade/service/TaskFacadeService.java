@@ -32,13 +32,14 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class TaskFacadeService {
 
   public static final String GENERAL = "GENERAL";
@@ -59,22 +60,6 @@ public class TaskFacadeService {
   private final PersonService personService;
 
   private final LocationService locationService;
-
-  @Autowired
-  public TaskFacadeService(MetaDataJdbcService metaDataJdbcService, UserService userService,
-      TaskJDBCService taskJDBCService, TaskFacadeProperties taskFacadeProperties,
-      TaskService taskService, ActionService actionService, PlanService planService,
-      PersonService personService, LocationService locationService) {
-    this.metaDataJdbcService = metaDataJdbcService;
-    this.userService = userService;
-    this.taskJDBCService = taskJDBCService;
-    this.taskFacadeProperties = taskFacadeProperties;
-    this.taskService = taskService;
-    this.actionService = actionService;
-    this.planService = planService;
-    this.personService = personService;
-    this.locationService = locationService;
-  }
 
   public List<TaskFacade> syncTasks(String plan, String group) {
     return taskJDBCService.getTasksByPlanAndJurisdictionList(UUID.fromString(plan),
