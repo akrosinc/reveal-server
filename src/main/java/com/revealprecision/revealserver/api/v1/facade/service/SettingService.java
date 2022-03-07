@@ -32,13 +32,13 @@ public class SettingService {
     return settingRepository.save(setting);
   }
 
-  public Setting updateSetting(UUID identifier,SettingRequest request) {
+  public Setting updateSetting(UUID identifier, SettingRequest request) {
     Setting setting = findExistingByIdentifier(identifier);
     setting = setting.update(request);
     return settingRepository.save(setting);
   }
 
-  public List<Setting> findExistingSettingsByTypeIdentifier(String settingTypeIdentifier){
+  public List<Setting> findExistingSettingsByTypeIdentifier(String settingTypeIdentifier) {
     return settingRepository.findBySettingIdentifier(settingTypeIdentifier);
   }
 
