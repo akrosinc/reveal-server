@@ -323,6 +323,7 @@ CREATE TABLE IF NOT EXISTS task
     execution_period_end          timestamp with time zone NOT NULL,
     lookup_task_status_identifier uuid                     NOT NULL,
     action_identifier             uuid                     NOT NULL,
+    plan_identifier               uuid                     NOT NULL,
     CONSTRAINT task_pkey PRIMARY KEY (identifier),
     CONSTRAINT action_identifier_fk FOREIGN KEY (action_identifier)
         REFERENCES action (identifier) MATCH SIMPLE
@@ -357,6 +358,7 @@ CREATE TABLE IF NOT EXISTS task_aud
     execution_period_end          timestamp with time zone NOT NULL,
     lookup_task_status_identifier uuid                     NOT NULL,
     action_identifier             uuid                     NOT NULL,
+    plan_identifier               uuid                     NOT NULL,
     CONSTRAINT task_aud_pkey PRIMARY KEY (identifier, rev)
 );
 
@@ -613,18 +615,30 @@ CREATE TABLE IF NOT EXISTS location_relationship_aud
 
 CREATE TABLE IF NOT EXISTS plan_locations
 (
+    identifier          uuid NOT NULL DEFAULT uuid_generate_v4(),
     plan_identifier     UUID NOT NULL,
     location_identifier UUID NOT NULL,
-    PRIMARY KEY (plan_identifier, location_identifier)
+    entity_status                 VARCHAR(36)              NOT NULL,
+    created_by                    VARCHAR(36),
+    created_datetime              TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by                   VARCHAR(36),
+    modified_datetime             TIMESTAMP WITH TIME ZONE NOT NULL,
+    PRIMARY KEY (identifier)
 );
 
 CREATE TABLE IF NOT EXISTS plan_locations_aud
 (
+    identifier          uuid NOT NULL DEFAULT uuid_generate_v4(),
     plan_identifier     UUID    NOT NULL,
     location_identifier UUID    NOT NULL,
     REV                 INT     NOT NULL,
     REVTYPE             INTEGER NULL,
-    PRIMARY KEY (plan_identifier, location_identifier, REV)
+    entity_status                 VARCHAR(36)              NOT NULL,
+    created_by                    VARCHAR(36),
+    created_datetime              TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by                   VARCHAR(36),
+    modified_datetime             TIMESTAMP WITH TIME ZONE NOT NULL,
+    PRIMARY KEY (identifier, REV)
 );
 
 
@@ -1045,6 +1059,57 @@ CREATE TABLE IF NOT EXISTS task_person_aud
     person_identifier uuid    NOT NULL,
     CONSTRAINT task_person_aud_pkey PRIMARY KEY (identifier, REV)
 );
+
+CREATE TABLE IF NOT EXISTS plan_assignment
+(
+    identifier        uuid NOT NULL DEFAULT uuid_generate_v4(),
+    plan_locations_identifier   uuid NOT NULL,
+    organization_identifier uuid NOT NULL,
+    entity_status     VARCHAR(36)              NOT NULL,
+    created_by        VARCHAR(36)              NOT NULL,
+    created_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by       VARCHAR(36)              NOT NULL,
+    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    PRIMARY KEY (identifier),
+    FOREIGN KEY (plan_locations_identifier) REFERENCES plan_locations (identifier),
+    FOREIGN KEY (organization_identifier) REFERENCES organization (identifier)
+);
+
+CREATE TABLE IF NOT EXISTS plan_assignment_aud
+(
+    identifier        uuid    NOT NULL DEFAULT uuid_generate_v4(),
+    REV               INT     NOT NULL,
+    REVTYPE           INTEGER NULL,
+    plan_locations_identifier   uuid NOT NULL,
+    organization_identifier uuid NOT NULL,
+    entity_status     VARCHAR(36)              NOT NULL,
+    created_by        VARCHAR(36)              NOT NULL,
+    created_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by       VARCHAR(36)              NOT NULL,
+    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    PRIMARY KEY (identifier,REV)
+);
+
+CREATE TABLE IF NOT EXISTS task_organization
+(
+    identifier        uuid    NOT NULL DEFAULT uuid_generate_v4(),
+    task_identifier   uuid NOT NULL,
+    organization_identifier uuid NOT NULL,
+    PRIMARY KEY (identifier),
+    FOREIGN KEY (task_identifier) REFERENCES task(identifier),
+    FOREIGN KEY (organization_identifier) REFERENCES organization (identifier)
+
+);
+CREATE TABLE IF NOT EXISTS task_organization_aud
+(
+    identifier        uuid    NOT NULL DEFAULT uuid_generate_v4(),
+    REV               INT     NOT NULL,
+    REVTYPE           INTEGER NULL,
+    task_identifier   uuid NOT NULL,
+    organization_identifier uuid NOT NULL,
+    PRIMARY KEY (identifier,REV)
+);
+
 
 CREATE TABLE IF NOT EXISTS setting
 (

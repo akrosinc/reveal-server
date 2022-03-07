@@ -1,31 +1,22 @@
 package com.revealprecision.revealserver.api.v1.controller;
 
-import com.revealprecision.revealserver.api.v1.dto.factory.ActionResponseFactory;
-import com.revealprecision.revealserver.api.v1.dto.factory.ConditionResponseFactory;
-import com.revealprecision.revealserver.api.v1.dto.factory.GoalResponseFactory;
-import com.revealprecision.revealserver.api.v1.dto.factory.PlanResponseFactory;
-import com.revealprecision.revealserver.api.v1.dto.factory.TargetResponseFactory;
-import com.revealprecision.revealserver.api.v1.dto.request.ActionRequest;
-import com.revealprecision.revealserver.api.v1.dto.request.ConditionRequest;
-import com.revealprecision.revealserver.api.v1.dto.request.GoalRequest;
-import com.revealprecision.revealserver.api.v1.dto.request.GoalUpdateRequest;
-import com.revealprecision.revealserver.api.v1.dto.request.PlanRequest;
-import com.revealprecision.revealserver.api.v1.dto.request.TargetRequest;
-import com.revealprecision.revealserver.api.v1.dto.response.ActionResponse;
-import com.revealprecision.revealserver.api.v1.dto.response.ConditionResponse;
-import com.revealprecision.revealserver.api.v1.dto.response.CountResponse;
-import com.revealprecision.revealserver.api.v1.dto.response.GoalResponse;
-import com.revealprecision.revealserver.api.v1.dto.response.PlanResponse;
-import com.revealprecision.revealserver.api.v1.dto.response.TargetResponse;
+import com.revealprecision.revealserver.api.v1.dto.factory.*;
+import com.revealprecision.revealserver.api.v1.dto.request.*;
+import com.revealprecision.revealserver.api.v1.dto.response.*;
 import com.revealprecision.revealserver.enums.SummaryEnum;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.service.ActionService;
 import com.revealprecision.revealserver.service.ConditionService;
 import com.revealprecision.revealserver.service.GoalService;
+import com.revealprecision.revealserver.service.PlanAssignmentService;
+import com.revealprecision.revealserver.service.PlanLocationsService;
 import com.revealprecision.revealserver.service.PlanService;
 import com.revealprecision.revealserver.service.TargetService;
 import io.swagger.v3.oas.annotations.Parameter;
+
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -49,6 +40,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class PlanController {
 
   private final PlanService planService;
+  private final PlanLocationsService planLocationsService;
+  private final PlanAssignmentService planAssignmentService;
   private final GoalService goalService;
   private final ActionService actionService;
   private final TargetService targetService;
@@ -76,6 +69,56 @@ public class PlanController {
         .status(HttpStatus.OK)
         .body(PlanResponseFactory.fromEntity(planService.getPlanByIdentifier(identifier)));
   }
+
+  @GetMapping("/{identifier}/locationHierarchy")
+  public ResponseEntity<?> getHierarchyByPlanIdentifier(
+      @PathVariable("identifier") UUID identifier,
+      @RequestParam(name = "_summary", defaultValue = "TRUE", required = false) SummaryEnum summary,
+      Pageable pageable) {
+    if (summary == SummaryEnum.COUNT) {
+      return ResponseEntity
+          .status(HttpStatus.OK)
+          .body(
+              new CountResponse(
+                  planService.getPlanByIdentifier(identifier).getPlanLocations().size()));
+    }
+    List<GeoTreeResponse> geoTreeResponseList = planLocationsService.getHierarchyByPlanIdentifier(
+        identifier);
+    Page<GeoTreeResponse> pageableGeoTreeResponse = LocationHierarchyResponseFactory.generatePageableGeoTreeResponse(
+        geoTreeResponseList, pageable, "");
+    return ResponseEntity
+        .status(HttpStatus.OK)
+        .body(pageableGeoTreeResponse);
+  }
+
+  @PostMapping("/{identifier}/assignLocations")
+  public ResponseEntity<Void> selectPlanLocations(@PathVariable("identifier") UUID identifier,
+      @Valid @RequestBody AssignLocationRequest assignLocationRequest) {
+    planLocationsService.selectPlanLocations(identifier, assignLocationRequest.getLocations());
+    return ResponseEntity.status(HttpStatus.CREATED).build();
+  }
+
+  @PostMapping("/{identifier}/{locationIdentifier}/assignTeams")
+  public ResponseEntity<Void> assignOrganizationsToLocationsByPlanId(
+      @PathVariable("identifier") UUID planIdentifier,
+      @PathVariable("locationIdentifier") UUID locationIdentifier,
+      @Valid @RequestBody AssignTeamsRequest assignTeamsRequest) {
+    planAssignmentService.assignOrganizationsToLocation(assignTeamsRequest.getTeams(),
+        locationIdentifier, planIdentifier);
+    return ResponseEntity.status(HttpStatus.CREATED).build();
+  }
+
+  @GetMapping("/{identifier}/{locationIdentifier}/teams")
+  public ResponseEntity<?> getAssignedTeamToPLanLocation(
+      @Parameter(description = "Plan identifier") @PathVariable("identifier") UUID identifier,
+      @PathVariable("locationIdentifier") UUID locationIdentifier) {
+    return ResponseEntity.status(HttpStatus.OK).body(
+        planAssignmentService.getPlanAssignmentByPlanLocationIdentifier(identifier,
+                locationIdentifier).stream()
+            .map(el -> OrganizationResponseFactory.fromEntityWithoutChild(el.getOrganization()))
+            .collect(Collectors.toList()));
+  }
+
 
   @PostMapping
   public ResponseEntity<Void> createPlan(@Valid @RequestBody PlanRequest planRequest) {

@@ -9,6 +9,9 @@ import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.Organization;
 import com.revealprecision.revealserver.persistence.domain.Organization.Fields;
+import com.revealprecision.revealserver.persistence.domain.Plan;
+import com.revealprecision.revealserver.persistence.domain.PlanAssignment;
+import com.revealprecision.revealserver.persistence.domain.PlanLocations;
 import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.persistence.projection.OrganizationProjection;
 import com.revealprecision.revealserver.persistence.repository.OrganizationRepository;
@@ -48,6 +51,16 @@ public class OrganizationService {
     organization.setEntityStatus(EntityStatus.ACTIVE);
 
     return organizationRepository.save(organization);
+  }
+
+  public Set<Plan> getPlanAssignmentByOrganizationId(UUID identifier) {
+    Organization organization = findById(identifier, true);
+    return organization.getPlanAssignments().stream().map(PlanAssignment::getPlanLocations).map(PlanLocations::getPlan).collect(Collectors.toSet());
+  }
+
+  public void getAssignedOrganizationsByLocationId(UUID identifier) {
+    Organization organization = findById(identifier, true);
+
   }
 
   public Organization findById(UUID identifier, boolean _summary) {

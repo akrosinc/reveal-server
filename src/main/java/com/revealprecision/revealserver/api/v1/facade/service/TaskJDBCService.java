@@ -2,6 +2,7 @@ package com.revealprecision.revealserver.api.v1.facade.service;
 
 import com.revealprecision.revealserver.enums.ActionTypeEnum;
 import com.revealprecision.revealserver.enums.EntityStatus;
+import com.revealprecision.revealserver.enums.LookupUtil;
 import com.revealprecision.revealserver.enums.PlanStatusEnum;
 import com.revealprecision.revealserver.enums.PriorityEnum;
 import com.revealprecision.revealserver.enums.TaskPriorityEnum;
@@ -16,8 +17,10 @@ import com.revealprecision.revealserver.persistence.domain.LookupTaskStatus;
 import com.revealprecision.revealserver.persistence.domain.Person;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.Task;
+import com.revealprecision.revealserver.service.LocationRelationshipService;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -29,16 +32,49 @@ import org.springframework.stereotype.Service;
 public class TaskJDBCService {
 
   private final JdbcTemplate jdbcTemplate;
+  private final LocationRelationshipService locationRelationshipService;
 
   @Autowired
-  public TaskJDBCService(JdbcTemplate jdbcTemplate) {
+  public TaskJDBCService(JdbcTemplate jdbcTemplate,
+      LocationRelationshipService locationRelationshipService) {
+    this.locationRelationshipService = locationRelationshipService;
     this.jdbcTemplate = jdbcTemplate;
   }
 
   public List<Task> getTasksByPlanAndJurisdictionList(UUID planIdentifier,
       List<String> jurisdictionList) {
 
-    return jdbcTemplate.query("SELECT locationsOfTasksInPlan.* ,\n"
+    List<UUID> locationUIIDs = new ArrayList<>();
+    List<UUID> parentLocationUUIDs = new ArrayList<>();
+    jurisdictionList.forEach(
+        location -> {
+          if (locationRelationshipService.findLocationRelationshipUiidsByParentLocationIdentifier(
+              UUID.fromString(location)).size() > 0) {
+            parentLocationUUIDs.add(UUID.fromString(location));
+          } else {
+            locationUIIDs.add(UUID.fromString(location));
+          }
+        });
+
+    return jdbcTemplate.query(
+        getTaskQueryForPlanAndGroupIds(planIdentifier, locationUIIDs, parentLocationUUIDs),
+        (rs, rowNum) -> buildTask(rs)
+
+    );
+
+  }
+
+  private String getTaskQueryForPlanAndGroupIds(UUID planIdentifier, List<UUID> locationUIIDs,
+      List<UUID> parentLocationUUIDs) {
+
+    String locationUUIDString = locationUIIDs.stream()
+        .map(location -> "'".concat(location.toString()).concat("'"))
+        .collect(Collectors.joining(","));
+    String parentLocationUUIDString = parentLocationUUIDs.stream()
+        .map(location -> "'".concat(location.toString()).concat("'"))
+        .collect(Collectors.joining(","));
+
+    return "SELECT locationsOfTasksInPlan.* ,\n"
         + "   l.name                                as location_name,\n"
         + "   l.geometry                as location_geometry,\n"
         + "   l.type                                as location_type,\n"
@@ -51,7 +87,7 @@ public class TaskJDBCService {
         + "   l.created_datetime                as location_created_datetime,\n"
         + "   l.modified_by                as location_modified_by,\n"
         + "   l.modified_datetime                as location_modified_datetimefrom \n" + "   FROM\n"
-        + "(select \n" + "   \n" + "   "
+        + "(select \n"
         + "   (case \n"
         + "      WHEN tp.identifier IS NOT NULL THEN pl.location_identifier \n"
         + "      WHEN tl.identifier IS NOT NULL THEN tl.location_identifier\n"
@@ -143,12 +179,12 @@ public class TaskJDBCService {
         + "where p.identifier='" + planIdentifier + "'\n" + "   )  as locationsOfTasksInPlan \n"
         + "   inner join  location_relationship lr on lr.location_identifier = locationsOfTasksInPlan.location_identifier \n"
         + "   LEFT join location l on l.identifier =locationsOfTasksInPlan.location_identifier\n"
-        + "   and ARRAY[" + jurisdictionList.stream()
-        .map(jurisdiction -> "'".concat(jurisdiction).concat("'")).collect(Collectors.joining(","))
-        + "]::uuid[] && lr.ancestry", (rs, rowNum) -> buildTask(rs)
-
-    );
-
+        + ((parentLocationUUIDs.size() > 0 || locationUIIDs.size() > 0) ? " WHERE " : " ") + " \n"
+        + (parentLocationUUIDs.size() > 0 ? " (ARRAY[" + parentLocationUUIDString
+        + "]::uuid[] && lr.ancestry) \n" : " ")
+        + ((parentLocationUUIDs.size() > 0 && locationUIIDs.size() > 0) ? " OR " : " ") + " \n"
+        + (locationUIIDs.size() > 0 ? " ( lr.location_identifier in (" + locationUUIDString + ") )"
+        : "");
   }
 
   private Task buildTask(ResultSet rs) throws SQLException {
@@ -223,7 +259,7 @@ public class TaskJDBCService {
         .title(rs.getString("action_title")).identifier((UUID) rs.getObject("action_identifier"))
         .timingPeriodEnd(rs.getDate("action_timing_period_end").toLocalDate())
         .timingPeriodStart(rs.getDate("action_timing_period_start").toLocalDate())
-        .type(ActionTypeEnum.valueOf(rs.getString("action_type")))
+        .type(LookupUtil.lookup(ActionTypeEnum.class,rs.getString("action_type")))
         .lookupEntityType(lookupEntityType)
         .build();
   }

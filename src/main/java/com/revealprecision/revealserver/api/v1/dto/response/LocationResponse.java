@@ -22,5 +22,6 @@ public class LocationResponse {
   private UUID identifier;
   private String type;
   private Geometry geometry;
+  private Boolean isActive;
   private LocationPropertyResponse properties;
 }

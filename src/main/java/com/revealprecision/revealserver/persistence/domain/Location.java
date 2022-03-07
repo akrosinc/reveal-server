@@ -62,9 +62,6 @@ public class Location extends AbstractAuditableEntity {
   private LocationBulk locationBulk;
 
   @ManyToMany(mappedBy = "locations")
-  private Set<Plan> plans;
-
-  @ManyToMany(mappedBy = "locations")
   private Set<Person> people;
 
   public Location update(LocationRequest locationRequest, GeographicLevel geographicLevel) {

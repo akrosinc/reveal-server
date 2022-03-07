@@ -6,21 +6,12 @@ import com.revealprecision.revealserver.api.v1.dto.request.PlanRequest;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.enums.PlanStatusEnum;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
-import com.revealprecision.revealserver.persistence.domain.Action;
-import com.revealprecision.revealserver.persistence.domain.Condition;
-import com.revealprecision.revealserver.persistence.domain.Form;
-import com.revealprecision.revealserver.persistence.domain.Goal;
-import com.revealprecision.revealserver.persistence.domain.Location;
-import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
-import com.revealprecision.revealserver.persistence.domain.LookupInterventionType;
-import com.revealprecision.revealserver.persistence.domain.Plan;
+import com.revealprecision.revealserver.persistence.domain.*;
 import com.revealprecision.revealserver.persistence.domain.Plan.Fields;
 import com.revealprecision.revealserver.persistence.repository.PlanRepository;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+
+import java.util.*;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -34,7 +25,6 @@ public class PlanService {
   private final PlanRepository planRepository;
   private final FormService formService;
   private final LocationHierarchyService locationHierarchyService;
-  private final LocationService locationService;
   private final LookupInterventionTypeService lookupInterventionTypeService;
 
   public static boolean isNullOrEmpty(final Collection<?> c) {
@@ -97,15 +87,6 @@ public class PlanService {
     LookupInterventionType interventionType = lookupInterventionTypeService.findByIdentifier(
         request.getInterventionType());
     plan.update(request, hierarchy, interventionType);
-    planRepository.save(plan);
-  }
-
-  //Temporary as I'm testing
-  public void assignAllLocationsToPlan(UUID planIdentifier) {
-    var plan = getPlanByIdentifier(planIdentifier);
-    Set<Location> locations = new HashSet<>();
-    locations.addAll(locationService.getAllLocations());
-    plan.setLocations(locations);
     planRepository.save(plan);
   }
 }

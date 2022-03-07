@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.persistence.repository;
 
 import com.revealprecision.revealserver.persistence.domain.Goal;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -14,4 +15,7 @@ public interface GoalRepository extends JpaRepository<Goal, UUID> {
 
   @Query(value = "select g from Goal g where g.plan.identifier = :identifier")
   Page<Goal> getAllFromPlan(@Param("identifier") UUID identifier, Pageable pageable);
+
+
+  List<Goal> findGoalsByPlan_Identifier(UUID planIdentifier);
 }

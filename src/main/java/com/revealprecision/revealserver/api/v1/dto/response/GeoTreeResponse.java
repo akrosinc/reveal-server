@@ -2,6 +2,7 @@ package com.revealprecision.revealserver.api.v1.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.revealprecision.revealserver.persistence.domain.Geometry;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -22,4 +23,6 @@ public class GeoTreeResponse {
   private Geometry geometry;
   private LocationPropertyResponse properties;
   private List<GeoTreeResponse> children;
+  private Boolean active;
+  private List<OrganizationResponse> teams;
 }
