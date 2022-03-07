@@ -67,7 +67,7 @@ public class Action extends AbstractAuditableEntity {
   @OneToMany(mappedBy = "action", cascade = {CascadeType.PERSIST, CascadeType.REMOVE})
   private Set<Condition> conditions;
 
-  @ManyToOne
+  @ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "lookup_entity_type_identifier")
   private LookupEntityType lookupEntityType;
 

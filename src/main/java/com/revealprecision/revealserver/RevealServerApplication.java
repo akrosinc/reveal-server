@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.web.servlet.ServletComponentScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.scheduling.annotation.EnableAsync;
@@ -15,6 +16,7 @@ import org.springframework.validation.beanvalidation.MethodValidationPostProcess
 @EnableJpaAuditing
 @Slf4j
 @EnableConfigurationProperties
+@ServletComponentScan
 public class RevealServerApplication {
 
   public static void main(String[] args) {

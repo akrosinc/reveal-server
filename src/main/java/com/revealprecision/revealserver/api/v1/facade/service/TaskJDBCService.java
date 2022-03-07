@@ -102,6 +102,7 @@ public class TaskJDBCService {
         + "   t.created_datetime                as task_created_datetime,\n"
         + "   t.modified_by                as task_modified_by,\n"
         + "   t.modified_datetime                as task_modified_datetime,\n"
+        + "   t.base_entity_identifier           as task_base_entity_identifier, \n"
         + "   t.priority                as task_priority,\n"
         + "   t.authored_on                as task_authored_on,\n"
         + "   t.description                as task_description,\n"
@@ -234,7 +235,8 @@ public class TaskJDBCService {
         .build();
   }
 
-  private Task getTask(ResultSet rs) throws SQLException {
+  private Task getTask(ResultSet rs)
+      throws SQLException {
     return Task.builder()
         .authoredOn(rs.getDate("task_authored_on").toLocalDate().atStartOfDay())
         .description(rs.getString("task_description"))
@@ -259,7 +261,7 @@ public class TaskJDBCService {
         .title(rs.getString("action_title")).identifier((UUID) rs.getObject("action_identifier"))
         .timingPeriodEnd(rs.getDate("action_timing_period_end").toLocalDate())
         .timingPeriodStart(rs.getDate("action_timing_period_start").toLocalDate())
-        .type(LookupUtil.lookup(ActionTypeEnum.class,rs.getString("action_type")))
+        .type(LookupUtil.lookup(ActionTypeEnum.class, rs.getString("action_type")))
         .lookupEntityType(lookupEntityType)
         .build();
   }

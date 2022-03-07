@@ -22,4 +22,25 @@ public class DateTimeFormatter {
     return zonedDateTime.format(dateTimeFormatter);
   }
 
+  public static String getDateTimeAndroidFacadeStringFromLocalDateTime(
+      LocalDateTime localDateTime) {
+
+    java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern(
+        "yyyy-MM-dd HHmm");
+
+    String formatDateTime = localDateTime.format(formatter);
+
+    return formatDateTime.replace(" ", "T");
+  }
+
+
+  public static LocalDateTime getLocalDateTimeFromAndroidFacadeString(
+      String androidFacadeDateString) {
+
+    java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern(
+        "yyyy-MM-dd HHmm");
+
+    return LocalDateTime.parse(androidFacadeDateString.replace("T", " "), formatter);
+  }
+
 }
