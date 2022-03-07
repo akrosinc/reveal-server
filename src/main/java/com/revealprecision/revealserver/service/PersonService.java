@@ -81,6 +81,10 @@ public class PersonService {
     personRepository.delete(person);
   }
 
+  public Person createPerson(Person person) {
+
+    return personRepository.save(person);
+  }
 
   public Person updatePerson(UUID personIdentifier, PersonRequest personRequest) {
     Person personRetrieved = getPersonByIdentifier(personIdentifier);
