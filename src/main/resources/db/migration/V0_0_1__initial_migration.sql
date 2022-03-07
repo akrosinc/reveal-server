@@ -322,6 +322,7 @@ CREATE TABLE IF NOT EXISTS task
     execution_period_start        timestamp with time zone NOT NULL,
     execution_period_end          timestamp with time zone NOT NULL,
     lookup_task_status_identifier uuid                     NOT NULL,
+    base_entity_identifier        uuid                     NOT NULL,
     action_identifier             uuid                     NOT NULL,
     plan_identifier               uuid                     NOT NULL,
     CONSTRAINT task_pkey PRIMARY KEY (identifier),
@@ -357,6 +358,7 @@ CREATE TABLE IF NOT EXISTS task_aud
     execution_period_start        timestamp with time zone NOT NULL,
     execution_period_end          timestamp with time zone NOT NULL,
     lookup_task_status_identifier uuid                     NOT NULL,
+    base_entity_identifier        uuid                     NOT NULL,
     action_identifier             uuid                     NOT NULL,
     plan_identifier               uuid                     NOT NULL,
     CONSTRAINT task_aud_pkey PRIMARY KEY (identifier, rev)

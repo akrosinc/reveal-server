@@ -19,6 +19,7 @@ import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToOne;
 import javax.validation.constraints.NotNull;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -81,14 +82,26 @@ public class Task extends AbstractAuditableEntity {
       joinColumns = @JoinColumn(name = "task_identifier"),
       inverseJoinColumns = @JoinColumn(name = "location_identifier")
   )
+  @Setter(AccessLevel.NONE)
   private Location location;
+
+  public void setLocation(Location location) {
+    this.location = location;
+    this.baseEntityIdentifier = location.getIdentifier();
+  }
 
   @OneToOne(fetch = FetchType.EAGER)
   @JoinTable(name = "task_person",
       joinColumns = @JoinColumn(name = "task_identifier"),
       inverseJoinColumns = @JoinColumn(name = "person_identifier")
   )
+  @Setter(AccessLevel.NONE)
   private Person person;
+
+  public void setPerson(Person person) {
+    this.person = person;
+    this.baseEntityIdentifier = person.getIdentifier();
+  }
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "plan_identifier", referencedColumnName = "identifier", nullable = false)
@@ -100,5 +113,7 @@ public class Task extends AbstractAuditableEntity {
       inverseJoinColumns = @JoinColumn(name = "organization_identifier")
   )
   private List<Organization> organizations;
+
+  private UUID baseEntityIdentifier;
 
 }
