@@ -107,6 +107,14 @@ public class PlanController {
     return ResponseEntity.status(HttpStatus.CREATED).build();
   }
 
+  @PostMapping("/{identifier}/assignLocationHierarchyTeams")
+  public ResponseEntity<Void> assignOrganizationsToLocationHierarchyByPlanId(
+      @PathVariable("identifier") UUID planIdentifier,
+      @Valid @RequestBody AssignTeamHierarchyRequest assignTeamHierarchyRequest) {
+    planAssignmentService.assignTeamsToLocationHierarchy(planIdentifier, assignTeamHierarchyRequest);
+    return ResponseEntity.status(HttpStatus.CREATED).build();
+  }
+
   @GetMapping("/{identifier}/{locationIdentifier}/teams")
   public ResponseEntity<?> getAssignedTeamToPLanLocation(
       @Parameter(description = "Plan identifier") @PathVariable("identifier") UUID identifier,
