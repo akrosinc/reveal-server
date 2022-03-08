@@ -30,7 +30,7 @@ public class PlanFacadeController {
     List<Plan> plans = planFacadeService.getPlans(planRequestFacade);
     return ResponseEntity
         .status(HttpStatus.OK)
-        .header("TOTAL_RECORDS", Integer.toString(plans.size()))
+        .header("total_records", Integer.toString(plans.size()))
         .body(plans
             .stream()
             .map(PlanFacadeFactory::fromEntity).collect(
