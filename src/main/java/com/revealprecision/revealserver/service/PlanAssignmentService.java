@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.service;
 
+import com.revealprecision.revealserver.api.v1.dto.request.AssignTeamHierarchyRequest;
 import com.revealprecision.revealserver.persistence.domain.Organization;
 import com.revealprecision.revealserver.persistence.domain.PlanAssignment;
 import com.revealprecision.revealserver.persistence.domain.PlanLocations;
@@ -47,5 +48,23 @@ public class PlanAssignmentService {
       Organization organization = organizationService.findById(org, true);
       planAssignmentRepository.save(new PlanAssignment(organization, planLocation));
     });
+  }
+
+  @Transactional
+  public void assignTeamsToLocationHierarchy(UUID planId,
+      AssignTeamHierarchyRequest assignTeamHierarchyRequest) {
+    if (assignTeamHierarchyRequest.getHierarchy().isEmpty()) {
+      planAssignmentRepository.deletePlanAssignmentsByPlanLocations_Plan_Identifier(planId);
+    } else {
+      assignTeamHierarchyRequest.getHierarchy().forEach(assignTeams -> {
+        if (assignTeams.getTeams().isEmpty()) {
+          planAssignmentRepository.deletePlanAssignmentsByPlanLocations_Plan_IdentifierAndPlanLocations_Location_Identifier(
+              planId, assignTeams.getLocationId());
+        } else {
+          assignOrganizationsToLocation(assignTeams.getTeams(), assignTeams.getLocationId(),
+              planId);
+        }
+      });
+    }
   }
 }

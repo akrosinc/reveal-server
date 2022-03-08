@@ -16,6 +16,8 @@ public interface PlanAssignmentRepository extends EntityGraphJpaRepository<PlanA
   Integer deletePlanAssignmentsByPlanLocations_Plan_IdentifierAndPlanLocations_Location_Identifier(
       UUID planIdentifier, UUID locationIdentifier);
 
+  Integer deletePlanAssignmentsByPlanLocations_Plan_Identifier(UUID planIdentifier);
+
   List<PlanAssignment> findPlanAssignmentsByPlanLocations_Plan_IdentifierAndPlanLocations_Location_Identifier(
       UUID planIdentifier, UUID locationIdentifier);
 }
