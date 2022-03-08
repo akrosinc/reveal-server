@@ -26,6 +26,10 @@ out/
 !**/src/main/**/out/
 !**/src/test/**/out/
 
+### Sensitive Data ###
+src/main/resources/application.properties
+
+
 ### NetBeans ###
 /nbproject/private/
 /nbbuild/

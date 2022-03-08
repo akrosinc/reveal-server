@@ -9,6 +9,7 @@ import com.revealprecision.revealserver.api.v1.dto.factory.PlanResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.TargetResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.ActionRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.AssignLocationRequest;
+import com.revealprecision.revealserver.api.v1.dto.request.AssignTeamHierarchyRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.AssignTeamsRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.ConditionRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.GoalRequest;

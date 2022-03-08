@@ -213,7 +213,7 @@ CREATE TABLE IF NOT EXISTS action
     created_datetime              timestamp with time zone NOT NULL,
     modified_by                   character varying(36)    NOT NULL,
     modified_datetime             timestamp with time zone NOT NULL,
-    lookup_entity_type_identifier uuid                     NOT NULL,
+    lookup_entity_type_identifier uuid,
     CONSTRAINT action_pkey PRIMARY KEY (identifier),
     CONSTRAINT action_entity_type_fkey FOREIGN KEY (lookup_entity_type_identifier)
         REFERENCES lookup_entity_type (identifier) MATCH SIMPLE
@@ -238,7 +238,7 @@ CREATE TABLE IF NOT EXISTS action_aud
     form_identifier               UUID,
     goal_identifier               UUID                     NOT NULL,
     type                          VARCHAR(36),
-    lookup_entity_type_identifier uuid                     NOT NULL,
+    lookup_entity_type_identifier uuid,
     entity_status                 VARCHAR(36)              NOT NULL,
     created_by                    VARCHAR(36)              NOT NULL,
     created_datetime              TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -617,29 +617,29 @@ CREATE TABLE IF NOT EXISTS location_relationship_aud
 
 CREATE TABLE IF NOT EXISTS plan_locations
 (
-    identifier          uuid NOT NULL DEFAULT uuid_generate_v4(),
-    plan_identifier     UUID NOT NULL,
-    location_identifier UUID NOT NULL,
-    entity_status                 VARCHAR(36)              NOT NULL,
-    created_by                    VARCHAR(36),
-    created_datetime              TIMESTAMP WITH TIME ZONE NOT NULL,
-    modified_by                   VARCHAR(36),
-    modified_datetime             TIMESTAMP WITH TIME ZONE NOT NULL,
+    identifier          uuid                     NOT NULL DEFAULT uuid_generate_v4(),
+    plan_identifier     UUID                     NOT NULL,
+    location_identifier UUID                     NOT NULL,
+    entity_status       VARCHAR(36)              NOT NULL,
+    created_by          VARCHAR(36),
+    created_datetime    TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by         VARCHAR(36),
+    modified_datetime   TIMESTAMP WITH TIME ZONE NOT NULL,
     PRIMARY KEY (identifier)
 );
 
 CREATE TABLE IF NOT EXISTS plan_locations_aud
 (
-    identifier          uuid NOT NULL DEFAULT uuid_generate_v4(),
-    plan_identifier     UUID    NOT NULL,
-    location_identifier UUID    NOT NULL,
-    REV                 INT     NOT NULL,
-    REVTYPE             INTEGER NULL,
-    entity_status                 VARCHAR(36)              NOT NULL,
-    created_by                    VARCHAR(36),
-    created_datetime              TIMESTAMP WITH TIME ZONE NOT NULL,
-    modified_by                   VARCHAR(36),
-    modified_datetime             TIMESTAMP WITH TIME ZONE NOT NULL,
+    identifier          uuid                     NOT NULL DEFAULT uuid_generate_v4(),
+    plan_identifier     UUID                     NOT NULL,
+    location_identifier UUID                     NOT NULL,
+    REV                 INT                      NOT NULL,
+    REVTYPE             INTEGER                  NULL,
+    entity_status       VARCHAR(36)              NOT NULL,
+    created_by          VARCHAR(36),
+    created_datetime    TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by         VARCHAR(36),
+    modified_datetime   TIMESTAMP WITH TIME ZONE NOT NULL,
     PRIMARY KEY (identifier, REV)
 );
 
@@ -1064,14 +1064,14 @@ CREATE TABLE IF NOT EXISTS task_person_aud
 
 CREATE TABLE IF NOT EXISTS plan_assignment
 (
-    identifier        uuid NOT NULL DEFAULT uuid_generate_v4(),
-    plan_locations_identifier   uuid NOT NULL,
-    organization_identifier uuid NOT NULL,
-    entity_status     VARCHAR(36)              NOT NULL,
-    created_by        VARCHAR(36)              NOT NULL,
-    created_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,
-    modified_by       VARCHAR(36)              NOT NULL,
-    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    identifier                uuid                     NOT NULL DEFAULT uuid_generate_v4(),
+    plan_locations_identifier uuid                     NOT NULL,
+    organization_identifier   uuid                     NOT NULL,
+    entity_status             VARCHAR(36)              NOT NULL,
+    created_by                VARCHAR(36)              NOT NULL,
+    created_datetime          TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by               VARCHAR(36)              NOT NULL,
+    modified_datetime         TIMESTAMP WITH TIME ZONE NOT NULL,
     PRIMARY KEY (identifier),
     FOREIGN KEY (plan_locations_identifier) REFERENCES plan_locations (identifier),
     FOREIGN KEY (organization_identifier) REFERENCES organization (identifier)
@@ -1079,39 +1079,38 @@ CREATE TABLE IF NOT EXISTS plan_assignment
 
 CREATE TABLE IF NOT EXISTS plan_assignment_aud
 (
-    identifier        uuid    NOT NULL DEFAULT uuid_generate_v4(),
-    REV               INT     NOT NULL,
-    REVTYPE           INTEGER NULL,
-    plan_locations_identifier   uuid NOT NULL,
-    organization_identifier uuid NOT NULL,
-    entity_status     VARCHAR(36)              NOT NULL,
-    created_by        VARCHAR(36)              NOT NULL,
-    created_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,
-    modified_by       VARCHAR(36)              NOT NULL,
-    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
-    PRIMARY KEY (identifier,REV)
+    identifier                uuid                     NOT NULL DEFAULT uuid_generate_v4(),
+    REV                       INT                      NOT NULL,
+    REVTYPE                   INTEGER                  NULL,
+    plan_locations_identifier uuid                     NOT NULL,
+    organization_identifier   uuid                     NOT NULL,
+    entity_status             VARCHAR(36)              NOT NULL,
+    created_by                VARCHAR(36)              NOT NULL,
+    created_datetime          TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by               VARCHAR(36)              NOT NULL,
+    modified_datetime         TIMESTAMP WITH TIME ZONE NOT NULL,
+    PRIMARY KEY (identifier, REV)
 );
 
 CREATE TABLE IF NOT EXISTS task_organization
 (
-    identifier        uuid    NOT NULL DEFAULT uuid_generate_v4(),
-    task_identifier   uuid NOT NULL,
+    identifier              uuid NOT NULL DEFAULT uuid_generate_v4(),
+    task_identifier         uuid NOT NULL,
     organization_identifier uuid NOT NULL,
     PRIMARY KEY (identifier),
-    FOREIGN KEY (task_identifier) REFERENCES task(identifier),
+    FOREIGN KEY (task_identifier) REFERENCES task (identifier),
     FOREIGN KEY (organization_identifier) REFERENCES organization (identifier)
 
 );
 CREATE TABLE IF NOT EXISTS task_organization_aud
 (
-    identifier        uuid    NOT NULL DEFAULT uuid_generate_v4(),
-    REV               INT     NOT NULL,
-    REVTYPE           INTEGER NULL,
-    task_identifier   uuid NOT NULL,
-    organization_identifier uuid NOT NULL,
+    identifier              uuid    NOT NULL DEFAULT uuid_generate_v4(),
+    REV                     INT     NOT NULL,
+    REVTYPE                 INTEGER NULL,
+    task_identifier         uuid    NOT NULL,
+    organization_identifier uuid    NOT NULL,
     PRIMARY KEY (identifier,REV)
 );
-
 
 CREATE TABLE IF NOT EXISTS setting
 (
@@ -1150,3 +1149,4 @@ CREATE TABLE IF NOT EXISTS setting_aud
     modified_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,
     PRIMARY KEY (identifier, REV)
 );
+
