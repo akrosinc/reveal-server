@@ -1149,3 +1149,4 @@ CREATE TABLE IF NOT EXISTS setting_aud
     modified_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,
     PRIMARY KEY (identifier, REV)
 );
+
