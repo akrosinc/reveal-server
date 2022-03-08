@@ -20,6 +20,8 @@ import lombok.experimental.FieldNameConstants;
 @Builder
 @FieldNameConstants
 @JsonInclude(value = Include.NON_NULL)
+@AllArgsConstructor
+@NoArgsConstructor
 public class TaskFacade implements Serializable {
 
   private static final long serialVersionUID = -9118755114172291102L;

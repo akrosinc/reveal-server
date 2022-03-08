@@ -88,6 +88,14 @@ public class TaskService {
     return taskRepository.count(TaskSpec.getTaskSpecification(taskSearchCriteria));
   }
 
+  public Task saveTask(Task task) {
+    return taskRepository.save(task);
+  }
+
+  public List<Task> saveTasks(List<Task> tasks) {
+    return taskRepository.saveAll(tasks);
+  }
+
   public Page<Task> getTasks(Pageable pageable) {
     return taskRepository.findAll(pageable);
   }
@@ -229,6 +237,7 @@ public class TaskService {
         .description(action.getDescription())
         .lastModified(LocalDateTime.now())
         .authoredOn(LocalDateTime.now())
+        .baseEntityIdentifier(entityUUID)
         .action(action)
         .executionPeriodStart(
             action.getTimingPeriodStart())
@@ -248,7 +257,7 @@ public class TaskService {
     return task;
   }
 
-  public void updateTasks(UUID planIdentifier) {
+  public void updateOrganizationsAndLocationsForTasksByPlanIdentifier(UUID planIdentifier) {
 
     List<Task> tasksByPlan = taskRepository.findTasksByPlan_Identifier(planIdentifier);
 
@@ -258,50 +267,54 @@ public class TaskService {
 
     for (Task task : tasksByPlan) {
 
-      Action action = task.getAction();
-      List<PlanLocations> planLocationsForLocation = new ArrayList<>();
-      if (action.getLookupEntityType().getCode().equals(ENTITY_LOCATION)) {
-        if (task.getLocation() != null) {
-          planLocationsForLocation = planLocationsService.getPlanLocationsByLocationIdentifier(
-              task.getLocation().getIdentifier());
-        }
-      }
-
-      List<PlanLocations> planLocationsForPerson = new ArrayList<>();
-      if (action.getLookupEntityType().getCode().equals(ENTITY_PERSON)) {
-        if (task.getPerson() != null) {
-          planLocationsForPerson = planLocationsService.getPlanLocationsByLocationIdentifierList(
-              task.getPerson().getLocations().stream()
-                  .map(Location::getIdentifier)
-                  .collect(Collectors.toList()));
-        }
-      }
-
-      if (planLocationsForLocation.isEmpty() && planLocationsForPerson.isEmpty()) {
-        task.setLookupTaskStatus(lookupTaskStatus);
-      } else {
-        if (action.getLookupEntityType().getCode().equals(ENTITY_LOCATION)) {
-          if (planLocationsForLocation.size() > 0) {
-            List<Organization> organizations = planLocationsForLocation.stream().filter(
-                    planLocations1 -> planLocations1.getPlan().getIdentifier().equals(planIdentifier))
-                .flatMap(planLocation -> planLocation.getPlanAssignments().stream())
-                .map(PlanAssignment::getOrganization)
-                .collect(Collectors.toList());
-            task.setOrganizations(organizations);
-          }
-        }
-        if (action.getLookupEntityType().getCode().equals(ENTITY_PERSON)) {
-          if (planLocationsForPerson.size() > 0) {
-            List<Organization> organizations = planLocationsForPerson.stream().filter(
-                    planLocations1 -> planLocations1.getPlan().getIdentifier().equals(planIdentifier))
-                .flatMap(planLocation -> planLocation.getPlanAssignments().stream())
-                .map(PlanAssignment::getOrganization)
-                .collect(Collectors.toList());
-            task.setOrganizations(organizations);
-          }
-        }
-      }
-      taskRepository.save(task);
+      updateOrganisationsAndLocationsForTask(planIdentifier, lookupTaskStatus, task);
     }
+  }
+
+  public void updateOrganisationsAndLocationsForTask(UUID planIdentifier, LookupTaskStatus lookupTaskStatus, Task task) {
+    Action action = task.getAction();
+    List<PlanLocations> planLocationsForLocation = new ArrayList<>();
+    if (action.getLookupEntityType().getCode().equals(ENTITY_LOCATION)) {
+      if (task.getLocation() != null) {
+        planLocationsForLocation = planLocationsService.getPlanLocationsByLocationIdentifier(
+            task.getLocation().getIdentifier());
+      }
+    }
+
+    List<PlanLocations> planLocationsForPerson = new ArrayList<>();
+    if (action.getLookupEntityType().getCode().equals(ENTITY_PERSON)) {
+      if (task.getPerson() != null) {
+        planLocationsForPerson = planLocationsService.getPlanLocationsByLocationIdentifierList(
+            task.getPerson().getLocations().stream()
+                .map(Location::getIdentifier)
+                .collect(Collectors.toList()));
+      }
+    }
+
+    if (planLocationsForLocation.isEmpty() && planLocationsForPerson.isEmpty()) {
+      task.setLookupTaskStatus(lookupTaskStatus);
+    } else {
+      if (action.getLookupEntityType().getCode().equals(ENTITY_LOCATION)) {
+        if (planLocationsForLocation.size() > 0) {
+          List<Organization> organizations = planLocationsForLocation.stream().filter(
+                  planLocations1 -> planLocations1.getPlan().getIdentifier().equals(planIdentifier))
+              .flatMap(planLocation -> planLocation.getPlanAssignments().stream())
+              .map(PlanAssignment::getOrganization)
+              .collect(Collectors.toList());
+          task.setOrganizations(organizations);
+        }
+      }
+      if (action.getLookupEntityType().getCode().equals(ENTITY_PERSON)) {
+        if (planLocationsForPerson.size() > 0) {
+          List<Organization> organizations = planLocationsForPerson.stream().filter(
+                  planLocations1 -> planLocations1.getPlan().getIdentifier().equals(planIdentifier))
+              .flatMap(planLocation -> planLocation.getPlanAssignments().stream())
+              .map(PlanAssignment::getOrganization)
+              .collect(Collectors.toList());
+          task.setOrganizations(organizations);
+        }
+      }
+    }
+    taskRepository.save(task);
   }
 }

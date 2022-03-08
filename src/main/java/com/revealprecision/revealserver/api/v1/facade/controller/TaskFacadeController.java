@@ -1,10 +1,12 @@
-package com.revealprecision.revealserver.api.v1.facade;
+package com.revealprecision.revealserver.api.v1.facade.controller;
 
+import com.revealprecision.revealserver.api.v1.facade.models.TaskDto;
 import com.revealprecision.revealserver.api.v1.facade.models.TaskFacade;
 import com.revealprecision.revealserver.api.v1.facade.request.TaskSyncRequestWrapper;
 import com.revealprecision.revealserver.api.v1.facade.service.TaskFacadeService;
 import io.swagger.v3.oas.annotations.Operation;
 import java.util.List;
+import java.util.stream.Collectors;
 import javax.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -34,7 +36,7 @@ public class TaskFacadeController {
 
   @Operation(summary = "Facade for Android Task Resource", description = "Sync Tasks", tags = {
       "Task"})
-  @ResponseStatus(HttpStatus.CREATED)
+  @ResponseStatus(HttpStatus.OK)
   @PostMapping(value = "/task/v2/sync", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   @Transactional
   public ResponseEntity<List<TaskFacade>> taskSync(
@@ -52,6 +54,27 @@ public class TaskFacadeController {
       return ResponseEntity.ok().headers(headers).body(taskFacades);
     } else {
       return ResponseEntity.ok().body(taskFacades);
+    }
+
+  }
+
+  @Operation(summary = "Facade for Android Task Resource", description = "Sync Tasks", tags = {
+      "Task"})
+  @ResponseStatus(HttpStatus.CREATED)
+  @PostMapping(value = "/v2/task/add", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<String> batchSave(@RequestBody List<TaskDto> tasks) {
+
+
+    List<TaskDto> taskDtosUnprocessed = taskFacadeService.addTasks(tasks);
+
+    if (taskDtosUnprocessed.isEmpty()) {
+      return new ResponseEntity<>("All Tasks  processed", HttpStatus.CREATED);
+    } else {
+      return new ResponseEntity<>(
+          "Tasks with identifiers not processed: " + taskDtosUnprocessed.stream()
+              .map(TaskDto::getIdentifier).collect(
+                  Collectors.joining(",")),
+          HttpStatus.CREATED);
     }
 
   }

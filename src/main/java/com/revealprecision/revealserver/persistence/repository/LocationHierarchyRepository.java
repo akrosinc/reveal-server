@@ -15,4 +15,6 @@ LocationHierarchyRepository extends JpaRepository<LocationHierarchy, UUID> {
 
   @Query(value = "SELECT * FROM location_hierarchy l WHERE :name = ANY(l.node_order) AND entity_status = 'ACTIVE'", nativeQuery = true)
   List<LocationHierarchy> findLocationHierarchiesByNodeOrderContaining(@Param("name") String name);
+
+  List<LocationHierarchy> findByName(String name);
 }
