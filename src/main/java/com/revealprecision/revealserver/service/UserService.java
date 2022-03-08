@@ -13,6 +13,7 @@ import com.revealprecision.revealserver.persistence.domain.Organization;
 import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.persistence.domain.User.Fields;
 import com.revealprecision.revealserver.persistence.repository.UserRepository;
+import com.revealprecision.revealserver.util.UserUtils;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -120,5 +121,9 @@ public class UserService {
     List<User> users = userRepository.findAll();
     UsersResource userResource = keycloak.realm(realm).users();
     keycloakService.deleteAll(users, userResource);
+  }
+
+  public User getCurrentUser(){
+    return getByKeycloakId(UUID.fromString(UserUtils.getKeyCloakPrincipal().getName()));
   }
 }

@@ -27,7 +27,7 @@ public interface LocationRelationshipRepository extends JpaRepository<LocationRe
       + "from LocationRelationship lr "
       + "where lr.locationHierarchy.identifier = :hierarchyIdentifier "
       + "and lr.location.identifier in :locations")
-  public List<UUID> findLocationsInHierarchy(
+  List<UUID> findLocationsInHierarchy(
       @Param("hierarchyIdentifier") UUID hierarchyIdentifier,
       @Param("locations") Set<UUID> locations);
 

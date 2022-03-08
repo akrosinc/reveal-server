@@ -1111,3 +1111,42 @@ CREATE TABLE IF NOT EXISTS task_organization_aud
     organization_identifier uuid NOT NULL,
     PRIMARY KEY (identifier,REV)
 );
+
+
+CREATE TABLE IF NOT EXISTS setting
+(
+    identifier         UUID UNIQUE              NOT NULL,
+    setting_identifier VARCHAR(36)              NOT NULL,
+    type               VARCHAR(36)              NOT NULL,
+    key                VARCHAR(36)              NOT NULL,
+    value              VARCHAR(36)              NOT NULL,
+    values             JSONB                    NOT NULL,
+    label              VARCHAR(36)              NOT NULL,
+    description        VARCHAR(36)              NOT NULL,
+    entity_status      VARCHAR(36)              NOT NULL,
+    created_by         VARCHAR(36)              NOT NULL,
+    created_datetime   TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by        VARCHAR(36)              NOT NULL,
+    modified_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,
+    PRIMARY KEY (identifier)
+);
+
+CREATE TABLE IF NOT EXISTS setting_aud
+(
+    identifier         UUID                     NOT NULL,
+    REV                INT                      NOT NULL,
+    REVTYPE            INTEGER                  NULL,
+    setting_identifier VARCHAR(36)              NOT NULL,
+    type               VARCHAR(36)              NOT NULL,
+    key                VARCHAR(36)              NOT NULL,
+    value              VARCHAR(36)              NOT NULL,
+    values             JSONB                    NOT NULL,
+    label              VARCHAR(36)              NOT NULL,
+    description        VARCHAR(36)              NOT NULL,
+    entity_status      VARCHAR(36)              NOT NULL,
+    created_by         VARCHAR(36)              NOT NULL,
+    created_datetime   TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by        VARCHAR(36)              NOT NULL,
+    modified_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,
+    PRIMARY KEY (identifier, REV)
+);

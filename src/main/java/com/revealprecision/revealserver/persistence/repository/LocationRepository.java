@@ -25,4 +25,7 @@ public interface LocationRepository extends JpaRepository<Location, UUID> {
 
   @Query(value = "select l from Location l where l.identifier in :identifiers")
   List<Location> getAllByIdentifiers(@Param("identifiers") List<UUID> identifiers);
+
+  @Query(value = "select l from Location  l where  l.name in :names")
+  List<Location> getAllByNames(@Param("names") List<String> names);
 }
