@@ -56,7 +56,8 @@ jobs:
       run: chmod +x gradlew
 
     - name: Build with Gradle
-      env:  SONAR_SECRET : ${{ secrets.SONAR_TOKEN }}
+      env:
+        SONAR_SECRET: ${{ secrets.SONAR_TOKEN }}
       run: ./gradlew --stacktrace sonarqube -Dsonar.login="$SONAR_SECRET" -Dsonar.host.url=https://sonar-ops.akros.online -Dsonar.dependencyCheck.htmlReportPath=build/reports/dependency-check-report.html
 
   # unit-tests:
