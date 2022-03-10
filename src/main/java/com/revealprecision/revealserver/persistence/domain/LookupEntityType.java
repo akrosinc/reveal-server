@@ -3,6 +3,7 @@ package com.revealprecision.revealserver.persistence.domain;
 import java.util.Set;
 import java.util.UUID;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.OneToMany;
@@ -39,4 +40,6 @@ public class LookupEntityType extends AbstractAuditableEntity {
   @OneToMany(mappedBy = "lookupEntityType")
   private Set<Action> actions;
 
+  @OneToMany(mappedBy = "lookupEntityType", fetch = FetchType.LAZY)
+  private Set<EntityTags> entityTags;
 }

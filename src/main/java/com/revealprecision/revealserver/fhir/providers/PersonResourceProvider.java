@@ -6,28 +6,41 @@ import ca.uhn.fhir.rest.annotation.Read;
 import ca.uhn.fhir.rest.annotation.ResourceParam;
 import ca.uhn.fhir.rest.api.MethodOutcome;
 import ca.uhn.fhir.rest.server.IResourceProvider;
+import com.revealprecision.revealserver.api.v1.facade.service.MetaDataJdbcService;
 import com.revealprecision.revealserver.enums.EntityStatus;
+import com.revealprecision.revealserver.fhir.properties.FhirServerProperties;
+import com.revealprecision.revealserver.persistence.domain.Location;
+import com.revealprecision.revealserver.persistence.projection.LocationCoordinatesProjection;
+import com.revealprecision.revealserver.service.LocationService;
+import com.revealprecision.revealserver.service.LookupEntityTypeService;
 import com.revealprecision.revealserver.service.PersonService;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import javax.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.tuple.Pair;
 import org.hl7.fhir.instance.model.api.IBaseResource;
+import org.hl7.fhir.r4.model.Address;
+import org.hl7.fhir.r4.model.Attachment;
 import org.hl7.fhir.r4.model.BooleanType;
+import org.hl7.fhir.r4.model.CodeableConcept;
+import org.hl7.fhir.r4.model.DecimalType;
 import org.hl7.fhir.r4.model.Enumerations.AdministrativeGender;
+import org.hl7.fhir.r4.model.Extension;
 import org.hl7.fhir.r4.model.HumanName;
 import org.hl7.fhir.r4.model.HumanName.NameUse;
 import org.hl7.fhir.r4.model.IdType;
 import org.hl7.fhir.r4.model.Identifier;
 import org.hl7.fhir.r4.model.Person;
-import org.hl7.fhir.r4.model.Person.PersonLinkComponent;
-import org.hl7.fhir.r4.model.Reference;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class PersonResourceProvider implements IResourceProvider {
 
   @Override
@@ -37,10 +50,16 @@ public class PersonResourceProvider implements IResourceProvider {
 
   private final PersonService personService;
 
-  @Autowired
-  public PersonResourceProvider(PersonService personService) {
-    this.personService = personService;
-  }
+  private final MetaDataJdbcService metaDataJdbcService;
+
+  private final FhirServerProperties fhirServerProperties;
+
+  private final LocationResourceProvider locationResourceProvider;
+
+  private final LocationService locationService;
+
+  private final LookupEntityTypeService lookupEntityTypeService;
+
 
   @Read()
   @Transactional
@@ -58,12 +77,9 @@ public class PersonResourceProvider implements IResourceProvider {
         fhirPerson);
     revealPersonFromFhirPerson.setEntityStatus(EntityStatus.ACTIVE);
     Person person = getFhirPersonFromRevealPerson(
-        personService.createPerson(
-            revealPersonFromFhirPerson));
+        personService.createPerson(revealPersonFromFhirPerson));
     MethodOutcome methodOutcome = new MethodOutcome();
-    methodOutcome
-        .setId(new IdType("Person", person.getId(), "1"))
-        .setResource(person);
+    methodOutcome.setId(new IdType("Person", person.getId(), "1")).setResource(person);
     return methodOutcome;
   }
 
@@ -82,8 +98,6 @@ public class PersonResourceProvider implements IResourceProvider {
     person.setGender(fhirPerson.getGender().toCode());
     person.setBirthDate(fhirPerson.getBirthDate());
     person.setActive(fhirPerson.getActive());
-
-
 
     return person;
   }
@@ -119,19 +133,54 @@ public class PersonResourceProvider implements IResourceProvider {
     person.setGender(AdministrativeGender.fromCode(revealPerson.getGender().toLowerCase()));
     person.setIdentifier(person.getIdentifier());
 
-    List<PersonLinkComponent> personLinkComponents = new ArrayList<>();
+    Extension extension = person.addExtension().setUrl(
+        fhirServerProperties.getBaseURL() + fhirServerProperties.getFhirPath()
+            + "/CodeSystem/person-metadata");
 
-    Reference reference = new Reference("Patient/" + revealPerson.getIdentifier());
+    extension.setExtension(
+        metaDataJdbcService.getMetadataFor("person", revealPerson.getIdentifier()).entrySet()
+            .stream().map(this::metadataExtension).collect(Collectors.toList()));
 
-    PersonLinkComponent personLinkComponent = new PersonLinkComponent();
-    personLinkComponent.setTarget(reference);
-    personLinkComponents.add(personLinkComponent);
+    revealPerson.getLocations().stream().map(this::getAddress).forEach(person::addAddress);
 
-//    person.add
-
-    person.setLink(personLinkComponents);
     return person;
   }
 
+  private Address getAddress(Location location) {
+    Address address = new Address();
+    LocationCoordinatesProjection locationCoordinates = locationService.getLocationCentroidCoordinatesByIdentifier(
+        location.getIdentifier());
+    DecimalType latitude = new DecimalType();
+    latitude.setValue(locationCoordinates.getLatitude());
+    DecimalType longitude = new DecimalType();
+    longitude.setValue(locationCoordinates.getLatitude());
 
+    Attachment attachment = new Attachment();
+    attachment.setContentType("application/geo+json");
+    attachment.setData(location.getGeometry().toString().getBytes());
+
+    Extension extension = address.addExtension()
+        .setUrl("http://hl7.org/fhir/StructureDefinition/geolocation");
+    extension.addExtension().setUrl("latitude").setValue(latitude);
+    extension.addExtension().setUrl("longitude").setValue(longitude);
+    extension.addExtension()
+        .setUrl("http://build.fhir.org/extension-location-boundary-geojson.html").addExtension()
+        .setUrl("geojson").setValue(attachment);
+    return address;
+  }
+
+  private Extension metadataExtension(Entry<String, Pair<Class<?>, Object>> entrySet) {
+
+    Class<?> aClass = entrySet.getValue().getKey();
+
+    CodeableConcept codeableConcept = new CodeableConcept();
+    codeableConcept.setText(String.valueOf(aClass.cast(entrySet.getValue().getValue())));
+    codeableConcept.setId(entrySet.getKey());
+
+    Extension extension = new Extension();
+    extension.setUrl(entrySet.getKey());
+    extension.setValue(codeableConcept);
+
+    return extension;
+  }
 }

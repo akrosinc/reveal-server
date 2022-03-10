@@ -9,6 +9,7 @@ import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.PlanLocations;
+import com.revealprecision.revealserver.persistence.projection.LocationCoordinatesProjection;
 import com.revealprecision.revealserver.persistence.repository.LocationRepository;
 import java.util.Collection;
 import java.util.List;
@@ -39,8 +40,8 @@ public class LocationService {
     GeographicLevel geographicLevel = geographicLevelService.findByName(
         locationRequest.getProperties().getGeographicLevel());
     var locationToSave = Location.builder().geographicLevel(geographicLevel)
-        .type(locationRequest.getType())
-        .geometry(locationRequest.getGeometry()).name(locationRequest.getProperties().getName())
+        .type(locationRequest.getType()).geometry(locationRequest.getGeometry())
+        .name(locationRequest.getProperties().getName())
         .status(locationRequest.getProperties().getStatus())
         .externalId(locationRequest.getProperties().getExternalId()).build();
     locationToSave.setEntityStatus(EntityStatus.ACTIVE);
@@ -72,8 +73,8 @@ public class LocationService {
 
   public Location updateLocation(UUID identifier, LocationRequest locationRequest) {
     Location location = findByIdentifier(identifier);
-    GeographicLevel geographicLevel = geographicLevelService
-        .findByName(locationRequest.getProperties().getGeographicLevel());
+    GeographicLevel geographicLevel = geographicLevelService.findByName(
+        locationRequest.getProperties().getGeographicLevel());
     return locationRepository.save(location.update(locationRequest, geographicLevel));
   }
 
@@ -89,17 +90,21 @@ public class LocationService {
       LocationHierarchy locationHierarchy) {
     List<LocationRelationship> locationRelationships = locationHierarchy.getLocationRelationships();
     List<Location> locations = locationRelationships.stream().filter(
-        locationRelationship -> parentIdentifiers
-            .contains(locationRelationship.getParentLocation()))
-        .map(locationRelationship -> locationRelationship.getLocation()).collect(
-            Collectors.toList());
+            locationRelationship -> parentIdentifiers.contains(
+                locationRelationship.getParentLocation()))
+        .map(locationRelationship -> locationRelationship.getLocation())
+        .collect(Collectors.toList());
 
     return locations;
   }
 
   public Set<Location> getAssignedLocationsFromPlans(Set<Plan> assignedPlans) {
-    Set<Location> assignedLocations = assignedPlans.stream().map(Plan::getPlanLocations).flatMap(
-        Collection::stream).map(PlanLocations::getLocation).collect(Collectors.toSet());
+    Set<Location> assignedLocations = assignedPlans.stream().map(Plan::getPlanLocations)
+        .flatMap(Collection::stream).map(PlanLocations::getLocation).collect(Collectors.toSet());
     return assignedLocations;
+  }
+
+  public LocationCoordinatesProjection getLocationCentroidCoordinatesByIdentifier(UUID locationIdentifier) {
+    return locationRepository.getLocationCentroidCoordinatesByIdentifier(locationIdentifier);
   }
 }
