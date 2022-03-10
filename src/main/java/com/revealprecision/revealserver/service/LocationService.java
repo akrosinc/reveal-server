@@ -5,10 +5,16 @@ import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.GeographicLevel;
 import com.revealprecision.revealserver.persistence.domain.Location;
+import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
+import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
+import com.revealprecision.revealserver.persistence.domain.Plan;
+import com.revealprecision.revealserver.persistence.domain.PlanLocations;
 import com.revealprecision.revealserver.persistence.repository.LocationRepository;
+import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
-import org.jobrunr.scheduling.JobScheduler;
+import java.util.stream.Collectors;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
@@ -20,16 +26,13 @@ public class LocationService {
   private LocationRepository locationRepository;
   private GeographicLevelService geographicLevelService;
   private LocationRelationshipService locationRelationshipService;
-  private JobScheduler jobScheduler;
 
   public LocationService(LocationRepository locationRepository,
       GeographicLevelService geographicLevelService,
-      LocationRelationshipService locationRelationshipService,
-      JobScheduler jobScheduler) {
+      LocationRelationshipService locationRelationshipService) {
     this.locationRepository = locationRepository;
     this.geographicLevelService = geographicLevelService;
     this.locationRelationshipService = locationRelationshipService;
-    this.jobScheduler = jobScheduler;
   }
 
   public Location createLocation(LocationRequest locationRequest) {
@@ -76,5 +79,27 @@ public class LocationService {
 
   public List<Location> getAllByIdentifiers(List<UUID> identifiers) {
     return locationRepository.getAllByIdentifiers(identifiers);
+  }
+
+  public List<Location> getAllByNames(List<String> names) {
+    return locationRepository.getAllByNames(names);
+  }
+
+  public List<Location> getLocationsByParentIdentifiers(List<UUID> parentIdentifiers,
+      LocationHierarchy locationHierarchy) {
+    List<LocationRelationship> locationRelationships = locationHierarchy.getLocationRelationships();
+    List<Location> locations = locationRelationships.stream().filter(
+        locationRelationship -> parentIdentifiers
+            .contains(locationRelationship.getParentLocation()))
+        .map(locationRelationship -> locationRelationship.getLocation()).collect(
+            Collectors.toList());
+
+    return locations;
+  }
+
+  public Set<Location> getAssignedLocationsFromPlans(Set<Plan> assignedPlans) {
+    Set<Location> assignedLocations = assignedPlans.stream().map(Plan::getPlanLocations).flatMap(
+        Collection::stream).map(PlanLocations::getLocation).collect(Collectors.toSet());
+    return assignedLocations;
   }
 }

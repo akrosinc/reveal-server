@@ -1,6 +1,3 @@
-/**
- *
- */
 package com.revealprecision.revealserver.api.v1.facade.models;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
