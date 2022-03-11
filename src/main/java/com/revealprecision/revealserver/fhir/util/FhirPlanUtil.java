@@ -77,21 +77,21 @@ public class FhirPlanUtil {
   }
 
   public static PlanDefinitionGoalComponent getPlanDefinitionGoalComponent(Goal goal) {
-    PlanDefinitionGoalComponent goal1 = new PlanDefinitionGoalComponent();
-    goal1.setId(goal.getIdentifier().toString());
+    PlanDefinitionGoalComponent planDefinitionGoalComponent = new PlanDefinitionGoalComponent();
+    planDefinitionGoalComponent.setId(goal.getIdentifier().toString());
 
     CodeableConcept goalDescription = new CodeableConcept();
     goalDescription.setText(goal.getDescription());
-    goal1.setDescription(goalDescription);
+    planDefinitionGoalComponent.setDescription(goalDescription);
 
     CodeableConcept goalPriority = new CodeableConcept();
     goalPriority.setText(goal.getPriority().toString());
-    goal1.setPriority(goalPriority);
+    planDefinitionGoalComponent.setPriority(goalPriority);
 
     goal.getActions().stream().flatMap(action -> action.getConditions().stream())
         .flatMap(condition -> condition.getTargets().stream())
-        .map(FhirPlanUtil::getPlanDefinitionGoalTargetComponent).forEach(goal1::addTarget);
-    return goal1;
+        .map(FhirPlanUtil::getPlanDefinitionGoalTargetComponent).forEach(planDefinitionGoalComponent::addTarget);
+    return planDefinitionGoalComponent;
   }
 
   public static PlanDefinitionGoalTargetComponent getPlanDefinitionGoalTargetComponent(Target target) {
