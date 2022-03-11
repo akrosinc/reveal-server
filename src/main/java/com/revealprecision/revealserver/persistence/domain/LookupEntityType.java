@@ -41,5 +41,5 @@ public class LookupEntityType extends AbstractAuditableEntity {
   private Set<Action> actions;
 
   @OneToMany(mappedBy = "lookupEntityType", fetch = FetchType.LAZY)
-  private Set<EntityTags> entityTags;
+  private Set<EntityTag> entityTags;
 }

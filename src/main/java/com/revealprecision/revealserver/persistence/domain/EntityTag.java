@@ -27,7 +27,7 @@ import org.hibernate.envers.Audited;
 @NoArgsConstructor
 @SQLDelete(sql = "UPDATE condition SET entity_status = 'DELETED' where identifier=?")
 @Where(clause = "entity_status='ACTIVE'")
-public class EntityTags extends AbstractAuditableEntity {
+public class EntityTag extends AbstractAuditableEntity {
 
   @Id
   @GeneratedValue

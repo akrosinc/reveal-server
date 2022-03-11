@@ -9,25 +9,20 @@ import com.revealprecision.revealserver.fhir.providers.PlanResourceProvider;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.support.SpringBeanAutowiringSupport;
 
 @WebServlet(name = "fhir-facade", urlPatterns = {"/fhir/*"})
 @Component
+@RequiredArgsConstructor
 public class FHIRRestfulServer extends RestfulServer {
 
-  @Autowired
-  PlanResourceProvider planResourceProvider;
-
-  @Autowired
-  PersonResourceProvider personResourceProvider;
-
-  @Autowired
-  CodeSystemResourceProvider codeSystemResourceProvider;
-
-  @Autowired
-  LocationResourceProvider locationResourceProvider;
+  private final PlanResourceProvider planResourceProvider;
+  private final PersonResourceProvider personResourceProvider;
+  private final CodeSystemResourceProvider codeSystemResourceProvider;
+  private final LocationResourceProvider locationResourceProvider;
 
   @Override
   protected void initialize() {

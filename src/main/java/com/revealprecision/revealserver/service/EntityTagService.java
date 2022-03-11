@@ -1,6 +1,6 @@
 package com.revealprecision.revealserver.service;
 
-import com.revealprecision.revealserver.persistence.domain.EntityTags;
+import com.revealprecision.revealserver.persistence.domain.EntityTag;
 import com.revealprecision.revealserver.persistence.repository.EntityTagRepository;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,17 +15,17 @@ public class EntityTagService {
 
   private final EntityTagRepository entityTagRepository;
 
-  public List<EntityTags> getAllEntityTags() {
+  public List<EntityTag> getAllEntityTags() {
     return entityTagRepository.findAll();
   }
 
-  public List<EntityTags> getEntityTagsByLookupEntityTypeIdentifier(
+  public List<EntityTag> getEntityTagsByLookupEntityTypeIdentifier(
       UUID lookupEntityTypeIdentifierUuid) {
     return new ArrayList<>(
         entityTagRepository.findByLookupEntityType_Identifier(lookupEntityTypeIdentifierUuid));
   }
 
-  public Optional<EntityTags> getEntityTagsIdentifier(
+  public Optional<EntityTag> getEntityTagsIdentifier(
       UUID entityTagIdentifier) {
     return entityTagRepository.findById(entityTagIdentifier);
   }

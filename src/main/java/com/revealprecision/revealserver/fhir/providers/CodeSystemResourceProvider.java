@@ -5,12 +5,11 @@ import ca.uhn.fhir.rest.annotation.Read;
 import ca.uhn.fhir.rest.annotation.Search;
 import ca.uhn.fhir.rest.server.IResourceProvider;
 import com.revealprecision.revealserver.fhir.properties.FhirServerProperties;
-import com.revealprecision.revealserver.persistence.domain.EntityTags;
+import com.revealprecision.revealserver.persistence.domain.EntityTag;
 import com.revealprecision.revealserver.persistence.domain.LookupEntityType;
 import com.revealprecision.revealserver.service.EntityTagService;
 import com.revealprecision.revealserver.service.LookupEntityTypeService;
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -64,7 +63,7 @@ public class CodeSystemResourceProvider implements IResourceProvider {
   }
 
 
-  private ConceptDefinitionComponent getConceptDefinitionComponent(EntityTags entityTag) {
+  private ConceptDefinitionComponent getConceptDefinitionComponent(EntityTag entityTag) {
     ConceptDefinitionComponent conceptDefinitionComponent = new ConceptDefinitionComponent();
     conceptDefinitionComponent.setCode(entityTag.getTag());
     conceptDefinitionComponent.setDefinition(entityTag.getDefinition());
