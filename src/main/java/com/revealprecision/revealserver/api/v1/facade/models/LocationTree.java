@@ -20,14 +20,15 @@ public class LocationTree {
       if (l.getParentLocation() == null) {
         locationsHierarchy.addNode(l.getLocationId(), l.getName(), l, null);
       } else {
-        locationsHierarchy.addNode(l.getLocationId(), l.getName(), l, l.getParentLocation().getLocationId());
+        locationsHierarchy
+            .addNode(l.getLocationId(), l.getName(), l, l.getParentLocation().getLocationId());
       }
     }
   }
 
-  public void buildTreeFromList(List<LocationFacade> locationFaces) {
-    for (LocationFacade locationFace : locationFaces) {
-      addLocation(locationFace);
+  public void buildTreeFromList(List<LocationFacade> locationFacades) {
+    for (LocationFacade locationFacade : locationFacades) {
+      addLocation(locationFacade);
     }
   }
 }
