@@ -2,6 +2,7 @@ package com.revealprecision.revealserver.api.v1.facade.controller;
 
 import com.revealprecision.revealserver.api.v1.facade.models.TaskDto;
 import com.revealprecision.revealserver.api.v1.facade.models.TaskFacade;
+import com.revealprecision.revealserver.api.v1.facade.models.TaskUpdateFacade;
 import com.revealprecision.revealserver.api.v1.facade.request.TaskSyncRequestWrapper;
 import com.revealprecision.revealserver.api.v1.facade.service.TaskFacadeService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -10,6 +11,7 @@ import java.util.stream.Collectors;
 import javax.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -18,11 +20,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/rest")
+@RequestMapping("/rest/task/v2")
 @Slf4j
 public class TaskFacadeController {
 
@@ -35,9 +38,9 @@ public class TaskFacadeController {
   }
 
   @Operation(summary = "Facade for Android Task Resource", description = "Sync Tasks", tags = {
-      "Task"})
+      "Task-Facade"})
   @ResponseStatus(HttpStatus.OK)
-  @PostMapping(value = "/task/v2/sync", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  @PostMapping(value = "/sync", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   @Transactional
   public ResponseEntity<List<TaskFacade>> taskSync(
       @RequestBody TaskSyncRequestWrapper taskSyncRequestWrapper) {
@@ -59,9 +62,9 @@ public class TaskFacadeController {
   }
 
   @Operation(summary = "Facade for Android Task Resource", description = "Sync Tasks", tags = {
-      "Task"})
+      "Task-Facade"})
   @ResponseStatus(HttpStatus.CREATED)
-  @PostMapping(value = "/v2/task/add", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  @PostMapping(value = "/add", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<String> batchSave(@RequestBody List<TaskDto> tasks) {
 
 
@@ -78,5 +81,21 @@ public class TaskFacadeController {
     }
 
   }
+  @Operation(summary = "Facade for Android Task Resource", description = "Update Status for Tasks", tags = {
+      "Task-Facade"})
+  @RequestMapping(value = "/update_status", method = RequestMethod.POST, consumes = { MediaType.APPLICATION_JSON_VALUE,
+      MediaType.TEXT_PLAIN_VALUE })
+  public ResponseEntity<String> updateStatus(@RequestBody List<TaskUpdateFacade> taskUpdates) {
 
+    List<String> updateTasks = taskFacadeService.updateTaskStatusAndBusinessStatusForListOfTasks(
+        taskUpdates);
+
+    JSONObject json = new JSONObject();
+    if (updateTasks.size() > 0) {
+      json.put("task_ids", updateTasks);
+    } else {
+      return new ResponseEntity<>("Tasks not Updated: ", HttpStatus.CREATED);
+    }
+    return new ResponseEntity<>(json.toString(), HttpStatus.CREATED);
+  }
 }
