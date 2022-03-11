@@ -26,7 +26,7 @@ public class LocationFacadeResponseFactory {
     Location parentLocation = null;
     Optional<Location> parentLocationOptional = locationRelationships.stream()
         .filter(lr -> lr.getLocation().equals(location) && lr.getParentLocation() != null)
-        .map(LocationRelationship::getLocation).findFirst();
+        .map(LocationRelationship::getParentLocation).findFirst();
     if (parentLocationOptional.isPresent()) {
       parentLocation = parentLocationOptional.get();
     }
