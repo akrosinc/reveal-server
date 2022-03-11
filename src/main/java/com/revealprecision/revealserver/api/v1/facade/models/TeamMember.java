@@ -1,6 +1,5 @@
 package com.revealprecision.revealserver.api.v1.facade.models;
 
-import java.util.Set;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
@@ -10,13 +9,11 @@ import lombok.Setter;
 @Builder
 public class TeamMember {
 
-  public String identifier;
+  private String identifier;
 
-  public String teamMemberId;
+  private String teamMemberId;
 
-  public Set<TeamLocation> locations;
+  private Team team;
 
-  public Team team;
-
-  public String uuid;
+  private String uuid;
 }

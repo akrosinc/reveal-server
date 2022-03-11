@@ -2,7 +2,11 @@ package com.revealprecision.revealserver.util;
 
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import lombok.Getter;
+import lombok.Setter;
 
+@Getter
+@Setter
 public class Tree<K, T> {
 
   private LinkedHashMap<K, TreeNode<K, T>> map;
@@ -10,10 +14,6 @@ public class Tree<K, T> {
 
   public LinkedHashMap<K, TreeNode<K, T>> getTree() {
     return map;
-  }
-
-  public LinkedHashMap<K, LinkedHashSet<K>> getChildParent() {
-    return parentChildren;
   }
 
   public Tree() {

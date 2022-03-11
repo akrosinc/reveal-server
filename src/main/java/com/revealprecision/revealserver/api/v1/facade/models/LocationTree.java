@@ -25,11 +25,6 @@ public class LocationTree {
     }
   }
 
-  /**
-   * WARNING: Overrides existing locations
-   *
-   * @param locationFaces
-   */
   public void buildTreeFromList(List<LocationFacade> locationFaces) {
     for (LocationFacade locationFace : locationFaces) {
       addLocation(locationFace);
