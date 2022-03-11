@@ -24,7 +24,6 @@ public class LoginResponseFactory {
   public static LoginResponse fromEntities(User user, Organization organization,
       Set<Location> assignedLocations, Set<Plan> plans) {
     UserFacadeResponse userFacadeResponse = UserFacadeResponseFactory.fromEntity(user);
-    TeamMember teamMember = TeamMemberResponseFactory.fromEntities(organization, user);
     Set<String> jurisdictionIds = extractJurisdictionIdentifiers(assignedLocations);
     List<String> jurisdictionNames = extractJurisdictionNames(assignedLocations);
 
@@ -39,6 +38,13 @@ public class LoginResponseFactory {
 
     LocationTree locationTree = new LocationTree();
     locationTree.buildTreeFromList(locationFacades);
+
+    Location defaultLocation = locationRelationships.stream()
+        .filter(locationRelationship -> locationRelationship.getParentLocation() == null)
+        .map(LocationRelationship::getLocation).findFirst().get();
+
+    TeamMember teamMember = TeamMemberResponseFactory.fromEntities(organization, user);
+    teamMember.getTeam().setLocation(TeamLocationResponseFactory.fromEntity(defaultLocation));
 
     LoginResponse loginResponse = LoginResponse.builder().user(userFacadeResponse).team(teamMember)
         .jurisdictionIds(jurisdictionIds).jurisdictions(jurisdictionNames).locations(locationTree)

@@ -35,9 +35,9 @@ public class UserFacadeController {
         .findFirst().get();
     Set<Plan> plansAssignedToUser = userFacadeService.getPlansAssignedToCurrentUser();
     Set<Location> assignedLocations = userFacadeService.getLocationsAssignedToCurrentUser();
-    LoginResponse loginResponseData = LoginResponseFactory
+    LoginResponse loginResponse = LoginResponseFactory
         .fromEntities(user, organization, assignedLocations, plansAssignedToUser);
-    return ResponseEntity.status(HttpStatus.OK).body(loginResponseData);
+    return ResponseEntity.status(HttpStatus.OK).body(loginResponse);
   }
 
   @Operation(summary = "Used by reveal-client to get data that is assigned to User", description = "Used by reveal-client to get data that is assigned to User", tags = {
