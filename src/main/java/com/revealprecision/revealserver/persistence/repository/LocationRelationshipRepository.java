@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.persistence.repository;
 
+import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
 import java.util.List;
 import java.util.Optional;
@@ -34,5 +35,14 @@ public interface LocationRelationshipRepository extends JpaRepository<LocationRe
   @Query(value = "select lr.identifier "
       + "from LocationRelationship lr "
       + "where lr.parentLocation.identifier= :parentLocationIdentifier")
-  List<UUID> findLocationRelationshipUuidsByParentLocation_Identifier(UUID parentLocationIdentifier);
+  List<UUID> findLocationRelationshipUuidsByParentLocation_Identifier(
+      UUID parentLocationIdentifier);
+
+  @Query(value = "select lr.location "
+      + "from LocationRelationship lr "
+      + "where lr.parentLocation.identifier in :parentLocationIdentifier "
+      + "and lr.locationHierarchy.identifier = :hierarchyIdentifier")
+  List<Location> findLocationRelationshipUuidsByParentLocation_IdentifierAndHierarchyIdentifier(
+      @Param("parentLocationIdentifier") List<UUID> parentLocationIdentifiers,
+      @Param("hierarchyIdentifier") UUID hierarchyIdentifier);
 }

@@ -206,8 +206,16 @@ public class LocationRelationshipService {
     }
   }
 
-  public List<UUID> findLocationRelationshipUiidsByParentLocationIdentifier(UUID parentLocationIdentifier){
-    return locationRelationshipRepository.findLocationRelationshipUuidsByParentLocation_Identifier(parentLocationIdentifier);
+  public List<Location> getLocationChildrenByLocationParentIdentifierAndHierarchyIdentifier(
+      List<UUID> parentLocationIdentifiers, UUID hierarchyIdentifier) {
+    return locationRelationshipRepository.findLocationRelationshipUuidsByParentLocation_IdentifierAndHierarchyIdentifier(
+        parentLocationIdentifiers, hierarchyIdentifier);
+  }
+
+  public List<UUID> findLocationRelationshipUiidsByParentLocationIdentifier(
+      UUID parentLocationIdentifier) {
+    return locationRelationshipRepository.findLocationRelationshipUuidsByParentLocation_Identifier(
+        parentLocationIdentifier);
   }
 
   @Async

@@ -9,7 +9,9 @@ import com.revealprecision.revealserver.enums.SummaryEnum;
 import com.revealprecision.revealserver.service.LocationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import javax.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
@@ -95,5 +97,16 @@ public class LocationController {
       @Parameter(description = "Location identifier") @PathVariable UUID identifier) {
     locationService.deleteLocation(identifier);
     return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+  }
+
+  @Operation(summary = "Location Children", description = "Retrieve Locations By Parent Identifier", tags = {
+      "Location"})
+  @GetMapping("/{parentLocationIdentifier}/children/{hierarchyIdentifier}")
+  public ResponseEntity<List<LocationResponse>> getLocationByParentIdentifier(
+      @PathVariable UUID parentLocationIdentifier, @PathVariable UUID hierarchyIdentifier) {
+    return ResponseEntity.ok(locationService.getLocationsByParentIdentifiersAndHierarchyIdentifier(
+        List.of(parentLocationIdentifier), hierarchyIdentifier).stream().map(
+        LocationResponseFactory::fromEntity
+    ).collect(Collectors.toList()));
   }
 }
