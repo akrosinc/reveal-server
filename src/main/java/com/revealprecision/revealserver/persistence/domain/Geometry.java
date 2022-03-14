@@ -11,11 +11,20 @@ public class Geometry implements Serializable {
 
   public enum GeometryType {
     @JsonProperty("Point")
-    POINT,
+    POINT("Point"),
     @JsonProperty("Polygon")
-    POLYGON,
+    POLYGON("Polygon"),
     @JsonProperty("MultiPolygon")
-    MULTI_POLYGON
+    MULTI_POLYGON("MultiPolygon");
+    private final String value;
+
+    GeometryType(String value) {
+      this.value = value;
+    }
+
+    public String value() {
+      return value;
+    }
   }
 
   private GeometryType type;
