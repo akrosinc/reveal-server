@@ -32,7 +32,7 @@ public class MetaDataJdbcService {
         + "SELECT  (jsonb_each(lm.entity_value)).*  from " + entityTable + " l\n" + "inner join "
         + entityTable + "_metadata lm on l.identifier = lm." + entityTable + "_identifier\n"
         + "where l.identifier = '" + identifier + "'\n"
-        + "\t) as t left join entity_tags et on et.identifier = (t.value->>'entity_tag')::uuid";
+        + "\t) as t left join entity_tag et on et.identifier = (t.value->>'entity_tag')::uuid";
 
     return jdbcTemplate.query(query, (rs, rowNum) -> getMapFromResultSet(rs)).stream()
         .filter(Objects::nonNull).flatMap(mapOfKeyAndPair -> mapOfKeyAndPair.entrySet().stream())
@@ -58,7 +58,7 @@ public class MetaDataJdbcService {
     String query = "update " + entity + "_metadata\n" + " set entity_value = jsonb_set(\n"
         + "  entity_value,\n" + "'{" + businessStatusField + "}',\n" + "(jsonb_build_object(\n"
         + "                         'entity_tag',\n"
-        + "                         (SELECT identifier From entity_tags WHERE tag='"
+        + "                         (SELECT identifier From entity_tag WHERE tag='"
         + businessStatusField + "'),\n" + "                         'value'," + quotes + value
         + quotes + "\n" + "                     )),true)\n" + " WHERE " + entity + "_identifier = '"
         + entityIdentifier + "'";

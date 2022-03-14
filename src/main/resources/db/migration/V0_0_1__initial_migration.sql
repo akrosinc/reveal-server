@@ -941,39 +941,41 @@ CREATE TABLE IF NOT EXISTS person_group_aud
     group_identifier  uuid    NOT NULL,
     CONSTRAINT person_group_aud_pkey PRIMARY KEY (person_identifier, group_identifier, rev)
 );
-CREATE TABLE IF NOT EXISTS entity_tags
+CREATE TABLE IF NOT EXISTS entity_tag
 (
     identifier                    uuid                     NOT NULL,
     tag                           character varying        NOT NULL,
     value_type                    character varying        NOT NULL,
+    definition                    character varying,
     lookup_entity_type_identifier uuid                     NOT NULL,
     entity_status                 character varying(36)    NOT NULL,
     created_by                    character varying(36)    NOT NULL,
     created_datetime              timestamp with time zone NOT NULL,
     modified_by                   character varying(36)    NOT NULL,
     modified_datetime             timestamp with time zone NOT NULL,
-    CONSTRAINT entity_tags_pkey PRIMARY KEY (identifier),
-    CONSTRAINT entity_tags_lookup_entity_type_fkey FOREIGN KEY (lookup_entity_type_identifier)
+    CONSTRAINT entity_tag_pkey PRIMARY KEY (identifier),
+    CONSTRAINT entity_tag_lookup_entity_type_fkey FOREIGN KEY (lookup_entity_type_identifier)
         REFERENCES lookup_entity_type (identifier) MATCH SIMPLE
         ON UPDATE NO ACTION
         ON DELETE NO ACTION
         NOT VALID
 );
 
-CREATE TABLE IF NOT EXISTS entity_tags_aud
+CREATE TABLE IF NOT EXISTS entity_tag_aud
 (
     identifier                    uuid                     NOT NULL,
     rev                           integer                  NOT NULL,
     revtype                       integer,
     tag                           character varying        NOT NULL,
     value_type                    character varying        NOT NULL,
+    definition                    character varying        NOT NULL,
     lookup_entity_type_identifier uuid                     NOT NULL,
     entity_status                 character varying(36)    NOT NULL,
     created_by                    character varying(36)    NOT NULL,
     created_datetime              timestamp with time zone NOT NULL,
     modified_by                   character varying(36)    NOT NULL,
     modified_datetime             timestamp with time zone NOT NULL,
-    CONSTRAINT entity_tags_aud_pkey PRIMARY KEY (identifier, rev)
+    CONSTRAINT entity_tag_aud_pkey PRIMARY KEY (identifier, rev)
 );
 
 CREATE TABLE person_location

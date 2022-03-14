@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.persistence.repository;
 
 import com.revealprecision.revealserver.persistence.domain.Location;
+import com.revealprecision.revealserver.persistence.projection.LocationCoordinatesProjection;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -16,8 +17,7 @@ public interface LocationRepository extends JpaRepository<Location, UUID> {
   @Query(value = "select l from Location l where l.geographicLevel.identifier = :identifier")
   List<Location> findByGeographicLevelIdentifier(@Param("identifier") UUID identifier);
 
-  @Query(value =
-      "SELECT l FROM Location l WHERE (lower(l.name) like lower(concat('%', :param, '%'))) AND l.entityStatus='ACTIVE'")
+  @Query(value = "SELECT l FROM Location l WHERE (lower(l.name) like lower(concat('%', :param, '%'))) AND l.entityStatus='ACTIVE'")
   Page<Location> findAlLByCriteria(@Param("param") String param, Pageable pageable);
 
   @Query(value = "SELECT COUNT(l) FROM Location l WHERE (lower(l.name) like lower(concat('%', :param, '%'))) AND l.entityStatus='ACTIVE'")
@@ -28,4 +28,10 @@ public interface LocationRepository extends JpaRepository<Location, UUID> {
 
   @Query(value = "select l from Location  l where  l.name in :names")
   List<Location> getAllByNames(@Param("names") List<String> names);
+
+  @Query(value =
+      "SELECT  name as name, ST_X(ST_Centroid(ST_GeomFromGeoJSON(geometry))) as longitude,ST_Y(ST_Centroid(ST_GeomFromGeoJSON(geometry))) as  latitude from location"
+          + " WHERE identifier = :locationIdentifier", nativeQuery = true)
+  LocationCoordinatesProjection getLocationCentroidCoordinatesByIdentifier(UUID locationIdentifier);
+
 }
