@@ -36,6 +36,7 @@ public class PlanService {
   private final FormService formService;
   private final LocationHierarchyService locationHierarchyService;
   private final LookupInterventionTypeService lookupInterventionTypeService;
+  private final TaskService taskService;
 
   public static boolean isNullOrEmpty(final Collection<?> c) {
     return c == null || c.isEmpty();
@@ -84,14 +85,13 @@ public class PlanService {
     Plan plan = PlanEntityFactory.toEntity(planRequest, interventionType, locationHierarchy,
         foundForms);
     plan.setEntityStatus(EntityStatus.ACTIVE);
-    planRepository.save(plan);
-
+    savePlan(plan);
   }
 
   public void activatePlan(UUID planIdentifier) {
     Plan plan = getPlanByIdentifier(planIdentifier);
     plan.setStatus(PlanStatusEnum.ACTIVE);
-    planRepository.save(plan);
+    savePlan(plan);
   }
 
   public void updatePlan(PlanRequest request, UUID identifier) {
@@ -101,6 +101,16 @@ public class PlanService {
     LookupInterventionType interventionType = lookupInterventionTypeService.findByIdentifier(
         request.getInterventionType());
     plan.update(request, hierarchy, interventionType);
-    planRepository.save(plan);
+    savePlan(plan);
+  }
+
+  private void savePlan(Plan plan) {
+    Plan savedPlan = planRepository.save(plan);
+    generateAndUpdateTasks(savedPlan.getIdentifier());
+  }
+
+  private void generateAndUpdateTasks(UUID planIdentifier) {
+    taskService.generateTasksByPlanId(planIdentifier);
+    taskService.updateOrganizationsAndLocationsForTasksByPlanIdentifier(planIdentifier);
   }
 }
