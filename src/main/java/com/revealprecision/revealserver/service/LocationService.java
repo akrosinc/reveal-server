@@ -85,16 +85,18 @@ public class LocationService {
     return locationRepository.getAllByNames(names);
   }
 
-  public List<Location> getLocationsByParentIdentifiers(List<UUID> parentIdentifiers,
+  public List<Location> getStructuresByParentIdentifiers(List<UUID> parentIdentifiers,
       LocationHierarchy locationHierarchy) {
     List<LocationRelationship> locationRelationships = locationHierarchy.getLocationRelationships();
     List<Location> locations = locationRelationships.stream().filter(
-        locationRelationship -> parentIdentifiers
-            .contains(locationRelationship.getParentLocation()))
+        locationRelationship -> locationRelationship.getParentLocation() != null
+            && parentIdentifiers
+            .contains(locationRelationship.getParentLocation().getIdentifier()))
         .map(locationRelationship -> locationRelationship.getLocation()).collect(
             Collectors.toList());
 
-    return locations;
+    return locations.stream().filter(location -> location.getGeographicLevel().getName().equalsIgnoreCase("structure")).collect(
+        Collectors.toList());//TODO: to update once we figure the target level part.
   }
 
   public Set<Location> getAssignedLocationsFromPlans(Set<Plan> assignedPlans) {
