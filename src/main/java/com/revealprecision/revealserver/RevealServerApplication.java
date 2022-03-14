@@ -16,6 +16,7 @@ import org.springframework.validation.beanvalidation.MethodValidationPostProcess
 @EnableJpaAuditing
 @Slf4j
 @EnableConfigurationProperties
+@ServletComponentScan
 public class RevealServerApplication {
 
   public static void main(String[] args) {

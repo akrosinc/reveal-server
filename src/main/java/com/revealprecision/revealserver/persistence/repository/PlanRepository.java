@@ -2,7 +2,9 @@ package com.revealprecision.revealserver.persistence.repository;
 
 import com.cosium.spring.data.jpa.entity.graph.domain.EntityGraph;
 import com.cosium.spring.data.jpa.entity.graph.repository.EntityGraphJpaRepository;
+import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.Plan;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -24,4 +26,8 @@ public interface PlanRepository extends EntityGraphJpaRepository<Plan, UUID> {
       + "OR lower(p.status) like lower(concat('%', :param, '%')) "
       + "OR lower(p.interventionType.name) like lower(concat('%', :param, '%'))")
   long getAllCount(@Param("param") String param);
+
+  @Query("select pl.location from Plan p inner join PlanLocations pl on pl.plan = p WHERE p.identifier = :planIdentifier")
+  List<Location> findLocationsForPlan(UUID planIdentifier);
+
 }
