@@ -16,25 +16,19 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class LocationService {
 
-  private LocationRepository locationRepository;
-  private GeographicLevelService geographicLevelService;
-  private LocationRelationshipService locationRelationshipService;
-
-  public LocationService(LocationRepository locationRepository,
-      GeographicLevelService geographicLevelService,
-      LocationRelationshipService locationRelationshipService) {
-    this.locationRepository = locationRepository;
-    this.geographicLevelService = geographicLevelService;
-    this.locationRelationshipService = locationRelationshipService;
-  }
+  private final LocationRepository locationRepository;
+  private final GeographicLevelService geographicLevelService;
+  private final LocationRelationshipService locationRelationshipService;
 
   public Location createLocation(LocationRequest locationRequest) {
     GeographicLevel geographicLevel = geographicLevelService.findByName(
@@ -98,13 +92,23 @@ public class LocationService {
     return locations;
   }
 
+  public List<Location> getLocationsByParentIdentifiersAndHierarchyIdentifier(
+      List<UUID> parentIdentifiers,
+      UUID locationHierarchyIdentifier) {
+
+    return locationRelationshipService.getLocationChildrenByLocationParentIdentifierAndHierarchyIdentifier(
+        parentIdentifiers, locationHierarchyIdentifier);
+  }
+
+
   public Set<Location> getAssignedLocationsFromPlans(Set<Plan> assignedPlans) {
     Set<Location> assignedLocations = assignedPlans.stream().map(Plan::getPlanLocations)
         .flatMap(Collection::stream).map(PlanLocations::getLocation).collect(Collectors.toSet());
     return assignedLocations;
   }
 
-  public LocationCoordinatesProjection getLocationCentroidCoordinatesByIdentifier(UUID locationIdentifier) {
+  public LocationCoordinatesProjection getLocationCentroidCoordinatesByIdentifier(
+      UUID locationIdentifier) {
     return locationRepository.getLocationCentroidCoordinatesByIdentifier(locationIdentifier);
   }
 }
