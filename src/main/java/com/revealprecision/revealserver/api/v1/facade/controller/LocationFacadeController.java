@@ -7,11 +7,9 @@ import com.revealprecision.revealserver.api.v1.facade.service.LocationFacadeServ
 import com.revealprecision.revealserver.api.v1.facade.service.LocationHierarchyFacadeService;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
-import com.revealprecision.revealserver.service.LocationHierarchyService;
 import io.swagger.v3.oas.annotations.Operation;
 import java.util.List;
 import java.util.Set;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;

@@ -33,6 +33,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
@@ -60,6 +61,7 @@ public class TaskService {
   private final EntityFilterService entityFilterService;
 
   @Autowired
+  @Lazy
   public TaskService(TaskRepository taskRepository,
       PlanService planService,
       ActionService actionService, LocationService locationService,

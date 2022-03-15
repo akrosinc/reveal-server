@@ -34,8 +34,8 @@ public class LocationService {
     GeographicLevel geographicLevel = geographicLevelService.findByName(
         locationRequest.getProperties().getGeographicLevel());
     var locationToSave = Location.builder().geographicLevel(geographicLevel)
-        .type(locationRequest.getType()).geometry(locationRequest.getGeometry())
-        .name(locationRequest.getProperties().getName())
+        .type(locationRequest.getType())
+        .geometry(locationRequest.getGeometry()).name(locationRequest.getProperties().getName())
         .status(locationRequest.getProperties().getStatus())
         .externalId(locationRequest.getProperties().getExternalId()).build();
     locationToSave.setEntityStatus(EntityStatus.ACTIVE);
@@ -80,24 +80,29 @@ public class LocationService {
     return locationRepository.getAllByNames(names);
   }
 
-  public List<Location> getLocationsByParentIdentifiers(List<UUID> parentIdentifiers,
+  public List<Location> getStructuresByParentIdentifiers(List<UUID> parentIdentifiers,
       LocationHierarchy locationHierarchy) {
     List<LocationRelationship> locationRelationships = locationHierarchy.getLocationRelationships();
     List<Location> locations = locationRelationships.stream().filter(
-            locationRelationship -> parentIdentifiers.contains(
-                locationRelationship.getParentLocation()))
-        .map(locationRelationship -> locationRelationship.getLocation())
-        .collect(Collectors.toList());
+        locationRelationship -> locationRelationship.getParentLocation() != null
+            && parentIdentifiers
+            .contains(locationRelationship.getParentLocation().getIdentifier()))
+        .map(LocationRelationship::getLocation).collect(
+            Collectors.toList());
 
-    return locations;
+    return locations.stream()
+        .filter(location -> location.getGeographicLevel().getName().equalsIgnoreCase("structure"))
+        .collect(
+            Collectors.toList());//TODO: to update once we figure the target level part.
   }
 
   public List<Location> getLocationsByParentIdentifiersAndHierarchyIdentifier(
       List<UUID> parentIdentifiers,
       UUID locationHierarchyIdentifier) {
 
-    return locationRelationshipService.getLocationChildrenByLocationParentIdentifierAndHierarchyIdentifier(
-        parentIdentifiers, locationHierarchyIdentifier);
+    return locationRelationshipService
+        .getLocationChildrenByLocationParentIdentifierAndHierarchyIdentifier(
+            parentIdentifiers, locationHierarchyIdentifier);
   }
 
 

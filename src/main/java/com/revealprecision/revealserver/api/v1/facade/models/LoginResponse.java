@@ -10,9 +10,10 @@ import lombok.Setter;
 @Setter
 @Builder
 public class LoginResponse {
-  public UserFacadeResponse user;
-  public LocationTree locations;
-  public TeamMember team;
-  public List<String> jurisdictions;
-  public Set<String> jurisdictionIds;
+
+  private UserFacadeResponse user;
+  private LocationTree locations;
+  private TeamMember team;
+  private List<String> jurisdictions;
+  private Set<String> jurisdictionIds;
 }

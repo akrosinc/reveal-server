@@ -13,9 +13,9 @@ public class ConditionEntityFactory {
 
   public static Condition toEntity(ConditionRequest conditionRequest, Action action) {
     Condition condition = Condition.builder()
-        .name("test")
-        .query("test")
-        .implicit_query("test")
+        .name(conditionRequest.getName())
+        .query(conditionRequest.getQuery())
+        .implicit_query("")
         .action(action)
         .build();
 
