@@ -8,14 +8,17 @@ import static com.revealprecision.revealserver.api.v1.facade.constants.JDBCHelpe
 import com.revealprecision.revealserver.api.v1.facade.factory.TaskFacadeFactory;
 import com.revealprecision.revealserver.api.v1.facade.models.TaskDto;
 import com.revealprecision.revealserver.api.v1.facade.models.TaskFacade;
+import com.revealprecision.revealserver.api.v1.facade.models.TaskUpdateFacade;
 import com.revealprecision.revealserver.api.v1.facade.properties.TaskFacadeProperties;
 import com.revealprecision.revealserver.api.v1.facade.util.DateTimeFormatter;
 import com.revealprecision.revealserver.enums.EntityStatus;
+import com.revealprecision.revealserver.enums.TaskPriorityEnum;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.Action;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LookupEntityType;
 import com.revealprecision.revealserver.persistence.domain.LookupTaskStatus;
+import com.revealprecision.revealserver.persistence.domain.LookupTaskStatus.Fields;
 import com.revealprecision.revealserver.persistence.domain.Person;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.Task;
@@ -26,6 +29,7 @@ import com.revealprecision.revealserver.service.PersonService;
 import com.revealprecision.revealserver.service.PlanService;
 import com.revealprecision.revealserver.service.TaskService;
 import com.revealprecision.revealserver.service.UserService;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -44,21 +48,13 @@ public class TaskFacadeService {
 
   public static final String GENERAL = "GENERAL";
   private final MetaDataJdbcService metaDataJdbcService;
-
   private final UserService userService;
-
   private final TaskJDBCService taskJDBCService;
-
   private final TaskFacadeProperties taskFacadeProperties;
-
   private final TaskService taskService;
-
   private final ActionService actionService;
-
   private final PlanService planService;
-
   private final PersonService personService;
-
   private final LocationService locationService;
 
   public List<TaskFacade> syncTasks(String plan, String group) {
@@ -107,81 +103,133 @@ public class TaskFacadeService {
   }
 
 
-  public void setbusinessStatus(Task task, String businessStatus) {
-    metaDataJdbcService.updateMetadata(task.getBaseEntityIdentifier(),
+  public int setBusinessStatus(Task task, String businessStatus) {
+    return metaDataJdbcService.updateMetadata(task.getBaseEntityIdentifier(),
         task.getAction().getLookupEntityType().getTableName(), businessStatus,
         task.getAction().getGoal().getPlan().getIdentifier(), String.class);
+  }
+
+  public List<String> updateTaskStatusAndBusinessStatusForListOfTasks(
+      List<TaskUpdateFacade> taskUpdateFacades) {
+    return taskUpdateFacades.stream().map(this::updateTaskStatusAndBusinessStatus).filter(
+        Optional::isPresent).map(Optional::get).map(UUID::toString).collect(Collectors.toList());
+  }
+
+  private Optional<UUID> updateTaskStatusAndBusinessStatus(TaskUpdateFacade updateFacade) {
+
+    UUID identifier = null;
+
+    try {
+      Task task = taskService.getTaskByIdentifier(
+          UUID.fromString(updateFacade.getIdentifier()));
+
+      Optional<LookupTaskStatus> taskStatus = taskService.getAllTaskStatus().stream().filter(
+          lookupTaskStatus -> lookupTaskStatus.getCode()
+              .equalsIgnoreCase(updateFacade.getStatus())).findFirst();
+
+      if (taskStatus.isPresent()) {
+        task.setLookupTaskStatus(taskStatus.get());
+        task = taskService.saveTask(task);
+        setBusinessStatus(task, updateFacade.getBusinessStatus());
+        identifier = task.getIdentifier();
+      } else {
+        log.error("Unknown task state in task update: {}", updateFacade.getStatus());
+      }
+    } catch (NotFoundException notFoundException) {
+      log.error("Task does not exist: {}", updateFacade.getIdentifier());
+    } catch (Exception e) {
+      e.printStackTrace();
+      log.error("Some error with updating task: {}", e.getMessage());
+    }
+    return Optional.ofNullable(identifier);
   }
 
   public List<TaskDto> addTasks(List<TaskDto> taskDtos) {
     List<TaskDto> unprocessedTaskIds = new ArrayList<>();
 
     taskDtos.forEach(taskDto -> {
-      Action action = actionService.getByIdentifier(UUID.fromString(taskDto.getFocus()));
-      Plan plan = planService.getPlanByIdentifier(UUID.fromString(taskDto.getPlanIdentifier()));
-      List<LookupTaskStatus> lookupTaskStatuses = taskService.getAllTaskStatus();
-
-      Optional<LookupTaskStatus> taskStatus = lookupTaskStatuses.stream().filter(
-          lookupTaskStatus -> lookupTaskStatus.getCode()
-              .equalsIgnoreCase(taskDto.getStatus().name())).findFirst();
-
-      LookupEntityType lookupEntityType = action.getLookupEntityType();
-
-      Task task;
       try {
-        task = taskService.getTaskByIdentifier(
-            UUID.fromString(taskDto.getIdentifier()));
-      } catch (NotFoundException notFoundException) {
-        task = new Task();
-      }
-
-      try {
-        if (taskStatus.isPresent()) {
-
-          task.setLookupTaskStatus(taskStatus.get());
-          task.setAction(action);
-          task.setDescription(taskDto.getDescription());
-          task.setIdentifier(UUID.fromString(taskDto.getIdentifier()));
-          task.setPlan(plan);
-          task.setAuthoredOn(DateTimeFormatter.getLocalDateTimeFromAndroidFacadeString(
-              taskDto.getAuthoredOn()));
-          task.setExecutionPeriodEnd(taskDto.getExecutionPeriod().getEnd() != null
-              ? DateTimeFormatter.getLocalDateTimeFromAndroidFacadeString(
-              taskDto.getExecutionPeriod().getEnd()).toLocalDate()
-              : action.getTimingPeriodEnd());
-          task.setExecutionPeriodStart(DateTimeFormatter.getLocalDateTimeFromAndroidFacadeString(
-              taskDto.getExecutionPeriod().getStart()).toLocalDate());
-          task.setLastModified(DateTimeFormatter.getLocalDateTimeFromAndroidFacadeString(
-              taskDto.getLastModified()));
-
-          if (lookupEntityType.getCode().equals(PERSON_ENTITY_NAME)) {
-            Person person = personService.getPersonByIdentifier(
-                UUID.fromString(taskDto.getForEntity()));
-            task.setPerson(person);
-          }
-
-          if (lookupEntityType.getCode().equals(LOCATION_ENTITY_NAME)) {
-            Location location = locationService.findByIdentifier(
-                UUID.fromString(taskDto.getForEntity()));
-            task.setLocation(location);
-          }
-
-          task.setEntityStatus(EntityStatus.ACTIVE);
-
-          taskService.saveTask(task);
-          setbusinessStatus(task, taskDto.getBusinessStatus());
-          taskService.updateOrganisationsAndLocationsForTask(plan.getIdentifier(), taskStatus.get(),
-              task);
-        } else {
-          log.error("Unknown task state in sync: {}", taskDto.getStatus().name());
-          unprocessedTaskIds.add(taskDto);
-        }
-      } catch (NotFoundException notFoundException) {
+        saveTask(taskDto);
+      } catch (Exception e) {
+        log.error(e.toString());
+        e.printStackTrace();
         unprocessedTaskIds.add(taskDto);
-        log.error(notFoundException.toString());
       }
     });
 
     return unprocessedTaskIds;
+  }
+
+  private void saveTask(TaskDto taskDto) {
+
+    Action action = actionService.getByIdentifier(UUID.fromString(taskDto.getFocus()));
+    Plan plan = planService.getPlanByIdentifier(UUID.fromString(taskDto.getPlanIdentifier()));
+    List<LookupTaskStatus> lookupTaskStatuses = taskService.getAllTaskStatus();
+
+    Optional<LookupTaskStatus> taskStatus = lookupTaskStatuses.stream().filter(
+        lookupTaskStatus -> lookupTaskStatus.getCode()
+            .equalsIgnoreCase(taskDto.getStatus().name())).findFirst();
+
+    LookupEntityType lookupEntityType = action.getLookupEntityType();
+
+    Task task;
+    try {
+      task = taskService.getTaskByIdentifier(
+          UUID.fromString(taskDto.getIdentifier()));
+    } catch (NotFoundException notFoundException) {
+      task = new Task();
+    }
+
+    LocalDateTime LastModifierFromAndroid = DateTimeFormatter.getLocalDateTimeFromAndroidFacadeString(
+        taskDto.getLastModified());
+
+    if (taskStatus.isPresent()) {
+
+      if (task.getLastModified()!=null && LastModifierFromAndroid.isAfter(task.getLastModified())) {
+
+        task.setLookupTaskStatus(taskStatus.get());
+        task.setAction(action);
+        task.setDescription(taskDto.getDescription());
+        task.setIdentifier(UUID.fromString(taskDto.getIdentifier()));
+        task.setPriority(TaskPriorityEnum.valueOf(taskDto.getPriority().name().toUpperCase()));
+        task.setPlan(plan);
+        task.setAuthoredOn(DateTimeFormatter.getLocalDateTimeFromAndroidFacadeString(
+            taskDto.getAuthoredOn()));
+        task.setExecutionPeriodEnd(taskDto.getExecutionPeriod().getEnd() != null
+            ? DateTimeFormatter.getLocalDateTimeFromAndroidFacadeString(
+            taskDto.getExecutionPeriod().getEnd()).toLocalDate()
+            : action.getTimingPeriodEnd());
+        task.setExecutionPeriodStart(DateTimeFormatter.getLocalDateTimeFromAndroidFacadeString(
+            taskDto.getExecutionPeriod().getStart()).toLocalDate());
+        task.setLastModified(LastModifierFromAndroid);
+
+        if (lookupEntityType.getCode().equals(PERSON_ENTITY_NAME)) {
+          Person person = personService.getPersonByIdentifier(
+              UUID.fromString(taskDto.getForEntity()));
+          task.setPerson(person);
+        }
+
+        if (lookupEntityType.getCode().equals(LOCATION_ENTITY_NAME)) {
+          Location location = locationService.findByIdentifier(
+              UUID.fromString(taskDto.getForEntity()));
+          task.setLocation(location);
+        }
+
+        task.setEntityStatus(EntityStatus.ACTIVE);
+
+        task = taskService.saveTask(task);
+        setBusinessStatus(task, taskDto.getBusinessStatus());
+        taskService.updateOrganisationsAndLocationsForTask(plan.getIdentifier(), taskStatus.get(),
+            task);
+      }else{
+        log.warn("Ignoring this task from sync as the task submitted is older than the task in the server");
+      }
+    } else {
+      log.error("Unknown task state in sync: {}", taskDto.getStatus().name());
+      throw new NotFoundException(
+          org.springframework.data.util.Pair.of(Fields.code, taskDto.getStatus().name()),
+          LookupTaskStatus.class);
+    }
+
   }
 }
