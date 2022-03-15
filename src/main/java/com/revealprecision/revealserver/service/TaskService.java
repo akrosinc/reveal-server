@@ -12,6 +12,7 @@ import com.revealprecision.revealserver.exceptions.QueryGenerationException;
 import com.revealprecision.revealserver.persistence.domain.Action;
 import com.revealprecision.revealserver.persistence.domain.Goal;
 import com.revealprecision.revealserver.persistence.domain.Location;
+import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.LookupTaskStatus;
 import com.revealprecision.revealserver.persistence.domain.Organization;
 import com.revealprecision.revealserver.persistence.domain.Person;
@@ -59,6 +60,7 @@ public class TaskService {
   private final LocationService locationService;
   private final LookupTaskStatusRepository lookupTaskStatusRepository;
   private final EntityFilterService entityFilterService;
+  private final LocationRelationshipService locationRelationshipService;
 
   @Autowired
   @Lazy
@@ -68,7 +70,7 @@ public class TaskService {
       LookupTaskStatusRepository lookupTaskStatusRepository, PersonService personService,
       EntityFilterService entityFilterService, GoalService goalService,
       ConditionService conditionService,
-      PlanLocationsService planLocationsService) {
+      PlanLocationsService planLocationsService,LocationRelationshipService locationRelationshipService) {
     this.taskRepository = taskRepository;
     this.planService = planService;
     this.actionService = actionService;
@@ -79,6 +81,7 @@ public class TaskService {
     this.goalService = goalService;
     this.conditionService = conditionService;
     this.planLocationsService = planLocationsService;
+    this.locationRelationshipService  = locationRelationshipService;
 
   }
 
@@ -214,7 +217,9 @@ public class TaskService {
 
   private Task createTaskObjectFromActionAndEntityId(Action action,
       UUID entityUUID, Plan plan) {
-    if (action.getLookupEntityType().getCode().equals(ENTITY_LOCATION)) {
+    boolean isLocationEntity = action.getLookupEntityType() != null && ENTITY_LOCATION
+        .equals(action.getLookupEntityType().getCode());
+    if (isLocationEntity) {
       if (taskRepository.findTasksByAction_IdentifierAndLocation_Identifier(
           action.getIdentifier(), entityUUID).size() > 0) {
         log.info("task for location: {} already exists", entityUUID);
@@ -222,7 +227,9 @@ public class TaskService {
       }
     }
 
-    if (action.getLookupEntityType().getCode().equals(ENTITY_PERSON)) {
+    boolean isPersonEntity = action.getLookupEntityType() != null && ENTITY_PERSON
+        .equals(action.getLookupEntityType().getCode());
+    if (isPersonEntity) {
       if (taskRepository.findTasksByAction_IdentifierAndPerson_Identifier(
           action.getIdentifier(),
           entityUUID).size() > 0) {
@@ -248,11 +255,11 @@ public class TaskService {
         .build();
     task.setEntityStatus(EntityStatus.ACTIVE);
 
-    if (action.getLookupEntityType().getCode().equals(ENTITY_LOCATION)) {
+    if (isLocationEntity) {
       Location location = locationService.findByIdentifier(entityUUID);
       task.setLocation(location);
     }
-    if (action.getLookupEntityType().getCode().equals(ENTITY_PERSON)) {
+    if (isPersonEntity) {
       Person person = personService.getPersonByIdentifier(entityUUID);
       task.setPerson(person);
     }
@@ -264,7 +271,7 @@ public class TaskService {
     List<Task> tasksByPlan = taskRepository.findTasksByPlan_Identifier(planIdentifier);
 
     LookupTaskStatus lookupTaskStatus = lookupTaskStatusRepository.findByCode(TASK_STATUS_CANCELLED)
-        .orElseThrow(()->new NotFoundException(
+        .orElseThrow(() -> new NotFoundException(
             Pair.of(LookupTaskStatus.Fields.code, TASK_STATUS_CANCELLED), LookupTaskStatus.class));
 
     for (Task task : tasksByPlan) {
@@ -273,7 +280,8 @@ public class TaskService {
     }
   }
 
-  public void updateOrganisationsAndLocationsForTask(UUID planIdentifier, LookupTaskStatus lookupTaskStatus, Task task) {
+  public void updateOrganisationsAndLocationsForTask(UUID planIdentifier,
+      LookupTaskStatus lookupTaskStatus, Task task) {
     Action action = task.getAction();
     List<PlanLocations> planLocationsForLocation = new ArrayList<>();
     if (action.getLookupEntityType().getCode().equals(ENTITY_LOCATION)) {
@@ -299,7 +307,7 @@ public class TaskService {
       if (action.getLookupEntityType().getCode().equals(ENTITY_LOCATION)) {
         if (planLocationsForLocation.size() > 0) {
           List<Organization> organizations = planLocationsForLocation.stream().filter(
-                  planLocations1 -> planLocations1.getPlan().getIdentifier().equals(planIdentifier))
+              planLocations1 -> planLocations1.getPlan().getIdentifier().equals(planIdentifier))
               .flatMap(planLocation -> planLocation.getPlanAssignments().stream())
               .map(PlanAssignment::getOrganization)
               .collect(Collectors.toList());
@@ -309,7 +317,7 @@ public class TaskService {
       if (action.getLookupEntityType().getCode().equals(ENTITY_PERSON)) {
         if (planLocationsForPerson.size() > 0) {
           List<Organization> organizations = planLocationsForPerson.stream().filter(
-                  planLocations1 -> planLocations1.getPlan().getIdentifier().equals(planIdentifier))
+              planLocations1 -> planLocations1.getPlan().getIdentifier().equals(planIdentifier))
               .flatMap(planLocation -> planLocation.getPlanAssignments().stream())
               .map(PlanAssignment::getOrganization)
               .collect(Collectors.toList());
@@ -319,4 +327,17 @@ public class TaskService {
     }
     taskRepository.save(task);
   }
+
+ public List<Task> getTasksByPlanAndJurisdictionList(UUID planIdentifier,
+      List<String> jurisdictionList) {
+   Plan plan = planService.getPlanByIdentifier(planIdentifier);
+   LocationHierarchy locationHierarchy = plan.getLocationHierarchy();
+   List<UUID> parentLocationIdentifiers = jurisdictionList.stream().map(UUID::fromString).collect(
+       Collectors.toList());
+   List<Location> childLocations = locationRelationshipService
+       .getLocationChildrenByLocationParentIdentifierAndHierarchyIdentifier(
+           parentLocationIdentifiers, locationHierarchy.getIdentifier());
+     return taskRepository.findByPlanAndBaseEntityIdentifiers(plan,childLocations.stream().map(Location::getIdentifier).collect(
+         Collectors.toList()));
+ }
 }

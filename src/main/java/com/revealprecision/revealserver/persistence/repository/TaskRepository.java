@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.persistence.repository;
 
+import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.Task;
 import java.util.List;
 import java.util.Optional;
@@ -23,5 +24,9 @@ public interface TaskRepository extends JpaRepository<Task, UUID>,
       UUID personIdentifier);
 
   List<Task> findTasksByPlan_Identifier(UUID planIdentifier);
+
+  @Query("select t from Task t where t.plan = :plan and t.baseEntityIdentifier in :baseEntityIdentifiers")
+  List<Task> findByPlanAndBaseEntityIdentifiers(@Param("plan") Plan plan,
+      @Param("baseEntityIdentifiers") List<UUID> baseEntityIdentifiers);
 
 }

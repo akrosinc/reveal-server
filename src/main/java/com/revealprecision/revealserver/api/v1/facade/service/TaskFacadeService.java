@@ -49,7 +49,6 @@ public class TaskFacadeService {
   public static final String GENERAL = "GENERAL";
   private final MetaDataJdbcService metaDataJdbcService;
   private final UserService userService;
-  private final TaskJDBCService taskJDBCService;
   private final TaskFacadeProperties taskFacadeProperties;
   private final TaskService taskService;
   private final ActionService actionService;
@@ -57,18 +56,26 @@ public class TaskFacadeService {
   private final PersonService personService;
   private final LocationService locationService;
 
-  public List<TaskFacade> syncTasks(String plan, String group) {
-    return taskJDBCService.getTasksByPlanAndJurisdictionList(UUID.fromString(plan),
-            Arrays.asList(group.split(",")))
-        .stream().map(task -> {
-          Object businessStatus = getBusinessStatus(task);
-          String createdBy = task.getAction().getGoal().getPlan().getCreatedBy();
-          User user = userService.getByIdentifier(UUID.fromString(createdBy));
+  public List<TaskFacade> syncTasks(String planIdentifier, String group) {
 
-          return TaskFacadeFactory.getEntity(task, (String) businessStatus, user.getUsername(),
-              group);
+    List<Task> tasks = taskService
+        .getTasksByPlanAndJurisdictionList(UUID.fromString(planIdentifier),
+            Arrays.asList(group.split(",")));
 
-        }).collect(Collectors.toList());
+    List<TaskFacade> taskFacades = tasks.stream().map(task -> {
+      Object businessStatus = getBusinessStatus(task);
+      String createdBy = task.getAction().getGoal().getPlan().getCreatedBy();
+      User user = null;
+      try {
+        user = userService.getByKeycloakId(UUID.fromString(createdBy));
+      } catch (NotFoundException exception) {
+        log.debug(String.format("CreatedBy user not found exception: %s", exception.getMessage()));
+      }
+      return TaskFacadeFactory.getEntity(task, (String) businessStatus, user,
+          group);
+    }).collect(Collectors.toList());
+
+    return taskFacades;
   }
 
   private Object getBusinessStatus(Task task) {
@@ -180,12 +187,14 @@ public class TaskFacadeService {
       task = new Task();
     }
 
-    LocalDateTime LastModifierFromAndroid = DateTimeFormatter.getLocalDateTimeFromAndroidFacadeString(
-        taskDto.getLastModified());
+    LocalDateTime LastModifierFromAndroid = DateTimeFormatter
+        .getLocalDateTimeFromAndroidFacadeString(
+            taskDto.getLastModified());
 
     if (taskStatus.isPresent()) {
 
-      if (task.getLastModified()!=null && LastModifierFromAndroid.isAfter(task.getLastModified())) {
+      if (task.getLastModified() != null && LastModifierFromAndroid
+          .isAfter(task.getLastModified())) {
 
         task.setLookupTaskStatus(taskStatus.get());
         task.setAction(action);
@@ -221,8 +230,9 @@ public class TaskFacadeService {
         setBusinessStatus(task, taskDto.getBusinessStatus());
         taskService.updateOrganisationsAndLocationsForTask(plan.getIdentifier(), taskStatus.get(),
             task);
-      }else{
-        log.warn("Ignoring this task from sync as the task submitted is older than the task in the server");
+      } else {
+        log.warn(
+            "Ignoring this task from sync as the task submitted is older than the task in the server");
       }
     } else {
       log.error("Unknown task state in sync: {}", taskDto.getStatus().name());
