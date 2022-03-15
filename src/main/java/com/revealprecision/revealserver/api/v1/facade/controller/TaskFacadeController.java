@@ -25,7 +25,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/rest/task/v2")
+@RequestMapping("/rest/v2/task")
 @Slf4j
 public class TaskFacadeController {
 
