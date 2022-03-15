@@ -7,6 +7,7 @@ import com.revealprecision.revealserver.api.v1.facade.service.PlanFacadeService;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import io.swagger.v3.oas.annotations.Operation;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -26,14 +27,15 @@ public class PlanFacadeController {
   @Operation(summary = "Used by reveal-client to fetch Plans", description = "Fetching plans by reveal-client for certain organizations ", tags = {
       "UserContext"})
   @PostMapping("/plans/sync")
-  public ResponseEntity<List<PlanFacade>> fetchPlans(@RequestBody PlanRequestFacade planRequestFacade) {
-    List<Plan> plans = planFacadeService.getPlans(planRequestFacade);
+  public ResponseEntity<List<PlanFacade>> fetchPlans(
+      @RequestBody PlanRequestFacade planRequestFacade) {
+    Set<Plan> plans = planFacadeService.getPlans(planRequestFacade);
     return ResponseEntity
         .status(HttpStatus.OK)
         .header("total_records", Integer.toString(plans.size()))
         .body(plans
             .stream()
             .map(PlanFacadeFactory::fromEntity).collect(
-            Collectors.toList()));
+                Collectors.toList()));
   }
 }
