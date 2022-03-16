@@ -31,8 +31,9 @@ import com.revealprecision.revealserver.service.TaskService;
 import com.revealprecision.revealserver.service.UserService;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -56,26 +57,35 @@ public class TaskFacadeService {
   private final PersonService personService;
   private final LocationService locationService;
 
-  public List<TaskFacade> syncTasks(String planIdentifier, String group) {
+  public List<TaskFacade> syncTasks(String planIdentifier, List<UUID> jurisdictionIdentifiers) {
 
-    List<Task> tasks = taskService
-        .getTasksByPlanAndJurisdictionList(UUID.fromString(planIdentifier),
-            Arrays.asList(group.split(",")));
+    Map<UUID, List<Task>> tasksPerJurisdictionIdentifier = taskService
+        .getTasksPerJurisdictionIdentifier(UUID.fromString(planIdentifier),
+            jurisdictionIdentifiers);
 
-    List<TaskFacade> taskFacades = tasks.stream().map(task -> {
-      Object businessStatus = getBusinessStatus(task);
-      String createdBy = task.getAction().getGoal().getPlan().getCreatedBy();
-      User user = null;
-      try {
-        user = userService.getByKeycloakId(UUID.fromString(createdBy));
-      } catch (NotFoundException exception) {
-        log.debug(String.format("CreatedBy user not found exception: %s", exception.getMessage()));
-      }
-      return TaskFacadeFactory.getEntity(task, (String) businessStatus, user,
-          group);
-    }).collect(Collectors.toList());
+    List<TaskFacade> taskFacades = tasksPerJurisdictionIdentifier.entrySet().stream().map(entry -> {
+      List<Task> tasks = entry.getValue();
+      String groupIdentifier = entry.getKey().toString();
+      return tasks.stream().map(task -> {
+        Object businessStatus = getBusinessStatus(task);
+        String createdBy = task.getAction().getGoal().getPlan()
+            .getCreatedBy(); //TODO: confirm business rule for task creation user(owner)
+        User user = getUser(createdBy);
+        return TaskFacadeFactory.getEntity(task, (String) businessStatus, user, groupIdentifier);
+      }).collect(Collectors.toList());
+    }).flatMap(Collection::stream).collect(Collectors.toList());
 
     return taskFacades;
+  }
+
+  private User getUser(String createdByUserIdentifier) {
+    User user = null;
+    try {
+      user = userService.getByKeycloakId(UUID.fromString(createdByUserIdentifier));
+    } catch (NotFoundException exception) {
+      log.debug(String.format("CreatedBy user not found exception: %s", exception.getMessage()));
+    }
+    return user;
   }
 
   private Object getBusinessStatus(Task task) {

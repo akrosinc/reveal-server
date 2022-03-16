@@ -29,7 +29,9 @@ import com.revealprecision.revealserver.service.models.TaskSearchCriteria;
 import com.revealprecision.revealserver.util.ConditionQueryUtil;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -70,7 +72,8 @@ public class TaskService {
       LookupTaskStatusRepository lookupTaskStatusRepository, PersonService personService,
       EntityFilterService entityFilterService, GoalService goalService,
       ConditionService conditionService,
-      PlanLocationsService planLocationsService,LocationRelationshipService locationRelationshipService) {
+      PlanLocationsService planLocationsService,
+      LocationRelationshipService locationRelationshipService) {
     this.taskRepository = taskRepository;
     this.planService = planService;
     this.actionService = actionService;
@@ -81,7 +84,7 @@ public class TaskService {
     this.goalService = goalService;
     this.conditionService = conditionService;
     this.planLocationsService = planLocationsService;
-    this.locationRelationshipService  = locationRelationshipService;
+    this.locationRelationshipService = locationRelationshipService;
 
   }
 
@@ -328,16 +331,24 @@ public class TaskService {
     taskRepository.save(task);
   }
 
- public List<Task> getTasksByPlanAndJurisdictionList(UUID planIdentifier,
-      List<String> jurisdictionList) {
-   Plan plan = planService.getPlanByIdentifier(planIdentifier);
-   LocationHierarchy locationHierarchy = plan.getLocationHierarchy();
-   List<UUID> parentLocationIdentifiers = jurisdictionList.stream().map(UUID::fromString).collect(
-       Collectors.toList());
-   List<Location> childLocations = locationRelationshipService
-       .getLocationChildrenByLocationParentIdentifierAndHierarchyIdentifier(
-           parentLocationIdentifiers, locationHierarchy.getIdentifier());
-     return taskRepository.findByPlanAndBaseEntityIdentifiers(plan,childLocations.stream().map(Location::getIdentifier).collect(
-         Collectors.toList()));
- }
+  public Map<UUID, List<Task>> getTasksPerJurisdictionIdentifier(UUID planIdentifier,
+      List<UUID> jurisdictionIdentifiers) {
+    Plan plan = planService.getPlanByIdentifier(planIdentifier);
+    LocationHierarchy locationHierarchy = plan.getLocationHierarchy();
+    Map<UUID, List<Task>> tasksToJurisdictions = new HashMap<>();
+
+    jurisdictionIdentifiers.stream().forEach(jurisdictionIdentifier -> {
+      List<Location> childLocations = locationRelationshipService
+          .getLocationChildrenByLocationParentIdentifierAndHierarchyIdentifier(
+              List.of(jurisdictionIdentifier), locationHierarchy.getIdentifier());
+
+      List<Task> tasks = taskRepository.findByPlanAndBaseEntityIdentifiers(plan,
+          childLocations.stream().map(Location::getIdentifier).collect(
+              Collectors.toList()));
+      if (!tasks.isEmpty()) {
+        tasksToJurisdictions.put(jurisdictionIdentifier, tasks);
+      }
+    });
+    return tasksToJurisdictions;
+  }
 }
