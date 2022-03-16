@@ -287,7 +287,8 @@ public class TaskService {
       LookupTaskStatus lookupTaskStatus, Task task) {
     Action action = task.getAction();
     List<PlanLocations> planLocationsForLocation = new ArrayList<>();
-    if (action.getLookupEntityType().getCode().equals(ENTITY_LOCATION)) {
+    boolean isLocationEntity = action.getLookupEntityType().getCode().equals(ENTITY_LOCATION);
+    if (isLocationEntity) {
       if (task.getLocation() != null) {
         planLocationsForLocation = planLocationsService.getPlanLocationsByLocationIdentifier(
             task.getLocation().getIdentifier());
@@ -295,7 +296,8 @@ public class TaskService {
     }
 
     List<PlanLocations> planLocationsForPerson = new ArrayList<>();
-    if (action.getLookupEntityType().getCode().equals(ENTITY_PERSON)) {
+    boolean isPersonEntity = action.getLookupEntityType().getCode().equals(ENTITY_PERSON);
+    if (isPersonEntity) {
       if (task.getPerson() != null) {
         planLocationsForPerson = planLocationsService.getPlanLocationsByLocationIdentifierList(
             task.getPerson().getLocations().stream()
@@ -307,28 +309,31 @@ public class TaskService {
     if (planLocationsForLocation.isEmpty() && planLocationsForPerson.isEmpty()) {
       task.setLookupTaskStatus(lookupTaskStatus);
     } else {
-      if (action.getLookupEntityType().getCode().equals(ENTITY_LOCATION)) {
+      List<Organization> organizations = new ArrayList<>();
+      if (isLocationEntity) {
         if (planLocationsForLocation.size() > 0) {
-          List<Organization> organizations = planLocationsForLocation.stream().filter(
-              planLocations1 -> planLocations1.getPlan().getIdentifier().equals(planIdentifier))
-              .flatMap(planLocation -> planLocation.getPlanAssignments().stream())
-              .map(PlanAssignment::getOrganization)
-              .collect(Collectors.toList());
-          task.setOrganizations(organizations);
+           organizations = getOrganizationsFromAssignedLocations(planIdentifier,
+               planLocationsForLocation);
         }
       }
-      if (action.getLookupEntityType().getCode().equals(ENTITY_PERSON)) {
+      if (isPersonEntity) {
         if (planLocationsForPerson.size() > 0) {
-          List<Organization> organizations = planLocationsForPerson.stream().filter(
-              planLocations1 -> planLocations1.getPlan().getIdentifier().equals(planIdentifier))
-              .flatMap(planLocation -> planLocation.getPlanAssignments().stream())
-              .map(PlanAssignment::getOrganization)
-              .collect(Collectors.toList());
-          task.setOrganizations(organizations);
+           organizations = getOrganizationsFromAssignedLocations(planIdentifier,
+               planLocationsForPerson);
         }
+        task.setOrganizations(organizations);
       }
     }
     taskRepository.save(task);
+  }
+
+  private List<Organization> getOrganizationsFromAssignedLocations(UUID planIdentifier,
+      List<PlanLocations> planLocationsForPerson) {
+    return planLocationsForPerson.stream().filter(
+        planLocations1 -> planLocations1.getPlan().getIdentifier().equals(planIdentifier))
+        .flatMap(planLocation -> planLocation.getPlanAssignments().stream())
+        .map(PlanAssignment::getOrganization)
+        .collect(Collectors.toList());
   }
 
   public Map<UUID, List<Task>> getTasksPerJurisdictionIdentifier(UUID planIdentifier,
