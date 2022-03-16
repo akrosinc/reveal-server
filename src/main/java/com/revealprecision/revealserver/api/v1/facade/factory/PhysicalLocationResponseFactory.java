@@ -29,7 +29,7 @@ public class PhysicalLocationResponseFactory {
       List<LocationRelationship> locationRelationships) {
     Optional<Location> parentLocationOptional = locationRelationships.stream()
         .filter(lr -> lr.getLocation().equals(location) && lr.getParentLocation() != null)
-        .map(LocationRelationship::getLocation).findFirst();
+        .map(LocationRelationship::getParentLocation).findFirst();
     Location parentLocation = null;
     if (parentLocationOptional.isPresent()) {
       parentLocation = parentLocationOptional.get();
