@@ -66,16 +66,20 @@ public class TaskFacadeService {
     List<TaskFacade> taskFacades = tasksPerJurisdictionIdentifier.entrySet().stream().map(entry -> {
       List<Task> tasks = entry.getValue();
       String groupIdentifier = entry.getKey().toString();
-      return tasks.stream().map(task -> {
-        Object businessStatus = getBusinessStatus(task);
-        String createdBy = task.getAction().getGoal().getPlan()
-            .getCreatedBy(); //TODO: confirm business rule for task creation user(owner)
-        User user = getUser(createdBy);
-        return TaskFacadeFactory.getEntity(task, (String) businessStatus, user, groupIdentifier);
-      }).collect(Collectors.toList());
+      return getTaskFacades(tasks, groupIdentifier);
     }).flatMap(Collection::stream).collect(Collectors.toList());
 
     return taskFacades;
+  }
+
+  private List<TaskFacade> getTaskFacades(List<Task> tasks, String groupIdentifier) {
+    return tasks.stream().map(task -> {
+      Object businessStatus = getBusinessStatus(task);
+      String createdBy = task.getAction().getGoal().getPlan()
+          .getCreatedBy(); //TODO: confirm business rule for task creation user(owner)
+      User user = getUser(createdBy);
+      return TaskFacadeFactory.getEntity(task, (String) businessStatus, user, groupIdentifier);
+    }).collect(Collectors.toList());
   }
 
   private User getUser(String createdByUserIdentifier) {
