@@ -1,19 +1,21 @@
-/**
- *
- */
 package com.revealprecision.revealserver.api.v1.facade.request;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
+import lombok.Getter;
+import lombok.Setter;
 
-public class TaskSyncRequestWrapper {
+@Getter
+@Setter
+public class TaskSyncRequest {
 
   @JsonProperty
   private List<String> plan = new ArrayList<>();
 
   @JsonProperty
-  private List<String> group = new ArrayList<>();
+  private List<UUID> group = new ArrayList<>();
 
   @JsonProperty
   private long serverVersion;
@@ -23,26 +25,5 @@ public class TaskSyncRequestWrapper {
 
   @JsonProperty("return_count")
   private boolean returnCount;
-
-  public List<String> getPlan() {
-    return plan;
-  }
-
-  public List<String> getGroup() {
-    return group;
-  }
-
-  public long getServerVersion() {
-    return serverVersion;
-  }
-
-  public String getOwner() {
-    return owner;
-  }
-
-
-  public boolean isReturnCount() {
-    return returnCount;
-  }
 
 }

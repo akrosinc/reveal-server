@@ -6,12 +6,13 @@ import com.revealprecision.revealserver.api.v1.facade.models.TaskFacade.TaskPrio
 import com.revealprecision.revealserver.api.v1.facade.models.TaskFacade.TaskStatus;
 import com.revealprecision.revealserver.api.v1.facade.util.DateTimeFormatter;
 import com.revealprecision.revealserver.persistence.domain.Task;
+import com.revealprecision.revealserver.persistence.domain.User;
 
 public class TaskFacadeFactory {
 
-  public static TaskFacade getEntity(Task task, String businessStatus, String userName,
+  public static TaskFacade getEntity(Task task, String businessStatus, User user,
       String group) {
-
+    String userName = user != null ? user.getUsername() : null;
     return TaskFacade.builder()
         .code(task.getAction().getTitle())
         .authoredOn(
@@ -19,7 +20,7 @@ public class TaskFacadeFactory {
         .description(task.getAction().getDescription())
         .executionPeriod(Period
             .between(DateTimeFormatter.getDateTimeFacadeStringFromLocalDateTime(
-                    task.getExecutionPeriodStart().atStartOfDay())
+                task.getExecutionPeriodStart().atStartOfDay())
                 , DateTimeFormatter.getDateTimeFacadeStringFromLocalDateTime(
                     task.getExecutionPeriodEnd().atStartOfDay())))
         .focus(task.getAction().getIdentifier().toString())
