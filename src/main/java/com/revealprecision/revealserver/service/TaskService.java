@@ -321,8 +321,8 @@ public class TaskService {
            organizations = getOrganizationsFromAssignedLocations(planIdentifier,
                planLocationsForPerson);
         }
-        task.setOrganizations(organizations);
       }
+      task.setOrganizations(organizations);
     }
     taskRepository.save(task);
   }
