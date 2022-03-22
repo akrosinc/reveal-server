@@ -17,4 +17,6 @@ public interface ActionRepository extends EntityGraphJpaRepository<Action, UUID>
   Page<Action> getActions(@Param("identifier") UUID identifier, Pageable pageable);
 
   List<Action> findActionsByGoal_Identifier(UUID goalIdentifier);
+
+  Action findByTitle(String title);
 }

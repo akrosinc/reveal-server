@@ -24,6 +24,7 @@ import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.Task;
 import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.service.ActionService;
+import com.revealprecision.revealserver.service.GoalService;
 import com.revealprecision.revealserver.service.LocationService;
 import com.revealprecision.revealserver.service.PersonService;
 import com.revealprecision.revealserver.service.PlanService;
@@ -48,6 +49,7 @@ import org.springframework.stereotype.Service;
 public class TaskFacadeService {
 
   public static final String GENERAL = "GENERAL";
+  public static final String DEFAULT_BUSINESS_STATUS = "Not Visited";
   private final MetaDataJdbcService metaDataJdbcService;
   private final UserService userService;
   private final TaskFacadeProperties taskFacadeProperties;
@@ -99,7 +101,7 @@ public class TaskFacadeService {
       businessStatusField = taskFacadeProperties.getBusinessStatusMapping().get(GENERAL);
     }
 
-    Object businessStatus = null;
+    Object businessStatus = DEFAULT_BUSINESS_STATUS;
     if (task.getLocation() != null) {
       Pair<Class<?>, Object> locationMetadata = metaDataJdbcService.getMetadataFor(LOCATION,
           task.getLocation().getIdentifier()).get(businessStatusField);
@@ -183,8 +185,9 @@ public class TaskFacadeService {
 
   private void saveTask(TaskDto taskDto) {
 
-    Action action = actionService.getByIdentifier(UUID.fromString(taskDto.getFocus()));
+    String taskCode = taskDto.getCode();
     Plan plan = planService.getPlanByIdentifier(UUID.fromString(taskDto.getPlanIdentifier()));
+    Action action = actionService.findByTitle(taskCode);
     List<LookupTaskStatus> lookupTaskStatuses = taskService.getAllTaskStatus();
 
     Optional<LookupTaskStatus> taskStatus = lookupTaskStatuses.stream().filter(

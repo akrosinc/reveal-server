@@ -70,7 +70,12 @@ public class ActionService {
     }
     return actionRepository.getActions(goalIdentifier, pageable);
   }
-  public List<Action> getActionsByGoalIdentifier(UUID goalIdentifier){
+
+  public List<Action> getActionsByGoalIdentifier(UUID goalIdentifier) {
     return actionRepository.findActionsByGoal_Identifier(goalIdentifier);
+  }
+
+  public Action findByTitle(String title) {
+    return actionRepository.findByTitle(title);
   }
 }
