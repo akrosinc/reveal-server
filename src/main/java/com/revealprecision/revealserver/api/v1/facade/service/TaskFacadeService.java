@@ -24,7 +24,6 @@ import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.Task;
 import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.service.ActionService;
-import com.revealprecision.revealserver.service.GoalService;
 import com.revealprecision.revealserver.service.LocationService;
 import com.revealprecision.revealserver.service.PersonService;
 import com.revealprecision.revealserver.service.PlanService;
@@ -209,10 +208,6 @@ public class TaskFacadeService {
             taskDto.getLastModified());
 
     if (taskStatus.isPresent()) {
-
-      if (task.getLastModified() != null && LastModifierFromAndroid
-          .isAfter(task.getLastModified())) {
-
         task.setLookupTaskStatus(taskStatus.get());
         task.setAction(action);
         task.setDescription(taskDto.getDescription());
@@ -229,13 +224,15 @@ public class TaskFacadeService {
             taskDto.getExecutionPeriod().getStart()).toLocalDate());
         task.setLastModified(LastModifierFromAndroid);
 
-        if (lookupEntityType.getCode().equals(PERSON_ENTITY_NAME)) {
+      boolean isPersonEntity = lookupEntityType!= null && PERSON_ENTITY_NAME.equals(lookupEntityType.getCode());
+      if (isPersonEntity) {
           Person person = personService.getPersonByIdentifier(
               UUID.fromString(taskDto.getForEntity()));
           task.setPerson(person);
         }
 
-        if (lookupEntityType.getCode().equals(LOCATION_ENTITY_NAME)) {
+      boolean isLocationEntity = lookupEntityType!= null && LOCATION_ENTITY_NAME.equals(lookupEntityType.getCode());
+      if (isLocationEntity) {
           Location location = locationService.findByIdentifier(
               UUID.fromString(taskDto.getForEntity()));
           task.setLocation(location);
@@ -247,10 +244,6 @@ public class TaskFacadeService {
         setBusinessStatus(task, taskDto.getBusinessStatus());
         taskService.updateOrganisationsAndLocationsForTask(plan.getIdentifier(), taskStatus.get(),
             task);
-      } else {
-        log.warn(
-            "Ignoring this task from sync as the task submitted is older than the task in the server");
-      }
     } else {
       log.error("Unknown task state in sync: {}", taskDto.getStatus().name());
       throw new NotFoundException(
