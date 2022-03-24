@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.persistence.domain;
 
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 import javax.persistence.Entity;
@@ -66,7 +67,7 @@ public class Person extends AbstractAuditableEntity {
       joinColumns = @JoinColumn(name = "person_identifier"),
       inverseJoinColumns = @JoinColumn(name = "location_identifier")
   )
-  private Set<Location> locations;
+  private Set<Location> locations; //TODO: Design needs to be updated on this person location story, what about initialization, especially with other parts of code depending on these locations
 
   @OneToOne(mappedBy = "person")
   private PersonMetadata personMetadata;

@@ -208,42 +208,52 @@ public class TaskFacadeService {
             taskDto.getLastModified());
 
     if (taskStatus.isPresent()) {
-        task.setLookupTaskStatus(taskStatus.get());
-        task.setAction(action);
-        task.setDescription(taskDto.getDescription());
-        task.setIdentifier(UUID.fromString(taskDto.getIdentifier()));
-        task.setPriority(TaskPriorityEnum.valueOf(taskDto.getPriority().name().toUpperCase()));
-        task.setPlan(plan);
-        task.setAuthoredOn(DateTimeFormatter.getLocalDateTimeFromAndroidFacadeString(
-            taskDto.getAuthoredOn()));
-        task.setExecutionPeriodEnd(taskDto.getExecutionPeriod().getEnd() != null
-            ? DateTimeFormatter.getLocalDateTimeFromAndroidFacadeString(
-            taskDto.getExecutionPeriod().getEnd()).toLocalDate()
-            : action.getTimingPeriodEnd());
-        task.setExecutionPeriodStart(DateTimeFormatter.getLocalDateTimeFromAndroidFacadeString(
-            taskDto.getExecutionPeriod().getStart()).toLocalDate());
-        task.setLastModified(LastModifierFromAndroid);
+      task.setLookupTaskStatus(taskStatus.get());
+      task.setAction(action);
+      task.setDescription(taskDto.getDescription());
+      task.setIdentifier(UUID.fromString(taskDto.getIdentifier()));
+      task.setPriority(TaskPriorityEnum.valueOf(taskDto.getPriority().name().toUpperCase()));
+      task.setPlan(plan);
+      task.setAuthoredOn(DateTimeFormatter.getLocalDateTimeFromAndroidFacadeString(
+          taskDto.getAuthoredOn()));
+      task.setExecutionPeriodEnd(taskDto.getExecutionPeriod().getEnd() != null
+          ? DateTimeFormatter.getLocalDateTimeFromAndroidFacadeString(
+          taskDto.getExecutionPeriod().getEnd()).toLocalDate()
+          : action.getTimingPeriodEnd());
+      task.setExecutionPeriodStart(DateTimeFormatter.getLocalDateTimeFromAndroidFacadeString(
+          taskDto.getExecutionPeriod().getStart()).toLocalDate());
+      task.setLastModified(LastModifierFromAndroid);
 
-      boolean isPersonEntity = lookupEntityType!= null && PERSON_ENTITY_NAME.equals(lookupEntityType.getCode());
+      boolean isPersonEntity =
+          lookupEntityType != null && PERSON_ENTITY_NAME.equals(lookupEntityType.getCode());
       if (isPersonEntity) {
-          Person person = personService.getPersonByIdentifier(
+        Person person = null;
+        try {
+          person = personService.getPersonByIdentifier(
               UUID.fromString(taskDto.getForEntity()));
-          task.setPerson(person);
-        }
+        } catch (NotFoundException e) {
+          //We received task for new Person, record the person
+          //TODO: consume the identifier from client...
+          person = personService.createPerson(taskDto.getPersonRequest());
 
-      boolean isLocationEntity = lookupEntityType!= null && LOCATION_ENTITY_NAME.equals(lookupEntityType.getCode());
+        }
+        task.setPerson(person);
+      }
+
+      boolean isLocationEntity =
+          lookupEntityType != null && LOCATION_ENTITY_NAME.equals(lookupEntityType.getCode());
       if (isLocationEntity) {
-          Location location = locationService.findByIdentifier(
-              UUID.fromString(taskDto.getForEntity()));
-          task.setLocation(location);
-        }
+        Location location = locationService.findByIdentifier(
+            UUID.fromString(taskDto.getForEntity()));
+        task.setLocation(location);
+      }
 
-        task.setEntityStatus(EntityStatus.ACTIVE);
+      task.setEntityStatus(EntityStatus.ACTIVE);
 
-        task = taskService.saveTask(task);
-        setBusinessStatus(task, taskDto.getBusinessStatus());
-        taskService.updateOrganisationsAndLocationsForTask(plan.getIdentifier(), taskStatus.get(),
-            task);
+      task = taskService.saveTask(task);
+      setBusinessStatus(task, taskDto.getBusinessStatus());
+      taskService.updateOrganisationsAndLocationsForTask(plan.getIdentifier(), taskStatus.get(),
+          task);
     } else {
       log.error("Unknown task state in sync: {}", taskDto.getStatus().name());
       throw new NotFoundException(

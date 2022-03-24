@@ -195,7 +195,8 @@ public class TaskService {
           generateTasksUnconditionally(action, plan);
         } else {
           try {
-            generateTasksByActionConditionQuery(action, conditions.get(0), plan); //Assume 1-1 action to condition,maybe change entity to reflect such
+            generateTasksByActionConditionQuery(action, conditions.get(0),
+                plan); //Assume 1-1 action to condition,maybe change entity to reflect such
           } catch (QueryGenerationException e) {
             log.error("Cannot generate tasks for condition: {}, action: {}, plan: {}",
                 conditions.get(0), action, plan);
@@ -240,11 +241,11 @@ public class TaskService {
     taskLocations.stream().forEach(location -> {
       Task task = createTaskObjectFromActionAndEntityId(action, location.getIdentifier(), plan);
       if (task != null) {
-          tasks.add(task);
+        tasks.add(task);
       }
     });
 
-    if(!tasks.isEmpty()){
+    if (!tasks.isEmpty()) {
       taskRepository.saveAll(tasks);
     }
   }
@@ -318,7 +319,8 @@ public class TaskService {
       LookupTaskStatus lookupTaskStatus, Task task) {
     Action action = task.getAction();
     List<PlanLocations> planLocationsForLocation = new ArrayList<>();
-    boolean isLocationEntity = action.getLookupEntityType().getCode().equals(ENTITY_LOCATION);
+    boolean isLocationEntity = action.getLookupEntityType().getCode() != null && ENTITY_LOCATION
+        .equals(action.getLookupEntityType().getCode());
     if (isLocationEntity) {
       if (task.getLocation() != null) {
         planLocationsForLocation = planLocationsService.getPlanLocationsByLocationIdentifier(
@@ -327,14 +329,13 @@ public class TaskService {
     }
 
     List<PlanLocations> planLocationsForPerson = new ArrayList<>();
-    boolean isPersonEntity = action.getLookupEntityType().getCode().equals(ENTITY_PERSON);
-    if (isPersonEntity) {
-      if (task.getPerson() != null) {
-        planLocationsForPerson = planLocationsService.getPlanLocationsByLocationIdentifierList(
-            task.getPerson().getLocations().stream()
-                .map(Location::getIdentifier)
-                .collect(Collectors.toList()));
-      }
+    boolean isPersonEntity = action.getLookupEntityType() != null && ENTITY_PERSON
+        .equals(action.getLookupEntityType().getCode());
+    if (isPersonEntity && task.getPerson() != null && task.getPerson().getLocations() != null) {
+      planLocationsForPerson = planLocationsService.getPlanLocationsByLocationIdentifierList(
+          task.getPerson().getLocations().stream()
+              .map(Location::getIdentifier)
+              .collect(Collectors.toList()));
     }
 
     if (planLocationsForLocation.isEmpty() && planLocationsForPerson.isEmpty()) {

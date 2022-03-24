@@ -9,7 +9,6 @@ import com.revealprecision.revealserver.enums.LookupUtil;
 import com.revealprecision.revealserver.enums.NameUseEnum;
 import com.revealprecision.revealserver.persistence.domain.Person;
 import com.revealprecision.revealserver.persistence.domain.PersonMetadata;
-import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Date;
 import java.util.stream.Collectors;
