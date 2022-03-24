@@ -849,7 +849,7 @@ CREATE TABLE IF NOT EXISTS person
     name_prefix       character varying(30)    NOT NULL,
     name_suffix       character varying DEFAULT ''::character varying,
     gender            character varying(30)    NOT NULL,
-    birth_date        date                     NOT NULL,
+    birth_date        date,
     entity_status     character varying(36)    NOT NULL,
     created_by        character varying(36)    NOT NULL,
     created_datetime  timestamp with time zone NOT NULL,
@@ -871,7 +871,7 @@ CREATE TABLE IF NOT EXISTS person_aud
     name_prefix       character varying(30)    NOT NULL,
     name_suffix       character varying DEFAULT ''::character varying,
     gender            character varying(30)    NOT NULL,
-    birth_date        date                     NOT NULL,
+    birth_date        date,
     created_by        character varying(36)    NOT NULL,
     created_datetime  timestamp with time zone NOT NULL,
     modified_by       character varying(36)    NOT NULL,
@@ -1111,7 +1111,7 @@ CREATE TABLE IF NOT EXISTS task_organization_aud
     REVTYPE                 INTEGER NULL,
     task_identifier         uuid    NOT NULL,
     organization_identifier uuid    NOT NULL,
-    PRIMARY KEY (identifier,REV)
+    PRIMARY KEY (identifier, REV)
 );
 
 CREATE TABLE IF NOT EXISTS setting
