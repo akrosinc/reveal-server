@@ -233,9 +233,7 @@ public class TaskFacadeService {
               UUID.fromString(taskDto.getForEntity()));
         } catch (NotFoundException e) {
           //We received task for new Person, record the person
-          //TODO: consume the identifier from client...
           person = personService.createPerson(taskDto.getPersonRequest());
-
         }
         task.setPerson(person);
       }

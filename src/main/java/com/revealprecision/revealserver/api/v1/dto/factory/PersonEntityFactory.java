@@ -5,6 +5,7 @@ import com.revealprecision.revealserver.persistence.domain.Person;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
@@ -13,7 +14,8 @@ public class PersonEntityFactory {
 
   public static Person fromRequestObj(PersonRequest personRequest) {
     LocalDate birthDate = personRequest.getBirthDate();
-    return Person.builder().nameFamily(personRequest.getName().getFamily())
+    UUID identifier = personRequest.getIdentifier();
+    return Person.builder().identifier(identifier).nameFamily(personRequest.getName().getFamily())
         .nameGiven(personRequest.getName().getGiven())
         .namePrefix(personRequest.getName().getPrefix())
         .nameSuffix(personRequest.getName().getSuffix()).nameText(personRequest.getName().getText())
