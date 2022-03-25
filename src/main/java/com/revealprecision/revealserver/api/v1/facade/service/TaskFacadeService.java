@@ -6,7 +6,6 @@ import com.revealprecision.revealserver.api.v1.facade.models.TaskFacade;
 import com.revealprecision.revealserver.api.v1.facade.models.TaskUpdateFacade;
 import com.revealprecision.revealserver.api.v1.facade.util.DateTimeFormatter;
 import com.revealprecision.revealserver.enums.EntityStatus;
-import com.revealprecision.revealserver.enums.LookupEntityTypeCodeEnum;
 import com.revealprecision.revealserver.enums.TaskPriorityEnum;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.Action;
@@ -41,6 +40,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @RequiredArgsConstructor
 public class TaskFacadeService {
+  public static final String DEFAULT_BUSINESS_STATUS = "Not Visited";
 
   private final UserService userService;
   private final TaskService taskService;
@@ -136,8 +136,9 @@ public class TaskFacadeService {
 
   private void saveTask(TaskDto taskDto) {
 
-    Action action = actionService.getByIdentifier(UUID.fromString(taskDto.getFocus()));
+    String taskCode = taskDto.getCode();
     Plan plan = planService.getPlanByIdentifier(UUID.fromString(taskDto.getPlanIdentifier()));
+    Action action = actionService.findByTitle(taskCode);
     List<LookupTaskStatus> lookupTaskStatuses = taskService.getAllTaskStatus();
 
     Optional<LookupTaskStatus> taskStatus = lookupTaskStatuses.stream().filter(
@@ -151,55 +152,57 @@ public class TaskFacadeService {
       task = taskService.getTaskByIdentifier(UUID.fromString(taskDto.getIdentifier()));
     } catch (NotFoundException notFoundException) {
       task = new Task();
+      task.setIdentifier(UUID.fromString(taskDto.getIdentifier()));
     }
 
     LocalDateTime LastModifierFromAndroid = DateTimeFormatter.getLocalDateTimeFromAndroidFacadeString(
         taskDto.getLastModified());
 
     if (taskStatus.isPresent()) {
+      task.setLookupTaskStatus(taskStatus.get());
+      task.setAction(action);
+      task.setDescription(taskDto.getDescription());
+      task.setIdentifier(UUID.fromString(taskDto.getIdentifier()));
+      task.setPriority(TaskPriorityEnum.valueOf(taskDto.getPriority().name().toUpperCase()));
+      task.setPlan(plan);
+      task.setAuthoredOn(DateTimeFormatter.getLocalDateTimeFromAndroidFacadeString(
+          taskDto.getAuthoredOn()));
+      task.setExecutionPeriodEnd(taskDto.getExecutionPeriod().getEnd() != null
+          ? DateTimeFormatter.getLocalDateTimeFromAndroidFacadeString(
+          taskDto.getExecutionPeriod().getEnd()).toLocalDate()
+          : action.getTimingPeriodEnd());
+      task.setExecutionPeriodStart(DateTimeFormatter.getLocalDateTimeFromAndroidFacadeString(
+          taskDto.getExecutionPeriod().getStart()).toLocalDate());
+      task.setLastModified(LastModifierFromAndroid);
 
-      if (task.getLastModified() != null && LastModifierFromAndroid.isAfter(
-          task.getLastModified())) {
-
-        task.setLookupTaskStatus(taskStatus.get());
-        task.setAction(action);
-        task.setDescription(taskDto.getDescription());
-        task.setIdentifier(UUID.fromString(taskDto.getIdentifier()));
-        task.setPriority(TaskPriorityEnum.valueOf(taskDto.getPriority().name().toUpperCase()));
-        task.setPlan(plan);
-        task.setAuthoredOn(
-            DateTimeFormatter.getLocalDateTimeFromAndroidFacadeString(taskDto.getAuthoredOn()));
-        task.setExecutionPeriodEnd(taskDto.getExecutionPeriod().getEnd() != null
-            ? DateTimeFormatter.getLocalDateTimeFromAndroidFacadeString(
-            taskDto.getExecutionPeriod().getEnd()).toLocalDate() : action.getTimingPeriodEnd());
-        task.setExecutionPeriodStart(DateTimeFormatter.getLocalDateTimeFromAndroidFacadeString(
-            taskDto.getExecutionPeriod().getStart()).toLocalDate());
-        task.setLastModified(LastModifierFromAndroid);
-
-        if (lookupEntityType.getCode()
-            .equals(LookupEntityTypeCodeEnum.PERSON_CODE.getLookupEntityType())) {
-          Person person = personService.getPersonByIdentifier(
+      boolean isPersonEntity =
+          lookupEntityType != null && PERSON_ENTITY_NAME.equals(lookupEntityType.getCode());
+      if (isPersonEntity) {
+        Person person = null;
+        try {
+          person = personService.getPersonByIdentifier(
               UUID.fromString(taskDto.getForEntity()));
-          task.setPerson(person);
+        } catch (NotFoundException e) {
+          //We received task for new Person, record the person
+          person = personService.createPerson(taskDto.getPersonRequest());
         }
-
-        if (lookupEntityType.getCode()
-            .equals(LookupEntityTypeCodeEnum.LOCATION_CODE.getLookupEntityType())) {
-          Location location = locationService.findByIdentifier(
-              UUID.fromString(taskDto.getForEntity()));
-          task.setLocation(location);
-        }
-
-        task.setEntityStatus(EntityStatus.ACTIVE);
-
-        task = taskService.saveTask(task);
-        businessStatusService.setBusinessStatus(task, taskDto.getBusinessStatus());
-        taskService.updateOrganisationsAndLocationsForTask(plan.getIdentifier(), taskStatus.get(),
-            task);
-      } else {
-        log.warn(
-            "Ignoring this task from sync as the task submitted is older than the task in the server");
+        task.setPerson(person);
       }
+
+      boolean isLocationEntity =
+          lookupEntityType != null && LOCATION_ENTITY_NAME.equals(lookupEntityType.getCode());
+      if (isLocationEntity) {
+        Location location = locationService.findByIdentifier(
+            UUID.fromString(taskDto.getForEntity()));
+        task.setLocation(location);
+      }
+
+      task.setEntityStatus(EntityStatus.ACTIVE);
+
+      task = taskService.saveTask(task);
+      businessStatusService.setBusinessStatus(task, taskDto.getBusinessStatus());
+      taskService.updateOrganisationsAndLocationsForTask(plan.getIdentifier(), taskStatus.get(),
+          task);
     } else {
       log.error("Unknown task state in sync: {}", taskDto.getStatus().name());
       throw new NotFoundException(

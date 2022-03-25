@@ -26,6 +26,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.FieldNameConstants;
+import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 import org.hibernate.envers.Audited;
@@ -43,7 +44,8 @@ import org.hibernate.envers.Audited;
 public class Task extends AbstractAuditableEntity {
 
   @Id
-  @GeneratedValue
+  @GeneratedValue(generator = "custom-generator")
+  @GenericGenerator(name = "custom-generator",strategy = "com.revealprecision.revealserver.persistence.generator.CustomGenerator")
   @NotNull(message = "identifier can not be null")
   private UUID identifier;
 

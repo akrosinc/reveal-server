@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import javax.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageImpl;
@@ -47,7 +48,6 @@ public class PersonController {
       "Person"})
   @ResponseStatus(HttpStatus.OK)
   @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-
   public ResponseEntity<?> getPersonsSearch(
       @Parameter(description = "Single value search across values") @RequestParam(name = "search", required = false) String searchParam,
       @Parameter(description = "Multi-value search across specified values") @Nullable PersonSearchCriteria criteria,
@@ -106,8 +106,8 @@ public class PersonController {
   @Operation(summary = "Create a person", description = "Create a Person", tags = {"Person"})
   @ResponseStatus(HttpStatus.CREATED)
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-  public PersonResponse createPerson(@RequestBody PersonRequest personRequest) {
-    return PersonResponseFactory.fromEntity(personService.createPerson(personRequest));
+  public ResponseEntity<PersonResponse> createPerson(@Valid @RequestBody PersonRequest personRequest) {
+    return ResponseEntity.status(HttpStatus.OK).body(PersonResponseFactory.fromEntity(personService.createPerson(personRequest)));
   }
 
   @Operation(summary = "Delete a person by identfier", description = "Delete a person by identfier", tags = {
