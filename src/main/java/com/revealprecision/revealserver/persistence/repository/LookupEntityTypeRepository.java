@@ -10,4 +10,6 @@ import org.springframework.stereotype.Repository;
 public interface LookupEntityTypeRepository extends JpaRepository<LookupEntityType, UUID> {
 
   Optional<LookupEntityType> findLookupEntityTypeByTableName(String tableName);
+
+  Optional<LookupEntityType> findLookupEntityTypeByCode(String code);
 }
