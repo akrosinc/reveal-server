@@ -201,6 +201,7 @@ public class TaskFacadeService {
           UUID.fromString(taskDto.getIdentifier()));
     } catch (NotFoundException notFoundException) {
       task = new Task();
+      task.setIdentifier(UUID.fromString(taskDto.getIdentifier()));
     }
 
     LocalDateTime LastModifierFromAndroid = DateTimeFormatter
