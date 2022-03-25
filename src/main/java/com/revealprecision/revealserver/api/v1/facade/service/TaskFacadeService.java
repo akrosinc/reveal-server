@@ -6,6 +6,7 @@ import com.revealprecision.revealserver.api.v1.facade.models.TaskFacade;
 import com.revealprecision.revealserver.api.v1.facade.models.TaskUpdateFacade;
 import com.revealprecision.revealserver.api.v1.facade.util.DateTimeFormatter;
 import com.revealprecision.revealserver.enums.EntityStatus;
+import com.revealprecision.revealserver.enums.LookupEntityTypeCodeEnum;
 import com.revealprecision.revealserver.enums.TaskPriorityEnum;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.Action;
@@ -40,7 +41,6 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @RequiredArgsConstructor
 public class TaskFacadeService {
-  public static final String DEFAULT_BUSINESS_STATUS = "Not Visited";
 
   private final UserService userService;
   private final TaskService taskService;
@@ -176,7 +176,8 @@ public class TaskFacadeService {
       task.setLastModified(LastModifierFromAndroid);
 
       boolean isPersonEntity =
-          lookupEntityType != null && PERSON_ENTITY_NAME.equals(lookupEntityType.getCode());
+          lookupEntityType != null && LookupEntityTypeCodeEnum.PERSON_CODE.getLookupEntityType()
+              .equals(lookupEntityType.getCode());
       if (isPersonEntity) {
         Person person = null;
         try {
@@ -190,7 +191,8 @@ public class TaskFacadeService {
       }
 
       boolean isLocationEntity =
-          lookupEntityType != null && LOCATION_ENTITY_NAME.equals(lookupEntityType.getCode());
+          lookupEntityType != null && LookupEntityTypeCodeEnum.LOCATION_CODE.getLookupEntityType()
+              .equals(lookupEntityType.getCode());
       if (isLocationEntity) {
         Location location = locationService.findByIdentifier(
             UUID.fromString(taskDto.getForEntity()));

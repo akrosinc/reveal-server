@@ -74,7 +74,7 @@ public class BusinessStatusService {
       businessStatusField = businessStatusProperties.getBusinessStatusMapping().get(GENERAL);
     }
 
-    Object businessStatus = null;
+    Object businessStatus = businessStatusProperties.getDefaultLocationBusinessStatus();
     if (task.getLocation() != null) {
       org.apache.commons.lang3.tuple.Pair<Class<?>, Object> locationMetadata = metaDataJdbcService.getMetadataFor(
           LookupEntityTypeTableEnum.LOCATION_TABLE.getLookupEntityType(),

@@ -18,4 +18,5 @@ public class BusinessStatusProperties {
       "business_status");
 
   String defaultLocationBusinessStatus = "Not Visited";
+  String defaultPersonBusinessStatus = "Not Visited";
 }
