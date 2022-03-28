@@ -6,6 +6,8 @@ import com.revealprecision.revealserver.api.v1.dto.request.PlanRequest;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.enums.PlanStatusEnum;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
+import com.revealprecision.revealserver.messaging.Message;
+import com.revealprecision.revealserver.messaging.TopicConstants;
 import com.revealprecision.revealserver.persistence.domain.Action;
 import com.revealprecision.revealserver.persistence.domain.Condition;
 import com.revealprecision.revealserver.persistence.domain.Form;
@@ -23,9 +25,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 @RequiredArgsConstructor
@@ -37,6 +41,9 @@ public class PlanService {
   private final LocationHierarchyService locationHierarchyService;
   private final LookupInterventionTypeService lookupInterventionTypeService;
   private final TaskService taskService;
+
+  @Autowired
+  private KafkaTemplate<String, Message> kafkaTemplate;
 
   public static boolean isNullOrEmpty(final Collection<?> c) {
     return c == null || c.isEmpty();
@@ -112,5 +119,10 @@ public class PlanService {
   private void generateAndUpdateTasks(UUID planIdentifier) {
     taskService.generateTasksByPlanId(planIdentifier);
     taskService.updateOrganizationsAndLocationsForTasksByPlanIdentifier(planIdentifier);
+  }
+
+  public void test(){
+    System.out.println("send it");
+    kafkaTemplate.send(TopicConstants.PLAN_CREATE, new Message("dsa", "aaa"));
   }
 }

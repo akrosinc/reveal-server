@@ -1,12 +1,18 @@
 package com.revealprecision.revealserver.persistence.domain;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Data;
-
 import java.io.Serializable;
 import java.util.List;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+//@JsonDeserialize(using = ItemDeserializer.class)
 public class Geometry implements Serializable {
 
   public enum GeometryType {
@@ -27,6 +33,14 @@ public class Geometry implements Serializable {
     }
   }
 
-  private GeometryType type;
+  private String type;
+
   List<Object> coordinates;
+
+  @Override
+  public String toString() {
+    return "{\"type\":\"" + type +
+        "\", \"coordinates\":" + coordinates +
+        '}';
+  }
 }

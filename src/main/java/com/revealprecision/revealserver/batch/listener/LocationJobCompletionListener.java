@@ -37,8 +37,13 @@ public class LocationJobCompletionListener implements JobExecutionListener {
 
     List<Location> addedLocations = locationBulkRepository.getAllCreatedInBulk(
         locationBulk.getIdentifier());
-    addedLocations.forEach(
-        locationRelationshipService::createRelationshipForImportedLocation);
+    addedLocations.forEach(location -> {
+      try {
+        locationRelationshipService.createRelationshipForImportedLocation(location);
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    });
 
     locationBulk.setStatus(BulkStatusEnum.COMPLETE);
     locationBulkRepository.save(locationBulk);

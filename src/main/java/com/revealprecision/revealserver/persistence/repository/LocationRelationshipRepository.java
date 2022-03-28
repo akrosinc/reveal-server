@@ -24,6 +24,12 @@ public interface LocationRelationshipRepository extends JpaRepository<LocationRe
   Boolean hasParentChildRelationship(@Param("parent") String parent,
       @Param("child") String child);
 
+  @Query(value = "SELECT cast(lo.identifier as varchar) from location lo "
+      + "left join geographic_level gl on lo.geographic_level_identifier = gl.identifier "
+      + "where ST_Contains(ST_AsText(ST_GeomFromGeoJSON(lo.geometry)),ST_AsText(ST_Centroid(ST_GeomFromGeoJSON(:geometry)))) "
+      + "and gl.name = :geographic_level", nativeQuery = true)
+  UUID getParentLocation(@Param("geometry") String geometry, @Param("geographic_level") String geographic_level);
+
   @Query(value = "select lr.location.identifier "
       + "from LocationRelationship lr "
       + "where lr.locationHierarchy.identifier = :hierarchyIdentifier "

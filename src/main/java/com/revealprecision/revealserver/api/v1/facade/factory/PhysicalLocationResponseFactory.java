@@ -20,7 +20,7 @@ public class PhysicalLocationResponseFactory {
         .parentId(parentLocation != null ? parentLocation.getIdentifier().toString() : null)
         .build();
     PhysicalLocation physicalLocation = PhysicalLocation.builder()
-        .id(location.getIdentifier().toString()).type(location.getGeometry().getType().value())
+        .id(location.getIdentifier().toString()).type(location.getGeometry().getType())
         .geometry(location.getGeometry()).properties(locationPropertyFacade).build();
     return physicalLocation;
   }

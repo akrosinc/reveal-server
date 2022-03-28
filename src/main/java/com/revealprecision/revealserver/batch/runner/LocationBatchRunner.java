@@ -9,6 +9,7 @@ import org.springframework.batch.core.repository.JobExecutionAlreadyRunningExcep
 import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteException;
 import org.springframework.batch.core.repository.JobRestartException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -18,7 +19,7 @@ public class LocationBatchRunner {
   private Job importLocationJob;
 
   @Autowired
-  public LocationBatchRunner(Job importLocationJob, JobLauncher jobLauncher) {
+  public LocationBatchRunner(Job importLocationJob, @Qualifier("asyncJobLauncher") JobLauncher jobLauncher) {
     this.importLocationJob = importLocationJob;
     this.jobLauncher = jobLauncher;
   }
