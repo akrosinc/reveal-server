@@ -17,6 +17,7 @@ public interface LocationRelationshipRepository extends JpaRepository<LocationRe
   Optional<LocationRelationship> findByLocationHierarchyIdentifierAndLocationIdentifier(
       UUID locationHierarchyIdentifier, UUID locationIdentifier);
 
+  @Query(value = "select lr from LocationRelationship lr where lr.locationHierarchy.identifier = :locationHierarchyIdentifier and lr.location.geographicLevel.name <> 'structure'")
   Optional<List<LocationRelationship>> findByLocationHierarchyIdentifier(
       UUID locationHierarchyIdentifier);
 
@@ -51,4 +52,11 @@ public interface LocationRelationshipRepository extends JpaRepository<LocationRe
   List<Location> findLocationRelationshipUuidsByParentLocation_IdentifierAndHierarchyIdentifier(
       @Param("parentLocationIdentifier") List<UUID> parentLocationIdentifiers,
       @Param("hierarchyIdentifier") UUID hierarchyIdentifier);
+
+
+  @Query(value = "select lr.location "
+      + "from LocationRelationship lr "
+      + "where lr.locationHierarchy.identifier = :hierarchyIdentifier "
+      + "and lr.parentLocation.identifier = :locationIdentifier")
+  List<Location> getChildren(@Param("hierarchyIdentifier") UUID hierarchyIdentifier, @Param("locationIdentifier") UUID locationIdentifier);
 }

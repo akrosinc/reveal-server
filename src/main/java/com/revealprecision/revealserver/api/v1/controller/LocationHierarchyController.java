@@ -2,18 +2,22 @@ package com.revealprecision.revealserver.api.v1.controller;
 
 import com.revealprecision.revealserver.annotation.AllowedSortProperties;
 import com.revealprecision.revealserver.api.v1.dto.factory.LocationHierarchyResponseFactory;
+import com.revealprecision.revealserver.api.v1.dto.factory.LocationResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.LocationHierarchyRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.GeoTreeResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationHierarchyResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.LocationResponse;
 import com.revealprecision.revealserver.enums.SummaryEnum;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.service.LocationHierarchyService;
+import com.revealprecision.revealserver.service.LocationRelationshipService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import javax.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -29,15 +33,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/v1/locationHierarchy")
 public class LocationHierarchyController {
 
   private final LocationHierarchyService locationHierarchyService;
-
-  @Autowired
-  public LocationHierarchyController(LocationHierarchyService locationHierarchyService) {
-    this.locationHierarchyService = locationHierarchyService;
-  }
+  private final LocationRelationshipService locationRelationshipService;
 
   @Operation(summary = "Create a locationHierarchy",
       description = "Create a locationHierarchy",
@@ -84,6 +85,15 @@ public class LocationHierarchyController {
             .getLocationsHierarchy(), includeGeometry);
     Page<GeoTreeResponse> pageableGeoTreeResponse = LocationHierarchyResponseFactory.generatePageableGeoTreeResponse(geoTreeResponses,pageable, search);
     return ResponseEntity.status(HttpStatus.OK).body(pageableGeoTreeResponse);
+  }
+
+  @GetMapping("/{identifier}/location/{locationIdentifier}")
+  public ResponseEntity<List<LocationResponse>> getChildLocations(@Parameter(description = "LocationHierarchy identifier") @PathVariable UUID identifier,
+      @Parameter(description = "Location identifier") @PathVariable UUID locationIdentifier) {
+    return ResponseEntity.status(HttpStatus.OK)
+        .body(locationRelationshipService.getChildreLocations(identifier, locationIdentifier).stream()
+            .map(LocationResponseFactory::fromEntitySummary)
+            .collect(Collectors.toList()));
   }
 
 

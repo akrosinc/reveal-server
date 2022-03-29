@@ -244,9 +244,6 @@ public class LocationRelationshipService {
         String parentGeographicLevelName = locationHierarchy.getNodeOrder()
             .get(nodePosition);
 
-//        Optional<GeographicLevel> parentGeographicLevel = geographicLevelRepository.findByName(parentGeographicLevelName);
-//        JSONObject json = new JSONObject(location.getGeometry().toString());
-//        UUID parentLocation = locationRelationshipRepository.getParentLocation(json.toString(), parentGeographicLevelName);
         String centroind = locationRepository.getCentroid(location.getIdentifier());
         centroind = centroind.substring(6).replace(")","");
         double x = Double.parseDouble(centroind.split(" ")[0]);
@@ -271,16 +268,14 @@ public class LocationRelationshipService {
           locationRelationshipToSave.setEntityStatus(EntityStatus.ACTIVE);
           locationRelationshipRepository.save(locationRelationshipToSave);
         }
-//        var upperGeographicLevelLocations = locationRepository
-//            .findByGeographicLevelIdentifier(parentGeographicLevel.get()
-//                .getIdentifier());
-//
-//        upperGeographicLevelLocations.stream().forEach(
-//            parentLocation -> createParentChildRelationship(parentLocation, location,
-//                locationHierarchy));
       } else if (nodePosition == -1) {
         createRelationshipForRoot(location, locationHierarchy);
       }
     }
+  }
+
+  public List<Location> getChildreLocations(UUID hierarchyIdentifier, UUID locationIdentifier) {
+    List<Location> children = locationRelationshipRepository.getChildren(hierarchyIdentifier, locationIdentifier);
+    return children;
   }
 }
