@@ -44,11 +44,9 @@ public class LocationService {
         .externalId(locationRequest.getProperties().getExternalId()).build();
     locationToSave.setEntityStatus(EntityStatus.ACTIVE);
     var savedLocation = locationRepository.save(locationToSave);
-    if (savedLocation.getGeographicLevel().getName().equalsIgnoreCase("structure")) { //TODO: to update once we figure the target level part.
-      businessStatusService.setBusinessStatusForAllKeys(savedLocation.getIdentifier(),
-          businessStatusProperties.getDefaultLocationBusinessStatus(),
-          LookupEntityTypeTableEnum.LOCATION_TABLE);
-    }
+    businessStatusService.setBusinessStatusForAllKeys(savedLocation.getIdentifier(),
+        businessStatusProperties.getDefaultLocationBusinessStatus(),
+        LookupEntityTypeTableEnum.LOCATION_TABLE);
     locationRelationshipService.updateLocationRelationshipsForNewLocation(savedLocation);
     return savedLocation;
   }
