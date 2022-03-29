@@ -50,17 +50,6 @@ VALUES (uuid_generate_v4(), 'IRS', 'IRS',
         'ACTIVE', '71fca736-c156-40bc-9de5-3ae04981fbc9', '2022-01-12 13:54:22.106221+00',
         '71fca736-c156-40bc-9de5-3ae04981fbc9', '2022-01-12 13:54:22.106221+00');
 
-INSERT INTO lookup_entity_type(identifier, code, table_name, entity_status, created_by,
-                               created_datetime, modified_by, modified_datetime)
-VALUES (uuid_generate_v4(), 'Person', 'person', 'ACTIVE', '71fca736-c156-40bc-9de5-3ae04981fbc9',
-        '2022-01-12 13:54:22.106221+00', '71fca736-c156-40bc-9de5-3ae04981fbc9',
-        '2022-01-12 13:54:22.106221+00');
-
-INSERT INTO lookup_entity_type(identifier, code, table_name, entity_status, created_by,
-                               created_datetime, modified_by, modified_datetime)
-VALUES (uuid_generate_v4(), 'Location', 'location', 'ACTIVE',
-        '71fca736-c156-40bc-9de5-3ae04981fbc9', '2022-01-12 13:54:22.106221+00',
-        '71fca736-c156-40bc-9de5-3ae04981fbc9', '2022-01-12 13:54:22.106221+00');
 
 INSERT INTO form(identifier, name, title, template, payload, entity_status, created_by,
                  created_datetime, modified_by, modified_datetime)
