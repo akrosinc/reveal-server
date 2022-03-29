@@ -165,12 +165,11 @@ public class TaskFacadeService {
       task.setIdentifier(UUID.fromString(taskDto.getIdentifier()));
       task.setPriority(TaskPriorityEnum.valueOf(taskDto.getPriority().name().toUpperCase()));
       task.setPlan(plan);
-      task.setAuthoredOn(DateTimeFormatter.getLocalDateTimeFromAndroidFacadeString(
-          taskDto.getAuthoredOn()));
+      task.setAuthoredOn(
+          DateTimeFormatter.getLocalDateTimeFromAndroidFacadeString(taskDto.getAuthoredOn()));
       task.setExecutionPeriodEnd(taskDto.getExecutionPeriod().getEnd() != null
           ? DateTimeFormatter.getLocalDateTimeFromAndroidFacadeString(
-          taskDto.getExecutionPeriod().getEnd()).toLocalDate()
-          : action.getTimingPeriodEnd());
+          taskDto.getExecutionPeriod().getEnd()).toLocalDate() : action.getTimingPeriodEnd());
       task.setExecutionPeriodStart(DateTimeFormatter.getLocalDateTimeFromAndroidFacadeString(
           taskDto.getExecutionPeriod().getStart()).toLocalDate());
       task.setLastModified(LastModifierFromAndroid);
@@ -181,8 +180,7 @@ public class TaskFacadeService {
       if (isPersonEntity) {
         Person person = null;
         try {
-          person = personService.getPersonByIdentifier(
-              UUID.fromString(taskDto.getForEntity()));
+          person = personService.getPersonByIdentifier(UUID.fromString(taskDto.getForEntity()));
         } catch (NotFoundException e) {
           //We received task for new Person, record the person
           person = personService.createPerson(taskDto.getPersonRequest());

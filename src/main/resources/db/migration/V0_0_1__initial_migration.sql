@@ -936,7 +936,7 @@ CREATE TABLE IF NOT EXISTS entity_tag_aud
     revtype                       integer,
     tag                           character varying        NOT NULL,
     value_type                    character varying        NOT NULL,
-    definition                    character varying        NOT NULL,
+    definition                    character varying,
     lookup_entity_type_identifier uuid                     NOT NULL,
     entity_status                 character varying(36)    NOT NULL,
     created_by                    character varying(36)    NOT NULL,

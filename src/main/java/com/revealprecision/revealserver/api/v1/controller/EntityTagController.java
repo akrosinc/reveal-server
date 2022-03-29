@@ -28,7 +28,7 @@ public class EntityTagController {
   @Operation(summary = "Create Tag", description = "Create Tag", tags = {"Entity Tags"})
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<EntityTagResponse> createTag(
-      @RequestBody EntityTagRequest entityTagRequest) {
+      @Valid @RequestBody EntityTagRequest entityTagRequest) {
 
     return ResponseEntity.status(HttpStatus.CREATED).body(
         EntityTagResponseFactory.fromEntity(entityTagService.createEntityTag(entityTagRequest)));

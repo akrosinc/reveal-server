@@ -11,22 +11,20 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class MetaDataJdbcService {
 
-  @Autowired
-  JdbcTemplate jdbcTemplate;
+  private final JdbcTemplate jdbcTemplate;
 
-  @Autowired
-  BusinessStatusProperties businessStatusProperties;
+  private final BusinessStatusProperties businessStatusProperties;
 
-  @Autowired
-  EntityTagService entityTagService;
+  private final EntityTagService entityTagService;
 
 
   public Map<String, Pair<Class<?>, Object>> getMetadataFor(String entityTable, UUID identifier) {
@@ -35,7 +33,7 @@ public class MetaDataJdbcService {
 
     String query = "SELECT t.key,t.value->>'value',t.value->>'entity_tag',et.value_type From (\n"
         + "SELECT  (jsonb_each(lm.entity_value)).*  from " + entityTable + " l\n" + "inner join "
-        + metadataTable+" lm on l.identifier = lm." + entityTable + "_identifier\n"
+        + metadataTable + " lm on l.identifier = lm." + entityTable + "_identifier\n"
         + "where l.identifier = '" + identifier + "'\n"
         + "\t) as t left join entity_tag et on et.identifier = (t.value->>'entity_tag')::uuid";
 
@@ -48,7 +46,6 @@ public class MetaDataJdbcService {
   public void createOrUpdateMetadata(UUID entityIdentifier, String entity, String tagName,
       Object value, Class<?> entityDataType) {
     String quotes = (entityDataType.equals(String.class) ? "'" : "");
-
 
 // upsert String resolves to below insert statement
 
