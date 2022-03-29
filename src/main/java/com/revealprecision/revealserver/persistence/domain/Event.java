@@ -60,8 +60,6 @@ public class Event extends AbstractAuditableEntity {
 
   private LocalDateTime captureDate;
 
-  // private LookupEventStatus
-
   @ManyToOne
   @JoinColumn(name = "organization_identifier", referencedColumnName = "identifier")
   private Organization organization;
