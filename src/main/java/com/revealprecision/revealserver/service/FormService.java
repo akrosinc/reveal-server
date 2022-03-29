@@ -1,6 +1,8 @@
 package com.revealprecision.revealserver.service;
 
+import com.revealprecision.revealserver.api.v1.dto.factory.FormDataEntityFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.FormEntityFactory;
+import com.revealprecision.revealserver.api.v1.dto.request.FormDataRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.FormRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.FormUpdateRequest;
 import com.revealprecision.revealserver.enums.EntityStatus;
@@ -10,6 +12,8 @@ import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.exceptions.constant.Error;
 import com.revealprecision.revealserver.persistence.domain.Form;
 import com.revealprecision.revealserver.persistence.domain.Form.Fields;
+import com.revealprecision.revealserver.persistence.domain.FormData;
+import com.revealprecision.revealserver.persistence.repository.FormDataRepository;
 import com.revealprecision.revealserver.persistence.repository.FormRepository;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -31,20 +35,30 @@ public class FormService {
 
   private final FormRepository formRepository;
 
+  private final FormDataRepository formDataRepository;
+
   public void createFrom(FormRequest formRequest) {
     if (formRepository.findByName(formRequest.getName()).isPresent()) {
-      throw new ConflictException(String.format(
-          Error.NON_UNIQUE, Fields.name, formRequest.getName()));
+      throw new ConflictException(
+          String.format(Error.NON_UNIQUE, Fields.name, formRequest.getName()));
     }
     Form form = FormEntityFactory.toEntity(formRequest);
     form.setEntityStatus(EntityStatus.ACTIVE);
     formRepository.save(form);
   }
 
+
+  public void createFormData(FormDataRequest formDataRequest) {
+
+    Form form = findById(formDataRequest.getFormIdentifier());
+    FormData formData = FormDataEntityFactory.toEntity(formDataRequest, form);
+    form.setEntityStatus(EntityStatus.ACTIVE);
+    formDataRepository.save(formData);
+  }
+
   public Form findById(UUID identifier) {
-    return formRepository.findById(identifier)
-        .orElseThrow(
-            () -> new NotFoundException(Pair.of(Fields.identifier, identifier), Form.class));
+    return formRepository.findById(identifier).orElseThrow(
+        () -> new NotFoundException(Pair.of(Fields.identifier, identifier), Form.class));
   }
 
   public Page<Form> getAll(String search, Pageable pageable, FlagEnum template) {
@@ -77,10 +91,7 @@ public class FormService {
 
     List<Form> foundForms = formRepository.getFormsByIdentifiers(findForms);
     identifiers.removeAll(
-        foundForms
-            .stream()
-            .map(Form::getIdentifier)
-            .collect(Collectors.toList()));
+        foundForms.stream().map(Form::getIdentifier).collect(Collectors.toList()));
     if (identifiers.size() > 0) {
       throw new ConflictException("Forms: " + identifiers + " does not exist");
     } else {

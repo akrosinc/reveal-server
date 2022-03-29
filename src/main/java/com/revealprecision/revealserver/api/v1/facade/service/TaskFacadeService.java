@@ -6,15 +6,12 @@ import com.revealprecision.revealserver.api.v1.facade.models.TaskFacade;
 import com.revealprecision.revealserver.api.v1.facade.models.TaskUpdateFacade;
 import com.revealprecision.revealserver.api.v1.facade.util.DateTimeFormatter;
 import com.revealprecision.revealserver.enums.EntityStatus;
-import com.revealprecision.revealserver.enums.LookupEntityTypeCodeEnum;
 import com.revealprecision.revealserver.enums.TaskPriorityEnum;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.Action;
-import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LookupEntityType;
 import com.revealprecision.revealserver.persistence.domain.LookupTaskStatus;
 import com.revealprecision.revealserver.persistence.domain.LookupTaskStatus.Fields;
-import com.revealprecision.revealserver.persistence.domain.Person;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.Task;
 import com.revealprecision.revealserver.persistence.domain.User;
@@ -50,16 +47,20 @@ public class TaskFacadeService {
   private final LocationService locationService;
   private final BusinessStatusService businessStatusService;
 
-  public List<TaskFacade> syncTasks(String planIdentifier, List<UUID> jurisdictionIdentifiers) {
+  public List<TaskFacade> syncTasks(List<String> planIdentifiers,
+      List<UUID> jurisdictionIdentifiers) {
 
-    Map<UUID, List<Task>> tasksPerJurisdictionIdentifier = taskService.getTasksPerJurisdictionIdentifier(
-        UUID.fromString(planIdentifier), jurisdictionIdentifiers);
+    return planIdentifiers.stream().map(planIdentifier -> {
+      Map<UUID, List<Task>> tasksPerJurisdictionIdentifier = taskService.getTasksPerJurisdictionIdentifier(
+          UUID.fromString(planIdentifier), jurisdictionIdentifiers);
 
-    return tasksPerJurisdictionIdentifier.entrySet().stream().map(entry -> {
-      List<Task> tasks = entry.getValue();
-      String groupIdentifier = entry.getKey().toString();
-      return getTaskFacades(tasks, groupIdentifier);
+      return tasksPerJurisdictionIdentifier.entrySet().stream().map(entry -> {
+        List<Task> tasks = entry.getValue();
+        String groupIdentifier = entry.getKey().toString();
+        return getTaskFacades(tasks, groupIdentifier);
+      }).flatMap(Collection::stream).collect(Collectors.toList());
     }).flatMap(Collection::stream).collect(Collectors.toList());
+
   }
 
   private List<TaskFacade> getTaskFacades(List<Task> tasks, String groupIdentifier) {
@@ -174,28 +175,7 @@ public class TaskFacadeService {
           taskDto.getExecutionPeriod().getStart()).toLocalDate());
       task.setLastModified(LastModifierFromAndroid);
 
-      boolean isPersonEntity =
-          lookupEntityType != null && LookupEntityTypeCodeEnum.PERSON_CODE.getLookupEntityType()
-              .equals(lookupEntityType.getCode());
-      if (isPersonEntity) {
-        Person person = null;
-        try {
-          person = personService.getPersonByIdentifier(UUID.fromString(taskDto.getForEntity()));
-        } catch (NotFoundException e) {
-          //We received task for new Person, record the person
-          person = personService.createPerson(taskDto.getPersonRequest());
-        }
-        task.setPerson(person);
-      }
-
-      boolean isLocationEntity =
-          lookupEntityType != null && LookupEntityTypeCodeEnum.LOCATION_CODE.getLookupEntityType()
-              .equals(lookupEntityType.getCode());
-      if (isLocationEntity) {
-        Location location = locationService.findByIdentifier(
-            UUID.fromString(taskDto.getForEntity()));
-        task.setLocation(location);
-      }
+      task.setBaseEntityIdentifier(UUID.fromString(taskDto.getForEntity()));
 
       task.setEntityStatus(EntityStatus.ACTIVE);
 

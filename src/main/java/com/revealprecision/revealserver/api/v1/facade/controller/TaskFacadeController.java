@@ -11,7 +11,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
@@ -43,14 +42,13 @@ public class TaskFacadeController {
   @ResponseStatus(HttpStatus.OK)
   @PostMapping(value = "/sync", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   @Transactional
-  public ResponseEntity<List<TaskFacade>> taskSync(
-      @RequestBody TaskSyncRequest taskSyncRequest) {
+  public ResponseEntity<List<TaskFacade>> taskSync(@RequestBody TaskSyncRequest taskSyncRequest) {
 
-    String plan = StringUtils.join(taskSyncRequest.getPlan(), ",");
     List<UUID> jurisdictionIdentifiers = taskSyncRequest.getGroup();
     boolean returnCount = taskSyncRequest.isReturnCount();
 
-    List<TaskFacade> taskFacades = taskFacadeService.syncTasks(plan, jurisdictionIdentifiers);
+    List<TaskFacade> taskFacades = taskFacadeService.syncTasks(taskSyncRequest.getPlan(),
+        jurisdictionIdentifiers);
 
     if (returnCount) {
       HttpHeaders headers = new HttpHeaders();
@@ -75,9 +73,7 @@ public class TaskFacadeController {
     } else {
       return new ResponseEntity<>(
           "Tasks with identifiers not processed: " + taskDtosUnprocessed.stream()
-              .map(TaskDto::getIdentifier).collect(
-                  Collectors.joining(",")),
-          HttpStatus.CREATED);
+              .map(TaskDto::getIdentifier).collect(Collectors.joining(",")), HttpStatus.CREATED);
     }
 
   }
@@ -85,8 +81,7 @@ public class TaskFacadeController {
   @Operation(summary = "Facade for Android Task Resource", description = "Update Status for Tasks", tags = {
       "Task-Facade"})
   @RequestMapping(value = "/update_status", method = RequestMethod.POST, consumes = {
-      MediaType.APPLICATION_JSON_VALUE,
-      MediaType.TEXT_PLAIN_VALUE})
+      MediaType.APPLICATION_JSON_VALUE, MediaType.TEXT_PLAIN_VALUE})
   public ResponseEntity<String> updateStatus(@RequestBody List<TaskUpdateFacade> taskUpdates) {
 
     List<String> updateTasks = taskFacadeService.updateTaskStatusAndBusinessStatusForListOfTasks(

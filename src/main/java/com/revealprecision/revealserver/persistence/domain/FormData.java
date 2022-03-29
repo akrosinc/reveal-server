@@ -4,56 +4,50 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import java.util.Set;
 import java.util.UUID;
+import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
-import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
-import javax.persistence.Table;
+import javax.persistence.OneToMany;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.FieldNameConstants;
-import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 import org.hibernate.annotations.Where;
 import org.hibernate.envers.Audited;
 
-@Entity
+@FieldNameConstants
 @Audited
 @Getter
 @Setter
-@SQLDelete(sql = "UPDATE \"group\" SET entity_status = 'DELETED' where identifier=?")
-@Where(clause = "entity_status='ACTIVE'")
-@Table(name = "\"group\"")
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@FieldNameConstants
+@Entity
+@SQLDelete(sql = "UPDATE form SET entity_status = 'DELETED' where identifier=?")
+@Where(clause = "entity_status='ACTIVE'")
 @TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
-public class Group extends AbstractAuditableEntity {
+public class FormData extends AbstractAuditableEntity {
 
   @Id
+  @GeneratedValue
   private UUID identifier;
 
-  private String name;
-
-  @ColumnDefault(value = "family")
-  private String type;
-
   @ManyToOne
-  @JoinColumn(name = "location_identifier", referencedColumnName = "identifier")
-  private Location location;
-
-
-  @ManyToMany(mappedBy = "groups")
-  private Set<Person> persons;
+  @JoinColumn(name = "form_identifier", referencedColumnName = "identifier")
+  private Form form;
 
   @Type(type = "jsonb")
-  private JsonNode additionalInfo;
+  @Column(nullable = false)
+  private JsonNode payload;
 
+  @OneToMany(mappedBy = "form")
+  private Set<Action> actions;
 }
