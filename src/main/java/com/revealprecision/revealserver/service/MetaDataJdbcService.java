@@ -99,7 +99,7 @@ public class MetaDataJdbcService {
             + entity + "')) " + ",'value'," + quotes + value + quotes + "))))" + ",'"
             + entityIdentifier + "'," + "'" + EntityStatus.ACTIVE + "', '"
             + UserUtils.getKeyCloakPrincipal().getName() + "', now(), '"
-            + UserUtils.getKeyCloakPrincipal().getName() + "', now())" + "ON CONFLICT (" + metadataTable
+            + UserUtils.getKeyCloakPrincipal().getName() + "', now())" + "ON CONFLICT (" + entity
             + "_identifier) DO UPDATE SET  entity_value = jsonb_set( " + metadataTable
             + ".entity_value," + "'{" + tagName + "}'," + "(jsonb_build_object("
             + "'entity_tag'," + "(SELECT identifier from entity_tag where tag = '" + tagName
