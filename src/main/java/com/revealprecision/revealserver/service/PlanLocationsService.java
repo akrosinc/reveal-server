@@ -10,6 +10,9 @@ import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.PlanAssignment;
 import com.revealprecision.revealserver.persistence.domain.PlanLocations;
 import com.revealprecision.revealserver.persistence.repository.PlanLocationsRepository;
+import com.revealprecision.revealserver.persistence.repository.PlanRepository;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -28,17 +31,20 @@ public class PlanLocationsService {
   private final LocationService locationService;
   private final LocationHierarchyService locationHierarchyService;
   private final PlanAssignmentService planAssignmentService;
+  private final PlanRepository planRepository;
 
   @Autowired
   public PlanLocationsService(PlanLocationsRepository planLocationsRepository,
       @Lazy PlanService planService, LocationService locationService,
       LocationHierarchyService locationHierarchyService,
-      @Lazy PlanAssignmentService planAssignmentService) {
+      @Lazy PlanAssignmentService planAssignmentService,
+      PlanRepository planRepository) {
     this.planLocationsRepository = planLocationsRepository;
     this.planService = planService;
     this.locationService = locationService;
     this.locationHierarchyService = locationHierarchyService;
     this.planAssignmentService = planAssignmentService;
+    this.planRepository = planRepository;
   }
 
   public List<PlanLocations> getPlanLocationsByPlanIdentifier(UUID planIdentifier) {
@@ -60,18 +66,45 @@ public class PlanLocationsService {
   }
 
   public void selectPlanLocations(UUID planIdentifier, Set<UUID> locations) {
-    List<PlanLocations> planLocations = getPlanLocationsByPlanIdentifier(planIdentifier);
     Plan plan = planService.getPlanByIdentifier(planIdentifier);
-    planLocations.forEach(el -> {
-      if (!locations.contains(el.getLocation().getIdentifier())) {
-        planLocationsRepository.delete(el);
-      } else {
-        locations.remove(el.getLocation().getIdentifier());
+    if(locations.size() == 0){
+      plan.getPlanLocations().clear();
+      planRepository.save(plan);
+    }else {
+      List<PlanLocations> planLocations = getPlanLocationsByPlanIdentifier(planIdentifier);
+
+      Set<UUID> currentLocation = plan.getPlanLocations().stream()
+          .map(planLocations1 -> planLocations1.getLocation().getIdentifier()).collect(
+              Collectors.toSet());
+
+      Set<UUID> locationsToAdd = new HashSet<>(locations);
+      locationsToAdd.removeAll(currentLocation);
+      currentLocation.removeAll(locations);
+
+      List<Location> addLocaitons = locationService.getAllByIdentifiers(new ArrayList<>(locationsToAdd));
+      List<PlanLocations> addPlanLocations = addLocaitons.stream()
+          .map(location -> new PlanLocations(plan,location))
+          .collect(Collectors.toList());
+
+      if(addPlanLocations.size() > 0){
+        planLocationsRepository.saveAll(addPlanLocations);
       }
-    });
-    locations.forEach(el -> {
-      planLocationsRepository.save(new PlanLocations(plan, locationService.findByIdentifier(el)));
-    });
+      if(currentLocation.size() > 0) {
+        planLocationsRepository.deletePlanLocationsByPlanAndLocation(planIdentifier, new ArrayList<>(currentLocation));
+      }
+
+
+//      planLocations.forEach(el -> {
+//        if (!locations.contains(el.getLocation().getIdentifier())) {
+//          planLocationsRepository.delete(el);
+//        } else {
+//          locations.remove(el.getLocation().getIdentifier());
+//        }
+//      });
+//      locations.forEach(el -> {
+//        planLocationsRepository.save(new PlanLocations(plan, locationService.findByIdentifier(el)));
+//      });
+    }
   }
 
   public List<GeoTreeResponse> getHierarchyByPlanIdentifier(UUID identifier) {

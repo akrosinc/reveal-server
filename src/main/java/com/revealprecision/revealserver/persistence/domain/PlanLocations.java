@@ -29,7 +29,6 @@ import org.hibernate.envers.Audited;
 @Audited
 @Getter
 @Setter
-@SQLDelete(sql = "UPDATE \"plan_locations\" SET entity_status = 'DELETED' where identifier=?")
 @Where(clause = "entity_status='ACTIVE'")
 @Builder
 @Table(name = "plan_locations")

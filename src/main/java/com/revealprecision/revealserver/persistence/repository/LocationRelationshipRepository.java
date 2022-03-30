@@ -20,18 +20,17 @@ public interface LocationRelationshipRepository extends JpaRepository<LocationRe
   Optional<List<LocationRelationship>> findByLocationHierarchyIdentifier(
       UUID locationHierarchyIdentifier);
 
-  @Query(value = "select lr from LocationRelationship lr where lr.locationHierarchy.identifier = :locationHierarchyIdentifier and lr.location.geographicLevel.name <> 'structure'")
+  @Query(value = "select *"
+      + "    from location_relationship lr "
+      + "    join location l on l.identifier = lr.location_identifier "
+      + "    join geographic_level gl on gl.identifier = l.geographic_level_identifier "
+      + "    where lr.location_hierarchy_identifier = :locationHierarchyIdentifier "
+      + "      and gl.name <> 'structure'", nativeQuery = true)
   Optional<List<LocationRelationship>>findByLocationHierarchyWithoutStructures(UUID locationHierarchyIdentifier);
 
   @Query(value = "SELECT ST_Contains (ST_AsText(ST_GeomFromGeoJSON(:parent)),ST_AsText(ST_Centroid(ST_GeomFromGeoJSON(:child))))", nativeQuery = true)
   Boolean hasParentChildRelationship(@Param("parent") String parent,
       @Param("child") String child);
-
-  @Query(value = "SELECT cast(lo.identifier as varchar) from location lo "
-      + "left join geographic_level gl on lo.geographic_level_identifier = gl.identifier "
-      + "where ST_Contains(ST_AsText(ST_GeomFromGeoJSON(lo.geometry)),ST_AsText(ST_Centroid(ST_GeomFromGeoJSON(:geometry)))) "
-      + "and gl.name = :geographic_level", nativeQuery = true)
-  UUID getParentLocation(@Param("geometry") String geometry, @Param("geographic_level") String geographic_level);
 
   @Query(value = "select lr.location.identifier "
       + "from LocationRelationship lr "

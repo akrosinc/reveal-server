@@ -51,7 +51,7 @@ public class Plan extends AbstractAuditableEntity {
   @JoinColumn(name = "hierarchy_identifier")
   private LocationHierarchy locationHierarchy;
 
-  @OneToMany(mappedBy = "plan", cascade = CascadeType.ALL,fetch = FetchType.LAZY)
+  @OneToMany(mappedBy = "plan", cascade = CascadeType.ALL,fetch = FetchType.LAZY, orphanRemoval = true)
   private Set<PlanLocations> planLocations;
 
   @OneToMany(mappedBy = "plan", cascade = CascadeType.ALL)
