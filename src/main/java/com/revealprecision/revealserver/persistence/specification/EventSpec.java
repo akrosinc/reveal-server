@@ -4,9 +4,8 @@ import static com.revealprecision.revealserver.enums.WhereClauseEnum.AND;
 
 import com.revealprecision.revealserver.enums.WhereClauseEnum;
 import com.revealprecision.revealserver.persistence.domain.Event;
-import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.Organization;
-import com.revealprecision.revealserver.persistence.domain.Task;
+import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.service.models.EventSearchCriteria;
 import java.util.List;
 import java.util.UUID;
@@ -21,51 +20,59 @@ public class EventSpec {
 
     Specification<Event> eventSpecification = Specification.where(null);
 
-    if (eventSearchCriteria.getBaseIdentifier() != null) {
+    if (eventSearchCriteria.getBaseIdentifiers() != null) {
       eventSpecification = getSpecification(eventSpecification,
-          whereBaseIdentifierEquals(eventSearchCriteria.getBaseIdentifier()), AND);
+          whereBaseIdentifierIn(eventSearchCriteria.getBaseIdentifiers()), AND);
     }
-    if (eventSearchCriteria.getOrganizationIdentifier() != null) {
+    if (eventSearchCriteria.getOrganizationIdentifiers() != null) {
       eventSpecification = getSpecification(eventSpecification,
-          whereOrganizationIdEquals(eventSearchCriteria.getOrganizationIdentifier()), AND);
+          whereOrganizationIdIn(eventSearchCriteria.getOrganizationIdentifiers()), AND);
     }
-    if (eventSearchCriteria.getOrganizationName() != null) {
+    if (eventSearchCriteria.getOrganizationNames() != null) {
       eventSpecification = getSpecification(eventSpecification,
-          whereOrganizationNameEquals(eventSearchCriteria.getOrganizationName()), AND);
+          whereOrganizationNameIn(eventSearchCriteria.getOrganizationNames()), AND);
     }
-    if (eventSearchCriteria.getProviderIdentifier() != null) {
+    if (eventSearchCriteria.getUserIdentifiers() != null) {
       eventSpecification = getSpecification(eventSpecification,
-          whereProvideIdEquals(eventSearchCriteria.getProviderIdentifier()), AND);
+          whereUserIdentifierIn(eventSearchCriteria.getUserIdentifiers()), AND);
     }
-    if (eventSearchCriteria.getLocationIdentifier() != null) {
+    if (eventSearchCriteria.getLocationIdentifiers() != null) {
       eventSpecification = getSpecification(eventSpecification,
-          whereLocationIdentifierEquals(eventSearchCriteria.getLocationIdentifier()), AND);
+          whereLocationIn(eventSearchCriteria.getLocationIdentifiers()), AND);
+    }
+    if (eventSearchCriteria.getUserNames() != null) {
+      eventSpecification = getSpecification(eventSpecification,
+          whereUserNamesIn(eventSearchCriteria.getUserNames()), AND);
     }
     return eventSpecification;
   }
 
-  private static Specification<Event> whereBaseIdentifierEquals(List<UUID> baseIdentifiers) {
-    return (root, query, criteriaBuilder) -> root.get("task").<Task>get("baseIdentifier")
+  private static Specification<Event> whereBaseIdentifierIn(List<UUID> baseIdentifiers) {
+    return (root, query, criteriaBuilder) -> root.get("baseEntityIdentifier")
         .in(baseIdentifiers);
   }
 
-  private static Specification<Event> whereProvideIdEquals(List<UUID> providerIdentifiers) {
-    return (root, query, criteriaBuilder) -> root.get("userIdentifier").in(providerIdentifiers);
+  private static Specification<Event> whereUserIdentifierIn(List<UUID> providerIdentifiers) {
+    return (root, query, criteriaBuilder) -> root.get("user").<User>get("identifier").in(providerIdentifiers);
   }
 
-  private static Specification<Event> whereLocationIdentifierEquals(
+  private static Specification<Event> whereLocationIn(
       List<UUID> locationIdentifiers) {
-    return (root, query, criteriaBuilder) -> root.get("location").<Location>get("identifier")
+    return (root, query, criteriaBuilder) -> root.get("locationIdentifier")
         .in(locationIdentifiers);
   }
 
-  private static Specification<Event> whereOrganizationNameEquals(List<String> organizationNames) {
-    return (root, query, criteriaBuilder) -> root.get("task").<Task>get("organization")
+  private static Specification<Event> whereOrganizationNameIn(List<String> organizationNames) {
+    return (root, query, criteriaBuilder) -> root.get("organization")
         .<Organization>get("name").in(organizationNames);
   }
 
-  private static Specification<Event> whereOrganizationIdEquals(List<UUID> identifiers) {
-    return (root, query, criteriaBuilder) -> root.get("task").<Task>get("organization")
+  private static Specification<Event> whereUserNamesIn(List<String> usernames) {
+    return (root, query, criteriaBuilder) -> root.get("user").<User>get("username").in(usernames);
+  }
+
+  private static Specification<Event> whereOrganizationIdIn(List<UUID> identifiers) {
+    return (root, query, criteriaBuilder) -> root.get("organization")
         .<Organization>get("identifier").in(identifiers);
   }
 

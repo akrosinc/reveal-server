@@ -11,14 +11,16 @@ import lombok.Setter;
 @Getter
 public class EventSearchCriteria {
 
-  private List<String> organizationName;
+  private List<String> organizationNames;
 
-  private List<UUID> organizationIdentifier;
+  private List<UUID> organizationIdentifiers;
 
-  private List<UUID> providerIdentifier;
+  private List<UUID> userIdentifiers;
 
-  private List<UUID> locationIdentifier;
+  private List<UUID> locationIdentifiers;
 
-  private List<UUID> baseIdentifier;
+  private List<UUID> baseIdentifiers;
+
+  private List<String> userNames;
 
 }

@@ -18,7 +18,7 @@ import lombok.experimental.FieldNameConstants;
 @JsonInclude(value = Include.NON_NULL)
 @AllArgsConstructor
 @NoArgsConstructor
-public class ClientFacadeMetadata extends BaseEntity {
+public class ClientFacadeMetadata {
 
   Map<String, Object> attributes;
   Map<String, List<String>> relationShips;

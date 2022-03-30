@@ -126,6 +126,7 @@ public class UserService {
 
   public User getByUserName(String username) {
     return userRepository.getByUsername(username)
-        .orElseThrow(() -> new NotFoundException(Pair.of(Fields.sid, username), User.class));
+        .orElseThrow(() -> new NotFoundException(Pair.of(Fields.username, username), User.class));
   }
+
 }

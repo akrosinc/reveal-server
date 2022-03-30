@@ -9,18 +9,23 @@ import java.util.stream.Collectors;
 public class EventSearchCriteriaFactory {
 
   public static EventSearchCriteria getEventSearchCriteria(SyncParamFacade syncParam) {
-    return EventSearchCriteria.builder().baseIdentifier(syncParam.getBaseEntityId() == null ? null
+    return EventSearchCriteria.builder()
+        .baseIdentifiers(syncParam.getBaseEntityId() == null ? null
             : Arrays.stream(syncParam.getBaseEntityId().split(",")).map(UUID::fromString)
-                .collect(Collectors.toList())).locationIdentifier(
+                .collect(Collectors.toList()))
+        .locationIdentifiers(
             syncParam.getLocationId() == null ? null
                 : Arrays.stream(syncParam.getLocationId().split(",")).map(UUID::fromString)
-                    .collect(Collectors.toList())).organizationIdentifier(
+                    .collect(Collectors.toList()))
+        .organizationIdentifiers(
             syncParam.getTeamId() == null ? null
                 : Arrays.stream(syncParam.getTeamId().split(",")).map(UUID::fromString)
-                    .collect(Collectors.toList())).organizationName(syncParam.getTeam() == null ? null
-            : Arrays.stream(syncParam.getTeamId().split(",")).collect(Collectors.toList()))
-        .providerIdentifier(syncParam.getProviderId() == null ? null
-            : Arrays.stream(syncParam.getProviderId().split(",")).map(UUID::fromString)
-                .collect(Collectors.toList())).build();
+                    .collect(Collectors.toList()))
+        .organizationNames(syncParam.getTeam() == null ? null
+            : Arrays.stream(syncParam.getTeam().split(",")).collect(Collectors.toList()))
+        .userNames(
+            syncParam.getProviderId() == null ? null
+                : Arrays.stream(syncParam.getProviderId().split(",")).collect(Collectors.toList()))
+        .build();
   }
 }

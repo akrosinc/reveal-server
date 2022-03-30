@@ -44,19 +44,17 @@ public class Event extends AbstractAuditableEntity {
   @GeneratedValue(strategy = GenerationType.AUTO)
   private UUID identifier;
 
-  private String name;
-
   private String eventType;
 
   @ManyToOne(cascade = CascadeType.ALL)
   @JoinColumn(name = "form_data_identifier", referencedColumnName = "identifier")
   private FormData formData;
 
-  @ManyToOne
-  @JoinColumn(name = "task_identifier", referencedColumnName = "identifier")
-  private Task task;
+  private UUID taskIdentifier;
 
-  private UUID userIdentifier;
+  @ManyToOne(cascade = CascadeType.ALL)
+  @JoinColumn(name = "user_identifier", referencedColumnName = "identifier")
+  private User user;
 
   private LocalDateTime captureDate;
 
@@ -64,13 +62,11 @@ public class Event extends AbstractAuditableEntity {
   @JoinColumn(name = "organization_identifier", referencedColumnName = "identifier")
   private Organization organization;
 
-  @ManyToOne
-  @JoinColumn(name = "plan_identifier", referencedColumnName = "identifier")
-  private Plan plan;
+  private UUID planIdentifier;
 
-  @ManyToOne
-  @JoinColumn(name = "location_identifier", referencedColumnName = "identifier")
-  private Location location;
+  private UUID locationIdentifier;
+
+  private UUID baseEntityIdentifier;
 
   @Type(type = "jsonb")
   @Column(columnDefinition = "jsonb")

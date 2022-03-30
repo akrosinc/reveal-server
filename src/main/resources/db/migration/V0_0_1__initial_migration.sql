@@ -947,7 +947,6 @@ CREATE TABLE IF NOT EXISTS group_metadata
     modified_by       VARCHAR(36)              NOT NULL,
     modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
     PRIMARY KEY (identifier),
-    FOREIGN KEY (group_identifier) REFERENCES "group" (identifier),
     UNIQUE (group_identifier)
 );
 
@@ -1048,7 +1047,6 @@ CREATE TABLE IF NOT EXISTS person_metadata
     modified_by       VARCHAR(36)              NOT NULL,
     modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
     PRIMARY KEY (identifier),
-    FOREIGN KEY (person_identifier) REFERENCES person (identifier),
     UNIQUE (person_identifier)
 );
 
@@ -1078,7 +1076,6 @@ CREATE TABLE IF NOT EXISTS location_metadata
     modified_by         VARCHAR(36)              NOT NULL,
     modified_datetime   TIMESTAMP WITH TIME ZONE NOT NULL,
     PRIMARY KEY (identifier),
-    FOREIGN KEY (location_identifier) REFERENCES location (identifier),
     UNIQUE (location_identifier)
 );
 CREATE TABLE IF NOT EXISTS location_metadata_aud
@@ -1208,7 +1205,6 @@ CREATE TABLE IF NOT EXISTS event
     id                      BIGSERIAL                NOT NULL,
     identifier              uuid                     not null,
     version                 bigint DEFAULT 1,
-    name                    character varying        NOT NULL,
     event_type              character varying        NOT NULL,
     form_data_identifier    uuid                     NOT NULL,
     user_identifier         uuid                     NOT NULL,
@@ -1219,6 +1215,7 @@ CREATE TABLE IF NOT EXISTS event
     additional_information  jsonb,
     details                 jsonb,
     task_identifier         uuid                     NOT NULL,
+    base_entity_identifier  uuid                     NOT NULL,
     entity_status           character varying(36)    NOT NULL,
     created_by              character varying(36)    NOT NULL,
     created_datetime        timestamp with time zone NOT NULL,
@@ -1227,8 +1224,6 @@ CREATE TABLE IF NOT EXISTS event
     PRIMARY KEY (id),
     FOREIGN KEY (form_data_identifier) REFERENCES form_data (identifier),
     FOREIGN KEY (organization_identifier) REFERENCES organization (identifier),
-    FOREIGN KEY (plan_identifier) REFERENCES plan (identifier),
-    FOREIGN KEY (task_identifier) REFERENCES task (identifier),
     FOREIGN KEY (user_identifier) REFERENCES users (identifier)
 );
 
@@ -1239,7 +1234,6 @@ CREATE TABLE IF NOT EXISTS event_aud
     REV                     INT                      NOT NULL,
     REVTYPE                 INTEGER                  NULL,
     version                 bigint                   NOT null,
-    name                    character varying        NOT NULL,
     event_type              character varying        NOT NULL,
     form_data_identifier    uuid                     NOT NULL,
     user_identifier         uuid                     NOT NULL,
@@ -1250,6 +1244,7 @@ CREATE TABLE IF NOT EXISTS event_aud
     additional_information  jsonb,
     details                 jsonb,
     task_identifier         uuid                     NOT NULL,
+    base_entity_identifier  uuid                     NOT NULL,
     entity_status           character varying(36)    NOT NULL,
     created_by              character varying(36)    NOT NULL,
     created_datetime        timestamp with time zone NOT NULL,

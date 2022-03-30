@@ -52,11 +52,16 @@ public class EventFacadeController {
         .isEmpty()) {
       return new ResponseEntity<>(CREATED);
     } else {
-      return ResponseEntity.status(CREATED).body(EventClientFacadeResponse.builder().failedClients(
-          failedEventClientFacades.getClients().stream().map(BaseEntity::getBaseEntityId)
-              .map(UUID::fromString).collect(Collectors.toList())).failedEvents(
-          failedEventClientFacades.getEvents().stream().map(EventFacade::getEventId)
-              .map(UUID::fromString).collect(Collectors.toList())).build());
+
+      return ResponseEntity.status(CREATED).body(EventClientFacadeResponse.builder()
+          .failedClients(
+              failedEventClientFacades.getClients() == null ? null :
+                  failedEventClientFacades.getClients().stream().map(BaseEntity::getBaseEntityId)
+                      .map(UUID::fromString).collect(Collectors.toList()))
+          .failedEvents(
+              failedEventClientFacades.getClients() == null ? null :
+                  failedEventClientFacades.getEvents().stream().map(EventFacade::getEventId)
+                      .map(UUID::fromString).collect(Collectors.toList())).build());
     }
   }
 

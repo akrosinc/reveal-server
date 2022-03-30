@@ -3,6 +3,7 @@ package com.revealprecision.revealserver.api.v1.facade.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.revealprecision.revealserver.api.v1.facade.factory.EventFacadeFactory;
 import com.revealprecision.revealserver.api.v1.facade.models.ClientFacade;
 import com.revealprecision.revealserver.api.v1.facade.models.ClientFacadeMetadata;
 import com.revealprecision.revealserver.api.v1.facade.models.EventClientFacade;
@@ -17,16 +18,13 @@ import com.revealprecision.revealserver.persistence.domain.FormData;
 import com.revealprecision.revealserver.persistence.domain.Group;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.Person;
-import com.revealprecision.revealserver.persistence.domain.Task;
-import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.persistence.projection.EventMaxVersionProjection;
 import com.revealprecision.revealserver.service.EventService;
+import com.revealprecision.revealserver.service.FormService;
 import com.revealprecision.revealserver.service.GroupService;
 import com.revealprecision.revealserver.service.LocationService;
 import com.revealprecision.revealserver.service.OrganizationService;
 import com.revealprecision.revealserver.service.PersonService;
-import com.revealprecision.revealserver.service.PlanService;
-import com.revealprecision.revealserver.service.TaskService;
 import com.revealprecision.revealserver.service.UserService;
 import com.revealprecision.revealserver.service.models.EventSearchCriteria;
 import java.time.LocalDateTime;
@@ -58,8 +56,6 @@ public class EventClientFacadeService {
 
   private final EventService eventService;
 
-  private final TaskService taskService;
-
   private final LocationService locationService;
 
   private final OrganizationService organizationService;
@@ -68,9 +64,9 @@ public class EventClientFacadeService {
 
   private final GroupService groupService;
 
-  private final PlanService planService;
-
   private final ObjectMapper objectMapper;
+
+  private final FormService formService;
 
 
   public EventClientFacade saveEventClient(EventClientFacade eventClientFacade) {
@@ -80,8 +76,8 @@ public class EventClientFacadeService {
       eventClientFacade.getEvents().forEach(eventFacade -> {
         try {
           saveEvent(eventFacade);
-        } catch (Exception notFoundException) {
-          notFoundException.printStackTrace();
+        } catch (Exception exception) {
+          exception.printStackTrace();
           failedEvents.add(eventFacade);
         }
       });
@@ -279,18 +275,19 @@ public class EventClientFacadeService {
 
 
   private Event saveEvent(EventFacade eventFacade) {
-    Task task = taskService.getTaskByIdentifier(
-        UUID.fromString(eventFacade.getDetails().get("taskIdentifier")));
 
-    Event event = Event.builder().task(task)
+    Event event = Event.builder()
+        .taskIdentifier(UUID.fromString(eventFacade.getDetails().get("taskIdentifier")))
         .additionalInformation(objectMapper.valueToTree(eventFacade)).captureDate(
             DateTimeFormatter.getLocalDateTimeFromZonedAndroidFacadeString(
                 eventFacade.getEventDate())).eventType(eventFacade.getEventType())
-        .name(task.getDescription()).details(objectMapper.valueToTree(eventFacade.getDetails()))
-        .location(locationService.findByIdentifier(UUID.fromString(eventFacade.getLocationId())))
+        .details(objectMapper.valueToTree(eventFacade.getDetails()))
+        .locationIdentifier(UUID.fromString(eventFacade.getLocationId()))
         .organization(organizationService.findById(UUID.fromString(eventFacade.getTeamId()), false))
-        .userIdentifier(userService.getByUserName(eventFacade.getProviderId()).getIdentifier())
-        .plan(planService.getPlanByIdentifier(task.getPlan().getIdentifier())).build();
+        .user(userService.getByUserName(eventFacade.getProviderId()))
+        .planIdentifier(UUID.fromString(eventFacade.getDetails().get("planIdentifier")))
+        .baseEntityIdentifier(UUID.fromString(eventFacade.getBaseEntityId()))
+        .build();
 
     event.setEntityStatus(EntityStatus.ACTIVE);
 
@@ -309,7 +306,7 @@ public class EventClientFacadeService {
     }
 
     FormData formData = new FormData();
-    formData.setForm(task.getAction().getForm());
+    formData.setForm(formService.findById(UUID.fromString(eventFacade.getFormSubmissionId())));
     formData.setEntityStatus(EntityStatus.ACTIVE);
 
     formData.setPayload(objectMapper.valueToTree(eventFacade.getObs()));
@@ -370,7 +367,8 @@ public class EventClientFacadeService {
       e.printStackTrace();
     }
     clientFacade.setBaseEntityId(group.getIdentifier().toString());
-    clientFacade.setDateCreated(group.getCreatedDatetime().toString());
+    clientFacade.setDateCreated(
+        DateTimeFormatter.getDateTimeFacadeStringFromLocalDateTime(group.getCreatedDatetime()));
     return clientFacade;
   }
 
@@ -412,42 +410,31 @@ public class EventClientFacadeService {
   }
 
   public List<EventFacade> getEventFacades(List<Event> searchEvents) {
-    return searchEvents.stream().map(event -> {
 
-          User user = userService.getByIdentifier(event.getUserIdentifier());
-          try {
-            EventFacade eventFacade = EventFacade.builder().eventId(event.getIdentifier().toString())
-                .baseEntityId(event.getTask().getBaseEntityIdentifier().toString())
-                .eventType(event.getEventType()).details(
-                    objectMapper.readValue(objectMapper.writeValueAsString(event.getDetails()),
-                        new TypeReference<Map<String, String>>() {
-                        })).obs(objectMapper.readValue(
-                    objectMapper.writeValueAsString(event.getFormData().getPayload()),
-                    new TypeReference<List<Obs>>() {
-                    })).providerId(user.getUsername()).version(event.getVersion())
-                .eventDate(event.getCaptureDate().toString())
-                .teamId(event.getOrganization().getIdentifier().toString())
-                .team(event.getOrganization().getName())
-                .locationId(event.getLocation().getIdentifier().toString())
-                .formSubmissionId(event.getTask().getAction().getForm().getIdentifier().toString())
-                .entityType(event.getAdditionalInformation() == null ? null
-                    : event.getAdditionalInformation().get("entityType").textValue()).childLocationId(
-                    event.getAdditionalInformation() == null ? null
-                        : event.getAdditionalInformation().get("childLocationId") == null ? null
-                            : event.getAdditionalInformation().get("childLocationId").textValue())
-                .build();
-            eventFacade.setType("Event");
-            eventFacade.setDateCreated(event.getAdditionalInformation() == null ? null
-                : event.getAdditionalInformation().get("dateCreated").textValue());
-            return eventFacade;
+    return searchEvents.stream().map(this::getEventFacade).filter(Objects::nonNull)
+        .collect(Collectors.toList());
+  }
 
-          } catch (JsonProcessingException e) {
-            e.printStackTrace();
-            return null;
-          }
-        }
+  private EventFacade getEventFacade(Event event) {
 
-    ).filter(Objects::nonNull).collect(Collectors.toList());
+    try {
+
+      List<Obs> obs = objectMapper.readValue(
+          objectMapper.writeValueAsString(event.getFormData().getPayload()),
+          new TypeReference<List<Obs>>() {
+          });
+
+      Map<String, String> details = objectMapper.readValue(
+          objectMapper.writeValueAsString(event.getDetails()),
+          new TypeReference<Map<String, String>>() {
+          });
+
+      return EventFacadeFactory.getEventFacade(event, obs, details);
+
+    } catch (JsonProcessingException e) {
+      e.printStackTrace();
+      return null;
+    }
   }
 
   public List<Group> searchGroups(List<Person> people) {
