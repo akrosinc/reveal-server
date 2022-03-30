@@ -3,7 +3,7 @@ package com.revealprecision.revealserver.config;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.revealprecision.revealserver.api.v1.dto.request.LocationRequest;
-import com.revealprecision.revealserver.batch.LocationWriter;
+import com.revealprecision.revealserver.batch.writer.LocationWriter;
 import com.revealprecision.revealserver.batch.listener.LocationJobCompletionListener;
 import com.revealprecision.revealserver.batch.processor.LocationItemProcessor;
 import com.revealprecision.revealserver.persistence.domain.Location;

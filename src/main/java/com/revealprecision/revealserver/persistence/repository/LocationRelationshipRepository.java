@@ -17,9 +17,11 @@ public interface LocationRelationshipRepository extends JpaRepository<LocationRe
   Optional<LocationRelationship> findByLocationHierarchyIdentifierAndLocationIdentifier(
       UUID locationHierarchyIdentifier, UUID locationIdentifier);
 
-  @Query(value = "select lr from LocationRelationship lr where lr.locationHierarchy.identifier = :locationHierarchyIdentifier and lr.location.geographicLevel.name <> 'structure'")
   Optional<List<LocationRelationship>> findByLocationHierarchyIdentifier(
       UUID locationHierarchyIdentifier);
+
+  @Query(value = "select lr from LocationRelationship lr where lr.locationHierarchy.identifier = :locationHierarchyIdentifier and lr.location.geographicLevel.name <> 'structure'")
+  Optional<List<LocationRelationship>>findByLocationHierarchyWithoutStructures(UUID locationHierarchyIdentifier);
 
   @Query(value = "SELECT ST_Contains (ST_AsText(ST_GeomFromGeoJSON(:parent)),ST_AsText(ST_Centroid(ST_GeomFromGeoJSON(:child))))", nativeQuery = true)
   Boolean hasParentChildRelationship(@Param("parent") String parent,

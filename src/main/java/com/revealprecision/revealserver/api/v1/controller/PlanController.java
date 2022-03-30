@@ -301,10 +301,4 @@ public class PlanController {
     planService.activatePlan(planIdentifier);
     return ResponseEntity.status(HttpStatus.OK).build();
   }
-
-  @GetMapping("/test")
-  public ResponseEntity<Void> test() {
-    planService.test();
-    return ResponseEntity.status(200).build();
-  }
 }

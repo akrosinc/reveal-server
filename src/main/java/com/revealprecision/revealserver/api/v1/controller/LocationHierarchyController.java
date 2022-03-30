@@ -91,7 +91,7 @@ public class LocationHierarchyController {
   public ResponseEntity<List<LocationResponse>> getChildLocations(@Parameter(description = "LocationHierarchy identifier") @PathVariable UUID identifier,
       @Parameter(description = "Location identifier") @PathVariable UUID locationIdentifier) {
     return ResponseEntity.status(HttpStatus.OK)
-        .body(locationRelationshipService.getChildreLocations(identifier, locationIdentifier).stream()
+        .body(locationRelationshipService.getChildrenLocations(identifier, locationIdentifier).stream()
             .map(LocationResponseFactory::fromEntitySummary)
             .collect(Collectors.toList()));
   }

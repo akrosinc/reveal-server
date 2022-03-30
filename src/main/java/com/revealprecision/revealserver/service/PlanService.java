@@ -7,7 +7,6 @@ import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.enums.PlanStatusEnum;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.messaging.Message;
-import com.revealprecision.revealserver.messaging.TopicConstants;
 import com.revealprecision.revealserver.persistence.domain.Action;
 import com.revealprecision.revealserver.persistence.domain.Condition;
 import com.revealprecision.revealserver.persistence.domain.Form;
@@ -121,8 +120,4 @@ public class PlanService {
     taskService.updateOrganizationsAndLocationsForTasksByPlanIdentifier(planIdentifier);
   }
 
-  public void test(){
-    System.out.println("send it");
-    kafkaTemplate.send(TopicConstants.PLAN_CREATE, new Message("dsa", "aaa"));
-  }
 }

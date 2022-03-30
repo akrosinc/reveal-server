@@ -210,6 +210,10 @@ public class LocationRelationshipService {
         .findByLocationHierarchyIdentifier(locationHierarchy.getIdentifier());
   }
 
+  public Optional<List<LocationRelationship>> getLocationRelationshipsWithoutStructure(LocationHierarchy locationHierarchy){
+    return locationRelationshipRepository.findByLocationHierarchyWithoutStructures(locationHierarchy.getIdentifier());
+  }
+
   public void validateLocationsBelonging(UUID hierarchyIdentifier, Set<UUID> locations) {
     Set<UUID> checkLocations = new HashSet<>(locations);
     List<UUID> foundLocations = locationRelationshipRepository.findLocationsInHierarchy(
@@ -274,7 +278,7 @@ public class LocationRelationshipService {
     }
   }
 
-  public List<Location> getChildreLocations(UUID hierarchyIdentifier, UUID locationIdentifier) {
+  public List<Location> getChildrenLocations(UUID hierarchyIdentifier, UUID locationIdentifier) {
     List<Location> children = locationRelationshipRepository.getChildren(hierarchyIdentifier, locationIdentifier);
     return children;
   }

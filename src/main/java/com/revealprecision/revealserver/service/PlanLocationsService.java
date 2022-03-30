@@ -79,7 +79,7 @@ public class PlanLocationsService {
     LocationHierarchy locationHierarchy = locationHierarchyService.findByIdentifier(
         plan.getLocationHierarchy().getIdentifier());
     List<GeoTreeResponse> geoTreeResponses = LocationHierarchyResponseFactory.generateGeoTreeResponseFromTree(
-        locationHierarchyService.getGeoTreeFromLocationHierarchy(locationHierarchy)
+        locationHierarchyService.getGeoTreeFromLocationHierarchyWithoutStructure(locationHierarchy)
             .getLocationsHierarchy(), false);
     Set<Location> locations = plan.getPlanLocations().stream().map(PlanLocations::getLocation)
         .collect(

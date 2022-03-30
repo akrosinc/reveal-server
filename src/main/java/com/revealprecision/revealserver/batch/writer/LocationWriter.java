@@ -1,7 +1,8 @@
-package com.revealprecision.revealserver.batch;
+package com.revealprecision.revealserver.batch.writer;
 
 import com.revealprecision.revealserver.persistence.domain.Location;
-import com.revealprecision.revealserver.persistence.repository.LocationElastic;
+import com.revealprecision.revealserver.persistence.es.LocationElastic;
+import com.revealprecision.revealserver.persistence.repository.LocationElasticRepository;
 import com.revealprecision.revealserver.persistence.repository.LocationRepository;
 import java.util.ArrayList;
 import java.util.List;
@@ -11,7 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 public class LocationWriter implements ItemWriter<Location> {
 
   @Autowired
-  private LocationElastic locationElastic;
+  private LocationElasticRepository locationElasticRepository;
 
   @Autowired
   private LocationRepository locationRepository;
@@ -19,14 +20,14 @@ public class LocationWriter implements ItemWriter<Location> {
   @Override
   public void write(List<? extends Location> items) throws Exception {
     items = locationRepository.saveAll(items);
-    List<com.revealprecision.revealserver.persistence.es.Location> locations = new ArrayList<>();
+    List<LocationElastic> locations = new ArrayList<>();
     items.forEach(location -> {
-      com.revealprecision.revealserver.persistence.es.Location loc = new com.revealprecision.revealserver.persistence.es.Location();
+      LocationElastic loc = new LocationElastic();
       loc.setId(location.getIdentifier().toString());
       loc.setLevel(location.getGeographicLevel().getName());
       loc.setGeometry(location.getGeometry());
       locations.add(loc);
     });
-    locationElastic.saveAll(locations);
+    locationElasticRepository.saveAll(locations);
   }
 }
