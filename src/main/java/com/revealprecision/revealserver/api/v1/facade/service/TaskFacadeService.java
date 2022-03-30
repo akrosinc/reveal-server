@@ -42,8 +42,6 @@ public class TaskFacadeService {
   private final TaskService taskService;
   private final ActionService actionService;
   private final PlanService planService;
-  private final PersonService personService;
-  private final LocationService locationService;
   private final BusinessStatusService businessStatusService;
 
   public List<TaskFacade> syncTasks(List<String> planIdentifiers,
