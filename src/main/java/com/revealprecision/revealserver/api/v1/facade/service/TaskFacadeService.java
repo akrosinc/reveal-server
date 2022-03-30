@@ -16,8 +16,6 @@ import com.revealprecision.revealserver.persistence.domain.Task;
 import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.service.ActionService;
 import com.revealprecision.revealserver.service.BusinessStatusService;
-import com.revealprecision.revealserver.service.LocationService;
-import com.revealprecision.revealserver.service.PersonService;
 import com.revealprecision.revealserver.service.PlanService;
 import com.revealprecision.revealserver.service.TaskService;
 import com.revealprecision.revealserver.service.UserService;
