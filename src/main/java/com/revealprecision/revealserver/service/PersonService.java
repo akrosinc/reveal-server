@@ -64,7 +64,7 @@ public class PersonService {
     person.setGroups(groupList);
 
     person.setEntityStatus(EntityStatus.ACTIVE);
-    Person save = personRepository.save(person);
+    Person save = savePerson(person);
     log.info("Group saved to database as {}", person);
 
     return save;
@@ -82,6 +82,11 @@ public class PersonService {
   }
 
   public Person createPerson(Person person) {
+
+    return savePerson(person);
+  }
+
+  public Person savePerson(Person person) {
 
     return personRepository.save(person);
   }
@@ -121,7 +126,7 @@ public class PersonService {
       personRetrieved.setGender(personRequest.getGender().name());
     }
 
-    return personRepository.save(personRetrieved);
+    return savePerson(personRetrieved);
   }
 
   public Page<Person> searchPersonByOneValueAcrossAllFields(String searchParam, Pageable pageable) {

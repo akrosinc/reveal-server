@@ -29,7 +29,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -50,26 +50,29 @@ public class TaskFacadeService {
   private final LocationService locationService;
   private final BusinessStatusService businessStatusService;
 
-  public List<TaskFacade> syncTasks(String planIdentifier, List<UUID> jurisdictionIdentifiers) {
+  public List<TaskFacade> syncTasks(List<String> planIdentifiers,
+      List<UUID> jurisdictionIdentifiers) {
 
-    Map<UUID, List<Task>> tasksPerJurisdictionIdentifier = taskService.getTasksPerJurisdictionIdentifier(
-        UUID.fromString(planIdentifier), jurisdictionIdentifiers);
-
-    return tasksPerJurisdictionIdentifier.entrySet().stream().map(entry -> {
-      List<Task> tasks = entry.getValue();
-      String groupIdentifier = entry.getKey().toString();
-      return getTaskFacades(tasks, groupIdentifier);
-    }).flatMap(Collection::stream).collect(Collectors.toList());
+    return planIdentifiers.stream().map(
+            planIdentifier -> taskService.getTasksPerJurisdictionIdentifier(
+                    UUID.fromString(planIdentifier), jurisdictionIdentifiers).entrySet().stream()
+                .map(this::getTaskFacades).flatMap(Collection::stream).collect(Collectors.toList()))
+        .flatMap(Collection::stream).collect(Collectors.toList());
   }
 
-  private List<TaskFacade> getTaskFacades(List<Task> tasks, String groupIdentifier) {
-    return tasks.stream().map(task -> {
-      Object businessStatus = businessStatusService.getBusinessStatus(task);
-      String createdBy = task.getAction().getGoal().getPlan()
-          .getCreatedBy(); //TODO: confirm business rule for task creation user(owner)
-      User user = getUser(createdBy);
-      return TaskFacadeFactory.getEntity(task, (String) businessStatus, user, groupIdentifier);
-    }).collect(Collectors.toList());
+  private List<TaskFacade> getTaskFacades(Entry<UUID, List<Task>> groupTaskListEntry) {
+    List<Task> tasks = groupTaskListEntry.getValue();
+    String groupIdentifier = groupTaskListEntry.getKey().toString();
+    return tasks.stream().map(task -> getTaskFacade(groupIdentifier, task))
+        .collect(Collectors.toList());
+  }
+
+  private TaskFacade getTaskFacade(String groupIdentifier, Task task) {
+    Object businessStatus = businessStatusService.getBusinessStatus(task);
+    String createdBy = task.getAction().getGoal().getPlan()
+        .getCreatedBy(); //TODO: confirm business rule for task creation user(owner)
+    User user = getUser(createdBy);
+    return TaskFacadeFactory.getEntity(task, (String) businessStatus, user, groupIdentifier);
   }
 
   private User getUser(String createdByUserIdentifier) {
@@ -174,6 +177,11 @@ public class TaskFacadeService {
           taskDto.getExecutionPeriod().getStart()).toLocalDate());
       task.setLastModified(LastModifierFromAndroid);
 
+      task.setBaseEntityIdentifier(UUID.fromString(taskDto.getForEntity()));
+
+      task.setEntityStatus(EntityStatus.ACTIVE);
+
+      //TODO: Incoming task should have a "client" with metadata instead of person request obj so that we save all client info for subsequent event syncs.
       boolean isPersonEntity =
           lookupEntityType != null && LookupEntityTypeCodeEnum.PERSON_CODE.getLookupEntityType()
               .equals(lookupEntityType.getCode());
@@ -188,6 +196,7 @@ public class TaskFacadeService {
         task.setPerson(person);
       }
 
+      //TODO: We will need to handle the location creation process here for dropped points. Will require android "task add" change.
       boolean isLocationEntity =
           lookupEntityType != null && LookupEntityTypeCodeEnum.LOCATION_CODE.getLookupEntityType()
               .equals(lookupEntityType.getCode());
@@ -196,8 +205,6 @@ public class TaskFacadeService {
             UUID.fromString(taskDto.getForEntity()));
         task.setLocation(location);
       }
-
-      task.setEntityStatus(EntityStatus.ACTIVE);
 
       task = taskService.saveTask(task);
       businessStatusService.setBusinessStatus(task, taskDto.getBusinessStatus());

@@ -58,16 +58,23 @@ public class GroupService {
     Group.GroupBuilder groupBuilder = Group.builder().type(groupRequest.getType().name())
         .name(groupRequest.getName());
 
-    if (groupRequest.getLocationIdentifier() != null) {
-      Location location = locationService.findByIdentifier(groupRequest.getLocationIdentifier());
-      groupBuilder.location(location);
+    if (groupRequest.getLocation() != null) {
+      groupBuilder.location(groupRequest.getLocation());
+    } else {
+      if (groupRequest.getLocationIdentifier() != null) {
+        Location location = locationService.findByIdentifier(groupRequest.getLocationIdentifier());
+        groupBuilder.location(location);
+      }
     }
-
     Group group = groupBuilder.build();
+    if (groupRequest.getIdentifier() != null) {
+      group.setIdentifier(groupRequest.getIdentifier());
+    }
     group.setEntityStatus(EntityStatus.ACTIVE);
 
-    return groupRepository.save(group);
+    return saveGroup(group);
   }
+
 
   public Group getGroupByIdentifier(UUID groupIdentifier) {
     return groupRepository.findByIdentifier(groupIdentifier).orElseThrow(
@@ -91,7 +98,11 @@ public class GroupService {
       groupRetrieved.setLocation(location);
     }
 
-    return groupRepository.save(groupRetrieved);
+    return saveGroup(groupRetrieved);
+  }
+
+  public Group saveGroup(Group group) {
+    return groupRepository.save(group);
   }
 
 }

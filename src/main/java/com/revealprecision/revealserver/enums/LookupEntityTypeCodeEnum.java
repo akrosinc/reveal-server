@@ -7,7 +7,7 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum LookupEntityTypeCodeEnum implements Serializable {
-  PERSON_CODE("Person"), LOCATION_CODE("Location");
+  PERSON_CODE("Person"), LOCATION_CODE("Location"), GROUP("Group");
 
   private final String lookupEntityType;
 

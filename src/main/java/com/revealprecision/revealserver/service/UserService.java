@@ -64,15 +64,13 @@ public class UserService {
   }
 
   public User getByIdentifier(UUID identifier) {
-    return userRepository.findByIdentifier(identifier)
-        .orElseThrow(() -> new NotFoundException(Pair.of(
-            Fields.identifier, identifier), User.class));
+    return userRepository.findByIdentifier(identifier).orElseThrow(
+        () -> new NotFoundException(Pair.of(Fields.identifier, identifier), User.class));
   }
 
   public Page<User> searchUsers(String searchParam, Pageable pageable) {
     return userRepository.searchByParameter(searchParam, pageable,
-        EntityGraphUtils.fromAttributePaths(
-            Fields.organizations));
+        EntityGraphUtils.fromAttributePaths(Fields.organizations));
   }
 
   public long getUsersNumber() {
@@ -94,8 +92,7 @@ public class UserService {
         if (!user1.getIdentifier().equals(user.getIdentifier())) {
           throw new ConflictException(
               String.format(Error.NON_UNIQUE, StringUtils.capitalize(Fields.email),
-                  userRequest.getEmail())
-          );
+                  userRequest.getEmail()));
         }
       });
     }
@@ -123,7 +120,13 @@ public class UserService {
     keycloakService.deleteAll(users, userResource);
   }
 
-  public User getCurrentUser(){
+  public User getCurrentUser() {
     return getByKeycloakId(UUID.fromString(UserUtils.getKeyCloakPrincipal().getName()));
   }
+
+  public User getByUserName(String username) {
+    return userRepository.getByUsername(username)
+        .orElseThrow(() -> new NotFoundException(Pair.of(Fields.username, username), User.class));
+  }
+
 }
