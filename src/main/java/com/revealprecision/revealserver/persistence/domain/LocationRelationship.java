@@ -3,6 +3,7 @@ package com.revealprecision.revealserver.persistence.domain;
 import java.util.List;
 import java.util.UUID;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
@@ -12,6 +13,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.experimental.FieldNameConstants;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.Where;
@@ -24,6 +26,7 @@ import org.hibernate.envers.Audited;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
+@FieldNameConstants
 @SQLDelete(sql = "UPDATE location_relationship SET entity_status = 'DELETED' where identifier=?")
 @Where(clause = "entity_status='ACTIVE'")
 public class LocationRelationship extends AbstractAuditableEntity {
@@ -36,11 +39,11 @@ public class LocationRelationship extends AbstractAuditableEntity {
   @JoinColumn(name = "location_hierarchy_identifier")
   private LocationHierarchy locationHierarchy;
 
-  @ManyToOne
+  @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "location_identifier")
   private Location location;
 
-  @ManyToOne
+  @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "parent_identifier")
   private Location parentLocation;
 

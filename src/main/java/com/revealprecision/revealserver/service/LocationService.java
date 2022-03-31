@@ -10,6 +10,7 @@ import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.PlanLocations;
 import com.revealprecision.revealserver.persistence.projection.LocationCoordinatesProjection;
+import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import com.revealprecision.revealserver.persistence.repository.LocationRepository;
 import java.util.Collection;
 import java.util.List;
@@ -96,13 +97,13 @@ public class LocationService {
             Collectors.toList());//TODO: to update once we figure the target level part.
   }
 
-  public List<Location> getLocationsByParentIdentifiersAndHierarchyIdentifier(
-      List<UUID> parentIdentifiers,
-      UUID locationHierarchyIdentifier) {
+  public List<PlanLocationDetails> getLocationsByParentIdentifierAndPlanIdentifier(
+      UUID parentIdentifier,
+      UUID planIdentifier) {
 
     return locationRelationshipService
-        .getLocationChildrenByLocationParentIdentifierAndHierarchyIdentifier(
-            parentIdentifiers, locationHierarchyIdentifier);
+        .getLocationChildrenByLocationParentIdentifierAndPlanIdentifier(
+            parentIdentifier, planIdentifier);
   }
 
 

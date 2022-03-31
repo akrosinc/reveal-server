@@ -101,12 +101,12 @@ public class LocationController {
 
   @Operation(summary = "Location Children", description = "Retrieve Locations By Parent Identifier", tags = {
       "Location"})
-  @GetMapping("/{parentLocationIdentifier}/children/{hierarchyIdentifier}")
+  @GetMapping("/{parentLocationIdentifier}/children/{planIdentifier}")
   public ResponseEntity<List<LocationResponse>> getLocationByParentIdentifier(
-      @PathVariable UUID parentLocationIdentifier, @PathVariable UUID hierarchyIdentifier) {
-    return ResponseEntity.ok(locationService.getLocationsByParentIdentifiersAndHierarchyIdentifier(
-        List.of(parentLocationIdentifier), hierarchyIdentifier).stream().map(
-        LocationResponseFactory::fromEntity
+      @PathVariable UUID parentLocationIdentifier, @PathVariable UUID planIdentifier) {
+    return ResponseEntity.ok(locationService.getLocationsByParentIdentifierAndPlanIdentifier(
+        parentLocationIdentifier, planIdentifier).stream().map(
+        LocationResponseFactory::fromPlanLocationDetails
     ).collect(Collectors.toList()));
   }
 }

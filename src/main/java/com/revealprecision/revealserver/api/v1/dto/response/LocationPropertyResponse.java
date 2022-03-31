@@ -21,4 +21,6 @@ public class LocationPropertyResponse {
   private String status;
   private UUID externalId;
   private String geographicLevel;
+  private Long numberOfTeams;
+  private boolean assigned;
 }

@@ -3,11 +3,11 @@ package com.revealprecision.revealserver.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.revealprecision.revealserver.enums.EntityStatus;
-import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.GeographicLevel;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
+import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import com.revealprecision.revealserver.persistence.repository.GeographicLevelRepository;
 import com.revealprecision.revealserver.persistence.repository.LocationHierarchyRepository;
 import com.revealprecision.revealserver.persistence.repository.LocationRelationshipRepository;
@@ -15,12 +15,10 @@ import com.revealprecision.revealserver.persistence.repository.LocationRepositor
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.elasticsearch.action.search.SearchRequest;
@@ -214,20 +212,11 @@ public class LocationRelationshipService {
     return locationRelationshipRepository.findByLocationHierarchyWithoutStructures(locationHierarchy.getIdentifier());
   }
 
-  public void validateLocationsBelonging(UUID hierarchyIdentifier, Set<UUID> locations) {
-    Set<UUID> checkLocations = new HashSet<>(locations);
-    List<UUID> foundLocations = locationRelationshipRepository.findLocationsInHierarchy(
-        hierarchyIdentifier, locations);
-    checkLocations.removeAll(foundLocations);
-    if (checkLocations.size() > 0) {
-      throw new NotFoundException("Locations: " + locations + " not found");
-    }
-  }
+  public List<PlanLocationDetails> getLocationChildrenByLocationParentIdentifierAndPlanIdentifier(
+      UUID parentLocationIdentifiers, UUID planIdentifier) {
 
-  public List<Location> getLocationChildrenByLocationParentIdentifierAndHierarchyIdentifier(
-      List<UUID> parentLocationIdentifiers, UUID hierarchyIdentifier) {
-    return locationRelationshipRepository.findLocationRelationshipUuidsByParentLocation_IdentifierAndHierarchyIdentifier(
-        parentLocationIdentifiers, hierarchyIdentifier);
+    return locationRelationshipRepository.getLocationDetailsByParentIdAndPlanId(
+        parentLocationIdentifiers, planIdentifier);
   }
 
   public List<UUID> findLocationRelationshipUiidsByParentLocationIdentifier(
@@ -279,7 +268,7 @@ public class LocationRelationshipService {
   }
 
   public List<Location> getChildrenLocations(UUID hierarchyIdentifier, UUID locationIdentifier) {
-    List<Location> children = locationRelationshipRepository.getChildren(hierarchyIdentifier, locationIdentifier);
+    List<Location> children = locationRelationshipRepository.getChildren(hierarchyIdentifier,locationIdentifier);
     return children;
   }
 }

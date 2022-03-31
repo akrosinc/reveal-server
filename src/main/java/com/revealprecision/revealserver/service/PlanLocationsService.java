@@ -125,7 +125,7 @@ public class PlanLocationsService {
     return geoTreeResponses;
   }
 
-  public void assignLocations(Map<UUID, Location> locationMap, GeoTreeResponse geoTreeResponse,
+  public void assignLocations(Map<UUID, Location> locationMap, GeoTreeResponse geoTreeResponse,//TODO: refactor this method
       UUID planId) {
     List<PlanAssignment> planAssignments = planAssignmentService.getPlanAssignmentByPlanLocationIdentifier(
         planId, geoTreeResponse.getIdentifier());
