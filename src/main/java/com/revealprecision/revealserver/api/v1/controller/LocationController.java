@@ -109,4 +109,13 @@ public class LocationController {
         LocationResponseFactory::fromPlanLocationDetails
     ).collect(Collectors.toList()));
   }
+
+  @GetMapping("/{locationIdentifier}/{planIdentifier}")
+  public ResponseEntity<LocationResponse> getLocationDetailsByIdentifierAndPlanIdentifier(
+      @PathVariable UUID locationIdentifier, @PathVariable UUID planIdentifier) {
+    return ResponseEntity.status(HttpStatus.OK)
+        .body(LocationResponseFactory.fromPlanLocationDetails(
+            locationService.getLocationDetailsByIdentifierAndPlanIdentifier(locationIdentifier,
+                planIdentifier)));
+  }
 }

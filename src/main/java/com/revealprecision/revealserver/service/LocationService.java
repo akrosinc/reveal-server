@@ -106,7 +106,6 @@ public class LocationService {
             parentIdentifier, planIdentifier);
   }
 
-
   public Set<Location> getAssignedLocationsFromPlans(Set<Plan> assignedPlans) {
     Set<Location> assignedLocations = assignedPlans.stream().map(Plan::getPlanLocations)
         .flatMap(Collection::stream).map(PlanLocations::getLocation).collect(Collectors.toSet());
@@ -116,5 +115,9 @@ public class LocationService {
   public LocationCoordinatesProjection getLocationCentroidCoordinatesByIdentifier(
       UUID locationIdentifier) {
     return locationRepository.getLocationCentroidCoordinatesByIdentifier(locationIdentifier);
+  }
+
+  public PlanLocationDetails getLocationDetailsByIdentifierAndPlanIdentifier(UUID locationIdentifier, UUID planIdentifier) {
+    return locationRepository.getLocationDetailsByIdentifierAndPlanIdentifier(locationIdentifier, planIdentifier);
   }
 }
