@@ -6,16 +6,22 @@ import com.revealprecision.revealserver.api.v1.facade.models.TaskFacade;
 import com.revealprecision.revealserver.api.v1.facade.models.TaskUpdateFacade;
 import com.revealprecision.revealserver.api.v1.facade.util.DateTimeFormatter;
 import com.revealprecision.revealserver.enums.EntityStatus;
+import com.revealprecision.revealserver.enums.LookupEntityTypeCodeEnum;
 import com.revealprecision.revealserver.enums.TaskPriorityEnum;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.Action;
+import com.revealprecision.revealserver.persistence.domain.Location;
+import com.revealprecision.revealserver.persistence.domain.LookupEntityType;
 import com.revealprecision.revealserver.persistence.domain.LookupTaskStatus;
 import com.revealprecision.revealserver.persistence.domain.LookupTaskStatus.Fields;
+import com.revealprecision.revealserver.persistence.domain.Person;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.Task;
 import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.service.ActionService;
 import com.revealprecision.revealserver.service.BusinessStatusService;
+import com.revealprecision.revealserver.service.LocationService;
+import com.revealprecision.revealserver.service.PersonService;
 import com.revealprecision.revealserver.service.PlanService;
 import com.revealprecision.revealserver.service.TaskService;
 import com.revealprecision.revealserver.service.UserService;
@@ -40,6 +46,8 @@ public class TaskFacadeService {
   private final TaskService taskService;
   private final ActionService actionService;
   private final PlanService planService;
+  private final PersonService personService;
+  private final LocationService locationService;
   private final BusinessStatusService businessStatusService;
 
   public List<TaskFacade> syncTasks(List<String> planIdentifiers,
@@ -140,6 +148,8 @@ public class TaskFacadeService {
             lookupTaskStatus -> lookupTaskStatus.getCode().equalsIgnoreCase(taskDto.getStatus().name()))
         .findFirst();
 
+    LookupEntityType lookupEntityType = action.getLookupEntityType();
+
     Task task;
     try {
       task = taskService.getTaskByIdentifier(UUID.fromString(taskDto.getIdentifier()));
@@ -170,6 +180,31 @@ public class TaskFacadeService {
       task.setBaseEntityIdentifier(UUID.fromString(taskDto.getForEntity()));
 
       task.setEntityStatus(EntityStatus.ACTIVE);
+
+      //TODO: Incoming task should have a "client" with metadata instead of person request obj so that we save all client info for subsequent event syncs.
+      boolean isPersonEntity =
+          lookupEntityType != null && LookupEntityTypeCodeEnum.PERSON_CODE.getLookupEntityType()
+              .equals(lookupEntityType.getCode());
+      if (isPersonEntity) {
+        Person person = null;
+        try {
+          person = personService.getPersonByIdentifier(UUID.fromString(taskDto.getForEntity()));
+        } catch (NotFoundException e) {
+          //We received task for new Person, record the person
+          person = personService.createPerson(taskDto.getPersonRequest());
+        }
+        task.setPerson(person);
+      }
+
+      //TODO: We will need to handle the location creation process here for dropped points. Will require android "task add" change.
+      boolean isLocationEntity =
+          lookupEntityType != null && LookupEntityTypeCodeEnum.LOCATION_CODE.getLookupEntityType()
+              .equals(lookupEntityType.getCode());
+      if (isLocationEntity) {
+        Location location = locationService.findByIdentifier(
+            UUID.fromString(taskDto.getForEntity()));
+        task.setLocation(location);
+      }
 
       task = taskService.saveTask(task);
       businessStatusService.setBusinessStatus(task, taskDto.getBusinessStatus());
