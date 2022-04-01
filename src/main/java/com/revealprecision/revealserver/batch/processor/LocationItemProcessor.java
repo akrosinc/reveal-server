@@ -47,12 +47,14 @@ public class LocationItemProcessor implements ItemProcessor<LocationRequest, Loc
     if (!isLocationValid(item)) {
       return null;
     }
-    var location = Location.builder().geographicLevel(
-        geographicLevelsMappedByName.get(item.getProperties().getGeographicLevel()))
+    var location = Location.builder()
+        .geographicLevel(geographicLevelsMappedByName.get(item.getProperties().getGeographicLevel()))
         .type(item.getType())
-        .geometry(item.getGeometry()).name(item.getProperties().getName())
+        .geometry(item.getGeometry())
+        .name(item.getProperties().getName())
         .status(item.getProperties().getStatus())
-        .externalId(item.getProperties().getExternalId()).build();
+        .externalId(item.getProperties().getExternalId())
+        .build();
     location.setEntityStatus(EntityStatus.ACTIVE);
     location.setLocationBulk(locationBulk);
     return location;

@@ -92,6 +92,15 @@ public class LocationHierarchyService {
     return geoTree;
   }
 
+  public GeoTree getGeoTreeFromLocationHierarchyWithoutStructure(LocationHierarchy locationHierarchy) {
+    Optional<List<LocationRelationship>> locationRelationshipOptional = locationRelationshipService.getLocationRelationshipsWithoutStructure(locationHierarchy);
+    GeoTree geoTree = new GeoTree();
+    geoTree.buildTreeFromList(
+        locationRelationshipOptional.isPresent() ? locationRelationshipOptional.get() :
+            Collections.emptyList());
+    return geoTree;
+  }
+
   public Optional<List<LocationRelationship>> getLocationRelationshipsForLocationHierarchy(
       LocationHierarchy locationHierarchy) {
     return locationRelationshipService

@@ -29,6 +29,8 @@ out/
 ### Sensitive Data ###
 src/main/resources/application.properties
 
+### Unuseful Data ###
+src/main/resources/batch/
 
 ### NetBeans ###
 /nbproject/private/
