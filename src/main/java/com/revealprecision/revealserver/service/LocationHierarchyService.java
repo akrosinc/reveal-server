@@ -15,31 +15,20 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import org.jobrunr.scheduling.JobScheduler;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class LocationHierarchyService {
 
-  private LocationHierarchyRepository locationHierarchyRepository;
-  private LocationRelationshipService locationRelationshipService;
-  private JobScheduler jobScheduler;
-  private GeographicLevelService geographicLevelService;
+  private final LocationHierarchyRepository locationHierarchyRepository;
+  private final LocationRelationshipService locationRelationshipService;
+  private final GeographicLevelService geographicLevelService;
 
-  @Autowired
-  public LocationHierarchyService(LocationHierarchyRepository locationHierarchyRepository,
-      LocationRelationshipService locationRelationshipService,
-      JobScheduler jobScheduler,
-      GeographicLevelService geographicLevelService) {
-    this.locationHierarchyRepository = locationHierarchyRepository;
-    this.locationRelationshipService = locationRelationshipService;
-    this.jobScheduler = jobScheduler;
-    this.geographicLevelService = geographicLevelService;
-  }
 
   public LocationHierarchy createLocationHierarchy(
       LocationHierarchyRequest locationHierarchyRequest) {
