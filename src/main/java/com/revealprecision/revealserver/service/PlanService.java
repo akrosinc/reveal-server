@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
@@ -40,9 +39,7 @@ public class PlanService {
   private final LocationHierarchyService locationHierarchyService;
   private final LookupInterventionTypeService lookupInterventionTypeService;
   private final TaskService taskService;
-
-  @Autowired
-  private KafkaTemplate<String, Message> kafkaTemplate;
+  private final KafkaTemplate<String, Message> kafkaTemplate;
 
   public static boolean isNullOrEmpty(final Collection<?> c) {
     return c == null || c.isEmpty();

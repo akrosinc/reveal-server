@@ -25,7 +25,7 @@ public class KafkaConsumerConfig {
   private String groupId;
 
   @Bean
-  public ConsumerFactory<String, Message> consumerFactory() {
+  public ConsumerFactory<String, Message> consumerFactory() { //TODO: consider serialization/deserialization failures
     Map<String, Object> props = new HashMap<>();
     props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapAddress);
     props.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);

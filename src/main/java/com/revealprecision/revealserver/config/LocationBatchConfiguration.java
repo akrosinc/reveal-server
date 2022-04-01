@@ -58,7 +58,7 @@ public class LocationBatchConfiguration {
 
   @Bean
   public LocationWriter locationWriterTest() {
-    LocationWriter locationWriter = new LocationWriter();
+    LocationWriter locationWriter = new LocationWriter(null, null);
     return locationWriter;
   }
 

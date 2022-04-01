@@ -6,16 +6,14 @@ import com.revealprecision.revealserver.persistence.repository.LocationElasticRe
 import com.revealprecision.revealserver.persistence.repository.LocationRepository;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.batch.item.ItemWriter;
-import org.springframework.beans.factory.annotation.Autowired;
 
+@RequiredArgsConstructor
 public class LocationWriter implements ItemWriter<Location> {
 
-  @Autowired
-  private LocationElasticRepository locationElasticRepository;
-
-  @Autowired
-  private LocationRepository locationRepository;
+  private final LocationElasticRepository locationElasticRepository;
+  private final LocationRepository locationRepository;
 
   @Override
   public void write(List<? extends Location> items) throws Exception {

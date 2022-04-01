@@ -16,7 +16,7 @@ import org.springframework.kafka.core.KafkaAdmin;
 public class KafkaConfig {
 
 
-  @Value(value = "${kafka.bootstrapAddress}")
+  @Value(value = "${kafka.bootstrapAddress}") //TODO: test for multiple instances
   private String bootstrapAddress;
 
   @Bean

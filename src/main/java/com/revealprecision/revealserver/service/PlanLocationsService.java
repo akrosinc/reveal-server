@@ -81,8 +81,8 @@ public class PlanLocationsService {
       locationsToAdd.removeAll(currentLocation);
       currentLocation.removeAll(locations);
 
-      List<Location> addLocaitons = locationService.getAllByIdentifiers(new ArrayList<>(locationsToAdd));
-      List<PlanLocations> addPlanLocations = addLocaitons.stream()
+      List<Location> addLocations = locationService.getAllByIdentifiers(new ArrayList<>(locationsToAdd));
+      List<PlanLocations> addPlanLocations = addLocations.stream()
           .map(location -> new PlanLocations(plan,location))
           .collect(Collectors.toList());
 
@@ -92,18 +92,6 @@ public class PlanLocationsService {
       if(currentLocation.size() > 0) {
         planLocationsRepository.deletePlanLocationsByPlanAndLocation(planIdentifier, new ArrayList<>(currentLocation));
       }
-
-
-//      planLocations.forEach(el -> {
-//        if (!locations.contains(el.getLocation().getIdentifier())) {
-//          planLocationsRepository.delete(el);
-//        } else {
-//          locations.remove(el.getLocation().getIdentifier());
-//        }
-//      });
-//      locations.forEach(el -> {
-//        planLocationsRepository.save(new PlanLocations(plan, locationService.findByIdentifier(el)));
-//      });
     }
   }
 

@@ -237,10 +237,10 @@ public class LocationRelationshipService {
         String parentGeographicLevelName = locationHierarchy.getNodeOrder()
             .get(nodePosition);
 
-        String centroind = locationRepository.getCentroid(location.getIdentifier());
-        centroind = centroind.substring(6).replace(")","");
-        double x = Double.parseDouble(centroind.split(" ")[0]);
-        double y = Double.parseDouble(centroind.split(" ")[1]);
+        String centroid = locationRepository.getCentroid(location.getIdentifier());
+        centroid = centroid.substring(6).replace(")","");
+        double x = Double.parseDouble(centroid.split(" ")[0]);
+        double y = Double.parseDouble(centroid.split(" ")[1]);
         BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
         boolQuery.must(QueryBuilders.matchQuery("level", parentGeographicLevelName));
         boolQuery.filter(QueryBuilders.geoShapeQuery("geometry", new Point(x,  y)).relation(
