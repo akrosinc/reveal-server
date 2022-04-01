@@ -27,3 +27,8 @@ This will generate a report in `build/reports/dependency-check-report.html`
 ```text
 /swagger-ui/index.html?configUrl=/api-docs/swagger-config
 ```
+
+## Elasticsearch
+```
+docker run -d --name es762 -p 9200:9200 -e "discovery.type=single-node" elasticsearch:7.6.2
+```
