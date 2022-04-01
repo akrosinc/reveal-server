@@ -2,6 +2,7 @@ package com.revealprecision.revealserver.service;
 
 import com.revealprecision.revealserver.api.v1.dto.request.LocationRequest;
 import com.revealprecision.revealserver.enums.EntityStatus;
+import com.revealprecision.revealserver.enums.LookupEntityTypeTableEnum;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.GeographicLevel;
 import com.revealprecision.revealserver.persistence.domain.Location;
@@ -12,6 +13,7 @@ import com.revealprecision.revealserver.persistence.domain.PlanLocations;
 import com.revealprecision.revealserver.persistence.projection.LocationCoordinatesProjection;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import com.revealprecision.revealserver.persistence.repository.LocationRepository;
+import com.revealprecision.revealserver.props.BusinessStatusProperties;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -30,17 +32,22 @@ public class LocationService {
   private final LocationRepository locationRepository;
   private final GeographicLevelService geographicLevelService;
   private final LocationRelationshipService locationRelationshipService;
+  private final BusinessStatusService businessStatusService;
+  private final BusinessStatusProperties businessStatusProperties;
 
   public Location createLocation(LocationRequest locationRequest) {
     GeographicLevel geographicLevel = geographicLevelService.findByName(
         locationRequest.getProperties().getGeographicLevel());
     var locationToSave = Location.builder().geographicLevel(geographicLevel)
-        .type(locationRequest.getType())
-        .geometry(locationRequest.getGeometry()).name(locationRequest.getProperties().getName())
+        .type(locationRequest.getType()).geometry(locationRequest.getGeometry())
+        .name(locationRequest.getProperties().getName())
         .status(locationRequest.getProperties().getStatus())
         .externalId(locationRequest.getProperties().getExternalId()).build();
     locationToSave.setEntityStatus(EntityStatus.ACTIVE);
     var savedLocation = locationRepository.save(locationToSave);
+    businessStatusService.setBusinessStatusForAllKeys(savedLocation.getIdentifier(),
+        businessStatusProperties.getDefaultLocationBusinessStatus(),
+        LookupEntityTypeTableEnum.LOCATION_TABLE);
     locationRelationshipService.updateLocationRelationshipsForNewLocation(savedLocation);
     return savedLocation;
   }
@@ -85,16 +92,13 @@ public class LocationService {
       LocationHierarchy locationHierarchy) {
     List<LocationRelationship> locationRelationships = locationHierarchy.getLocationRelationships();
     List<Location> locations = locationRelationships.stream().filter(
-        locationRelationship -> locationRelationship.getParentLocation() != null
-            && parentIdentifiers
-            .contains(locationRelationship.getParentLocation().getIdentifier()))
-        .map(LocationRelationship::getLocation).collect(
-            Collectors.toList());
+            locationRelationship -> locationRelationship.getParentLocation() != null
+                && parentIdentifiers.contains(locationRelationship.getParentLocation().getIdentifier()))
+        .map(LocationRelationship::getLocation).collect(Collectors.toList());
 
     return locations.stream()
         .filter(location -> location.getGeographicLevel().getName().equalsIgnoreCase("structure"))
-        .collect(
-            Collectors.toList());//TODO: to update once we figure the target level part.
+        .collect(Collectors.toList());//TODO: to update once we figure the target level part.
   }
 
   public List<PlanLocationDetails> getLocationsByParentIdentifierAndPlanIdentifier(
@@ -107,9 +111,8 @@ public class LocationService {
   }
 
   public Set<Location> getAssignedLocationsFromPlans(Set<Plan> assignedPlans) {
-    Set<Location> assignedLocations = assignedPlans.stream().map(Plan::getPlanLocations)
+    return assignedPlans.stream().map(Plan::getPlanLocations)
         .flatMap(Collection::stream).map(PlanLocations::getLocation).collect(Collectors.toSet());
-    return assignedLocations;
   }
 
   public LocationCoordinatesProjection getLocationCentroidCoordinatesByIdentifier(

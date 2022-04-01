@@ -3,14 +3,14 @@ package com.revealprecision.revealserver.api.v1.facade.controller;
 import com.revealprecision.revealserver.api.v1.facade.models.TaskDto;
 import com.revealprecision.revealserver.api.v1.facade.models.TaskFacade;
 import com.revealprecision.revealserver.api.v1.facade.models.TaskUpdateFacade;
-import com.revealprecision.revealserver.api.v1.facade.request.TaskSyncRequestWrapper;
+import com.revealprecision.revealserver.api.v1.facade.request.TaskSyncRequest;
 import com.revealprecision.revealserver.api.v1.facade.service.TaskFacadeService;
 import io.swagger.v3.oas.annotations.Operation;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
@@ -42,14 +42,13 @@ public class TaskFacadeController {
   @ResponseStatus(HttpStatus.OK)
   @PostMapping(value = "/sync", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   @Transactional
-  public ResponseEntity<List<TaskFacade>> taskSync(
-      @RequestBody TaskSyncRequestWrapper taskSyncRequestWrapper) {
+  public ResponseEntity<List<TaskFacade>> taskSync(@RequestBody TaskSyncRequest taskSyncRequest) {
 
-    String plan = StringUtils.join(taskSyncRequestWrapper.getPlan(), ",");
-    String group = StringUtils.join(taskSyncRequestWrapper.getGroup(), ",");
-    boolean returnCount = taskSyncRequestWrapper.isReturnCount();
+    List<UUID> jurisdictionIdentifiers = taskSyncRequest.getGroup();
+    boolean returnCount = taskSyncRequest.isReturnCount();
 
-    List<TaskFacade> taskFacades = taskFacadeService.syncTasks(plan, group);
+    List<TaskFacade> taskFacades = taskFacadeService.syncTasks(taskSyncRequest.getPlan(),
+        jurisdictionIdentifiers);
 
     if (returnCount) {
       HttpHeaders headers = new HttpHeaders();
@@ -67,7 +66,6 @@ public class TaskFacadeController {
   @PostMapping(value = "/add", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<String> batchSave(@RequestBody List<TaskDto> tasks) {
 
-
     List<TaskDto> taskDtosUnprocessed = taskFacadeService.addTasks(tasks);
 
     if (taskDtosUnprocessed.isEmpty()) {
@@ -75,16 +73,15 @@ public class TaskFacadeController {
     } else {
       return new ResponseEntity<>(
           "Tasks with identifiers not processed: " + taskDtosUnprocessed.stream()
-              .map(TaskDto::getIdentifier).collect(
-                  Collectors.joining(",")),
-          HttpStatus.CREATED);
+              .map(TaskDto::getIdentifier).collect(Collectors.joining(",")), HttpStatus.CREATED);
     }
 
   }
+
   @Operation(summary = "Facade for Android Task Resource", description = "Update Status for Tasks", tags = {
       "Task-Facade"})
-  @RequestMapping(value = "/update_status", method = RequestMethod.POST, consumes = { MediaType.APPLICATION_JSON_VALUE,
-      MediaType.TEXT_PLAIN_VALUE })
+  @RequestMapping(value = "/update_status", method = RequestMethod.POST, consumes = {
+      MediaType.APPLICATION_JSON_VALUE, MediaType.TEXT_PLAIN_VALUE})
   public ResponseEntity<String> updateStatus(@RequestBody List<TaskUpdateFacade> taskUpdates) {
 
     List<String> updateTasks = taskFacadeService.updateTaskStatusAndBusinessStatusForListOfTasks(

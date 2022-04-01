@@ -53,4 +53,7 @@ public class Form extends AbstractAuditableEntity {
 
   @OneToMany(mappedBy = "form")
   private Set<Action> actions;
+
+  @OneToMany(mappedBy = "form")
+  private Set<FormData> formData;
 }

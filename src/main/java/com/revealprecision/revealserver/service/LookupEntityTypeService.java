@@ -31,4 +31,9 @@ public class LookupEntityTypeService {
         () -> new NotFoundException(Pair.of(Fields.tableName, name), LookupEntityType.class));
   }
 
+  public LookupEntityType getLookupEntityTypeByCode(String code) {
+    return lookupEntityTypeRepository.findLookupEntityTypeByCode(code).orElseThrow(
+        () -> new NotFoundException(Pair.of(Fields.code, code), LookupEntityType.class));
+  }
+
 }

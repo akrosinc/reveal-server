@@ -29,8 +29,8 @@ public class GoalService {
         Fields.identifier, identifier), Goal.class));
   }
 
-  public void createGoal(UUID identifier, GoalRequest goalRequest) {
-    Plan plan = planService.getPlanByIdentifier(identifier);
+  public void createGoal(UUID planIdentifier, GoalRequest goalRequest) {
+    Plan plan = planService.getPlanByIdentifier(planIdentifier);
     Goal goal = GoalEntityFactory.toEntityWithoutAction(goalRequest, plan);
     goalRepository.save(goal);
   }
@@ -57,7 +57,7 @@ public class GoalService {
     return goalRepository.getAllFromPlan(identifier, pageable);
   }
 
-  public List<Goal> getGoalsByPlanIdentifier(UUID planIdentifier){
-   return goalRepository.findGoalsByPlan_Identifier(planIdentifier);
+  public List<Goal> getGoalsByPlanIdentifier(UUID planIdentifier) {
+    return goalRepository.findGoalsByPlan_Identifier(planIdentifier);
   }
 }

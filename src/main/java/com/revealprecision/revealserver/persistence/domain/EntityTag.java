@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.persistence.domain;
 
 import java.util.UUID;
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
@@ -33,6 +34,7 @@ public class EntityTag extends AbstractAuditableEntity {
   @GeneratedValue
   private UUID identifier;
 
+  @Column(unique = true)
   private String tag;
 
   private String valueType;

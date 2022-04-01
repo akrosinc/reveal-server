@@ -179,7 +179,6 @@ public class LocationRelationshipService {
     LocationRelationship locationRelationship = LocationRelationship.builder()
         .location(location)
         .locationHierarchy(locationHierarchy)
-        .ancestry(new ArrayList<>())
         .build();
     locationRelationship.setEntityStatus(EntityStatus.ACTIVE);
     locationRelationshipRepository.save(locationRelationship);
@@ -210,6 +209,12 @@ public class LocationRelationshipService {
 
   public Optional<List<LocationRelationship>> getLocationRelationshipsWithoutStructure(LocationHierarchy locationHierarchy){
     return locationRelationshipRepository.findByLocationHierarchyWithoutStructures(locationHierarchy.getIdentifier());
+  }
+
+  public List<Location> getLocationChildrenByLocationParentIdentifierAndHierarchyIdentifier(
+      List<UUID> parentLocationIdentifiers, UUID hierarchyIdentifier) {
+    return locationRelationshipRepository.findLocationRelationshipUuidsByParentLocation_IdentifierAndHierarchyIdentifier(
+        parentLocationIdentifiers, hierarchyIdentifier);
   }
 
   public List<PlanLocationDetails> getLocationChildrenByLocationParentIdentifierAndPlanIdentifier(

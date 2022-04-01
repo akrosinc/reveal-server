@@ -6,13 +6,12 @@ import ca.uhn.fhir.rest.annotation.Read;
 import ca.uhn.fhir.rest.annotation.ResourceParam;
 import ca.uhn.fhir.rest.api.MethodOutcome;
 import ca.uhn.fhir.rest.server.IResourceProvider;
-import com.revealprecision.revealserver.api.v1.facade.service.MetaDataJdbcService;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.fhir.properties.FhirServerProperties;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.projection.LocationCoordinatesProjection;
 import com.revealprecision.revealserver.service.LocationService;
-import com.revealprecision.revealserver.service.LookupEntityTypeService;
+import com.revealprecision.revealserver.service.MetaDataJdbcService;
 import com.revealprecision.revealserver.service.PersonService;
 import java.util.ArrayList;
 import java.util.List;
@@ -54,11 +53,7 @@ public class PersonResourceProvider implements IResourceProvider {
 
   private final FhirServerProperties fhirServerProperties;
 
-  private final LocationResourceProvider locationResourceProvider;
-
   private final LocationService locationService;
-
-  private final LookupEntityTypeService lookupEntityTypeService;
 
 
   @Read()

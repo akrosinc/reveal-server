@@ -3,6 +3,7 @@ package com.revealprecision.revealserver.api.v1.facade.models;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.revealprecision.revealserver.api.v1.dto.request.PersonRequest;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
@@ -115,6 +116,8 @@ public class TaskFacade implements Serializable {
   @JsonProperty("for")
   private String forEntity;
 
+  private PersonRequest personRequest;
+
   private Period executionPeriod;
 
   private String authoredOn;
@@ -134,8 +137,6 @@ public class TaskFacade implements Serializable {
   private String syncStatus;
 
   private String structureId;
-
-  private Long rowid;
 
   private Restriction restriction;
 

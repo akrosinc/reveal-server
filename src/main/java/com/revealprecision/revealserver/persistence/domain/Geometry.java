@@ -12,7 +12,6 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-//@JsonDeserialize(using = ItemDeserializer.class)
 public class Geometry implements Serializable {
 
   public enum GeometryType {

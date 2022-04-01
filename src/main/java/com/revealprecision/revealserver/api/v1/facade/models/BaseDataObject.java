@@ -4,24 +4,23 @@ package com.revealprecision.revealserver.api.v1.facade.models;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.apache.james.mime4j.field.datetime.DateTime;
 
 @Getter
 @Setter
 @NoArgsConstructor
-public abstract class BaseDataObject {
+public abstract class BaseDataObject extends BaseDataEntity {
 
   private String creator;
 
-  private DateTime dateCreated;
+  private String dateCreated;
 
   private String editor;
 
-  private DateTime dateEdited;
+  private String dateEdited;
 
   private Boolean voided;
 
-  private DateTime dateVoided;
+  private String dateVoided;
 
   private String voider;
 
@@ -32,5 +31,6 @@ public abstract class BaseDataObject {
   private Integer clientApplicationVersion;
 
   private Integer clientDatabaseVersion;
+
 
 }

@@ -171,6 +171,36 @@ CREATE TABLE IF NOT EXISTS form_aud
     modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
     PRIMARY KEY (identifier, REV)
 );
+
+CREATE TABLE IF NOT EXISTS form_data
+(
+    identifier        UUID                     NOT NULL,
+    payload           jsonb                    NOT NULL,
+    form_identifier   UUID                     NOT NULL,
+    entity_status     VARCHAR(36)              NOT NULL,
+    created_by        VARCHAR(36)              NOT NULL,
+    created_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by       VARCHAR(36)              NOT NULL,
+    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    PRIMARY KEY (identifier),
+    FOREIGN KEY (form_identifier) REFERENCES form (identifier)
+);
+
+CREATE TABLE IF NOT EXISTS form_data_aud
+(
+    identifier        UUID                     NOT NULL,
+    REV               INT                      NOT NULL,
+    REVTYPE           INTEGER                  NULL,
+    payload           jsonb                    NOT NULL,
+    form_identifier   UUID                     NOT NULL,
+    entity_status     VARCHAR(36)              NOT NULL,
+    created_by        VARCHAR(36)              NOT NULL,
+    created_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by       VARCHAR(36)              NOT NULL,
+    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    PRIMARY KEY (identifier, REV)
+);
+
 CREATE TABLE IF NOT EXISTS lookup_entity_type
 (
     identifier        uuid                     NOT NULL,
@@ -181,7 +211,8 @@ CREATE TABLE IF NOT EXISTS lookup_entity_type
     created_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,
     modified_by       VARCHAR(36)              NOT NULL,
     modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
-    CONSTRAINT lookup_entity_type_pkey PRIMARY KEY (identifier)
+    PRIMARY KEY (identifier),
+    UNIQUE (code)
 );
 
 CREATE TABLE IF NOT EXISTS lookup_entity_type_aud
@@ -190,12 +221,13 @@ CREATE TABLE IF NOT EXISTS lookup_entity_type_aud
     REV               INT                      NOT NULL,
     REVTYPE           INTEGER                  NULL,
     code              character varying        NOT NULL,
+    table_name        character varying        NOT NULL,
     entity_status     VARCHAR(36)              NOT NULL,
     created_by        VARCHAR(36)              NOT NULL,
     created_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,
     modified_by       VARCHAR(36)              NOT NULL,
     modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
-    CONSTRAINT lookup_entity_type_aud_pkey PRIMARY KEY (identifier, REV)
+    PRIMARY KEY (identifier, REV)
 );
 
 CREATE TABLE IF NOT EXISTS action
@@ -214,16 +246,9 @@ CREATE TABLE IF NOT EXISTS action
     modified_by                   character varying(36)    NOT NULL,
     modified_datetime             timestamp with time zone NOT NULL,
     lookup_entity_type_identifier uuid,
-    CONSTRAINT action_pkey PRIMARY KEY (identifier),
-    CONSTRAINT action_entity_type_fkey FOREIGN KEY (lookup_entity_type_identifier)
-        REFERENCES lookup_entity_type (identifier) MATCH SIMPLE
-        ON UPDATE NO ACTION
-        ON DELETE NO ACTION
-        NOT VALID,
-    CONSTRAINT action_goal_identifier_fkey FOREIGN KEY (goal_identifier)
-        REFERENCES goal (identifier) MATCH SIMPLE
-        ON UPDATE NO ACTION
-        ON DELETE NO ACTION
+    PRIMARY KEY (identifier),
+    FOREIGN KEY (lookup_entity_type_identifier) REFERENCES lookup_entity_type (identifier),
+    FOREIGN KEY (goal_identifier) REFERENCES goal (identifier)
 );
 
 CREATE TABLE IF NOT EXISTS action_aud
@@ -325,16 +350,9 @@ CREATE TABLE IF NOT EXISTS task
     base_entity_identifier        uuid                     NOT NULL,
     action_identifier             uuid                     NOT NULL,
     plan_identifier               uuid                     NOT NULL,
-    CONSTRAINT task_pkey PRIMARY KEY (identifier),
-    CONSTRAINT action_identifier_fk FOREIGN KEY (action_identifier)
-        REFERENCES action (identifier) MATCH SIMPLE
-        ON UPDATE NO ACTION
-        ON DELETE NO ACTION
-        NOT VALID,
-    CONSTRAINT lookup_task_status_fk FOREIGN KEY (lookup_task_status_identifier)
-        REFERENCES lookup_task_status (identifier) MATCH SIMPLE
-        ON UPDATE NO ACTION
-        ON DELETE NO ACTION
+    PRIMARY KEY (identifier),
+    FOREIGN KEY (action_identifier) REFERENCES action (identifier),
+    FOREIGN KEY (lookup_task_status_identifier) REFERENCES lookup_task_status (identifier)
 );
 
 CREATE INDEX IF NOT EXISTS task_idx
@@ -361,7 +379,7 @@ CREATE TABLE IF NOT EXISTS task_aud
     base_entity_identifier        uuid                     NOT NULL,
     action_identifier             uuid                     NOT NULL,
     plan_identifier               uuid                     NOT NULL,
-    CONSTRAINT task_aud_pkey PRIMARY KEY (identifier, rev)
+    PRIMARY KEY (identifier, rev)
 );
 
 CREATE TABLE IF NOT EXISTS target
@@ -566,11 +584,8 @@ CREATE TABLE IF NOT EXISTS task_location
     identifier          uuid NOT NULL DEFAULT uuid_generate_v4(),
     task_identifier     uuid NOT NULL,
     location_identifier uuid NOT NULL,
-    CONSTRAINT task_location_pkey PRIMARY KEY (identifier),
-    CONSTRAINT task_fk FOREIGN KEY (task_identifier)
-        REFERENCES task (identifier) MATCH SIMPLE
-        ON UPDATE NO ACTION
-        ON DELETE NO ACTION
+    PRIMARY KEY (identifier),
+    FOREIGN KEY (task_identifier) REFERENCES task (identifier)
 );
 
 CREATE TABLE IF NOT EXISTS task_location_aud
@@ -580,7 +595,7 @@ CREATE TABLE IF NOT EXISTS task_location_aud
     REVTYPE             INTEGER NULL,
     task_identifier     uuid    NOT NULL,
     location_identifier uuid    NOT NULL,
-    CONSTRAINT task_location_aud_pkey PRIMARY KEY (identifier, REV)
+    PRIMARY KEY (identifier, REV)
 );
 
 CREATE TABLE IF NOT EXISTS location_relationship
@@ -849,7 +864,11 @@ CREATE TABLE IF NOT EXISTS person
     name_prefix       character varying(30)    NOT NULL,
     name_suffix       character varying DEFAULT ''::character varying,
     gender            character varying(30)    NOT NULL,
-    birth_date        date                     NOT NULL,
+    birth_date        date,
+    death_date        date,
+    birth_date_approx bool              DEFAULT false,
+    death_date_approx bool              DEFAULT false,
+    additional_info   json,
     entity_status     character varying(36)    NOT NULL,
     created_by        character varying(36)    NOT NULL,
     created_datetime  timestamp with time zone NOT NULL,
@@ -871,7 +890,11 @@ CREATE TABLE IF NOT EXISTS person_aud
     name_prefix       character varying(30)    NOT NULL,
     name_suffix       character varying DEFAULT ''::character varying,
     gender            character varying(30)    NOT NULL,
-    birth_date        date                     NOT NULL,
+    birth_date        date,
+    death_date        date,
+    birth_date_approx bool              DEFAULT false,
+    death_date_approx bool              DEFAULT false,
+    additional_info   json,
     created_by        character varying(36)    NOT NULL,
     created_datetime  timestamp with time zone NOT NULL,
     modified_by       character varying(36)    NOT NULL,
@@ -886,16 +909,14 @@ CREATE TABLE IF NOT EXISTS "group"
     name                character varying(255)   NOT NULL,
     type                character varying(255)   NOT NULL,
     location_identifier uuid,
+    additional_info     jsonb,
     entity_status       character varying(36)    NOT NULL,
     created_by          character varying(36)    NOT NULL,
     created_datetime    timestamp with time zone NOT NULL,
     modified_by         character varying(36)    NOT NULL,
     modified_datetime   timestamp with time zone NOT NULL,
-    CONSTRAINT group_pkey PRIMARY KEY (identifier),
-    CONSTRAINT group_location_identifier_fkey FOREIGN KEY (location_identifier)
-        REFERENCES location (identifier) MATCH SIMPLE
-        ON UPDATE NO ACTION
-        ON DELETE NO ACTION
+    PRIMARY KEY (identifier),
+    FOREIGN KEY (location_identifier) REFERENCES location (identifier)
 );
 
 CREATE TABLE IF NOT EXISTS group_aud
@@ -906,31 +927,52 @@ CREATE TABLE IF NOT EXISTS group_aud
     rev                 integer                  NOT NULL,
     revtype             integer,
     location_identifier uuid,
+    additional_info     jsonb,
     created_by          character varying(36)    NOT NULL,
     created_datetime    timestamp with time zone NOT NULL,
     modified_by         character varying(36)    NOT NULL,
     modified_datetime   timestamp with time zone NOT NULL,
     entity_status       character varying(36)    NOT NULL,
-    CONSTRAINT group_aud_pkey PRIMARY KEY (identifier, rev),
-    CONSTRAINT group_aud_location_identifier_fkey FOREIGN KEY (location_identifier)
-        REFERENCES location (identifier) MATCH SIMPLE
-        ON UPDATE NO ACTION
-        ON DELETE NO ACTION
+    PRIMARY KEY (identifier, rev)
 );
+
+CREATE TABLE IF NOT EXISTS group_metadata
+(
+    identifier        uuid                     NOT NULL,
+    entity_value      jsonb                    NOT NULL,
+    group_identifier  uuid                     NOT NULL,
+    entity_status     VARCHAR(36)              NOT NULL,
+    created_by        VARCHAR(36)              NOT NULL,
+    created_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by       VARCHAR(36)              NOT NULL,
+    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    PRIMARY KEY (identifier),
+    UNIQUE (group_identifier)
+);
+
+CREATE TABLE IF NOT EXISTS group_metadata_aud
+(
+    identifier        uuid                     NOT NULL,
+    entity_value      jsonb                    NOT NULL,
+    group_identifier  uuid                     NOT NULL,
+    rev               integer                  NOT NULL,
+    revtype           integer,
+    entity_status     VARCHAR(36)              NOT NULL,
+    created_by        VARCHAR(36)              NOT NULL,
+    created_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by       VARCHAR(36)              NOT NULL,
+    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    PRIMARY KEY (identifier, rev)
+);
+
 
 CREATE TABLE IF NOT EXISTS person_group
 (
     person_identifier uuid NOT NULL,
     group_identifier  uuid NOT NULL,
-    CONSTRAINT person_group_pkey PRIMARY KEY (person_identifier, group_identifier),
-    CONSTRAINT person_group_group_identifier_fkey FOREIGN KEY (group_identifier)
-        REFERENCES "group" (identifier) MATCH SIMPLE
-        ON UPDATE NO ACTION
-        ON DELETE NO ACTION,
-    CONSTRAINT person_group_person_identifier_fkey FOREIGN KEY (person_identifier)
-        REFERENCES person (identifier) MATCH SIMPLE
-        ON UPDATE NO ACTION
-        ON DELETE NO ACTION
+    PRIMARY KEY (person_identifier, group_identifier),
+    FOREIGN KEY (group_identifier) REFERENCES "group" (identifier),
+    FOREIGN KEY (person_identifier) REFERENCES person (identifier)
 );
 
 CREATE TABLE IF NOT EXISTS person_group_aud
@@ -939,7 +981,7 @@ CREATE TABLE IF NOT EXISTS person_group_aud
     revtype           integer,
     person_identifier uuid    NOT NULL,
     group_identifier  uuid    NOT NULL,
-    CONSTRAINT person_group_aud_pkey PRIMARY KEY (person_identifier, group_identifier, rev)
+    PRIMARY KEY (person_identifier, group_identifier, rev)
 );
 CREATE TABLE IF NOT EXISTS entity_tag
 (
@@ -953,12 +995,8 @@ CREATE TABLE IF NOT EXISTS entity_tag
     created_datetime              timestamp with time zone NOT NULL,
     modified_by                   character varying(36)    NOT NULL,
     modified_datetime             timestamp with time zone NOT NULL,
-    CONSTRAINT entity_tag_pkey PRIMARY KEY (identifier),
-    CONSTRAINT entity_tag_lookup_entity_type_fkey FOREIGN KEY (lookup_entity_type_identifier)
-        REFERENCES lookup_entity_type (identifier) MATCH SIMPLE
-        ON UPDATE NO ACTION
-        ON DELETE NO ACTION
-        NOT VALID
+    PRIMARY KEY (identifier),
+    FOREIGN KEY (lookup_entity_type_identifier) REFERENCES lookup_entity_type (identifier)
 );
 
 CREATE TABLE IF NOT EXISTS entity_tag_aud
@@ -968,32 +1006,34 @@ CREATE TABLE IF NOT EXISTS entity_tag_aud
     revtype                       integer,
     tag                           character varying        NOT NULL,
     value_type                    character varying        NOT NULL,
-    definition                    character varying        NOT NULL,
+    definition                    character varying,
     lookup_entity_type_identifier uuid                     NOT NULL,
     entity_status                 character varying(36)    NOT NULL,
     created_by                    character varying(36)    NOT NULL,
     created_datetime              timestamp with time zone NOT NULL,
     modified_by                   character varying(36)    NOT NULL,
     modified_datetime             timestamp with time zone NOT NULL,
-    CONSTRAINT entity_tag_aud_pkey PRIMARY KEY (identifier, rev)
+    PRIMARY KEY (identifier, rev)
 );
 
 CREATE TABLE person_location
 (
-    identifier          uuid NOT NULL,
+    identifier          uuid NOT NULL DEFAULT uuid_generate_v4(),
     person_identifier   uuid NOT NULL,
     location_identifier uuid NOT NULL,
     PRIMARY KEY (identifier),
-    CONSTRAINT person_location_person_fkey FOREIGN KEY (person_identifier)
-        REFERENCES person (identifier) MATCH SIMPLE
-        ON UPDATE NO ACTION
-        ON DELETE NO ACTION
-        NOT VALID,
-    CONSTRAINT person_location_location_fkey FOREIGN KEY (location_identifier)
-        REFERENCES location (identifier) MATCH SIMPLE
-        ON UPDATE NO ACTION
-        ON DELETE NO ACTION
-        NOT VALID
+    FOREIGN KEY (person_identifier) REFERENCES person (identifier),
+    FOREIGN KEY (location_identifier) REFERENCES location (identifier)
+);
+
+CREATE TABLE person_location_aud
+(
+    identifier          uuid    NOT NULL DEFAULT uuid_generate_v4(),
+    person_identifier   uuid    NOT NULL,
+    location_identifier uuid    NOT NULL,
+    rev                 integer NOT NULL,
+    revtype             integer,
+    PRIMARY KEY (identifier, rev)
 );
 
 CREATE TABLE IF NOT EXISTS person_metadata
@@ -1006,12 +1046,8 @@ CREATE TABLE IF NOT EXISTS person_metadata
     created_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,
     modified_by       VARCHAR(36)              NOT NULL,
     modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
-    CONSTRAINT person_metadata_pkey PRIMARY KEY (identifier),
-    CONSTRAINT person_identifier_fkey FOREIGN KEY (person_identifier)
-        REFERENCES person (identifier) MATCH SIMPLE
-        ON UPDATE NO ACTION
-        ON DELETE NO ACTION
-        NOT VALID
+    PRIMARY KEY (identifier),
+    UNIQUE (person_identifier)
 );
 
 CREATE TABLE IF NOT EXISTS person_metadata_AUD
@@ -1031,27 +1067,39 @@ CREATE TABLE IF NOT EXISTS person_metadata_AUD
 
 CREATE TABLE IF NOT EXISTS location_metadata
 (
-    identifier          uuid  NOT NULL,
-    entity_value        jsonb NOT NULL,
-    location_identifier uuid  NOT NULL,
-    CONSTRAINT location_metadata_pkey PRIMARY KEY (identifier),
-    CONSTRAINT location_identifier_fkey FOREIGN KEY (location_identifier)
-        REFERENCES location (identifier) MATCH SIMPLE
-        ON UPDATE NO ACTION
-        ON DELETE NO ACTION
-        NOT VALID
+    identifier          uuid                     NOT NULL,
+    entity_value        jsonb                    NOT NULL,
+    location_identifier uuid                     NOT NULL,
+    entity_status       VARCHAR(36)              NOT NULL,
+    created_by          VARCHAR(36)              NOT NULL,
+    created_datetime    TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by         VARCHAR(36)              NOT NULL,
+    modified_datetime   TIMESTAMP WITH TIME ZONE NOT NULL,
+    PRIMARY KEY (identifier),
+    UNIQUE (location_identifier)
 );
-
+CREATE TABLE IF NOT EXISTS location_metadata_aud
+(
+    identifier          uuid                     NOT NULL,
+    rev                 integer                  NOT NULL,
+    revtype             integer,
+    entity_value        jsonb                    NOT NULL,
+    location_identifier uuid                     NOT NULL,
+    entity_status       VARCHAR(36)              NOT NULL,
+    created_by          VARCHAR(36)              NOT NULL,
+    created_datetime    TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by         VARCHAR(36)              NOT NULL,
+    modified_datetime   TIMESTAMP WITH TIME ZONE NOT NULL,
+    PRIMARY KEY (identifier, REV)
+);
 CREATE TABLE IF NOT EXISTS task_person
 (
     identifier        uuid NOT NULL DEFAULT uuid_generate_v4(),
     task_identifier   uuid NOT NULL,
     person_identifier uuid NOT NULL,
-    CONSTRAINT task_person_pkey PRIMARY KEY (identifier),
-    CONSTRAINT task_fk FOREIGN KEY (task_identifier)
-        REFERENCES task (identifier) MATCH SIMPLE
-        ON UPDATE NO ACTION
-        ON DELETE NO ACTION
+    PRIMARY KEY (identifier),
+    FOREIGN KEY (task_identifier) REFERENCES task (identifier),
+    FOREIGN KEY (person_identifier) REFERENCES person (identifier)
 );
 
 CREATE TABLE IF NOT EXISTS task_person_aud
@@ -1061,7 +1109,7 @@ CREATE TABLE IF NOT EXISTS task_person_aud
     REVTYPE           INTEGER NULL,
     task_identifier   uuid    NOT NULL,
     person_identifier uuid    NOT NULL,
-    CONSTRAINT task_person_aud_pkey PRIMARY KEY (identifier, REV)
+    PRIMARY KEY (identifier, REV)
 );
 
 CREATE TABLE IF NOT EXISTS plan_assignment
@@ -1111,7 +1159,7 @@ CREATE TABLE IF NOT EXISTS task_organization_aud
     REVTYPE                 INTEGER NULL,
     task_identifier         uuid    NOT NULL,
     organization_identifier uuid    NOT NULL,
-    PRIMARY KEY (identifier,REV)
+    PRIMARY KEY (identifier, REV)
 );
 
 CREATE TABLE IF NOT EXISTS setting
@@ -1152,3 +1200,55 @@ CREATE TABLE IF NOT EXISTS setting_aud
     PRIMARY KEY (identifier, REV)
 );
 
+CREATE TABLE IF NOT EXISTS event
+(
+    id                      BIGSERIAL                NOT NULL,
+    identifier              uuid                     not null,
+    version                 bigint DEFAULT 1,
+    event_type              character varying        NOT NULL,
+    form_data_identifier    uuid                     NOT NULL,
+    user_identifier         uuid                     NOT NULL,
+    capture_date            date                     NOT NULL,
+    plan_identifier         uuid                     NOT NULL,
+    organization_identifier uuid                     NOT NULL,
+    location_identifier     uuid,
+    additional_information  jsonb,
+    details                 jsonb,
+    task_identifier         uuid                     NOT NULL,
+    base_entity_identifier  uuid                     NOT NULL,
+    entity_status           character varying(36)    NOT NULL,
+    created_by              character varying(36)    NOT NULL,
+    created_datetime        timestamp with time zone NOT NULL,
+    modified_by             character varying(36)    NOT NULL,
+    modified_datetime       timestamp with time zone NOT NULL,
+    PRIMARY KEY (id),
+    FOREIGN KEY (form_data_identifier) REFERENCES form_data (identifier),
+    FOREIGN KEY (organization_identifier) REFERENCES organization (identifier),
+    FOREIGN KEY (user_identifier) REFERENCES users (identifier)
+);
+
+CREATE TABLE IF NOT EXISTS event_aud
+(
+    id                      bigint                   NOT NULL,
+    identifier              uuid                     NOT NULL,
+    REV                     INT                      NOT NULL,
+    REVTYPE                 INTEGER                  NULL,
+    version                 bigint                   NOT null,
+    event_type              character varying        NOT NULL,
+    form_data_identifier    uuid                     NOT NULL,
+    user_identifier         uuid                     NOT NULL,
+    capture_date            date                     NOT NULL,
+    plan_identifier         uuid                     NOT NULL,
+    organization_identifier uuid                     NOT NULL,
+    location_identifier     uuid,
+    additional_information  jsonb,
+    details                 jsonb,
+    task_identifier         uuid                     NOT NULL,
+    base_entity_identifier  uuid                     NOT NULL,
+    entity_status           character varying(36)    NOT NULL,
+    created_by              character varying(36)    NOT NULL,
+    created_datetime        timestamp with time zone NOT NULL,
+    modified_by             character varying(36)    NOT NULL,
+    modified_datetime       timestamp with time zone NOT NULL,
+    PRIMARY KEY (id, REV)
+)
