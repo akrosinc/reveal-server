@@ -6,6 +6,7 @@ import com.revealprecision.revealserver.api.v1.dto.request.PlanRequest;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.enums.PlanStatusEnum;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
+import com.revealprecision.revealserver.messaging.Message;
 import com.revealprecision.revealserver.persistence.domain.Action;
 import com.revealprecision.revealserver.persistence.domain.Condition;
 import com.revealprecision.revealserver.persistence.domain.Form;
@@ -26,6 +27,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 @RequiredArgsConstructor
@@ -37,6 +39,7 @@ public class PlanService {
   private final LocationHierarchyService locationHierarchyService;
   private final LookupInterventionTypeService lookupInterventionTypeService;
   private final TaskService taskService;
+  private final KafkaTemplate<String, Message> kafkaTemplate;
 
   public static boolean isNullOrEmpty(final Collection<?> c) {
     return c == null || c.isEmpty();
@@ -113,4 +116,5 @@ public class PlanService {
     taskService.generateTasksByPlanId(planIdentifier);
     taskService.updateOrganizationsAndLocationsForTasksByPlanIdentifier(planIdentifier);
   }
+
 }

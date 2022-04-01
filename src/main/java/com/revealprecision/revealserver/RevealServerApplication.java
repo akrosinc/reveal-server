@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver;
 
 import lombok.extern.slf4j.Slf4j;
+import org.n52.jackson.datatype.jts.JtsModule;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -34,5 +35,10 @@ public class RevealServerApplication {
     MethodValidationPostProcessor processor = new MethodValidationPostProcessor();
     processor.setValidator(localValidatorFactoryBean);
     return processor;
+  }
+
+  @Bean
+  public JtsModule jtsModule() {
+    return new JtsModule();
   }
 }

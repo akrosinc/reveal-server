@@ -62,6 +62,19 @@ public class UserBatchConfiguration {
   }
 
   @Bean
+  public TaskExecutor getAsyncExecutorTest() {
+
+    ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+    executor.setCorePoolSize(25);
+    executor.setMaxPoolSize(1000);
+    executor.setWaitForTasksToCompleteOnShutdown(true);
+    executor.setThreadNamePrefix("AsyncTest-");
+    executor.initialize();
+    return new DelegatingSecurityContextAsyncTaskExecutor(
+        executor);
+  }
+
+  @Bean
   public JobLauncher asyncJobLauncher() throws Exception {
     SimpleJobLauncher jobLauncher = new SimpleJobLauncher();
 

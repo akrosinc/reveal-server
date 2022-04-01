@@ -24,6 +24,12 @@ VALUES (uuid_generate_v4(), 'operational', 'Operational', 'ACTIVE',
 
 INSERT INTO geographic_level(identifier, name, title, entity_status, created_by, created_datetime,
                              modified_by, modified_datetime)
+VALUES (uuid_generate_v4(), 'catchment', 'Operational', 'ACTIVE',
+        '71fca736-c156-40bc-9de5-3ae04981fbc9', '2022-01-12 13:54:22.106221+00',
+        '71fca736-c156-40bc-9de5-3ae04981fbc9', '2022-01-12 13:54:22.106221+00');
+
+INSERT INTO geographic_level(identifier, name, title, entity_status, created_by, created_datetime,
+                             modified_by, modified_datetime)
 VALUES (uuid_generate_v4(), 'structure', 'Structure', 'ACTIVE',
         '71fca736-c156-40bc-9de5-3ae04981fbc9', '2022-01-12 13:54:22.106221+00',
         '71fca736-c156-40bc-9de5-3ae04981fbc9', '2022-01-12 13:54:22.106221+00');
@@ -93,6 +99,14 @@ INSERT INTO public.users(identifier, sid, username, first_name, last_name, email
                          modified_by, modified_datetime)
 VALUES ('71fca736-c156-40bc-9de5-3ae04981fbc9', '71fca736-c156-40bc-9de5-3ae04981fbc9', 'test.user',
         'Test', 'User', null, null, null, 'ACTIVE', '71fca736-c156-40bc-9de5-3ae04981fbc9',
+        '2022-01-12 13:54:22.106221+00', '71fca736-c156-40bc-9de5-3ae04981fbc9',
+        '2022-01-12 13:54:22.106221+00');
+
+INSERT INTO public.users(identifier, sid, username, first_name, last_name, email, api_response,
+                         user_bulk_identifier, entity_status, created_by, created_datetime,
+                         modified_by, modified_datetime)
+VALUES ('52264802-36d9-49ac-ac8e-b285d03d5aea', '52264802-36d9-49ac-ac8e-b285d03d5aea', 'demo.user',
+        'Demo', 'User', null, null, null, 'ACTIVE', '71fca736-c156-40bc-9de5-3ae04981fbc9',
         '2022-01-12 13:54:22.106221+00', '71fca736-c156-40bc-9de5-3ae04981fbc9',
         '2022-01-12 13:54:22.106221+00');
 
