@@ -1,8 +1,12 @@
 package com.revealprecision.revealserver.persistence.repository;
 
+import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.Person;
+import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -19,4 +23,6 @@ public interface PersonRepository extends JpaRepository<Person, UUID>,
   Page<Person> findPersonByBirthDate(Date date, Pageable pageable);
 
   Long countPersonByBirthDate(Date date);
+
+  List<Person> findPersonByLocationsIn(List<Location> locations);
 }

@@ -106,8 +106,19 @@ VALUES (uuid_generate_v4(), 'READY', 'READY', 'ACTIVE', '649f338b-eb53-4832-9562
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00'),
        (uuid_generate_v4(), 'CANCELLED', 'CANCELLED', 'ACTIVE',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
-        '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00');
-
+        '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00'),
+       (uuid_generate_v4(), 'DRAFT', 'DRAFT', 'ACTIVE',
+        '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
+        '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00'),
+       (uuid_generate_v4(), 'IN_PROGRESS', 'IN_PROGRESS', 'ACTIVE',
+        '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
+        '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00'),
+       (uuid_generate_v4(), 'ARCHIVED', 'ARCHIVED', 'ACTIVE',
+        '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
+        '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00'),
+        (uuid_generate_v4(), 'FAILED', 'FAILED', 'ACTIVE',
+            '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
+            '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00');
 
 INSERT INTO lookup_entity_type(identifier, code, table_name, entity_status, created_by,
                                created_datetime, modified_by, modified_datetime)

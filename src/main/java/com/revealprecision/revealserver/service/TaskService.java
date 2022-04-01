@@ -177,15 +177,13 @@ public class TaskService {
           .flatMap(Collection::stream).collect(Collectors.toList());
 
       Map<Action, List<Condition>> actionToConditions = new HashMap<>();
-      actions.stream().forEach(action -> {
+      actions.forEach(action -> {
         List<Condition> conditions = conditionService.getConditionsByActionIdentifier(
             action.getIdentifier());
         actionToConditions.put(action, conditions);
       });
 
-      actionToConditions.entrySet().stream().forEach(entry -> {
-        Action action = entry.getKey();
-        List<Condition> conditions = entry.getValue();
+      actionToConditions.forEach((action, conditions) -> {
         if (conditions.isEmpty()) {
           generateTasksUnconditionally(action, plan);
         } else {
@@ -231,7 +229,7 @@ public class TaskService {
         .collect(Collectors.toSet());
 
     List<Task> tasks = new ArrayList<>();
-    taskLocations.stream().forEach(location -> {
+    taskLocations.forEach(location -> {
       Task task = createTaskObjectFromActionAndEntityId(action, location.getIdentifier(), plan);
       if (task != null) {
         tasks.add(task);
@@ -358,15 +356,27 @@ public class TaskService {
       Plan plan = planService.getPlanByIdentifier(planIdentifier);
       LocationHierarchy locationHierarchy = plan.getLocationHierarchy();
 
-      jurisdictionIdentifiers.stream().forEach(jurisdictionIdentifier -> {
+      jurisdictionIdentifiers.forEach(jurisdictionIdentifier -> {
         List<Location> childLocations = locationRelationshipService.getLocationChildrenByLocationParentIdentifierAndHierarchyIdentifier(
             List.of(jurisdictionIdentifier), locationHierarchy.getIdentifier());
 
-        List<Task> tasks = taskRepository.findByPlanAndBaseEntityIdentifiers(plan,
+        List<UUID> baseEntityIdentifiers = new ArrayList<>();
+
+        //TODO: can this be done in a single query from below findByPlanAndBaseEntityIdentifiers method
+        List<UUID> personIdentifiers = personService.getPeopleByLocations(childLocations)
+            .stream()
+            .map(Person::getIdentifier).collect(Collectors.toList());
+        baseEntityIdentifiers.addAll(personIdentifiers);
+
+        baseEntityIdentifiers.addAll(
             childLocations.stream().map(Location::getIdentifier).collect(Collectors.toList()));
+
+        List<Task> tasks = taskRepository.findByPlanAndBaseEntityIdentifiers(plan
+            , baseEntityIdentifiers);
         if (!tasks.isEmpty()) {
           tasksToJurisdictions.put(jurisdictionIdentifier, tasks);
         }
+
       });
     } catch (NotFoundException e) {
       e.printStackTrace();
