@@ -118,4 +118,6 @@ public class Task extends AbstractAuditableEntity {
 
   private UUID baseEntityIdentifier;
 
+  private Long serverVersion;
+
 }
