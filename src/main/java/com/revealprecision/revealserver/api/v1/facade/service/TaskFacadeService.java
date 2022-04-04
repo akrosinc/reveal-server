@@ -226,7 +226,7 @@ public class TaskFacadeService {
 
       task = taskService.saveTask(task);
       businessStatusService.setBusinessStatus(task, taskDto.getBusinessStatus());
-      taskService.updateOrganisationsAndLocationsForTask(plan.getIdentifier(), taskStatus.get(),
+      taskService.updateOrganisationsAndLocationsForTask(plan, taskStatus.get(),
           task);
     } else {
       log.error("Unknown task state in sync: {}", taskDto.getStatus().name());
