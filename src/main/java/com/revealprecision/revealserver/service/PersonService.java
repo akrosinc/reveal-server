@@ -6,6 +6,7 @@ import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.exceptions.InvalidDateFormatException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.Group;
+import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.Organization.Fields;
 import com.revealprecision.revealserver.persistence.domain.Person;
 import com.revealprecision.revealserver.persistence.repository.PersonMetadataRepository;
@@ -75,6 +76,9 @@ public class PersonService {
         () -> new NotFoundException(Pair.of(Fields.identifier, personIdentifier), Person.class));
   }
 
+  public List<Person> getPeopleByLocations(List<Location> locations){
+    return personRepository.findPersonByLocationsIn(locations);
+  }
 
   public void removePerson(UUID personIdentifier) {
     Person person = getPersonByIdentifier(personIdentifier);
