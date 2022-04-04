@@ -255,16 +255,20 @@ public class LocationRelationshipService {
         SearchRequest searchRequest = new SearchRequest("location");
         searchRequest.source(sourceBuilder);
         SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
-        UUID parentLocation = UUID.fromString(searchResponse.getHits().getAt(0).getId());
-        if(parentLocation != null) {
-          Location parentLoc = Location.builder().identifier(parentLocation).build();
-          LocationRelationship locationRelationshipToSave = LocationRelationship.builder()
-              .parentLocation(parentLoc)
-              .location(location)
-              .locationHierarchy(locationHierarchy)
-              .build();
-          locationRelationshipToSave.setEntityStatus(EntityStatus.ACTIVE);
-          locationRelationshipRepository.save(locationRelationshipToSave);
+        if(searchResponse.getHits().getHits().length == 0) {
+          break;
+        }else{
+          UUID parentLocation = UUID.fromString(searchResponse.getHits().getAt(0).getId());
+          if(parentLocation != null) {
+            Location parentLoc = Location.builder().identifier(parentLocation).build();
+            LocationRelationship locationRelationshipToSave = LocationRelationship.builder()
+                .parentLocation(parentLoc)
+                .location(location)
+                .locationHierarchy(locationHierarchy)
+                .build();
+            locationRelationshipToSave.setEntityStatus(EntityStatus.ACTIVE);
+            locationRelationshipRepository.save(locationRelationshipToSave);
+          }
         }
       } else if (nodePosition == -1) {
         createRelationshipForRoot(location, locationHierarchy);

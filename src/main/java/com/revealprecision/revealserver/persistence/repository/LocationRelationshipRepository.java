@@ -21,9 +21,8 @@ public interface LocationRelationshipRepository extends JpaRepository<LocationRe
   Optional<List<LocationRelationship>> findByLocationHierarchyIdentifier(
       UUID locationHierarchyIdentifier);
 
-  @Query(value = "select lr, l, pl from LocationRelationship lr "
+  @Query(value = "select lr, l from LocationRelationship lr "
       + "JOIN lr.location l "
-      + "JOIN lr.parentLocation pl "
       + "JOIN l.geographicLevel gl "
       + "WHERE lr.locationHierarchy.identifier = :locationHierarchyIdentifier "
       + "AND gl.name <> 'structure'")
