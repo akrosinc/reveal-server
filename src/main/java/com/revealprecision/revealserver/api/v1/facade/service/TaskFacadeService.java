@@ -51,12 +51,13 @@ public class TaskFacadeService {
   private final BusinessStatusService businessStatusService;
 
   public List<TaskFacade> syncTasks(List<String> planIdentifiers,
-      List<UUID> jurisdictionIdentifiers) {
+      List<UUID> jurisdictionIdentifiers, Long serverVersion) {
 
     return planIdentifiers.stream().map(
-            planIdentifier -> taskService.getTasksPerJurisdictionIdentifier(
-                    UUID.fromString(planIdentifier), jurisdictionIdentifiers).entrySet().stream()
-                .map(this::getTaskFacades).flatMap(Collection::stream).collect(Collectors.toList()))
+        planIdentifier -> taskService.getTasksPerJurisdictionIdentifier(
+            UUID.fromString(planIdentifier), jurisdictionIdentifiers, serverVersion).entrySet()
+            .stream()
+            .map(this::getTaskFacades).flatMap(Collection::stream).collect(Collectors.toList()))
         .flatMap(Collection::stream).collect(Collectors.toList());
   }
 
@@ -101,7 +102,7 @@ public class TaskFacadeService {
       Task task = taskService.getTaskByIdentifier(UUID.fromString(updateFacade.getIdentifier()));
 
       Optional<LookupTaskStatus> taskStatus = taskService.getAllTaskStatus().stream().filter(
-              lookupTaskStatus -> lookupTaskStatus.getCode().equalsIgnoreCase(updateFacade.getStatus()))
+          lookupTaskStatus -> lookupTaskStatus.getCode().equalsIgnoreCase(updateFacade.getStatus()))
           .findFirst();
 
       if (taskStatus.isPresent()) {
@@ -145,7 +146,7 @@ public class TaskFacadeService {
     List<LookupTaskStatus> lookupTaskStatuses = taskService.getAllTaskStatus();
 
     Optional<LookupTaskStatus> taskStatus = lookupTaskStatuses.stream().filter(
-            lookupTaskStatus -> lookupTaskStatus.getCode().equalsIgnoreCase(taskDto.getStatus().name()))
+        lookupTaskStatus -> lookupTaskStatus.getCode().equalsIgnoreCase(taskDto.getStatus().name()))
         .findFirst();
 
     Task task;
@@ -156,8 +157,9 @@ public class TaskFacadeService {
       task.setIdentifier(UUID.fromString(taskDto.getIdentifier()));
     }
 
-    LocalDateTime LastModifierFromAndroid = DateTimeFormatter.getLocalDateTimeFromAndroidFacadeString(
-        taskDto.getLastModified());
+    LocalDateTime LastModifierFromAndroid = DateTimeFormatter
+        .getLocalDateTimeFromAndroidFacadeString(
+            taskDto.getLastModified());
 
     if (taskStatus.isPresent()) {
       task.setLookupTaskStatus(taskStatus.get());
@@ -179,13 +181,12 @@ public class TaskFacadeService {
 
       task.setEntityStatus(EntityStatus.ACTIVE);
 
-
       Location location = null;
       boolean locationFound = true;
       try {
         location = locationService.findByIdentifier(
             UUID.fromString(taskDto.getStructureId()));
-      } catch (NotFoundException notFoundException){
+      } catch (NotFoundException notFoundException) {
         locationFound = false;
       }
       //TODO: We will need to handle the location creation process here for dropped points. Will require android "task add" change.
@@ -206,9 +207,9 @@ public class TaskFacadeService {
           //We received task for new Person, record the person
           person = personService.createPerson(taskDto.getPersonRequest());
         }
-        if (location != null){
+        if (location != null) {
           Set<Location> locations = person.getLocations();
-          if (locations != null){
+          if (locations != null) {
             locations.add(location);
             person.setLocations(locations);
           }

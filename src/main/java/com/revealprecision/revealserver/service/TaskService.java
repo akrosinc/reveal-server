@@ -375,7 +375,7 @@ public class TaskService {
   }
 
   public Map<UUID, List<Task>> getTasksPerJurisdictionIdentifier(UUID planIdentifier,
-      List<UUID> jurisdictionIdentifiers) {
+      List<UUID> jurisdictionIdentifiers, Long serverVersion) {
     Map<UUID, List<Task>> tasksToJurisdictions = new HashMap<>();
     try {
       Plan plan = planService.getPlanByIdentifier(planIdentifier);
@@ -397,8 +397,8 @@ public class TaskService {
         baseEntityIdentifiers.addAll(
             childLocations.stream().map(Location::getIdentifier).collect(Collectors.toList()));
 
-        List<Task> tasks = taskRepository.findByPlanAndBaseEntityIdentifiers(plan
-            , baseEntityIdentifiers);
+        List<Task> tasks = taskRepository.findByPlanAndBaseEntityIdentifiersAndServerVersion(plan
+            , baseEntityIdentifiers, serverVersion);
         if (!tasks.isEmpty()) {
           tasksToJurisdictions.put(jurisdictionIdentifier, tasks);
         }

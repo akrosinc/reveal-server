@@ -46,9 +46,13 @@ public class TaskFacadeController {
 
     List<UUID> jurisdictionIdentifiers = taskSyncRequest.getGroup();
     boolean returnCount = taskSyncRequest.isReturnCount();
+    Long serverVersion  = taskSyncRequest.getServerVersion();
+    if(serverVersion == null){
+      serverVersion = 0L;
+    }
 
     List<TaskFacade> taskFacades = taskFacadeService.syncTasks(taskSyncRequest.getPlan(),
-        jurisdictionIdentifiers);
+        jurisdictionIdentifiers,serverVersion);
 
     if (returnCount) {
       HttpHeaders headers = new HttpHeaders();
