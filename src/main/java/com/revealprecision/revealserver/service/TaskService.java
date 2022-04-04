@@ -227,31 +227,39 @@ public class TaskService {
   }
 
   public void generateTasksUnconditionally(Action action, Plan plan) {
+    //TODO: update this once business rule for unconditional generation of tasks linked to person has been defined.
+    Boolean isActionForLocation =
+        action.getLookupEntityType() != null && LookupEntityTypeCodeEnum.LOCATION_CODE
+            .getLookupEntityType().equals(action.getLookupEntityType().getCode());
+    if (isActionForLocation) {
+      Set<Location> taskLocations = plan.getPlanLocations().stream().map(PlanLocations::getLocation)
+          .collect(Collectors.toSet());
+      Set<Location> structureLocations = locationRelationshipService
+          .getStructuresForPlanIfHierarchyHasStructure(
+              plan.getLocationHierarchy(), taskLocations);
+      taskLocations.addAll(structureLocations);
+      generateTasksForLocationEntities(action, plan, taskLocations);
+    }
+  }
 
-    Set<Location> taskLocations = plan.getPlanLocations().stream().map(PlanLocations::getLocation)
-        .collect(Collectors.toSet());
-
-    Set<Location> structureLocations = locationRelationshipService.getStructuresForPlanIfHierarchyHasStructure(
-        plan.getLocationHierarchy(), taskLocations);
-
-    taskLocations.addAll(structureLocations);
-
+  private void generateTasksForLocationEntities(Action action, Plan plan, Set<Location> entities) {
     List<Task> tasks = new ArrayList<>();
-    taskLocations.forEach(location -> {
-      Task task = createTaskObjectFromActionAndEntityId(action, location.getIdentifier(), plan);
+    entities.forEach(entity -> {
+      Task task = createTaskObjectFromActionAndEntityId(action, entity.getIdentifier(), plan);
       if (task != null) {
         tasks.add(task);
       }
     });
-
     if (!tasks.isEmpty()) {
       taskRepository.saveAll(tasks);
     }
   }
 
   private Task createTaskObjectFromActionAndEntityId(Action action, UUID entityUUID, Plan plan) {
-    boolean isLocationEntity = action.getLookupEntityType() != null && LookupEntityTypeCodeEnum.LOCATION_CODE.getLookupEntityType().equals(
-        action.getLookupEntityType().getCode());
+    boolean isLocationEntity =
+        action.getLookupEntityType() != null && LookupEntityTypeCodeEnum.LOCATION_CODE
+            .getLookupEntityType().equals(
+                action.getLookupEntityType().getCode());
     if (isLocationEntity) {
       if (taskRepository.findTasksByAction_IdentifierAndLocation_Identifier(action.getIdentifier(),
           entityUUID).size() > 0) {
@@ -260,8 +268,10 @@ public class TaskService {
       }
     }
 
-    boolean isPersonEntity = action.getLookupEntityType() != null && LookupEntityTypeCodeEnum.PERSON_CODE.getLookupEntityType().equals(
-        action.getLookupEntityType().getCode());
+    boolean isPersonEntity =
+        action.getLookupEntityType() != null && LookupEntityTypeCodeEnum.PERSON_CODE
+            .getLookupEntityType().equals(
+                action.getLookupEntityType().getCode());
     if (isPersonEntity) {
       if (taskRepository.findTasksByAction_IdentifierAndPerson_Identifier(action.getIdentifier(),
           entityUUID).size() > 0) {
@@ -271,9 +281,9 @@ public class TaskService {
     }
 
     Task task = Task.builder().lookupTaskStatus(
-            lookupTaskStatusRepository.findByCode(TASK_STATUS_READY).orElseThrow(
-                () -> new NotFoundException(Pair.of(LookupTaskStatus.Fields.code, TASK_STATUS_READY),
-                    LookupTaskStatus.class))).priority(TaskPriorityEnum.ROUTINE)
+        lookupTaskStatusRepository.findByCode(TASK_STATUS_READY).orElseThrow(
+            () -> new NotFoundException(Pair.of(LookupTaskStatus.Fields.code, TASK_STATUS_READY),
+                LookupTaskStatus.class))).priority(TaskPriorityEnum.ROUTINE)
         .description(action.getDescription()).lastModified(LocalDateTime.now())
         .authoredOn(LocalDateTime.now()).baseEntityIdentifier(entityUUID).action(action)
         .executionPeriodStart(action.getTimingPeriodStart())
@@ -288,6 +298,7 @@ public class TaskService {
       Person person = personService.getPersonByIdentifier(entityUUID);
       task.setPerson(person);
     }
+    task.setServerVersion(0L);
     return task;
   }
 
@@ -312,14 +323,16 @@ public class TaskService {
     Action action = task.getAction();
     List<PlanLocations> planLocationsForLocation = new ArrayList<>();
     boolean isLocationEntity =
-        action.getLookupEntityType().getCode() != null && LookupEntityTypeCodeEnum.LOCATION_CODE.getLookupEntityType().equals(
-            action.getLookupEntityType().getCode());
+        action.getLookupEntityType().getCode() != null && LookupEntityTypeCodeEnum.LOCATION_CODE
+            .getLookupEntityType().equals(
+                action.getLookupEntityType().getCode());
     if (isLocationEntity) {
       if (task.getLocation() != null) {
-        if (task.getLocation().getGeographicLevel().getName().equals(STRUCTURE)){
-         Location parentLocation = locationService.getLocationParent(task.getLocation(),plan.getLocationHierarchy());
-         planLocationsForLocation = planLocationsService.getPlanLocationsByLocationIdentifier(
-             parentLocation.getIdentifier());
+        if (task.getLocation().getGeographicLevel().getName().equals(STRUCTURE)) {
+          Location parentLocation = locationService
+              .getLocationParent(task.getLocation(), plan.getLocationHierarchy());
+          planLocationsForLocation = planLocationsService.getPlanLocationsByLocationIdentifier(
+              parentLocation.getIdentifier());
         } else {
           planLocationsForLocation = planLocationsService.getPlanLocationsByLocationIdentifier(
               task.getLocation().getIdentifier());
@@ -328,12 +341,15 @@ public class TaskService {
     }
 
     List<PlanLocations> planLocationsForPerson = new ArrayList<>();
-    boolean isPersonEntity = action.getLookupEntityType() != null && LookupEntityTypeCodeEnum.PERSON_CODE.getLookupEntityType().equals(
-        action.getLookupEntityType().getCode());
+    boolean isPersonEntity =
+        action.getLookupEntityType() != null && LookupEntityTypeCodeEnum.PERSON_CODE
+            .getLookupEntityType().equals(
+                action.getLookupEntityType().getCode());
     if (isPersonEntity && task.getPerson() != null && task.getPerson().getLocations() != null) {
 
-      if (task.getLocation().getGeographicLevel().getName().equals(STRUCTURE)){
-        Location parentLocation = locationService.getLocationParent(task.getLocation(),plan.getLocationHierarchy());
+      if (task.getLocation().getGeographicLevel().getName().equals(STRUCTURE)) {
+        Location parentLocation = locationService
+            .getLocationParent(task.getLocation(), plan.getLocationHierarchy());
         planLocationsForPerson = planLocationsService.getPlanLocationsByLocationIdentifier(
             parentLocation.getIdentifier());
       } else {
@@ -380,8 +396,9 @@ public class TaskService {
       LocationHierarchy locationHierarchy = plan.getLocationHierarchy();
 
       jurisdictionIdentifiers.forEach(jurisdictionIdentifier -> {
-        List<Location> childLocations = locationRelationshipService.getLocationChildrenByLocationParentIdentifierAndHierarchyIdentifier(
-            List.of(jurisdictionIdentifier), locationHierarchy.getIdentifier());
+        List<Location> childLocations = locationRelationshipService
+            .getLocationChildrenByLocationParentIdentifierAndHierarchyIdentifier(
+                List.of(jurisdictionIdentifier), locationHierarchy.getIdentifier());
 
         List<UUID> baseEntityIdentifiers = new ArrayList<>();
 
