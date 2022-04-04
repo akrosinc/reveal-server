@@ -230,6 +230,10 @@ public class LocationRelationshipService {
         parentLocationIdentifier);
   }
 
+  public Location findParentLocationByLocationIdAndHierarchyId(UUID locationIdentifier, UUID hierarchyIdentifier) {
+    return locationRelationshipRepository.getParentLocationByLocationIdAndHierarchyId(locationIdentifier, hierarchyIdentifier);
+  }
+
   @Async("getAsyncExecutorTest")
   public void createRelationshipForImportedLocation(Location location) throws IOException {
     List<LocationHierarchy> locationHierarchies = locationHierarchyRepository

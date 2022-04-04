@@ -123,6 +123,9 @@ public class LocationService {
 
   public PlanLocationDetails getLocationDetailsByIdentifierAndPlanIdentifier(UUID locationIdentifier, UUID planIdentifier) {
     Plan plan = planService.getPlanByIdentifier(planIdentifier);
-    return locationRepository.getLocationDetailsByIdentifierAndPlanIdentifier(locationIdentifier, plan.getIdentifier());
+    PlanLocationDetails details = locationRepository.getLocationDetailsByIdentifierAndPlanIdentifier(locationIdentifier, plan.getIdentifier());
+
+    details.setParentLocation(locationRelationshipService.findParentLocationByLocationIdAndHierarchyId(locationIdentifier, plan.getLocationHierarchy().getIdentifier()));
+    return details;
   }
 }
