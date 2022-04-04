@@ -1,6 +1,8 @@
 package com.revealprecision.revealserver.service;
 
 import com.revealprecision.revealserver.exceptions.QueryGenerationException;
+import com.revealprecision.revealserver.persistence.domain.Location;
+import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.actioncondition.Condition;
 import com.revealprecision.revealserver.persistence.domain.actioncondition.Query;
 import com.revealprecision.revealserver.props.ConditionQueryProperties;
@@ -8,17 +10,22 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.util.Pair;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
+
 public class EntityFilterService {
 
   private final JdbcTemplate jdbcTemplate;
   private final ConditionQueryProperties conditionQueryProperties;
+  private final LocationRelationshipService locationRelationshipService;
+  private final LocationHierarchyService locationHierarchyService;
 
   private final static String WHERE = " WHERE ";
 
@@ -28,17 +35,36 @@ public class EntityFilterService {
 
   @Autowired
   public EntityFilterService(JdbcTemplate jdbcTemplate,
-      ConditionQueryProperties conditionQueryProperties) {
+      ConditionQueryProperties conditionQueryProperties,
+      LocationRelationshipService locationRelationshipService,
+      LocationHierarchyService locationHierarchyService) {
     this.conditionQueryProperties = conditionQueryProperties;
     this.jdbcTemplate = jdbcTemplate;
+    this.locationRelationshipService = locationRelationshipService;
+    this.locationHierarchyService = locationHierarchyService;
   }
 
-  public List<UUID> filterEntities(Query query, UUID planIdentifier) throws QueryGenerationException{
+  public List<UUID> filterEntities(Query query, UUID planIdentifier,
+      UUID locationHierarchyIdentifier)
+      throws QueryGenerationException {
 
-    List<String> locations = queryDBAndRetrieveListOfLocationsLinkedToPlanJurisdiction(
+    List<Pair<UUID, String>> locations = queryDBAndRetrieveListOfLocationsLinkedToPlanJurisdiction(
         planIdentifier);
 
-    String planLocations = getConditionFragmentsForPlanLocations(locations);
+    LocationHierarchy locationHierarchy = locationHierarchyService.findByIdentifier(
+        locationHierarchyIdentifier);
+
+    Set<Location> structures = locationRelationshipService.getStructuresForPlanIfHierarchyHasStructure(
+        locationHierarchy,
+        locations);
+
+    List<String> taskLocationUuids = locations.stream().map(Pair::getFirst).map(UUID::toString)
+        .collect(Collectors.toList());
+
+    taskLocationUuids.addAll(structures.stream().map(Location::getIdentifier).map(UUID::toString)
+        .collect(Collectors.toList()));
+
+    String planLocations = getConditionFragmentsForPlanLocations(taskLocationUuids);
 
     String queryFinal = null;
 
@@ -57,7 +83,7 @@ public class EntityFilterService {
       List<String> andConditionList = getQueryFragmentListForAndConditions(andConditions);
 
       String wherePartBeforeLocationJurisdiction = combineGroupedOrConditionsAndAndConditions(
-          groupedOrConditions, andConditionList,joinedConditionList);
+          groupedOrConditions, andConditionList, joinedConditionList);
 
       if (query.getEntity().equalsIgnoreCase(LOCATION_TABLE)) {
 
@@ -81,7 +107,7 @@ public class EntityFilterService {
     } else {
 
       String wherePartBeforeLocationJurisdiction = combineGroupedOrConditionsAndAndConditions(
-          new ArrayList<>(), new ArrayList<>(),joinedConditionList);
+          new ArrayList<>(), new ArrayList<>(), joinedConditionList);
 
       queryFinal =
           conditionQueryProperties.getLocationWithoutConditionQuery() + "\n"
@@ -91,8 +117,9 @@ public class EntityFilterService {
               : wherePartBeforeLocationJurisdiction + " AND \n")
               + planLocations;
     }
-    if (queryFinal == null){
-      throw new QueryGenerationException("Postgres query cannot be built for Query Object: "+query.toString());
+    if (queryFinal == null) {
+      throw new QueryGenerationException(
+          "Postgres query cannot be built for Query Object: " + query.toString());
     }
     return new ArrayList<>(jdbcTemplate.query(queryFinal,
         (rs, rowNum) -> ((UUID) rs.getObject("identifier"))));
@@ -103,13 +130,14 @@ public class EntityFilterService {
     return joinConditions.stream().map(condition ->
         "LEFT JOIN ".concat(condition.getJoinedEntity()).concat(" ")
             .concat(condition.getJoinedEntity()).concat("_join").concat(" ON ")
-            .concat(condition.getJoinedEntity()).concat("_join").concat(".").concat("identifier").concat("=")
+            .concat(condition.getJoinedEntity()).concat("_join").concat(".").concat("identifier")
+            .concat("=")
             .concat("a.").concat(condition.getJoinedEntity()).concat("_identifier")
-        ).collect(Collectors.joining("\n"));
+    ).collect(Collectors.joining("\n"));
   }
 
   private String combineGroupedOrConditionsAndAndConditions(List<String> groupedOrConditions,
-      List<String> andConditionList,List<String> joinConditions) {
+      List<String> andConditionList, List<String> joinConditions) {
     return String.join(" AND ", groupedOrConditions) +
         ((!groupedOrConditions.isEmpty() && !andConditionList.isEmpty()) ? " AND " : "")
         + String.join(" AND ", andConditionList)
@@ -128,12 +156,11 @@ public class EntityFilterService {
   private List<String> getQueryFragmentListJoinedConditions(List<Condition> joinConditions) {
     List<String> joinedConditions = new ArrayList<>();
     for (Condition joinCondition : joinConditions) {
-      joinedConditions = getConditionQueryParts(joinCondition,joinedConditions);
+      joinedConditions = getConditionQueryParts(joinCondition, joinedConditions);
     }
 
     return joinedConditions;
   }
-
 
 
   private List<String> getQueryFragmentListForGroupedOrConditions(List<Condition> orConditions) {
@@ -168,10 +195,11 @@ public class EntityFilterService {
   }
 
   /**
-   * Returns query condition segments given a list of location uuid with the placement of parenthesis
-   * Example give List of ["9f34814c-fc38-4ddb-9cac-a9b2890fea9f","36e8d03e-23d9-41bd-b2c0-45dd8bcdd8ee"]:
+   * Returns query condition segments given a list of location uuid with the placement of
+   * parenthesis Example give List of ["9f34814c-fc38-4ddb-9cac-a9b2890fea9f","36e8d03e-23d9-41bd-b2c0-45dd8bcdd8ee"]:
    * will return -
-   * lr.ancestry @> ARRAY["9f34814c-fc38-4ddb-9cac-a9b2890fea9f"] OR lr.ancestry @> ARRAY["36e8d03e-23d9-41bd-b2c0-45dd8bcdd8ee"]
+   * lr.ancestry @> ARRAY["9f34814c-fc38-4ddb-9cac-a9b2890fea9f"] OR lr.ancestry @>
+   * ARRAY["36e8d03e-23d9-41bd-b2c0-45dd8bcdd8ee"]
    */
   private String getConditionFragmentsForPlanLocationJurisdictions(List<String> locations) {
 
@@ -180,23 +208,29 @@ public class EntityFilterService {
         .collect(Collectors.joining(" OR "))).concat(")");
   }
 
-  private List<String> queryDBAndRetrieveListOfLocationsLinkedToPlanJurisdiction(
+  private List<Pair<UUID, String>> queryDBAndRetrieveListOfLocationsLinkedToPlanJurisdiction(
       UUID planIdentifier) {
     return jdbcTemplate.query(
         conditionQueryProperties.getPlanLocationsQuery() + "'" + planIdentifier + "'",
-        (rs, rowNum) -> rs.getObject("location_identifier").toString());
+        (rs, rowNum) -> {
+          Object location_identifier = rs.getObject("location_identifier");
+          String geographic_level_name = rs.getString("geographic_level_name");
+          return Pair.of(UUID.fromString(location_identifier.toString()), geographic_level_name);
+        });
   }
 
   /**
-   * Generates the query conditions for core fields and tagged properties
-   * Each field is matched against its datatype and an applicable condition is created.
-   *
+   * Generates the query conditions for core fields and tagged properties Each field is matched
+   * against its datatype and an applicable condition is created.
+   * <p>
    * Examples:
    * Person.[core_date]birth_date BETWEEN 2012-02-17,2017-02-17 will be -
    * ( a.birth_date >= '2012-02-17' and a.birth_date <= '2017-02-17' )
-   *
+   * <p>
    * Location.[tag_boolean]is_eligibleForMDA == true will be -
-   * ( (am.entity_value->'is_eligibleForMDA')::bool = true )
+   *
+   * ( (am.entity_value->'is_eligibleForMDA')::bool
+   * = true )
    */
   private List<String> getConditionQueryParts(Condition condition,
       List<String> conditionListPassed) {

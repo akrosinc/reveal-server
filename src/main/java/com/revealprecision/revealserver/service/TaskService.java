@@ -207,7 +207,8 @@ public class TaskService {
     Query query = ConditionQueryUtil.getQueryObject(condition.getQuery(),
         action.getLookupEntityType().getCode());
 
-    List<UUID> uuids = entityFilterService.filterEntities(query, plan.getIdentifier());
+    List<UUID> uuids = entityFilterService.filterEntities(query, plan.getIdentifier(),
+        plan.getLocationHierarchy().getIdentifier());
     List<Task> tasks = new ArrayList<>();
     for (UUID entityUUID : uuids) {
 
@@ -227,6 +228,11 @@ public class TaskService {
 
     Set<Location> taskLocations = plan.getPlanLocations().stream().map(PlanLocations::getLocation)
         .collect(Collectors.toSet());
+
+    Set<Location> structureLocations = locationRelationshipService.getStructuresForPlanIfHierarchyHasStructure(
+        plan.getLocationHierarchy(), taskLocations);
+
+    taskLocations.addAll(structureLocations);
 
     List<Task> tasks = new ArrayList<>();
     taskLocations.forEach(location -> {
@@ -286,6 +292,8 @@ public class TaskService {
   public void updateOrganizationsAndLocationsForTasksByPlanIdentifier(UUID planIdentifier) {
 
     List<Task> tasksByPlan = taskRepository.findTasksByPlan_Identifier(planIdentifier);
+//TODO - resolve the dependency injection issue so that @Lazy is not used in this class
+    Plan plan = planService.getPlanByIdentifier(planIdentifier);
 
     LookupTaskStatus lookupTaskStatus = lookupTaskStatusRepository.findByCode(TASK_STATUS_CANCELLED)
         .orElseThrow(() -> new NotFoundException(
@@ -293,11 +301,11 @@ public class TaskService {
 
     for (Task task : tasksByPlan) {
 
-      updateOrganisationsAndLocationsForTask(planIdentifier, lookupTaskStatus, task);
+      updateOrganisationsAndLocationsForTask(plan, lookupTaskStatus, task);
     }
   }
 
-  public void updateOrganisationsAndLocationsForTask(UUID planIdentifier,
+  public void updateOrganisationsAndLocationsForTask(Plan plan,
       LookupTaskStatus lookupTaskStatus, Task task) {
     Action action = task.getAction();
     List<PlanLocations> planLocationsForLocation = new ArrayList<>();
@@ -306,8 +314,14 @@ public class TaskService {
             action.getLookupEntityType().getCode());
     if (isLocationEntity) {
       if (task.getLocation() != null) {
-        planLocationsForLocation = planLocationsService.getPlanLocationsByLocationIdentifier(
-            task.getLocation().getIdentifier());
+        if (task.getLocation().getGeographicLevel().getName().equals("structure")){
+         Location parentLocation = locationService.getLocationParent(task.getLocation(),plan.getLocationHierarchy());
+         planLocationsForLocation = planLocationsService.getPlanLocationsByLocationIdentifier(
+             parentLocation.getIdentifier());
+        } else {
+          planLocationsForLocation = planLocationsService.getPlanLocationsByLocationIdentifier(
+              task.getLocation().getIdentifier());
+        }
       }
     }
 
@@ -315,9 +329,16 @@ public class TaskService {
     boolean isPersonEntity = action.getLookupEntityType() != null && ENTITY_PERSON.equals(
         action.getLookupEntityType().getCode());
     if (isPersonEntity && task.getPerson() != null && task.getPerson().getLocations() != null) {
-      planLocationsForPerson = planLocationsService.getPlanLocationsByLocationIdentifierList(
-          task.getPerson().getLocations().stream().map(Location::getIdentifier)
-              .collect(Collectors.toList()));
+
+      if (task.getLocation().getGeographicLevel().getName().equals("structure")){
+        Location parentLocation = locationService.getLocationParent(task.getLocation(),plan.getLocationHierarchy());
+        planLocationsForPerson = planLocationsService.getPlanLocationsByLocationIdentifier(
+            parentLocation.getIdentifier());
+      } else {
+        planLocationsForPerson = planLocationsService.getPlanLocationsByLocationIdentifierList(
+            task.getPerson().getLocations().stream().map(Location::getIdentifier)
+                .collect(Collectors.toList()));
+      }
     }
 
     if (planLocationsForLocation.isEmpty() && planLocationsForPerson.isEmpty()) {
@@ -326,13 +347,13 @@ public class TaskService {
       List<Organization> organizations = new ArrayList<>();
       if (isLocationEntity) {
         if (planLocationsForLocation.size() > 0) {
-          organizations = getOrganizationsFromAssignedLocations(planIdentifier,
+          organizations = getOrganizationsFromAssignedLocations(plan.getIdentifier(),
               planLocationsForLocation);
         }
       }
       if (isPersonEntity) {
         if (planLocationsForPerson.size() > 0) {
-          organizations = getOrganizationsFromAssignedLocations(planIdentifier,
+          organizations = getOrganizationsFromAssignedLocations(plan.getIdentifier(),
               planLocationsForPerson);
         }
       }

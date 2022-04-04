@@ -15,10 +15,12 @@ import com.revealprecision.revealserver.persistence.repository.LocationRepositor
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.elasticsearch.action.search.SearchRequest;
@@ -31,6 +33,7 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.util.Pair;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -207,8 +210,10 @@ public class LocationRelationshipService {
         .findByLocationHierarchyIdentifier(locationHierarchy.getIdentifier());
   }
 
-  public Optional<List<LocationRelationship>> getLocationRelationshipsWithoutStructure(LocationHierarchy locationHierarchy){
-    return locationRelationshipRepository.findByLocationHierarchyWithoutStructures(locationHierarchy.getIdentifier());
+  public Optional<List<LocationRelationship>> getLocationRelationshipsWithoutStructure(
+      LocationHierarchy locationHierarchy) {
+    return locationRelationshipRepository.findByLocationHierarchyWithoutStructures(
+        locationHierarchy.getIdentifier());
   }
 
   public List<Location> getLocationChildrenByLocationParentIdentifierAndHierarchyIdentifier(
@@ -224,11 +229,6 @@ public class LocationRelationshipService {
         parentLocationIdentifiers, planIdentifier);
   }
 
-  public List<UUID> findLocationRelationshipUiidsByParentLocationIdentifier(
-      UUID parentLocationIdentifier) {
-    return locationRelationshipRepository.findLocationRelationshipUuidsByParentLocation_Identifier(
-        parentLocationIdentifier);
-  }
 
   @Async("getAsyncExecutorTest")
   public void createRelationshipForImportedLocation(Location location) throws IOException {
@@ -243,12 +243,12 @@ public class LocationRelationshipService {
             .get(nodePosition);
 
         String centroid = locationRepository.getCentroid(location.getIdentifier());
-        centroid = centroid.substring(6).replace(")","");
+        centroid = centroid.substring(6).replace(")", "");
         double x = Double.parseDouble(centroid.split(" ")[0]);
         double y = Double.parseDouble(centroid.split(" ")[1]);
         BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
         boolQuery.must(QueryBuilders.matchQuery("level", parentGeographicLevelName));
-        boolQuery.filter(QueryBuilders.geoShapeQuery("geometry", new Point(x,  y)).relation(
+        boolQuery.filter(QueryBuilders.geoShapeQuery("geometry", new Point(x, y)).relation(
             ShapeRelation.CONTAINS));
         SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
         sourceBuilder.query(boolQuery);
@@ -256,7 +256,7 @@ public class LocationRelationshipService {
         searchRequest.source(sourceBuilder);
         SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
         UUID parentLocation = UUID.fromString(searchResponse.getHits().getAt(0).getId());
-        if(parentLocation != null) {
+        if (parentLocation != null) {
           Location parentLoc = Location.builder().identifier(parentLocation).build();
           LocationRelationship locationRelationshipToSave = LocationRelationship.builder()
               .parentLocation(parentLoc)
@@ -273,7 +273,45 @@ public class LocationRelationshipService {
   }
 
   public List<Location> getChildrenLocations(UUID hierarchyIdentifier, UUID locationIdentifier) {
-    List<Location> children = locationRelationshipRepository.getChildren(hierarchyIdentifier,locationIdentifier);
+    List<Location> children = locationRelationshipRepository.getChildren(hierarchyIdentifier,
+        locationIdentifier);
     return children;
   }
+
+  public Set<Location> getStructuresForPlanIfHierarchyHasStructure(
+      LocationHierarchy locationHierarchy, Set<Location> planLocations) {
+    return this.getStructuresForPlanIfHierarchyHasStructure(locationHierarchy,
+        planLocations.stream().map(
+            planLocation -> Pair.of(planLocation.getIdentifier(),
+                planLocation.getGeographicLevel().getName())).collect(Collectors.toList()));
+  }
+
+
+  public Set<Location> getStructuresForPlanIfHierarchyHasStructure(
+      LocationHierarchy locationHierarchy, List<Pair<UUID, String>> planLocations) {
+
+    // 1. check if hierarchy has structures
+    // 2. get the parent of structure from the hierarchy
+    // 3. get children locations of the locations that has that parent node name
+
+    Set<Location> structureLocations = new HashSet<>();
+
+    if (locationHierarchy.getNodeOrder().contains("structure")) {
+      Set<Location> structures = planLocations.stream()
+          .filter(planLocation -> planLocation.getSecond().equals(
+              locationHierarchy.getNodeOrder()
+                  .get(locationHierarchy.getNodeOrder().indexOf("structure") - 1))
+          ).flatMap(filteredPlanLocation -> getChildrenLocations(
+              locationHierarchy.getIdentifier(), filteredPlanLocation.getFirst())
+              .stream()).collect(Collectors.toSet());
+      structureLocations.addAll(structures);
+    }
+
+    return structureLocations;
+  }
+
+  public LocationRelationship getLocationParent(Location location, LocationHierarchy locationHierarchy){
+    return locationRelationshipRepository.findLocationRelationshipByLocationAndLocationHierarchy(location,locationHierarchy);
+  }
+
 }
