@@ -34,6 +34,7 @@ public class LocationService {
   private final LocationRelationshipService locationRelationshipService;
   private final BusinessStatusService businessStatusService;
   private final BusinessStatusProperties businessStatusProperties;
+  private final PlanService planService;
 
   public Location createLocation(LocationRequest locationRequest) {
     GeographicLevel geographicLevel = geographicLevelService.findByName(
@@ -121,6 +122,7 @@ public class LocationService {
   }
 
   public PlanLocationDetails getLocationDetailsByIdentifierAndPlanIdentifier(UUID locationIdentifier, UUID planIdentifier) {
-    return locationRepository.getLocationDetailsByIdentifierAndPlanIdentifier(locationIdentifier, planIdentifier);
+    Plan plan = planService.getPlanByIdentifier(planIdentifier);
+    return locationRepository.getLocationDetailsByIdentifierAndPlanIdentifier(locationIdentifier, plan.getIdentifier());
   }
 }

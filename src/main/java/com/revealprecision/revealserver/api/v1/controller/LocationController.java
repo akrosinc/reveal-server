@@ -105,8 +105,7 @@ public class LocationController {
   public ResponseEntity<List<LocationResponse>> getLocationByParentIdentifier(
       @PathVariable UUID parentLocationIdentifier, @PathVariable UUID planIdentifier) {
     return ResponseEntity.ok(locationService.getLocationsByParentIdentifierAndPlanIdentifier(
-        parentLocationIdentifier, planIdentifier).stream().map(
-        LocationResponseFactory::fromPlanLocationDetails
+        parentLocationIdentifier, planIdentifier).stream().map(planLocationDetails -> LocationResponseFactory.fromPlanLocationDetails(planLocationDetails, parentLocationIdentifier)
     ).collect(Collectors.toList()));
   }
 
@@ -116,6 +115,6 @@ public class LocationController {
     return ResponseEntity.status(HttpStatus.OK)
         .body(LocationResponseFactory.fromPlanLocationDetails(
             locationService.getLocationDetailsByIdentifierAndPlanIdentifier(locationIdentifier,
-                planIdentifier)));
+                planIdentifier), null));
   }
 }

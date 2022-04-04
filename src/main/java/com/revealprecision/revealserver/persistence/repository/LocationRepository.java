@@ -38,10 +38,12 @@ public interface LocationRepository extends JpaRepository<Location, UUID> {
   @Query(value = "select ST_AsText(ST_Centroid(st_geomfromgeojson(l.geometry))) from location l where l.identifier = :identifier", nativeQuery = true)
   String getCentroid(@Param("identifier")UUID identifier);
 
-  @Query(value = "select new com.revealprecision.revealserver.persistence.projection.PlanLocationDetails(l, count(pl), count(pa)) from Location l "
+  @Query(value = "select new com.revealprecision.revealserver.persistence.projection.PlanLocationDetails(l, count(pl), count(pa), lr.parentLocation) from Location l "
       + "left join PlanLocations pl on l.identifier = pl.location.identifier and pl.plan.identifier = :planIdentifier "
       + "left join PlanAssignment pa on pa.planLocations.identifier = pl.identifier "
-      + "where l.identifier = :locationIdentifier group by l.identifier")
+      + "left join Plan pn on pn.identifier = :planIdentifier "
+      + "left join LocationRelationship lr on lr.locationHierarchy = pn.locationHierarchy.identifier and lr.location.identifier = :locationIdentifier "
+      + "where l.identifier = :locationIdentifier group by l.identifier, lr.parentLocation.identifier")
   PlanLocationDetails getLocationDetailsByIdentifierAndPlanIdentifier(@Param("locationIdentifier")UUID locationIdentifier,
       @Param("planIdentifier") UUID planIdentifier);
 }
