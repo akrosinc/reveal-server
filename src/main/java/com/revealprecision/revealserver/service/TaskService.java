@@ -1,9 +1,12 @@
 package com.revealprecision.revealserver.service;
 
+import static com.revealprecision.revealserver.constants.LocationConstants.STRUCTURE;
+
 import com.revealprecision.revealserver.api.v1.dto.factory.TaskEntityFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.TaskCreateRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.TaskUpdateRequest;
 import com.revealprecision.revealserver.enums.EntityStatus;
+import com.revealprecision.revealserver.enums.LookupEntityTypeCodeEnum;
 import com.revealprecision.revealserver.enums.PlanStatusEnum;
 import com.revealprecision.revealserver.enums.TaskPriorityEnum;
 import com.revealprecision.revealserver.exceptions.DuplicateTaskCreationException;
@@ -45,12 +48,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 
+
 @Service
 @Slf4j
 public class TaskService {
 
-  private static final String ENTITY_LOCATION = "Location";
-  private static final String ENTITY_PERSON = "Person";
   public static final String TASK_STATUS_READY = "READY";
   public static final String TASK_STATUS_CANCELLED = "CANCELLED";
   private final TaskRepository taskRepository;
@@ -248,7 +250,7 @@ public class TaskService {
   }
 
   private Task createTaskObjectFromActionAndEntityId(Action action, UUID entityUUID, Plan plan) {
-    boolean isLocationEntity = action.getLookupEntityType() != null && ENTITY_LOCATION.equals(
+    boolean isLocationEntity = action.getLookupEntityType() != null && LookupEntityTypeCodeEnum.LOCATION_CODE.getLookupEntityType().equals(
         action.getLookupEntityType().getCode());
     if (isLocationEntity) {
       if (taskRepository.findTasksByAction_IdentifierAndLocation_Identifier(action.getIdentifier(),
@@ -258,7 +260,7 @@ public class TaskService {
       }
     }
 
-    boolean isPersonEntity = action.getLookupEntityType() != null && ENTITY_PERSON.equals(
+    boolean isPersonEntity = action.getLookupEntityType() != null && LookupEntityTypeCodeEnum.PERSON_CODE.getLookupEntityType().equals(
         action.getLookupEntityType().getCode());
     if (isPersonEntity) {
       if (taskRepository.findTasksByAction_IdentifierAndPerson_Identifier(action.getIdentifier(),
@@ -310,11 +312,11 @@ public class TaskService {
     Action action = task.getAction();
     List<PlanLocations> planLocationsForLocation = new ArrayList<>();
     boolean isLocationEntity =
-        action.getLookupEntityType().getCode() != null && ENTITY_LOCATION.equals(
+        action.getLookupEntityType().getCode() != null && LookupEntityTypeCodeEnum.LOCATION_CODE.getLookupEntityType().equals(
             action.getLookupEntityType().getCode());
     if (isLocationEntity) {
       if (task.getLocation() != null) {
-        if (task.getLocation().getGeographicLevel().getName().equals("structure")){
+        if (task.getLocation().getGeographicLevel().getName().equals(STRUCTURE)){
          Location parentLocation = locationService.getLocationParent(task.getLocation(),plan.getLocationHierarchy());
          planLocationsForLocation = planLocationsService.getPlanLocationsByLocationIdentifier(
              parentLocation.getIdentifier());
@@ -326,11 +328,11 @@ public class TaskService {
     }
 
     List<PlanLocations> planLocationsForPerson = new ArrayList<>();
-    boolean isPersonEntity = action.getLookupEntityType() != null && ENTITY_PERSON.equals(
+    boolean isPersonEntity = action.getLookupEntityType() != null && LookupEntityTypeCodeEnum.PERSON_CODE.getLookupEntityType().equals(
         action.getLookupEntityType().getCode());
     if (isPersonEntity && task.getPerson() != null && task.getPerson().getLocations() != null) {
 
-      if (task.getLocation().getGeographicLevel().getName().equals("structure")){
+      if (task.getLocation().getGeographicLevel().getName().equals(STRUCTURE)){
         Location parentLocation = locationService.getLocationParent(task.getLocation(),plan.getLocationHierarchy());
         planLocationsForPerson = planLocationsService.getPlanLocationsByLocationIdentifier(
             parentLocation.getIdentifier());

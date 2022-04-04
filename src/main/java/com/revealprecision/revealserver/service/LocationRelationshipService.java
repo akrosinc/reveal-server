@@ -1,5 +1,7 @@
 package com.revealprecision.revealserver.service;
 
+import static com.revealprecision.revealserver.constants.LocationConstants.STRUCTURE;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.revealprecision.revealserver.enums.EntityStatus;
@@ -296,11 +298,11 @@ public class LocationRelationshipService {
 
     Set<Location> structureLocations = new HashSet<>();
 
-    if (locationHierarchy.getNodeOrder().contains("structure")) {
+    if (locationHierarchy.getNodeOrder().contains(STRUCTURE)) {
       Set<Location> structures = planLocations.stream()
           .filter(planLocation -> planLocation.getSecond().equals(
               locationHierarchy.getNodeOrder()
-                  .get(locationHierarchy.getNodeOrder().indexOf("structure") - 1))
+                  .get(locationHierarchy.getNodeOrder().indexOf(STRUCTURE) - 1))
           ).flatMap(filteredPlanLocation -> getChildrenLocations(
               locationHierarchy.getIdentifier(), filteredPlanLocation.getFirst())
               .stream()).collect(Collectors.toSet());
