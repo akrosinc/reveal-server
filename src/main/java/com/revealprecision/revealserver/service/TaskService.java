@@ -6,7 +6,6 @@ import com.revealprecision.revealserver.api.v1.dto.factory.TaskEntityFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.TaskCreateRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.TaskUpdateRequest;
 import com.revealprecision.revealserver.enums.EntityStatus;
-import com.revealprecision.revealserver.enums.LookupEntityTypeCodeEnum;
 import com.revealprecision.revealserver.enums.PlanStatusEnum;
 import com.revealprecision.revealserver.enums.TaskPriorityEnum;
 import com.revealprecision.revealserver.exceptions.DuplicateTaskCreationException;
