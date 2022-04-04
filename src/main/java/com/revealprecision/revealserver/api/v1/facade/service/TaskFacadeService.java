@@ -6,12 +6,10 @@ import com.revealprecision.revealserver.api.v1.facade.models.TaskFacade;
 import com.revealprecision.revealserver.api.v1.facade.models.TaskUpdateFacade;
 import com.revealprecision.revealserver.api.v1.facade.util.DateTimeFormatter;
 import com.revealprecision.revealserver.enums.EntityStatus;
-import com.revealprecision.revealserver.enums.LookupEntityTypeCodeEnum;
 import com.revealprecision.revealserver.enums.TaskPriorityEnum;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.Action;
 import com.revealprecision.revealserver.persistence.domain.Location;
-import com.revealprecision.revealserver.persistence.domain.LookupEntityType;
 import com.revealprecision.revealserver.persistence.domain.LookupTaskStatus;
 import com.revealprecision.revealserver.persistence.domain.LookupTaskStatus.Fields;
 import com.revealprecision.revealserver.persistence.domain.Person;
@@ -25,6 +23,7 @@ import com.revealprecision.revealserver.service.PersonService;
 import com.revealprecision.revealserver.service.PlanService;
 import com.revealprecision.revealserver.service.TaskService;
 import com.revealprecision.revealserver.service.UserService;
+import com.revealprecision.revealserver.util.ActionUtils;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -149,8 +148,6 @@ public class TaskFacadeService {
             lookupTaskStatus -> lookupTaskStatus.getCode().equalsIgnoreCase(taskDto.getStatus().name()))
         .findFirst();
 
-    LookupEntityType lookupEntityType = action.getLookupEntityType();
-
     Task task;
     try {
       task = taskService.getTaskByIdentifier(UUID.fromString(taskDto.getIdentifier()));
@@ -193,20 +190,16 @@ public class TaskFacadeService {
       }
       //TODO: We will need to handle the location creation process here for dropped points. Will require android "task add" change.
       if (locationFound) {
-        boolean isLocationEntity =
-            lookupEntityType != null && LookupEntityTypeCodeEnum.LOCATION_CODE.getLookupEntityType()
-                .equals(lookupEntityType.getCode());
-        if (isLocationEntity) {
+        boolean isActionForLocation = ActionUtils.isActionForLocation(action);
+        if (isActionForLocation) {
           task.setLocation(location);
         }
       }
 
       //TODO: Incoming task should have a "client" with metadata instead of person request obj so that we save all client info for subsequent event syncs.
-      boolean isPersonEntity =
-          lookupEntityType != null && LookupEntityTypeCodeEnum.PERSON_CODE.getLookupEntityType()
-              .equals(lookupEntityType.getCode());
-      if (isPersonEntity) {
-        Person person = null;
+      boolean isActionForPerson = ActionUtils.isActionForPerson(action);
+      if (isActionForPerson) {
+        Person person;
         try {
           person = personService.getPersonByIdentifier(UUID.fromString(taskDto.getForEntity()));
         } catch (NotFoundException e) {
