@@ -185,7 +185,7 @@ public class TaskFacadeService {
       boolean locationFound = true;
       try {
         location = locationService.findByIdentifier(
-            UUID.fromString(taskDto.getStructureId()));
+            UUID.fromString(taskDto.getForEntity()));
       } catch (NotFoundException notFoundException) {
         locationFound = false;
       }
