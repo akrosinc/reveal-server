@@ -178,7 +178,7 @@ public class TaskFacadeService {
       task.setLastModified(LastModifierFromAndroid);
 
       task.setBaseEntityIdentifier(UUID.fromString(taskDto.getForEntity()));
-
+      task.setSyncStatus(taskDto.getSyncStatus());
       task.setEntityStatus(EntityStatus.ACTIVE);
 
       Location location = null;
@@ -217,7 +217,6 @@ public class TaskFacadeService {
 
         task.setPerson(person);
       }
-
       task = taskService.saveTask(task);
       businessStatusService.setBusinessStatus(task, taskDto.getBusinessStatus());
       taskService.updateOrganisationsAndLocationsForTask(plan, taskStatus.get(),

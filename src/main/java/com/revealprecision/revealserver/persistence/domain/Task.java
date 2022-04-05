@@ -120,4 +120,6 @@ public class Task extends AbstractAuditableEntity {
 
   private Long serverVersion;
 
+  private String syncStatus;
+
 }
