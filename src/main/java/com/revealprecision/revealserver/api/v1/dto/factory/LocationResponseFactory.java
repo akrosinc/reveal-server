@@ -5,6 +5,7 @@ import com.revealprecision.revealserver.api.v1.dto.response.LocationResponse;
 import com.revealprecision.revealserver.enums.SummaryEnum;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -40,7 +41,7 @@ public class LocationResponseFactory {
     return new PageImpl<>(locationsResponseContent, pageable, locations.getTotalElements());
   }
 
-  public static LocationResponse fromPlanLocationDetails(PlanLocationDetails planLocationDetails) {
+  public static LocationResponse fromPlanLocationDetails(PlanLocationDetails planLocationDetails, UUID parentIdentifier) {
     return LocationResponse.builder()
         .identifier(planLocationDetails.getLocation().getIdentifier())
         .type(planLocationDetails.getLocation().getType())
@@ -53,6 +54,7 @@ public class LocationResponseFactory {
                 .geographicLevel(planLocationDetails.getLocation().getGeographicLevel().getName())
                 .numberOfTeams(planLocationDetails.getAssignedTeams())
                 .assigned(planLocationDetails.getAssignedLocations() > 0 ? true : false)
+                .parentIdentifier(planLocationDetails.getParentLocation() == null ? parentIdentifier : planLocationDetails.getParentLocation().getIdentifier())
                 .build())
         .build();
   }

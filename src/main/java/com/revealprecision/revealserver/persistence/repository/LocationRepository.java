@@ -41,6 +41,8 @@ public interface LocationRepository extends JpaRepository<Location, UUID> {
   @Query(value = "select new com.revealprecision.revealserver.persistence.projection.PlanLocationDetails(l, count(pl), count(pa)) from Location l "
       + "left join PlanLocations pl on l.identifier = pl.location.identifier and pl.plan.identifier = :planIdentifier "
       + "left join PlanAssignment pa on pa.planLocations.identifier = pl.identifier "
+      + "left join Plan pn on pn.identifier = :planIdentifier "
+      + "left join LocationRelationship lr on lr.locationHierarchy = pn.locationHierarchy.identifier and lr.location.identifier = :locationIdentifier "
       + "where l.identifier = :locationIdentifier group by l.identifier")
   PlanLocationDetails getLocationDetailsByIdentifierAndPlanIdentifier(@Param("locationIdentifier")UUID locationIdentifier,
       @Param("planIdentifier") UUID planIdentifier);
