@@ -179,6 +179,7 @@ public class TaskFacadeService {
 
       task.setBaseEntityIdentifier(UUID.fromString(taskDto.getForEntity()));
       task.setSyncStatus(taskDto.getSyncStatus());
+      task.setServerVersion(taskDto.getServerVersion());
       task.setEntityStatus(EntityStatus.ACTIVE);
 
       Location location = null;
