@@ -333,7 +333,7 @@ public class TaskService {
     boolean isActionForPerson = ActionUtils.isActionForPerson(action);
     if (isActionForPerson && task.getPerson() != null && task.getPerson().getLocations() != null) {
 
-      if (task.getLocation().getGeographicLevel().getName().equals(STRUCTURE)) {
+      if (task.getLocation()!= null && task.getLocation().getGeographicLevel().getName().equals(STRUCTURE)) {
         Location parentLocation = locationService
             .getLocationParent(task.getLocation(), plan.getLocationHierarchy());
         planLocationsForPerson = planLocationsService.getPlanLocationsByLocationIdentifier(
