@@ -128,4 +128,8 @@ public class LocationService {
     details.setParentLocation(locationRelationshipService.findParentLocationByLocationIdAndHierarchyId(locationIdentifier, plan.getLocationHierarchy().getIdentifier()));
     return details;
   }
+
+  public Location getLocationParent(Location location, LocationHierarchy locationHierarchy){
+    return locationRelationshipService.getLocationParent(location,locationHierarchy).getParentLocation();
+  }
 }

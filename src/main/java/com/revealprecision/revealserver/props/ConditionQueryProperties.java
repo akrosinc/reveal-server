@@ -28,7 +28,10 @@ public class ConditionQueryProperties {
           + " LEFT JOIN location_relationship lr on lr.location_identifier = a.identifier \n";
 
   private String planLocationsQuery =
-      "SELECT location_identifier from plan_locations WHERE plan_identifier = \n";
+      "SELECT tl.location_identifier as location_identifier, tgl.name as geographic_level_name from plan_locations tl"
+          + "LEFT JOIN location t on t.identifier = tl.location_identifier"
+          + "LEFT JOIN geographic_level tgl on tgl.identifier = t.geographic_level_identifier"
+          + "WHERE tl.plan_identifier = \n";
 }
 
 
