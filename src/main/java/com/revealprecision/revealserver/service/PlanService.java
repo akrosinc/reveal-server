@@ -79,7 +79,8 @@ public class PlanService {
     if (!isNullOrEmpty(planRequest.getGoals())) {
       planRequest.getGoals().forEach(goalRequest -> {
         if (!isNullOrEmpty(goalRequest.getActions())) {
-          goalRequest.getActions().forEach(actionRequest -> forms.add(actionRequest.getFormIdentifier()));
+          goalRequest.getActions()
+              .forEach(actionRequest -> forms.add(actionRequest.getFormIdentifier()));
         }
       });
     }
@@ -87,7 +88,7 @@ public class PlanService {
     Map<UUID, Form> foundForms = formService.findByIdentifiers(forms);
 
     Plan plan = PlanEntityFactory.toEntity(planRequest, interventionType, locationHierarchy,
-        foundForms,allLookUpEntityTypes);
+        foundForms, allLookUpEntityTypes);
     plan.setEntityStatus(EntityStatus.ACTIVE);
     savePlan(plan);
   }

@@ -36,7 +36,7 @@ public class PlanEntityFactory {
     if (planRequest.getGoals() != null) {
       var goals = planRequest.getGoals()
           .stream()
-          .map(request -> GoalEntityFactory.toEntity(request, plan, forms,lookupEntityTypeList))
+          .map(request -> GoalEntityFactory.toEntity(request, plan, forms, lookupEntityTypeList))
           .collect(Collectors.toSet());
       plan.setGoals(goals);
     }
