@@ -4,7 +4,9 @@ import com.revealprecision.revealserver.api.v1.dto.request.GoalRequest;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.persistence.domain.Form;
 import com.revealprecision.revealserver.persistence.domain.Goal;
+import com.revealprecision.revealserver.persistence.domain.LookupEntityType;
 import com.revealprecision.revealserver.persistence.domain.Plan;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -14,7 +16,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class GoalEntityFactory {
 
-  public static Goal toEntity(GoalRequest request, Plan plan, Map<UUID, Form> forms) {
+  public static Goal toEntity(GoalRequest request, Plan plan, Map<UUID, Form> forms,
+      List<LookupEntityType> lookupEntityTypes) {
     Goal goal = Goal.builder()
         .description(request.getDescription())
         .priority(request.getPriority())
@@ -24,9 +27,7 @@ public class GoalEntityFactory {
     if (request.getActions() != null) {
       var actions = request.getActions()
           .stream()
-          .map(actionRequest -> {
-            return ActionEntityFactory.toEntity(actionRequest, goal, forms);
-          })
+          .map(actionRequest -> ActionEntityFactory.toEntity(actionRequest, goal, forms, lookupEntityTypes))
           .collect(Collectors.toSet());
       goal.setActions(actions);
     }

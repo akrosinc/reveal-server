@@ -2,12 +2,14 @@ package com.revealprecision.revealserver.service;
 
 import com.revealprecision.revealserver.api.v1.dto.factory.ActionEntityFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.ActionRequest;
+import com.revealprecision.revealserver.enums.ActionTitleEnum;
 import com.revealprecision.revealserver.exceptions.ConflictException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.Action;
 import com.revealprecision.revealserver.persistence.domain.Action.Fields;
 import com.revealprecision.revealserver.persistence.domain.Form;
 import com.revealprecision.revealserver.persistence.domain.Goal;
+import com.revealprecision.revealserver.persistence.domain.LookupEntityType;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.repository.ActionRepository;
 import java.util.List;
@@ -26,6 +28,7 @@ public class ActionService {
   private final GoalService goalService;
   private final PlanService planService;
   private final FormService formService;
+  private final LookupEntityTypeService lookupEntityTypeService;
 
   public Action getByIdentifier(UUID identifier) {
     return actionRepository.findById(identifier).orElseThrow(() -> new NotFoundException(Pair.of(
@@ -38,7 +41,11 @@ public class ActionService {
     Goal goal = goalService.findByIdentifier(goalIdentifier);
     Form form = formService.findById(actionRequest.getFormIdentifier());
 
-    Action action = ActionEntityFactory.toEntity(actionRequest, goal, form);
+    LookupEntityType lookupEntityTypeByCode = lookupEntityTypeService.getLookupEntityTypeByCode(
+        ActionTitleEnum.lookup(actionRequest.getTitle()).getEntityType().getLookupEntityType());
+
+    Action action = ActionEntityFactory.toEntity(actionRequest, goal, form, lookupEntityTypeByCode);
+
     actionRepository.save(action);
   }
 
