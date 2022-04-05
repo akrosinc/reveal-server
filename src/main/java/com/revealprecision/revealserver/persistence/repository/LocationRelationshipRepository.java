@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.persistence.repository;
 
 import com.revealprecision.revealserver.persistence.domain.Location;
+import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import java.util.List;
@@ -41,11 +42,6 @@ public interface LocationRelationshipRepository extends JpaRepository<LocationRe
       @Param("hierarchyIdentifier") UUID hierarchyIdentifier,
       @Param("locations") Set<UUID> locations);
 
-  @Query(value = "select lr.identifier "
-      + "from LocationRelationship lr "
-      + "where lr.parentLocation.identifier= :parentLocationIdentifier")
-  List<UUID> findLocationRelationshipUuidsByParentLocation_Identifier(
-      UUID parentLocationIdentifier);
 
   @Query(value = "select "
       + "new com.revealprecision.revealserver.persistence.projection.PlanLocationDetails(lr.location, count(pl), count(pa)) from LocationRelationship lr "
@@ -70,4 +66,6 @@ public interface LocationRelationshipRepository extends JpaRepository<LocationRe
   List<Location> findLocationRelationshipUuidsByParentLocation_IdentifierAndHierarchyIdentifier(
       @Param("parentLocationIdentifier") List<UUID> parentLocationIdentifiers,
       @Param("hierarchyIdentifier") UUID hierarchyIdentifier);
+
+  LocationRelationship findLocationRelationshipByLocationAndLocationHierarchy(Location location, LocationHierarchy locationHierarchy);
 }

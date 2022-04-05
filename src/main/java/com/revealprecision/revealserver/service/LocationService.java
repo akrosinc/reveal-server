@@ -123,4 +123,8 @@ public class LocationService {
   public PlanLocationDetails getLocationDetailsByIdentifierAndPlanIdentifier(UUID locationIdentifier, UUID planIdentifier) {
     return locationRepository.getLocationDetailsByIdentifierAndPlanIdentifier(locationIdentifier, planIdentifier);
   }
+
+  public Location getLocationParent(Location location, LocationHierarchy locationHierarchy){
+    return locationRelationshipService.getLocationParent(location,locationHierarchy).getParentLocation();
+  }
 }

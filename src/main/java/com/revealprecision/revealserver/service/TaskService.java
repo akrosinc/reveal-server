@@ -1,9 +1,12 @@
 package com.revealprecision.revealserver.service;
 
+import static com.revealprecision.revealserver.constants.LocationConstants.STRUCTURE;
+
 import com.revealprecision.revealserver.api.v1.dto.factory.TaskEntityFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.TaskCreateRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.TaskUpdateRequest;
 import com.revealprecision.revealserver.enums.EntityStatus;
+import com.revealprecision.revealserver.enums.LookupEntityTypeCodeEnum;
 import com.revealprecision.revealserver.enums.PlanStatusEnum;
 import com.revealprecision.revealserver.enums.TaskPriorityEnum;
 import com.revealprecision.revealserver.exceptions.DuplicateTaskCreationException;
@@ -45,12 +48,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 
+
 @Service
 @Slf4j
 public class TaskService {
 
-  private static final String ENTITY_LOCATION = "Location";
-  private static final String ENTITY_PERSON = "Person";
   public static final String TASK_STATUS_READY = "READY";
   public static final String TASK_STATUS_CANCELLED = "CANCELLED";
   private final TaskRepository taskRepository;
@@ -207,7 +209,8 @@ public class TaskService {
     Query query = ConditionQueryUtil.getQueryObject(condition.getQuery(),
         action.getLookupEntityType().getCode());
 
-    List<UUID> uuids = entityFilterService.filterEntities(query, plan.getIdentifier());
+    List<UUID> uuids = entityFilterService.filterEntities(query, plan.getIdentifier(),
+        plan.getLocationHierarchy().getIdentifier());
     List<Task> tasks = new ArrayList<>();
     for (UUID entityUUID : uuids) {
 
@@ -228,6 +231,11 @@ public class TaskService {
     Set<Location> taskLocations = plan.getPlanLocations().stream().map(PlanLocations::getLocation)
         .collect(Collectors.toSet());
 
+    Set<Location> structureLocations = locationRelationshipService.getStructuresForPlanIfHierarchyHasStructure(
+        plan.getLocationHierarchy(), taskLocations);
+
+    taskLocations.addAll(structureLocations);
+
     List<Task> tasks = new ArrayList<>();
     taskLocations.forEach(location -> {
       Task task = createTaskObjectFromActionAndEntityId(action, location.getIdentifier(), plan);
@@ -242,7 +250,7 @@ public class TaskService {
   }
 
   private Task createTaskObjectFromActionAndEntityId(Action action, UUID entityUUID, Plan plan) {
-    boolean isLocationEntity = action.getLookupEntityType() != null && ENTITY_LOCATION.equals(
+    boolean isLocationEntity = action.getLookupEntityType() != null && LookupEntityTypeCodeEnum.LOCATION_CODE.getLookupEntityType().equals(
         action.getLookupEntityType().getCode());
     if (isLocationEntity) {
       if (taskRepository.findTasksByAction_IdentifierAndLocation_Identifier(action.getIdentifier(),
@@ -252,7 +260,7 @@ public class TaskService {
       }
     }
 
-    boolean isPersonEntity = action.getLookupEntityType() != null && ENTITY_PERSON.equals(
+    boolean isPersonEntity = action.getLookupEntityType() != null && LookupEntityTypeCodeEnum.PERSON_CODE.getLookupEntityType().equals(
         action.getLookupEntityType().getCode());
     if (isPersonEntity) {
       if (taskRepository.findTasksByAction_IdentifierAndPerson_Identifier(action.getIdentifier(),
@@ -286,6 +294,8 @@ public class TaskService {
   public void updateOrganizationsAndLocationsForTasksByPlanIdentifier(UUID planIdentifier) {
 
     List<Task> tasksByPlan = taskRepository.findTasksByPlan_Identifier(planIdentifier);
+//TODO - resolve the dependency injection issue so that @Lazy is not used in this class
+    Plan plan = planService.getPlanByIdentifier(planIdentifier);
 
     LookupTaskStatus lookupTaskStatus = lookupTaskStatusRepository.findByCode(TASK_STATUS_CANCELLED)
         .orElseThrow(() -> new NotFoundException(
@@ -293,31 +303,44 @@ public class TaskService {
 
     for (Task task : tasksByPlan) {
 
-      updateOrganisationsAndLocationsForTask(planIdentifier, lookupTaskStatus, task);
+      updateOrganisationsAndLocationsForTask(plan, lookupTaskStatus, task);
     }
   }
 
-  public void updateOrganisationsAndLocationsForTask(UUID planIdentifier,
+  public void updateOrganisationsAndLocationsForTask(Plan plan,
       LookupTaskStatus lookupTaskStatus, Task task) {
     Action action = task.getAction();
     List<PlanLocations> planLocationsForLocation = new ArrayList<>();
     boolean isLocationEntity =
-        action.getLookupEntityType().getCode() != null && ENTITY_LOCATION.equals(
+        action.getLookupEntityType().getCode() != null && LookupEntityTypeCodeEnum.LOCATION_CODE.getLookupEntityType().equals(
             action.getLookupEntityType().getCode());
     if (isLocationEntity) {
       if (task.getLocation() != null) {
-        planLocationsForLocation = planLocationsService.getPlanLocationsByLocationIdentifier(
-            task.getLocation().getIdentifier());
+        if (task.getLocation().getGeographicLevel().getName().equals(STRUCTURE)){
+         Location parentLocation = locationService.getLocationParent(task.getLocation(),plan.getLocationHierarchy());
+         planLocationsForLocation = planLocationsService.getPlanLocationsByLocationIdentifier(
+             parentLocation.getIdentifier());
+        } else {
+          planLocationsForLocation = planLocationsService.getPlanLocationsByLocationIdentifier(
+              task.getLocation().getIdentifier());
+        }
       }
     }
 
     List<PlanLocations> planLocationsForPerson = new ArrayList<>();
-    boolean isPersonEntity = action.getLookupEntityType() != null && ENTITY_PERSON.equals(
+    boolean isPersonEntity = action.getLookupEntityType() != null && LookupEntityTypeCodeEnum.PERSON_CODE.getLookupEntityType().equals(
         action.getLookupEntityType().getCode());
     if (isPersonEntity && task.getPerson() != null && task.getPerson().getLocations() != null) {
-      planLocationsForPerson = planLocationsService.getPlanLocationsByLocationIdentifierList(
-          task.getPerson().getLocations().stream().map(Location::getIdentifier)
-              .collect(Collectors.toList()));
+
+      if (task.getLocation().getGeographicLevel().getName().equals(STRUCTURE)){
+        Location parentLocation = locationService.getLocationParent(task.getLocation(),plan.getLocationHierarchy());
+        planLocationsForPerson = planLocationsService.getPlanLocationsByLocationIdentifier(
+            parentLocation.getIdentifier());
+      } else {
+        planLocationsForPerson = planLocationsService.getPlanLocationsByLocationIdentifierList(
+            task.getPerson().getLocations().stream().map(Location::getIdentifier)
+                .collect(Collectors.toList()));
+      }
     }
 
     if (planLocationsForLocation.isEmpty() && planLocationsForPerson.isEmpty()) {
@@ -326,13 +349,13 @@ public class TaskService {
       List<Organization> organizations = new ArrayList<>();
       if (isLocationEntity) {
         if (planLocationsForLocation.size() > 0) {
-          organizations = getOrganizationsFromAssignedLocations(planIdentifier,
+          organizations = getOrganizationsFromAssignedLocations(plan.getIdentifier(),
               planLocationsForLocation);
         }
       }
       if (isPersonEntity) {
         if (planLocationsForPerson.size() > 0) {
-          organizations = getOrganizationsFromAssignedLocations(planIdentifier,
+          organizations = getOrganizationsFromAssignedLocations(plan.getIdentifier(),
               planLocationsForPerson);
         }
       }
