@@ -116,7 +116,6 @@ public class PlanService {
 
   private void generateAndUpdateTasks(UUID planIdentifier) {
     taskService.generateTasksByPlanId(planIdentifier);
-    taskService.updateOrganizationsAndLocationsForTasksByPlanIdentifier(planIdentifier);
   }
 
 }
