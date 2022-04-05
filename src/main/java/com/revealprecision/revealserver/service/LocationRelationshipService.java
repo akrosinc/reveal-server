@@ -320,8 +320,8 @@ public class LocationRelationshipService {
     return structureLocations;
   }
 
-  public LocationRelationship getLocationParent(Location location, LocationHierarchy locationHierarchy){
-    return locationRelationshipRepository.findLocationRelationshipByLocationAndLocationHierarchy(location,locationHierarchy);
+  public Location getLocationParent(Location location, LocationHierarchy locationHierarchy){
+    return locationRelationshipRepository.getParentLocationByLocationIdAndHierarchyId(location.getIdentifier(),locationHierarchy.getIdentifier());
   }
 
 }

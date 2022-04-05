@@ -130,6 +130,6 @@ public class LocationService {
   }
 
   public Location getLocationParent(Location location, LocationHierarchy locationHierarchy){
-    return locationRelationshipService.getLocationParent(location,locationHierarchy).getParentLocation();
+    return locationRelationshipService.getLocationParent(location,locationHierarchy);
   }
 }
