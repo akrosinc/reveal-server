@@ -23,4 +23,5 @@ public class LocationPropertyResponse {
   private String geographicLevel;
   private Long numberOfTeams;
   private boolean assigned;
+  private UUID parentIdentifier;
 }
