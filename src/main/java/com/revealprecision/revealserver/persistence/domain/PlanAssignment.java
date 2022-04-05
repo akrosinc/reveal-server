@@ -15,7 +15,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.FieldNameConstants;
-import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 import org.hibernate.envers.Audited;
 
@@ -27,7 +26,6 @@ import org.hibernate.envers.Audited;
 @AllArgsConstructor
 @Builder
 @FieldNameConstants
-@SQLDelete(sql = "UPDATE plan_assignment SET entity_status = 'DELETED' where identifier=?")
 @Where(clause = "entity_status='ACTIVE'")
 public class PlanAssignment extends AbstractAuditableEntity {
 

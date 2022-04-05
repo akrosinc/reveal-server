@@ -21,7 +21,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.FieldNameConstants;
-import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 import org.hibernate.envers.Audited;
 
@@ -49,7 +48,7 @@ public class PlanLocations extends AbstractAuditableEntity {
   @JoinColumn(name = "location_identifier", referencedColumnName = "identifier")
   private Location location;
 
-  @OneToMany(mappedBy = "planLocations", cascade = CascadeType.ALL)
+  @OneToMany(mappedBy = "planLocations", cascade = CascadeType.REMOVE, orphanRemoval = true)
   private Set<PlanAssignment> planAssignments;
 
   public PlanLocations(Plan plan, Location location) {

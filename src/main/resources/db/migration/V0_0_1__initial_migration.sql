@@ -1123,7 +1123,7 @@ CREATE TABLE IF NOT EXISTS plan_assignment
     modified_by               VARCHAR(36)              NOT NULL,
     modified_datetime         TIMESTAMP WITH TIME ZONE NOT NULL,
     PRIMARY KEY (identifier),
-    FOREIGN KEY (plan_locations_identifier) REFERENCES plan_locations (identifier),
+    FOREIGN KEY (plan_locations_identifier) REFERENCES plan_locations (identifier) ON DELETE CASCADE,
     FOREIGN KEY (organization_identifier) REFERENCES organization (identifier)
 );
 
