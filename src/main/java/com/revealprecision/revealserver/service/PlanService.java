@@ -13,6 +13,7 @@ import com.revealprecision.revealserver.persistence.domain.Form;
 import com.revealprecision.revealserver.persistence.domain.Goal;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
+import com.revealprecision.revealserver.persistence.domain.LookupEntityType;
 import com.revealprecision.revealserver.persistence.domain.LookupInterventionType;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.Plan.Fields;
@@ -39,6 +40,7 @@ public class PlanService {
   private final LocationHierarchyService locationHierarchyService;
   private final LookupInterventionTypeService lookupInterventionTypeService;
   private final TaskService taskService;
+  private final LookupEntityTypeService lookupEntityTypeService;
   private final KafkaTemplate<String, Message> kafkaTemplate;
 
   public static boolean isNullOrEmpty(final Collection<?> c) {
@@ -73,12 +75,12 @@ public class PlanService {
         planRequest.getLocationHierarchy());
 
     Set<UUID> forms = new HashSet<>();
+    List<LookupEntityType> allLookUpEntityTypes = lookupEntityTypeService.getAllLookUpEntityTypes();
     if (!isNullOrEmpty(planRequest.getGoals())) {
       planRequest.getGoals().forEach(goalRequest -> {
         if (!isNullOrEmpty(goalRequest.getActions())) {
-          goalRequest.getActions().forEach(actionRequest -> {
-            forms.add(actionRequest.getFormIdentifier());
-          });
+          goalRequest.getActions()
+              .forEach(actionRequest -> forms.add(actionRequest.getFormIdentifier()));
         }
       });
     }
@@ -86,7 +88,7 @@ public class PlanService {
     Map<UUID, Form> foundForms = formService.findByIdentifiers(forms);
 
     Plan plan = PlanEntityFactory.toEntity(planRequest, interventionType, locationHierarchy,
-        foundForms);
+        foundForms, allLookUpEntityTypes);
     plan.setEntityStatus(EntityStatus.ACTIVE);
     savePlan(plan);
   }

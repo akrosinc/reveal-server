@@ -4,9 +4,11 @@ import com.revealprecision.revealserver.api.v1.dto.request.PlanRequest;
 import com.revealprecision.revealserver.enums.PlanStatusEnum;
 import com.revealprecision.revealserver.persistence.domain.Form;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
+import com.revealprecision.revealserver.persistence.domain.LookupEntityType;
 import com.revealprecision.revealserver.persistence.domain.LookupInterventionType;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -17,7 +19,8 @@ import lombok.NoArgsConstructor;
 public class PlanEntityFactory {
 
   public static Plan toEntity(PlanRequest planRequest, LookupInterventionType type,
-      LocationHierarchy locationHierarchy, Map<UUID, Form> forms) {
+      LocationHierarchy locationHierarchy, Map<UUID, Form> forms,
+      List<LookupEntityType> lookupEntityTypeList) {
 
     Plan plan = Plan.builder()
         .name(planRequest.getName())
@@ -33,7 +36,7 @@ public class PlanEntityFactory {
     if (planRequest.getGoals() != null) {
       var goals = planRequest.getGoals()
           .stream()
-          .map(request -> GoalEntityFactory.toEntity(request, plan, forms))
+          .map(request -> GoalEntityFactory.toEntity(request, plan, forms, lookupEntityTypeList))
           .collect(Collectors.toSet());
       plan.setGoals(goals);
     }
