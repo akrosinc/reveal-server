@@ -40,12 +40,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import javax.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 
@@ -170,6 +172,7 @@ public class TaskService {
 
   public void generateTasksByPlanId(UUID planIdentifier) {
 
+    log.info("TASK_GENERATION Start generate tasks for Plan Id: {}", planIdentifier);
     Plan plan = planService.getPlanByIdentifier(planIdentifier);
     if (plan.getStatus().equals(PlanStatusEnum.ACTIVE)) {
       List<Goal> goals = goalService.getGoalsByPlanIdentifier(planIdentifier);
@@ -193,7 +196,8 @@ public class TaskService {
             generateTasksByActionConditionQuery(action, conditions.get(0),
                 plan); //Assume 1-1 action to condition,maybe change entity to reflect such
           } catch (QueryGenerationException e) {
-            log.error("Cannot generate tasks for condition: {}, action: {}, plan: {}",
+            log.error(
+                "TASK_GENERATION Cannot generate tasks for condition: {}, action: {}, plan: {}",
                 conditions.get(0), action, plan);
             e.printStackTrace();
           }
@@ -201,6 +205,7 @@ public class TaskService {
 
       });
     }
+    log.info("TASK_GENERATION Completed generating tasks for Plan Id: {}", planIdentifier);
   }
 
   public void generateTasksByActionConditionQuery(Action action,
@@ -254,6 +259,9 @@ public class TaskService {
   }
 
   private Task createTaskObjectFromActionAndEntityId(Action action, UUID entityUUID, Plan plan) {
+    log.debug("TASK_GENERATION  create individual task for plan: {} and action: {}",
+        plan.getIdentifier(), action.getIdentifier());
+
     boolean isActionForLocation = ActionUtils.isActionForLocation(action);
     if (isActionForLocation) {
       if (taskRepository.findTasksByAction_IdentifierAndLocation_Identifier(action.getIdentifier(),
@@ -291,10 +299,20 @@ public class TaskService {
       task.setPerson(person);
     }
     task.setServerVersion(0L);
+    log.debug("TASK_GENERATION completed creating individual task for plan: {} and action: {}",
+        plan.getIdentifier(), action.getIdentifier());
+
     return task;
   }
 
+  @Async
+  @Transactional
+  public void updateOrganizationsAndLocationsForTasksByPlanIdentifierAsync(UUID planIdentifier) {
+    updateOrganizationsAndLocationsForTasksByPlanIdentifierBatch(planIdentifier);
+  }
+
   public void updateOrganizationsAndLocationsForTasksByPlanIdentifier(UUID planIdentifier) {
+    log.info("TASK_ASSIGN Start update tasks for Plan Id: {}", planIdentifier);
 
     List<Task> tasksByPlan = taskRepository.findTasksByPlan_Identifier(planIdentifier);
 //TODO - resolve the dependency injection issue so that @Lazy is not used in this class
@@ -304,46 +322,75 @@ public class TaskService {
         .orElseThrow(() -> new NotFoundException(
             Pair.of(LookupTaskStatus.Fields.code, TASK_STATUS_CANCELLED), LookupTaskStatus.class));
 
+    int taskListSize = tasksByPlan.size();
+    int taskCount = 1;
     for (Task task : tasksByPlan) {
-
+      log.debug("processing task {} - id: {} of total {}", taskCount, task.getIdentifier(),
+          taskListSize);
       updateOrganisationsAndLocationsForTask(plan, lookupTaskStatus, task);
+      taskCount++;
     }
+    log.info("TASK_ASSIGN Completed updating tasks for Plan Id: {}", planIdentifier);
+
   }
+
+  public void updateOrganizationsAndLocationsForTasksByPlanIdentifierBatch(UUID planIdentifier) {
+    log.info("TASK_ASSIGN Start update tasks for Plan Id: {}", planIdentifier);
+
+    List<Task> tasksByPlan = taskRepository.findTasksByPlan_Identifier(planIdentifier);
+//TODO - resolve the dependency injection issue so that @Lazy is not used in this class
+    Plan plan = planService.getPlanByIdentifier(planIdentifier);
+
+    LookupTaskStatus lookupTaskStatus = lookupTaskStatusRepository.findByCode(TASK_STATUS_CANCELLED)
+        .orElseThrow(() -> new NotFoundException(
+            Pair.of(LookupTaskStatus.Fields.code, TASK_STATUS_CANCELLED), LookupTaskStatus.class));
+
+    int taskListSize = tasksByPlan.size();
+    int taskCount = 1;
+    List<Task> tasks = new ArrayList<>();
+    for (Task task : tasksByPlan) {
+      log.debug("processing task {} - id: {} of total {}", taskCount, task.getIdentifier(),
+          taskListSize);
+      tasks.add(getUpdatedTaskAfterLocationAndOrganizationAssignment(plan, lookupTaskStatus, task));
+      taskCount++;
+    }
+    taskRepository.saveAll(tasks);
+    log.info("TASK_ASSIGN Completed updating tasks for Plan Id: {}", planIdentifier);
+
+  }
+
 
   public void updateOrganisationsAndLocationsForTask(Plan plan,
       LookupTaskStatus lookupTaskStatus, Task task) {
+    taskRepository.save(
+        getUpdatedTaskAfterLocationAndOrganizationAssignment(plan, lookupTaskStatus, task));
+  }
+
+  private Task getUpdatedTaskAfterLocationAndOrganizationAssignment(Plan plan,
+      LookupTaskStatus lookupTaskStatus, Task task) {
+    log.debug("TASK_ASSIGN Start updating location and organization assignments for task: {}",
+        task.getIdentifier());
     Action action = task.getAction();
-    List<PlanLocations> planLocationsForLocation = new ArrayList<>();
-    boolean isActionForLocation = ActionUtils.isActionForLocation(action);
-    if (isActionForLocation) {
-      if (task.getLocation() != null) {
-        if (task.getLocation().getGeographicLevel().getName().equals(STRUCTURE)) {
-          Location parentLocation = locationService
-              .getLocationParent(task.getLocation(), plan.getLocationHierarchy());
-          planLocationsForLocation = planLocationsService.getPlanLocationsByLocationIdentifier(
-              parentLocation.getIdentifier());
-        } else {
-          planLocationsForLocation = planLocationsService.getPlanLocationsByLocationIdentifier(
-              task.getLocation().getIdentifier());
-        }
-      }
-    }
 
-    List<PlanLocations> planLocationsForPerson = new ArrayList<>();
+    log.debug("TASK_ASSIGN getting plan locations: {}", task.getIdentifier());
+
+    List<PlanLocations> planLocationsForLocation = getPlanLocationsForLocation(plan, task, action);
+
+    List<PlanLocations> planLocationsForPerson = getPlanLocationsForPerson(plan, task, action);
+    log.debug("TASK_ASSIGN got plan locations: {}", task.getIdentifier());
+
+    return updateTaskWithOrganizations(plan, lookupTaskStatus, task, planLocationsForLocation,
+        planLocationsForPerson, action);
+  }
+
+  private Task updateTaskWithOrganizations(Plan plan, LookupTaskStatus lookupTaskStatus, Task task,
+      List<PlanLocations> planLocationsForLocation, List<PlanLocations> planLocationsForPerson,
+      Action action) {
+    log.debug("TASK_ASSIGN getting organizations locations: {}", task.getIdentifier());
+
     boolean isActionForPerson = ActionUtils.isActionForPerson(action);
-    if (isActionForPerson && task.getPerson() != null && task.getPerson().getLocations() != null) {
 
-      if (task.getLocation()!= null && task.getLocation().getGeographicLevel().getName().equals(STRUCTURE)) {
-        Location parentLocation = locationService
-            .getLocationParent(task.getLocation(), plan.getLocationHierarchy());
-        planLocationsForPerson = planLocationsService.getPlanLocationsByLocationIdentifier(
-            parentLocation.getIdentifier());
-      } else {
-        planLocationsForPerson = planLocationsService.getPlanLocationsByLocationIdentifierList(
-            task.getPerson().getLocations().stream().map(Location::getIdentifier)
-                .collect(Collectors.toList()));
-      }
-    }
+    boolean isActionForLocation = ActionUtils.isActionForLocation(action);
 
     if (planLocationsForLocation.isEmpty() && planLocationsForPerson.isEmpty()) {
       task.setLookupTaskStatus(lookupTaskStatus);
@@ -361,10 +408,64 @@ public class TaskService {
               planLocationsForPerson);
         }
       }
+      log.debug("TASK_ASSIGN got organizations locations: {}", task.getIdentifier());
       task.setOrganizations(organizations);
     }
-    taskRepository.save(task);
+    log.debug("TASK_ASSIGN Completed updating location and organization assignments for task: {}",
+        task.getIdentifier());
+    return task;
   }
+
+  private List<PlanLocations> getPlanLocationsForPerson(Plan plan, Task task
+      , Action action) {
+
+    List<PlanLocations> planLocationsForPerson = new ArrayList<>();
+
+    boolean isActionForPerson = ActionUtils.isActionForPerson(action);
+
+    if (isActionForPerson && task.getPerson() != null && task.getPerson().getLocations() != null) {
+
+      if (task.getLocation().getGeographicLevel().getName().equals(STRUCTURE)) {
+        Location parentLocation = locationService.getLocationParent(task.getLocation(),
+            plan.getLocationHierarchy());
+        planLocationsForPerson = planLocationsService.getPlanLocationsByLocationIdentifier(
+            parentLocation.getIdentifier());
+      } else {
+        planLocationsForPerson = planLocationsService.getPlanLocationsByLocationIdentifierList(
+            task.getPerson().getLocations().stream().map(Location::getIdentifier)
+                .collect(Collectors.toList()));
+      }
+    }
+    return planLocationsForPerson;
+  }
+
+
+
+  private List<PlanLocations> getPlanLocationsForLocation(Plan plan, Task task
+      , Action action) {
+
+    List<PlanLocations> planLocationsForLocation = new ArrayList<>();
+
+    boolean isActionForLocation = ActionUtils.isActionForLocation(action);
+
+    if (isActionForLocation) {
+      if (task.getLocation() != null) {
+        if (task.getLocation().getGeographicLevel().getName().equals(STRUCTURE)) {
+
+          Location parentLocation = locationService.getLocationParent(task.getLocation(),
+              plan.getLocationHierarchy());
+          planLocationsForLocation = planLocationsService.getPlanLocationsByLocationIdentifier(
+              parentLocation.getIdentifier());
+
+        } else {
+          planLocationsForLocation = planLocationsService.getPlanLocationsByLocationIdentifier(
+              task.getLocation().getIdentifier());
+        }
+      }
+    }
+    return planLocationsForLocation;
+  }
+
 
   private List<Organization> getOrganizationsFromAssignedLocations(UUID planIdentifier,
       List<PlanLocations> planLocationsForPerson) {

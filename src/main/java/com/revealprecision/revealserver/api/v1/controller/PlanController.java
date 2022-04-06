@@ -97,8 +97,7 @@ public class PlanController {
       return ResponseEntity
           .status(HttpStatus.OK)
           .body(
-              new CountResponse(
-                  planService.getPlanByIdentifier(identifier).getPlanLocations().size()));
+              new CountResponse(planLocationsService.getPlanLocationsCount(identifier)));
     }
     List<GeoTreeResponse> geoTreeResponseList = planLocationsService.getHierarchyByPlanIdentifier(
         identifier);
@@ -114,6 +113,13 @@ public class PlanController {
   public ResponseEntity<Void> selectPlanLocations(@PathVariable("identifier") UUID identifier,
       @Valid @RequestBody AssignLocationRequest assignLocationRequest) {
     planLocationsService.selectPlanLocations(identifier, assignLocationRequest.getLocations());
+    return ResponseEntity.status(HttpStatus.CREATED).build();
+  }
+
+  @PostMapping("/{identifier}/assignLocation/{locationIdentifier}")
+  public ResponseEntity<Void> assignLocation(@PathVariable("identifier") UUID identifier,
+      @PathVariable("locationIdentifier") UUID locationIdentifier) {
+    planLocationsService.assignLocation(identifier, locationIdentifier);
     return ResponseEntity.status(HttpStatus.CREATED).build();
   }
 

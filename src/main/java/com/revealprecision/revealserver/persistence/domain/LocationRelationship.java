@@ -39,7 +39,7 @@ public class LocationRelationship extends AbstractAuditableEntity {
   @JoinColumn(name = "location_hierarchy_identifier")
   private LocationHierarchy locationHierarchy;
 
-  @ManyToOne(fetch = FetchType.LAZY)
+  @ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "location_identifier")
   private Location location;
 
