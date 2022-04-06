@@ -1,7 +1,6 @@
 package com.revealprecision.revealserver.persistence.repository;
 
 import com.revealprecision.revealserver.persistence.domain.Location;
-import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import java.util.List;
@@ -22,11 +21,11 @@ public interface LocationRelationshipRepository extends JpaRepository<LocationRe
   Optional<List<LocationRelationship>> findByLocationHierarchyIdentifier(
       UUID locationHierarchyIdentifier);
 
-  @Query(value = "select lr, l from LocationRelationship lr "
-      + "JOIN lr.location l "
-      + "JOIN l.geographicLevel gl "
+  @Query(value = "select lr from LocationRelationship lr "
+      + "left JOIN fetch lr.location l "
+      + "left JOIN fetch l.geographicLevel gl "
       + "WHERE lr.locationHierarchy.identifier = :locationHierarchyIdentifier "
-      + "AND gl.name <> 'structure'")
+      + "AND (gl is null or gl.name <> 'structure')")
   Optional<List<LocationRelationship>>findByLocationHierarchyWithoutStructures(UUID locationHierarchyIdentifier);
 
   @Query(value = "SELECT ST_Contains (ST_AsText(ST_GeomFromGeoJSON(:parent)),ST_AsText(ST_Centroid(ST_GeomFromGeoJSON(:child))))", nativeQuery = true)

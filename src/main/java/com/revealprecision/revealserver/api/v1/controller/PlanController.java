@@ -116,6 +116,13 @@ public class PlanController {
     return ResponseEntity.status(HttpStatus.CREATED).build();
   }
 
+  @PostMapping("/{identifier}/assignLocation/{locationIdentifier}")
+  public ResponseEntity<Void> assignLocation(@PathVariable("identifier") UUID identifier,
+      @PathVariable("locationIdentifier") UUID locationIdentifier) {
+    planLocationsService.assignLocation(identifier, locationIdentifier);
+    return ResponseEntity.status(HttpStatus.CREATED).build();
+  }
+
   @PostMapping("/{identifier}/{locationIdentifier}/assignTeams")
   public ResponseEntity<Void> assignOrganizationsToLocationsByPlanId(
       @PathVariable("identifier") UUID planIdentifier,

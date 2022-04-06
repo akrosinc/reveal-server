@@ -65,6 +65,12 @@ public class PlanLocationsService {
     return planLocationsRepository.findByPlan_IdentifierAndLocation_Identifier(planId, locationId);
   }
 
+  public void assignLocation(UUID planIdentifier, UUID locationIdentifier) {
+    Plan plan = planService.getPlanByIdentifier(planIdentifier);
+    Location location = locationService.findByIdentifier(locationIdentifier);
+    planLocationsRepository.save(new PlanLocations(plan, location));
+  }
+
   public void selectPlanLocations(UUID planIdentifier, Set<UUID> locations) {
     Plan plan = planService.getPlanByIdentifier(planIdentifier);
     if (locations.size() == 0) {
