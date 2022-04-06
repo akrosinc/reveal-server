@@ -35,6 +35,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -87,17 +88,17 @@ public class TaskFacadeService {
   }
 
 
-  public List<String> updateTaskStatusAndBusinessStatusForListOfTasks(
+  public List<Pair<String,Long>> updateTaskStatusAndBusinessStatusForListOfTasks(
       List<TaskUpdateFacade> taskUpdateFacades) {
     return taskUpdateFacades.stream().map(this::updateTaskStatusAndBusinessStatus)
-        .filter(Optional::isPresent).map(Optional::get).map(UUID::toString)
+        .filter(Optional::isPresent).map(Optional::get)
         .collect(Collectors.toList());
   }
 
-  private Optional<UUID> updateTaskStatusAndBusinessStatus(TaskUpdateFacade updateFacade) {
+  private Optional<Pair<String,Long>> updateTaskStatusAndBusinessStatus(TaskUpdateFacade updateFacade) {
 
     UUID identifier = null;
-
+    Long updatedServerVersion = 0L;
     try {
       Task task = taskService.getTaskByIdentifier(UUID.fromString(updateFacade.getIdentifier()));
 
@@ -105,8 +106,12 @@ public class TaskFacadeService {
           lookupTaskStatus -> lookupTaskStatus.getCode().equalsIgnoreCase(updateFacade.getStatus()))
           .findFirst();
 
+       updatedServerVersion = task.getServerVersion();
+
       if (taskStatus.isPresent()) {
         task.setLookupTaskStatus(taskStatus.get());
+        updatedServerVersion += 1;
+        task.setServerVersion(updatedServerVersion);
         task = taskService.saveTask(task);
         businessStatusService.setBusinessStatus(task, updateFacade.getBusinessStatus());
         identifier = task.getIdentifier();
@@ -119,7 +124,7 @@ public class TaskFacadeService {
       e.printStackTrace();
       log.error("Some error with updating task: {}", e.getMessage());
     }
-    return Optional.ofNullable(identifier);
+    return Optional.ofNullable(Pair.of(identifier.toString(),updatedServerVersion));
   }
 
   public List<TaskDto> addTasks(List<TaskDto> taskDtos) {
@@ -162,6 +167,13 @@ public class TaskFacadeService {
             taskDto.getLastModified());
 
     if (taskStatus.isPresent()) {
+      LookupTaskStatus currentTaskStatus = task.getLookupTaskStatus();
+      LookupTaskStatus incomingTaskStatus = taskStatus.get();
+      if(!incomingTaskStatus.equals(currentTaskStatus)){
+        task.setServerVersion(taskDto.getServerVersion() + 1);
+      } else {
+        task.setServerVersion(taskDto.getServerVersion());
+      }
       task.setLookupTaskStatus(taskStatus.get());
       task.setAction(action);
       task.setDescription(taskDto.getDescription());
@@ -179,7 +191,6 @@ public class TaskFacadeService {
 
       task.setBaseEntityIdentifier(UUID.fromString(taskDto.getForEntity()));
       task.setSyncStatus(taskDto.getSyncStatus());
-      task.setServerVersion(taskDto.getServerVersion());
       task.setEntityStatus(EntityStatus.ACTIVE);
 
       Location location = null;
