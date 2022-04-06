@@ -67,10 +67,10 @@ public class PlanLocationsService {
 
   public void selectPlanLocations(UUID planIdentifier, Set<UUID> locations) {
     Plan plan = planService.getPlanByIdentifier(planIdentifier);
-    if(locations.size() == 0){
+    if (locations.size() == 0) {
       plan.getPlanLocations().clear();
       planRepository.save(plan);
-    }else {
+    } else {
       List<PlanLocations> planLocations = getPlanLocationsByPlanIdentifier(planIdentifier);
 
       Set<UUID> currentLocation = plan.getPlanLocations().stream()
@@ -81,16 +81,18 @@ public class PlanLocationsService {
       locationsToAdd.removeAll(currentLocation);
       currentLocation.removeAll(locations);
 
-      List<Location> addLocations = locationService.getAllByIdentifiers(new ArrayList<>(locationsToAdd));
+      List<Location> addLocations = locationService.getAllByIdentifiers(
+          new ArrayList<>(locationsToAdd));
       List<PlanLocations> addPlanLocations = addLocations.stream()
-          .map(location -> new PlanLocations(plan,location))
+          .map(location -> new PlanLocations(plan, location))
           .collect(Collectors.toList());
 
-      if(addPlanLocations.size() > 0){
+      if (addPlanLocations.size() > 0) {
         planLocationsRepository.saveAll(addPlanLocations);
       }
-      if(currentLocation.size() > 0) {
-        planLocationsRepository.deletePlanLocationsByPlanAndLocation(planIdentifier, new ArrayList<>(currentLocation));
+      if (currentLocation.size() > 0) {
+        planLocationsRepository.deletePlanLocationsByPlanAndLocation(planIdentifier,
+            new ArrayList<>(currentLocation));
       }
     }
   }
@@ -107,26 +109,34 @@ public class PlanLocationsService {
             Collectors.toSet());
     Map<UUID, Location> locationMap = locations.stream()
         .collect(Collectors.toMap(Location::getIdentifier, location -> location));
+    List<PlanAssignment> planAssignments = planAssignmentService.getPlanAssignmentsByPlanIdentifier(
+        identifier);
+    Map<UUID, List<PlanAssignment>> planAssignmentMap = planAssignments.stream()
+        .collect(Collectors.groupingBy(planAssignment -> planAssignment.getPlanLocations().getLocation().getIdentifier()));
     geoTreeResponses.forEach(el -> {
-      assignLocations(locationMap, el, plan.getIdentifier());
+      assignLocations(locationMap, el, planAssignmentMap);
     });
     return geoTreeResponses;
   }
 
-  public void assignLocations(Map<UUID, Location> locationMap, GeoTreeResponse geoTreeResponse,//TODO: refactor this method
-      UUID planId) {
-    List<PlanAssignment> planAssignments = planAssignmentService.getPlanAssignmentByPlanLocationIdentifier(
-        planId, geoTreeResponse.getIdentifier());
-    List<OrganizationResponse> teams = planAssignments.stream()
-        .map(el -> OrganizationResponseFactory.fromEntityWithoutChild(el.getOrganization()))
-        .collect(Collectors.toList());
-    geoTreeResponse.setTeams(teams);
+  public void assignLocations(Map<UUID, Location> locationMap, GeoTreeResponse geoTreeResponse,  Map<UUID, List<PlanAssignment>> planAssignmentMap) {
+//    List<PlanAssignment> planAssignments = planAssignmentService.getPlanAssignmentByPlanLocationIdentifier(
+//        planId, geoTreeResponse.getIdentifier());
+    List<PlanAssignment> planAssignments = planAssignmentMap.get(geoTreeResponse.getIdentifier());
+    if(planAssignments == null) {
+      geoTreeResponse.setTeams(new ArrayList<>());
+    }else {
+      List<OrganizationResponse> teams = planAssignments.stream()
+          .map(el -> OrganizationResponseFactory.fromEntityWithoutChild(el.getOrganization()))
+          .collect(Collectors.toList());
+      geoTreeResponse.setTeams(teams);
+    }
     if (locationMap.containsKey(geoTreeResponse.getIdentifier())) {
       geoTreeResponse.setActive(true);
     } else {
       geoTreeResponse.setActive(false);
     }
-    geoTreeResponse.getChildren().forEach(el -> assignLocations(locationMap, el, planId));
+    geoTreeResponse.getChildren().forEach(el -> assignLocations(locationMap, el, planAssignmentMap));
   }
 
   public Long getPlanLocationsCount(UUID planIdentifier) {
