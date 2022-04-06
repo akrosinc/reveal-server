@@ -25,6 +25,7 @@ import com.revealprecision.revealserver.service.PersonService;
 import com.revealprecision.revealserver.service.PlanService;
 import com.revealprecision.revealserver.service.TaskService;
 import com.revealprecision.revealserver.service.UserService;
+import com.revealprecision.revealserver.util.ActionEntityUtil;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -182,20 +183,18 @@ public class TaskFacadeService {
 
       task.setEntityStatus(EntityStatus.ACTIVE);
 
-
       Location location = null;
       boolean locationFound = true;
       try {
         location = locationService.findByIdentifier(
             UUID.fromString(taskDto.getStructureId()));
-      } catch (NotFoundException notFoundException){
+      } catch (NotFoundException notFoundException) {
         locationFound = false;
       }
       //TODO: We will need to handle the location creation process here for dropped points. Will require android "task add" change.
       if (locationFound) {
         boolean isLocationEntity =
-            lookupEntityType != null && LookupEntityTypeCodeEnum.LOCATION_CODE.getLookupEntityType()
-                .equals(lookupEntityType.getCode());
+            ActionEntityUtil.isEntityFor(action, LookupEntityTypeCodeEnum.LOCATION_CODE);
         if (isLocationEntity) {
           task.setLocation(location);
         }
@@ -203,8 +202,7 @@ public class TaskFacadeService {
 
       //TODO: Incoming task should have a "client" with metadata instead of person request obj so that we save all client info for subsequent event syncs.
       boolean isPersonEntity =
-          lookupEntityType != null && LookupEntityTypeCodeEnum.PERSON_CODE.getLookupEntityType()
-              .equals(lookupEntityType.getCode());
+          ActionEntityUtil.isEntityFor(action, LookupEntityTypeCodeEnum.PERSON_CODE);
       if (isPersonEntity) {
         Person person = null;
         try {
@@ -213,9 +211,9 @@ public class TaskFacadeService {
           //We received task for new Person, record the person
           person = personService.createPerson(taskDto.getPersonRequest());
         }
-        if (location != null){
+        if (location != null) {
           Set<Location> locations = person.getLocations();
-          if (locations != null){
+          if (locations != null) {
             locations.add(location);
             person.setLocations(locations);
           }
@@ -226,8 +224,7 @@ public class TaskFacadeService {
 
       task = taskService.saveTask(task);
       businessStatusService.setBusinessStatus(task, taskDto.getBusinessStatus());
-      taskService.updateOrganisationsAndLocationsForTask(plan, taskStatus.get(),
-          task);
+
     } else {
       log.error("Unknown task state in sync: {}", taskDto.getStatus().name());
       throw new NotFoundException(
