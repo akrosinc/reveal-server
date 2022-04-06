@@ -126,8 +126,6 @@ public class PlanLocationsService {
   }
 
   public void assignLocations(Map<UUID, Location> locationMap, GeoTreeResponse geoTreeResponse,  Map<UUID, List<PlanAssignment>> planAssignmentMap) {
-//    List<PlanAssignment> planAssignments = planAssignmentService.getPlanAssignmentByPlanLocationIdentifier(
-//        planId, geoTreeResponse.getIdentifier());
     List<PlanAssignment> planAssignments = planAssignmentMap.get(geoTreeResponse.getIdentifier());
     if(planAssignments == null) {
       geoTreeResponse.setTeams(new ArrayList<>());
