@@ -128,4 +128,9 @@ public class PlanLocationsService {
     }
     geoTreeResponse.getChildren().forEach(el -> assignLocations(locationMap, el, planId));
   }
+
+  public Long getPlanLocationsCount(UUID planIdentifier) {
+    Plan plan = planService.getPlanByIdentifier(planIdentifier);
+    return planLocationsRepository.countByPlan_Identifier(plan.getIdentifier());
+  }
 }

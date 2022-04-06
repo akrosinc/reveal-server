@@ -97,8 +97,7 @@ public class PlanController {
       return ResponseEntity
           .status(HttpStatus.OK)
           .body(
-              new CountResponse(
-                  planService.getPlanByIdentifier(identifier).getPlanLocations().size()));
+              new CountResponse(planLocationsService.getPlanLocationsCount(identifier)));
     }
     List<GeoTreeResponse> geoTreeResponseList = planLocationsService.getHierarchyByPlanIdentifier(
         identifier);
