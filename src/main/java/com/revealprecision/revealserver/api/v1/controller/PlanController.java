@@ -14,6 +14,7 @@ import com.revealprecision.revealserver.api.v1.dto.request.AssignTeamsRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.ConditionRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.GoalRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.GoalUpdateRequest;
+import com.revealprecision.revealserver.api.v1.dto.request.MultipleLocationAssignRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.PlanRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.TargetRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.ActionResponse;
@@ -121,6 +122,13 @@ public class PlanController {
       @PathVariable("locationIdentifier") UUID locationIdentifier) {
     planLocationsService.assignLocation(identifier, locationIdentifier);
     return ResponseEntity.status(HttpStatus.CREATED).build();
+  }
+
+  @PostMapping("/{identifier}/multipleTeamAssign")
+  public ResponseEntity<Void> multipleTeamAssign(@PathVariable UUID identifier,@Valid @RequestBody
+      MultipleLocationAssignRequest request) {
+    planAssignmentService.assignMultipleTeams(identifier, request);
+    return ResponseEntity.status(HttpStatus.OK).build();
   }
 
   @PostMapping("/{identifier}/{locationIdentifier}/assignTeams")

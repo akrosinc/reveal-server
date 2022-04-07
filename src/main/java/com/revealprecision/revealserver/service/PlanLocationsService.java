@@ -65,6 +65,10 @@ public class PlanLocationsService {
     return planLocationsRepository.findByPlan_IdentifierAndLocation_Identifier(planId, locationId);
   }
 
+  public List<PlanLocations> getByPlanIdAndLocationIdentifiers(UUID planIdentifier, List<UUID> locationIdentifiers) {
+    return planLocationsRepository.findByPlan_IdentifierAndLocation_IdentifierIn(planIdentifier, locationIdentifiers);
+  }
+
   public void assignLocation(UUID planIdentifier, UUID locationIdentifier) {
     Plan plan = planService.getPlanByIdentifier(planIdentifier);
     Location location = locationService.findByIdentifier(locationIdentifier);

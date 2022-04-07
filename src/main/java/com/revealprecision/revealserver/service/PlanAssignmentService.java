@@ -1,10 +1,13 @@
 package com.revealprecision.revealserver.service;
 
 import com.revealprecision.revealserver.api.v1.dto.request.AssignTeamHierarchyRequest;
+import com.revealprecision.revealserver.api.v1.dto.request.MultipleLocationAssignRequest;
 import com.revealprecision.revealserver.persistence.domain.Organization;
+import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.PlanAssignment;
 import com.revealprecision.revealserver.persistence.domain.PlanLocations;
 import com.revealprecision.revealserver.persistence.repository.PlanAssignmentRepository;
+import com.revealprecision.revealserver.persistence.repository.PlanLocationsRepository;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -18,7 +21,9 @@ public class PlanAssignmentService {
 
   private final PlanAssignmentRepository planAssignmentRepository;
   private final PlanLocationsService planLocationsService;
+  private final PlanLocationsRepository planLocationsRepository;
   private final OrganizationService organizationService;
+  private final PlanService planService;
 
   public List<PlanAssignment> getPlanAssignmentsByOrganizationIdentifier(
       UUID organizationIdentifier) {
@@ -65,6 +70,24 @@ public class PlanAssignmentService {
               planId);
         }
       });
+    }
+  }
+
+  public void assignMultipleTeams(UUID planIdentifier, MultipleLocationAssignRequest request) {
+    Plan plan = planService.getPlanByIdentifier(planIdentifier);
+    List<PlanLocations> planLocations = planLocationsService.getByPlanIdAndLocationIdentifiers(plan.getIdentifier(), List.copyOf(request.getLocations()));
+    if(request.getTeams().isEmpty()){
+      planLocations.forEach(pl -> pl.getPlanAssignments().clear());
+      planLocationsRepository.saveAll(planLocations);
+    }else {
+      Set<Organization> teams = organizationService.findByIdentifiers(request.getTeams());
+      planLocations.forEach(pl -> {
+        pl.getPlanAssignments().clear();
+        teams.forEach(organization -> {
+          pl.getPlanAssignments().add(new PlanAssignment(organization, pl));
+        });
+      });
+      planLocationsRepository.saveAll(planLocations);
     }
   }
 }
