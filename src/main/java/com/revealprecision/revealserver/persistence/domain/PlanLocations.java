@@ -48,7 +48,7 @@ public class PlanLocations extends AbstractAuditableEntity {
   @JoinColumn(name = "location_identifier", referencedColumnName = "identifier")
   private Location location;
 
-  @OneToMany(mappedBy = "planLocations", cascade = CascadeType.REMOVE, orphanRemoval = true)
+  @OneToMany(mappedBy = "planLocations", cascade = CascadeType.ALL, orphanRemoval = true)
   private Set<PlanAssignment> planAssignments;
 
   public PlanLocations(Plan plan, Location location) {
