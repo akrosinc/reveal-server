@@ -13,6 +13,7 @@ import javax.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.util.Pair;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -46,9 +47,13 @@ public class TaskFacadeController {
 
     List<UUID> jurisdictionIdentifiers = taskSyncRequest.getGroup();
     boolean returnCount = taskSyncRequest.isReturnCount();
+    Long serverVersion  = taskSyncRequest.getServerVersion();
+    if(serverVersion == null){
+      serverVersion = 0L;
+    }
 
     List<TaskFacade> taskFacades = taskFacadeService.syncTasks(taskSyncRequest.getPlan(),
-        jurisdictionIdentifiers);
+        jurisdictionIdentifiers,serverVersion);
 
     if (returnCount) {
       HttpHeaders headers = new HttpHeaders();
@@ -84,15 +89,17 @@ public class TaskFacadeController {
       MediaType.APPLICATION_JSON_VALUE, MediaType.TEXT_PLAIN_VALUE})
   public ResponseEntity<String> updateStatus(@RequestBody List<TaskUpdateFacade> taskUpdates) {
 
-    List<String> updateTasks = taskFacadeService.updateTaskStatusAndBusinessStatusForListOfTasks(
-        taskUpdates);
+    List<Pair<String,Long>> updateTasks = taskFacadeService.updateTaskStatusAndBusinessStatusForListOfTasks(taskUpdates);
 
     JSONObject json = new JSONObject();
+   Long maxServerVersion =  updateTasks.stream().map(Pair::getSecond).max(Long::compareTo).orElse(0L);
     if (updateTasks.size() > 0) {
-      json.put("task_ids", updateTasks);
+      json.put("task_ids", updateTasks.stream().map(Pair::getFirst).collect(Collectors.toList()));
+      json.put("maxServerVersion",maxServerVersion);
     } else {
       return new ResponseEntity<>("Tasks not Updated: ", HttpStatus.CREATED);
     }
     return new ResponseEntity<>(json.toString(), HttpStatus.CREATED);
   }
 }
+

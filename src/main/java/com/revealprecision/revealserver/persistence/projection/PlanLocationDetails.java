@@ -10,8 +10,7 @@ import lombok.Setter;
 @NoArgsConstructor
 public class PlanLocationDetails {
   private Location location;
-  private Long assignedLocations;
-  private Long assignedTeams;
+  private Long assignedLocations;  private Long assignedTeams;
   private Location parentLocation;
 
   public PlanLocationDetails(Location location, Long assignedLocations, Long assignedTeams) {

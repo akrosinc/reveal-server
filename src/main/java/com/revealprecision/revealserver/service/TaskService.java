@@ -6,7 +6,6 @@ import com.revealprecision.revealserver.api.v1.dto.factory.TaskEntityFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.TaskCreateRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.TaskUpdateRequest;
 import com.revealprecision.revealserver.enums.EntityStatus;
-import com.revealprecision.revealserver.enums.LookupEntityTypeCodeEnum;
 import com.revealprecision.revealserver.enums.PlanStatusEnum;
 import com.revealprecision.revealserver.enums.TaskPriorityEnum;
 import com.revealprecision.revealserver.exceptions.DuplicateTaskCreationException;
@@ -30,7 +29,7 @@ import com.revealprecision.revealserver.persistence.repository.LookupTaskStatusR
 import com.revealprecision.revealserver.persistence.repository.TaskRepository;
 import com.revealprecision.revealserver.persistence.specification.TaskSpec;
 import com.revealprecision.revealserver.service.models.TaskSearchCriteria;
-import com.revealprecision.revealserver.util.ActionEntityUtil;
+import com.revealprecision.revealserver.util.ActionUtils;
 import com.revealprecision.revealserver.util.ConditionQueryUtil;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -233,22 +232,27 @@ public class TaskService {
   }
 
   public void generateTasksUnconditionally(Action action, Plan plan) {
-    Set<Location> taskLocations = plan.getPlanLocations().stream().map(PlanLocations::getLocation)
-        .collect(Collectors.toSet());
+    //TODO: update this once business rule for unconditional generation of tasks linked to person has been defined.
+    Boolean isActionForLocation = ActionUtils.isActionForLocation(action);
+    if (isActionForLocation) {
+      Set<Location> taskLocations = plan.getPlanLocations().stream().map(PlanLocations::getLocation)
+          .collect(Collectors.toSet());
+      Set<Location> structureLocations = locationRelationshipService
+          .getStructuresForPlanIfHierarchyHasStructure(
+              plan.getLocationHierarchy(), taskLocations);
+      taskLocations.addAll(structureLocations);
+      generateTasksForLocationEntities(action, plan, taskLocations);
+    }
+  }
 
-    Set<Location> structureLocations = locationRelationshipService.getStructuresForPlanIfHierarchyHasStructure(
-        plan.getLocationHierarchy(), taskLocations);
-
-    taskLocations.addAll(structureLocations);
-
+  private void generateTasksForLocationEntities(Action action, Plan plan, Set<Location> entities) {
     List<Task> tasks = new ArrayList<>();
-    taskLocations.forEach(location -> {
-      Task task = createTaskObjectFromActionAndEntityId(action, location.getIdentifier(), plan);
+    entities.forEach(entity -> {
+      Task task = createTaskObjectFromActionAndEntityId(action, entity.getIdentifier(), plan);
       if (task != null) {
         tasks.add(task);
       }
     });
-
     if (!tasks.isEmpty()) {
       taskRepository.saveAll(tasks);
     }
@@ -258,9 +262,8 @@ public class TaskService {
     log.debug("TASK_GENERATION  create individual task for plan: {} and action: {}",
         plan.getIdentifier(), action.getIdentifier());
 
-    boolean isLocationEntity = ActionEntityUtil.isEntityFor(action, LookupEntityTypeCodeEnum.LOCATION_CODE);
-
-    if (isLocationEntity) {
+    boolean isActionForLocation = ActionUtils.isActionForLocation(action);
+    if (isActionForLocation) {
       if (taskRepository.findTasksByAction_IdentifierAndLocation_Identifier(action.getIdentifier(),
           entityUUID).size() > 0) {
         log.info("task for location: {} already exists", entityUUID);
@@ -268,8 +271,8 @@ public class TaskService {
       }
     }
 
-    boolean isPersonEntity = ActionEntityUtil.isEntityFor(action, LookupEntityTypeCodeEnum.PERSON_CODE);
-    if (isPersonEntity) {
+    boolean isActionForPerson = ActionUtils.isActionForPerson(action);
+    if (isActionForPerson) {
       if (taskRepository.findTasksByAction_IdentifierAndPerson_Identifier(action.getIdentifier(),
           entityUUID).size() > 0) {
         log.info("task for person: {} already exists", entityUUID);
@@ -278,23 +281,24 @@ public class TaskService {
     }
 
     Task task = Task.builder().lookupTaskStatus(
-            lookupTaskStatusRepository.findByCode(TASK_STATUS_READY).orElseThrow(
-                () -> new NotFoundException(Pair.of(LookupTaskStatus.Fields.code, TASK_STATUS_READY),
-                    LookupTaskStatus.class))).priority(TaskPriorityEnum.ROUTINE)
+        lookupTaskStatusRepository.findByCode(TASK_STATUS_READY).orElseThrow(
+            () -> new NotFoundException(Pair.of(LookupTaskStatus.Fields.code, TASK_STATUS_READY),
+                LookupTaskStatus.class))).priority(TaskPriorityEnum.ROUTINE)
         .description(action.getDescription()).lastModified(LocalDateTime.now())
         .authoredOn(LocalDateTime.now()).baseEntityIdentifier(entityUUID).action(action)
         .executionPeriodStart(action.getTimingPeriodStart())
         .executionPeriodEnd(action.getTimingPeriodEnd()).plan(plan).build();
     task.setEntityStatus(EntityStatus.ACTIVE);
 
-    if (isLocationEntity) {
+    if (isActionForLocation) {
       Location location = locationService.findByIdentifier(entityUUID);
       task.setLocation(location);
     }
-    if (isPersonEntity) {
+    if (isActionForPerson) {
       Person person = personService.getPersonByIdentifier(entityUUID);
       task.setPerson(person);
     }
+    task.setServerVersion(0L);
     log.debug("TASK_GENERATION completed creating individual task for plan: {} and action: {}",
         plan.getIdentifier(), action.getIdentifier());
 
@@ -384,21 +388,21 @@ public class TaskService {
       Action action) {
     log.debug("TASK_ASSIGN getting organizations locations: {}", task.getIdentifier());
 
-    boolean isPersonEntity = ActionEntityUtil.isEntityFor(action,LookupEntityTypeCodeEnum.PERSON_CODE);
+    boolean isActionForPerson = ActionUtils.isActionForPerson(action);
 
-    boolean isLocationEntity = ActionEntityUtil.isEntityFor(action,LookupEntityTypeCodeEnum.LOCATION_CODE);
+    boolean isActionForLocation = ActionUtils.isActionForLocation(action);
 
     if (planLocationsForLocation.isEmpty() && planLocationsForPerson.isEmpty()) {
       task.setLookupTaskStatus(lookupTaskStatus);
     } else {
       List<Organization> organizations = new ArrayList<>();
-      if (isLocationEntity) {
+      if (isActionForLocation) {
         if (planLocationsForLocation.size() > 0) {
           organizations = getOrganizationsFromAssignedLocations(plan.getIdentifier(),
               planLocationsForLocation);
         }
       }
-      if (isPersonEntity) {
+      if (isActionForPerson) {
         if (planLocationsForPerson.size() > 0) {
           organizations = getOrganizationsFromAssignedLocations(plan.getIdentifier(),
               planLocationsForPerson);
@@ -417,9 +421,9 @@ public class TaskService {
 
     List<PlanLocations> planLocationsForPerson = new ArrayList<>();
 
-    boolean isPersonEntity = ActionEntityUtil.isEntityFor(action,LookupEntityTypeCodeEnum.PERSON_CODE);
+    boolean isActionForPerson = ActionUtils.isActionForPerson(action);
 
-    if (isPersonEntity && task.getPerson() != null && task.getPerson().getLocations() != null) {
+    if (isActionForPerson && task.getPerson() != null && task.getPerson().getLocations() != null) {
 
       if (task.getLocation().getGeographicLevel().getName().equals(STRUCTURE)) {
         Location parentLocation = locationService.getLocationParent(task.getLocation(),
@@ -442,9 +446,9 @@ public class TaskService {
 
     List<PlanLocations> planLocationsForLocation = new ArrayList<>();
 
-    boolean isLocationEntity = ActionEntityUtil.isEntityFor(action,LookupEntityTypeCodeEnum.LOCATION_CODE);
+    boolean isActionForLocation = ActionUtils.isActionForLocation(action);
 
-    if (isLocationEntity) {
+    if (isActionForLocation) {
       if (task.getLocation() != null) {
         if (task.getLocation().getGeographicLevel().getName().equals(STRUCTURE)) {
 
@@ -472,15 +476,16 @@ public class TaskService {
   }
 
   public Map<UUID, List<Task>> getTasksPerJurisdictionIdentifier(UUID planIdentifier,
-      List<UUID> jurisdictionIdentifiers) {
+      List<UUID> jurisdictionIdentifiers, Long serverVersion) {
     Map<UUID, List<Task>> tasksToJurisdictions = new HashMap<>();
     try {
       Plan plan = planService.getPlanByIdentifier(planIdentifier);
       LocationHierarchy locationHierarchy = plan.getLocationHierarchy();
 
       jurisdictionIdentifiers.forEach(jurisdictionIdentifier -> {
-        List<Location> childLocations = locationRelationshipService.getLocationChildrenByLocationParentIdentifierAndHierarchyIdentifier(
-            List.of(jurisdictionIdentifier), locationHierarchy.getIdentifier());
+        List<Location> childLocations = locationRelationshipService
+            .getLocationChildrenByLocationParentIdentifierAndHierarchyIdentifier(
+                List.of(jurisdictionIdentifier), locationHierarchy.getIdentifier());
 
         List<UUID> baseEntityIdentifiers = new ArrayList<>();
 
@@ -493,8 +498,8 @@ public class TaskService {
         baseEntityIdentifiers.addAll(
             childLocations.stream().map(Location::getIdentifier).collect(Collectors.toList()));
 
-        List<Task> tasks = taskRepository.findByPlanAndBaseEntityIdentifiers(plan
-            , baseEntityIdentifiers);
+        List<Task> tasks = taskRepository.findByPlanAndBaseEntityIdentifiersAndServerVersion(plan
+            , baseEntityIdentifiers, serverVersion);
         if (!tasks.isEmpty()) {
           tasksToJurisdictions.put(jurisdictionIdentifier, tasks);
         }
