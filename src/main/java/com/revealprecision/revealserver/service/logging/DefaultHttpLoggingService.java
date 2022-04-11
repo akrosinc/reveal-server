@@ -57,7 +57,7 @@ public class DefaultHttpLoggingService implements HttpLoggingService {
 
   public void logMessage(HttpLogging httpLogging) {
     if (httpLoggingProperties.isShouldLogToConsole()) {
-      log.info("{}", pretty(httpLogging));
+      log.debug("{}", pretty(httpLogging));
     }
   }
 

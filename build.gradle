@@ -30,7 +30,6 @@ ext {
     set('springCloudVersion', "2020.0.5")
 }
 
-
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-actuator:2.5.6'
     implementation 'org.springframework.batch:spring-batch-core:4.3.4'

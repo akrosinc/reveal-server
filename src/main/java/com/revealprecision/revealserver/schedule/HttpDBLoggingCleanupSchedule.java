@@ -18,9 +18,9 @@ public class HttpDBLoggingCleanupSchedule {
 
   @Scheduled(cron = "#{httpLoggingProperties.cleanUpCron}")
   public void cleanDBLogs() {
-    log.info("schedule start");
+    log.debug("schedule start");
     ((HttpDBHttpLoggingService) httpLoggingService).cleanUpLog();
-    log.info("schedule end");
+    log.debug("schedule end");
   }
 
 }
