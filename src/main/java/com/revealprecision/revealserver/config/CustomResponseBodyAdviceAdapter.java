@@ -69,7 +69,6 @@ public class CustomResponseBodyAdviceAdapter implements ResponseBodyAdvice<Objec
               ((ServletServerHttpResponse) serverHttpResponse).getServletResponse().getStatus()),
           headers, triggerTime, LocalDateTime.now(), UserUtils.getKeyCloakPrincipal().getName(),
           jwtKid);
-      log.info(servletRequest.getRequestURL().toString());
 
     }
     return o;

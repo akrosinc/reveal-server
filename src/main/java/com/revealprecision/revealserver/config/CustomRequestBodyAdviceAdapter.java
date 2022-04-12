@@ -55,8 +55,6 @@ public class CustomRequestBodyAdviceAdapter extends RequestBodyAdviceAdapter {
         httpServletRequest.getMethod(), null, requestHeaders, triggerTime, null,
         UserUtils.getKeyCloakPrincipal().getName(), jwtKid);
 
-    log.info(httpServletRequest.getRequestURL().toString());
-
     return super.afterBodyRead(body, inputMessage, parameter, targetType, converterType);
   }
 
