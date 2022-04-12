@@ -9,7 +9,7 @@ import org.hibernate.id.UUIDGenerator;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.type.Type;
 
-public class CustomGenerator extends UUIDGenerator {
+public class CustomIdentifierGenerator extends UUIDGenerator {
   private String entityName;
 
   @Override

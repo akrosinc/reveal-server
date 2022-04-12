@@ -2,6 +2,7 @@ package com.revealprecision.revealserver.persistence.domain;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.revealprecision.revealserver.enums.TaskPriorityEnum;
+import com.revealprecision.revealserver.persistence.generator.TaskServerVersionGenerator;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -26,6 +27,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.FieldNameConstants;
+import org.hibernate.annotations.GenerationTime;
+import org.hibernate.annotations.GeneratorType;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
@@ -45,7 +48,7 @@ public class Task extends AbstractAuditableEntity {
 
   @Id
   @GeneratedValue(generator = "custom-generator")
-  @GenericGenerator(name = "custom-generator",strategy = "com.revealprecision.revealserver.persistence.generator.CustomGenerator")
+  @GenericGenerator(name = "custom-generator", strategy = "com.revealprecision.revealserver.persistence.generator.CustomIdentifierGenerator")
   @NotNull(message = "identifier can not be null")
   private UUID identifier;
 
@@ -105,6 +108,7 @@ public class Task extends AbstractAuditableEntity {
     this.baseEntityIdentifier = person.getIdentifier();
   }
 
+
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "plan_identifier", referencedColumnName = "identifier", nullable = false)
   private Plan plan;
@@ -118,6 +122,7 @@ public class Task extends AbstractAuditableEntity {
 
   private UUID baseEntityIdentifier;
 
+  @GeneratorType(type = TaskServerVersionGenerator.class, when = GenerationTime.ALWAYS)
   private Long serverVersion;
 
   private String syncStatus;

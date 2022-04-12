@@ -298,7 +298,6 @@ public class TaskService {
       Person person = personService.getPersonByIdentifier(entityUUID);
       task.setPerson(person);
     }
-    task.setServerVersion(0L);
     log.debug("TASK_GENERATION completed creating individual task for plan: {} and action: {}",
         plan.getIdentifier(), action.getIdentifier());
 
@@ -498,7 +497,7 @@ public class TaskService {
         baseEntityIdentifiers.addAll(
             childLocations.stream().map(Location::getIdentifier).collect(Collectors.toList()));
 
-        List<Task> tasks = taskRepository.findByPlanAndBaseEntityIdentifiersAndServerVersion(plan
+        List<Task> tasks = taskRepository.findByPlanAndBaseEntityIdentifiersAndMinimumServerVersion(plan
             , baseEntityIdentifiers, serverVersion);
         if (!tasks.isEmpty()) {
           tasksToJurisdictions.put(jurisdictionIdentifier, tasks);

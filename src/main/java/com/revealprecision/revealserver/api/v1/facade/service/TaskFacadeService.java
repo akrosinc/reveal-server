@@ -110,8 +110,6 @@ public class TaskFacadeService {
 
       if (taskStatus.isPresent()) {
         task.setLookupTaskStatus(taskStatus.get());
-        updatedServerVersion += 1;
-        task.setServerVersion(updatedServerVersion);
         task = taskService.saveTask(task);
         businessStatusService.setBusinessStatus(task, updateFacade.getBusinessStatus());
         identifier = task.getIdentifier();
@@ -167,13 +165,6 @@ public class TaskFacadeService {
             taskDto.getLastModified());
 
     if (taskStatus.isPresent()) {
-      LookupTaskStatus currentTaskStatus = task.getLookupTaskStatus();
-      LookupTaskStatus incomingTaskStatus = taskStatus.get();
-      if(!incomingTaskStatus.equals(currentTaskStatus)){
-        task.setServerVersion(taskDto.getServerVersion() + 1);
-      } else {
-        task.setServerVersion(taskDto.getServerVersion());
-      }
       task.setLookupTaskStatus(taskStatus.get());
       task.setAction(action);
       task.setDescription(taskDto.getDescription());

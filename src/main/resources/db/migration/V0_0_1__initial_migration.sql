@@ -350,8 +350,8 @@ CREATE TABLE IF NOT EXISTS task
     base_entity_identifier        uuid                     NOT NULL,
     action_identifier             uuid                     NOT NULL,
     plan_identifier               uuid                     NOT NULL,
-    server_version                bigint                   NOT NULL DEFAULT 0,
-    sync_status                  varchar(255),
+    server_version                bigint                   NOT NULL,
+    sync_status                   varchar(255),
     PRIMARY KEY (identifier),
     FOREIGN KEY (action_identifier) REFERENCES action (identifier),
     FOREIGN KEY (lookup_task_status_identifier) REFERENCES lookup_task_status (identifier)
@@ -381,8 +381,8 @@ CREATE TABLE IF NOT EXISTS task_aud
     base_entity_identifier        uuid                     NOT NULL,
     action_identifier             uuid                     NOT NULL,
     plan_identifier               uuid                     NOT NULL,
-    server_version                bigint                   NOT NULL DEFAULT 0,
-    sync_status                  varchar(255),
+    server_version                bigint                   NOT NULL,
+    sync_status                   varchar(255),
     PRIMARY KEY (identifier, rev)
 );
 
@@ -608,7 +608,7 @@ CREATE TABLE IF NOT EXISTS location_relationship
     location_hierarchy_identifier UUID                     NOT NULL,
     location_identifier           UUID                     NOT NULL,
     parent_identifier             UUID,
-    ancestry                      UUID[]                   ,
+    ancestry                      UUID[],
     entity_status                 VARCHAR(36)              NOT NULL,
     created_by                    VARCHAR(36),
     created_datetime              TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -625,7 +625,7 @@ CREATE TABLE IF NOT EXISTS location_relationship_aud
     location_hierarchy_identifier UUID                     NOT NULL,
     location_identifier           UUID                     NOT NULL,
     parent_identifier             UUID,
-    ancestry                      UUID[]                   ,
+    ancestry                      UUID[],
     entity_status                 VARCHAR(36)              NOT NULL,
     created_by                    VARCHAR(36),
     created_datetime              TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -857,6 +857,10 @@ CREATE SEQUENCE IF NOT EXISTS hibernate_sequence
 CREATE INDEX IF NOT EXISTS raster_store_idx ON raster_store (id);
 CREATE INDEX raster_store_rast_st_convexhull_idx ON raster_store USING gist (public.ST_ConvexHull(rast));
 
+CREATE SEQUENCE IF NOT EXISTS task_server_version_seq
+    START WITH 1
+    INCREMENT BY 1
+    MAXVALUE 9223372036854775807;
 CREATE TABLE IF NOT EXISTS person
 (
     identifier        uuid                     NOT NULL,
