@@ -439,7 +439,6 @@ public class TaskService {
   }
 
 
-
   private List<PlanLocations> getPlanLocationsForLocation(Plan plan, Task task
       , Action action) {
 
@@ -474,7 +473,8 @@ public class TaskService {
         .map(PlanAssignment::getOrganization).collect(Collectors.toList());
   }
 
-  public Map<UUID, List<Task>> getTasksPerJurisdictionIdentifier(UUID planIdentifier,
+  public Map<UUID, List<Task>>
+  getTasksPerJurisdictionIdentifier(UUID planIdentifier,
       List<UUID> jurisdictionIdentifiers, Long serverVersion) {
     Map<UUID, List<Task>> tasksToJurisdictions = new HashMap<>();
     try {
@@ -482,9 +482,9 @@ public class TaskService {
       LocationHierarchy locationHierarchy = plan.getLocationHierarchy();
 
       jurisdictionIdentifiers.forEach(jurisdictionIdentifier -> {
-        List<Location> childLocations = locationRelationshipService
-            .getLocationChildrenByLocationParentIdentifierAndHierarchyIdentifier(
-                List.of(jurisdictionIdentifier), locationHierarchy.getIdentifier());
+        List<Location> childLocations = getLocationChildrenByLocationParentIdentifierAndHierarchyIdentifier(
+            locationHierarchy,
+            List.of(jurisdictionIdentifier), new ArrayList<>());
 
         List<UUID> baseEntityIdentifiers = new ArrayList<>();
 
@@ -497,8 +497,9 @@ public class TaskService {
         baseEntityIdentifiers.addAll(
             childLocations.stream().map(Location::getIdentifier).collect(Collectors.toList()));
 
-        List<Task> tasks = taskRepository.findByPlanAndBaseEntityIdentifiersAndMinimumServerVersion(plan
-            , baseEntityIdentifiers, serverVersion);
+        List<Task> tasks = taskRepository
+            .findByPlanAndBaseEntityIdentifiersAndMinimumServerVersion(plan
+                , baseEntityIdentifiers, serverVersion);
         if (!tasks.isEmpty()) {
           tasksToJurisdictions.put(jurisdictionIdentifier, tasks);
         }
@@ -508,5 +509,22 @@ public class TaskService {
       e.printStackTrace();
     }
     return tasksToJurisdictions;
+  }
+
+  private List<Location> getLocationChildrenByLocationParentIdentifierAndHierarchyIdentifier(
+      LocationHierarchy locationHierarchy, List<UUID> parentIdentifiers,
+      List<Location> allChildren) {
+//TODO: maybe refactor to recursive query or reintroduce ancestry concept
+    List<Location> foundChildren = locationRelationshipService
+        .getLocationChildrenByLocationParentIdentifierAndHierarchyIdentifier(
+            parentIdentifiers, locationHierarchy.getIdentifier());
+    if (foundChildren.isEmpty()) {
+      return allChildren;
+    } else {
+      allChildren.addAll(foundChildren);
+    }
+    return getLocationChildrenByLocationParentIdentifierAndHierarchyIdentifier(locationHierarchy,
+        foundChildren.stream().map(Location::getIdentifier).collect(
+            Collectors.toList()), allChildren);
   }
 }

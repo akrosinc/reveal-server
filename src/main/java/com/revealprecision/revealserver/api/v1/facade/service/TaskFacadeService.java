@@ -177,7 +177,6 @@ public class TaskFacadeService {
       task.setLastModified(LastModifierFromAndroid);
 
       task.setBaseEntityIdentifier(UUID.fromString(taskDto.getForEntity()));
-      task.setSyncStatus(taskDto.getSyncStatus());
       task.setEntityStatus(EntityStatus.ACTIVE);
 
       Location location = null;
