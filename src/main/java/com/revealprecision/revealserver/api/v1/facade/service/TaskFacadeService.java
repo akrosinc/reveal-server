@@ -88,25 +88,21 @@ public class TaskFacadeService {
   }
 
 
-  public List<Pair<String,Long>> updateTaskStatusAndBusinessStatusForListOfTasks(
+  public List<String> updateTaskStatusAndBusinessStatusForListOfTasks(
       List<TaskUpdateFacade> taskUpdateFacades) {
     return taskUpdateFacades.stream().map(this::updateTaskStatusAndBusinessStatus)
         .filter(Optional::isPresent).map(Optional::get)
         .collect(Collectors.toList());
   }
 
-  private Optional<Pair<String,Long>> updateTaskStatusAndBusinessStatus(TaskUpdateFacade updateFacade) {
-
+  private Optional<String> updateTaskStatusAndBusinessStatus(TaskUpdateFacade updateFacade) {
     UUID identifier = null;
-    Long updatedServerVersion = 0L;
     try {
       Task task = taskService.getTaskByIdentifier(UUID.fromString(updateFacade.getIdentifier()));
 
       Optional<LookupTaskStatus> taskStatus = taskService.getAllTaskStatus().stream().filter(
           lookupTaskStatus -> lookupTaskStatus.getCode().equalsIgnoreCase(updateFacade.getStatus()))
           .findFirst();
-
-       updatedServerVersion = task.getServerVersion();
 
       if (taskStatus.isPresent()) {
         task.setLookupTaskStatus(taskStatus.get());
@@ -122,7 +118,7 @@ public class TaskFacadeService {
       e.printStackTrace();
       log.error("Some error with updating task: {}", e.getMessage());
     }
-    return Optional.ofNullable(Pair.of(identifier.toString(),updatedServerVersion));
+    return Optional.ofNullable(identifier.toString());
   }
 
   public List<TaskDto> addTasks(List<TaskDto> taskDtos) {
