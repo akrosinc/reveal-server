@@ -46,17 +46,13 @@ public class Event extends AbstractAuditableEntity {
 
   private String eventType;
 
-  @ManyToOne(cascade = CascadeType.ALL)
-  @JoinColumn(name = "form_data_identifier", referencedColumnName = "identifier")
-  private FormData formData;
-
   private UUID taskIdentifier;
 
   @ManyToOne(cascade = CascadeType.ALL)
   @JoinColumn(name = "user_identifier", referencedColumnName = "identifier")
   private User user;
 
-  private LocalDateTime captureDate;
+  private LocalDateTime captureDatetime;
 
   @ManyToOne
   @JoinColumn(name = "organization_identifier", referencedColumnName = "identifier")
