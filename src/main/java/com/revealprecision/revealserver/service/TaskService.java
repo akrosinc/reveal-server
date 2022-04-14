@@ -482,9 +482,9 @@ public class TaskService {
       LocationHierarchy locationHierarchy = plan.getLocationHierarchy();
 
       jurisdictionIdentifiers.forEach(jurisdictionIdentifier -> {
-        List<Location> childLocations = getLocationChildrenByLocationParentIdentifierAndHierarchyIdentifier(
-            locationHierarchy,
-            List.of(jurisdictionIdentifier), new ArrayList<>());
+        List<Location> childLocations = locationRelationshipService
+            .getLocationChildrenByLocationParentIdentifierAndHierarchyIdentifier(
+                List.of(jurisdictionIdentifier), locationHierarchy.getIdentifier());
 
         List<UUID> baseEntityIdentifiers = new ArrayList<>();
 
@@ -509,22 +509,5 @@ public class TaskService {
       e.printStackTrace();
     }
     return tasksToJurisdictions;
-  }
-
-  private List<Location> getLocationChildrenByLocationParentIdentifierAndHierarchyIdentifier(
-      LocationHierarchy locationHierarchy, List<UUID> parentIdentifiers,
-      List<Location> allChildren) {
-//TODO: maybe refactor to recursive query or reintroduce ancestry concept
-    List<Location> foundChildren = locationRelationshipService
-        .getLocationChildrenByLocationParentIdentifierAndHierarchyIdentifier(
-            parentIdentifiers, locationHierarchy.getIdentifier());
-    if (foundChildren.isEmpty()) {
-      return allChildren;
-    } else {
-      allChildren.addAll(foundChildren);
-    }
-    return getLocationChildrenByLocationParentIdentifierAndHierarchyIdentifier(locationHierarchy,
-        foundChildren.stream().map(Location::getIdentifier).collect(
-            Collectors.toList()), allChildren);
   }
 }
