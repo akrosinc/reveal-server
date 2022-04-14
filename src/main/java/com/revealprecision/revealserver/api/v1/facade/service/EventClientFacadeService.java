@@ -13,9 +13,7 @@ import com.revealprecision.revealserver.persistence.domain.Event;
 import com.revealprecision.revealserver.persistence.domain.Group;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.Person;
-import com.revealprecision.revealserver.persistence.projection.EventMaxVersionProjection;
 import com.revealprecision.revealserver.service.EventService;
-import com.revealprecision.revealserver.service.FormService;
 import com.revealprecision.revealserver.service.GroupService;
 import com.revealprecision.revealserver.service.LocationService;
 import com.revealprecision.revealserver.service.OrganizationService;
@@ -32,13 +30,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.joda.time.DateTime;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -61,8 +57,6 @@ public class EventClientFacadeService {
   private final GroupService groupService;
 
   private final ObjectMapper objectMapper;
-
-  private final FormService formService;
 
 
   public List<EventFacade> addOrUpdateEvents(List<EventFacade> eventFacadeList) {
@@ -262,10 +256,12 @@ public class EventClientFacadeService {
 
 
   private Event saveEvent(EventFacade eventFacade) {
-
     Event event = Event.builder()
         .taskIdentifier(UUID.fromString(eventFacade.getDetails().get("taskIdentifier")))
-        .additionalInformation(objectMapper.valueToTree(eventFacade)).captureDatetime(DateTimeFormatter.getLocalDateTimeFromZonedAndroidFacadeString(eventFacade.getEventDate())).eventType(eventFacade.getEventType())
+        .additionalInformation(objectMapper.valueToTree(eventFacade)).captureDatetime(
+            DateTimeFormatter
+                .getLocalDateTimeFromZonedAndroidFacadeString(eventFacade.getEventDate()))
+        .eventType(eventFacade.getEventType())
         .details(objectMapper.valueToTree(eventFacade.getDetails()))
         .locationIdentifier(UUID.fromString(eventFacade.getLocationId()))
         .organization(organizationService.findById(UUID.fromString(eventFacade.getTeamId()), false))
@@ -273,26 +269,7 @@ public class EventClientFacadeService {
         .planIdentifier(UUID.fromString(eventFacade.getDetails().get("planIdentifier")))
         .baseEntityIdentifier(UUID.fromString(eventFacade.getBaseEntityId()))
         .build();
-
     event.setEntityStatus(EntityStatus.ACTIVE);
-
-    Optional<EventMaxVersionProjection> eventMaxVersionProjections = eventService
-        .findMaxVersionForEventByTaskIdentifier(
-            UUID.fromString(eventFacade.getDetails().get("taskIdentifier")), event.getEventType());
-    if (eventMaxVersionProjections.isPresent()) {
-      if (event.getEventType().equals(eventMaxVersionProjections.get().getEventType())) {
-        event.setIdentifier(UUID.fromString(eventMaxVersionProjections.get().getIdentifier()));
-      } else {
-        event.setIdentifier(UUID.randomUUID());
-      }
-      event.setVersion(eventMaxVersionProjections.get().getVersion() + 1);
-    } else {
-      event.setIdentifier(UUID.randomUUID());
-      event.setVersion(1);
-    }
-
-    event.setEntityStatus(EntityStatus.ACTIVE);
-
     return eventService.saveEvent(event);
   }
 
@@ -396,7 +373,8 @@ public class EventClientFacadeService {
 
   private EventFacade getEventFacade(Event event) {
     ObjectMapper mapper = new ObjectMapper();
-    EventFacade eventFacade  =  mapper.convertValue(event.getAdditionalInformation(),EventFacade.class);
+    EventFacade eventFacade = mapper
+        .convertValue(event.getAdditionalInformation(), EventFacade.class);
     return eventFacade;
   }
 
@@ -434,7 +412,8 @@ public class EventClientFacadeService {
     Map<UUID, Event> eventMap = new HashMap<>();
     for (Event event : events) {
       if (eventMap.containsKey(event.getIdentifier())) {
-        if (eventMap.get(event.getIdentifier()).getCaptureDatetime().isBefore(event.getCaptureDatetime())) {
+        if (eventMap.get(event.getIdentifier()).getCaptureDatetime()
+            .isBefore(event.getCaptureDatetime())) {
           eventMap.put(event.getIdentifier(), event);
         }
       } else {

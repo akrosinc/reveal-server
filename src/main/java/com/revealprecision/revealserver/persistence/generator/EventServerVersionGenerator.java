@@ -5,9 +5,9 @@ import org.hibernate.Session;
 import org.hibernate.query.NativeQuery;
 import org.hibernate.tuple.ValueGenerator;
 
-public class TaskServerVersionGenerator implements ValueGenerator<Long> {
+public class EventServerVersionGenerator implements ValueGenerator<Long> {
 
-  private static final String SELECT_QUERY = "select nextval('task_server_version_seq')";
+  private static final String SELECT_QUERY = "select nextval('event_server_version_seq')";
 
   @Override
   public Long generateValue(Session session, Object owner) {
@@ -15,4 +15,5 @@ public class TaskServerVersionGenerator implements ValueGenerator<Long> {
     Number nextVal = (Number) nextValQuery.setFlushMode(FlushMode.COMMIT).uniqueResult();
     return nextVal.longValue();
   }
+
 }

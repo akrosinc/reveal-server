@@ -861,6 +861,10 @@ CREATE SEQUENCE IF NOT EXISTS task_server_version_seq
     START WITH 1
     INCREMENT BY 1
     MAXVALUE 9223372036854775807;
+CREATE SEQUENCE IF NOT EXISTS event_server_version_seq
+    START WITH 1
+    INCREMENT BY 1
+    MAXVALUE 9223372036854775807;
 CREATE TABLE IF NOT EXISTS person
 (
     identifier        uuid                     NOT NULL,
@@ -1210,9 +1214,8 @@ CREATE TABLE IF NOT EXISTS setting_aud
 
 CREATE TABLE IF NOT EXISTS event
 (
-    id                      BIGSERIAL                NOT NULL,
     identifier              uuid                     not null,
-    version                 bigint DEFAULT 1,
+    server_version          bigint                   not null,
     event_type              character varying        NOT NULL,
     user_identifier         uuid                     NOT NULL,
     capture_datetime        timestamp with time zone NOT NULL,
@@ -1228,18 +1231,17 @@ CREATE TABLE IF NOT EXISTS event
     created_datetime        timestamp with time zone NOT NULL,
     modified_by             character varying(36)    NOT NULL,
     modified_datetime       timestamp with time zone NOT NULL,
-    PRIMARY KEY (id),
+    PRIMARY KEY (identifier),
     FOREIGN KEY (organization_identifier) REFERENCES organization (identifier),
     FOREIGN KEY (user_identifier) REFERENCES users (identifier)
 );
 
 CREATE TABLE IF NOT EXISTS event_aud
 (
-    id                      bigint                   NOT NULL,
     identifier              uuid                     NOT NULL,
     REV                     INT                      NOT NULL,
     REVTYPE                 INTEGER                  NULL,
-    version                 bigint                   NOT null,
+    server_version          bigint                   not null,
     event_type              character varying        NOT NULL,
     user_identifier         uuid                     NOT NULL,
     capture_datetime        timestamp with time zone NOT NULL,
@@ -1255,5 +1257,5 @@ CREATE TABLE IF NOT EXISTS event_aud
     created_datetime        timestamp with time zone NOT NULL,
     modified_by             character varying(36)    NOT NULL,
     modified_datetime       timestamp with time zone NOT NULL,
-    PRIMARY KEY (id, REV)
+    PRIMARY KEY (identifier, REV)
 )
