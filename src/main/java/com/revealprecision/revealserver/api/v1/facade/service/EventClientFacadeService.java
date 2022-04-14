@@ -375,6 +375,8 @@ public class EventClientFacadeService {
     ObjectMapper mapper = new ObjectMapper();
     EventFacade eventFacade = mapper
         .convertValue(event.getAdditionalInformation(), EventFacade.class);
+    eventFacade.setEventId(event.getIdentifier().toString());
+    eventFacade.setServerVersion(event.getServerVersion());
     return eventFacade;
   }
 
