@@ -66,7 +66,7 @@ public class Event extends AbstractAuditableEntity {
 
   @Type(type = "jsonb")
   @Column(columnDefinition = "jsonb")
-  private JsonNode additionalInformation;
+  private JsonNode additionalInformation; //We are storing raw json event data here.
 
   @Type(type = "jsonb")
   @Column(columnDefinition = "jsonb")
