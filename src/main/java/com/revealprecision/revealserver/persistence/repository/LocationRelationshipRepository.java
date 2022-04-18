@@ -7,8 +7,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import javax.persistence.QueryHint;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.QueryHints;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
@@ -21,12 +23,14 @@ public interface LocationRelationshipRepository extends JpaRepository<LocationRe
   Optional<List<LocationRelationship>> findByLocationHierarchyIdentifier(
       UUID locationHierarchyIdentifier);
 
+
+  @QueryHints({@QueryHint(name="org.hibernate.fetchSize", value="1000")})
   @Query(value = "select lr from LocationRelationship lr "
       + "left JOIN fetch lr.location l "
       + "left JOIN fetch l.geographicLevel gl "
       + "WHERE lr.locationHierarchy.identifier = :locationHierarchyIdentifier "
       + "AND (gl is null or gl.name <> 'structure')")
-  Optional<List<LocationRelationship>>findByLocationHierarchyWithoutStructures(UUID locationHierarchyIdentifier);
+  List<Object>findByLocationHierarchyWithoutStructures(UUID locationHierarchyIdentifier);
 
   @Query(value = "SELECT ST_Contains (ST_AsText(ST_GeomFromGeoJSON(:parent)),ST_AsText(ST_Centroid(ST_GeomFromGeoJSON(:child))))", nativeQuery = true)
   Boolean hasParentChildRelationship(@Param("parent") String parent,

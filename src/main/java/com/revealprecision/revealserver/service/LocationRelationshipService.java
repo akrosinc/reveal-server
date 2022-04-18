@@ -17,6 +17,7 @@ import com.revealprecision.revealserver.persistence.repository.LocationRepositor
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -212,10 +213,20 @@ public class LocationRelationshipService {
         .findByLocationHierarchyIdentifier(locationHierarchy.getIdentifier());
   }
 
-  public Optional<List<LocationRelationship>> getLocationRelationshipsWithoutStructure(
+  public List<LocationRelationship> getLocationRelationshipsWithoutStructure(
       LocationHierarchy locationHierarchy) {
-    return locationRelationshipRepository.findByLocationHierarchyWithoutStructures(
+    System.out.println(new Date());
+    List<Object> locationRelationships = locationRelationshipRepository.findByLocationHierarchyWithoutStructures(
         locationHierarchy.getIdentifier());
+    System.out.println(new Date());
+    return mapObjects(locationRelationships);
+  }
+
+  public List<LocationRelationship> mapObjects(List<Object> locationRelationships) {
+    locationRelationships.forEach(el -> {
+      System.out.println(el);
+    });
+    return null;
   }
 
   public List<Location> getLocationChildrenByLocationParentIdentifierAndHierarchyIdentifier(
@@ -232,8 +243,10 @@ public class LocationRelationshipService {
   }
 
 
-  public Location findParentLocationByLocationIdAndHierarchyId(UUID locationIdentifier, UUID hierarchyIdentifier) {
-    return locationRelationshipRepository.getParentLocationByLocationIdAndHierarchyId(locationIdentifier, hierarchyIdentifier);
+  public Location findParentLocationByLocationIdAndHierarchyId(UUID locationIdentifier,
+      UUID hierarchyIdentifier) {
+    return locationRelationshipRepository.getParentLocationByLocationIdAndHierarchyId(
+        locationIdentifier, hierarchyIdentifier);
   }
 
   @Async("getAsyncExecutorTest")
@@ -261,11 +274,11 @@ public class LocationRelationshipService {
         SearchRequest searchRequest = new SearchRequest("location");
         searchRequest.source(sourceBuilder);
         SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
-        if(searchResponse.getHits().getHits().length == 0) {
+        if (searchResponse.getHits().getHits().length == 0) {
           break;
-        }else{
+        } else {
           UUID parentLocation = UUID.fromString(searchResponse.getHits().getAt(0).getId());
-          if(parentLocation != null) {
+          if (parentLocation != null) {
             Location parentLoc = Location.builder().identifier(parentLocation).build();
             LocationRelationship locationRelationshipToSave = LocationRelationship.builder()
                 .parentLocation(parentLoc)
@@ -320,8 +333,9 @@ public class LocationRelationshipService {
     return structureLocations;
   }
 
-  public Location getLocationParent(Location location, LocationHierarchy locationHierarchy){
-    return locationRelationshipRepository.getParentLocationByLocationIdAndHierarchyId(location.getIdentifier(),locationHierarchy.getIdentifier());
+  public Location getLocationParent(Location location, LocationHierarchy locationHierarchy) {
+    return locationRelationshipRepository.getParentLocationByLocationIdAndHierarchyId(
+        location.getIdentifier(), locationHierarchy.getIdentifier());
   }
 
 }

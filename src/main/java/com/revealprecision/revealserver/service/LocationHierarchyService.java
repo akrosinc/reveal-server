@@ -12,6 +12,7 @@ import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
 import com.revealprecision.revealserver.persistence.repository.LocationHierarchyRepository;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -87,17 +88,16 @@ public class LocationHierarchyService {
         locationHierarchy);
     GeoTree geoTree = new GeoTree();
     geoTree.buildTreeFromList(
-        locationRelationshipOptional.isPresent() ? locationRelationshipOptional.get() :
-            Collections.emptyList());
+        locationRelationshipOptional.orElse(Collections.emptyList()));
     return geoTree;
   }
 
   public GeoTree getGeoTreeFromLocationHierarchyWithoutStructure(LocationHierarchy locationHierarchy) {
-    Optional<List<LocationRelationship>> locationRelationshipOptional = locationRelationshipService.getLocationRelationshipsWithoutStructure(locationHierarchy);
+    System.out.println(new Date());
+    List<LocationRelationship> locationRelationship = locationRelationshipService.getLocationRelationshipsWithoutStructure(locationHierarchy);
+    System.out.println(new Date());
     GeoTree geoTree = new GeoTree();
-    geoTree.buildTreeFromList(
-        locationRelationshipOptional.isPresent() ? locationRelationshipOptional.get() :
-            Collections.emptyList());
+    geoTree.buildTreeFromList(locationRelationship);
     return geoTree;
   }
 

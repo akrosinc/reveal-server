@@ -23,10 +23,9 @@ import org.hibernate.envers.Audited;
 @Audited
 @Getter
 @Setter
+@Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Builder
-@FieldNameConstants
 @SQLDelete(sql = "UPDATE location_relationship SET entity_status = 'DELETED' where identifier=?")
 @Where(clause = "entity_status='ACTIVE'")
 public class LocationRelationship extends AbstractAuditableEntity {
