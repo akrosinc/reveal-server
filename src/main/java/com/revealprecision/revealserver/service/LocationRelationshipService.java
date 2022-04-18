@@ -9,6 +9,7 @@ import com.revealprecision.revealserver.persistence.domain.GeographicLevel;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
+import com.revealprecision.revealserver.persistence.projection.LocationRelationshipProjection;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import com.revealprecision.revealserver.persistence.repository.GeographicLevelRepository;
 import com.revealprecision.revealserver.persistence.repository.LocationHierarchyRepository;
@@ -216,17 +217,12 @@ public class LocationRelationshipService {
   public List<LocationRelationship> getLocationRelationshipsWithoutStructure(
       LocationHierarchy locationHierarchy) {
     System.out.println(new Date());
-    List<Object> locationRelationships = locationRelationshipRepository.findByLocationHierarchyWithoutStructures(
+    List<LocationRelationshipProjection> locationRelationships = locationRelationshipRepository.findByLocationHierarchyWithoutStructures(
         locationHierarchy.getIdentifier());
     System.out.println(new Date());
-    return mapObjects(locationRelationships);
-  }
-
-  public List<LocationRelationship> mapObjects(List<Object> locationRelationships) {
-    locationRelationships.forEach(el -> {
-      System.out.println(el);
-    });
-    return null;
+    return locationRelationships.stream()
+        .map(LocationRelationship::new)
+        .collect(Collectors.toList());
   }
 
   public List<Location> getLocationChildrenByLocationParentIdentifierAndHierarchyIdentifier(
