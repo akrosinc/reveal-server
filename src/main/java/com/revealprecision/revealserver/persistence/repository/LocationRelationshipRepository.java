@@ -8,10 +8,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import javax.persistence.QueryHint;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.jpa.repository.QueryHints;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
@@ -24,14 +22,7 @@ public interface LocationRelationshipRepository extends JpaRepository<LocationRe
   Optional<List<LocationRelationship>> findByLocationHierarchyIdentifier(
       UUID locationHierarchyIdentifier);
 
-
-  @QueryHints({@QueryHint(name="org.hibernate.fetchSize", value="1000")})
-//  @Query(value = "select lr from LocationRelationship lr "
-//      + "left JOIN fetch lr.location l "
-//      + "left JOIN fetch l.geographicLevel gl "
-//      + "WHERE lr.locationHierarchy.identifier = :locationHierarchyIdentifier "
-//      + "AND (gl is null or gl.name <> 'structure')")
-  @Query(value = "SELECT cast(lr.identifier as varchar) identifier, l.name locationName, cast(l.identifier as varchar) locationIdentifier, cast(l.geometry as varchar) geometry, cast(lr.parent_identifier as varchar) parentIdentifier, gl.name geographicLevelName FROM location_relationship lr "
+  @Query(value = "SELECT cast(lr.identifier as varchar) identifier, l.name locationName, cast(l.identifier as varchar) locationIdentifier, cast(lr.parent_identifier as varchar) parentIdentifier, gl.name geographicLevelName FROM location_relationship lr "
       + "LEFT JOIN location l ON lr.location_identifier = l.identifier "
       + "LEFT JOIN geographic_level gl ON l.geographic_level_identifier = gl.identifier "
       + "WHERE gl.name NOT LIKE 'structure'", nativeQuery = true)

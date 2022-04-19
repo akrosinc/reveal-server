@@ -98,6 +98,7 @@ public class LocationHierarchyService {
     System.out.println(new Date());
     GeoTree geoTree = new GeoTree();
     geoTree.buildTreeFromList(locationRelationship);
+    System.out.println(new Date());
     return geoTree;
   }
 

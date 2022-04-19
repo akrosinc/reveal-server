@@ -12,6 +12,7 @@ import com.revealprecision.revealserver.persistence.domain.PlanLocations;
 import com.revealprecision.revealserver.persistence.repository.PlanLocationsRepository;
 import com.revealprecision.revealserver.persistence.repository.PlanRepository;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -114,18 +115,22 @@ public class PlanLocationsService {
     List<GeoTreeResponse> geoTreeResponses = LocationHierarchyResponseFactory.generateGeoTreeResponseFromTree(
         locationHierarchyService.getGeoTreeFromLocationHierarchyWithoutStructure(locationHierarchy)
             .getLocationsHierarchy(), false);
-    Set<Location> locations = plan.getPlanLocations().stream().map(PlanLocations::getLocation)
-        .collect(
-            Collectors.toSet());
+    System.out.println("geotree gotov " + new Date());
+    Set<Location> locations = planLocationsRepository.findLocationsByPlan_Identifier(plan.getIdentifier());
+    System.out.println("set lokacija gotov" + new Date());
     Map<UUID, Location> locationMap = locations.stream()
         .collect(Collectors.toMap(Location::getIdentifier, location -> location));
+    System.out.println("mapa lokacija gotova " + new Date());
     List<PlanAssignment> planAssignments = planAssignmentService.getPlanAssignmentsByPlanIdentifier(
         identifier);
+    System.out.println("plan assignmenti gotovi " + new Date());
     Map<UUID, List<PlanAssignment>> planAssignmentMap = planAssignments.stream()
         .collect(Collectors.groupingBy(planAssignment -> planAssignment.getPlanLocations().getLocation().getIdentifier()));
+    System.out.println("pre rekurzije " + new Date());
     geoTreeResponses.forEach(el -> {
       assignLocations(locationMap, el, planAssignmentMap);
     });
+    System.out.println("posle rekurzije " + new Date());
     return geoTreeResponses;
   }
 

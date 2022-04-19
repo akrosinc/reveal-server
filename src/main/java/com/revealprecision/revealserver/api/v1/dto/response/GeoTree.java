@@ -31,9 +31,6 @@ public class GeoTree {
 
   public void buildTreeFromList(List<LocationRelationship> locationRelationships) {
     for (var locationRelationship : locationRelationships) {
-      if(locationRelationship.getLocation().getIdentifier().equals(UUID.fromString("10486a20-0caf-46e4-8d58-88a8ed6df5cd"))) {
-        System.out.println("IMA PARENTA");
-      }
       addLocation(locationRelationship);
     }
   }

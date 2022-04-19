@@ -1,8 +1,10 @@
 package com.revealprecision.revealserver.persistence.repository;
 
 import com.cosium.spring.data.jpa.entity.graph.repository.EntityGraphJpaRepository;
+import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.PlanLocations;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import javax.transaction.Transactional;
 import org.springframework.data.jpa.repository.Modifying;
@@ -27,10 +29,17 @@ public interface PlanLocationsRepository extends EntityGraphJpaRepository<PlanLo
 
   Long countByPlan_Identifier(UUID planIdentifier);
 
+  @Query(value = (
+      "select new com.revealprecision.revealserver.persistence.domain.Location(l.identifier, l.type, l.name, l.status, l.externalId, l.geographicLevel, l.locationBulk)"
+          + " from PlanLocations pl left join Location l on pl.location.identifier = l.identifier"
+          + " where pl.plan.identifier = :planIdentifier"))
+  Set<Location> findLocationsByPlan_Identifier(UUID planIdentifier);
+
   @Transactional
   @Modifying
   @Query(value = "delete from PlanLocations pl where pl.plan.identifier = :planIdentifier and pl.location.identifier in :locations")
-  void deletePlanLocationsByPlanAndLocation(@Param("planIdentifier") UUID identifier, @Param("locations") List<UUID> locations);
+  void deletePlanLocationsByPlanAndLocation(@Param("planIdentifier") UUID identifier,
+      @Param("locations") List<UUID> locations);
 
 
 }
