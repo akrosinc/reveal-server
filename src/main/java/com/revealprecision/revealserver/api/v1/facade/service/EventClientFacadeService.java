@@ -1,5 +1,8 @@
 package com.revealprecision.revealserver.api.v1.facade.service;
 
+import static com.revealprecision.revealserver.constants.EventClientConstants.CLIENTS;
+import static com.revealprecision.revealserver.constants.EventClientConstants.EVENTS;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.revealprecision.revealserver.api.v1.facade.models.ClientFacade;
@@ -35,8 +38,10 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.json.JSONObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -59,7 +64,29 @@ public class EventClientFacadeService {
   private final ObjectMapper objectMapper;
 
 
-  public List<EventFacade> addOrUpdateEvents(List<EventFacade> eventFacadeList) {
+  public Pair<List<EventFacade>, List<ClientFacade>> processEventsClientsRequest(
+      JSONObject eventClientRequestJSON)
+      throws JsonProcessingException {
+    ObjectMapper mapper = new ObjectMapper();
+    List<EventFacade> failedEvents = new ArrayList<>();
+    if (eventClientRequestJSON.has(EVENTS)) {
+      String rawEventsRequest = eventClientRequestJSON.getString(EVENTS);
+      List<EventFacade> eventFacades = List
+          .of(mapper.readValue(rawEventsRequest, EventFacade[].class));
+      failedEvents = addOrUpdateEvents(eventFacades);
+    }
+    List<ClientFacade> failedClients = new ArrayList<>();
+    if (eventClientRequestJSON.has(CLIENTS)) {
+      String rawClientsRequest = eventClientRequestJSON.getString(CLIENTS);
+      List<ClientFacade> clientFacades = List
+          .of(mapper.readValue(rawClientsRequest, ClientFacade[].class));
+      failedClients = addOrUpdateClients(clientFacades);
+    }
+
+    return Pair.of(failedEvents, failedClients);
+  }
+
+  private List<EventFacade> addOrUpdateEvents(List<EventFacade> eventFacadeList) {
     List<EventFacade> failedEvents = new ArrayList<>();
     eventFacadeList.forEach(eventFacade -> {
       try {
@@ -72,7 +99,7 @@ public class EventClientFacadeService {
     return failedEvents;
   }
 
-  public List<ClientFacade> addOrUpdateClients(List<ClientFacade> clientFacadeList) {
+  private List<ClientFacade> addOrUpdateClients(List<ClientFacade> clientFacadeList) {
     List<ClientFacade> failedClients = new ArrayList<>();
     clientFacadeList.forEach(clientFacade -> {
       try {
