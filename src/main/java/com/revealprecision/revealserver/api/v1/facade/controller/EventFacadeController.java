@@ -18,6 +18,7 @@ import com.revealprecision.revealserver.api.v1.facade.response.EventClientFacade
 import com.revealprecision.revealserver.api.v1.facade.service.EventClientFacadeService;
 import com.revealprecision.revealserver.persistence.domain.Event;
 import com.revealprecision.revealserver.service.models.EventSearchCriteria;
+import io.swagger.v3.oas.annotations.Operation;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -41,7 +42,9 @@ public class EventFacadeController {
 
   private final EventClientFacadeService eventClientFacadeService;
 
-
+  @Operation(summary = "Add new Events and Client objects originating from Android client",
+      description = "Add new Events and Client objects originating from Android client",
+      tags = {"EventClient"})
   @PostMapping(value = "/add", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<EventClientFacadeResponse> eventAdd(
       @RequestBody String eventsClientsRequest) throws JSONException, JsonProcessingException {
@@ -60,6 +63,9 @@ public class EventFacadeController {
     }
   }
 
+  @Operation(summary = "Sync down Events and Client objects to Android client",
+      description = "Sync down Events and Client objects to Android client",
+      tags = {"EventClient"})
   @PostMapping(value = "/sync", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<?> getLocations(@RequestBody SyncParamFacade syncParam) {
     if (syncParam.getTeam() != null || syncParam.getProviderId() != null
