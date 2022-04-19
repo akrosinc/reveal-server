@@ -125,6 +125,5 @@ public class Task extends AbstractAuditableEntity {
   @GeneratorType(type = TaskServerVersionGenerator.class, when = GenerationTime.ALWAYS)
   private Long serverVersion;
 
-  private String syncStatus;
-
+  private String businessStatus;
 }

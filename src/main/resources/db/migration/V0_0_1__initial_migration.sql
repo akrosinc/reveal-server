@@ -351,7 +351,7 @@ CREATE TABLE IF NOT EXISTS task
     action_identifier             uuid                     NOT NULL,
     plan_identifier               uuid                     NOT NULL,
     server_version                bigint                   NOT NULL,
-    sync_status                   varchar(255),
+    business_status               varchar(255)             NOT NULL,
     PRIMARY KEY (identifier),
     FOREIGN KEY (action_identifier) REFERENCES action (identifier),
     FOREIGN KEY (lookup_task_status_identifier) REFERENCES lookup_task_status (identifier)
@@ -382,7 +382,7 @@ CREATE TABLE IF NOT EXISTS task_aud
     action_identifier             uuid                     NOT NULL,
     plan_identifier               uuid                     NOT NULL,
     server_version                bigint                   NOT NULL,
-    sync_status                   varchar(255),
+    business_status               varchar(255)             NOT NULL,
     PRIMARY KEY (identifier, rev)
 );
 

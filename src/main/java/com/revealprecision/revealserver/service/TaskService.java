@@ -28,6 +28,7 @@ import com.revealprecision.revealserver.persistence.domain.actioncondition.Query
 import com.revealprecision.revealserver.persistence.repository.LookupTaskStatusRepository;
 import com.revealprecision.revealserver.persistence.repository.TaskRepository;
 import com.revealprecision.revealserver.persistence.specification.TaskSpec;
+import com.revealprecision.revealserver.props.BusinessStatusProperties;
 import com.revealprecision.revealserver.service.models.TaskSearchCriteria;
 import com.revealprecision.revealserver.util.ActionUtils;
 import com.revealprecision.revealserver.util.ConditionQueryUtil;
@@ -70,6 +71,7 @@ public class TaskService {
   private final LookupTaskStatusRepository lookupTaskStatusRepository;
   private final EntityFilterService entityFilterService;
   private final LocationRelationshipService locationRelationshipService;
+  private final BusinessStatusProperties businessStatusProperties;
 
   @Autowired
   @Lazy
@@ -78,7 +80,8 @@ public class TaskService {
       LookupTaskStatusRepository lookupTaskStatusRepository, PersonService personService,
       EntityFilterService entityFilterService, GoalService goalService,
       ConditionService conditionService, PlanLocationsService planLocationsService,
-      LocationRelationshipService locationRelationshipService) {
+      LocationRelationshipService locationRelationshipService,
+      BusinessStatusProperties businessStatusProperties) {
     this.taskRepository = taskRepository;
     this.planService = planService;
     this.actionService = actionService;
@@ -90,7 +93,7 @@ public class TaskService {
     this.conditionService = conditionService;
     this.planLocationsService = planLocationsService;
     this.locationRelationshipService = locationRelationshipService;
-
+    this.businessStatusProperties = businessStatusProperties;
   }
 
   public Page<Task> searchTasks(TaskSearchCriteria taskSearchCriteria, Pageable pageable) {
@@ -288,6 +291,7 @@ public class TaskService {
         .authoredOn(LocalDateTime.now()).baseEntityIdentifier(entityUUID).action(action)
         .executionPeriodStart(action.getTimingPeriodStart())
         .executionPeriodEnd(action.getTimingPeriodEnd()).plan(plan).build();
+    task.setBusinessStatus(businessStatusProperties.getDefaultLocationBusinessStatus());
     task.setEntityStatus(EntityStatus.ACTIVE);
 
     if (isActionForLocation) {

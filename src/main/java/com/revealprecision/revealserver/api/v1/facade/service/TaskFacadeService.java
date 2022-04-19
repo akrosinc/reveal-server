@@ -70,11 +70,10 @@ public class TaskFacadeService {
   }
 
   private TaskFacade getTaskFacade(String groupIdentifier, Task task) {
-    Object businessStatus = businessStatusService.getBusinessStatus(task);
     String createdBy = task.getAction().getGoal().getPlan()
         .getCreatedBy(); //TODO: confirm business rule for task creation user(owner)
     User user = getUser(createdBy);
-    return TaskFacadeFactory.getEntity(task, (String) businessStatus, user, groupIdentifier);
+    return TaskFacadeFactory.getEntity(task, user, groupIdentifier);
   }
 
   private User getUser(String createdByUserIdentifier) {
@@ -175,8 +174,8 @@ public class TaskFacadeService {
       task.setExecutionPeriodStart(DateTimeFormatter.getLocalDateTimeFromAndroidFacadeString(
           taskDto.getExecutionPeriod().getStart()).toLocalDate());
       task.setLastModified(LastModifierFromAndroid);
-
       task.setBaseEntityIdentifier(UUID.fromString(taskDto.getForEntity()));
+      task.setBusinessStatus(taskDto.getBusinessStatus());
       task.setEntityStatus(EntityStatus.ACTIVE);
 
       Location location = null;
@@ -212,16 +211,13 @@ public class TaskFacadeService {
             person.setLocations(locations);
           }
         }
-
         task.setPerson(person);
       }
-      task = taskService.saveTask(task);
-      businessStatusService.setBusinessStatus(task, taskDto.getBusinessStatus());
-
+      taskService.saveTask(task);
     } else {
       log.error("Unknown task state in sync: {}", taskDto.getStatus().name());
       throw new NotFoundException(
-          org.springframework.data.util.Pair.of(Fields.code, taskDto.getStatus().name()),
+          Pair.of(Fields.code, taskDto.getStatus().name()),
           LookupTaskStatus.class);
     }
 

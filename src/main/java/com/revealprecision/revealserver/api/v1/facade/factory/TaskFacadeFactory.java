@@ -15,7 +15,7 @@ import java.util.Optional;
 
 public class TaskFacadeFactory {
 
-  public static TaskFacade getEntity(Task task, String businessStatus, User user,
+  public static TaskFacade getEntity(Task task, User user,
       String group) {
     String userName = user != null ? user.getUsername() : null;
     Action action = task.getAction();
@@ -38,7 +38,7 @@ public class TaskFacadeFactory {
         .lastModified(
             DateTimeFormatter.getDateTimeFacadeStringFromLocalDateTime(task.getLastModified()))
         .status(TaskStatus.get(task.getLookupTaskStatus().getCode().toLowerCase()))
-        .businessStatus(businessStatus)
+        .businessStatus(task.getBusinessStatus())
         .owner(userName)
         .requester(userName)
         .groupIdentifier(group)
