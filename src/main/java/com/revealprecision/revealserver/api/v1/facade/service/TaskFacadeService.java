@@ -17,7 +17,6 @@ import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.Task;
 import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.service.ActionService;
-import com.revealprecision.revealserver.service.BusinessStatusService;
 import com.revealprecision.revealserver.service.LocationService;
 import com.revealprecision.revealserver.service.PersonService;
 import com.revealprecision.revealserver.service.PlanService;
@@ -49,7 +48,6 @@ public class TaskFacadeService {
   private final PlanService planService;
   private final PersonService personService;
   private final LocationService locationService;
-  private final BusinessStatusService businessStatusService;
 
   public List<TaskFacade> syncTasks(List<String> planIdentifiers,
       List<UUID> jurisdictionIdentifiers, Long serverVersion) {

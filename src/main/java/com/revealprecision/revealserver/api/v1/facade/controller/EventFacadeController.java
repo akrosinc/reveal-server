@@ -67,14 +67,13 @@ public class EventFacadeController {
       description = "Sync down Events and Client objects to Android client",
       tags = {"EventClient"})
   @PostMapping(value = "/sync", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<?> getLocations(@RequestBody SyncParamFacade syncParam) {
+  public ResponseEntity<EventClientFacadeSyncResponse> getEventClients(@RequestBody SyncParamFacade syncParam) {
     if (syncParam.getTeam() != null || syncParam.getProviderId() != null
         || syncParam.getLocationId() != null || syncParam.getBaseEntityId() != null
         || syncParam.getTeamId() != null) {
 
       EventClientFacadeSyncResponse eventClientFacadeSyncResponse = getEventClientFacadeSyncResponse(
           syncParam);
-
       if (syncParam.isReturnCount()) {
         HttpHeaders headers = new HttpHeaders();
         headers.add(TOTAL_RECORDS, String.valueOf(eventClientFacadeSyncResponse.getTotalRecords()));
@@ -82,9 +81,8 @@ public class EventFacadeController {
       } else {
         return ResponseEntity.ok().body(eventClientFacadeSyncResponse);
       }
-
     } else {
-      return ResponseEntity.badRequest().body("specify atleast one filter");
+      return new ResponseEntity<>(BAD_REQUEST);
     }
   }
 
