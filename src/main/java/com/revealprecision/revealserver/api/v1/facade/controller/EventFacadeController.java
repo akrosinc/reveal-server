@@ -10,22 +10,17 @@ import static org.springframework.http.HttpStatus.CREATED;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.revealprecision.revealserver.api.v1.dto.response.EventClientFacadeSyncResponse;
 import com.revealprecision.revealserver.api.v1.facade.factory.EventClientFacadeResponseFactory;
-import com.revealprecision.revealserver.api.v1.facade.factory.EventSearchCriteriaFactory;
+import com.revealprecision.revealserver.api.v1.facade.factory.EventClientFacadeSyncResponseFactory;
 import com.revealprecision.revealserver.api.v1.facade.models.ClientFacade;
 import com.revealprecision.revealserver.api.v1.facade.models.EventFacade;
 import com.revealprecision.revealserver.api.v1.facade.models.SyncParamFacade;
 import com.revealprecision.revealserver.api.v1.facade.response.EventClientFacadeResponse;
 import com.revealprecision.revealserver.api.v1.facade.service.EventClientFacadeService;
-import com.revealprecision.revealserver.persistence.domain.Event;
-import com.revealprecision.revealserver.service.models.EventSearchCriteria;
 import io.swagger.v3.oas.annotations.Operation;
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.util.Pair;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -67,13 +62,15 @@ public class EventFacadeController {
       description = "Sync down Events and Client objects to Android client",
       tags = {"EventClient"})
   @PostMapping(value = "/sync", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<EventClientFacadeSyncResponse> getEventClients(@RequestBody SyncParamFacade syncParam) {
+  public ResponseEntity<EventClientFacadeSyncResponse> getEventClients(
+      @RequestBody SyncParamFacade syncParam) {
     if (syncParam.getTeam() != null || syncParam.getProviderId() != null
         || syncParam.getLocationId() != null || syncParam.getBaseEntityId() != null
         || syncParam.getTeamId() != null) {
-
-      EventClientFacadeSyncResponse eventClientFacadeSyncResponse = getEventClientFacadeSyncResponse(
-          syncParam);
+      Pair<List<EventFacade>, List<ClientFacade>> eventsAndClients = eventClientFacadeService
+          .getSyncedEventsAndClients(syncParam);
+      EventClientFacadeSyncResponse eventClientFacadeSyncResponse = EventClientFacadeSyncResponseFactory
+          .fromEventsAndClients(eventsAndClients);
       if (syncParam.isReturnCount()) {
         HttpHeaders headers = new HttpHeaders();
         headers.add(TOTAL_RECORDS, String.valueOf(eventClientFacadeSyncResponse.getTotalRecords()));
@@ -84,27 +81,6 @@ public class EventFacadeController {
     } else {
       return new ResponseEntity<>(BAD_REQUEST);
     }
-  }
-
-  private EventClientFacadeSyncResponse getEventClientFacadeSyncResponse(
-      SyncParamFacade syncParam) {
-    EventSearchCriteria eventSearchCriteria = EventSearchCriteriaFactory.getEventSearchCriteria(
-        syncParam);
-    PageRequest pageRequest = PageRequest.of(0, syncParam.getLimit());
-
-    Page<Event> searchEvents = eventClientFacadeService.searchEvents(eventSearchCriteria,
-        pageRequest);
-
-    List<Event> events = eventClientFacadeService.findLatestCaptureDatePerIdentifier(
-        searchEvents.get().collect(Collectors.toList()));
-
-    List<EventFacade> eventFacades = eventClientFacadeService.getEventFacades(events);
-
-    List<ClientFacade> combinedClientFacade = eventClientFacadeService.getClientFacades(events);
-
-    return EventClientFacadeSyncResponse.builder().clients(combinedClientFacade)
-        .events(eventFacades).noOfEvents(eventFacades.size())
-        .totalRecords((long) (combinedClientFacade.size() + eventFacades.size())).build();
   }
 
 

@@ -5,9 +5,11 @@ import static com.revealprecision.revealserver.constants.EventClientConstants.EV
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.revealprecision.revealserver.api.v1.facade.factory.EventSearchCriteriaFactory;
 import com.revealprecision.revealserver.api.v1.facade.models.ClientFacade;
 import com.revealprecision.revealserver.api.v1.facade.models.ClientFacadeMetadata;
 import com.revealprecision.revealserver.api.v1.facade.models.EventFacade;
+import com.revealprecision.revealserver.api.v1.facade.models.SyncParamFacade;
 import com.revealprecision.revealserver.api.v1.facade.util.DateTimeFormatter;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.enums.NameUseEnum;
@@ -40,6 +42,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
@@ -452,5 +455,23 @@ public class EventClientFacadeService {
     return new ArrayList<>(eventMap.values());
   }
 
+  public  Pair<List<EventFacade>, List<ClientFacade>> getSyncedEventsAndClients(
+      SyncParamFacade syncParam) {
+    EventSearchCriteria eventSearchCriteria = EventSearchCriteriaFactory.getEventSearchCriteria(
+        syncParam);
+    PageRequest pageRequest = PageRequest.of(0, syncParam.getLimit());
+
+    Page<Event> searchEvents = searchEvents(eventSearchCriteria,
+        pageRequest);
+
+    List<Event> events = findLatestCaptureDatePerIdentifier(
+        searchEvents.get().collect(Collectors.toList()));
+
+    List<EventFacade> eventFacades = getEventFacades(events);
+
+    List<ClientFacade> combinedClientFacade = getClientFacades(events);
+
+     return Pair.of(eventFacades,combinedClientFacade);
+  }
 
 }
