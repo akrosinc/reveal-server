@@ -105,8 +105,8 @@ public class TaskFacadeService {
 
       if (taskStatus.isPresent()) {
         task.setLookupTaskStatus(taskStatus.get());
+        task.setBusinessStatus(updateFacade.getBusinessStatus());
         task = taskService.saveTask(task);
-        businessStatusService.setBusinessStatus(task, updateFacade.getBusinessStatus());
         identifier = task.getIdentifier();
       } else {
         log.error("Unknown task state in task update: {}", updateFacade.getStatus());
