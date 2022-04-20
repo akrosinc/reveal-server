@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.persistence.domain;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.revealprecision.revealserver.persistence.generator.EventServerVersionGenerator;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -8,7 +9,6 @@ import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
@@ -18,6 +18,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.FieldNameConstants;
+import org.hibernate.annotations.GenerationTime;
+import org.hibernate.annotations.GeneratorType;
+import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
@@ -38,17 +41,11 @@ import org.hibernate.envers.Audited;
 public class Event extends AbstractAuditableEntity {
 
   @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private int id;
-
-  @GeneratedValue(strategy = GenerationType.AUTO)
+  @GeneratedValue(generator = "custom-generator")
+  @GenericGenerator(name = "custom-generator", strategy = "com.revealprecision.revealserver.persistence.generator.CustomIdentifierGenerator")
   private UUID identifier;
 
   private String eventType;
-
-  @ManyToOne(cascade = CascadeType.ALL)
-  @JoinColumn(name = "form_data_identifier", referencedColumnName = "identifier")
-  private FormData formData;
 
   private UUID taskIdentifier;
 
@@ -56,7 +53,7 @@ public class Event extends AbstractAuditableEntity {
   @JoinColumn(name = "user_identifier", referencedColumnName = "identifier")
   private User user;
 
-  private LocalDateTime captureDate;
+  private LocalDateTime captureDatetime;
 
   @ManyToOne
   @JoinColumn(name = "organization_identifier", referencedColumnName = "identifier")
@@ -70,12 +67,12 @@ public class Event extends AbstractAuditableEntity {
 
   @Type(type = "jsonb")
   @Column(columnDefinition = "jsonb")
-  private JsonNode additionalInformation;
+  private JsonNode additionalInformation; //We are storing raw json event data here.
 
   @Type(type = "jsonb")
   @Column(columnDefinition = "jsonb")
   private JsonNode details;
 
-  private int version;
-
+  @GeneratorType(type = EventServerVersionGenerator.class, when = GenerationTime.ALWAYS)
+  private Long serverVersion;
 }

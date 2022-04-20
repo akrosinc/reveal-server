@@ -23,4 +23,6 @@ public class EventSearchCriteria {
 
   private List<String> userNames;
 
+  private Long serverVersion;
+
 }
