@@ -140,14 +140,6 @@ public class TaskFacade implements Serializable {
 
   private Restriction restriction;
 
-  public Long getServerVersion() {
-    return serverVersion;
-  }
-
-  public void setServerVersion(Long serverVersion) {
-    this.serverVersion = serverVersion;
-  }
-
   @Data
   @NoArgsConstructor
   @AllArgsConstructor
