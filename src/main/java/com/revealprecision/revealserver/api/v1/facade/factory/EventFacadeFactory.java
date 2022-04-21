@@ -16,8 +16,6 @@ public class EventFacadeFactory {
             details)
         .obs(obs)
         .providerId(event.getUser().getUsername())
-        .version(event.getVersion())
-        .eventDate(event.getCaptureDate().toString())
         .teamId(event.getOrganization().getIdentifier().toString())
         .team(event.getOrganization().getName())
         .locationId(event.getLocationIdentifier().toString())

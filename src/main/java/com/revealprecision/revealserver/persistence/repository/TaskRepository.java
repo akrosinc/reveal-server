@@ -25,8 +25,8 @@ public interface TaskRepository extends JpaRepository<Task, UUID>,
 
   List<Task> findTasksByPlan_Identifier(UUID planIdentifier);
 
-  @Query("select t from Task t where t.plan = :plan and t.baseEntityIdentifier in :baseEntityIdentifiers and t.serverVersion = :serverVersion")
-  List<Task> findByPlanAndBaseEntityIdentifiersAndServerVersion(@Param("plan") Plan plan,
+  @Query("select t from Task t where t.plan = :plan and t.baseEntityIdentifier in :baseEntityIdentifiers and t.serverVersion >= :serverVersion")
+  List<Task> findByPlanAndBaseEntityIdentifiersAndMinimumServerVersion(@Param("plan") Plan plan,
       @Param("baseEntityIdentifiers") List<UUID> baseEntityIdentifiers,
       @Param("serverVersion") Long serverVersion);
 

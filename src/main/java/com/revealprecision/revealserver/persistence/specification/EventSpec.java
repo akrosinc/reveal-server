@@ -44,6 +44,11 @@ public class EventSpec {
       eventSpecification = getSpecification(eventSpecification,
           whereUserNamesIn(eventSearchCriteria.getUserNames()), AND);
     }
+
+    if(eventSearchCriteria.getServerVersion() != null) {
+      eventSpecification = getSpecification(eventSpecification,
+          whereServerVersionIsGreaterThan(eventSearchCriteria.getServerVersion()), AND);
+    }
     return eventSpecification;
   }
 
@@ -74,6 +79,10 @@ public class EventSpec {
   private static Specification<Event> whereOrganizationIdIn(List<UUID> identifiers) {
     return (root, query, criteriaBuilder) -> root.get("organization")
         .<Organization>get("identifier").in(identifiers);
+  }
+
+  private static Specification<Event> whereServerVersionIsGreaterThan(Long serverVersion){
+    return (root, query, criteriaBuilder) -> criteriaBuilder.greaterThan(root.get("serverVersion"),serverVersion);
   }
 
 

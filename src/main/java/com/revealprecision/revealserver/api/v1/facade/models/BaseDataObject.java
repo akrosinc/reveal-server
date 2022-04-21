@@ -32,5 +32,6 @@ public abstract class BaseDataObject extends BaseDataEntity {
 
   private Integer clientDatabaseVersion;
 
+  private  String clientApplicationVersionName;
 
 }

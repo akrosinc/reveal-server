@@ -47,13 +47,13 @@ public class TaskFacadeController {
 
     List<UUID> jurisdictionIdentifiers = taskSyncRequest.getGroup();
     boolean returnCount = taskSyncRequest.isReturnCount();
-    Long serverVersion  = taskSyncRequest.getServerVersion();
-    if(serverVersion == null){
+    Long serverVersion = taskSyncRequest.getServerVersion();
+    if (serverVersion == null) {
       serverVersion = 0L;
     }
 
     List<TaskFacade> taskFacades = taskFacadeService.syncTasks(taskSyncRequest.getPlan(),
-        jurisdictionIdentifiers,serverVersion);
+        jurisdictionIdentifiers, serverVersion);
 
     if (returnCount) {
       HttpHeaders headers = new HttpHeaders();
@@ -88,14 +88,12 @@ public class TaskFacadeController {
   @RequestMapping(value = "/update_status", method = RequestMethod.POST, consumes = {
       MediaType.APPLICATION_JSON_VALUE, MediaType.TEXT_PLAIN_VALUE})
   public ResponseEntity<String> updateStatus(@RequestBody List<TaskUpdateFacade> taskUpdates) {
-
-    List<Pair<String,Long>> updateTasks = taskFacadeService.updateTaskStatusAndBusinessStatusForListOfTasks(taskUpdates);
+    List<String> updateTasks = taskFacadeService
+        .updateTaskStatusAndBusinessStatusForListOfTasks(taskUpdates);
 
     JSONObject json = new JSONObject();
-   Long maxServerVersion =  updateTasks.stream().map(Pair::getSecond).max(Long::compareTo).orElse(0L);
     if (updateTasks.size() > 0) {
-      json.put("task_ids", updateTasks.stream().map(Pair::getFirst).collect(Collectors.toList()));
-      json.put("maxServerVersion",maxServerVersion);
+      json.put("task_ids", updateTasks);
     } else {
       return new ResponseEntity<>("Tasks not Updated: ", HttpStatus.CREATED);
     }
