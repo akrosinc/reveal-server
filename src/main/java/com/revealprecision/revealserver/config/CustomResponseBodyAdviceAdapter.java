@@ -1,6 +1,5 @@
 package com.revealprecision.revealserver.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.revealprecision.revealserver.service.HttpLoggingService;
 import com.revealprecision.revealserver.util.HeaderUtil;
 import com.revealprecision.revealserver.util.UserUtils;
@@ -9,8 +8,8 @@ import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.TimeZone;
 import javax.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.sleuth.Tracer;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.MediaType;
@@ -19,22 +18,20 @@ import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.http.server.ServletServerHttpRequest;
 import org.springframework.http.server.ServletServerHttpResponse;
+import org.springframework.lang.Nullable;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 
 
 @ControllerAdvice
 @Slf4j
+@RequiredArgsConstructor
 public class CustomResponseBodyAdviceAdapter implements ResponseBodyAdvice<Object> {
 
-  @Autowired
-  ObjectMapper objectMapper;
 
-  @Autowired
-  HttpLoggingService httpLoggingService;
+  private final HttpLoggingService httpLoggingService;
 
-  @Autowired
-  private Tracer tracer;
+  private final Tracer tracer;
 
   @Override
   public boolean supports(MethodParameter methodParameter,
@@ -59,15 +56,26 @@ public class CustomResponseBodyAdviceAdapter implements ResponseBodyAdvice<Objec
       LocalDateTime triggerTime = LocalDateTime.ofInstant(
           Instant.ofEpochMilli(servletRequest.getSession().getCreationTime()),
           TimeZone.getDefault().toZoneId());
-
-      String jwtKid = UserUtils.getJwtKid();
-
+      String jwtKid;
+      try {
+        jwtKid = UserUtils.getJwtKid();
+      } catch (ClassCastException | NullPointerException e) {
+        log.warn("No keycloak principal available");
+        jwtKid = "not available";
+      }
+      String username;
+      try {
+        username = UserUtils.getKeyCloakPrincipal().getName();
+      } catch (ClassCastException | NullPointerException e) {
+        log.warn("No keycloak username available");
+        username = "not available";
+      }
       httpLoggingService.log(
           servletRequest.getRequestURL().toString() + (servletRequest.getQueryString() != null ? "?"
               + servletRequest.getQueryString() : ""), null, o, tracer.currentSpan(),
           servletRequest.getMethod(), String.valueOf(
               ((ServletServerHttpResponse) serverHttpResponse).getServletResponse().getStatus()),
-          headers, triggerTime, LocalDateTime.now(), UserUtils.getKeyCloakPrincipal().getName(),
+          headers, triggerTime, LocalDateTime.now(), username,
           jwtKid);
 
     }
