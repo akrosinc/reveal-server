@@ -29,7 +29,7 @@ public class LoginResponseFactory {
 
     TeamMember teamMember = TeamMemberResponseFactory.fromEntities(organization, user);
 
-    LocationHierarchy locationHierarchy = null;
+    LocationHierarchy locationHierarchy;
     LocationTree locationTree = null;
     if (!plans.isEmpty()) {
       //We pick one hierarchy for now:
