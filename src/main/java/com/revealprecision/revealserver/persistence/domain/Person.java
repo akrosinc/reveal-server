@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.persistence.domain;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.revealprecision.revealserver.persistence.domain.metadata.PersonMetadata;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import java.util.Date;
 import java.util.Set;

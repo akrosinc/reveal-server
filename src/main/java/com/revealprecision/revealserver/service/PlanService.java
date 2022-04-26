@@ -6,7 +6,10 @@ import com.revealprecision.revealserver.api.v1.dto.request.PlanRequest;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.enums.PlanStatusEnum;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
-import com.revealprecision.revealserver.messaging.Message;
+import com.revealprecision.revealserver.messaging.TopicConstants;
+import com.revealprecision.revealserver.messaging.message.Message;
+import com.revealprecision.revealserver.messaging.message.PlanUpdateMessage;
+import com.revealprecision.revealserver.messaging.message.PlanUpdateType;
 import com.revealprecision.revealserver.persistence.domain.Action;
 import com.revealprecision.revealserver.persistence.domain.Condition;
 import com.revealprecision.revealserver.persistence.domain.Form;
@@ -25,6 +28,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
@@ -33,6 +37,7 @@ import org.springframework.stereotype.Service;
 
 @RequiredArgsConstructor
 @Service
+@Slf4j
 public class PlanService {
 
   private final PlanRepository planRepository;
@@ -90,6 +95,7 @@ public class PlanService {
     Plan plan = PlanEntityFactory.toEntity(planRequest, interventionType, locationHierarchy,
         foundForms, allLookUpEntityTypes);
     plan.setEntityStatus(EntityStatus.ACTIVE);
+
     savePlan(plan);
   }
 
@@ -97,6 +103,11 @@ public class PlanService {
     Plan plan = getPlanByIdentifier(planIdentifier);
     plan.setStatus(PlanStatusEnum.ACTIVE);
     savePlan(plan);
+    PlanUpdateMessage planUpdateMessage = new PlanUpdateMessage();
+    planUpdateMessage.setPlanIdentifier(plan.getIdentifier());
+    planUpdateMessage.setPlanUpdateType(PlanUpdateType.ACTIVATE);
+
+    kafkaTemplate.send(TopicConstants.PLAN_UPDATE,planUpdateMessage);
   }
 
   public void updatePlan(PlanRequest request, UUID identifier) {
@@ -111,11 +122,5 @@ public class PlanService {
 
   private void savePlan(Plan plan) {
     Plan savedPlan = planRepository.save(plan);
-    generateAndUpdateTasks(savedPlan.getIdentifier());
   }
-
-  private void generateAndUpdateTasks(UUID planIdentifier) {
-    taskService.generateTasksByPlanId(planIdentifier);
-  }
-
 }

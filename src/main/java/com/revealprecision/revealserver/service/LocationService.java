@@ -46,9 +46,6 @@ public class LocationService {
         .externalId(locationRequest.getProperties().getExternalId()).build();
     locationToSave.setEntityStatus(EntityStatus.ACTIVE);
     var savedLocation = locationRepository.save(locationToSave);
-    businessStatusService.setBusinessStatusForAllKeys(savedLocation.getIdentifier(),
-        businessStatusProperties.getDefaultLocationBusinessStatus(),
-        LookupEntityTypeTableEnum.LOCATION_TABLE);
     locationRelationshipService.updateLocationRelationshipsForNewLocation(savedLocation);
     return savedLocation;
   }

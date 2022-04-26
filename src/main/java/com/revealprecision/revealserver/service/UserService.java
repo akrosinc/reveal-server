@@ -121,7 +121,7 @@ public class UserService {
   }
 
   public User getCurrentUser() {
-    return getByKeycloakId(UUID.fromString(UserUtils.getKeyCloakPrincipal().getName()));
+    return getByKeycloakId(UUID.fromString(UserUtils.getCurrentPrinciple().getName()));
   }
 
   public User getByUserName(String username) {

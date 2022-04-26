@@ -8,7 +8,7 @@ import com.revealprecision.revealserver.enums.GenderEnum;
 import com.revealprecision.revealserver.enums.LookupUtil;
 import com.revealprecision.revealserver.enums.NameUseEnum;
 import com.revealprecision.revealserver.persistence.domain.Person;
-import com.revealprecision.revealserver.persistence.domain.PersonMetadata;
+import com.revealprecision.revealserver.persistence.domain.metadata.PersonMetadata;
 import java.time.ZoneId;
 import java.util.Date;
 import java.util.stream.Collectors;
@@ -58,7 +58,7 @@ public class PersonResponseFactory {
                 .suffix(person.getNameSuffix())
                 .build())
         .active(person.isActive())
-        .meta(personMetadata != null ? personMetadata.getEntityValue() : null)
+        //TODO: fix this add metadata fix here
         .birthDate(
             birthDate != null ? birthDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
                 : null)

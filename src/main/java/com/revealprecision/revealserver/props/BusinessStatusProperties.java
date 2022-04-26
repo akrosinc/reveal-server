@@ -13,10 +13,13 @@ import org.springframework.stereotype.Component;
 @Getter
 public class BusinessStatusProperties {
 
+  private final String businessStatusTagName = "business-status";
+
   public static final String GENERAL = "GENERAL";
   Map<String, String> businessStatusMapping = Collections.singletonMap("GENERAL",
-      "business_status");
+      businessStatusTagName);
 
   String defaultLocationBusinessStatus = "Not Visited";
   String defaultPersonBusinessStatus = "Not Visited";
+  String defaultGroupBusinessStatus = "Not Visited";
 }

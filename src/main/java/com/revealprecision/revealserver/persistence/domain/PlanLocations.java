@@ -41,7 +41,7 @@ public class PlanLocations extends AbstractAuditableEntity {
   private UUID identifier;
 
   @ManyToOne(fetch = FetchType.EAGER)
-  @JoinColumn(name = "plan_identifier",referencedColumnName = "identifier")
+  @JoinColumn(name = "plan_identifier", referencedColumnName = "identifier")
   private Plan plan;
 
   @ManyToOne(fetch = FetchType.EAGER)
@@ -55,9 +55,9 @@ public class PlanLocations extends AbstractAuditableEntity {
     this.plan = plan;
     this.location = location;
     this.setEntityStatus(EntityStatus.ACTIVE);
-    this.setCreatedBy(UserUtils.getKeyCloakPrincipal().getName());
+    this.setCreatedBy(UserUtils.getCurrentPrinciple().getName());
     this.setCreatedDatetime(LocalDateTime.now());
-    this.setModifiedBy(UserUtils.getKeyCloakPrincipal().getName());
+    this.setModifiedBy(UserUtils.getCurrentPrinciple().getName());
     this.setModifiedDatetime(LocalDateTime.now());
   }
 

@@ -15,16 +15,20 @@ import com.revealprecision.revealserver.persistence.repository.LocationHierarchy
 import com.revealprecision.revealserver.persistence.repository.LocationRelationshipRepository;
 import com.revealprecision.revealserver.persistence.repository.LocationRepository;
 import java.io.IOException;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -33,6 +37,7 @@ import org.elasticsearch.common.geo.ShapeRelation;
 import org.elasticsearch.geometry.Point;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.util.Pair;
@@ -40,6 +45,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
+@Slf4j
 public class LocationRelationshipService {
 
   private final LocationRelationshipRepository locationRelationshipRepository;
@@ -232,8 +238,10 @@ public class LocationRelationshipService {
   }
 
 
-  public Location findParentLocationByLocationIdAndHierarchyId(UUID locationIdentifier, UUID hierarchyIdentifier) {
-    return locationRelationshipRepository.getParentLocationByLocationIdAndHierarchyId(locationIdentifier, hierarchyIdentifier);
+  public Location findParentLocationByLocationIdAndHierarchyId(UUID locationIdentifier,
+      UUID hierarchyIdentifier) {
+    return locationRelationshipRepository.getParentLocationByLocationIdAndHierarchyId(
+        locationIdentifier, hierarchyIdentifier);
   }
 
   @Async("getAsyncExecutorTest")
@@ -261,16 +269,52 @@ public class LocationRelationshipService {
         SearchRequest searchRequest = new SearchRequest("location");
         searchRequest.source(sourceBuilder);
         SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
-        if(searchResponse.getHits().getHits().length == 0) {
+        if (searchResponse.getHits().getHits().length == 0) {
           break;
-        }else{
+        } else {
+
+          BoolQueryBuilder allParentsQuery = QueryBuilders.boolQuery();
+          allParentsQuery.filter(QueryBuilders.geoShapeQuery("geometry", new Point(x, y)).relation(
+              ShapeRelation.CONTAINS));
+          SearchSourceBuilder allParentsSourceBuilder = new SearchSourceBuilder();
+          allParentsSourceBuilder.query(allParentsQuery);
+          SearchRequest allParentsSearchRequest = new SearchRequest("location");
+          allParentsSearchRequest.source(allParentsSourceBuilder);
+          SearchResponse allParentsSearchResponse = client.search(allParentsSearchRequest,
+              RequestOptions.DEFAULT);
+
+          Map<String, Map<String, Object>> parents = Arrays.stream(
+                  allParentsSearchResponse.getHits().getHits())
+              .filter(SearchHit::hasSource).map(SearchHit::getSourceAsMap)
+              .map(sourceMap -> new SimpleEntry<String, Map<String, Object>>(
+                  String.valueOf(sourceMap.get("level")), sourceMap))
+              .collect(Collectors.toMap(Entry::getKey, Entry::getValue, (a, b) -> {
+                log.info("a: {} - b: {}", a, b);
+                return b;
+              }));
+          List<UUID> parentIds = new ArrayList<>();
+
+          try {
+            parentIds = locationHierarchy.getNodeOrder().stream()
+                .takeWhile(node -> !node.equals(location.getGeographicLevel().getName()))
+                .map(parents::get)
+                .map(node -> node.get("id"))
+                .map(node -> UUID.fromString((String) node))
+                .collect(Collectors.toList());
+            Collections.reverse(parentIds);
+          } catch (NullPointerException e) {
+            e.printStackTrace();
+            log.error("Error building ancestry - {}", e.getMessage());
+          }
+
           UUID parentLocation = UUID.fromString(searchResponse.getHits().getAt(0).getId());
-          if(parentLocation != null) {
+          if (parentLocation != null) {
             Location parentLoc = Location.builder().identifier(parentLocation).build();
             LocationRelationship locationRelationshipToSave = LocationRelationship.builder()
                 .parentLocation(parentLoc)
                 .location(location)
                 .locationHierarchy(locationHierarchy)
+                .ancestry(parentIds)
                 .build();
             locationRelationshipToSave.setEntityStatus(EntityStatus.ACTIVE);
             locationRelationshipRepository.save(locationRelationshipToSave);
@@ -286,14 +330,6 @@ public class LocationRelationshipService {
     List<Location> children = locationRelationshipRepository.getChildren(hierarchyIdentifier,
         locationIdentifier);
     return children;
-  }
-
-  public Set<Location> getStructuresForPlanIfHierarchyHasStructure(
-      LocationHierarchy locationHierarchy, Set<Location> planLocations) {
-    return this.getStructuresForPlanIfHierarchyHasStructure(locationHierarchy,
-        planLocations.stream().map(
-            planLocation -> Pair.of(planLocation.getIdentifier(),
-                planLocation.getGeographicLevel().getName())).collect(Collectors.toList()));
   }
 
 
@@ -320,8 +356,10 @@ public class LocationRelationshipService {
     return structureLocations;
   }
 
-  public Location getLocationParent(Location location, LocationHierarchy locationHierarchy){
-    return locationRelationshipRepository.getParentLocationByLocationIdAndHierarchyId(location.getIdentifier(),locationHierarchy.getIdentifier());
+  public Location getLocationParent(Location location, LocationHierarchy locationHierarchy) {
+    return locationRelationshipRepository.getParentLocationByLocationIdAndHierarchyId(
+        location.getIdentifier(), locationHierarchy.getIdentifier());
   }
+
 
 }

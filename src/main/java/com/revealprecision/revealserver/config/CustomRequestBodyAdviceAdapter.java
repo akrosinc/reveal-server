@@ -49,7 +49,7 @@ public class CustomRequestBodyAdviceAdapter extends RequestBodyAdviceAdapter {
     }
     String username;
     try {
-      username = UserUtils.getKeyCloakPrincipal().getName();
+      username = UserUtils.getCurrentPrincipleName();
     } catch (ClassCastException | NullPointerException e) {
       log.warn("No keycloak username available");
       username = "not available";

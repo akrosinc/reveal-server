@@ -42,6 +42,7 @@ public class DefaultHttpLoggingService implements HttpLoggingService {
       } catch (JsonProcessingException e){
         log.warn("Response is not a JSON object {}",requestObject);
       }
+
       String traceId = span != null ? span.context().traceId() : null;
 
       String spanId = span != null ? span.context().spanId() : null;

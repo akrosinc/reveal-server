@@ -39,9 +39,13 @@ public class HttpDBHttpLoggingService implements HttpLoggingService {
       JsonNode request = requestObject != null ? objectMapper.readTree(
           objectMapper.writeValueAsString(requestObject)) : null;
 
-      JsonNode response = responseObject != null ? objectMapper.readTree(
-          objectMapper.writeValueAsString(responseObject)) : null;
-
+      JsonNode response = null;
+      try {
+        response = responseObject != null ? objectMapper.readTree(
+            objectMapper.writeValueAsString(responseObject)) : null;
+      } catch (JsonProcessingException e){
+        log.warn("Response is not a JSON object {}",requestObject);
+      }
       String traceId = span != null ? span.context().traceId() : null;
 
       String spanId = span != null ? span.context().spanId() : null;
