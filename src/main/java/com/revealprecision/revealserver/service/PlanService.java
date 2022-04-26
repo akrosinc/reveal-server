@@ -122,11 +122,5 @@ public class PlanService {
 
   private void savePlan(Plan plan) {
     Plan savedPlan = planRepository.save(plan);
-    generateAndUpdateTasks(savedPlan.getIdentifier());
   }
-
-  private void generateAndUpdateTasks(UUID planIdentifier) {
-    taskService.generateTasksByPlanId(planIdentifier);
-  }
-
 }

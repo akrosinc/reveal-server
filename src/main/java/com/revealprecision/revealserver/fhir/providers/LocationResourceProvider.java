@@ -4,11 +4,14 @@ import ca.uhn.fhir.rest.annotation.IdParam;
 import ca.uhn.fhir.rest.annotation.Read;
 import ca.uhn.fhir.rest.server.IResourceProvider;
 import com.revealprecision.revealserver.fhir.properties.FhirServerProperties;
+import com.revealprecision.revealserver.persistence.domain.metadata.infra.MetadataObj;
 import com.revealprecision.revealserver.persistence.projection.LocationCoordinatesProjection;
 import com.revealprecision.revealserver.service.LocationService;
+import com.revealprecision.revealserver.service.MetadataService;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,6 +39,7 @@ public class LocationResourceProvider implements IResourceProvider {
 
   private final LocationService locationService;
   private final FhirServerProperties fhirServerProperties;
+  private final MetadataService metadataService;
 
   @Read()
   @Transactional
@@ -80,24 +84,22 @@ public class LocationResourceProvider implements IResourceProvider {
             + "/CodeSystem/location-metadata");
 
 
-    //TODO : fix fhir metadata
-//    extension.setExtension(
-//        metaDataJdbcService.getMetadataFor("location", revealLocation.getIdentifier()).entrySet()
-//            .stream().map(this::metadataExtension).collect(Collectors.toList()));
+    extension.setExtension(
+            metadataService.getLocationMetadataByLocation(revealLocation.getIdentifier())
+                .getEntityValue().getMetadataObjs().stream()
+            .map(this::metadataExtension).collect(Collectors.toList()));
 
     return location;
   }
 
-  private Extension metadataExtension(Entry<String, Pair<Class<?>, Object>> entrySet) {
-
-    Class<?> aClass = entrySet.getValue().getKey();
+  private Extension metadataExtension(MetadataObj metadataObj) {
 
     CodeableConcept codeableConcept = new CodeableConcept();
-    codeableConcept.setText(String.valueOf(aClass.cast(entrySet.getValue().getValue())));
-    codeableConcept.setId(entrySet.getKey());
+    codeableConcept.setText(String.valueOf(MetadataService.getValueFromValueObject(metadataObj).getSecond()));
+    codeableConcept.setId(metadataObj.getTag());
 
     Extension extension = new Extension();
-    extension.setUrl(entrySet.getKey());
+    extension.setUrl(metadataObj.getTag());
     extension.setValue(codeableConcept);
 
     return extension;

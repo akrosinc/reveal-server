@@ -20,6 +20,7 @@ import java.util.UUID;
 import java.util.stream.IntStream;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.SerializationUtils;
+import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -206,6 +207,31 @@ public class MetadataService {
     metadataObj.setCurrent(tagData);
     return metadataObj;
   }
+
+  public static Pair<Class,Object> getValueFromValueObject(MetadataObj metadataObj){
+    switch (metadataObj.getDataType()){
+      case "string":
+        return Pair.of(String.class,metadataObj.getCurrent().getValue().getValueString());
+
+      case "integer":
+        return Pair.of(Integer.class,metadataObj.getCurrent().getValue().getValueInteger());
+
+      case "date":
+        return Pair.of(LocalDateTime.class,metadataObj.getCurrent().getValue().getValueDate());
+
+      case "double":
+        return Pair.of(Double.class,metadataObj.getCurrent().getValue().getValueDouble());
+
+      case "boolean":
+        return Pair.of(Boolean.class,metadataObj.getCurrent().getValue().getValueBoolean());
+
+      default:
+        return Pair.of(String.class,metadataObj.getCurrent().getValue().getValueString());
+
+    }
+
+  }
+
 
   private TagValue getTagValue(Object tagValue, String dataType, TagValue value) {
     switch (dataType) {

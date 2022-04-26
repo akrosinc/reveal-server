@@ -9,13 +9,16 @@ import ca.uhn.fhir.rest.server.IResourceProvider;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.fhir.properties.FhirServerProperties;
 import com.revealprecision.revealserver.persistence.domain.Location;
+import com.revealprecision.revealserver.persistence.domain.metadata.infra.MetadataObj;
 import com.revealprecision.revealserver.persistence.projection.LocationCoordinatesProjection;
 import com.revealprecision.revealserver.service.LocationService;
+import com.revealprecision.revealserver.service.MetadataService;
 import com.revealprecision.revealserver.service.PersonService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -50,6 +53,8 @@ public class PersonResourceProvider implements IResourceProvider {
   private final FhirServerProperties fhirServerProperties;
 
   private final LocationService locationService;
+
+  private final MetadataService metadataService;
 
 
   @Read()
@@ -128,11 +133,10 @@ public class PersonResourceProvider implements IResourceProvider {
         fhirServerProperties.getBaseURL() + fhirServerProperties.getFhirPath()
             + "/CodeSystem/person-metadata");
 
-
-    // TODO: fix fhir metadata extension
-//    extension.setExtension(
-//        metaDataJdbcService.getMetadataFor("person", revealPerson.getIdentifier()).entrySet()
-//            .stream().map(this::metadataExtension).collect(Collectors.toList()));
+    extension.setExtension(
+        metadataService.getPersonMetadataByPerson(revealPerson.getIdentifier())
+            .getEntityValue().getMetadataObjs().stream()
+            .map(this::metadataExtension).collect(Collectors.toList()));
 
     revealPerson.getLocations().stream().map(this::getAddress).forEach(person::addAddress);
 
@@ -162,16 +166,14 @@ public class PersonResourceProvider implements IResourceProvider {
     return address;
   }
 
-  private Extension metadataExtension(Entry<String, Pair<Class<?>, Object>> entrySet) {
-
-    Class<?> aClass = entrySet.getValue().getKey();
+  private Extension metadataExtension(MetadataObj metadataObj) {
 
     CodeableConcept codeableConcept = new CodeableConcept();
-    codeableConcept.setText(String.valueOf(aClass.cast(entrySet.getValue().getValue())));
-    codeableConcept.setId(entrySet.getKey());
+    codeableConcept.setText(String.valueOf(MetadataService.getValueFromValueObject(metadataObj).getSecond()));
+    codeableConcept.setId(metadataObj.getTag());
 
     Extension extension = new Extension();
-    extension.setUrl(entrySet.getKey());
+    extension.setUrl(metadataObj.getTag());
     extension.setValue(codeableConcept);
 
     return extension;

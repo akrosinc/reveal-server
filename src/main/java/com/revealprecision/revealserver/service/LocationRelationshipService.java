@@ -294,8 +294,6 @@ public class LocationRelationshipService {
               }));
           List<UUID> parentIds = new ArrayList<>();
 
-          log.info("hierarchy: {} for location: {} - name: {}", locationHierarchy.getNodeOrder(),
-              location.getIdentifier(), location.getName());
           try {
             parentIds = locationHierarchy.getNodeOrder().stream()
                 .takeWhile(node -> !node.equals(location.getGeographicLevel().getName()))
@@ -362,5 +360,6 @@ public class LocationRelationshipService {
     return locationRelationshipRepository.getParentLocationByLocationIdAndHierarchyId(
         location.getIdentifier(), locationHierarchy.getIdentifier());
   }
+
 
 }
