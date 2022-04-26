@@ -99,9 +99,16 @@ public class LocationHierarchyResponseFactory {
   public static List<GeoTreeResponse> buildGeoResponseFromNode(TreeNode<UUID, Location> node,Boolean includeGeometry) {
     List<GeoTreeResponse> allLocationData = new ArrayList<>();
 
-    var locationPropertyResponse = LocationPropertyResponse.builder().name(node.getNode().getName())
-        .externalId(node.getNode().getExternalId()).status(node.getNode().getStatus())
-        .geographicLevel(node.getNode().getGeographicLevel().getName()).build();
+    var locationPropertyResponse = LocationPropertyResponse.builder()
+        .name(node.getNode().getName())
+        .externalId(node.getNode()
+            .getExternalId())
+        .status(node.getNode().getStatus())
+        .geographicLevel(node.getNode()
+            .getGeographicLevel()
+            .getName())
+        .parentIdentifier(node.getParent())
+        .build();
     var geoTreeResponse = GeoTreeResponse.builder().identifier(node.getId())
        .geometry(includeGeometry ? node.getNode().getGeometry() : null)
         .properties(locationPropertyResponse).build();
