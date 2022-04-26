@@ -22,13 +22,18 @@ public class UserFacadeService {
   private final LocationService locationService;
 
   public Set<Location> getLocationsAssignedToCurrentUser() {
-    return locationService.getAssignedLocationsFromPlans(getPlansAssignedToCurrentUser());
+    return locationService.getAssignedLocationsFromPlanAssignments(getPlanAssignmentsForCurrentUser());
   }
 
   public Set<Plan> getPlansAssignedToCurrentUser() {
     return geAssignedPlans();
   }
 
+  private Set<PlanAssignment> getPlanAssignmentsForCurrentUser(){
+    Set<Organization> organizations = getOrganizationsAssignedToCurrentUser();
+    return organizations.stream().map(Organization::getPlanAssignments).flatMap(
+        Collection::stream).collect(Collectors.toSet());
+  }
   public Set<Plan> geAssignedPlans() {
     Set<Organization> organizations = getOrganizationsAssignedToCurrentUser();
     Set<Plan> assignedPlans = organizations.stream().map(Organization::getPlanAssignments).flatMap(

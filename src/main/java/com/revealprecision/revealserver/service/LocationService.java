@@ -9,12 +9,12 @@ import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
 import com.revealprecision.revealserver.persistence.domain.Plan;
+import com.revealprecision.revealserver.persistence.domain.PlanAssignment;
 import com.revealprecision.revealserver.persistence.domain.PlanLocations;
 import com.revealprecision.revealserver.persistence.projection.LocationCoordinatesProjection;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import com.revealprecision.revealserver.persistence.repository.LocationRepository;
 import com.revealprecision.revealserver.props.BusinessStatusProperties;
-import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -111,9 +111,10 @@ public class LocationService {
             parentIdentifier, planIdentifier);
   }
 
-  public Set<Location> getAssignedLocationsFromPlans(Set<Plan> assignedPlans) {
-    return assignedPlans.stream().map(Plan::getPlanLocations)
-        .flatMap(Collection::stream).map(PlanLocations::getLocation).collect(Collectors.toSet());
+  public Set<Location> getAssignedLocationsFromPlanAssignments(
+      Set<PlanAssignment> planAssignments) {
+    return planAssignments.stream().map(PlanAssignment::getPlanLocations)
+        .map(PlanLocations::getLocation).collect(Collectors.toSet());
   }
 
   public LocationCoordinatesProjection getLocationCentroidCoordinatesByIdentifier(
@@ -121,15 +122,19 @@ public class LocationService {
     return locationRepository.getLocationCentroidCoordinatesByIdentifier(locationIdentifier);
   }
 
-  public PlanLocationDetails getLocationDetailsByIdentifierAndPlanIdentifier(UUID locationIdentifier, UUID planIdentifier) {
+  public PlanLocationDetails getLocationDetailsByIdentifierAndPlanIdentifier(
+      UUID locationIdentifier, UUID planIdentifier) {
     Plan plan = planService.getPlanByIdentifier(planIdentifier);
-    PlanLocationDetails details = locationRepository.getLocationDetailsByIdentifierAndPlanIdentifier(locationIdentifier, plan.getIdentifier());
+    PlanLocationDetails details = locationRepository.getLocationDetailsByIdentifierAndPlanIdentifier(
+        locationIdentifier, plan.getIdentifier());
 
-    details.setParentLocation(locationRelationshipService.findParentLocationByLocationIdAndHierarchyId(locationIdentifier, plan.getLocationHierarchy().getIdentifier()));
+    details.setParentLocation(
+        locationRelationshipService.findParentLocationByLocationIdAndHierarchyId(locationIdentifier,
+            plan.getLocationHierarchy().getIdentifier()));
     return details;
   }
 
-  public Location getLocationParent(Location location, LocationHierarchy locationHierarchy){
-    return locationRelationshipService.getLocationParent(location,locationHierarchy);
+  public Location getLocationParent(Location location, LocationHierarchy locationHierarchy) {
+    return locationRelationshipService.getLocationParent(location, locationHierarchy);
   }
 }
