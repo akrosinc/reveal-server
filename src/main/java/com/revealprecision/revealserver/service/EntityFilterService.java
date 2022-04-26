@@ -48,81 +48,94 @@ public class EntityFilterService {
       UUID locationHierarchyIdentifier)
       throws QueryGenerationException {
 
+
     List<Pair<UUID, String>> locations = queryDBAndRetrieveListOfLocationsLinkedToPlanJurisdiction(
         planIdentifier);
 
-    LocationHierarchy locationHierarchy = locationHierarchyService.findByIdentifier(
-        locationHierarchyIdentifier);
+    if (locations.isEmpty()){
+      return new ArrayList<>();
+    } else {
+      LocationHierarchy locationHierarchy = locationHierarchyService.findByIdentifier(
+          locationHierarchyIdentifier);
 
-    Set<Location> structures = locationRelationshipService.getStructuresForPlanIfHierarchyHasStructure(
-        locationHierarchy,
-        locations);
+      Set<Location> structures = locationRelationshipService.getStructuresForPlanIfHierarchyHasStructure(
+          locationHierarchy,
+          locations);
 
-    List<String> taskLocationUuids = locations.stream().map(Pair::getFirst).map(UUID::toString)
-        .collect(Collectors.toList());
+      if (query == null) {
+        return structures.stream().map(Location::getIdentifier).collect(Collectors.toList());
+      } else {
 
-    taskLocationUuids.addAll(structures.stream().map(Location::getIdentifier).map(UUID::toString)
-        .collect(Collectors.toList()));
+        List<String> taskLocationUuids = locations.stream().map(Pair::getFirst).map(UUID::toString)
+            .collect(Collectors.toList());
 
-    String planLocations = getConditionFragmentsForPlanLocations(taskLocationUuids);
+        taskLocationUuids.addAll(
+            structures.stream().map(Location::getIdentifier).map(UUID::toString)
+                .collect(Collectors.toList()));
 
-    String queryFinal = null;
+        String planLocations = getConditionFragmentsForPlanLocations(taskLocationUuids);
 
-    List<Condition> joinConditions = query.getJoinConditions();
-    String joinTableFragment = getJoinFragment(joinConditions);
+        String queryFinal = null;
 
-    List<String> joinedConditionList = getQueryFragmentListJoinedConditions(joinConditions);
+        List<Condition> joinConditions = query.getJoinConditions();
+        String joinTableFragment = getJoinFragment(joinConditions);
 
-    if (!(query.getAndConditions().size() == 0 && query.getOrConditions().size() == 0)) {
+        List<String> joinedConditionList = getQueryFragmentListJoinedConditions(joinConditions);
 
-      List<Condition> andConditions = query.getAndConditions();
-      List<Condition> orConditions = query.getOrConditions();
+        if (!(query.getAndConditions().size() == 0 && query.getOrConditions().size() == 0)) {
 
-      List<String> groupedOrConditions = getQueryFragmentListForGroupedOrConditions(orConditions);
+          List<Condition> andConditions = query.getAndConditions();
+          List<Condition> orConditions = query.getOrConditions();
 
-      List<String> andConditionList = getQueryFragmentListForAndConditions(andConditions);
+          List<String> groupedOrConditions = getQueryFragmentListForGroupedOrConditions(
+              orConditions);
 
-      String wherePartBeforeLocationJurisdiction = combineGroupedOrConditionsAndAndConditions(
-          groupedOrConditions, andConditionList, joinedConditionList);
+          List<String> andConditionList = getQueryFragmentListForAndConditions(andConditions);
 
-      if (query.getEntity().equalsIgnoreCase(LOCATION_TABLE)) {
+          String wherePartBeforeLocationJurisdiction = combineGroupedOrConditionsAndAndConditions(
+              groupedOrConditions, andConditionList, joinedConditionList);
 
-        queryFinal = conditionQueryProperties.getLocationWithConditionsQuery() + "\n"
-            + joinTableFragment
-            + WHERE
-            + (wherePartBeforeLocationJurisdiction.equals("") ? " "
-            : wherePartBeforeLocationJurisdiction + " AND \n")
-            + planLocations;
-      }
+          if (query.getEntity().equalsIgnoreCase(LOCATION_TABLE)) {
 
-      if (query.getEntity().equalsIgnoreCase(PERSON_TABLE)) {
-        queryFinal =
-            conditionQueryProperties.getPersonWithConditionQueryWithinALocationJurisdiction() + "\n"
+            queryFinal = conditionQueryProperties.getLocationWithConditionsQuery2() + "\n"
                 + joinTableFragment
                 + WHERE
                 + (wherePartBeforeLocationJurisdiction.equals("") ? " "
                 : wherePartBeforeLocationJurisdiction + " AND \n")
                 + planLocations;
+          }
+
+          if (query.getEntity().equalsIgnoreCase(PERSON_TABLE)) {
+            queryFinal =
+                conditionQueryProperties.getPersonWithConditionQueryWithinALocationJurisdiction2()
+                    + "\n"
+                    + joinTableFragment
+                    + WHERE
+                    + (wherePartBeforeLocationJurisdiction.equals("") ? " "
+                    : wherePartBeforeLocationJurisdiction + " AND \n")
+                    + planLocations;
+          }
+        } else {
+
+          String wherePartBeforeLocationJurisdiction = combineGroupedOrConditionsAndAndConditions(
+              new ArrayList<>(), new ArrayList<>(), joinedConditionList);
+
+          queryFinal =
+              conditionQueryProperties.getLocationWithoutConditionQuery() + "\n"
+                  + joinTableFragment
+                  + WHERE
+                  + (wherePartBeforeLocationJurisdiction.equals("") ? " "
+                  : wherePartBeforeLocationJurisdiction + " AND \n")
+                  + planLocations;
+        }
+        if (queryFinal == null) {
+          throw new QueryGenerationException(
+              "Postgres query cannot be built for Query Object: " + query.toString());
+        }
+        return new ArrayList<>(jdbcTemplate.query(queryFinal,
+            (rs, rowNum) -> ((UUID) rs.getObject("identifier"))));
       }
-    } else {
-
-      String wherePartBeforeLocationJurisdiction = combineGroupedOrConditionsAndAndConditions(
-          new ArrayList<>(), new ArrayList<>(), joinedConditionList);
-
-      queryFinal =
-          conditionQueryProperties.getLocationWithoutConditionQuery() + "\n"
-              + joinTableFragment
-              + WHERE
-              + (wherePartBeforeLocationJurisdiction.equals("") ? " "
-              : wherePartBeforeLocationJurisdiction + " AND \n")
-              + planLocations;
     }
-    if (queryFinal == null) {
-      throw new QueryGenerationException(
-          "Postgres query cannot be built for Query Object: " + query.toString());
-    }
-    return new ArrayList<>(jdbcTemplate.query(queryFinal,
-        (rs, rowNum) -> ((UUID) rs.getObject("identifier"))));
   }
 
   private String getJoinFragment(List<Condition> joinConditions) {
@@ -219,19 +232,6 @@ public class EntityFilterService {
         });
   }
 
-  /**
-   * Generates the query conditions for core fields and tagged properties Each field is matched
-   * against its datatype and an applicable condition is created.
-   * <p>
-   * Examples:
-   * Person.[core_date]birth_date BETWEEN 2012-02-17,2017-02-17 will be -
-   * ( a.birth_date >= '2012-02-17' and a.birth_date <= '2017-02-17' )
-   * <p>
-   * Location.[tag_boolean]is_eligibleForMDA == true will be -
-   *
-   * ( (am.entity_value->'is_eligibleForMDA')::bool
-   * = true )
-   */
   private List<String> getConditionQueryParts(Condition condition,
       List<String> conditionListPassed) {
 
@@ -241,7 +241,7 @@ public class EntityFilterService {
 
     switch (condition.getType()) {
       case "tag":
-        con = "am.entity_value->'" + condition.getProperty() + "'->>'value'";
+//        con = "am.entity_value->'" + condition.getProperty() + "'->>'value'";
         break;
       case "core":
         con = "a." + condition.getProperty();
@@ -251,49 +251,106 @@ public class EntityFilterService {
         break;
     }
 
-    switch (condition.getOperator()) {
-      case "BETWEEN":
-        if (condition.getDataType().equals("int")) {
-          conditionList.add("((" + con + ")::int >= " + condition.getValue().get(0) + " OR " +
-              "(" + con + ")::int <= " + condition.getValue().get(1) + ")");
-        }
-        if (condition.getDataType().equals("date")) {
-          conditionList.add("(" + con + " >= '" + condition.getValue().get(0) + "' OR " +
-              "" + con + " <= '" + condition.getValue().get(1) + "')");
-        }
-        break;
-      case "==":
-        if (condition.getDataType().equals("int")) {
-          conditionList.add("(" + con + ")::int = " + condition.getValue().get(0));
-        }
-        if (condition.getDataType().equals("string")) {
-          conditionList.add(con + " = '" + condition.getValue().get(0) + "'");
-        }
-        if (condition.getDataType().equals("boolean")) {
-          conditionList.add("(" + con + ")::bool = " + condition.getValue().get(0));
-        }
-        if (condition.getDataType().equals("date")) {
-          conditionList.add("" + con + " = '" + condition.getValue().get(0) + "'");
-        }
-        break;
-      default:
-        if (condition.getDataType().equals("int")) {
-          conditionList.add(
-              "(" + con + ")::int " + condition.getOperator() + " " + condition.getValue().get(0));
-        }
-        if (condition.getDataType().equals("string")) {
-          conditionList.add(
-              con + " " + condition.getOperator() + " '" + condition.getValue().get(0) + "'");
-        }
-        if (condition.getDataType().equals("boolean")) {
-          conditionList.add(
-              "(" + con + ")::bool " + condition.getOperator() + " " + condition.getValue().get(0));
-        }
-        if (condition.getDataType().equals("date")) {
-          conditionList.add(
-              "" + con + " " + condition.getOperator() + " " + condition.getValue().get(0) + "'");
-        }
-        break;
+    if (!condition.getType().equals("tag")) {
+      switch (condition.getOperator()) {
+        case "BETWEEN":
+          if (condition.getDataType().equals("int")) {
+            conditionList.add("((" + con + ")::int >= " + condition.getValue().get(0) + " OR " +
+                "(" + con + ")::int <= " + condition.getValue().get(1) + ")");
+          }
+          if (condition.getDataType().equals("date")) {
+            conditionList.add("(" + con + " >= '" + condition.getValue().get(0) + "' OR " +
+                "" + con + " <= '" + condition.getValue().get(1) + "')");
+          }
+          break;
+        case "==":
+          if (condition.getDataType().equals("int")) {
+            conditionList.add("(" + con + ")::int = " + condition.getValue().get(0));
+          }
+          if (condition.getDataType().equals("string")) {
+            conditionList.add(con + " = '" + condition.getValue().get(0) + "'");
+          }
+          if (condition.getDataType().equals("boolean")) {
+            conditionList.add("(" + con + ")::bool = " + condition.getValue().get(0));
+          }
+          if (condition.getDataType().equals("date")) {
+            conditionList.add("" + con + " = '" + condition.getValue().get(0) + "'");
+          }
+          break;
+        default:
+          if (condition.getDataType().equals("int")) {
+            conditionList.add(
+                "(" + con + ")::int " + condition.getOperator() + " " + condition.getValue()
+                    .get(0));
+          }
+          if (condition.getDataType().equals("string")) {
+            conditionList.add(
+                con + " " + condition.getOperator() + " '" + condition.getValue().get(0) + "'");
+          }
+          if (condition.getDataType().equals("boolean")) {
+            conditionList.add(
+                "(" + con + ")::bool " + condition.getOperator() + " " + condition.getValue()
+                    .get(0));
+          }
+          if (condition.getDataType().equals("date")) {
+            conditionList.add(
+                "" + con + " " + condition.getOperator() + " " + condition.getValue().get(0) + "'");
+          }
+          break;
+      }
+    }else{
+      switch (condition.getOperator()) {
+        case "BETWEEN":
+          if (condition.getDataType().equals("int")) {
+
+            conditionList.add("( am.item_object->>'tag' = '"+condition.getProperty()+"' AND " +
+            "( am.item_object->'current'->'value'->>'valueInteger' >= "+ condition.getValue().get(0) + " OR " +
+                " am.item_object->'current'->'value'->>'valueInteger' <= "+ condition.getValue().get(1)+" ))");
+
+          }
+          if (condition.getDataType().equals("date")) {
+            conditionList.add("( am.item_object->>'tag' = '"+condition.getProperty()+"' AND " +
+                "( am.item_object->'current'->'value'->>'valueDateTime' >= '"+ condition.getValue().get(0) + "' OR " +
+                " am.item_object->'current'->'value'->>'valueDateTime' <= '"+ condition.getValue().get(1)+"' ))");
+          }
+          break;
+        case "==":
+          if (condition.getDataType().equals("int")) {
+            conditionList.add("( am.item_object->>'tag' = '"+condition.getProperty()+"' AND " +
+                " am.item_object->'current'->'value'->>'valueInteger' = "+ condition.getValue().get(0) + ")" );
+          }
+          if (condition.getDataType().equals("string")) {
+            conditionList.add("( am.item_object->>'tag' = '"+condition.getProperty()+"' AND " +
+                " am.item_object->'current'->'value'->>'valueString' = '"+ condition.getValue().get(0) + "')" );
+          }
+          if (condition.getDataType().equals("boolean")) {
+            conditionList.add("( am.item_object->>'tag' = '"+condition.getProperty()+"' AND " +
+                " am.item_object->'current'->'value'->>'valueBoolean' = "+ condition.getValue().get(0) + ")" );
+          }
+          if (condition.getDataType().equals("date")) {
+            conditionList.add("( am.item_object->>'tag' = '"+condition.getProperty()+"' AND " +
+                " am.item_object->'current'->'value'->>'valueDate' = "+ condition.getValue().get(0) + ")" );
+          }
+          break;
+        default:
+          if (condition.getDataType().equals("int")) {
+            conditionList.add("( am.item_object->>'tag' "+condition.getOperator()+" '"+condition.getProperty()+"' AND " +
+                " am.item_object->'current'->'value'->>'valueInteger' = "+ condition.getValue().get(0) + ")" );
+          }
+          if (condition.getDataType().equals("string")) {
+            conditionList.add("( am.item_object->>'tag' = '"+condition.getProperty()+"' AND " +
+                " am.item_object->'current'->'value'->>'valueString' "+condition.getOperator()+" '"+ condition.getValue().get(0) + "')" );
+          }
+          if (condition.getDataType().equals("boolean")) {
+            conditionList.add("( am.item_object->>'tag' = '"+condition.getProperty()+"' AND " +
+                " am.item_object->'current'->'value'->>'valueBoolean' "+condition.getOperator()+" "+ condition.getValue().get(0) + ")" );
+          }
+          if (condition.getDataType().equals("date")) {
+            conditionList.add("( am.item_object->>'tag' = '"+condition.getProperty()+"' AND " +
+                " am.item_object->'current'->'value'->>'valueDate' "+condition.getOperator()+" "+ condition.getValue().get(0) + ")" );
+          }
+          break;
+      }
     }
 
     return conditionList;

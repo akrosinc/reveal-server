@@ -17,6 +17,7 @@ import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.Task;
 import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.service.ActionService;
+import com.revealprecision.revealserver.service.BusinessStatusService;
 import com.revealprecision.revealserver.service.LocationService;
 import com.revealprecision.revealserver.service.PersonService;
 import com.revealprecision.revealserver.service.PlanService;
@@ -48,6 +49,7 @@ public class TaskFacadeService {
   private final PlanService planService;
   private final PersonService personService;
   private final LocationService locationService;
+  private final BusinessStatusService businessStatusService;
 
   public List<TaskFacade> syncTasks(List<String> planIdentifiers,
       List<UUID> jurisdictionIdentifiers, Long serverVersion) {
@@ -68,10 +70,11 @@ public class TaskFacadeService {
   }
 
   private TaskFacade getTaskFacade(String groupIdentifier, Task task) {
+    String businessStatus = businessStatusService.getBusinessStatus(task);
     String createdBy = task.getAction().getGoal().getPlan()
         .getCreatedBy(); //TODO: confirm business rule for task creation user(owner)
     User user = getUser(createdBy);
-    return TaskFacadeFactory.getEntity(task, user, groupIdentifier);
+    return TaskFacadeFactory.getEntity(task, businessStatus, user, groupIdentifier);
   }
 
   private User getUser(String createdByUserIdentifier) {
@@ -104,6 +107,7 @@ public class TaskFacadeService {
       if (taskStatus.isPresent()) {
         task.setLookupTaskStatus(taskStatus.get());
         task.setBusinessStatus(updateFacade.getBusinessStatus());
+        businessStatusService.setBusinessStatus(task, updateFacade.getBusinessStatus());
         task = taskService.saveTask(task);
         identifier = task.getIdentifier();
       } else {
@@ -174,6 +178,7 @@ public class TaskFacadeService {
       task.setLastModified(LastModifierFromAndroid);
       task.setBaseEntityIdentifier(UUID.fromString(taskDto.getForEntity()));
       task.setBusinessStatus(taskDto.getBusinessStatus());
+      businessStatusService.setBusinessStatus(task, taskDto.getBusinessStatus());
       task.setEntityStatus(EntityStatus.ACTIVE);
 
       Location location = null;

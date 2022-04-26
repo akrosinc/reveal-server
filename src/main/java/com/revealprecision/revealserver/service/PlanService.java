@@ -6,7 +6,11 @@ import com.revealprecision.revealserver.api.v1.dto.request.PlanRequest;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.enums.PlanStatusEnum;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
-import com.revealprecision.revealserver.messaging.Message;
+import com.revealprecision.revealserver.messaging.message.Message;
+import com.revealprecision.revealserver.messaging.message.PlanCreateMessage;
+import com.revealprecision.revealserver.messaging.message.PlanUpdateMessage;
+import com.revealprecision.revealserver.messaging.message.PlanUpdateType;
+import com.revealprecision.revealserver.messaging.TopicConstants;
 import com.revealprecision.revealserver.persistence.domain.Action;
 import com.revealprecision.revealserver.persistence.domain.Condition;
 import com.revealprecision.revealserver.persistence.domain.Form;
@@ -18,6 +22,7 @@ import com.revealprecision.revealserver.persistence.domain.LookupInterventionTyp
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.Plan.Fields;
 import com.revealprecision.revealserver.persistence.repository.PlanRepository;
+import com.revealprecision.revealserver.util.UserUtils;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -25,6 +30,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
@@ -33,6 +39,7 @@ import org.springframework.stereotype.Service;
 
 @RequiredArgsConstructor
 @Service
+@Slf4j
 public class PlanService {
 
   private final PlanRepository planRepository;
@@ -90,13 +97,24 @@ public class PlanService {
     Plan plan = PlanEntityFactory.toEntity(planRequest, interventionType, locationHierarchy,
         foundForms, allLookUpEntityTypes);
     plan.setEntityStatus(EntityStatus.ACTIVE);
+
     savePlan(plan);
+    PlanCreateMessage planCreateMessage = new PlanCreateMessage();
+    planCreateMessage.setUserId(UserUtils.getCurrentPrinciple().getName());
+    log.info("userid {}", UserUtils.getCurrentPrinciple().getName());
+    planCreateMessage.setPlanIdentifier(plan.getIdentifier());
+    kafkaTemplate.send(TopicConstants.PLAN_CREATE,planCreateMessage);
   }
 
   public void activatePlan(UUID planIdentifier) {
     Plan plan = getPlanByIdentifier(planIdentifier);
     plan.setStatus(PlanStatusEnum.ACTIVE);
     savePlan(plan);
+    PlanUpdateMessage planUpdateMessage = new PlanUpdateMessage();
+    planUpdateMessage.setPlanIdentifier(plan.getIdentifier());
+    planUpdateMessage.setPlanUpdateType(PlanUpdateType.ACTIVATE);
+
+    kafkaTemplate.send(TopicConstants.PLAN_UPDATE,planUpdateMessage);
   }
 
   public void updatePlan(PlanRequest request, UUID identifier) {

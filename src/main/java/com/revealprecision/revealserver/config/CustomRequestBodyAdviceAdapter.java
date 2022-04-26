@@ -47,13 +47,26 @@ public class CustomRequestBodyAdviceAdapter extends RequestBodyAdviceAdapter {
         Instant.ofEpochMilli(httpServletRequest.getSession().getCreationTime()),
         TimeZone.getDefault().toZoneId());
 
-    String jwtKid = UserUtils.getJwtKid();
+    String jwtKid;
+    try {
+      jwtKid = UserUtils.getJwtKid();
+    } catch (ClassCastException | NullPointerException e) {
+      log.warn("No keycloak principal available");
+      jwtKid = "not available";
+    }
+    String username;
+    try {
+      username = UserUtils.getCurrentPrincipleName();
+    } catch (ClassCastException | NullPointerException e) {
+      log.warn("No keycloak username available");
+      username = "not available";
+    }
 
     httpLoggingService.log(
         httpServletRequest.getRequestURL().toString() + (httpServletRequest.getQueryString() != null
             ? "?" + httpServletRequest.getQueryString() : ""), body, null, tracer.currentSpan(),
         httpServletRequest.getMethod(), null, requestHeaders, triggerTime, null,
-        UserUtils.getKeyCloakPrincipal().getName(), jwtKid);
+        username, jwtKid);
 
     return super.afterBodyRead(body, inputMessage, parameter, targetType, converterType);
   }

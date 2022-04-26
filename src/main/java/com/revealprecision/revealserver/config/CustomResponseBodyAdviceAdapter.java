@@ -59,17 +59,33 @@ public class CustomResponseBodyAdviceAdapter implements ResponseBodyAdvice<Objec
       LocalDateTime triggerTime = LocalDateTime.ofInstant(
           Instant.ofEpochMilli(servletRequest.getSession().getCreationTime()),
           TimeZone.getDefault().toZoneId());
+      try {
+        String jwtKid;
+        try {
+          jwtKid = UserUtils.getJwtKid();
+        } catch (ClassCastException | NullPointerException e) {
+          log.warn("No keycloak principal available");
+          jwtKid = "not available";
+        }
+        String username;
+        try {
+          username = UserUtils.getCurrentPrincipleName();
+        } catch (ClassCastException | NullPointerException e) {
+          log.warn("No keycloak username available");
+          username = "not available";
+        }
 
-      String jwtKid = UserUtils.getJwtKid();
-
-      httpLoggingService.log(
-          servletRequest.getRequestURL().toString() + (servletRequest.getQueryString() != null ? "?"
-              + servletRequest.getQueryString() : ""), null, o, tracer.currentSpan(),
-          servletRequest.getMethod(), String.valueOf(
-              ((ServletServerHttpResponse) serverHttpResponse).getServletResponse().getStatus()),
-          headers, triggerTime, LocalDateTime.now(), UserUtils.getKeyCloakPrincipal().getName(),
-          jwtKid);
-
+        httpLoggingService.log(
+            servletRequest.getRequestURL().toString() + (servletRequest.getQueryString() != null ?
+                "?"
+                    + servletRequest.getQueryString() : ""), null, o, tracer.currentSpan(),
+            servletRequest.getMethod(), String.valueOf(
+                ((ServletServerHttpResponse) serverHttpResponse).getServletResponse().getStatus()),
+            headers, triggerTime, LocalDateTime.now(), username,
+            jwtKid);
+      }catch (ClassCastException e){
+        e.printStackTrace();
+      }
     }
     return o;
   }
