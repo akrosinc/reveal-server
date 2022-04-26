@@ -1258,4 +1258,22 @@ CREATE TABLE IF NOT EXISTS event_aud
     modified_by             character varying(36)    NOT NULL,
     modified_datetime       timestamp with time zone NOT NULL,
     PRIMARY KEY (identifier, REV)
-)
+);
+
+CREATE TABLE http_logging
+(
+    identifier uuid NOT NULL,
+    trace_id character varying,
+    span_id character varying,
+    http_method character varying,
+    http_code character varying,
+    path character varying,
+    request jsonb,
+    request_time timestamp with time zone,
+    response jsonb,
+    response_time timestamp with time zone,
+    http_headers jsonb,
+    requestor character varying,
+    jwt_kid character varying,
+    PRIMARY KEY (identifier)
+);
