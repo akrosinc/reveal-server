@@ -169,7 +169,4 @@ public class PlanLocationsService {
     return planLocationsRepository.countByPlan_Identifier(plan.getIdentifier());
   }
 
-  public List<PlanLocations> getPlanLocationsByPlan(UUID planIdentifier) {
-    return planLocationsRepository.findPlanLocationsByPlan_Identifier(planIdentifier);
-  }
 }

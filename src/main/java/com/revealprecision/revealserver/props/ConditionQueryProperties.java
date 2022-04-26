@@ -13,12 +13,18 @@ public class ConditionQueryProperties {
 
   private String locationWithConditionsQuery =
       "SELECT a.identifier FROM location a \n"
-          + " LEFT JOIN location_metadata am ON a.identifier = am.location_identifier \n"
+          + " INNER JOIN \n"
+          + "         ( SELECT mm.identifier, mm.location_identifier, item_object\n"
+          + "         FROM location_metadata mm,jsonb_array_elements(entity_value -> 'metadataObjs') with ordinality arr(item_object , position) \n"
+          + "         ) as am on am.location_identifier = a.identifier\n"
           + " LEFT JOIN location_relationship lr on lr.location_identifier = a.identifier\n";
 
   private String personWithConditionQueryWithinALocationJurisdiction =
       "SELECT a.identifier FROM person a \n"
-          + " LEFT JOIN person_metadata am ON a.identifier = am.person_identifier\n"
+          + " INNER JOIN \n"
+          + "         ( SELECT mm.identifier, mm.person_identifier, item_object\n"
+          + "         FROM person_metadata mm,jsonb_array_elements(entity_value -> 'metadataObjs') with ordinality arr(item_object , position) \n"
+          + "         ) as am on am.person_identifier = a.identifier\n"
           + " LEFT JOIN person_location pl on a.identifier = pl.person_identifier\n"
           + " LEFT JOIN location l on l.identifier = pl.location_identifier \n"
           + " LEFT JOIN location_relationship lr on lr.location_identifier = l.identifier \n";

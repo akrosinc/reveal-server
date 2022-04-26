@@ -11,13 +11,11 @@ import com.revealprecision.revealserver.fhir.properties.FhirServerProperties;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.projection.LocationCoordinatesProjection;
 import com.revealprecision.revealserver.service.LocationService;
-import com.revealprecision.revealserver.service.MetaDataJdbcService;
 import com.revealprecision.revealserver.service.PersonService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -48,8 +46,6 @@ public class PersonResourceProvider implements IResourceProvider {
   }
 
   private final PersonService personService;
-
-  private final MetaDataJdbcService metaDataJdbcService;
 
   private final FhirServerProperties fhirServerProperties;
 
@@ -132,9 +128,11 @@ public class PersonResourceProvider implements IResourceProvider {
         fhirServerProperties.getBaseURL() + fhirServerProperties.getFhirPath()
             + "/CodeSystem/person-metadata");
 
-    extension.setExtension(
-        metaDataJdbcService.getMetadataFor("person", revealPerson.getIdentifier()).entrySet()
-            .stream().map(this::metadataExtension).collect(Collectors.toList()));
+
+    // TODO: fix fhir metadata extension
+//    extension.setExtension(
+//        metaDataJdbcService.getMetadataFor("person", revealPerson.getIdentifier()).entrySet()
+//            .stream().map(this::metadataExtension).collect(Collectors.toList()));
 
     revealPerson.getLocations().stream().map(this::getAddress).forEach(person::addAddress);
 

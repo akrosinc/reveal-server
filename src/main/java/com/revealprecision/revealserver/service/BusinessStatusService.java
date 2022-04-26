@@ -1,18 +1,14 @@
 package com.revealprecision.revealserver.service;
 
-import com.revealprecision.revealserver.messaging.TopicConstants;
-import com.revealprecision.revealserver.messaging.message.LocationBusinessStatusUpdateMessage;
 import com.revealprecision.revealserver.persistence.domain.Task;
 import com.revealprecision.revealserver.persistence.domain.metadata.LocationMetadata;
 import com.revealprecision.revealserver.persistence.domain.metadata.PersonMetadata;
-import com.revealprecision.revealserver.persistence.repository.PlanRepository;
 import com.revealprecision.revealserver.props.BusinessStatusProperties;
 import com.revealprecision.revealserver.util.ActionUtils;
 import com.revealprecision.revealserver.util.UserUtils;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -21,7 +17,6 @@ public class BusinessStatusService {
 
   private final BusinessStatusProperties businessStatusProperties;
   private final MetadataService metadataService;
-  private final KafkaTemplate<String, LocationBusinessStatusUpdateMessage> kafkaTemplate;
 
   public void setBusinessStatus(Task task, String businessStatus) {
 
@@ -39,13 +34,6 @@ public class BusinessStatusService {
       LocationMetadata locationMetadata = metadataService.updateLocationMetadata(task.getBaseEntityIdentifier(), businessStatus,
           planIdentifier, task.getIdentifier(), UserUtils.getCurrentPrincipleName(), "string",
           businessStatusTagName, baseBusinessStatusTagName);
-
-      LocationBusinessStatusUpdateMessage locationBusinessStatusUpdateMessage = new LocationBusinessStatusUpdateMessage();
-      locationBusinessStatusUpdateMessage.setLocationIdentifier(task.getBaseEntityIdentifier());
-      locationBusinessStatusUpdateMessage.setLocationMetadataIdentifier(locationMetadata.getIdentifier());
-      locationBusinessStatusUpdateMessage.setPlanIdentifier(planIdentifier);
-
-      kafkaTemplate.send(TopicConstants.LOCATION_BUSINESS_STATUS_UPDATE, locationBusinessStatusUpdateMessage);
     }
 
     if (ActionUtils.isActionForPerson(task.getAction())) {

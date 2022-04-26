@@ -6,11 +6,9 @@ import ca.uhn.fhir.rest.server.IResourceProvider;
 import com.revealprecision.revealserver.fhir.properties.FhirServerProperties;
 import com.revealprecision.revealserver.persistence.projection.LocationCoordinatesProjection;
 import com.revealprecision.revealserver.service.LocationService;
-import com.revealprecision.revealserver.service.MetaDataJdbcService;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,7 +35,6 @@ public class LocationResourceProvider implements IResourceProvider {
   }
 
   private final LocationService locationService;
-  private final MetaDataJdbcService metaDataJdbcService;
   private final FhirServerProperties fhirServerProperties;
 
   @Read()
@@ -82,9 +79,11 @@ public class LocationResourceProvider implements IResourceProvider {
         fhirServerProperties.getBaseURL() + fhirServerProperties.getFhirPath()
             + "/CodeSystem/location-metadata");
 
-    extension.setExtension(
-        metaDataJdbcService.getMetadataFor("location", revealLocation.getIdentifier()).entrySet()
-            .stream().map(this::metadataExtension).collect(Collectors.toList()));
+
+    //TODO : fix fhir metadata
+//    extension.setExtension(
+//        metaDataJdbcService.getMetadataFor("location", revealLocation.getIdentifier()).entrySet()
+//            .stream().map(this::metadataExtension).collect(Collectors.toList()));
 
     return location;
   }

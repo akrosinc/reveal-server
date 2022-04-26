@@ -97,7 +97,7 @@ public class EntityFilterService {
 
           if (query.getEntity().equalsIgnoreCase(LOCATION_TABLE)) {
 
-            queryFinal = conditionQueryProperties.getLocationWithConditionsQuery2() + "\n"
+            queryFinal = conditionQueryProperties.getLocationWithConditionsQuery() + "\n"
                 + joinTableFragment
                 + WHERE
                 + (wherePartBeforeLocationJurisdiction.equals("") ? " "
@@ -107,7 +107,7 @@ public class EntityFilterService {
 
           if (query.getEntity().equalsIgnoreCase(PERSON_TABLE)) {
             queryFinal =
-                conditionQueryProperties.getPersonWithConditionQueryWithinALocationJurisdiction2()
+                conditionQueryProperties.getPersonWithConditionQueryWithinALocationJurisdiction()
                     + "\n"
                     + joinTableFragment
                     + WHERE
@@ -130,7 +130,7 @@ public class EntityFilterService {
         }
         if (queryFinal == null) {
           throw new QueryGenerationException(
-              "Postgres query cannot be built for Query Object: " + query.toString());
+              "Postgres query cannot be built for Query Object: " + query);
         }
         return new ArrayList<>(jdbcTemplate.query(queryFinal,
             (rs, rowNum) -> ((UUID) rs.getObject("identifier"))));
