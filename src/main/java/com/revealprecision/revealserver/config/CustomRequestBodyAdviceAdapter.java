@@ -1,7 +1,6 @@
 package com.revealprecision.revealserver.config;
 
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.revealprecision.revealserver.service.HttpLoggingService;
 import com.revealprecision.revealserver.util.HeaderUtil;
 import com.revealprecision.revealserver.util.UserUtils;
@@ -11,8 +10,8 @@ import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.TimeZone;
 import javax.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.sleuth.Tracer;
 import org.springframework.http.HttpInputMessage;
 import org.springframework.http.converter.HttpMessageConverter;
@@ -21,21 +20,15 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestBodyAdviceAd
 
 @ControllerAdvice
 @Slf4j
+@RequiredArgsConstructor
 public class CustomRequestBodyAdviceAdapter extends RequestBodyAdviceAdapter {
 
-  @Autowired
-  HttpServletRequest httpServletRequest;
+  private final HttpServletRequest httpServletRequest;
 
-  @Autowired
-  ObjectMapper objectMapper;
+  private final HttpLoggingService httpLoggingService;
 
-  @Autowired
-  HttpLoggingService httpLoggingService;
+  private final Tracer tracer;
 
-  @Autowired
-  private Tracer tracer;
-
-  @Override
   public Object afterBodyRead(Object body, HttpInputMessage inputMessage,
       org.springframework.core.MethodParameter parameter, Type targetType,
       Class<? extends HttpMessageConverter<?>> converterType) {
