@@ -82,9 +82,8 @@ public class PlanLocationsService {
       plan.getPlanLocations().clear();
       planRepository.save(plan);
     } else {
-      List<PlanLocations> planLocations = getPlanLocationsByPlanIdentifier(planIdentifier);
 
-      Set<UUID> currentLocation = plan.getPlanLocations().stream()
+      Set<UUID> currentLocation = planLocationsRepository.findByPlan_Identifier(planIdentifier).stream()
           .map(planLocations1 -> planLocations1.getLocation().getIdentifier()).collect(
               Collectors.toSet());
 
@@ -155,5 +154,9 @@ public class PlanLocationsService {
   public Long getPlanLocationsCount(UUID planIdentifier) {
     Plan plan = planService.getPlanByIdentifier(planIdentifier);
     return planLocationsRepository.countByPlan_Identifier(plan.getIdentifier());
+  }
+
+  public Set<PlanLocations> getPlanLocationsByPlanIdAndLocationIds(UUID planId, List<UUID> locationIds) {
+    return planLocationsRepository.getPlanLocationsByPlanIdAndLocationIdentifiers(planId, locationIds);
   }
 }

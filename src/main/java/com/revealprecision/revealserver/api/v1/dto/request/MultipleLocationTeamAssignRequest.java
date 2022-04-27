@@ -15,11 +15,13 @@ import lombok.Setter;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class MultipleLocationAssignRequest {
+public class MultipleLocationTeamAssignRequest {
 
   @NotEmpty
   private Set<UUID> locations;
 
   @NotNull
   private Set<UUID> teams;
+
+  private boolean assignChildren;
 }

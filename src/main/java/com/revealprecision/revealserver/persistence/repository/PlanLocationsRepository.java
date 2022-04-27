@@ -42,4 +42,7 @@ public interface PlanLocationsRepository extends EntityGraphJpaRepository<PlanLo
       @Param("locations") List<UUID> locations);
 
 
+  @Query(value = "select pl from PlanLocations pl where pl.plan.identifier = :planIdentifier and pl.location.identifier in :locationIdentifiers")
+  Set<PlanLocations> getPlanLocationsByPlanIdAndLocationIdentifiers(@Param("planIdentifier")UUID planIdentifier, @Param("locationIdentifiers")List<UUID> locationIdentifiers);
+
 }
