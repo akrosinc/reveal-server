@@ -244,7 +244,7 @@ public class LocationRelationshipService {
         locationIdentifier, hierarchyIdentifier);
   }
 
-  @Async("getAsyncExecutorTest")
+  @Async("getAsyncExecutor")
   public void createRelationshipForImportedLocation(Location location) throws IOException {
     List<LocationHierarchy> locationHierarchies = locationHierarchyRepository
         .findLocationHierarchiesByNodeOrderContaining(location.getGeographicLevel().getName());
