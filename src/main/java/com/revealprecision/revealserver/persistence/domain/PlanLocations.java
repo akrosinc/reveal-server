@@ -61,6 +61,11 @@ public class PlanLocations extends AbstractAuditableEntity {
     this.setModifiedDatetime(LocalDateTime.now());
   }
 
+
+  public PlanLocations(UUID identifier, UUID locationIdentifier) {
+    this.identifier = identifier;
+    this.location = Location.builder().identifier(locationIdentifier).build();
+  }
   @PreRemove
   private void removeFromPlan() {
     this.plan.getPlanLocations().clear();
