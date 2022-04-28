@@ -51,4 +51,18 @@ public class PlanAssignment extends AbstractAuditableEntity {
     this.setModifiedDatetime(LocalDateTime.now());
   }
 
+  public PlanAssignment(UUID identifier, UUID orgIdentifier, String orgName, UUID planLocationIdentifier, UUID locationIdentifier) {
+    Organization organization = Organization.builder()
+        .identifier(orgIdentifier)
+        .name(orgName)
+        .build();
+    PlanLocations planLocations = PlanLocations.builder()
+        .identifier(planLocationIdentifier)
+        .location(Location.builder().identifier(locationIdentifier).build())
+        .build();
+    this.planLocations = planLocations;
+    this.organization = organization;
+    this.identifier = identifier;
+  }
+
 }

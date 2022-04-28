@@ -139,7 +139,7 @@ public class PlanLocationsService {
       geoTreeResponse.setTeams(new ArrayList<>());
     }else {
       List<OrganizationResponse> teams = planAssignments.stream()
-          .map(el -> OrganizationResponseFactory.fromEntityWithoutChild(el.getOrganization()))
+          .map(el -> OrganizationResponseFactory.fromEntityIdAndName(el.getOrganization()))
           .collect(Collectors.toList());
       geoTreeResponse.setTeams(teams);
     }
