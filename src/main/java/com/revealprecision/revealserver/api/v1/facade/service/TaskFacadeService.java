@@ -54,12 +54,15 @@ public class TaskFacadeService {
   public List<TaskFacade> syncTasks(List<String> planIdentifiers,
       List<UUID> jurisdictionIdentifiers, Long serverVersion) {
 
-    return planIdentifiers.stream().map(
-        planIdentifier -> taskService.getTasksPerJurisdictionIdentifier(
-            UUID.fromString(planIdentifier), jurisdictionIdentifiers, serverVersion).entrySet()
-            .stream()
-            .map(this::getTaskFacades).flatMap(Collection::stream).collect(Collectors.toList()))
+    log.info("Before task sync");
+    List<TaskFacade> collect = planIdentifiers.stream().map(
+            planIdentifier -> taskService.getTasksPerJurisdictionIdentifier(
+                    UUID.fromString(planIdentifier), jurisdictionIdentifiers, serverVersion).entrySet()
+                .stream()
+                .map(this::getTaskFacades).flatMap(Collection::stream).collect(Collectors.toList()))
         .flatMap(Collection::stream).collect(Collectors.toList());
+    log.info("Done with task sync");
+    return collect;
   }
 
   private List<TaskFacade> getTaskFacades(Entry<UUID, List<Task>> groupTaskListEntry) {
@@ -74,6 +77,7 @@ public class TaskFacadeService {
     String createdBy = task.getAction().getGoal().getPlan()
         .getCreatedBy(); //TODO: confirm business rule for task creation user(owner)
     User user = getUser(createdBy);
+    log.info("Creating task facade with task identifier: {}",task.getIdentifier());
     return TaskFacadeFactory.getEntity(task, businessStatus, user, groupIdentifier);
   }
 
