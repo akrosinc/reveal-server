@@ -244,7 +244,7 @@ public class LocationRelationshipService {
         locationIdentifier, hierarchyIdentifier);
   }
 
-  @Async("getAsyncExecutorTest")
+  @Async("getAsyncExecutor")
   public void createRelationshipForImportedLocation(Location location) throws IOException {
     List<LocationHierarchy> locationHierarchies = locationHierarchyRepository
         .findLocationHierarchiesByNodeOrderContaining(location.getGeographicLevel().getName());
@@ -273,40 +273,6 @@ public class LocationRelationshipService {
           break;
         } else {
 
-          BoolQueryBuilder allParentsQuery = QueryBuilders.boolQuery();
-          allParentsQuery.filter(QueryBuilders.geoShapeQuery("geometry", new Point(x, y)).relation(
-              ShapeRelation.CONTAINS));
-          SearchSourceBuilder allParentsSourceBuilder = new SearchSourceBuilder();
-          allParentsSourceBuilder.query(allParentsQuery);
-          SearchRequest allParentsSearchRequest = new SearchRequest("location");
-          allParentsSearchRequest.source(allParentsSourceBuilder);
-          SearchResponse allParentsSearchResponse = client.search(allParentsSearchRequest,
-              RequestOptions.DEFAULT);
-
-          Map<String, Map<String, Object>> parents = Arrays.stream(
-                  allParentsSearchResponse.getHits().getHits())
-              .filter(SearchHit::hasSource).map(SearchHit::getSourceAsMap)
-              .map(sourceMap -> new SimpleEntry<String, Map<String, Object>>(
-                  String.valueOf(sourceMap.get("level")), sourceMap))
-              .collect(Collectors.toMap(Entry::getKey, Entry::getValue, (a, b) -> {
-                log.info("a: {} - b: {}", a, b);
-                return b;
-              }));
-          List<UUID> parentIds = new ArrayList<>();
-
-          try {
-            parentIds = locationHierarchy.getNodeOrder().stream()
-                .takeWhile(node -> !node.equals(location.getGeographicLevel().getName()))
-                .map(parents::get)
-                .map(node -> node.get("id"))
-                .map(node -> UUID.fromString((String) node))
-                .collect(Collectors.toList());
-            Collections.reverse(parentIds);
-          } catch (NullPointerException e) {
-            e.printStackTrace();
-            log.error("Error building ancestry - {}", e.getMessage());
-          }
-
           UUID parentLocation = UUID.fromString(searchResponse.getHits().getAt(0).getId());
           if (parentLocation != null) {
             Location parentLoc = Location.builder().identifier(parentLocation).build();
@@ -314,7 +280,6 @@ public class LocationRelationshipService {
                 .parentLocation(parentLoc)
                 .location(location)
                 .locationHierarchy(locationHierarchy)
-                .ancestry(parentIds)
                 .build();
             locationRelationshipToSave.setEntityStatus(EntityStatus.ACTIVE);
             locationRelationshipRepository.save(locationRelationshipToSave);
