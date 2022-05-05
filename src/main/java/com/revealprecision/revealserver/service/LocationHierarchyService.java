@@ -96,23 +96,29 @@ public class LocationHierarchyService {
     return geoTree;
   }
 
-  public List<GeoTreeResponse> getGeoTreeFromLocationHierarchyWithoutStructure(LocationHierarchy locationHierarchy) {
-    List<LocationRelationship> locationRelationship = locationRelationshipService.getLocationRelationshipsWithoutStructure(locationHierarchy);
+  public List<GeoTreeResponse> getGeoTreeFromLocationHierarchyWithoutStructure(
+      LocationHierarchy locationHierarchy) {
+    List<LocationRelationship> locationRelationship = locationRelationshipService.getLocationRelationshipsWithoutStructure(
+        locationHierarchy);
 
-    List<GeoTreeResponse> geoTreeResponses = locationRelationship.stream().map(lr-> GeoTreeResponse.builder()
-        .identifier(lr.getLocation().getIdentifier())
-        .children(new ArrayList<>())
-        .properties(LocationPropertyResponse.builder()
-            .parentIdentifier((lr.getParentLocation() == null) ? UUID.fromString("00000000-0000-0000-0000-000000000000") : lr.getParentLocation().getIdentifier())
-            .name(lr.getLocation().getName())
-            .geographicLevel(lr.getLocation().getGeographicLevel().getName())
-            .build())
-        .build()).collect(Collectors.toList());
+    List<GeoTreeResponse> geoTreeResponses = locationRelationship.stream()
+        .map(lr -> GeoTreeResponse.builder()
+            .identifier(lr.getLocation().getIdentifier())
+            .properties(LocationPropertyResponse.builder()
+                .parentIdentifier((lr.getParentLocation() == null) ? UUID.fromString(
+                    "00000000-0000-0000-0000-000000000000")
+                    : lr.getParentLocation().getIdentifier())
+                .name(lr.getLocation().getName())
+                .geographicLevel(lr.getLocation().getGeographicLevel().getName())
+                .build())
+            .build()).collect(Collectors.toList());
     Map<UUID, List<GeoTreeResponse>> geoTreeHierarchy = geoTreeResponses.stream()
         .collect(Collectors.groupingBy(lr -> lr.getProperties().getParentIdentifier(),
-            Collectors.mapping(lr-> lr, Collectors.toList())));
+            Collectors.mapping(lr -> lr, Collectors.toList())));
 
-    geoTreeResponses.forEach(gt -> gt.setChildren(geoTreeHierarchy.get(gt.getIdentifier())));
+    geoTreeResponses.forEach(gt -> gt.setChildren(
+        geoTreeHierarchy.get(gt.getIdentifier()) == null ? new ArrayList<>()
+            : geoTreeHierarchy.get(gt.getIdentifier())));
     return geoTreeHierarchy.get(UUID.fromString("00000000-0000-0000-0000-000000000000"));
   }
 
