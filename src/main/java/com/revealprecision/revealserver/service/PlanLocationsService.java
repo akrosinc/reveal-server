@@ -77,10 +77,8 @@ public class PlanLocationsService {
   public void selectPlanLocations(UUID planIdentifier, Set<UUID> locations) {
     Plan plan = planService.getPlanByIdentifier(planIdentifier);
     if (locations.size() == 0) {
-      plan.getPlanLocations().clear();
-      planRepository.save(plan);
+      planLocationsRepository.deleteByPlanIdentifier(planIdentifier);
     } else {
-
       Set<UUID> currentLocation = planLocationsRepository.findByPlan_Identifier(planIdentifier).stream()
           .map(planLocations1 -> planLocations1.getLocation().getIdentifier()).collect(
               Collectors.toSet());

@@ -45,4 +45,8 @@ public interface PlanLocationsRepository extends EntityGraphJpaRepository<PlanLo
   @Query(value = "select new com.revealprecision.revealserver.persistence.domain.PlanLocations(pl.identifier, pl.location.identifier, pl.plan.identifier) from PlanLocations pl where pl.plan.identifier = :planIdentifier and pl.location.identifier in :locationIdentifiers")
   Set<PlanLocations> getPlanLocationsByPlanIdAndLocationIdentifiers(@Param("planIdentifier")UUID planIdentifier, @Param("locationIdentifiers")List<UUID> locationIdentifiers);
 
+  @Transactional
+  @Modifying
+  @Query(value = "delete from PlanLocations pl where pl.plan.identifier = :planIdentifier")
+  void deleteByPlanIdentifier(UUID planIdentifier);
 }
