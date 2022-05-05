@@ -13,6 +13,7 @@ import com.revealprecision.revealserver.exceptions.constant.Error;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
 import com.revealprecision.revealserver.persistence.repository.LocationHierarchyRepository;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -100,6 +101,7 @@ public class LocationHierarchyService {
 
     List<GeoTreeResponse> geoTreeResponses = locationRelationship.stream().map(lr-> GeoTreeResponse.builder()
         .identifier(lr.getLocation().getIdentifier())
+        .children(new ArrayList<>())
         .properties(LocationPropertyResponse.builder()
             .parentIdentifier((lr.getParentLocation() == null) ? UUID.fromString("00000000-0000-0000-0000-000000000000") : lr.getParentLocation().getIdentifier())
             .name(lr.getLocation().getName())
