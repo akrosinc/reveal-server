@@ -219,7 +219,7 @@ public class TaskService {
     if (conditions == null || conditions.isEmpty()) {
       try {
         uuids = entityFilterService.filterEntities(null, plan.getIdentifier(),
-            plan.getLocationHierarchy().getIdentifier());
+            plan.getLocationHierarchy().getIdentifier(),action);
 
 
       } catch (QueryGenerationException e) {
@@ -233,7 +233,7 @@ public class TaskService {
 
         try {
           List<UUID> filteredUUIDs = entityFilterService.filterEntities(query, plan.getIdentifier(),
-              plan.getLocationHierarchy().getIdentifier());
+              plan.getLocationHierarchy().getIdentifier(),action);
 
           uuids.addAll(filteredUUIDs);
 
