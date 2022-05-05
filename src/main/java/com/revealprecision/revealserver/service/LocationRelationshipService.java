@@ -355,6 +355,7 @@ public class LocationRelationshipService {
     // 1. check if hierarchy has structures
     // 2. get the parent of structure from the hierarchy
     // 3. get children locations of the locations that has that parent node name
+    // 4. If structure is not in hierarchy then get children of the lowest location level in hierarchy
 
     Set<Location> structureLocations = new HashSet<>();
 
@@ -363,6 +364,15 @@ public class LocationRelationshipService {
           .filter(planLocation -> planLocation.getSecond().equals(
               locationHierarchy.getNodeOrder()
                   .get(locationHierarchy.getNodeOrder().indexOf(STRUCTURE) - 1))
+          ).flatMap(filteredPlanLocation -> getChildrenLocations(
+              locationHierarchy.getIdentifier(), filteredPlanLocation.getFirst())
+              .stream()).collect(Collectors.toSet());
+      structureLocations.addAll(structures);
+    } else {
+      Set<Location> structures = planLocations.stream()
+          .filter(planLocation -> planLocation.getSecond().equals(
+              locationHierarchy.getNodeOrder()
+                  .get(locationHierarchy.getNodeOrder().size() - 1))
           ).flatMap(filteredPlanLocation -> getChildrenLocations(
               locationHierarchy.getIdentifier(), filteredPlanLocation.getFirst())
               .stream()).collect(Collectors.toSet());
