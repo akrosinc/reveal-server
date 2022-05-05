@@ -17,7 +17,6 @@ public class GeoTree {
   private Tree<UUID, Location> locationsHierarchy;
 
   public void addLocation(LocationRelationship locationRelationship) {
-    if (!locationsHierarchy.hasNode(locationRelationship.getLocation().getIdentifier())) {
       if (locationRelationship.getParentLocation() == null) {
         locationsHierarchy.addNode(locationRelationship.getLocation().getIdentifier(),
             locationRelationship.getLocation().getName(), locationRelationship.getLocation(), null);
@@ -26,7 +25,6 @@ public class GeoTree {
             locationRelationship.getLocation().getName(), locationRelationship.getLocation(),
             locationRelationship.getParentLocation().getIdentifier());
       }
-    }
   }
 
   public void buildTreeFromList(List<LocationRelationship> locationRelationships) {

@@ -62,9 +62,11 @@ public class PlanLocations extends AbstractAuditableEntity {
   }
 
 
-  public PlanLocations(UUID identifier, UUID locationIdentifier) {
+  public PlanLocations(UUID identifier, UUID locationIdentifier, UUID planIdentifier) {
     this.identifier = identifier;
     this.location = Location.builder().identifier(locationIdentifier).build();
+    this.plan = Plan.builder().identifier(planIdentifier).build();
+    this.setEntityStatus(EntityStatus.ACTIVE);
   }
   @PreRemove
   private void removeFromPlan() {

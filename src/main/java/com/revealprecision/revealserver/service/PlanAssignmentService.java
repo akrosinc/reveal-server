@@ -72,8 +72,7 @@ public class PlanAssignmentService {
   @Transactional
   public void assignTeamsToLocationHierarchy(UUID planId,
       AssignTeamHierarchyRequest assignTeamHierarchyRequest) {
-    
-      planAssignmentRepository.deletePlanAssignmentsByPlanLocations_Plan_Identifier(planId);
+     // planAssignmentRepository.deletePlanAssignmentsByPlanLocations_Plan_Identifier(planId);
       Set<UUID> organizations = new HashSet<>();
       Set<UUID> locations = new HashSet<>();
       assignTeamHierarchyRequest.getHierarchy().stream().forEach(assignTeams -> {
@@ -99,7 +98,7 @@ public class PlanAssignmentService {
         orgsToAdd.forEach(organization -> planAssignmentsToSave.add(new PlanAssignment(organization, planLoc)));
       });
     System.out.println("PRE SAVE");
-      planAssignmentRepository.saveAll(planAssignmentsToSave);
+      planAssignmentRepository.saveAllAndFlush(planAssignmentsToSave);
     System.out.println("POSLE SAVE");
 //      assignTeamHierarchyRequest.getHierarchy().forEach(assignTeams -> {
 //        if (assignTeams.getTeams().isEmpty()) {

@@ -1,6 +1,5 @@
 package com.revealprecision.revealserver.service;
 
-import com.revealprecision.revealserver.api.v1.dto.factory.LocationHierarchyResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.OrganizationResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.response.GeoTreeResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.OrganizationResponse;
@@ -12,7 +11,6 @@ import com.revealprecision.revealserver.persistence.domain.PlanLocations;
 import com.revealprecision.revealserver.persistence.repository.PlanLocationsRepository;
 import com.revealprecision.revealserver.persistence.repository.PlanRepository;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -111,25 +109,18 @@ public class PlanLocationsService {
     Plan plan = planService.getPlanByIdentifier((identifier));
     LocationHierarchy locationHierarchy = locationHierarchyService.findByIdentifier(
         plan.getLocationHierarchy().getIdentifier());
-    List<GeoTreeResponse> geoTreeResponses = LocationHierarchyResponseFactory.generateGeoTreeResponseFromTree(
-        locationHierarchyService.getGeoTreeFromLocationHierarchyWithoutStructure(locationHierarchy)
-            .getLocationsHierarchy(), false);
-    System.out.println("geotree gotov " + new Date());
+
+    List<GeoTreeResponse> geoTreeResponses = locationHierarchyService.getGeoTreeFromLocationHierarchyWithoutStructure(locationHierarchy);
     Set<Location> locations = planLocationsRepository.findLocationsByPlan_Identifier(plan.getIdentifier());
-    System.out.println("set lokacija gotov" + new Date());
     Map<UUID, Location> locationMap = locations.stream()
         .collect(Collectors.toMap(Location::getIdentifier, location -> location));
-    System.out.println("mapa lokacija gotova " + new Date());
     List<PlanAssignment> planAssignments = planAssignmentService.getPlanAssignmentsByPlanIdentifier(
         identifier);
-    System.out.println("plan assignmenti gotovi " + new Date());
     Map<UUID, List<PlanAssignment>> planAssignmentMap = planAssignments.stream()
         .collect(Collectors.groupingBy(planAssignment -> planAssignment.getPlanLocations().getLocation().getIdentifier()));
-    System.out.println("pre rekurzije " + new Date());
     geoTreeResponses.forEach(el -> {
       assignLocations(locationMap, el, planAssignmentMap);
     });
-    System.out.println("posle rekurzije " + new Date());
     return geoTreeResponses;
   }
 
@@ -148,7 +139,9 @@ public class PlanLocationsService {
     } else {
       geoTreeResponse.setActive(false);
     }
-    geoTreeResponse.getChildren().forEach(el -> assignLocations(locationMap, el, planAssignmentMap));
+    if(geoTreeResponse.getChildren() != null) {
+      geoTreeResponse.getChildren().forEach(el -> assignLocations(locationMap, el, planAssignmentMap));
+    }
   }
 
   public Long getPlanLocationsCount(UUID planIdentifier) {
