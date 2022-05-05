@@ -111,7 +111,9 @@ public class LocationHierarchyResponseFactory {
         .build();
     var geoTreeResponse = GeoTreeResponse.builder().identifier(node.getId())
        .geometry(includeGeometry ? node.getNode().getGeometry() : null)
-        .properties(locationPropertyResponse).build();
+        .properties(locationPropertyResponse)
+        .children(new ArrayList<>())
+        .build();
     List<GeoTreeResponse> children = new ArrayList<>();
     if (node.getChildren() != null) {
       for (Map.Entry<UUID, TreeNode<UUID, Location>> childEntry : node.getChildren().entrySet()) {
