@@ -1,11 +1,8 @@
 package com.revealprecision.revealserver.api.v1.facade.service;
 
 import com.revealprecision.revealserver.api.v1.facade.factory.TaskFacadeFactory;
-import com.revealprecision.revealserver.api.v1.facade.models.Period;
 import com.revealprecision.revealserver.api.v1.facade.models.TaskDto;
 import com.revealprecision.revealserver.api.v1.facade.models.TaskFacade;
-import com.revealprecision.revealserver.api.v1.facade.models.TaskFacade.TaskPriority;
-import com.revealprecision.revealserver.api.v1.facade.models.TaskFacade.TaskStatus;
 import com.revealprecision.revealserver.api.v1.facade.models.TaskUpdateFacade;
 import com.revealprecision.revealserver.api.v1.facade.util.DateTimeFormatter;
 import com.revealprecision.revealserver.enums.EntityStatus;
@@ -90,43 +87,21 @@ public class TaskFacadeService {
             planIdentifier -> jurisdictionIdentifiers.stream().flatMap(
                 jurisdictionIdentifier -> taskParent.get(
                         planIdentifier + "_" + jurisdictionIdentifier).getTaskIds().stream()
-                    .filter(taskId -> Long.parseLong(taskId.getId().split("\\.")[1]) > serverVersion)
+                    .filter(taskId -> taskId.getServerVersion() > serverVersion)
                     .map(taskId -> taskId.getId() + "_" + planIdentifier + "_"
                         + jurisdictionIdentifier))
         ).collect(Collectors.toCollection(LinkedHashSet::new));
 
-    return strings.stream().map(taskPlanParentId -> {
+    List<TaskFacade> taskFacades = strings.stream().map(taskPlanParentId -> {
       TaskEvent task = taskPlanParent.get(taskPlanParentId);
-
-      return TaskFacade.builder()
-          .code(task.getAction().getTitle())
-          .authoredOn(
-              DateTimeFormatter.getDateTimeFacadeStringFromLocalDateTime(task.getAuthoredOn()))
-          .description(task.getAction().getDescription())
-            .executionPeriod(Period
-                .between(DateTimeFormatter.getDateTimeFacadeStringFromLocalDateTime(
-                        task.getExecutionPeriodStart().atStartOfDay())
-                    , DateTimeFormatter.getDateTimeFacadeStringFromLocalDateTime(
-                        task.getExecutionPeriodEnd().atStartOfDay())))
-          .focus(task.getAction().getIdentifier().toString())
-          .forEntity(task.getBaseEntityIdentifier().toString())
-          .identifier(task.getIdentifier().toString())
-          .planIdentifier(task.getAction().getGoal().getPlan().getIdentifier().toString())
-          .priority(TaskPriority.get(task.getPriority().name().toLowerCase()))
-          .lastModified(
-              DateTimeFormatter.getDateTimeFacadeStringFromLocalDateTime(task.getLastModified()))
-          .status(TaskStatus.get(task.getLookupTaskStatus().getCode().toLowerCase()))
-          .businessStatus(task.getBusinessStatus())
-            .owner(task.getOwner())
-            .requester(requester)
-          .groupIdentifier(taskPlanParentId.split("_")[2])
-          .structureId(task.getBaseEntityIdentifier().toString())
-          .serverVersion(task.getServerVersion() == null ? 0 : task.getServerVersion())
-          .build();
-
+      return TaskFacadeFactory.getTaskFacadeObj(requester, taskPlanParentId, task);
     }).collect(Collectors.toList());
 
+    return taskFacades;
+
   }
+
+
 
   private List<TaskFacade> getTaskFacades(Entry<UUID, List<Task>> groupTaskListEntry) {
     List<Task> tasks = groupTaskListEntry.getValue();
