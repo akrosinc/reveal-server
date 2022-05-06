@@ -23,6 +23,4 @@ public class HierarchyStructure extends Message{
 
   private String planIdentifier;
 
-  private LocationAncestor locationAncestor;
-
 }

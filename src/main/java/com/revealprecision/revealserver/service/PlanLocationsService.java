@@ -4,7 +4,7 @@ import com.revealprecision.revealserver.api.v1.dto.factory.LocationHierarchyResp
 import com.revealprecision.revealserver.api.v1.dto.factory.OrganizationResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.response.GeoTreeResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.OrganizationResponse;
-import com.revealprecision.revealserver.messaging.TopicConstants;
+import com.revealprecision.revealserver.messaging.KafkaConstants;
 import com.revealprecision.revealserver.messaging.message.PlanLocationAssignMessage;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
@@ -112,7 +112,7 @@ public class PlanLocationsService {
     if (locations.size() == 0) {
       plan.getPlanLocations().clear();
       planRepository.save(plan);
-      kafkaTemplate.send(kafkaProperties.getTopicMap().get(TopicConstants.PLAN_LOCATION_ASSIGNED), planLocationAssignMessage);
+      kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_LOCATION_ASSIGNED), planLocationAssignMessage);
     } else {
       List<PlanLocations> planLocations = getPlanLocationsByPlanIdentifier(planIdentifier);
 
@@ -138,7 +138,7 @@ public class PlanLocationsService {
             new ArrayList<>(currentLocation));
       }
 
-      kafkaTemplate.send(kafkaProperties.getTopicMap().get(TopicConstants.PLAN_LOCATION_ASSIGNED), planLocationAssignMessage);
+      kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_LOCATION_ASSIGNED), planLocationAssignMessage);
       log.info("sent plan location");
     }
   }

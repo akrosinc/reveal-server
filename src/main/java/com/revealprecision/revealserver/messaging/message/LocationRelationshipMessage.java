@@ -27,6 +27,4 @@ public class LocationRelationshipMessage extends Message {
 
   private List<UUID> ancestry;
 
-  private List<LocationAncestor> locationAncestors;
-
 }

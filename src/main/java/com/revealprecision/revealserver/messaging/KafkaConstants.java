@@ -1,6 +1,6 @@
 package com.revealprecision.revealserver.messaging;
 
-public class TopicConstants {
+public class KafkaConstants {
 
   public static final String version = "FORTYSEVEN";
 

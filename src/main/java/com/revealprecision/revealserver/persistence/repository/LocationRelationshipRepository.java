@@ -81,4 +81,8 @@ public interface LocationRelationshipRepository extends JpaRepository<LocationRe
   List<LocationProjection> getLocationsHigherGeographicLevelsByLocationAndGeographicNameAndHierarchy(
       @Param("locationIdentifier") String locationIdentifier, @Param("geographicLevelName") String geographicLevelName,
       @Param("locationHierarchyIdentifier")  UUID locationHierarchyIdentifier);
+
+
+  LocationRelationship getLocationRelationshipByLocation_IdentifierAndLocationHierarchy_Identifier(UUID locationIdentifier,UUID hierarchyIdentifier);
+
 }

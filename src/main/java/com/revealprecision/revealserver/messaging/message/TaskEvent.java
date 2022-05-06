@@ -55,7 +55,7 @@ public class TaskEvent  extends Message  {
 
   private LocalDate executionPeriodEnd;
 
-  private List<LocationAncestor> locationAncestors;
+  private List<UUID> ancestors;
 
-  private LocationAncestor flattenedLocationAncestor;
+  private UUID flattenedLocationAncestor;
 }

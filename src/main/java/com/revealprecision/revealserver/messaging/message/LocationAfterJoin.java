@@ -25,8 +25,6 @@ public class LocationAfterJoin extends Message {
 
   private boolean isAssigned;
 
-  private List<LocationAncestor> ancestry;
-
   private String planIdentifier;
 
 }

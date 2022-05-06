@@ -9,7 +9,7 @@ import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.enums.TaskPriorityEnum;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.messaging.TaskEventFactory;
-import com.revealprecision.revealserver.messaging.TopicConstants;
+import com.revealprecision.revealserver.messaging.KafkaConstants;
 import com.revealprecision.revealserver.messaging.message.Message;
 import com.revealprecision.revealserver.messaging.message.TaskAggregate;
 import com.revealprecision.revealserver.messaging.message.TaskEvent;
@@ -72,11 +72,11 @@ public class TaskFacadeService {
 
     KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
     ReadOnlyKeyValueStore<String, TaskEvent> taskPlanParent = kafkaStreams.store(
-        StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap().get(TopicConstants.taskPlanParent),
+        StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap().get(KafkaConstants.taskPlanParent),
             QueryableStoreTypes.keyValueStore())
     );
     ReadOnlyKeyValueStore<String, TaskAggregate> taskParent = kafkaStreams.store(
-        StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap().get(TopicConstants.taskParent),
+        StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap().get(KafkaConstants.taskParent),
             QueryableStoreTypes.keyValueStore())
     );
 
@@ -155,7 +155,7 @@ public class TaskFacadeService {
 
         TaskEvent taskEvent = TaskEventFactory.getTaskEventFromTask(savedTask);
         taskEvent.setOwnerId(UserUtils.getCurrentPrincipleName());
-        kafkaTemplate.send(kafkaProperties.getTopicMap().get(TopicConstants.TASK), taskEvent);
+        kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.TASK), taskEvent);
 
       } else {
         log.error("Unknown task state in task update: {}", updateFacade.getStatus());
@@ -266,7 +266,7 @@ public class TaskFacadeService {
       Task taskSaved = taskService.saveTask(task);
       TaskEvent taskEvent = TaskEventFactory.getTaskEventFromTask(taskSaved);
       taskEvent.setOwnerId(UserUtils.getCurrentPrincipleName());
-      kafkaTemplate.send(kafkaProperties.getTopicMap().get(TopicConstants.TASK), taskEvent);
+      kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.TASK), taskEvent);
 
     } else {
       log.error("Unknown task state in sync: {}", taskDto.getStatus().name());

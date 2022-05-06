@@ -12,7 +12,7 @@ import com.revealprecision.revealserver.exceptions.DuplicateTaskCreationExceptio
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.exceptions.QueryGenerationException;
 import com.revealprecision.revealserver.messaging.TaskEventFactory;
-import com.revealprecision.revealserver.messaging.TopicConstants;
+import com.revealprecision.revealserver.messaging.KafkaConstants;
 import com.revealprecision.revealserver.messaging.message.Message;
 import com.revealprecision.revealserver.messaging.message.TaskEvent;
 import com.revealprecision.revealserver.persistence.domain.Action;
@@ -219,7 +219,7 @@ public class TaskService {
         TaskEvent taskEvent = TaskEventFactory.getTaskEventFromTask(task);
         //TODO: we need to save the owner in the database, just so we can retrieve it here
         taskEvent.setOwnerId(ownerId);
-        kafkaTemplate.send(kafkaProperties.getTopicMap().get(TopicConstants.TASK), taskEvent);
+        kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.TASK), taskEvent);
       }
     } else {
       log.info("Cannot cancel tasks as plan is not active");
@@ -291,7 +291,7 @@ public class TaskService {
     for (Task task : savedTasks) {
       TaskEvent taskEvent = TaskEventFactory.getTaskEventFromTask(task);
       taskEvent.setOwnerId(ownerId);
-      kafkaTemplate.send(kafkaProperties.getTopicMap().get(TopicConstants.TASK),taskEvent);
+      kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.TASK),taskEvent);
     }
   }
 

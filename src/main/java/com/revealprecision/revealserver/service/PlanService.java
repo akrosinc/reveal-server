@@ -6,7 +6,7 @@ import com.revealprecision.revealserver.api.v1.dto.request.PlanRequest;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.enums.PlanStatusEnum;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
-import com.revealprecision.revealserver.messaging.TopicConstants;
+import com.revealprecision.revealserver.messaging.KafkaConstants;
 import com.revealprecision.revealserver.messaging.message.Message;
 import com.revealprecision.revealserver.messaging.message.PlanUpdateMessage;
 import com.revealprecision.revealserver.messaging.message.PlanUpdateType;
@@ -110,7 +110,7 @@ public class PlanService {
     planUpdateMessage.setPlanUpdateType(PlanUpdateType.ACTIVATE);
     planUpdateMessage.setOwnerId(UserUtils.getCurrentPrincipleName());
 
-    kafkaTemplate.send(kafkaProperties.getTopicMap().get(TopicConstants.PLAN_UPDATE),planUpdateMessage);
+    kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_UPDATE),planUpdateMessage);
   }
 
   public void updatePlan(PlanRequest request, UUID identifier) {

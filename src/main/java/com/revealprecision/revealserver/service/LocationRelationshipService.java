@@ -5,7 +5,7 @@ import static com.revealprecision.revealserver.constants.LocationConstants.STRUC
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.revealprecision.revealserver.enums.EntityStatus;
-import com.revealprecision.revealserver.messaging.TopicConstants;
+import com.revealprecision.revealserver.messaging.KafkaConstants;
 import com.revealprecision.revealserver.messaging.message.LocationRelationshipMessage;
 import com.revealprecision.revealserver.persistence.domain.GeographicLevel;
 import com.revealprecision.revealserver.persistence.domain.Location;
@@ -247,6 +247,10 @@ public class LocationRelationshipService {
         parentLocationIdentifiers, planIdentifier);
   }
 
+  public LocationRelationship getLocationRelationshipsForLocation(
+      UUID locationHierarchyIdentifier, UUID locationIdentifier) {
+    return locationRelationshipRepository.getLocationRelationshipByLocation_IdentifierAndLocationHierarchy_Identifier(locationIdentifier, locationHierarchyIdentifier);
+  }
 
   public Location findParentLocationByLocationIdAndHierarchyId(UUID locationIdentifier,
       UUID hierarchyIdentifier) {
@@ -333,7 +337,7 @@ public class LocationRelationshipService {
             locationRelationshipMessage.setParentLocationIdentifier(locationRelationshipToSave.getParentLocation().getIdentifier());
             locationRelationshipMessage.setAncestry(locationRelationshipToSave.getAncestry());
             locationRelationshipMessage.setLocationName(location.getName());
-            kafkaTemplate.send(kafkaProperties.getTopicMap().get(TopicConstants.LOCATIONS_IMPORTED),locationRelationshipMessage);
+            kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.LOCATIONS_IMPORTED),locationRelationshipMessage);
           }
         }
       } else if (nodePosition == -1) {
