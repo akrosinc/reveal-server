@@ -16,4 +16,6 @@ public class AssignTeamsRequest {
 
   @NotNull
   private Set<UUID> teams;
+
+  private boolean assignChildren;
 }

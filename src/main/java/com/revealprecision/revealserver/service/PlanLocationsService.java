@@ -1,6 +1,5 @@
 package com.revealprecision.revealserver.service;
 
-import com.revealprecision.revealserver.api.v1.dto.factory.LocationHierarchyResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.OrganizationResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.response.GeoTreeResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.OrganizationResponse;
@@ -82,7 +81,13 @@ public class PlanLocationsService {
   public void assignLocation(UUID planIdentifier, UUID locationIdentifier) {
     Plan plan = planService.getPlanByIdentifier(planIdentifier);
     Location location = locationService.findByIdentifier(locationIdentifier);
-    planLocationsRepository.save(new PlanLocations(plan, location));
+
+    List<UUID> locationsToAdd = locationService.getAllLocationChildren(locationIdentifier, plan.getLocationHierarchy().getIdentifier());
+    locationsToAdd.add(locationIdentifier);
+    List<PlanLocations> addPlanLocations = locationsToAdd.stream()
+        .map(loc -> new PlanLocations(plan, loc))
+        .collect(Collectors.toList());
+    planLocationsRepository.saveAll(addPlanLocations);
   }
 
   public void selectPlanLocations(UUID planIdentifier, Set<UUID> locations) {
@@ -92,23 +97,17 @@ public class PlanLocationsService {
     planLocationAssignMessage.setPlanIdentifier(planIdentifier);
 
     if (locations.size() == 0) {
-      plan.getPlanLocations().clear();
-      planRepository.save(plan);
+      planLocationsRepository.deleteByPlanIdentifier(planIdentifier);
       kafkaTemplate.send(TopicConstants.PLAN_LOCATION, planLocationAssignMessage);
     } else {
-      List<PlanLocations> planLocations = getPlanLocationsByPlanIdentifier(planIdentifier);
-
-      Set<UUID> currentLocation = plan.getPlanLocations().stream()
+      Set<UUID> currentLocation = planLocationsRepository.findByPlan_Identifier(planIdentifier).stream()
           .map(planLocations1 -> planLocations1.getLocation().getIdentifier()).collect(
               Collectors.toSet());
-
       Set<UUID> locationsToAdd = new HashSet<>(locations);
       locationsToAdd.removeAll(currentLocation);
       currentLocation.removeAll(locations);
 
-      List<Location> addLocations = locationService.getAllByIdentifiers(
-          new ArrayList<>(locationsToAdd));
-      List<PlanLocations> addPlanLocations = addLocations.stream()
+      List<PlanLocations> addPlanLocations = locations.stream()
           .map(location -> new PlanLocations(plan, location))
           .collect(Collectors.toList());
 
@@ -129,12 +128,9 @@ public class PlanLocationsService {
     Plan plan = planService.getPlanByIdentifier((identifier));
     LocationHierarchy locationHierarchy = locationHierarchyService.findByIdentifier(
         plan.getLocationHierarchy().getIdentifier());
-    List<GeoTreeResponse> geoTreeResponses = LocationHierarchyResponseFactory.generateGeoTreeResponseFromTree(
-        locationHierarchyService.getGeoTreeFromLocationHierarchyWithoutStructure(locationHierarchy)
-            .getLocationsHierarchy(), false);
-    Set<Location> locations = plan.getPlanLocations().stream().map(PlanLocations::getLocation)
-        .collect(
-            Collectors.toSet());
+
+    List<GeoTreeResponse> geoTreeResponses = locationHierarchyService.getGeoTreeFromLocationHierarchyWithoutStructure(locationHierarchy);
+    Set<Location> locations = planLocationsRepository.findLocationsByPlan_Identifier(plan.getIdentifier());
     Map<UUID, Location> locationMap = locations.stream()
         .collect(Collectors.toMap(Location::getIdentifier, location -> location));
     List<PlanAssignment> planAssignments = planAssignmentService.getPlanAssignmentsByPlanIdentifier(
@@ -155,13 +151,18 @@ public class PlanLocationsService {
       geoTreeResponse.setTeams(new ArrayList<>());
     } else {
       List<OrganizationResponse> teams = planAssignments.stream()
-          .map(el -> OrganizationResponseFactory.fromEntityWithoutChild(el.getOrganization()))
+          .map(el -> OrganizationResponseFactory.fromEntityIdAndName(el.getOrganization()))
           .collect(Collectors.toList());
       geoTreeResponse.setTeams(teams);
     }
-    geoTreeResponse.setActive(locationMap.containsKey(geoTreeResponse.getIdentifier()));
-    geoTreeResponse.getChildren()
-        .forEach(el -> assignLocations(locationMap, el, planAssignmentMap));
+    if (locationMap.containsKey(geoTreeResponse.getIdentifier())) {
+      geoTreeResponse.setActive(true);
+    } else {
+      geoTreeResponse.setActive(false);
+    }
+    if(geoTreeResponse.getChildren() != null) {
+      geoTreeResponse.getChildren().forEach(el -> assignLocations(locationMap, el, planAssignmentMap));
+    }
   }
 
   public Long getPlanLocationsCount(UUID planIdentifier) {
@@ -169,4 +170,7 @@ public class PlanLocationsService {
     return planLocationsRepository.countByPlan_Identifier(plan.getIdentifier());
   }
 
+  public Set<PlanLocations> getPlanLocationsByPlanIdAndLocationIds(UUID planId, List<UUID> locationIds) {
+    return planLocationsRepository.getPlanLocationsByPlanIdAndLocationIdentifiers(planId, locationIds);
+  }
 }

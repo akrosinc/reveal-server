@@ -109,4 +109,11 @@ public class OrganizationResponseFactory {
         .headOf(new HashSet<>())
         .build();
   }
+
+  public static OrganizationResponse fromEntityIdAndName(Organization organization) {
+    return OrganizationResponse.builder()
+        .identifier(organization.getIdentifier())
+        .name(organization.getName())
+        .build();
+  }
 }

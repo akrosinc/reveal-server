@@ -64,6 +64,18 @@ public class Location extends AbstractAuditableEntity {
   @ManyToMany(mappedBy = "locations")
   private Set<Person> people;
 
+  public Location(UUID identifier, String type, String name, String status, UUID externalId,
+      GeographicLevel geographicLevel,
+      LocationBulk locationBulk) {
+    this.identifier = identifier;
+    this.type = type;
+    this.name = name;
+    this.status = status;
+    this.externalId = externalId;
+    this.geographicLevel = geographicLevel;
+    this.locationBulk = locationBulk;
+  }
+
   public Location update(LocationRequest locationRequest, GeographicLevel geographicLevel) {
     this.type = locationRequest.getType();
     this.name = locationRequest.getProperties().getName();

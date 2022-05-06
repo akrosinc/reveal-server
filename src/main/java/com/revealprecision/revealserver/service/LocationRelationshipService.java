@@ -9,6 +9,7 @@ import com.revealprecision.revealserver.persistence.domain.GeographicLevel;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
+import com.revealprecision.revealserver.persistence.projection.LocationRelationshipProjection;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import com.revealprecision.revealserver.persistence.repository.GeographicLevelRepository;
 import com.revealprecision.revealserver.persistence.repository.LocationHierarchyRepository;
@@ -19,6 +20,7 @@ import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -212,16 +214,19 @@ public class LocationRelationshipService {
     return ancestry;
   }
 
-  public Optional<List<LocationRelationship>> getLocationRelationshipsForLocationHierarchy(
+  public List<LocationRelationship> getLocationRelationshipsForLocationHierarchy(
       LocationHierarchy locationHierarchy) {
-    return locationRelationshipRepository
-        .findByLocationHierarchyIdentifier(locationHierarchy.getIdentifier());
+    return locationRelationshipRepository.findByLocationHierarchyIdentifier(locationHierarchy.getIdentifier()).stream().map((LocationRelationship::new)).collect(
+        Collectors.toList());
   }
 
-  public Optional<List<LocationRelationship>> getLocationRelationshipsWithoutStructure(
+  public List<LocationRelationship> getLocationRelationshipsWithoutStructure(
       LocationHierarchy locationHierarchy) {
-    return locationRelationshipRepository.findByLocationHierarchyWithoutStructures(
+    List<LocationRelationshipProjection> locationRelationships = locationRelationshipRepository.findByLocationHierarchyWithoutStructures(
         locationHierarchy.getIdentifier());
+    return locationRelationships.stream()
+        .map(LocationRelationship::new)
+        .collect(Collectors.toList());
   }
 
   public List<Location> getLocationChildrenByLocationParentIdentifierAndHierarchyIdentifier(

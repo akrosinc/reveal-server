@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.persistence.domain;
 
+import com.revealprecision.revealserver.persistence.projection.LocationRelationshipProjection;
 import java.util.List;
 import java.util.UUID;
 import javax.persistence.Entity;
@@ -13,7 +14,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.experimental.FieldNameConstants;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.Where;
@@ -23,10 +23,9 @@ import org.hibernate.envers.Audited;
 @Audited
 @Getter
 @Setter
+@Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Builder
-@FieldNameConstants
 @SQLDelete(sql = "UPDATE location_relationship SET entity_status = 'DELETED' where identifier=?")
 @Where(clause = "entity_status='ACTIVE'")
 public class LocationRelationship extends AbstractAuditableEntity {
@@ -49,4 +48,21 @@ public class LocationRelationship extends AbstractAuditableEntity {
 
   @Type(type = "list-array")
   private List<UUID> ancestry;
+
+  public LocationRelationship(LocationRelationshipProjection projection) {
+    this.identifier = UUID.fromString(projection.getIdentifier());
+    Location location = Location.builder().
+        identifier(UUID.fromString(projection.getLocationIdentifier()))
+        .name(projection.getLocationName())
+        .geographicLevel(GeographicLevel.builder().name(projection.getGeographicLevelName()).build())
+        .build();
+    this.location = location;
+    if(projection.getParentIdentifier() != null) {
+      Location parentLocation = Location.builder()
+          .identifier(UUID.fromString(projection.getParentIdentifier()))
+          .geographicLevel(GeographicLevel.builder().name(projection.getGeographicLevelName()).build())
+          .build();
+      this.parentLocation = parentLocation;
+    }
+  }
 }
