@@ -15,4 +15,9 @@ public class ActionUtils {
     return action.getLookupEntityType() != null && LookupEntityTypeCodeEnum.LOCATION_CODE
         .getLookupEntityType().equals(action.getLookupEntityType().getCode());
   }
+
+  public static Boolean isActionForGroup(Action action) {
+    return action.getLookupEntityType() != null && LookupEntityTypeCodeEnum.GROUP_CODE
+        .getLookupEntityType().equals(action.getLookupEntityType().getCode());
+  }
 }

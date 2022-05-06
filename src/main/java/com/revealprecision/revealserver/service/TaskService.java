@@ -11,6 +11,10 @@ import com.revealprecision.revealserver.enums.TaskPriorityEnum;
 import com.revealprecision.revealserver.exceptions.DuplicateTaskCreationException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.exceptions.QueryGenerationException;
+import com.revealprecision.revealserver.messaging.TaskEventFactory;
+import com.revealprecision.revealserver.messaging.TopicConstants;
+import com.revealprecision.revealserver.messaging.message.Message;
+import com.revealprecision.revealserver.messaging.message.TaskEvent;
 import com.revealprecision.revealserver.persistence.domain.Action;
 import com.revealprecision.revealserver.persistence.domain.Condition;
 import com.revealprecision.revealserver.persistence.domain.Goal;
@@ -29,6 +33,7 @@ import com.revealprecision.revealserver.persistence.repository.LookupTaskStatusR
 import com.revealprecision.revealserver.persistence.repository.TaskRepository;
 import com.revealprecision.revealserver.persistence.specification.TaskSpec;
 import com.revealprecision.revealserver.props.BusinessStatusProperties;
+import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.service.models.TaskSearchCriteria;
 import com.revealprecision.revealserver.util.ActionUtils;
 import com.revealprecision.revealserver.util.ConditionQueryUtil;
@@ -47,6 +52,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 
@@ -71,6 +77,8 @@ public class TaskService {
   private final LocationRelationshipService locationRelationshipService;
   private final BusinessStatusProperties businessStatusProperties;
   private final BusinessStatusService businessStatusService;
+  private final KafkaTemplate<String,Message> kafkaTemplate;
+  private final KafkaProperties kafkaProperties;
 
   @Autowired
   @Lazy
@@ -81,7 +89,9 @@ public class TaskService {
       ConditionService conditionService, PlanLocationsService planLocationsService,
       LocationRelationshipService locationRelationshipService,
       BusinessStatusProperties businessStatusProperties,
-      BusinessStatusService businessStatusService) {
+      BusinessStatusService businessStatusService,
+      KafkaTemplate<String,Message> kafkaTemplate,
+      KafkaProperties kafkaProperties) {
     this.taskRepository = taskRepository;
     this.planService = planService;
     this.actionService = actionService;
@@ -95,6 +105,8 @@ public class TaskService {
     this.locationRelationshipService = locationRelationshipService;
     this.businessStatusProperties = businessStatusProperties;
     this.businessStatusService = businessStatusService;
+    this.kafkaTemplate = kafkaTemplate;
+    this.kafkaProperties = kafkaProperties;
   }
 
   public Page<Task> searchTasks(TaskSearchCriteria taskSearchCriteria, Pageable pageable) {
@@ -174,7 +186,7 @@ public class TaskService {
     return lookupTaskStatusRepository.findAll();
   }
 
-  public void generateTasksByPlanId(UUID planIdentifier) {
+  public void generateTasksByPlanId(UUID planIdentifier,String ownerId) {
 
     log.info("TASK_GENERATION Start generate tasks for Plan Id: {}", planIdentifier);
     Plan plan = planService.getPlanByIdentifier(planIdentifier);
@@ -182,12 +194,12 @@ public class TaskService {
       List<Goal> goals = goalService.getGoalsByPlanIdentifier(planIdentifier);
 
       goals.stream().map(goal -> actionService.getActionsByGoalIdentifier(goal.getIdentifier()))
-          .flatMap(Collection::stream).forEach((action) -> generateTasksByAction(action, plan));
+          .flatMap(Collection::stream).forEach((action) -> generateTasksByAction(action, plan, ownerId));
     }
     log.info("TASK_GENERATION Completed generating tasks for Plan Id: {}", planIdentifier);
   }
 
-  public void cancelApplicableTasksByPlanId(UUID planIdentifier) {
+  public void cancelApplicableTasksByPlanId(UUID planIdentifier, String ownerId) {
 
     log.info("TASK_CANCELLATION Start cancellation for tasks for Plan Id: {}", planIdentifier);
     LookupTaskStatus lookupTaskStatus = lookupTaskStatusRepository.findByCode(TASK_STATUS_CANCELLED)
@@ -201,7 +213,14 @@ public class TaskService {
           .filter(Objects::nonNull)
           .filter(task -> task.getLookupTaskStatus().getCode().equals(lookupTaskStatus.getCode()))
           .collect(Collectors.toList());
-      taskRepository.saveAll(tasksToCancel);
+      List<Task> savedCancelledTask = taskRepository.saveAll(tasksToCancel);
+
+      for (Task task : savedCancelledTask) {
+        TaskEvent taskEvent = TaskEventFactory.getTaskEventFromTask(task);
+        //TODO: we need to save the owner in the database, just so we can retrieve it here
+        taskEvent.setOwnerId(ownerId);
+        kafkaTemplate.send(kafkaProperties.getTopicMap().get(TopicConstants.TASK), taskEvent);
+      }
     } else {
       log.info("Cannot cancel tasks as plan is not active");
     }
@@ -209,7 +228,7 @@ public class TaskService {
   }
 
 
-  public void generateTasksByAction(Action action, Plan plan) {
+  public void generateTasksByAction(Action action, Plan plan,String ownerId) {
 
     List<Condition> conditions = conditionService.getConditionsByActionIdentifier(
         action.getIdentifier());
@@ -267,7 +286,13 @@ public class TaskService {
     }
 
     log.info("no of tasks to be generate for action: {} is: {}", action.getTitle(), tasks.size());
-    taskRepository.saveAll(tasks);
+    List<Task> savedTasks = taskRepository.saveAll(tasks);
+
+    for (Task task : savedTasks) {
+      TaskEvent taskEvent = TaskEventFactory.getTaskEventFromTask(task);
+      taskEvent.setOwnerId(ownerId);
+      kafkaTemplate.send(kafkaProperties.getTopicMap().get(TopicConstants.TASK),taskEvent);
+    }
   }
 
 
@@ -320,6 +345,7 @@ public class TaskService {
         .description(action.getDescription()).lastModified(LocalDateTime.now())
         .authoredOn(LocalDateTime.now()).baseEntityIdentifier(entityUUID).action(action)
         .executionPeriodStart(action.getTimingPeriodStart())
+        .serverVersion(0L)
         //TODO how to get this before save unless we do it on save of the task with kafka
         .identifier(UUID.randomUUID()).executionPeriodEnd(action.getTimingPeriodEnd()).plan(plan)
         .build();

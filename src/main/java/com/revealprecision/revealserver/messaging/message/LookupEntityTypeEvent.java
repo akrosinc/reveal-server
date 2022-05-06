@@ -7,19 +7,18 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
-
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString
-public class PlanUpdateMessage extends Message {
+public class LookupEntityTypeEvent extends Message {
 
-  private UUID planIdentifier;
+  private UUID identifier;
 
-  private PlanUpdateType planUpdateType;
+  private String code;
 
-  private String ownerId;
+  private String tableName;
 
 }
