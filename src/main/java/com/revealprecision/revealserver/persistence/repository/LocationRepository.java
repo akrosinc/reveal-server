@@ -46,4 +46,19 @@ public interface LocationRepository extends JpaRepository<Location, UUID> {
       + "where l.identifier = :locationIdentifier group by l.identifier")
   PlanLocationDetails getLocationDetailsByIdentifierAndPlanIdentifier(@Param("locationIdentifier")UUID locationIdentifier,
       @Param("planIdentifier") UUID planIdentifier);
+  
+  @Query(value = "WITH RECURSIVE ancestors(id, parent_id, lvl) AS ( "
+      + "      SELECT lr.location_identifier, lr.parent_identifier,1 AS lvl "
+      + "      FROM location_relationship lr "
+      + "      WHERE lr.parent_identifier = :locationIdentifier and lr.location_hierarchy_identifier = :hierarchyIdentifier"
+      + "      UNION ALL "
+      + "      SELECT parent.location_identifier, parent.parent_identifier, child.lvl + 1 AS lvl "
+      + "      FROM location_relationship parent "
+      + "        JOIN ancestors child ON parent.parent_identifier = child.id "
+      + "        join location loc on parent.location_identifier = loc.identifier "
+      + "        join geographic_level gl on gl.identifier = loc.geographic_level_identifier "
+      + "    where gl.name <> 'structure' and parent.location_hierarchy_identifier = :hierarchyIdentifier"
+      + "     ) "
+      + "      select cast(a.id as varchar) from ancestors a", nativeQuery = true)
+  List<UUID> getAllLocationChildren(UUID locationIdentifier, UUID hierarchyIdentifier);
 }

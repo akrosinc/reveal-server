@@ -71,7 +71,13 @@ public class PlanLocationsService {
   public void assignLocation(UUID planIdentifier, UUID locationIdentifier) {
     Plan plan = planService.getPlanByIdentifier(planIdentifier);
     Location location = locationService.findByIdentifier(locationIdentifier);
-    planLocationsRepository.save(new PlanLocations(plan, location));
+
+    List<UUID> locationsToAdd = locationService.getAllLocationChildren(locationIdentifier, plan.getLocationHierarchy().getIdentifier());
+    locationsToAdd.add(locationIdentifier);
+    List<PlanLocations> addPlanLocations = locationsToAdd.stream()
+        .map(loc -> new PlanLocations(plan, loc))
+        .collect(Collectors.toList());
+    planLocationsRepository.saveAll(addPlanLocations);
   }
 
   public void selectPlanLocations(UUID planIdentifier, Set<UUID> locations) {
@@ -82,14 +88,11 @@ public class PlanLocationsService {
       Set<UUID> currentLocation = planLocationsRepository.findByPlan_Identifier(planIdentifier).stream()
           .map(planLocations1 -> planLocations1.getLocation().getIdentifier()).collect(
               Collectors.toSet());
-
       Set<UUID> locationsToAdd = new HashSet<>(locations);
       locationsToAdd.removeAll(currentLocation);
       currentLocation.removeAll(locations);
 
-      List<Location> addLocations = locationService.getAllByIdentifiers(
-          new ArrayList<>(locationsToAdd));
-      List<PlanLocations> addPlanLocations = addLocations.stream()
+      List<PlanLocations> addPlanLocations = locations.stream()
           .map(location -> new PlanLocations(plan, location))
           .collect(Collectors.toList());
 

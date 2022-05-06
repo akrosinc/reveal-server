@@ -13,7 +13,6 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
-import javax.persistence.PreRemove;
 import javax.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -61,6 +60,14 @@ public class PlanLocations extends AbstractAuditableEntity {
     this.setModifiedDatetime(LocalDateTime.now());
   }
 
+  public PlanLocations(Plan plan, UUID locationIdentifier) {
+    this.plan = plan;
+    this.location = Location.builder()
+        .identifier(locationIdentifier)
+        .build();
+    this.setEntityStatus(EntityStatus.ACTIVE);
+  }
+
 
   public PlanLocations(UUID identifier, UUID locationIdentifier, UUID planIdentifier) {
     this.identifier = identifier;
@@ -68,9 +75,6 @@ public class PlanLocations extends AbstractAuditableEntity {
     this.plan = Plan.builder().identifier(planIdentifier).build();
     this.setEntityStatus(EntityStatus.ACTIVE);
   }
-  @PreRemove
-  private void removeFromPlan() {
-    this.plan.getPlanLocations().clear();
-  }
+
 
 }

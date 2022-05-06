@@ -124,9 +124,10 @@ public class PlanController {
     return ResponseEntity.status(HttpStatus.CREATED).build();
   }
 
-  @PostMapping("/{identifier}/multipleTeamAssign")
+  @PostMapping("/{identifier}/multipleTeamAssign")//TODO DODATI BOOLEAN
   public ResponseEntity<Void> multipleTeamAssign(@PathVariable UUID identifier,@Valid @RequestBody
       MultipleLocationTeamAssignRequest request) {
+
     planAssignmentService.assignMultipleTeams(identifier, request);
     return ResponseEntity.status(HttpStatus.OK).build();
   }
@@ -136,8 +137,13 @@ public class PlanController {
       @PathVariable("identifier") UUID planIdentifier,
       @PathVariable("locationIdentifier") UUID locationIdentifier,
       @Valid @RequestBody AssignTeamsRequest assignTeamsRequest) {
-    planAssignmentService.assignOrganizationsToLocation(assignTeamsRequest.getTeams(),
-        locationIdentifier, planIdentifier);
+    if(assignTeamsRequest.isAssignChildren()) {
+      planAssignmentService.assignOrganizationsWithChildrenToLocation(assignTeamsRequest.getTeams(),
+          locationIdentifier, planIdentifier);
+    }else {
+      planAssignmentService.assignOrganizationsToLocation(assignTeamsRequest.getTeams(),
+          locationIdentifier, planIdentifier);
+    }
     return ResponseEntity.status(HttpStatus.CREATED).build();
   }
 

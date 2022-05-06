@@ -2,6 +2,7 @@ package com.revealprecision.revealserver.persistence.repository;
 
 import com.cosium.spring.data.jpa.entity.graph.repository.EntityGraphJpaRepository;
 import com.revealprecision.revealserver.persistence.domain.PlanAssignment;
+import com.revealprecision.revealserver.persistence.projection.PlanLocationProjection;
 import java.util.List;
 import java.util.UUID;
 import javax.transaction.Transactional;
@@ -35,4 +36,15 @@ public interface PlanAssignmentRepository extends EntityGraphJpaRepository<PlanA
 
   @Query(value = "select pa from PlanAssignment pa where pa.organization.identifier in :identifiers")
   List<PlanAssignment> findPlansByOrganization(@Param("identifiers") List<UUID> identifiers);
+
+  @Query(value = "select pl.identifier as identifier,pl.location.identifier as locationIdentifier from PlanLocations pl where pl.plan.identifier = :planIdentifier")
+  List<PlanLocationProjection> getPlanLocationsIdentifiers(UUID planIdentifier);
+
+  @Modifying
+  @Query(value = "delete from plan_assignment pa "
+      + "using plan_locations pl "
+      + "where pa.plan_locations_identifier = pl.identifier "
+      + "and pl.location_identifier in :locationIdentifier "
+      + "and pl.plan_identifier = :planIdentifier", nativeQuery = true)
+  void deleteAllByPlanIdentifierAndLocationIdentifiers(List<UUID> locationIdentifier, UUID planIdentifier);
 }

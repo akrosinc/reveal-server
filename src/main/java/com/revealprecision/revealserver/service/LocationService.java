@@ -132,4 +132,8 @@ public class LocationService {
   public Location getLocationParent(Location location, LocationHierarchy locationHierarchy){
     return locationRelationshipService.getLocationParent(location,locationHierarchy);
   }
+
+  public List<UUID> getAllLocationChildren(UUID locationIdentifier, UUID hierarchyIdentifier) {
+    return locationRepository.getAllLocationChildren(locationIdentifier, hierarchyIdentifier);
+  }
 }
