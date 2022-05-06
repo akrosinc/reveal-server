@@ -214,10 +214,10 @@ public class LocationRelationshipService {
     return ancestry;
   }
 
-  public Optional<List<LocationRelationship>> getLocationRelationshipsForLocationHierarchy(
+  public List<LocationRelationship> getLocationRelationshipsForLocationHierarchy(
       LocationHierarchy locationHierarchy) {
-    return locationRelationshipRepository
-        .findByLocationHierarchyIdentifier(locationHierarchy.getIdentifier());
+    return locationRelationshipRepository.findByLocationHierarchyIdentifier(locationHierarchy.getIdentifier()).stream().map((LocationRelationship::new)).collect(
+        Collectors.toList());
   }
 
   public List<LocationRelationship> getLocationRelationshipsWithoutStructure(

@@ -87,13 +87,28 @@ public class LocationHierarchyService {
             LocationHierarchy.class));
   }
 
-  public GeoTree getGeoTreeFromLocationHierarchy(LocationHierarchy locationHierarchy) {
-    Optional<List<LocationRelationship>> locationRelationshipOptional = getLocationRelationshipsForLocationHierarchy(
+  public List<GeoTreeResponse> getGeoTreeFromLocationHierarchy(LocationHierarchy locationHierarchy) {
+    List<LocationRelationship> locationRelationship = getLocationRelationshipsForLocationHierarchy(
         locationHierarchy);
-    GeoTree geoTree = new GeoTree();
-    geoTree.buildTreeFromList(
-        locationRelationshipOptional.orElse(Collections.emptyList()));
-    return geoTree;
+    List<GeoTreeResponse> geoTreeResponses = locationRelationship.stream()
+        .map(lr -> GeoTreeResponse.builder()
+            .identifier(lr.getLocation().getIdentifier())
+            .properties(LocationPropertyResponse.builder()
+                .parentIdentifier((lr.getParentLocation() == null) ? UUID.fromString(
+                    "00000000-0000-0000-0000-000000000000")
+                    : lr.getParentLocation().getIdentifier())
+                .name(lr.getLocation().getName())
+                .geographicLevel(lr.getLocation().getGeographicLevel().getName())
+                .build())
+            .build()).collect(Collectors.toList());
+    Map<UUID, List<GeoTreeResponse>> geoTreeHierarchy = geoTreeResponses.stream()
+        .collect(Collectors.groupingBy(lr -> lr.getProperties().getParentIdentifier(),
+            Collectors.mapping(lr -> lr, Collectors.toList())));
+
+    geoTreeResponses.forEach(gt -> gt.setChildren(
+        geoTreeHierarchy.get(gt.getIdentifier()) == null ? new ArrayList<>()
+            : geoTreeHierarchy.get(gt.getIdentifier())));
+    return geoTreeHierarchy.get(UUID.fromString("00000000-0000-0000-0000-000000000000"));
   }
 
   public List<GeoTreeResponse> getGeoTreeFromLocationHierarchyWithoutStructure(
@@ -122,7 +137,7 @@ public class LocationHierarchyService {
     return geoTreeHierarchy.get(UUID.fromString("00000000-0000-0000-0000-000000000000"));
   }
 
-  public Optional<List<LocationRelationship>> getLocationRelationshipsForLocationHierarchy(
+  public List<LocationRelationship> getLocationRelationshipsForLocationHierarchy(
       LocationHierarchy locationHierarchy) {
     return locationRelationshipService
         .getLocationRelationshipsForLocationHierarchy(locationHierarchy);
