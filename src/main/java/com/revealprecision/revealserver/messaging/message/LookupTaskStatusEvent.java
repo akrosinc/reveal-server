@@ -14,12 +14,11 @@ import lombok.ToString;
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString
-public class PlanUpdateMessage extends Message {
+public class LookupTaskStatusEvent extends Message {
+  private UUID identifier;
 
-  private UUID planIdentifier;
+  private String code;
 
-  private PlanUpdateType planUpdateType;
-
-  private String ownerId;
+  private String name;
 
 }

@@ -39,7 +39,7 @@ public class BusinessStatusService {
     if (ActionUtils.isActionForPerson(task.getAction())) {
       metadataService.updatePersonMetadata(task.getBaseEntityIdentifier(), businessStatus,
           planIdentifier, task.getIdentifier(), UserUtils.getCurrentPrincipleName(), "string",
-          businessStatusTagName, baseBusinessStatusTagName);
+          businessStatusTagName, baseBusinessStatusTagName, task.getPerson());
     }
   }
 

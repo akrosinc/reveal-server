@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.messaging.message;
 
+import java.util.List;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -14,12 +15,12 @@ import lombok.ToString;
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString
-public class PlanUpdateMessage extends Message {
+public class LocationHierarchyEvent extends Message {
 
-  private UUID planIdentifier;
+  private UUID identifier;
 
-  private PlanUpdateType planUpdateType;
+  private String name;
 
-  private String ownerId;
+  private List<String> nodeOrder;
 
 }

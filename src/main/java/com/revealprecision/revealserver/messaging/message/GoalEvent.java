@@ -1,5 +1,7 @@
 package com.revealprecision.revealserver.messaging.message;
 
+import com.revealprecision.revealserver.enums.PriorityEnum;
+import com.revealprecision.revealserver.persistence.domain.AbstractAuditableEntity;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -14,12 +16,15 @@ import lombok.ToString;
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString
-public class PlanUpdateMessage extends Message {
+public class GoalEvent extends AbstractAuditableEntity {
 
-  private UUID planIdentifier;
 
-  private PlanUpdateType planUpdateType;
+  private UUID identifier;
 
-  private String ownerId;
+  private String description;
+
+  private PriorityEnum priority;
+
+  private PlanEvent plan;
 
 }

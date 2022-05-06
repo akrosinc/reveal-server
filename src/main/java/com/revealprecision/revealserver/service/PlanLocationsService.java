@@ -3,7 +3,7 @@ package com.revealprecision.revealserver.service;
 import com.revealprecision.revealserver.api.v1.dto.factory.OrganizationResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.response.GeoTreeResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.OrganizationResponse;
-import com.revealprecision.revealserver.messaging.TopicConstants;
+import com.revealprecision.revealserver.messaging.KafkaConstants;
 import com.revealprecision.revealserver.messaging.message.PlanLocationAssignMessage;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
@@ -12,6 +12,8 @@ import com.revealprecision.revealserver.persistence.domain.PlanAssignment;
 import com.revealprecision.revealserver.persistence.domain.PlanLocations;
 import com.revealprecision.revealserver.persistence.repository.PlanLocationsRepository;
 import com.revealprecision.revealserver.persistence.repository.PlanRepository;
+import com.revealprecision.revealserver.props.KafkaProperties;
+import com.revealprecision.revealserver.util.UserUtils;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -37,6 +39,7 @@ public class PlanLocationsService {
   private final PlanAssignmentService planAssignmentService;
   private final PlanRepository planRepository;
   private final KafkaTemplate<String, PlanLocationAssignMessage> kafkaTemplate;
+  private final KafkaProperties kafkaProperties;
 
   @Autowired
   public PlanLocationsService(PlanLocationsRepository planLocationsRepository,
@@ -44,7 +47,8 @@ public class PlanLocationsService {
       LocationHierarchyService locationHierarchyService,
       @Lazy PlanAssignmentService planAssignmentService,
       PlanRepository planRepository,
-      KafkaTemplate<String, PlanLocationAssignMessage> kafkaTemplate) {
+      KafkaTemplate<String, PlanLocationAssignMessage> kafkaTemplate,
+      KafkaProperties kafkaProperties) {
     this.planLocationsRepository = planLocationsRepository;
     this.planService = planService;
     this.locationService = locationService;
@@ -52,6 +56,8 @@ public class PlanLocationsService {
     this.planAssignmentService = planAssignmentService;
     this.planRepository = planRepository;
     this.kafkaTemplate = kafkaTemplate;
+    this.kafkaProperties=kafkaProperties;
+
   }
 
   public List<PlanLocations> getPlanLocationsByPlanIdentifier(UUID planIdentifier) {
@@ -94,11 +100,23 @@ public class PlanLocationsService {
     Plan plan = planService.getPlanByIdentifier(planIdentifier);
 
     PlanLocationAssignMessage planLocationAssignMessage = new PlanLocationAssignMessage();
-    planLocationAssignMessage.setPlanIdentifier(planIdentifier);
+    planLocationAssignMessage.setPlanIdentifier(planIdentifier.toString());
+    planLocationAssignMessage.setLocationsAdded(
+        locations.stream()
+            .map(UUID::toString)
+            .collect(Collectors.toList())
+    );
+    planLocationAssignMessage.setOwnerId(UserUtils.getCurrentPrincipleName());
 
+    List<UUID> removedPlanLocations = plan.getPlanLocations().stream().map(PlanLocations::getLocation)
+        .map(Location::getIdentifier).collect(Collectors.toList());
+    removedPlanLocations.removeAll(locations);
+    List<String> removedPlanLocationsString = removedPlanLocations.stream().map(UUID::toString)
+        .collect(Collectors.toList());
+    planLocationAssignMessage.setLocationsRemoved(removedPlanLocationsString);
     if (locations.size() == 0) {
       planLocationsRepository.deleteByPlanIdentifier(planIdentifier);
-      kafkaTemplate.send(TopicConstants.PLAN_LOCATION, planLocationAssignMessage);
+      kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_LOCATION_ASSIGNED), planLocationAssignMessage);
     } else {
       Set<UUID> currentLocation = planLocationsRepository.findByPlan_Identifier(planIdentifier).stream()
           .map(planLocations1 -> planLocations1.getLocation().getIdentifier()).collect(
@@ -119,7 +137,7 @@ public class PlanLocationsService {
             new ArrayList<>(currentLocation));
       }
 
-      kafkaTemplate.send(TopicConstants.PLAN_LOCATION, planLocationAssignMessage);
+      kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_LOCATION_ASSIGNED), planLocationAssignMessage);
       log.info("sent plan location");
     }
   }

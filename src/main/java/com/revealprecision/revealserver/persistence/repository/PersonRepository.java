@@ -23,4 +23,5 @@ public interface PersonRepository extends JpaRepository<Person, UUID>,
   Long countPersonByBirthDate(Date date);
 
   List<Person> findPersonByLocationsIn(List<Location> locations);
+
 }

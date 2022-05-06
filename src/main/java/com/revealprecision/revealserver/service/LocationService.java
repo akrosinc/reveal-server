@@ -138,4 +138,7 @@ public class LocationService {
   public List<UUID> getAllLocationChildren(UUID locationIdentifier, UUID hierarchyIdentifier) {
     return locationRepository.getAllLocationChildren(locationIdentifier, hierarchyIdentifier);
   }
+  public List<Location> getLocationsByPeople(UUID personIdentifier){
+    return locationRepository.getLocationsByPeople_Identifier(personIdentifier);
+  }
 }

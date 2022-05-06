@@ -43,7 +43,7 @@ public class MetadataService {
 
   public PersonMetadata updatePersonMetadata(UUID personIdentifier, Object tagValue,
       UUID planIdentifier, UUID taskIdentifier,
-      String user, String dataType, String tag, String type) {
+      String user, String dataType, String tag, String type, Person person) {
 
     PersonMetadata personMetadata;
 
@@ -95,7 +95,7 @@ public class MetadataService {
       personMetadata = new PersonMetadata();
 
       //TODO: check this
-      Person person = new Person();
+
       person.setIdentifier(personIdentifier);
       personMetadata.setPerson(person);
 
