@@ -5,19 +5,15 @@ import static com.revealprecision.revealserver.constants.LocationConstants.STRUC
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.revealprecision.revealserver.enums.EntityStatus;
-import com.revealprecision.revealserver.messaging.TopicConstants;
-import com.revealprecision.revealserver.messaging.message.LocationRelationshipMessage;
 import com.revealprecision.revealserver.persistence.domain.GeographicLevel;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
-import com.revealprecision.revealserver.persistence.projection.LocationProjection;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import com.revealprecision.revealserver.persistence.repository.GeographicLevelRepository;
 import com.revealprecision.revealserver.persistence.repository.LocationHierarchyRepository;
 import com.revealprecision.revealserver.persistence.repository.LocationRelationshipRepository;
 import com.revealprecision.revealserver.persistence.repository.LocationRepository;
-import com.revealprecision.revealserver.props.KafkaProperties;
 import java.io.IOException;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
@@ -45,7 +41,6 @@ import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.util.Pair;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -58,21 +53,16 @@ public class LocationRelationshipService {
   private final LocationRepository locationRepository;
   private final LocationHierarchyRepository locationHierarchyRepository;
   private final RestHighLevelClient client;
-  private final KafkaTemplate<String, LocationRelationshipMessage> kafkaTemplate;
-  private final KafkaProperties kafkaProperties;
 
   @Autowired
   public LocationRelationshipService(LocationRelationshipRepository locationRelationshipRepository,
       GeographicLevelRepository geographicLevelRepository, LocationRepository locationRepository,
-      LocationHierarchyRepository locationHierarchyRepository, RestHighLevelClient client
-  ,KafkaTemplate<String, LocationRelationshipMessage> kafkaTemplate,KafkaProperties kafkaProperties) {
+      LocationHierarchyRepository locationHierarchyRepository, RestHighLevelClient client) {
     this.locationRelationshipRepository = locationRelationshipRepository;
     this.geographicLevelRepository = geographicLevelRepository;
     this.locationRepository = locationRepository;
     this.locationHierarchyRepository = locationHierarchyRepository;
     this.client = client;
-    this.kafkaTemplate = kafkaTemplate;
-    this.kafkaProperties = kafkaProperties;
   }
 
 
@@ -282,38 +272,6 @@ public class LocationRelationshipService {
         if (searchResponse.getHits().getHits().length == 0) {
           break;
         } else {
-          BoolQueryBuilder allParentsQuery = QueryBuilders.boolQuery();
-          allParentsQuery.filter(QueryBuilders.geoShapeQuery("geometry", new Point(x, y)).relation(
-              ShapeRelation.CONTAINS));
-          SearchSourceBuilder allParentsSourceBuilder = new SearchSourceBuilder();
-          allParentsSourceBuilder.query(allParentsQuery);
-          SearchRequest allParentsSearchRequest = new SearchRequest("location");
-          allParentsSearchRequest.source(allParentsSourceBuilder);
-          SearchResponse allParentsSearchResponse = client.search(allParentsSearchRequest,
-              RequestOptions.DEFAULT);
-
-          Map<String, Object> parents = Arrays.stream(
-                  allParentsSearchResponse.getHits().getHits())
-              .filter(SearchHit::hasSource).map(SearchHit::getSourceAsMap)
-              .map(sourceMap -> new SimpleEntry<String, Object>(
-                  String.valueOf(sourceMap.get("level")), sourceMap.get("id")))
-              .collect(Collectors.toMap(Entry::getKey, Entry::getValue, (a, b) -> {
-                log.info("a: {} - b: {}", a, b);
-                return b;
-              }));
-          List<UUID> parentIds = new ArrayList<>();
-
-          try {
-            parentIds = locationHierarchy.getNodeOrder().stream()
-                .takeWhile(node -> !node.equals(location.getGeographicLevel().getName()))
-                .map(parents::get)
-                .map(node -> UUID.fromString((String) node))
-                .collect(Collectors.toList());
-            Collections.reverse(parentIds);
-          } catch (NullPointerException e) {
-            e.printStackTrace();
-            log.error("Error building ancestry - {}", e.getMessage());
-          }
 
           UUID parentLocation = UUID.fromString(searchResponse.getHits().getAt(0).getId());
           if (parentLocation != null) {
@@ -321,19 +279,10 @@ public class LocationRelationshipService {
             LocationRelationship locationRelationshipToSave = LocationRelationship.builder()
                 .parentLocation(parentLoc)
                 .location(location)
-                .ancestry(parentIds)
                 .locationHierarchy(locationHierarchy)
                 .build();
             locationRelationshipToSave.setEntityStatus(EntityStatus.ACTIVE);
             locationRelationshipRepository.save(locationRelationshipToSave);
-
-            LocationRelationshipMessage locationRelationshipMessage = new LocationRelationshipMessage();
-            locationRelationshipMessage.setLocationIdentifier(locationRelationshipToSave.getLocation().getIdentifier());
-            locationRelationshipMessage.setGeoName(locationRelationshipToSave.getLocation().getGeographicLevel().getName());
-            locationRelationshipMessage.setParentLocationIdentifier(locationRelationshipToSave.getParentLocation().getIdentifier());
-            locationRelationshipMessage.setAncestry(locationRelationshipToSave.getAncestry());
-            locationRelationshipMessage.setLocationName(location.getName());
-            kafkaTemplate.send(kafkaProperties.getTopicMap().get(TopicConstants.LOCATIONS_IMPORTED),locationRelationshipMessage);
           }
         }
       } else if (nodePosition == -1) {
@@ -387,10 +336,5 @@ public class LocationRelationshipService {
         location.getIdentifier(), locationHierarchy.getIdentifier());
   }
 
-  public List<LocationProjection> getLocationsHigherGeographicLevelsByLocationAndGeographicNameAndHierarchy(
-      UUID identifier,
-      String geoName, UUID locationHierarchyIdentifier) {
-    return locationRelationshipRepository.getLocationsHigherGeographicLevelsByLocationAndGeographicNameAndHierarchy(
-        identifier.toString(), geoName, locationHierarchyIdentifier);
-  }
+
 }

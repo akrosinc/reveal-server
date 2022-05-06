@@ -20,6 +20,5 @@ public class PlanUpdateMessage extends Message {
 
   private PlanUpdateType planUpdateType;
 
-  private String ownerId;
 
 }

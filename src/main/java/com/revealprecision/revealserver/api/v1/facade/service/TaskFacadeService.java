@@ -8,11 +8,6 @@ import com.revealprecision.revealserver.api.v1.facade.util.DateTimeFormatter;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.enums.TaskPriorityEnum;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
-import com.revealprecision.revealserver.messaging.TaskEventFactory;
-import com.revealprecision.revealserver.messaging.TopicConstants;
-import com.revealprecision.revealserver.messaging.message.Message;
-import com.revealprecision.revealserver.messaging.message.TaskAggregate;
-import com.revealprecision.revealserver.messaging.message.TaskEvent;
 import com.revealprecision.revealserver.persistence.domain.Action;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LookupTaskStatus;
@@ -21,7 +16,6 @@ import com.revealprecision.revealserver.persistence.domain.Person;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.Task;
 import com.revealprecision.revealserver.persistence.domain.User;
-import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.service.ActionService;
 import com.revealprecision.revealserver.service.BusinessStatusService;
 import com.revealprecision.revealserver.service.LocationService;
@@ -30,10 +24,9 @@ import com.revealprecision.revealserver.service.PlanService;
 import com.revealprecision.revealserver.service.TaskService;
 import com.revealprecision.revealserver.service.UserService;
 import com.revealprecision.revealserver.util.ActionUtils;
-import com.revealprecision.revealserver.util.UserUtils;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -42,13 +35,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.kafka.streams.KafkaStreams;
-import org.apache.kafka.streams.StoreQueryParameters;
-import org.apache.kafka.streams.state.QueryableStoreTypes;
-import org.apache.kafka.streams.state.ReadOnlyKeyValueStore;
 import org.springframework.data.util.Pair;
-import org.springframework.kafka.config.StreamsBuilderFactoryBean;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -63,45 +50,20 @@ public class TaskFacadeService {
   private final PersonService personService;
   private final LocationService locationService;
   private final BusinessStatusService businessStatusService;
-  private final KafkaTemplate<String, Message> kafkaTemplate;
-  private final StreamsBuilderFactoryBean getKafkaStreams;
-  private final KafkaProperties kafkaProperties;
 
   public List<TaskFacade> syncTasks(List<String> planIdentifiers,
-      List<UUID> jurisdictionIdentifiers, Long serverVersion, String requester) {
+      List<UUID> jurisdictionIdentifiers, Long serverVersion) {
 
-    KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
-    ReadOnlyKeyValueStore<String, TaskEvent> taskPlanParent = kafkaStreams.store(
-        StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap().get(TopicConstants.taskPlanParent),
-            QueryableStoreTypes.keyValueStore())
-    );
-    ReadOnlyKeyValueStore<String, TaskAggregate> taskParent = kafkaStreams.store(
-        StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap().get(TopicConstants.taskParent),
-            QueryableStoreTypes.keyValueStore())
-    );
-
-    log.debug("Before task sync");
-
-    Set<String> strings = planIdentifiers.stream()
-        .flatMap(
-            planIdentifier -> jurisdictionIdentifiers.stream().flatMap(
-                jurisdictionIdentifier -> taskParent.get(
-                        planIdentifier + "_" + jurisdictionIdentifier).getTaskIds().stream()
-                    .filter(taskId -> taskId.getServerVersion() > serverVersion)
-                    .map(taskId -> taskId.getId() + "_" + planIdentifier + "_"
-                        + jurisdictionIdentifier))
-        ).collect(Collectors.toCollection(LinkedHashSet::new));
-
-    List<TaskFacade> taskFacades = strings.stream().map(taskPlanParentId -> {
-      TaskEvent task = taskPlanParent.get(taskPlanParentId);
-      return TaskFacadeFactory.getTaskFacadeObj(requester, taskPlanParentId, task);
-    }).collect(Collectors.toList());
-
-    return taskFacades;
-
+    log.info("Before task sync");
+    List<TaskFacade> collect = planIdentifiers.stream().map(
+            planIdentifier -> taskService.getTasksPerJurisdictionIdentifier(
+                    UUID.fromString(planIdentifier), jurisdictionIdentifiers, serverVersion).entrySet()
+                .stream()
+                .map(this::getTaskFacades).flatMap(Collection::stream).collect(Collectors.toList()))
+        .flatMap(Collection::stream).collect(Collectors.toList());
+    log.info("Done with task sync");
+    return collect;
   }
-
-
 
   private List<TaskFacade> getTaskFacades(Entry<UUID, List<Task>> groupTaskListEntry) {
     List<Task> tasks = groupTaskListEntry.getValue();
@@ -115,7 +77,7 @@ public class TaskFacadeService {
     String createdBy = task.getAction().getGoal().getPlan()
         .getCreatedBy(); //TODO: confirm business rule for task creation user(owner)
     User user = getUser(createdBy);
-    log.debug("Creating task facade with task identifier: {}", task.getIdentifier());
+    log.info("Creating task facade with task identifier: {}",task.getIdentifier());
     return TaskFacadeFactory.getEntity(task, businessStatus, user, groupIdentifier);
   }
 
@@ -143,20 +105,15 @@ public class TaskFacadeService {
       Task task = taskService.getTaskByIdentifier(UUID.fromString(updateFacade.getIdentifier()));
 
       Optional<LookupTaskStatus> taskStatus = taskService.getAllTaskStatus().stream().filter(
-              lookupTaskStatus -> lookupTaskStatus.getCode().equalsIgnoreCase(updateFacade.getStatus()))
+          lookupTaskStatus -> lookupTaskStatus.getCode().equalsIgnoreCase(updateFacade.getStatus()))
           .findFirst();
 
       if (taskStatus.isPresent()) {
         task.setLookupTaskStatus(taskStatus.get());
         task.setBusinessStatus(updateFacade.getBusinessStatus());
         businessStatusService.setBusinessStatus(task, updateFacade.getBusinessStatus());
-        Task savedTask = taskService.saveTask(task);
+        task = taskService.saveTask(task);
         identifier = task.getIdentifier();
-
-        TaskEvent taskEvent = TaskEventFactory.getTaskEventFromTask(savedTask);
-        taskEvent.setOwnerId(UserUtils.getCurrentPrincipleName());
-        kafkaTemplate.send(kafkaProperties.getTopicMap().get(TopicConstants.TASK), taskEvent);
-
       } else {
         log.error("Unknown task state in task update: {}", updateFacade.getStatus());
       }
@@ -193,7 +150,7 @@ public class TaskFacadeService {
     List<LookupTaskStatus> lookupTaskStatuses = taskService.getAllTaskStatus();
 
     Optional<LookupTaskStatus> taskStatus = lookupTaskStatuses.stream().filter(
-            lookupTaskStatus -> lookupTaskStatus.getCode().equalsIgnoreCase(taskDto.getStatus().name()))
+        lookupTaskStatus -> lookupTaskStatus.getCode().equalsIgnoreCase(taskDto.getStatus().name()))
         .findFirst();
 
     Task task;
@@ -263,11 +220,7 @@ public class TaskFacadeService {
         }
         task.setPerson(person);
       }
-      Task taskSaved = taskService.saveTask(task);
-      TaskEvent taskEvent = TaskEventFactory.getTaskEventFromTask(taskSaved);
-      taskEvent.setOwnerId(UserUtils.getCurrentPrincipleName());
-      kafkaTemplate.send(kafkaProperties.getTopicMap().get(TopicConstants.TASK), taskEvent);
-
+      taskService.saveTask(task);
     } else {
       log.error("Unknown task state in sync: {}", taskDto.getStatus().name());
       throw new NotFoundException(
