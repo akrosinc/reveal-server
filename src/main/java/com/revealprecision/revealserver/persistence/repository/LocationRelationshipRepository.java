@@ -2,7 +2,6 @@ package com.revealprecision.revealserver.persistence.repository;
 
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
-import com.revealprecision.revealserver.persistence.projection.LocationProjection;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import java.util.List;
 import java.util.Optional;
@@ -70,15 +69,4 @@ public interface LocationRelationshipRepository extends JpaRepository<LocationRe
       + "where lr.location.identifier = :locationIdentifier "
       + "and lr.locationHierarchy.identifier = :hierarchyIdentifier")
   Location getParentLocationByLocationIdAndHierarchyId(@Param("locationIdentifier") UUID locationIdentifier, @Param("hierarchyIdentifier") UUID hierarchyIdentifier);
-
-  @Query(value = "SELECT CAST(l.identifier as varchar) as identifier,CAST(lr.parent_identifier as varchar) as parentIdentifier from location_relationship lr "
-      + "left join location l on l.identifier = lr.location_identifier "
-      + "left join geographic_level gl on gl.identifier = l.geographic_level_identifier "
-      + "where CAST(STRING_TO_ARRAY(:locationIdentifier,',') as uuid[]) && lr.ancestry and gl.name = :geographicLevelName "
-      + "and lr.location_hierarchy_identifier = :locationHierarchyIdentifier"
-
-      , nativeQuery = true)
-  List<LocationProjection> getLocationsHigherGeographicLevelsByLocationAndGeographicNameAndHierarchy(
-      @Param("locationIdentifier") String locationIdentifier, @Param("geographicLevelName") String geographicLevelName,
-      @Param("locationHierarchyIdentifier")  UUID locationHierarchyIdentifier);
 }

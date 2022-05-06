@@ -5,7 +5,6 @@ import com.revealprecision.revealserver.api.v1.facade.models.TaskFacade;
 import com.revealprecision.revealserver.api.v1.facade.models.TaskUpdateFacade;
 import com.revealprecision.revealserver.api.v1.facade.request.TaskSyncRequest;
 import com.revealprecision.revealserver.api.v1.facade.service.TaskFacadeService;
-import com.revealprecision.revealserver.util.UserUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import java.util.List;
 import java.util.UUID;
@@ -54,7 +53,7 @@ public class TaskFacadeController {
     }
 
     List<TaskFacade> taskFacades = taskFacadeService.syncTasks(taskSyncRequest.getPlan(),
-        jurisdictionIdentifiers, serverVersion, UserUtils.getCurrentPrincipleName());
+        jurisdictionIdentifiers, serverVersion);
 
     if (returnCount) {
       HttpHeaders headers = new HttpHeaders();

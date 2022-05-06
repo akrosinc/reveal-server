@@ -21,8 +21,6 @@ import com.revealprecision.revealserver.persistence.domain.LookupInterventionTyp
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.Plan.Fields;
 import com.revealprecision.revealserver.persistence.repository.PlanRepository;
-import com.revealprecision.revealserver.props.KafkaProperties;
-import com.revealprecision.revealserver.util.UserUtils;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -46,9 +44,9 @@ public class PlanService {
   private final FormService formService;
   private final LocationHierarchyService locationHierarchyService;
   private final LookupInterventionTypeService lookupInterventionTypeService;
+  private final TaskService taskService;
   private final LookupEntityTypeService lookupEntityTypeService;
   private final KafkaTemplate<String, Message> kafkaTemplate;
-  private final KafkaProperties kafkaProperties;
 
   public static boolean isNullOrEmpty(final Collection<?> c) {
     return c == null || c.isEmpty();
@@ -108,9 +106,8 @@ public class PlanService {
     PlanUpdateMessage planUpdateMessage = new PlanUpdateMessage();
     planUpdateMessage.setPlanIdentifier(plan.getIdentifier());
     planUpdateMessage.setPlanUpdateType(PlanUpdateType.ACTIVATE);
-    planUpdateMessage.setOwnerId(UserUtils.getCurrentPrincipleName());
 
-    kafkaTemplate.send(kafkaProperties.getTopicMap().get(TopicConstants.PLAN_UPDATE),planUpdateMessage);
+    kafkaTemplate.send(TopicConstants.PLAN_UPDATE,planUpdateMessage);
   }
 
   public void updatePlan(PlanRequest request, UUID identifier) {

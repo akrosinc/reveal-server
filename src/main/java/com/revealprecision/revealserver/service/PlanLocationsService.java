@@ -13,8 +13,6 @@ import com.revealprecision.revealserver.persistence.domain.PlanAssignment;
 import com.revealprecision.revealserver.persistence.domain.PlanLocations;
 import com.revealprecision.revealserver.persistence.repository.PlanLocationsRepository;
 import com.revealprecision.revealserver.persistence.repository.PlanRepository;
-import com.revealprecision.revealserver.props.KafkaProperties;
-import com.revealprecision.revealserver.util.UserUtils;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -40,7 +38,6 @@ public class PlanLocationsService {
   private final PlanAssignmentService planAssignmentService;
   private final PlanRepository planRepository;
   private final KafkaTemplate<String, PlanLocationAssignMessage> kafkaTemplate;
-  private final KafkaProperties kafkaProperties;
 
   @Autowired
   public PlanLocationsService(PlanLocationsRepository planLocationsRepository,
@@ -48,8 +45,7 @@ public class PlanLocationsService {
       LocationHierarchyService locationHierarchyService,
       @Lazy PlanAssignmentService planAssignmentService,
       PlanRepository planRepository,
-      KafkaTemplate<String, PlanLocationAssignMessage> kafkaTemplate,
-      KafkaProperties kafkaProperties) {
+      KafkaTemplate<String, PlanLocationAssignMessage> kafkaTemplate) {
     this.planLocationsRepository = planLocationsRepository;
     this.planService = planService;
     this.locationService = locationService;
@@ -57,7 +53,6 @@ public class PlanLocationsService {
     this.planAssignmentService = planAssignmentService;
     this.planRepository = planRepository;
     this.kafkaTemplate = kafkaTemplate;
-    this.kafkaProperties=kafkaProperties;
   }
 
   public List<PlanLocations> getPlanLocationsByPlanIdentifier(UUID planIdentifier) {
@@ -94,25 +89,12 @@ public class PlanLocationsService {
     Plan plan = planService.getPlanByIdentifier(planIdentifier);
 
     PlanLocationAssignMessage planLocationAssignMessage = new PlanLocationAssignMessage();
-    planLocationAssignMessage.setPlanIdentifier(planIdentifier.toString());
-    planLocationAssignMessage.setLocationsAdded(
-        locations.stream()
-            .map(UUID::toString)
-            .collect(Collectors.toList())
-    );
-    planLocationAssignMessage.setOwnerId(UserUtils.getCurrentPrincipleName());
-
-    List<UUID> removedPlanLocations = plan.getPlanLocations().stream().map(PlanLocations::getLocation)
-        .map(Location::getIdentifier).collect(Collectors.toList());
-    removedPlanLocations.removeAll(locations);
-    List<String> removedPlanLocationsString = removedPlanLocations.stream().map(UUID::toString)
-        .collect(Collectors.toList());
-    planLocationAssignMessage.setLocationsRemoved(removedPlanLocationsString);
+    planLocationAssignMessage.setPlanIdentifier(planIdentifier);
 
     if (locations.size() == 0) {
       plan.getPlanLocations().clear();
       planRepository.save(plan);
-      kafkaTemplate.send(kafkaProperties.getTopicMap().get(TopicConstants.PLAN_LOCATION_ASSIGNED), planLocationAssignMessage);
+      kafkaTemplate.send(TopicConstants.PLAN_LOCATION, planLocationAssignMessage);
     } else {
       List<PlanLocations> planLocations = getPlanLocationsByPlanIdentifier(planIdentifier);
 
@@ -138,7 +120,7 @@ public class PlanLocationsService {
             new ArrayList<>(currentLocation));
       }
 
-      kafkaTemplate.send(kafkaProperties.getTopicMap().get(TopicConstants.PLAN_LOCATION_ASSIGNED), planLocationAssignMessage);
+      kafkaTemplate.send(TopicConstants.PLAN_LOCATION, planLocationAssignMessage);
       log.info("sent plan location");
     }
   }

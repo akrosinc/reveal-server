@@ -32,4 +32,5 @@ public interface PlanLocationsRepository extends EntityGraphJpaRepository<PlanLo
   @Query(value = "delete from PlanLocations pl where pl.plan.identifier = :planIdentifier and pl.location.identifier in :locations")
   void deletePlanLocationsByPlanAndLocation(@Param("planIdentifier") UUID identifier, @Param("locations") List<UUID> locations);
 
+
 }
