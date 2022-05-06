@@ -16,17 +16,21 @@ import com.revealprecision.revealserver.persistence.repository.LocationHierarchy
 import com.revealprecision.revealserver.persistence.repository.LocationRelationshipRepository;
 import com.revealprecision.revealserver.persistence.repository.LocationRepository;
 import java.io.IOException;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -35,6 +39,7 @@ import org.elasticsearch.common.geo.ShapeRelation;
 import org.elasticsearch.geometry.Point;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.util.Pair;
@@ -42,6 +47,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
+@Slf4j
 public class LocationRelationshipService {
 
   private final LocationRelationshipRepository locationRelationshipRepository;
@@ -243,7 +249,7 @@ public class LocationRelationshipService {
         locationIdentifier, hierarchyIdentifier);
   }
 
-  @Async("getAsyncExecutorTest")
+  @Async("getAsyncExecutor")
   public void createRelationshipForImportedLocation(Location location) throws IOException {
     List<LocationHierarchy> locationHierarchies = locationHierarchyRepository
         .findLocationHierarchiesByNodeOrderContaining(location.getGeographicLevel().getName());
@@ -271,6 +277,7 @@ public class LocationRelationshipService {
         if (searchResponse.getHits().getHits().length == 0) {
           break;
         } else {
+
           UUID parentLocation = UUID.fromString(searchResponse.getHits().getAt(0).getId());
           if (parentLocation != null) {
             Location parentLoc = Location.builder().identifier(parentLocation).build();
@@ -295,14 +302,6 @@ public class LocationRelationshipService {
     return children;
   }
 
-  public Set<Location> getStructuresForPlanIfHierarchyHasStructure(
-      LocationHierarchy locationHierarchy, Set<Location> planLocations) {
-    return this.getStructuresForPlanIfHierarchyHasStructure(locationHierarchy,
-        planLocations.stream().map(
-            planLocation -> Pair.of(planLocation.getIdentifier(),
-                planLocation.getGeographicLevel().getName())).collect(Collectors.toList()));
-  }
-
 
   public Set<Location> getStructuresForPlanIfHierarchyHasStructure(
       LocationHierarchy locationHierarchy, List<Pair<UUID, String>> planLocations) {
@@ -310,6 +309,7 @@ public class LocationRelationshipService {
     // 1. check if hierarchy has structures
     // 2. get the parent of structure from the hierarchy
     // 3. get children locations of the locations that has that parent node name
+    // 4. If structure is not in hierarchy then get children of the lowest location level in hierarchy
 
     Set<Location> structureLocations = new HashSet<>();
 
@@ -318,6 +318,15 @@ public class LocationRelationshipService {
           .filter(planLocation -> planLocation.getSecond().equals(
               locationHierarchy.getNodeOrder()
                   .get(locationHierarchy.getNodeOrder().indexOf(STRUCTURE) - 1))
+          ).flatMap(filteredPlanLocation -> getChildrenLocations(
+              locationHierarchy.getIdentifier(), filteredPlanLocation.getFirst())
+              .stream()).collect(Collectors.toSet());
+      structureLocations.addAll(structures);
+    } else {
+      Set<Location> structures = planLocations.stream()
+          .filter(planLocation -> planLocation.getSecond().equals(
+              locationHierarchy.getNodeOrder()
+                  .get(locationHierarchy.getNodeOrder().size() - 1))
           ).flatMap(filteredPlanLocation -> getChildrenLocations(
               locationHierarchy.getIdentifier(), filteredPlanLocation.getFirst())
               .stream()).collect(Collectors.toSet());
@@ -331,5 +340,6 @@ public class LocationRelationshipService {
     return locationRelationshipRepository.getParentLocationByLocationIdAndHierarchyId(
         location.getIdentifier(), locationHierarchy.getIdentifier());
   }
+
 
 }

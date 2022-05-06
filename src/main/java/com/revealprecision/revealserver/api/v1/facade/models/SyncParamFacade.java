@@ -19,7 +19,7 @@ public class SyncParamFacade {
   private String providerId;
   private String locationId;
   private String baseEntityId;
-  private String serverVersion;
+  private Long serverVersion;
   private String team;
   private String teamId;
   private Integer limit;

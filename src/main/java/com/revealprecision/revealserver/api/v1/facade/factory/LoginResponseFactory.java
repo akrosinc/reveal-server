@@ -27,24 +27,27 @@ public class LoginResponseFactory {
     Set<String> jurisdictionIds = extractJurisdictionIdentifiers(assignedLocations);
     List<String> jurisdictionNames = extractJurisdictionNames(assignedLocations);
 
-    //We pick one hierarchy for now:
-    LocationHierarchy locationHierarchy = plans.stream().findFirst().get().getLocationHierarchy();
-    List<LocationRelationship> locationRelationships = locationHierarchy.getLocationRelationships();
-
-    List<LocationFacade> locationFacades = assignedLocations.stream().map(
-        location -> LocationFacadeResponseFactory
-            .fromLocationEntityAndLocationRelationship(location, locationRelationships)).collect(
-        Collectors.toList());
-
-    LocationTree locationTree = new LocationTree();
-    locationTree.buildTreeFromList(locationFacades);
-
-    Location defaultLocation = locationRelationships.stream()
-        .filter(locationRelationship -> locationRelationship.getParentLocation() == null)
-        .map(LocationRelationship::getLocation).findFirst().get();
-
     TeamMember teamMember = TeamMemberResponseFactory.fromEntities(organization, user);
-    teamMember.getTeam().setLocation(TeamLocationResponseFactory.fromEntity(defaultLocation));
+
+    LocationHierarchy locationHierarchy;
+    LocationTree locationTree = null;
+    if (!plans.isEmpty()) {
+      //We pick one hierarchy for now:
+      locationHierarchy = plans.stream().findFirst().get().getLocationHierarchy();
+      List<LocationRelationship> locationRelationships = locationHierarchy.getLocationRelationships();
+      List<LocationFacade> locationFacades = assignedLocations.stream().map(
+          location -> LocationFacadeResponseFactory
+              .fromLocationEntityAndLocationRelationship(location, locationRelationships)).collect(
+          Collectors.toList());
+      locationTree = new LocationTree();
+      locationTree.buildTreeFromList(locationFacades);
+
+      Location defaultLocation = locationRelationships.stream()
+          .filter(locationRelationship -> locationRelationship.getParentLocation() == null)
+          .map(LocationRelationship::getLocation).findFirst().get();
+
+      teamMember.getTeam().setLocation(TeamLocationResponseFactory.fromEntity(defaultLocation));
+    }
 
     LoginResponse loginResponse = LoginResponse.builder().user(userFacadeResponse).team(teamMember)
         .jurisdictionIds(jurisdictionIds).jurisdictions(jurisdictionNames).locations(locationTree)

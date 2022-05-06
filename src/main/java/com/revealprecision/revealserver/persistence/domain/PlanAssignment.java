@@ -46,9 +46,9 @@ public class PlanAssignment extends AbstractAuditableEntity {
     this.organization = organization;
     this.planLocations = planLocations;
     this.setEntityStatus(EntityStatus.ACTIVE);
-    this.setCreatedBy(UserUtils.getKeyCloakPrincipal().getName());
+    this.setCreatedBy(UserUtils.getCurrentPrinciple().getName());
     this.setCreatedDatetime(LocalDateTime.now());
-    this.setModifiedBy(UserUtils.getKeyCloakPrincipal().getName());
+    this.setModifiedBy(UserUtils.getCurrentPrinciple().getName());
     this.setModifiedDatetime(LocalDateTime.now());
   }
 

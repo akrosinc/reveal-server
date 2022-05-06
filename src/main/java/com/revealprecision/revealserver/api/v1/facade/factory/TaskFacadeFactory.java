@@ -43,7 +43,7 @@ public class TaskFacadeFactory {
         .requester(userName)
         .groupIdentifier(group)
         .structureId(structureId)
-        .syncStatus(task.getSyncStatus())
+        .serverVersion(task.getServerVersion())
         .build();
   }
 

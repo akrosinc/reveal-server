@@ -54,12 +54,15 @@ public class TaskFacadeService {
   public List<TaskFacade> syncTasks(List<String> planIdentifiers,
       List<UUID> jurisdictionIdentifiers, Long serverVersion) {
 
-    return planIdentifiers.stream().map(
-        planIdentifier -> taskService.getTasksPerJurisdictionIdentifier(
-            UUID.fromString(planIdentifier), jurisdictionIdentifiers, serverVersion).entrySet()
-            .stream()
-            .map(this::getTaskFacades).flatMap(Collection::stream).collect(Collectors.toList()))
+    log.info("Before task sync");
+    List<TaskFacade> collect = planIdentifiers.stream().map(
+            planIdentifier -> taskService.getTasksPerJurisdictionIdentifier(
+                    UUID.fromString(planIdentifier), jurisdictionIdentifiers, serverVersion).entrySet()
+                .stream()
+                .map(this::getTaskFacades).flatMap(Collection::stream).collect(Collectors.toList()))
         .flatMap(Collection::stream).collect(Collectors.toList());
+    log.info("Done with task sync");
+    return collect;
   }
 
   private List<TaskFacade> getTaskFacades(Entry<UUID, List<Task>> groupTaskListEntry) {
@@ -70,11 +73,12 @@ public class TaskFacadeService {
   }
 
   private TaskFacade getTaskFacade(String groupIdentifier, Task task) {
-    Object businessStatus = businessStatusService.getBusinessStatus(task);
+    String businessStatus = businessStatusService.getBusinessStatus(task);
     String createdBy = task.getAction().getGoal().getPlan()
         .getCreatedBy(); //TODO: confirm business rule for task creation user(owner)
     User user = getUser(createdBy);
-    return TaskFacadeFactory.getEntity(task, (String) businessStatus, user, groupIdentifier);
+    log.info("Creating task facade with task identifier: {}",task.getIdentifier());
+    return TaskFacadeFactory.getEntity(task, businessStatus, user, groupIdentifier);
   }
 
   private User getUser(String createdByUserIdentifier) {
@@ -88,17 +92,15 @@ public class TaskFacadeService {
   }
 
 
-  public List<Pair<String,Long>> updateTaskStatusAndBusinessStatusForListOfTasks(
+  public List<String> updateTaskStatusAndBusinessStatusForListOfTasks(
       List<TaskUpdateFacade> taskUpdateFacades) {
     return taskUpdateFacades.stream().map(this::updateTaskStatusAndBusinessStatus)
         .filter(Optional::isPresent).map(Optional::get)
         .collect(Collectors.toList());
   }
 
-  private Optional<Pair<String,Long>> updateTaskStatusAndBusinessStatus(TaskUpdateFacade updateFacade) {
-
+  private Optional<String> updateTaskStatusAndBusinessStatus(TaskUpdateFacade updateFacade) {
     UUID identifier = null;
-    Long updatedServerVersion = 0L;
     try {
       Task task = taskService.getTaskByIdentifier(UUID.fromString(updateFacade.getIdentifier()));
 
@@ -106,14 +108,11 @@ public class TaskFacadeService {
           lookupTaskStatus -> lookupTaskStatus.getCode().equalsIgnoreCase(updateFacade.getStatus()))
           .findFirst();
 
-       updatedServerVersion = task.getServerVersion();
-
       if (taskStatus.isPresent()) {
         task.setLookupTaskStatus(taskStatus.get());
-        updatedServerVersion += 1;
-        task.setServerVersion(updatedServerVersion);
-        task = taskService.saveTask(task);
+        task.setBusinessStatus(updateFacade.getBusinessStatus());
         businessStatusService.setBusinessStatus(task, updateFacade.getBusinessStatus());
+        task = taskService.saveTask(task);
         identifier = task.getIdentifier();
       } else {
         log.error("Unknown task state in task update: {}", updateFacade.getStatus());
@@ -124,7 +123,7 @@ public class TaskFacadeService {
       e.printStackTrace();
       log.error("Some error with updating task: {}", e.getMessage());
     }
-    return Optional.ofNullable(Pair.of(identifier.toString(),updatedServerVersion));
+    return Optional.ofNullable(identifier.toString());
   }
 
   public List<TaskDto> addTasks(List<TaskDto> taskDtos) {
@@ -167,13 +166,6 @@ public class TaskFacadeService {
             taskDto.getLastModified());
 
     if (taskStatus.isPresent()) {
-      LookupTaskStatus currentTaskStatus = task.getLookupTaskStatus();
-      LookupTaskStatus incomingTaskStatus = taskStatus.get();
-      if(!incomingTaskStatus.equals(currentTaskStatus)){
-        task.setServerVersion(taskDto.getServerVersion() + 1);
-      } else {
-        task.setServerVersion(taskDto.getServerVersion());
-      }
       task.setLookupTaskStatus(taskStatus.get());
       task.setAction(action);
       task.setDescription(taskDto.getDescription());
@@ -188,9 +180,9 @@ public class TaskFacadeService {
       task.setExecutionPeriodStart(DateTimeFormatter.getLocalDateTimeFromAndroidFacadeString(
           taskDto.getExecutionPeriod().getStart()).toLocalDate());
       task.setLastModified(LastModifierFromAndroid);
-
       task.setBaseEntityIdentifier(UUID.fromString(taskDto.getForEntity()));
-      task.setSyncStatus(taskDto.getSyncStatus());
+      task.setBusinessStatus(taskDto.getBusinessStatus());
+      businessStatusService.setBusinessStatus(task, taskDto.getBusinessStatus());
       task.setEntityStatus(EntityStatus.ACTIVE);
 
       Location location = null;
@@ -226,16 +218,13 @@ public class TaskFacadeService {
             person.setLocations(locations);
           }
         }
-
         task.setPerson(person);
       }
-      task = taskService.saveTask(task);
-      businessStatusService.setBusinessStatus(task, taskDto.getBusinessStatus());
-
+      taskService.saveTask(task);
     } else {
       log.error("Unknown task state in sync: {}", taskDto.getStatus().name());
       throw new NotFoundException(
-          org.springframework.data.util.Pair.of(Fields.code, taskDto.getStatus().name()),
+          Pair.of(Fields.code, taskDto.getStatus().name()),
           LookupTaskStatus.class);
     }
 

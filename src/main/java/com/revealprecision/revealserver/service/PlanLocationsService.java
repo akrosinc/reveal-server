@@ -3,6 +3,8 @@ package com.revealprecision.revealserver.service;
 import com.revealprecision.revealserver.api.v1.dto.factory.OrganizationResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.response.GeoTreeResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.OrganizationResponse;
+import com.revealprecision.revealserver.messaging.TopicConstants;
+import com.revealprecision.revealserver.messaging.message.PlanLocationAssignMessage;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.Plan;
@@ -17,12 +19,15 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 
 @Service
+@Slf4j
 public class PlanLocationsService {
 
   private final PlanLocationsRepository planLocationsRepository;
@@ -31,19 +36,22 @@ public class PlanLocationsService {
   private final LocationHierarchyService locationHierarchyService;
   private final PlanAssignmentService planAssignmentService;
   private final PlanRepository planRepository;
+  private final KafkaTemplate<String, PlanLocationAssignMessage> kafkaTemplate;
 
   @Autowired
   public PlanLocationsService(PlanLocationsRepository planLocationsRepository,
       @Lazy PlanService planService, LocationService locationService,
       LocationHierarchyService locationHierarchyService,
       @Lazy PlanAssignmentService planAssignmentService,
-      PlanRepository planRepository) {
+      PlanRepository planRepository,
+      KafkaTemplate<String, PlanLocationAssignMessage> kafkaTemplate) {
     this.planLocationsRepository = planLocationsRepository;
     this.planService = planService;
     this.locationService = locationService;
     this.locationHierarchyService = locationHierarchyService;
     this.planAssignmentService = planAssignmentService;
     this.planRepository = planRepository;
+    this.kafkaTemplate = kafkaTemplate;
   }
 
   public List<PlanLocations> getPlanLocationsByPlanIdentifier(UUID planIdentifier) {
@@ -64,8 +72,10 @@ public class PlanLocationsService {
     return planLocationsRepository.findByPlan_IdentifierAndLocation_Identifier(planId, locationId);
   }
 
-  public List<PlanLocations> getByPlanIdAndLocationIdentifiers(UUID planIdentifier, List<UUID> locationIdentifiers) {
-    return planLocationsRepository.findByPlan_IdentifierAndLocation_IdentifierIn(planIdentifier, locationIdentifiers);
+  public List<PlanLocations> getByPlanIdAndLocationIdentifiers(UUID planIdentifier,
+      List<UUID> locationIdentifiers) {
+    return planLocationsRepository.findByPlan_IdentifierAndLocation_IdentifierIn(planIdentifier,
+        locationIdentifiers);
   }
 
   public void assignLocation(UUID planIdentifier, UUID locationIdentifier) {
@@ -82,8 +92,13 @@ public class PlanLocationsService {
 
   public void selectPlanLocations(UUID planIdentifier, Set<UUID> locations) {
     Plan plan = planService.getPlanByIdentifier(planIdentifier);
+
+    PlanLocationAssignMessage planLocationAssignMessage = new PlanLocationAssignMessage();
+    planLocationAssignMessage.setPlanIdentifier(planIdentifier);
+
     if (locations.size() == 0) {
       planLocationsRepository.deleteByPlanIdentifier(planIdentifier);
+      kafkaTemplate.send(TopicConstants.PLAN_LOCATION, planLocationAssignMessage);
     } else {
       Set<UUID> currentLocation = planLocationsRepository.findByPlan_Identifier(planIdentifier).stream()
           .map(planLocations1 -> planLocations1.getLocation().getIdentifier()).collect(
@@ -103,6 +118,9 @@ public class PlanLocationsService {
         planLocationsRepository.deletePlanLocationsByPlanAndLocation(planIdentifier,
             new ArrayList<>(currentLocation));
       }
+
+      kafkaTemplate.send(TopicConstants.PLAN_LOCATION, planLocationAssignMessage);
+      log.info("sent plan location");
     }
   }
 
@@ -118,18 +136,20 @@ public class PlanLocationsService {
     List<PlanAssignment> planAssignments = planAssignmentService.getPlanAssignmentsByPlanIdentifier(
         identifier);
     Map<UUID, List<PlanAssignment>> planAssignmentMap = planAssignments.stream()
-        .collect(Collectors.groupingBy(planAssignment -> planAssignment.getPlanLocations().getLocation().getIdentifier()));
+        .collect(Collectors.groupingBy(
+            planAssignment -> planAssignment.getPlanLocations().getLocation().getIdentifier()));
     geoTreeResponses.forEach(el -> {
       assignLocations(locationMap, el, planAssignmentMap);
     });
     return geoTreeResponses;
   }
 
-  public void assignLocations(Map<UUID, Location> locationMap, GeoTreeResponse geoTreeResponse,  Map<UUID, List<PlanAssignment>> planAssignmentMap) {
+  public void assignLocations(Map<UUID, Location> locationMap, GeoTreeResponse geoTreeResponse,
+      Map<UUID, List<PlanAssignment>> planAssignmentMap) {
     List<PlanAssignment> planAssignments = planAssignmentMap.get(geoTreeResponse.getIdentifier());
-    if(planAssignments == null) {
+    if (planAssignments == null) {
       geoTreeResponse.setTeams(new ArrayList<>());
-    }else {
+    } else {
       List<OrganizationResponse> teams = planAssignments.stream()
           .map(el -> OrganizationResponseFactory.fromEntityIdAndName(el.getOrganization()))
           .collect(Collectors.toList());

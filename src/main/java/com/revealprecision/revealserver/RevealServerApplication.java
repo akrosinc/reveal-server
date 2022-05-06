@@ -9,6 +9,7 @@ import org.springframework.boot.web.servlet.ServletComponentScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 import org.springframework.validation.beanvalidation.MethodValidationPostProcessor;
 
@@ -18,6 +19,7 @@ import org.springframework.validation.beanvalidation.MethodValidationPostProcess
 @Slf4j
 @EnableConfigurationProperties
 @ServletComponentScan
+@EnableScheduling
 public class RevealServerApplication {
 
   public static void main(String[] args) {

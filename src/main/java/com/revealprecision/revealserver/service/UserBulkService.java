@@ -7,6 +7,7 @@ import com.revealprecision.revealserver.persistence.domain.UserBulk;
 import com.revealprecision.revealserver.persistence.projection.UserBulkProjection;
 import com.revealprecision.revealserver.persistence.repository.UserBulkRepository;
 import com.revealprecision.revealserver.util.UserUtils;
+import java.security.Principal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import javax.transaction.Transactional;
@@ -26,25 +27,29 @@ public class UserBulkService {
 
   public UUID saveBulk(String file) {
 
-    KeycloakPrincipal principal = UserUtils.getKeyCloakPrincipal();
-
     UserBulk userBulk = new UserBulk();
     userBulk.setFilename(file);
     userBulk.setStatus(BulkStatusEnum.PROCESSING);
     userBulk.setEntityStatus(EntityStatus.ACTIVE);
     userBulk.setUploadedDatetime(LocalDateTime.now());
-    userBulk.setUploadedBy(
-        userService.getByKeycloakId(UUID.fromString(principal.getName())).getUsername());
+
+    Principal principal = UserUtils.getCurrentPrinciple();
+    UUID keycloakId = null;
+    if (principal instanceof KeycloakPrincipal) {
+      keycloakId = UUID.fromString(principal.getName());
+    }
+    if (keycloakId != null) {
+      userBulk.setUploadedBy(userService.getByKeycloakId(keycloakId).getUsername());
+    }
     userBulk = userBulkRepository.save(userBulk);
     return userBulk.getIdentifier();
   }
 
   @Transactional
   public UserBulk findById(UUID identifier) {
-    return userBulkRepository.findById(identifier)
-        .orElseThrow(
-            () -> new NotFoundException(Pair.of(UserBulk.Fields.identifier, identifier),
-                UserBulk.class));
+    return userBulkRepository.findById(identifier).orElseThrow(
+        () -> new NotFoundException(Pair.of(UserBulk.Fields.identifier, identifier),
+            UserBulk.class));
   }
 
   public Page<UserBulkProjection> getUserBulkDetails(UUID identifier, Pageable pageable) {

@@ -26,6 +26,7 @@ public class EventSearchCriteriaFactory {
         .userNames(
             syncParam.getProviderId() == null ? null
                 : Arrays.stream(syncParam.getProviderId().split(",")).collect(Collectors.toList()))
+        .serverVersion(syncParam.getServerVersion())
         .build();
   }
 }

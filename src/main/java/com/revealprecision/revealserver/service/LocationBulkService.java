@@ -33,7 +33,7 @@ public class LocationBulkService {
         .build();
     locationBulk.setEntityStatus(EntityStatus.ACTIVE);
     locationBulk.setUploadedBy(
-        userService.getByKeycloakId(UUID.fromString(UserUtils.getKeyCloakPrincipal().getName()))
+        userService.getByKeycloakId(UUID.fromString(UserUtils.getCurrentPrinciple().getName()))
             .getUsername());
     locationBulk = locationBulkRepository.save(locationBulk);
     return locationBulk.getIdentifier();

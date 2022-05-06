@@ -15,7 +15,7 @@ import org.springframework.data.elasticsearch.annotations.GeoShapeField;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Document(indexName = "location")
+@Document(indexName = "location", createIndex = false)
 public class LocationElastic {
 
   @Id

@@ -10,14 +10,15 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum LookupEntityTypeCodeEnum implements Serializable {
-  PERSON_CODE("Person"), LOCATION_CODE("Location"), GROUP("Group");
+  PERSON_CODE("Person"), LOCATION_CODE("Location"), GROUP_CODE("Group");
 
   private final String lookupEntityType;
 
   public static LookupEntityTypeCodeEnum lookup(String lookupEntityType) {
     return Stream.of(LookupEntityTypeCodeEnum.values()).filter(
-        lookupEntityTypeCodeEnum -> lookupEntityTypeCodeEnum.getLookupEntityType()
-            .equals(lookupEntityType)).findFirst().orElseThrow(()->new WrongEnumException(String.format(
-        Error.WRONG_ENUM, LookupEntityTypeCodeEnum.class.getSimpleName(), lookupEntityType)));
+            lookupEntityTypeCodeEnum -> lookupEntityTypeCodeEnum.getLookupEntityType()
+                .equals(lookupEntityType)).findFirst()
+        .orElseThrow(() -> new WrongEnumException(String.format(
+            Error.WRONG_ENUM, LookupEntityTypeCodeEnum.class.getSimpleName(), lookupEntityType)));
   }
 }

@@ -1,9 +1,11 @@
 package com.revealprecision.revealserver.api.v1.facade.util;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Date;
+import org.joda.time.DateTime;
 
 public class DateTimeFormatter {
 
@@ -21,8 +23,9 @@ public class DateTimeFormatter {
         "yyyy-MM-dd HH:mm:ss.SSS");
 
     String formatDateTime = localDateTime.format(formatter);
-    java.time.format.DateTimeFormatter dateTimeFormatter = java.time.format.DateTimeFormatter.ISO_INSTANT.withZone(
-        ZoneId.systemDefault());
+    java.time.format.DateTimeFormatter dateTimeFormatter = java.time.format.DateTimeFormatter.ISO_INSTANT
+        .withZone(
+            ZoneId.systemDefault());
 
     ZonedDateTime zonedDateTime = LocalDateTime.parse(formatDateTime, formatter)
         .atZone(ZoneId.systemDefault());
@@ -53,12 +56,10 @@ public class DateTimeFormatter {
 
   public static LocalDateTime getLocalDateTimeFromZonedAndroidFacadeString(
       String androidFacadeDateString) {
-
-    java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern(
-        "yyyy-MM-dd HH:mm:ss.SSS");
-
-    return LocalDateTime.parse(androidFacadeDateString.replace("T", " ").replace("Z", ""),
-        formatter);
+    //Note android uses joda time, we handle that here until we unify.
+    return LocalDateTime.ofInstant(
+        Instant.ofEpochMilli(org.joda.time.DateTime.parse(androidFacadeDateString).getMillis()),
+        ZoneId.systemDefault());
   }
 
 

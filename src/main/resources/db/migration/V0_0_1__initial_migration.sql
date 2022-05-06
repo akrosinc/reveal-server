@@ -350,8 +350,8 @@ CREATE TABLE IF NOT EXISTS task
     base_entity_identifier        uuid                     NOT NULL,
     action_identifier             uuid                     NOT NULL,
     plan_identifier               uuid                     NOT NULL,
-    server_version                bigint                   NOT NULL DEFAULT 0,
-    sync_status                  varchar(255),
+    server_version                bigint                   NOT NULL,
+    business_status               varchar(255)             NOT NULL,
     PRIMARY KEY (identifier),
     FOREIGN KEY (action_identifier) REFERENCES action (identifier),
     FOREIGN KEY (lookup_task_status_identifier) REFERENCES lookup_task_status (identifier)
@@ -381,8 +381,8 @@ CREATE TABLE IF NOT EXISTS task_aud
     base_entity_identifier        uuid                     NOT NULL,
     action_identifier             uuid                     NOT NULL,
     plan_identifier               uuid                     NOT NULL,
-    server_version                bigint                   NOT NULL DEFAULT 0,
-    sync_status                  varchar(255),
+    server_version                bigint                   NOT NULL,
+    business_status               varchar(255)             NOT NULL,
     PRIMARY KEY (identifier, rev)
 );
 
@@ -608,7 +608,7 @@ CREATE TABLE IF NOT EXISTS location_relationship
     location_hierarchy_identifier UUID                     NOT NULL,
     location_identifier           UUID                     NOT NULL,
     parent_identifier             UUID,
-    ancestry                      UUID[]                   ,
+    ancestry                      UUID[],
     entity_status                 VARCHAR(36)              NOT NULL,
     created_by                    VARCHAR(36),
     created_datetime              TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -625,7 +625,7 @@ CREATE TABLE IF NOT EXISTS location_relationship_aud
     location_hierarchy_identifier UUID                     NOT NULL,
     location_identifier           UUID                     NOT NULL,
     parent_identifier             UUID,
-    ancestry                      UUID[]                   ,
+    ancestry                      UUID[],
     entity_status                 VARCHAR(36)              NOT NULL,
     created_by                    VARCHAR(36),
     created_datetime              TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -857,6 +857,14 @@ CREATE SEQUENCE IF NOT EXISTS hibernate_sequence
 CREATE INDEX IF NOT EXISTS raster_store_idx ON raster_store (id);
 CREATE INDEX raster_store_rast_st_convexhull_idx ON raster_store USING gist (public.ST_ConvexHull(rast));
 
+CREATE SEQUENCE IF NOT EXISTS task_server_version_seq
+    START WITH 1
+    INCREMENT BY 1
+    MAXVALUE 9223372036854775807;
+CREATE SEQUENCE IF NOT EXISTS event_server_version_seq
+    START WITH 1
+    INCREMENT BY 1
+    MAXVALUE 9223372036854775807;
 CREATE TABLE IF NOT EXISTS person
 (
     identifier        uuid                     NOT NULL,
@@ -1206,13 +1214,11 @@ CREATE TABLE IF NOT EXISTS setting_aud
 
 CREATE TABLE IF NOT EXISTS event
 (
-    id                      BIGSERIAL                NOT NULL,
     identifier              uuid                     not null,
-    version                 bigint DEFAULT 1,
+    server_version          bigint                   not null,
     event_type              character varying        NOT NULL,
-    form_data_identifier    uuid                     NOT NULL,
     user_identifier         uuid                     NOT NULL,
-    capture_date            date                     NOT NULL,
+    capture_datetime        timestamp with time zone NOT NULL,
     plan_identifier         uuid                     NOT NULL,
     organization_identifier uuid                     NOT NULL,
     location_identifier     uuid,
@@ -1225,23 +1231,20 @@ CREATE TABLE IF NOT EXISTS event
     created_datetime        timestamp with time zone NOT NULL,
     modified_by             character varying(36)    NOT NULL,
     modified_datetime       timestamp with time zone NOT NULL,
-    PRIMARY KEY (id),
-    FOREIGN KEY (form_data_identifier) REFERENCES form_data (identifier),
+    PRIMARY KEY (identifier),
     FOREIGN KEY (organization_identifier) REFERENCES organization (identifier),
     FOREIGN KEY (user_identifier) REFERENCES users (identifier)
 );
 
 CREATE TABLE IF NOT EXISTS event_aud
 (
-    id                      bigint                   NOT NULL,
     identifier              uuid                     NOT NULL,
     REV                     INT                      NOT NULL,
     REVTYPE                 INTEGER                  NULL,
-    version                 bigint                   NOT null,
+    server_version          bigint                   not null,
     event_type              character varying        NOT NULL,
-    form_data_identifier    uuid                     NOT NULL,
     user_identifier         uuid                     NOT NULL,
-    capture_date            date                     NOT NULL,
+    capture_datetime        timestamp with time zone NOT NULL,
     plan_identifier         uuid                     NOT NULL,
     organization_identifier uuid                     NOT NULL,
     location_identifier     uuid,
@@ -1254,5 +1257,23 @@ CREATE TABLE IF NOT EXISTS event_aud
     created_datetime        timestamp with time zone NOT NULL,
     modified_by             character varying(36)    NOT NULL,
     modified_datetime       timestamp with time zone NOT NULL,
-    PRIMARY KEY (id, REV)
-)
+    PRIMARY KEY (identifier, REV)
+);
+
+CREATE TABLE http_logging
+(
+    identifier uuid NOT NULL,
+    trace_id character varying,
+    span_id character varying,
+    http_method character varying,
+    http_code character varying,
+    path character varying,
+    request jsonb,
+    request_time timestamp with time zone,
+    response jsonb,
+    response_time timestamp with time zone,
+    http_headers jsonb,
+    requestor character varying,
+    jwt_kid character varying,
+    PRIMARY KEY (identifier)
+);

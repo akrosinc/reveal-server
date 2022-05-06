@@ -1,6 +1,6 @@
 package com.revealprecision.revealserver.config;
 
-import com.revealprecision.revealserver.messaging.Message;
+import com.revealprecision.revealserver.messaging.message.Message;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -14,13 +14,13 @@ import org.springframework.kafka.core.ProducerFactory;
 import org.springframework.kafka.support.serializer.JsonSerializer;
 
 @Configuration
-public class KafkaProducerConfig {
+public class KafkaProducerConfig<T extends Message> {
 
   @Value(value = "${kafka.bootstrapAddress}")
   private String bootstrapAddress;
 
   @Bean
-  public ProducerFactory<String, Message> producerFactory() {
+  public ProducerFactory<String, T> producerFactory() {
     Map<String, Object> configProps = new HashMap<>();
     configProps.put(
         ProducerConfig.BOOTSTRAP_SERVERS_CONFIG,
@@ -35,7 +35,7 @@ public class KafkaProducerConfig {
   }
 
   @Bean
-  public KafkaTemplate<String, Message> kafkaTemplate() {
+  public KafkaTemplate<String, T> kafkaTemplate() {
     return new KafkaTemplate<>(producerFactory());
   }
 }
