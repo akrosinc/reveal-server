@@ -1,6 +1,10 @@
 package com.revealprecision.revealserver.service;
 
 import com.revealprecision.revealserver.enums.EntityStatus;
+import com.revealprecision.revealserver.messaging.KafkaConstants;
+import com.revealprecision.revealserver.messaging.Message;
+import com.revealprecision.revealserver.messaging.message.LocationMetadataEvent;
+import com.revealprecision.revealserver.messaging.message.MetaDataEvent;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.Person;
 import com.revealprecision.revealserver.persistence.domain.metadata.LocationMetadata;
@@ -12,15 +16,18 @@ import com.revealprecision.revealserver.persistence.domain.metadata.infra.TagDat
 import com.revealprecision.revealserver.persistence.domain.metadata.infra.TagValue;
 import com.revealprecision.revealserver.persistence.repository.LocationMetadataRepository;
 import com.revealprecision.revealserver.persistence.repository.PersonMetadataRepository;
+import com.revealprecision.revealserver.props.KafkaProperties;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.SerializationUtils;
 import org.springframework.data.util.Pair;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -29,6 +36,8 @@ public class MetadataService {
 
   private final LocationMetadataRepository locationMetadataRepository;
   private final PersonMetadataRepository personMetadataRepository;
+  private final KafkaTemplate<String, LocationMetadataEvent> kafkaTemplate;
+  private final KafkaProperties kafkaProperties;
 
   public LocationMetadata getLocationMetadataByLocation(UUID locationIdentifier) {
     //TODO fix this
@@ -115,7 +124,7 @@ public class MetadataService {
 
   public LocationMetadata updateLocationMetadata(UUID locationIdentifier, Object tagValue,
       UUID planIdentifier, UUID taskIdentifier,
-      String user, String dataType, String tag, String type) {
+      String user, String dataType, String tag, String type, Location location) {
 
     LocationMetadata locationMetadata;
 
@@ -168,7 +177,7 @@ public class MetadataService {
       //location metadata does not exist
       locationMetadata = new LocationMetadata();
       //TODO: check this
-      Location location = new Location();
+
       location.setIdentifier(locationIdentifier);
       locationMetadata.setLocation(location);
 
@@ -181,7 +190,23 @@ public class MetadataService {
 
       locationMetadata.setEntityStatus(EntityStatus.ACTIVE);
     }
-    return locationMetadataRepository.save(locationMetadata);
+    LocationMetadata savedLocationMetadata = locationMetadataRepository.save(locationMetadata);
+
+    LocationMetadataEvent locationMetadataEvent = new LocationMetadataEvent();
+    locationMetadataEvent.setIdentifier(savedLocationMetadata.getIdentifier());
+    locationMetadataEvent.setMetaDataEvents(
+        savedLocationMetadata.getEntityValue().getMetadataObjs().stream().map(metadataObj -> {
+          MetaDataEvent metaDataEvent = new MetaDataEvent();
+          metaDataEvent.setTag(metadataObj.getTag());
+          metaDataEvent.setTagData(metadataObj.getCurrent());
+
+          metaDataEvent.setType(metadataObj.getType());
+          return metaDataEvent;
+        }).collect(Collectors.toList()));
+    locationMetadataEvent.setEntityId(savedLocationMetadata.getLocation().getIdentifier());
+
+    kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.LOCATION_METADATA_UPDATE),locationMetadataEvent);
+    return savedLocationMetadata;
   }
 
   private MetadataObj getMetadataObj(Object tagValue, UUID planIdentifier, UUID taskIdentifier,

@@ -354,6 +354,7 @@ public class LocationRelationshipService {
   public List<Location> getChildrenLocations(UUID hierarchyIdentifier, UUID locationIdentifier) {
     List<Location> children = locationRelationshipRepository.getChildren(hierarchyIdentifier,
         locationIdentifier);
+    log.info("found children by identifier {} -{}",locationIdentifier,children);
     return children;
   }
 

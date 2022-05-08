@@ -53,8 +53,10 @@ public class LocationJobCompletionListener implements JobExecutionListener {
     String filePath = jobExecution.getJobParameters().getString("filePath");
     LocationBulk locationBulk = locationBulkService.findById(UUID.fromString(locationBulkId));
 
+
     List<Location> addedLocations = locationBulkRepository.getAllCreatedInBulk(
         locationBulk.getIdentifier());
+    log.info("addLocations size: {}",addedLocations.size());
     addedLocations.forEach(location -> {
       try {
         locationRelationshipService.createRelationshipForImportedLocation(location);

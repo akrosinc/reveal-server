@@ -275,6 +275,7 @@ public class TaskService {
         () -> new NotFoundException(Pair.of(LookupTaskStatus.Fields.code, TASK_STATUS_READY),
             LookupTaskStatus.class));
 
+    log.debug("entityUUID list: {}",uuids);
     for (UUID entityUUID : uuids) {
 
       List<Task> taskObjs = createOrUpdateTaskObjectFromActionAndEntityId(action,
@@ -285,10 +286,12 @@ public class TaskService {
       tasks.addAll(taskObjs);
     }
 
-    log.info("no of tasks to be generate for action: {} is: {}", action.getTitle(), tasks.size());
+
+    log.debug("no of tasks to be generate for action: {} is: {}", action.getTitle(), tasks.size());
     List<Task> savedTasks = taskRepository.saveAll(tasks);
 
     for (Task task : savedTasks) {
+      log.debug("task: {} entity: {}",task.getIdentifier(),task.getBaseEntityIdentifier());
       TaskEvent taskEvent = TaskEventFactory.getTaskEventFromTask(task);
       taskEvent.setOwnerId(ownerId);
       kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.TASK),taskEvent);

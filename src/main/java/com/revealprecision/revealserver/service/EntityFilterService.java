@@ -17,13 +17,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.util.Pair;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
-
+@Slf4j
 public class EntityFilterService {
 
   private final JdbcTemplate jdbcTemplate;
@@ -58,6 +59,9 @@ public class EntityFilterService {
     List<Pair<UUID, String>> locations = queryDBAndRetrieveListOfLocationsLinkedToPlanJurisdiction(
         planIdentifier);
 
+    log.debug("plan_locations size {} ",locations.size());
+    log.debug("plan_locations {} ",locations);
+
     if (locations.isEmpty()) {
       return new ArrayList<>();
     } else {
@@ -84,6 +88,9 @@ public class EntityFilterService {
       Set<Location> structures = locationRelationshipService.getStructuresForPlanIfHierarchyHasStructure(
           locationHierarchy,
           locationsForTaskGeneration);
+
+      log.debug("structures size: {}",structures.size());
+      log.debug("structures: {}",structures);
 
       if (query == null) {
         if (ActionUtils.isActionForLocation(action)) {

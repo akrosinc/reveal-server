@@ -94,7 +94,7 @@ public class TaskGenerationStream {
         personStream
             .merge(splitStreamMap.get("splitLocationStream"))
             .merge(splitStreamMap.get("splitOtherStream"));
-    mergedStream.print(Printed.<String, TaskEvent>toSysOut());
+//    mergedStream.print(Printed.<String, TaskEvent>toSysOut());
 
     KStream<String, TaskEvent> stringTaskEventKStream1 = mergedStream.mapValues((k, taskEvent) -> {
 
@@ -112,7 +112,7 @@ public class TaskGenerationStream {
         .flatMapValues((k, locationTask) -> duplicateTaskEventPerAncestor(locationTask))
         .selectKey((k, taskEvent) -> createTaskPlanAncestorKey(taskEvent));
     stringTaskEventKStream.to(kafkaProperties.getTopicMap().get(KafkaConstants.TASK_PARENT_PLAN));
-    stringTaskEventKStream.print(Printed.<String, TaskEvent>toSysOut());
+//    stringTaskEventKStream.print(Printed.<String, TaskEvent>toSysOut());
 
     // create a table of the records for task Events
     // keyed on task + "_" + plan + "_" + ancestor
@@ -125,7 +125,7 @@ public class TaskGenerationStream {
     KStream<String, TaskEvent> stringStringKStream = stringTaskEventKStream
         .filter((k, v) -> k.split("_").length > 2);
 
-    stringStringKStream.print(Printed.<String, TaskEvent>toSysOut());
+//    stringStringKStream.print(Printed.<String, TaskEvent>toSysOut());
     // Group the records by plan and ancestor
     KGroupedStream<String, TaskEvent> stringStringKGroupedStream = stringStringKStream
         .selectKey((k, v) -> createPlanAncestorKey(k))
@@ -145,6 +145,7 @@ public class TaskGenerationStream {
                     kafkaProperties.getStoreMap().get(KafkaConstants.taskParent))
                 .withKeySerde(Serdes.String())
                 .withValueSerde(new JsonSerde<>(TaskAggregate.class)));
+    aggregatedTaskStream.toStream().print(Printed.<String, TaskAggregate>toSysOut());
     return taskStream;
   }
 

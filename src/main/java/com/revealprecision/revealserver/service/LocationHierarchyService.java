@@ -70,6 +70,10 @@ public class LocationHierarchyService {
     return locationHierarchyRepository
         .findByNodeOrderArray(nodeOrder.stream().collect(joining(",", "{", "}")));
   }
+  public List<LocationHierarchy> getAll() {
+    return locationHierarchyRepository
+        .findAll();
+  }
 
   public void deleteLocationHierarchyAndAssociatedLocationRelationships(UUID identifier) {
     LocationHierarchy locationHierarchy = findByIdentifier(identifier);
