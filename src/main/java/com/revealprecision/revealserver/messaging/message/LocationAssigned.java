@@ -1,5 +1,7 @@
 package com.revealprecision.revealserver.messaging.message;
 
+import java.util.List;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -20,5 +22,8 @@ public class LocationAssigned extends Message{
   private boolean isAssigned;
 
   private String planIdentifier;
+
+  private List<UUID> ancestry;
+  private UUID ancestor;
 
 }

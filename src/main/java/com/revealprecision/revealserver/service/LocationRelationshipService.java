@@ -374,7 +374,8 @@ public class LocationRelationshipService {
           .filter(planLocation -> planLocation.getSecond().equals(
               locationHierarchy.getNodeOrder()
                   .get(locationHierarchy.getNodeOrder().indexOf(STRUCTURE) - 1))
-          ).flatMap(filteredPlanLocation -> getChildrenLocations(
+          )
+          .flatMap(filteredPlanLocation -> getChildrenLocations(
               locationHierarchy.getIdentifier(), filteredPlanLocation.getFirst())
               .stream()).collect(Collectors.toSet());
       structureLocations.addAll(structures);

@@ -114,6 +114,7 @@ public class PlanLocationsService {
     List<String> removedPlanLocationsString = removedPlanLocations.stream().map(UUID::toString)
         .collect(Collectors.toList());
     planLocationAssignMessage.setLocationsRemoved(removedPlanLocationsString);
+
     if (locations.size() == 0) {
       planLocationsRepository.deleteByPlanIdentifier(planIdentifier);
       kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_LOCATION_ASSIGNED), planLocationAssignMessage);
