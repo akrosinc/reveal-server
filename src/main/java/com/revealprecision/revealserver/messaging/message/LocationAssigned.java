@@ -25,5 +25,7 @@ public class LocationAssigned extends Message{
 
   private List<UUID> ancestry;
   private UUID ancestor;
+  private Long count;
+  private boolean isVisited;
 
 }
