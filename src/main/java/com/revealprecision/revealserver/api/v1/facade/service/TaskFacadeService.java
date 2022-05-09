@@ -14,6 +14,7 @@ import com.revealprecision.revealserver.messaging.KafkaConstants;
 import com.revealprecision.revealserver.messaging.message.Message;
 import com.revealprecision.revealserver.messaging.message.TaskAggregate;
 import com.revealprecision.revealserver.messaging.message.TaskEvent;
+import com.revealprecision.revealserver.messaging.message.TaskLocationPair;
 import com.revealprecision.revealserver.persistence.domain.Action;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LookupTaskStatus;
@@ -41,6 +42,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.streams.KafkaStreams;
@@ -71,6 +73,12 @@ public class TaskFacadeService {
   public List<TaskFacade> syncTasks(List<String> planIdentifiers,
       List<UUID> jurisdictionIdentifiers, Long serverVersion, String requester) {
 
+    List<Location> operational = jurisdictionIdentifiers.stream().map(jurisdictionIdentifier -> {
+      Location location = locationService.findByIdentifier(jurisdictionIdentifier);
+      return location;
+    }).filter(location -> location.getGeographicLevel().getName().equals("operational")).collect(
+        Collectors.toList());
+
     KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
     ReadOnlyKeyValueStore<String, TaskEvent> taskPlanParent = kafkaStreams.store(
         StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap().get(KafkaConstants.taskPlanParent),
@@ -85,13 +93,14 @@ public class TaskFacadeService {
 
     Set<String> strings = planIdentifiers.stream()
         .flatMap(
-            planIdentifier -> jurisdictionIdentifiers.stream().flatMap(
+            planIdentifier -> operational.stream().flatMap(
                 jurisdictionIdentifier -> taskParent.get(
-                        planIdentifier + "_" + jurisdictionIdentifier).getTaskIds().stream()
+                        planIdentifier + "_" + jurisdictionIdentifier.getIdentifier()).getTaskIds().stream()
                     .filter(taskId -> taskId.getServerVersion() > serverVersion)
                     .map(taskId -> taskId.getId() + "_" + planIdentifier + "_"
-                        + jurisdictionIdentifier))
+                        + jurisdictionIdentifier.getIdentifier()))
         ).collect(Collectors.toCollection(LinkedHashSet::new));
+
 
     List<TaskFacade> taskFacades = strings.stream().map(taskPlanParentId -> {
       TaskEvent task = taskPlanParent.get(taskPlanParentId);
