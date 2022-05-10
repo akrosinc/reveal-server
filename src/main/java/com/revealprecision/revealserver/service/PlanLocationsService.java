@@ -107,7 +107,7 @@ public class PlanLocationsService {
       locationsToAdd.removeAll(currentLocation);
       currentLocation.removeAll(locations);
 
-      List<PlanLocations> addPlanLocations = locations.stream()
+      List<PlanLocations> addPlanLocations = locationsToAdd.stream()
           .map(location -> new PlanLocations(plan, location))
           .collect(Collectors.toList());
 
