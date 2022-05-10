@@ -5,6 +5,7 @@ import com.revealprecision.revealserver.api.v1.dto.models.RowData;
 import com.revealprecision.revealserver.api.v1.dto.models.TableRow;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.messaging.KafkaConstants;
+import com.revealprecision.revealserver.messaging.message.OperationalAreaVisitedCount;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
 import com.revealprecision.revealserver.persistence.domain.Plan;
@@ -53,7 +54,7 @@ public class DashboardService {
             QueryableStoreTypes.keyValueStore())
     );
 
-    ReadOnlyKeyValueStore<String, Long> countOfOperationalArea = kafkaStreams.store(
+    ReadOnlyKeyValueStore<String, OperationalAreaVisitedCount> countOfOperationalArea = kafkaStreams.store(
         StoreQueryParameters.fromNameAndType(
             kafkaProperties.getStoreMap().get(KafkaConstants.tableOfOperationalAreaHierarchies),
             QueryableStoreTypes.keyValueStore())
@@ -130,10 +131,10 @@ public class DashboardService {
       totalFoundCoverageColumnData.setIsPercentage(true);
 
       String operationalAreaVisitedQueryKey = planIdentifier + "_" + childLocation.getIdentifier();
-      Long operationalAreaVisitedObj = countOfOperationalArea.get(operationalAreaVisitedQueryKey);
+      OperationalAreaVisitedCount operationalAreaVisitedObj = countOfOperationalArea.get(operationalAreaVisitedQueryKey);
       double operationalAreaVisitedCount = 0;
       if (operationalAreaVisitedObj != null) {
-        operationalAreaVisitedCount = operationalAreaVisitedObj;
+        operationalAreaVisitedCount = operationalAreaVisitedObj.getCount();
       }
 
       ColumnData operationalAreaVisitedColumnData = new ColumnData();

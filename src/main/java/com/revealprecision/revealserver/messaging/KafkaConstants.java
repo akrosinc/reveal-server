@@ -21,6 +21,7 @@ public class KafkaConstants {
   public static final String PLAN_LOCATION_HIERARCHY_PARENT = "PLAN_LOCATION_HIERARCHY_PARENT";
   public static final String LOCATION_BUSINESS_STATUS_COUNTS = "LOCATION_BUSINESS_STATUS_COUNTS";
   public static final String OPERATIONAL_AREA_COUNTS = "OPERATIONAL_AREA_COUNTS";
+  public static final String PERSON_METADATA_UPDATE = "PERSON_METADATA_UPDATE";
 
 
 

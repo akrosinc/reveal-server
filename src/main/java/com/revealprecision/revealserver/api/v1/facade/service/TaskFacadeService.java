@@ -35,6 +35,7 @@ import com.revealprecision.revealserver.util.ActionUtils;
 import com.revealprecision.revealserver.util.UserUtils;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map.Entry;
@@ -267,8 +268,9 @@ public class TaskFacadeService {
         if (location != null) {
           Set<Location> locations = person.getLocations();
           if (locations != null) {
-            locations.add(location);
-            person.setLocations(locations);
+            List<Location> locationArrayList = new ArrayList<>(locations);
+            locationArrayList.add(location);
+            person.setLocations(new HashSet<>(locationArrayList));
           }else{
             person.setLocations(Set.of(location));
           }

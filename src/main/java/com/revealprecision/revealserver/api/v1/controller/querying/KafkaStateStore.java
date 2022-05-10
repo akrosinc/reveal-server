@@ -3,6 +3,7 @@ package com.revealprecision.revealserver.api.v1.controller.querying;
 import com.revealprecision.revealserver.messaging.KafkaConstants;
 import com.revealprecision.revealserver.messaging.Message;
 import com.revealprecision.revealserver.messaging.message.LocationAssigned;
+import com.revealprecision.revealserver.messaging.message.OperationalAreaVisitedCount;
 import com.revealprecision.revealserver.messaging.message.TaskAggregate;
 import com.revealprecision.revealserver.messaging.message.TaskEvent;
 import com.revealprecision.revealserver.props.KafkaProperties;
@@ -94,15 +95,15 @@ public class KafkaStateStore {
   @GetMapping("/tableOfOperationalAreaHierarchies")
   public void tableOfOperationalAreaHierarchies() {
     KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
-    ReadOnlyKeyValueStore<String, Long> counts = kafkaStreams.store(
+    ReadOnlyKeyValueStore<String, OperationalAreaVisitedCount> counts = kafkaStreams.store(
         StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap().get(KafkaConstants.tableOfOperationalAreaHierarchies), QueryableStoreTypes.keyValueStore())
     );
-    KeyValueIterator<String, Long> all = counts.all();
+    KeyValueIterator<String, OperationalAreaVisitedCount> all = counts.all();
     log.info("Started");
     while (all.hasNext()) {
-      KeyValue<String, Long> keyValue = all.next();
+      KeyValue<String, OperationalAreaVisitedCount> keyValue = all.next();
       String key = keyValue.key;
-      Long value = keyValue.value;
+      OperationalAreaVisitedCount value = keyValue.value;
       log.info("key: {} - value: {}",key,value);
     }
     log.info("Ended");

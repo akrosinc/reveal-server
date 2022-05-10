@@ -2,9 +2,9 @@ package com.revealprecision.revealserver.service;
 
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.messaging.KafkaConstants;
-import com.revealprecision.revealserver.messaging.Message;
 import com.revealprecision.revealserver.messaging.message.LocationMetadataEvent;
 import com.revealprecision.revealserver.messaging.message.MetaDataEvent;
+import com.revealprecision.revealserver.messaging.message.PersonMetadataEvent;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.Person;
 import com.revealprecision.revealserver.persistence.domain.metadata.LocationMetadata;
@@ -18,6 +18,7 @@ import com.revealprecision.revealserver.persistence.repository.LocationMetadataR
 import com.revealprecision.revealserver.persistence.repository.PersonMetadataRepository;
 import com.revealprecision.revealserver.props.KafkaProperties;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -36,7 +37,8 @@ public class MetadataService {
 
   private final LocationMetadataRepository locationMetadataRepository;
   private final PersonMetadataRepository personMetadataRepository;
-  private final KafkaTemplate<String, LocationMetadataEvent> kafkaTemplate;
+  private final KafkaTemplate<String, LocationMetadataEvent> locationMetadataKafkaTemplate;
+  private final KafkaTemplate<String, PersonMetadataEvent> personMetadataKafkaTemplate;
   private final KafkaProperties kafkaProperties;
 
   public LocationMetadata getLocationMetadataByLocation(UUID locationIdentifier) {
@@ -84,7 +86,11 @@ public class MetadataService {
             .setUserId(user);
 
         if (personMetadata.getEntityValue().getMetadataObjs().get(arrIndex).getHistory() != null) {
-          personMetadata.getEntityValue().getMetadataObjs().get(arrIndex).getHistory().add(oldObj);
+          List<TagData> history = new ArrayList<>(personMetadata.getEntityValue().getMetadataObjs().get(arrIndex)
+              .getHistory());
+          history.add(oldObj);
+          personMetadata.getEntityValue().getMetadataObjs().get(arrIndex).setHistory(history);
+
         } else {
           personMetadata.getEntityValue().getMetadataObjs().get(arrIndex)
               .setHistory(List.of(oldObj));
@@ -96,14 +102,15 @@ public class MetadataService {
             dataType, tag, type);
 
         personMetadata = optionalPersonMetadata.get();
-        personMetadata.getEntityValue().getMetadataObjs().add(metadataObj);
+        List<MetadataObj> metadataObjs = new ArrayList<>(personMetadata.getEntityValue().getMetadataObjs());
+        metadataObjs.add(metadataObj);
+        personMetadata.getEntityValue().setMetadataObjs(metadataObjs);
 
       }
     } else {
       //location metadata does not exist
       personMetadata = new PersonMetadata();
 
-      //TODO: check this
 
       person.setIdentifier(personIdentifier);
       personMetadata.setPerson(person);
@@ -118,7 +125,25 @@ public class MetadataService {
       personMetadata.setEntityStatus(EntityStatus.ACTIVE);
     }
 
-    return personMetadataRepository.save(personMetadata);
+    PersonMetadata savedLocationMetadata = personMetadataRepository.save(personMetadata);
+
+    PersonMetadataEvent personMetadataEvent = new PersonMetadataEvent();
+    personMetadataEvent.setIdentifier(savedLocationMetadata.getIdentifier());
+    personMetadataEvent.setMetaDataEvents(
+        savedLocationMetadata.getEntityValue().getMetadataObjs().stream().map(metadataObj -> {
+          MetaDataEvent metaDataEvent = new MetaDataEvent();
+          metaDataEvent.setTag(metadataObj.getTag());
+          metaDataEvent.setTagData(metadataObj.getCurrent());
+
+          metaDataEvent.setType(metadataObj.getType());
+          return metaDataEvent;
+        }).collect(Collectors.toList()));
+    personMetadataEvent.setEntityId(savedLocationMetadata.getPerson().getIdentifier());
+    personMetadataEvent.setLocationIdList(person.getLocations().stream().map(Location::getIdentifier).collect(
+        Collectors.toList()));
+
+//    personMetadataKafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.PERSON_METADATA_UPDATE),personMetadataEvent);
+    return savedLocationMetadata;
   }
 
 
@@ -205,7 +230,7 @@ public class MetadataService {
         }).collect(Collectors.toList()));
     locationMetadataEvent.setEntityId(savedLocationMetadata.getLocation().getIdentifier());
 
-    kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.LOCATION_METADATA_UPDATE),locationMetadataEvent);
+    locationMetadataKafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.LOCATION_METADATA_UPDATE),locationMetadataEvent);
     return savedLocationMetadata;
   }
 

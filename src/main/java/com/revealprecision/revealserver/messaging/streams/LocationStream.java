@@ -2,6 +2,7 @@ package com.revealprecision.revealserver.messaging.streams;
 
 import com.revealprecision.revealserver.messaging.KafkaConstants;
 import com.revealprecision.revealserver.messaging.message.LocationAssigned;
+import com.revealprecision.revealserver.messaging.message.OperationalAreaVisitedCount;
 import com.revealprecision.revealserver.messaging.message.PlanLocationAssignMessage;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
@@ -17,6 +18,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.serialization.Serdes;
+import org.apache.kafka.common.utils.Bytes;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StoreQueryParameters;
@@ -27,6 +29,7 @@ import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KTable;
 import org.apache.kafka.streams.kstream.Materialized;
 import org.apache.kafka.streams.kstream.Printed;
+import org.apache.kafka.streams.state.KeyValueStore;
 import org.apache.kafka.streams.state.QueryableStoreTypes;
 import org.apache.kafka.streams.state.ReadOnlyKeyValueStore;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -133,6 +136,7 @@ public class LocationStream {
     KStream<String, LocationAssigned> stringLocationAssignedKStream = planStructureCounts
         .filter((k, v) -> locationService.findByIdentifier(UUID.fromString(k.split("_")[1]))
             .getGeographicLevel().getName().equals("operational"))
+        .filter((k,v)->k.split("_")[3].equals("Not Visited"))
         .mapValues((k, v) -> {
           Plan plan = planService.getPlanByIdentifier(UUID.fromString(k.split("_")[0]));
 
@@ -161,7 +165,7 @@ public class LocationStream {
             double percentageOfNotVisited =
                 countOfNotVisited.doubleValue() / countOfAssigned.doubleValue() * 100;
 
-            log.info("{} percentage: {}",key,percentageOfNotVisited);
+            log.info("{} countOfNotVisited/countOfAssigned {}/{} percentage: {}",key,countOfNotVisited,countOfAssigned,percentageOfNotVisited);
 
             if (percentageOfNotVisited < 80) {
               v.setVisited(true);
@@ -206,15 +210,32 @@ public class LocationStream {
           return v.getPlanIdentifier()+"_"+v.getIdentifier()+"_"+v.getAncestor();
     });
 
-    KTable<String, Long> count = stringLocationAssignedKStream
+    KTable<String, OperationalAreaVisitedCount> count = stringLocationAssignedKStream
         .mapValues((k, v) -> v.isVisited() ? v : null)
         .groupBy((k, v) ->
                 k.split("_")[0] + "_" + k.split("_")[2]
             , Grouped.with(Serdes.String(), new JsonSerde<>(LocationAssigned.class)))
-        .count(Materialized.as(
-            kafkaProperties.getStoreMap().get(KafkaConstants.tableOfOperationalAreaHierarchies)));
+            .aggregate(OperationalAreaVisitedCount::new,
+                (k,v,agg)->{
+                    if (agg.getCount() != null){
+                      if (!agg.getListOfKeys().contains(v.getPlanIdentifier()+"_"+v.getIdentifier()+"_"+v.getAncestor())){
+                        List<String> listOfKeys = new ArrayList<>(agg.getListOfKeys());
+                        listOfKeys.add(v.getPlanIdentifier()+"_"+v.getIdentifier()+"_"+v.getAncestor());
+                        agg.setListOfKeys(listOfKeys);
+                        agg.setCount(agg.getCount()+1);
+                      }
+                    } else {
+                      agg.setCount(1L);
+                      agg.setListOfKeys(List.of(v.getPlanIdentifier()+"_"+v.getIdentifier()+"_"+v.getAncestor()));
+                    }
+                    return agg;
+                },Materialized.<String,OperationalAreaVisitedCount, KeyValueStore<Bytes, byte[]>>as(
+            kafkaProperties.getStoreMap().get(KafkaConstants.tableOfOperationalAreaHierarchies))
+                    .withKeySerde(Serdes.String())
+                    .withValueSerde(new JsonSerde<>(OperationalAreaVisitedCount.class)));
+//        .count(Materialized.as(
+//            kafkaProperties.getStoreMap().get(KafkaConstants.tableOfOperationalAreaHierarchies)));
 
-    count.toStream().print(Printed.<String,Long>toSysOut());
     return stringLocationAssignedKStream1;
   }
 
