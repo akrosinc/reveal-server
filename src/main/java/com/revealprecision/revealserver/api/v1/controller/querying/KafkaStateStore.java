@@ -53,7 +53,40 @@ public class KafkaStateStore {
     return counts.get(parentId);
   }
 
+  @GetMapping("/assignedStructureCountPerParent")
+  public void countOfAssignedStructure() {
+    KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
+    ReadOnlyKeyValueStore<String, Long> counts = kafkaStreams.store(
+        StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap().get(KafkaConstants.assignedStructureCountPerParent), QueryableStoreTypes.keyValueStore())
+    );
+    KeyValueIterator<String, Long> all = counts.all();
+    log.info("Started");
+    while (all.hasNext()) {
+      KeyValue<String, Long> keyValue = all.next();
+      String key = keyValue.key;
+      Long value = keyValue.value;
+      log.info("key: {} - value: {}",key,value);
+    }
+    log.info("Ended");
+//    return counts.get(parentId);
+  }
 
+  @GetMapping("/tableOfOperationalAreaHierarchies")
+  public void tableOfOperationalAreaHierarchies() {
+    KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
+    ReadOnlyKeyValueStore<String, Long> counts = kafkaStreams.store(
+        StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap().get(KafkaConstants.tableOfOperationalAreaHierarchies), QueryableStoreTypes.keyValueStore())
+    );
+    KeyValueIterator<String, Long> all = counts.all();
+    log.info("Started");
+    while (all.hasNext()) {
+      KeyValue<String, Long> keyValue = all.next();
+      String key = keyValue.key;
+      Long value = keyValue.value;
+      log.info("key: {} - value: {}",key,value);
+    }
+    log.info("Ended");
+  }
 
   @GetMapping("/locationBusinessStatusByPlanParentHierarchy")
   public void locationBusinessStatusByPlanParentHierarchy() {

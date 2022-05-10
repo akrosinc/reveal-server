@@ -71,7 +71,7 @@ public class TaskFacadeController {
   @PostMapping(value = "/add", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<String> batchSave(@RequestBody List<TaskDto> tasks) {
 
-    List<TaskDto> taskDtosUnprocessed = taskFacadeService.addTasks(tasks);
+       List<TaskDto> taskDtosUnprocessed = taskFacadeService.addTasks(tasks);
 
     if (taskDtosUnprocessed.isEmpty()) {
       return new ResponseEntity<>("All Tasks  processed", HttpStatus.CREATED);
