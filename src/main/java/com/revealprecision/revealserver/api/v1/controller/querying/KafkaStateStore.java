@@ -2,6 +2,7 @@ package com.revealprecision.revealserver.api.v1.controller.querying;
 
 import com.revealprecision.revealserver.messaging.KafkaConstants;
 import com.revealprecision.revealserver.messaging.Message;
+import com.revealprecision.revealserver.messaging.message.LocationAssigned;
 import com.revealprecision.revealserver.messaging.message.TaskAggregate;
 import com.revealprecision.revealserver.messaging.message.TaskEvent;
 import com.revealprecision.revealserver.props.KafkaProperties;
@@ -34,6 +35,25 @@ public class KafkaStateStore {
 
   @Autowired
   KafkaTemplate<String, Message> kafkaTemplate;
+
+
+  @GetMapping("/tableOfOperationalAreas")
+  public void tableOfOperationalAreas() {
+    KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
+    ReadOnlyKeyValueStore<String, LocationAssigned> counts = kafkaStreams.store(
+        StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap().get(KafkaConstants.tableOfOperationalAreas), QueryableStoreTypes.keyValueStore())
+    );
+    KeyValueIterator<String, LocationAssigned> all = counts.all();
+    log.info("Started");
+    while (all.hasNext()) {
+      KeyValue<String, LocationAssigned> keyValue = all.next();
+      String key = keyValue.key;
+      LocationAssigned value = keyValue.value;
+      log.info("key: {} - value: {}",key,value);
+    }
+    log.info("Ended");
+//    return counts.get(parentId);
+  }
 
   @GetMapping("/locationBusinessStatusByPlanParentHierarchy/{parentId}")
   public Long locationBusinessStatusByPlanParentHierarchy(@PathVariable String parentId) {

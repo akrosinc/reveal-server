@@ -145,7 +145,7 @@ public class TaskGenerationStream {
                     kafkaProperties.getStoreMap().get(KafkaConstants.taskParent))
                 .withKeySerde(Serdes.String())
                 .withValueSerde(new JsonSerde<>(TaskAggregate.class)));
-    aggregatedTaskStream.toStream().print(Printed.<String, TaskAggregate>toSysOut());
+
     return taskStream;
   }
 
