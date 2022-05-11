@@ -79,6 +79,7 @@ public class TaskFacadeService {
       return location;
     }).filter(location -> location.getGeographicLevel().getName().equals("operational")).collect(
         Collectors.toList());
+    log.debug("getting tasks for the ffg operational areas: {}",operational);
 
     KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
     ReadOnlyKeyValueStore<String, TaskEvent> taskPlanParent = kafkaStreams.store(
@@ -94,12 +95,27 @@ public class TaskFacadeService {
 
     Set<String> strings = planIdentifiers.stream()
         .flatMap(
-            planIdentifier -> operational.stream().flatMap(
-                jurisdictionIdentifier -> taskParent.get(
-                        planIdentifier + "_" + jurisdictionIdentifier.getIdentifier()).getTaskIds().stream()
-                    .filter(taskId -> taskId.getServerVersion() > serverVersion)
-                    .map(taskId -> taskId.getId() + "_" + planIdentifier + "_"
-                        + jurisdictionIdentifier.getIdentifier()))
+            planIdentifier -> operational.stream()
+                .peek(plan->log.debug("plan Id for task sync: {}",plan))
+                .flatMap(
+                jurisdictionIdentifier -> {
+                  log.debug("key to retrieve task: {}",planIdentifier + "_" + jurisdictionIdentifier.getIdentifier());
+                  List<TaskLocationPair> taskIds = taskParent.get(
+                      planIdentifier + "_" + jurisdictionIdentifier.getIdentifier()).getTaskIds();
+
+                  if (taskIds == null){
+                    log.error("cannot retrieve tasks from kafka store for key: {}",planIdentifier + "_" + jurisdictionIdentifier.getIdentifier());
+                    taskIds = new ArrayList<>();
+                  }
+
+                  return taskIds
+                      .stream()
+                      .peek(taskIdList -> log.debug("items retrieved from kafka store: {}",taskIdList))
+                      .filter(taskId -> taskId.getServerVersion() > serverVersion)
+                      .map(taskId -> taskId.getId() + "_" + planIdentifier + "_"
+                          + jurisdictionIdentifier.getIdentifier());
+                })
+
         ).collect(Collectors.toCollection(LinkedHashSet::new));
 
 
