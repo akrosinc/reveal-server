@@ -4,6 +4,7 @@ import com.revealprecision.revealserver.messaging.KafkaConstants;
 import com.revealprecision.revealserver.messaging.Message;
 import com.revealprecision.revealserver.messaging.message.LocationAssigned;
 import com.revealprecision.revealserver.messaging.message.OperationalAreaVisitedCount;
+import com.revealprecision.revealserver.messaging.message.PersonBusinessStatus;
 import com.revealprecision.revealserver.messaging.message.TaskAggregate;
 import com.revealprecision.revealserver.messaging.message.TaskEvent;
 import com.revealprecision.revealserver.props.KafkaProperties;
@@ -36,6 +37,43 @@ public class KafkaStateStore {
 
   @Autowired
   KafkaTemplate<String, Message> kafkaTemplate;
+
+  @GetMapping("/personBusinessStatus")
+  public void personBusinessStatus() {
+    KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
+    ReadOnlyKeyValueStore<String, PersonBusinessStatus> counts = kafkaStreams.store(
+        StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap().get(KafkaConstants.personBusinessStatus), QueryableStoreTypes.keyValueStore())
+    );
+    KeyValueIterator<String, PersonBusinessStatus> all = counts.all();
+    log.info("Started");
+    while (all.hasNext()) {
+      KeyValue<String, PersonBusinessStatus> keyValue = all.next();
+      String key = keyValue.key;
+      PersonBusinessStatus value = keyValue.value;
+      log.info("key: {} - value: {}",key,value);
+    }
+    log.info("Ended");
+//    return counts.get(parentId);
+  }
+
+
+  @GetMapping("/personBusinessStatusByPlanParentHierarchy")
+  public void personBusinessStatusByPlanParentHierarchy() {
+    KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
+    ReadOnlyKeyValueStore<String, Long> counts = kafkaStreams.store(
+        StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap().get(KafkaConstants.personBusinessStatusByPlanParentHierarchy), QueryableStoreTypes.keyValueStore())
+    );
+    KeyValueIterator<String, Long> all = counts.all();
+    log.info("Started");
+    while (all.hasNext()) {
+      KeyValue<String, Long> keyValue = all.next();
+      String key = keyValue.key;
+      Long value = keyValue.value;
+      log.info("key: {} - value: {}",key,value);
+    }
+    log.info("Ended");
+//    return counts.get(parentId);
+  }
 
 
   @GetMapping("/tableOfOperationalAreas")
@@ -91,6 +129,9 @@ public class KafkaStateStore {
     log.info("Ended");
 //    return counts.get(parentId);
   }
+
+
+
 
   @GetMapping("/tableOfOperationalAreaHierarchies")
   public void tableOfOperationalAreaHierarchies() {

@@ -6,6 +6,7 @@ import com.revealprecision.revealserver.api.v1.dto.models.TableRow;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.messaging.KafkaConstants;
 import com.revealprecision.revealserver.messaging.message.OperationalAreaVisitedCount;
+import com.revealprecision.revealserver.messaging.message.PersonBusinessStatus;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
 import com.revealprecision.revealserver.persistence.domain.Plan;
@@ -59,6 +60,13 @@ public class DashboardService {
             kafkaProperties.getStoreMap().get(KafkaConstants.tableOfOperationalAreaHierarchies),
             QueryableStoreTypes.keyValueStore())
     );
+
+    ReadOnlyKeyValueStore<String, PersonBusinessStatus> personBusinessStatus = kafkaStreams.store(
+        StoreQueryParameters.fromNameAndType(
+            kafkaProperties.getStoreMap().get(KafkaConstants.personBusinessStatus),
+            QueryableStoreTypes.keyValueStore())
+    );
+
 
     Plan plan = planService.getPlanByIdentifier(planIdentifier);
     List<Location> childrenLocations = new ArrayList<>();
@@ -116,6 +124,7 @@ public class DashboardService {
         notEligibleStructures = notEligibleStructuresObj;
       }
 
+
       double totalStructuresFound =
           totalStructureCount - (notVisitedStructuresCount + notEligibleStructures);
 
@@ -141,11 +150,44 @@ public class DashboardService {
       operationalAreaVisitedColumnData.setValue(operationalAreaVisitedCount);
       operationalAreaVisitedColumnData.setIsPercentage(false);
 
+      String personLocationBusinessStatusKey =
+          planIdentifier + "_" + childLocation.getIdentifier() + "_" + plan.getLocationHierarchy()
+              .getIdentifier();
+      PersonBusinessStatus personLocationBusinessStatusObj = personBusinessStatus.get(personLocationBusinessStatusKey);
+
+      double noOfTreatedStructures = 0;
+      double noOfChildrenTreated = 0;
+      double noOfPeopleEligible = 0;
+      if (personLocationBusinessStatusObj != null) {
+        noOfTreatedStructures = personLocationBusinessStatusObj.getLocationsTreated().size();
+        noOfChildrenTreated = personLocationBusinessStatusObj.getPersonTreated().size();
+        noOfPeopleEligible = personLocationBusinessStatusObj.getPersonEligible().size();
+      }
+
+      ColumnData noOfTreatedStructuresColumnData = new ColumnData();
+      noOfTreatedStructuresColumnData.setValue(noOfTreatedStructures);
+      noOfTreatedStructuresColumnData.setIsPercentage(false);
+
+      double percentageOfTreatedStructuresToTotalStructures = totalStructureCount > 0 ? noOfTreatedStructures / totalStructureCount * 100 : 0;
+
+      ColumnData percentageOfTreatedStructuresToTotalStructureColumnData = new ColumnData();
+      percentageOfTreatedStructuresToTotalStructureColumnData.setValue(percentageOfTreatedStructuresToTotalStructures);
+      percentageOfTreatedStructuresToTotalStructureColumnData.setIsPercentage(true);
+
+      double percentageOfChildrenTreatedToPeopleEligible = noOfPeopleEligible > 0 ? noOfChildrenTreated / noOfPeopleEligible * 100 : 0;
+
+      ColumnData percentageOfChildrenTreatedToPeopleEligibleColumnData = new ColumnData();
+      percentageOfChildrenTreatedToPeopleEligibleColumnData.setValue(percentageOfChildrenTreatedToPeopleEligible);
+      percentageOfChildrenTreatedToPeopleEligibleColumnData.setIsPercentage(true);
+
       Map<String, ColumnData> columns = new HashMap<>();
       columns.put("Total Structures", totalStructuresColumnData);
       columns.put("Total Structures Found", totalStructuresFoundColumnData);
       columns.put("Found Coverage", totalFoundCoverageColumnData);
       columns.put("Operational Area Visited", operationalAreaVisitedColumnData);
+      columns.put("Total Structures Received SPAQ",noOfTreatedStructuresColumnData);
+      columns.put("Distribution Coverage",percentageOfTreatedStructuresToTotalStructureColumnData);
+      columns.put("Treatment coverage",percentageOfChildrenTreatedToPeopleEligibleColumnData);
 
       RowData rowData = new RowData();
       rowData.setLocationIdentifier(childLocation.getIdentifier());

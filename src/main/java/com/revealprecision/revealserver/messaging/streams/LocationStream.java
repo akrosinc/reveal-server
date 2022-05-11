@@ -233,9 +233,6 @@ public class LocationStream {
             kafkaProperties.getStoreMap().get(KafkaConstants.tableOfOperationalAreaHierarchies))
                     .withKeySerde(Serdes.String())
                     .withValueSerde(new JsonSerde<>(OperationalAreaVisitedCount.class)));
-//        .count(Materialized.as(
-//            kafkaProperties.getStoreMap().get(KafkaConstants.tableOfOperationalAreaHierarchies)));
-
     return stringLocationAssignedKStream1;
   }
 

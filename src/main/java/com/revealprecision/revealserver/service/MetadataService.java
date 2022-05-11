@@ -108,7 +108,7 @@ public class MetadataService {
 
       }
     } else {
-      //location metadata does not exist
+      //person metadata does not exist
       personMetadata = new PersonMetadata();
 
 
@@ -128,6 +128,7 @@ public class MetadataService {
     PersonMetadata savedLocationMetadata = personMetadataRepository.save(personMetadata);
 
     PersonMetadataEvent personMetadataEvent = new PersonMetadataEvent();
+
     personMetadataEvent.setIdentifier(savedLocationMetadata.getIdentifier());
     personMetadataEvent.setMetaDataEvents(
         savedLocationMetadata.getEntityValue().getMetadataObjs().stream().map(metadataObj -> {
@@ -142,7 +143,7 @@ public class MetadataService {
     personMetadataEvent.setLocationIdList(person.getLocations().stream().map(Location::getIdentifier).collect(
         Collectors.toList()));
 
-//    personMetadataKafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.PERSON_METADATA_UPDATE),personMetadataEvent);
+    personMetadataKafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.PERSON_METADATA_UPDATE),personMetadataEvent);
     return savedLocationMetadata;
   }
 

@@ -134,7 +134,6 @@ public class LocationBusinessStatusStream {
                 .withValueSerde(new JsonSerde<>(LocationBusinessStatus.class))
                 .withKeySerde(Serdes.String())
         );
-//    aggregate1.toStream().print(Printed.<String,LocationBusinessStatus>toSysOut());
 
     KTable<String, Long> count = aggregate1.groupBy((k, v) ->
             KeyValue.pair(k.split("_")[0] + "_" + //plan
