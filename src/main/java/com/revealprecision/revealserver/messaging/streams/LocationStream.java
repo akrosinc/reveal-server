@@ -62,7 +62,7 @@ public class LocationStream {
     KStream<String, PlanLocationAssignMessage> locationsAssignedStream = streamsBuilder.stream(
         kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_LOCATION_ASSIGNED),
         Consumed.with(Serdes.String(), new JsonSerde<>(PlanLocationAssignMessage.class)));
-    locationsAssignedStream.print(Printed.<String, PlanLocationAssignMessage>toSysOut());
+//    locationsAssignedStream.print(Printed.<String, PlanLocationAssignMessage>toSysOut());
 
     //Get structures from the locations assigned to plan
     KStream<String, PlanLocationAssignMessage> stringPlanLocationAssignMessageKStream = locationsAssignedStream
@@ -96,7 +96,6 @@ public class LocationStream {
             return locationAssigned1;
           }).collect(Collectors.toList());
         })
-        .peek((k, v) -> log.info("k: {},v: {}", k, v))
         .selectKey((key, locationAssigned) -> locationAssigned.getIdentifier() + "_"
             + locationAssigned.getPlanIdentifier() + "_" + locationAssigned.getAncestor())
         .mapValues((k, v) -> v.isAssigned() ? v : null);
@@ -117,8 +116,8 @@ public class LocationStream {
             Grouped.with(Serdes.String(), new JsonSerde<>(LocationAssigned.class)))
         .count(Materialized.as(
             kafkaProperties.getStoreMap().get(KafkaConstants.assignedStructureCountPerParent)));
-    assignedStructureCountPerParent.toStream()
-        .print(Printed.<String, Long>toSysOut());
+//    assignedStructureCountPerParent.toStream()
+//        .print(Printed.<String, Long>toSysOut());
     assignedStructureCountPerParent.toStream()
         .to(kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_STRUCTURES_COUNTS));
 
@@ -131,7 +130,7 @@ public class LocationStream {
     KStream<String, Long> planStructureCounts = streamsBuilder.stream(
         kafkaProperties.getTopicMap().get(KafkaConstants.LOCATION_BUSINESS_STATUS_COUNTS),
         Consumed.with(Serdes.String(), Serdes.Long()));
-    planStructureCounts.print(Printed.<String, Long>toSysOut());
+//    planStructureCounts.print(Printed.<String, Long>toSysOut());
 
     KStream<String, LocationAssigned> stringLocationAssignedKStream = planStructureCounts
         .filter((k, v) -> locationService.findByIdentifier(UUID.fromString(k.split("_")[1]))
@@ -177,7 +176,7 @@ public class LocationStream {
           }
           return v;
         }).selectKey((k,v)->v.getPlanIdentifier()+"_"+v.getIdentifier());
-    stringLocationAssignedKStream.print(Printed.<String,LocationAssigned>toSysOut());
+//    stringLocationAssignedKStream.print(Printed.<String,LocationAssigned>toSysOut());
 
     stringLocationAssignedKStream.to(kafkaProperties.getTopicMap().get(KafkaConstants.OPERATIONAL_AREA_COUNTS));
 

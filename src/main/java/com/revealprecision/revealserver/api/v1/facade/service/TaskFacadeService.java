@@ -96,18 +96,17 @@ public class TaskFacadeService {
     Set<String> strings = planIdentifiers.stream()
         .flatMap(
             planIdentifier -> operational.stream()
-                .peek(plan->log.debug("plan Id for task sync: {}",plan))
+                .peek(plan->log.debug("plan Id for task sync: {}",planIdentifier))
                 .flatMap(
                 jurisdictionIdentifier -> {
-                  log.debug("key to retrieve task: {}",planIdentifier + "_" + jurisdictionIdentifier.getIdentifier());
-                  List<TaskLocationPair> taskIds = taskParent.get(
-                      planIdentifier + "_" + jurisdictionIdentifier.getIdentifier()).getTaskIds();
-
-                  if (taskIds == null){
-                    log.error("cannot retrieve tasks from kafka store for key: {}",planIdentifier + "_" + jurisdictionIdentifier.getIdentifier());
-                    taskIds = new ArrayList<>();
+                  String taskKey = planIdentifier + "_" + jurisdictionIdentifier.getIdentifier();
+                  log.debug("key to retrieve task: {}",taskKey);
+                  List<TaskLocationPair> taskIds = new ArrayList<>();
+                  try {
+                    taskIds = taskParent.get(taskKey).getTaskIds();
+                  }catch (NullPointerException exp){
+                    log.error("key: {} requested is not present in kafka store",taskKey);
                   }
-
                   return taskIds
                       .stream()
                       .peek(taskIdList -> log.debug("items retrieved from kafka store: {}",taskIdList))
