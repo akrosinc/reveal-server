@@ -16,4 +16,5 @@ public class ColumnData implements Serializable {
 
   private Double value;
   private Boolean isPercentage;
+  private String meta;
 }

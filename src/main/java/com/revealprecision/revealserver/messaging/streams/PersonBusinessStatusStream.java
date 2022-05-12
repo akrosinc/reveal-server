@@ -90,7 +90,6 @@ public class PersonBusinessStatusStream {
                   return locationMetadataEvent;
                 });
           }).collect(Collectors.toList());
-
         })
         .flatMapValues((k, personMetadata) -> {
           List<PersonMetadataUnpackedEvent> personMetadataEventsWithHierarchyAndAncestorNodeWithIndividualMetadata = personMetadata.getMetaDataEvents()

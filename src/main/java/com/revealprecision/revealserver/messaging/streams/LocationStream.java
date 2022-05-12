@@ -1,7 +1,9 @@
 package com.revealprecision.revealserver.messaging.streams;
 
+import com.revealprecision.revealserver.constants.LocationConstants;
 import com.revealprecision.revealserver.messaging.KafkaConstants;
 import com.revealprecision.revealserver.messaging.message.LocationAssigned;
+import com.revealprecision.revealserver.messaging.message.LocationRelationshipMessage;
 import com.revealprecision.revealserver.messaging.message.OperationalAreaVisitedCount;
 import com.revealprecision.revealserver.messaging.message.PlanLocationAssignMessage;
 import com.revealprecision.revealserver.persistence.domain.Location;
@@ -53,6 +55,34 @@ public class LocationStream {
 
   @Autowired
    StreamsBuilderFactoryBean getKafkaStreams;
+
+  @Bean
+  KStream<String, LocationRelationshipMessage> getTotalStructures(
+      StreamsBuilder streamsBuilder) {
+
+    KStream<String, LocationRelationshipMessage> locationsImported = streamsBuilder.stream(
+        kafkaProperties.getTopicMap().get(KafkaConstants.LOCATIONS_IMPORTED),
+        Consumed.with(Serdes.String(), new JsonSerde<>(LocationRelationshipMessage.class)));
+
+    KStream<String, LocationRelationshipMessage> structures = locationsImported
+        .filter((k,locationRelationshipMessage) -> locationRelationshipMessage.getGeoName().equals(
+            LocationConstants.STRUCTURE))
+        .flatMapValues((k, locationRelationshipMessage) -> locationRelationshipMessage.getAncestry().stream().map(ancestor -> {
+          LocationRelationshipMessage locationRelationshipMessage1 = new LocationRelationshipMessage();
+          locationRelationshipMessage1.setLocationName(locationRelationshipMessage.getLocationName());
+          locationRelationshipMessage1.setGeoName(locationRelationshipMessage.getGeoName());
+          locationRelationshipMessage1.setAncestor(ancestor);
+          locationRelationshipMessage1.setLocationIdentifier(locationRelationshipMessage.getLocationIdentifier());
+          locationRelationshipMessage1.setLocationHierarchyIdentifier(locationRelationshipMessage.getLocationHierarchyIdentifier());
+          return locationRelationshipMessage1;
+        }).collect(Collectors.toList()))
+        .selectKey((k,locationRelationshipMessage)->locationRelationshipMessage.getLocationHierarchyIdentifier() +"_"+locationRelationshipMessage.getAncestor());
+
+    structures.groupByKey().count(Materialized.as(kafkaProperties.getStoreMap()
+        .get(KafkaConstants.structureCountPerParent)));
+
+    return locationsImported;
+  }
 
   @Bean
   KStream<String, PlanLocationAssignMessage> getAssignedStructures(
@@ -184,7 +214,7 @@ public class LocationStream {
   }
 
 
-  @Bean
+  @Bean("OperationalAreaTable")
   KStream<String, LocationAssigned> getOperationalAreaTable(StreamsBuilder streamsBuilder) {
 
    KTable<String,LocationAssigned> operationalAreaTable = streamsBuilder.table(kafkaProperties.getTopicMap().get(KafkaConstants.OPERATIONAL_AREA_COUNTS),

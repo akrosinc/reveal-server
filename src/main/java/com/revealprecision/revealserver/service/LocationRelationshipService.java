@@ -23,7 +23,6 @@ import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -336,6 +335,7 @@ public class LocationRelationshipService {
             locationRelationshipMessage.setParentLocationIdentifier(locationRelationshipToSave.getParentLocation().getIdentifier());
             locationRelationshipMessage.setAncestry(locationRelationshipToSave.getAncestry());
             locationRelationshipMessage.setLocationName(location.getName());
+            locationRelationshipMessage.setLocationHierarchyIdentifier(locationHierarchy.getIdentifier());
             kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.LOCATIONS_IMPORTED),locationRelationshipMessage);
           }
         }

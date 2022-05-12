@@ -27,4 +27,8 @@ public class LocationRelationshipMessage extends Message {
 
   private List<UUID> ancestry;
 
+  private UUID ancestor;
+
+  private UUID locationHierarchyIdentifier;
+
 }

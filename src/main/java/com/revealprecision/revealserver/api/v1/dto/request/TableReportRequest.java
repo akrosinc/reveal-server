@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.api.v1.dto.request;
 
+import com.revealprecision.revealserver.enums.ReportTypeEnum;
 import java.io.Serializable;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -16,7 +17,7 @@ public class TableReportRequest implements Serializable {
 
   private UUID planIdentifier;
 
-  private UUID reportIdentifier;
+  private ReportTypeEnum reportTypeEnum;
 
   @Nullable
   private UUID parentLocationIdentifier;

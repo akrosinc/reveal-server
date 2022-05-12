@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.api.v1.dto.models;
 
+import com.revealprecision.revealserver.enums.ReportTypeEnum;
 import java.io.Serializable;
 import java.util.List;
 import java.util.UUID;
@@ -17,7 +18,7 @@ import org.hl7.fhir.utilities.xls.XLSXmlParser.Row;
 @Builder
 public class TableRow implements Serializable {
   private UUID parentLocationIdentifier;
-  private UUID reportIdentifier;
+  private ReportTypeEnum reportTypeEnum;
   private UUID planIdentifier;
   private List<RowData> rowData;
 }
