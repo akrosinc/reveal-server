@@ -55,6 +55,7 @@ public class LocationResponseFactory {
                 .numberOfTeams(planLocationDetails.getAssignedTeams())
                 .assigned(planLocationDetails.getAssignedLocations() > 0 ? true : false)
                 .parentIdentifier(planLocationDetails.getParentLocation() == null ? parentIdentifier : planLocationDetails.getParentLocation().getIdentifier())
+                .childrenNumber(planLocationDetails.getChildrenNumber())
                 .build())
         .build();
   }

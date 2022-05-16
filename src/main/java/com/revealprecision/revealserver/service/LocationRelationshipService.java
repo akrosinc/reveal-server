@@ -226,7 +226,9 @@ public class LocationRelationshipService {
     return locationRelationshipRepository.getLocationChildrenCount(locationHierarchyIdentifier);
   }
 
-
+  public long getNumberOfChildren(UUID locationIdentifier) {
+    return locationRelationshipRepository.getChildrenNumber(locationIdentifier);
+  }
 
   public List<Location> getLocationChildrenByLocationParentIdentifierAndHierarchyIdentifier(
       List<UUID> parentLocationIdentifiers, UUID hierarchyIdentifier) {
