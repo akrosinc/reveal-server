@@ -9,6 +9,7 @@ import com.revealprecision.revealserver.persistence.domain.GeographicLevel;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
+import com.revealprecision.revealserver.persistence.projection.LocationChildrenCountProjection;
 import com.revealprecision.revealserver.persistence.projection.LocationRelationshipProjection;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import com.revealprecision.revealserver.persistence.repository.GeographicLevelRepository;
@@ -16,16 +17,12 @@ import com.revealprecision.revealserver.persistence.repository.LocationHierarchy
 import com.revealprecision.revealserver.persistence.repository.LocationRelationshipRepository;
 import com.revealprecision.revealserver.persistence.repository.LocationRepository;
 import java.io.IOException;
-import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -39,7 +36,6 @@ import org.elasticsearch.common.geo.ShapeRelation;
 import org.elasticsearch.geometry.Point;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.util.Pair;
@@ -224,10 +220,13 @@ public class LocationRelationshipService {
       LocationHierarchy locationHierarchy) {
    return locationRelationshipRepository.findByLocationHierarchyWithoutStructures(
         locationHierarchy.getIdentifier());
-//    return locationRelationships.stream()
-//        .map(LocationRelationship::new)
-//        .collect(Collectors.toList());
   }
+
+  public List<LocationChildrenCountProjection> getLocationChildrenCount(UUID locationHierarchyIdentifier){
+    return locationRelationshipRepository.getLocationChildrenCount(locationHierarchyIdentifier);
+  }
+
+
 
   public List<Location> getLocationChildrenByLocationParentIdentifierAndHierarchyIdentifier(
       List<UUID> parentLocationIdentifiers, UUID hierarchyIdentifier) {

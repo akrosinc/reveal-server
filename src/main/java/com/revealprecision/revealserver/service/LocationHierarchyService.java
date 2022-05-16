@@ -113,6 +113,9 @@ public class LocationHierarchyService {
       LocationHierarchy locationHierarchy) {
     List<LocationRelationshipProjection> locationRelationship = locationRelationshipService.getLocationRelationshipsWithoutStructure(
         locationHierarchy);
+    Map<String, Long> childrenCount = locationRelationshipService.getLocationChildrenCount(locationHierarchy.getIdentifier())
+        .stream().filter(loc -> loc.getParentIdentifier() != null)
+        .collect(Collectors.toMap(loc -> loc.getParentIdentifier(), loc -> loc.getChildrenCount()));
 
     List<GeoTreeResponse> geoTreeResponses = locationRelationship.stream()
         .map(lr -> GeoTreeResponse.builder()
@@ -123,7 +126,7 @@ public class LocationHierarchyService {
                     : UUID.fromString(lr.getParentIdentifier()))
                 .name(lr.getLocationName())
                 .geographicLevel(lr.getGeographicLevelName())
-                .childrenNumber(lr.getChildrenNumber())
+                .childrenNumber(childrenCount.containsKey(lr.getLocationIdentifier()) ? childrenCount.get(lr.getLocationIdentifier()) : 0)
                 .build())
             .build()).collect(Collectors.toList());
     Map<UUID, List<GeoTreeResponse>> geoTreeHierarchy = geoTreeResponses.stream()
