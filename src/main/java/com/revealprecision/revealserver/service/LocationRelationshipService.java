@@ -220,13 +220,13 @@ public class LocationRelationshipService {
         Collectors.toList());
   }
 
-  public List<LocationRelationship> getLocationRelationshipsWithoutStructure(
+  public List<LocationRelationshipProjection> getLocationRelationshipsWithoutStructure(
       LocationHierarchy locationHierarchy) {
-    List<LocationRelationshipProjection> locationRelationships = locationRelationshipRepository.findByLocationHierarchyWithoutStructures(
+   return locationRelationshipRepository.findByLocationHierarchyWithoutStructures(
         locationHierarchy.getIdentifier());
-    return locationRelationships.stream()
-        .map(LocationRelationship::new)
-        .collect(Collectors.toList());
+//    return locationRelationships.stream()
+//        .map(LocationRelationship::new)
+//        .collect(Collectors.toList());
   }
 
   public List<Location> getLocationChildrenByLocationParentIdentifierAndHierarchyIdentifier(
