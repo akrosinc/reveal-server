@@ -16,4 +16,6 @@ public class TopicConstants {
 
   public static final String PLAN_LOCATION = "plan_location_assign";
 
+  public static final String EVENT_CONSUMPTION = "event_consumption";
+
 }

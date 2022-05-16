@@ -71,13 +71,6 @@ public class EventClientFacadeService {
       JSONObject eventClientRequestJSON)
       throws JsonProcessingException {
     ObjectMapper mapper = new ObjectMapper();
-    List<EventFacade> failedEvents = new ArrayList<>();
-    if (eventClientRequestJSON.has(EVENTS)) {
-      String rawEventsRequest = eventClientRequestJSON.getString(EVENTS);
-      List<EventFacade> eventFacades = List
-          .of(mapper.readValue(rawEventsRequest, EventFacade[].class));
-      failedEvents = addOrUpdateEvents(eventFacades);
-    }
     List<ClientFacade> failedClients = new ArrayList<>();
     if (eventClientRequestJSON.has(CLIENTS)) {
       String rawClientsRequest = eventClientRequestJSON.getString(CLIENTS);
@@ -85,7 +78,14 @@ public class EventClientFacadeService {
           .of(mapper.readValue(rawClientsRequest, ClientFacade[].class));
       failedClients = addOrUpdateClients(clientFacades);
     }
-
+    List<EventFacade> failedEvents = new ArrayList<>();
+    if (eventClientRequestJSON.has(EVENTS)) {
+      String rawEventsRequest = eventClientRequestJSON.getString(EVENTS);
+      List<EventFacade> eventFacades = List
+          .of(mapper.readValue(rawEventsRequest, EventFacade[].class));
+      failedEvents = addOrUpdateEvents(eventFacades);
+    }
+  
     return Pair.of(failedEvents, failedClients);
   }
 

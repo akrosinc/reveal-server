@@ -35,4 +35,9 @@ public class KafkaConfig {
   public NewTopic planUpdateTopic() {
     return new NewTopic(TopicConstants.PLAN_UPDATE, 1, (short) 1);
   }
+
+  @Bean
+  public NewTopic eventConsumptionTopic() {
+    return new NewTopic(TopicConstants.EVENT_CONSUMPTION, 1, (short) 1);
+  }
 }
