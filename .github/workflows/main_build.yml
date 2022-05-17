@@ -90,7 +90,7 @@ jobs:
     runs-on: ubuntu-latest
     # needs: [dependancy, code-quality, unit-tests]
     # needs: [dependancy, code-quality]
-      needs: [dependancy]
+    needs: [dependancy]
     steps:
 
     - name: Checkout reveal-server
