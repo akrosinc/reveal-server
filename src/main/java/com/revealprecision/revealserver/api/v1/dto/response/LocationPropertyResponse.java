@@ -24,4 +24,5 @@ public class LocationPropertyResponse {
   private Long numberOfTeams;
   private boolean assigned;
   private UUID parentIdentifier;
+  private long childrenNumber;
 }

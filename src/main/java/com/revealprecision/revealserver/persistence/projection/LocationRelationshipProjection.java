@@ -7,4 +7,5 @@ public interface LocationRelationshipProjection {
   String getLocationIdentifier();
   String getParentIdentifier();
   String getGeographicLevelName();
+  long getChildrenNumber();
 }

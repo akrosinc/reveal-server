@@ -2,7 +2,6 @@ package com.revealprecision.revealserver.service;
 
 import com.revealprecision.revealserver.api.v1.dto.request.LocationRequest;
 import com.revealprecision.revealserver.enums.EntityStatus;
-import com.revealprecision.revealserver.enums.LookupEntityTypeTableEnum;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.GeographicLevel;
 import com.revealprecision.revealserver.persistence.domain.Location;
@@ -16,6 +15,7 @@ import com.revealprecision.revealserver.persistence.projection.PlanLocationDetai
 import com.revealprecision.revealserver.persistence.repository.LocationRepository;
 import com.revealprecision.revealserver.props.BusinessStatusProperties;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -102,10 +102,16 @@ public class LocationService {
   public List<PlanLocationDetails> getLocationsByParentIdentifierAndPlanIdentifier(
       UUID parentIdentifier,
       UUID planIdentifier) {
-
-    return locationRelationshipService
+    Plan plan = planService.getPlanByIdentifier(planIdentifier);
+    Location location = findByIdentifier(parentIdentifier);
+    Map<UUID, Long> childrenCount = locationRelationshipService.getLocationChildrenCount(plan.getLocationHierarchy().getIdentifier())
+        .stream().filter(loc -> loc.getParentIdentifier() != null)
+        .collect(Collectors.toMap(loc -> UUID.fromString(loc.getParentIdentifier()), loc -> loc.getChildrenCount()));
+    List<PlanLocationDetails> response = locationRelationshipService
         .getLocationChildrenByLocationParentIdentifierAndPlanIdentifier(
             parentIdentifier, planIdentifier);
+    response.forEach(resp -> resp.setChildrenNumber(childrenCount.containsKey(resp.getLocation().getIdentifier()) ? childrenCount.get(resp.getLocation().getIdentifier()) : 0));
+    return response;
   }
 
   public Set<Location> getAssignedLocationsFromPlanAssignments(

@@ -6,6 +6,8 @@ import com.revealprecision.revealserver.api.v1.dto.request.LocationRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.CountResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationResponse;
 import com.revealprecision.revealserver.enums.SummaryEnum;
+import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
+import com.revealprecision.revealserver.service.LocationRelationshipService;
 import com.revealprecision.revealserver.service.LocationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -13,7 +15,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -28,16 +30,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/v1/location")
 public class LocationController {
 
   private final LocationService locationService;
-
-  @Autowired
-  public LocationController(LocationService locationService) {
-    this.locationService = locationService;
-  }
+  private final LocationRelationshipService locationRelationshipService;
 
   @Operation(summary = "Create a Location",
       description = "Create a Location",
@@ -58,7 +57,7 @@ public class LocationController {
   public ResponseEntity<LocationResponse> findLocationById(
       @Parameter(description = "Location Identifier") @PathVariable UUID identifier) {
     return ResponseEntity.status(HttpStatus.OK)
-        .body(LocationResponseFactory.fromEntity(locationService.findByIdentifier(identifier)));
+        .body(LocationResponseFactory.fromEntityWithChildCount(locationService.findByIdentifier(identifier), locationRelationshipService.getNumberOfChildren(identifier)));
   }
 
   @Operation(summary = "Search for Locations",
@@ -112,9 +111,9 @@ public class LocationController {
   @GetMapping("/{locationIdentifier}/{planIdentifier}")
   public ResponseEntity<LocationResponse> getLocationDetailsByIdentifierAndPlanIdentifier(
       @PathVariable UUID locationIdentifier, @PathVariable UUID planIdentifier) {
+    PlanLocationDetails planLocationDetails = locationService.getLocationDetailsByIdentifierAndPlanIdentifier(locationIdentifier, planIdentifier);
+    planLocationDetails.setChildrenNumber(locationRelationshipService.getNumberOfChildren(locationIdentifier));
     return ResponseEntity.status(HttpStatus.OK)
-        .body(LocationResponseFactory.fromPlanLocationDetails(
-            locationService.getLocationDetailsByIdentifierAndPlanIdentifier(locationIdentifier,
-                planIdentifier), null));
+        .body(LocationResponseFactory.fromPlanLocationDetails(planLocationDetails, null));
   }
 }
