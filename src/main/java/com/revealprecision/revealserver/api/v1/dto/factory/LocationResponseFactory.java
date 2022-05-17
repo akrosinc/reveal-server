@@ -24,6 +24,22 @@ public class LocationResponseFactory {
                 .geographicLevel(location.getGeographicLevel().getName()).build()).build();
   }
 
+  public static LocationResponse fromEntityWithChildCount(Location location, Long childrenNumber) {
+    return LocationResponse.builder()
+        .identifier(location.getIdentifier())
+        .type(location.getType())
+        .geometry(location.getGeometry())
+        .properties(
+            LocationPropertyResponse.builder()
+                .name(location.getName())
+                .status(location.getStatus())
+                .externalId(location.getExternalId())
+                .geographicLevel(location.getGeographicLevel().getName())
+                .childrenNumber(childrenNumber)
+                .build())
+        .build();
+  }
+
   public static LocationResponse fromEntitySummary(Location location) {
     return LocationResponse.builder().identifier(location.getIdentifier())
         .type(location.getType()).properties(

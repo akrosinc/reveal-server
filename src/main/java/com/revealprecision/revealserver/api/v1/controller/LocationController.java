@@ -57,7 +57,7 @@ public class LocationController {
   public ResponseEntity<LocationResponse> findLocationById(
       @Parameter(description = "Location Identifier") @PathVariable UUID identifier) {
     return ResponseEntity.status(HttpStatus.OK)
-        .body(LocationResponseFactory.fromEntity(locationService.findByIdentifier(identifier)));
+        .body(LocationResponseFactory.fromEntityWithChildCount(locationService.findByIdentifier(identifier), locationRelationshipService.getNumberOfChildren(identifier)));
   }
 
   @Operation(summary = "Search for Locations",
