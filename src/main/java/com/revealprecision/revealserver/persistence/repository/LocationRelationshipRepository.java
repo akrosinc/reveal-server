@@ -2,6 +2,7 @@ package com.revealprecision.revealserver.persistence.repository;
 
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
+import com.revealprecision.revealserver.persistence.projection.LocationChildrenCountProjection;
 import com.revealprecision.revealserver.persistence.projection.LocationRelationshipProjection;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import java.util.List;
@@ -30,6 +31,16 @@ public interface LocationRelationshipRepository extends JpaRepository<LocationRe
       + "LEFT JOIN geographic_level gl ON l.geographic_level_identifier = gl.identifier "
       + "WHERE gl.name NOT LIKE 'structure'", nativeQuery = true)
   List<LocationRelationshipProjection>findByLocationHierarchyWithoutStructures(UUID locationHierarchyIdentifier);
+
+  @Query(value = "select cast(lr.parent_identifier as varchar) as parentIdentifier, count(lr.parent_identifier) as childrenCount from location_relationship lr "
+      + "where lr.location_hierarchy_identifier = :locationHierarchyIdentifier "
+      + "group by lr.parent_identifier", nativeQuery = true)
+  List<LocationChildrenCountProjection> getLocationChildrenCount(UUID locationHierarchyIdentifier);
+
+  @Query(value = "select count(*) from location_relationship lr "
+      + "where lr.parent_identifier = :locationIdentifier "
+      + "group by lr.parent_identifier", nativeQuery = true)
+  long getChildrenNumber(UUID locationIdentifier);
 
   @Query(value = "SELECT ST_Contains (ST_AsText(ST_GeomFromGeoJSON(:parent)),ST_AsText(ST_Centroid(ST_GeomFromGeoJSON(:child))))", nativeQuery = true)
   Boolean hasParentChildRelationship(@Param("parent") String parent,
