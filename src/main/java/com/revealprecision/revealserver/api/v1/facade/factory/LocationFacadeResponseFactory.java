@@ -17,8 +17,11 @@ public class LocationFacadeResponseFactory {
   public static LocationFacade fromEntity(Location location) {
     Set<String> locationTags = new HashSet<>();
     locationTags.add(location.getGeographicLevel().getName());
-    return LocationFacade.builder().locationId(location.getIdentifier().toString())
+    LocationFacade locationFacade = LocationFacade.builder()
+        .locationId(location.getIdentifier().toString())
         .name(location.getName()).tags(locationTags).build();
+    locationFacade.setServerVersion(location.getServerVersion());
+    return locationFacade;
   }
 
   public static LocationFacade fromLocationEntityAndLocationRelationship(Location location,
