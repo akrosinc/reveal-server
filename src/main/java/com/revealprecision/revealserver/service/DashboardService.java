@@ -20,7 +20,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import javax.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.apache.kafka.streams.StoreQueryParameters;
 import org.apache.kafka.streams.state.QueryableStoreTypes;
@@ -93,6 +92,12 @@ public class DashboardService {
     tableRow.setPlanIdentifier(planIdentifier);
     tableRow.setReportTypeEnum(reportTypeEnum);
     tableRow.setParentLocationIdentifier(parentLocationIdentifier);
+
+    Map<UUID, Long> childrenCount = locationRelationshipService.getLocationChildrenCount(plan.getLocationHierarchy().getIdentifier())
+        .stream().filter(loc -> loc.getParentIdentifier() != null)
+        .collect(Collectors.toMap(loc -> UUID.fromString(loc.getParentIdentifier()), loc -> loc.getChildrenCount()));
+
+    tableRow.getRowData().forEach(row -> row.setChildrenNumber(childrenCount.containsKey(row.getLocationIdentifier()) ? childrenCount.get(row.getLocationIdentifier()) : 0));
 
     return tableRow;
   }

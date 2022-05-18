@@ -9,9 +9,7 @@ import com.revealprecision.revealserver.service.DashboardService;
 import com.revealprecision.revealserver.service.PlanService;
 import java.util.List;
 import java.util.UUID;
-import javax.ws.rs.PathParam;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -28,7 +26,6 @@ public class ReportDashboardController {
 
   @GetMapping("/row")
   public TableRow getRow(TableReportRequest tableReportRequest) {
-
     return dashboardService.getRowData(tableReportRequest.getPlanIdentifier(),
         tableReportRequest.getParentLocationIdentifier(), tableReportRequest.getGetChildren(), tableReportRequest.getReportTypeEnum());
   }
