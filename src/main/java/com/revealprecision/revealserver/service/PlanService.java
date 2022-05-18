@@ -3,8 +3,11 @@ package com.revealprecision.revealserver.service;
 import com.cosium.spring.data.jpa.entity.graph.domain.EntityGraphUtils;
 import com.revealprecision.revealserver.api.v1.dto.factory.PlanEntityFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.PlanRequest;
+import com.revealprecision.revealserver.enums.ApplicableReportsEnum;
 import com.revealprecision.revealserver.enums.EntityStatus;
+import com.revealprecision.revealserver.enums.LookupUtil;
 import com.revealprecision.revealserver.enums.PlanStatusEnum;
+import com.revealprecision.revealserver.enums.ReportTypeEnum;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.messaging.KafkaConstants;
 import com.revealprecision.revealserver.messaging.message.Message;
@@ -72,6 +75,22 @@ public class PlanService {
 
   public long getAllCount(String search) {
     return planRepository.getAllCount(search);
+  }
+
+  public Page<Plan> getPlansForReports(String reportType, Pageable pageable) {
+    if(reportType.isBlank()) {
+      return planRepository.findPlansByInterventionType(reportType, pageable);
+    }else{
+      ApplicableReportsEnum applicableReportsEnum = null;
+      ReportTypeEnum reportTypeEnum = LookupUtil.lookup(ReportTypeEnum.class, reportType);
+      for(ApplicableReportsEnum applicableReport : ApplicableReportsEnum.values()) {
+        if(applicableReport.getReportName().contains(reportType)) {
+          applicableReportsEnum = applicableReport;
+          break;
+        }
+      }
+      return planRepository.findPlansByInterventionType(applicableReportsEnum.name(), pageable);
+    }
   }
 
   public void createPlan(PlanRequest planRequest) {
