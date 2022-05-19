@@ -255,6 +255,10 @@ public class LocationRelationshipService {
         parentLocationIdentifiers, planIdentifier);
   }
 
+  public PlanLocationDetails getRootLocationDetailsByPlanId(UUID planIdentifier) {
+    return locationRelationshipRepository.getRootLocationDetailsByAndPlanId(planIdentifier);
+  }
+
 
   public Location findParentLocationByLocationIdAndHierarchyId(UUID locationIdentifier,
       UUID hierarchyIdentifier) {

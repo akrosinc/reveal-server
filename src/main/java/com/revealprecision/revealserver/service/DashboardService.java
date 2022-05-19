@@ -19,6 +19,7 @@ import com.revealprecision.revealserver.persistence.domain.PlanLocations;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import com.revealprecision.revealserver.props.KafkaProperties;
 import java.util.AbstractMap.SimpleEntry;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -500,7 +501,13 @@ public class DashboardService {
   public FeatureSetResponse getDataForReport(String reportType, UUID planIdentifier, UUID parentIdentifier) {
     ReportTypeEnum reportTypeEnum = LookupUtil.lookup(ReportTypeEnum.class, reportType);
     Plan plan = planService.getPlanByIdentifier(planIdentifier);
-    List<PlanLocationDetails> locationDetails = locationService.getLocationsByParentIdentifierAndPlanIdentifier(parentIdentifier, planIdentifier);
+    List<PlanLocationDetails> locationDetails = new ArrayList<>();
+    if(parentIdentifier == null) {
+      locationDetails.add(locationService.getRootLocationByPlanIdentifier(planIdentifier));
+    }else {
+      locationDetails = locationService.getLocationsByParentIdentifierAndPlanIdentifier(parentIdentifier, planIdentifier);
+    }
+
     initDataStoresIfNecessary();
     Map<UUID, RowData> rowDataMap = locationDetails.stream().map(loc -> {
       switch (reportTypeEnum) {
