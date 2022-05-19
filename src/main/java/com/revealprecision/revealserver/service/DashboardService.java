@@ -1,8 +1,13 @@
 package com.revealprecision.revealserver.service;
 
+import com.revealprecision.revealserver.api.v1.dto.factory.LocationResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.models.ColumnData;
 import com.revealprecision.revealserver.api.v1.dto.models.RowData;
 import com.revealprecision.revealserver.api.v1.dto.models.TableRow;
+import com.revealprecision.revealserver.api.v1.dto.request.ReportDataRequest;
+import com.revealprecision.revealserver.api.v1.dto.response.FeatureSetResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.LocationResponse;
+import com.revealprecision.revealserver.enums.LookupUtil;
 import com.revealprecision.revealserver.enums.ReportTypeEnum;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.messaging.KafkaConstants;
@@ -12,6 +17,7 @@ import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.PlanLocations;
+import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import com.revealprecision.revealserver.props.KafkaProperties;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.HashMap;
@@ -490,5 +496,38 @@ public class DashboardService {
               QueryableStoreTypes.keyValueStore()));
       datastoresInitialized = true;
     }
+  }
+
+  public FeatureSetResponse getDataForReport(ReportDataRequest request) {
+    ReportTypeEnum reportTypeEnum = LookupUtil.lookup(ReportTypeEnum.class, request.getReportType());
+    Plan plan = planService.getPlanByIdentifier(request.getPlanIdentifier());
+    List<PlanLocationDetails> locationDetails = locationService.getLocationsByParentIdentifierAndPlanIdentifier(request.getParentIdentifier(), request.getPlanIdentifier());
+    initDataStoresIfNecessary();
+    Map<UUID, RowData> rowDataMap = locationDetails.stream().map(loc -> {
+      switch (reportTypeEnum) {
+
+        case MDA_FULL_COVERAGE:
+          return getMDAFullCoverageData(request.getPlanIdentifier(), plan, loc.getLocation());
+
+        case MDA_FULL_COVERAGE_OPERATIONAL_AREA_LEVEL:
+          return getMDAFullCoverageOperationalAreaLevelData(request.getPlanIdentifier(), plan, loc.getLocation());
+
+        case IRS_FULL_COVERAGE:
+          return getIRSFullData(loc.getLocation());
+
+      }
+      return null;
+    }).collect(Collectors.toMap(RowData::getLocationIdentifier, row -> row));
+
+    FeatureSetResponse response = new FeatureSetResponse();
+    response.setType("FeatureCollection");
+    List<LocationResponse> locationResponses = locationDetails.stream()
+        .map(loc -> LocationResponseFactory.fromPlanLocationDetails(loc, request.getParentIdentifier()))
+        .collect(Collectors.toList());
+
+    locationResponses.forEach(loc -> loc.getProperties().setColumnDataMap(rowDataMap.get(loc.getIdentifier()).getColumnDataMap()));
+    response.setFeatures(locationResponses);
+    response.setIdentifier(request.getParentIdentifier());
+    return response;
   }
 }

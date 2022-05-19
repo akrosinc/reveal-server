@@ -1,6 +1,8 @@
 package com.revealprecision.revealserver.api.v1.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.revealprecision.revealserver.api.v1.dto.models.ColumnData;
+import java.util.Map;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -25,4 +27,5 @@ public class LocationPropertyResponse {
   private boolean assigned;
   private UUID parentIdentifier;
   private long childrenNumber;
+  private Map<String, ColumnData> columnDataMap;
 }
