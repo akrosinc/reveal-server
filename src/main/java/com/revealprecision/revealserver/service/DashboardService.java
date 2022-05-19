@@ -4,7 +4,6 @@ import com.revealprecision.revealserver.api.v1.dto.factory.LocationResponseFacto
 import com.revealprecision.revealserver.api.v1.dto.models.ColumnData;
 import com.revealprecision.revealserver.api.v1.dto.models.RowData;
 import com.revealprecision.revealserver.api.v1.dto.models.TableRow;
-import com.revealprecision.revealserver.api.v1.dto.request.ReportDataRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.FeatureSetResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationResponse;
 import com.revealprecision.revealserver.enums.LookupUtil;
@@ -498,19 +497,19 @@ public class DashboardService {
     }
   }
 
-  public FeatureSetResponse getDataForReport(ReportDataRequest request) {
-    ReportTypeEnum reportTypeEnum = LookupUtil.lookup(ReportTypeEnum.class, request.getReportType());
-    Plan plan = planService.getPlanByIdentifier(request.getPlanIdentifier());
-    List<PlanLocationDetails> locationDetails = locationService.getLocationsByParentIdentifierAndPlanIdentifier(request.getParentIdentifier(), request.getPlanIdentifier());
+  public FeatureSetResponse getDataForReport(String reportType, UUID planIdentifier, UUID parentIdentifier) {
+    ReportTypeEnum reportTypeEnum = LookupUtil.lookup(ReportTypeEnum.class, reportType);
+    Plan plan = planService.getPlanByIdentifier(planIdentifier);
+    List<PlanLocationDetails> locationDetails = locationService.getLocationsByParentIdentifierAndPlanIdentifier(parentIdentifier, planIdentifier);
     initDataStoresIfNecessary();
     Map<UUID, RowData> rowDataMap = locationDetails.stream().map(loc -> {
       switch (reportTypeEnum) {
 
         case MDA_FULL_COVERAGE:
-          return getMDAFullCoverageData(request.getPlanIdentifier(), plan, loc.getLocation());
+          return getMDAFullCoverageData(planIdentifier, plan, loc.getLocation());
 
         case MDA_FULL_COVERAGE_OPERATIONAL_AREA_LEVEL:
-          return getMDAFullCoverageOperationalAreaLevelData(request.getPlanIdentifier(), plan, loc.getLocation());
+          return getMDAFullCoverageOperationalAreaLevelData(planIdentifier, plan, loc.getLocation());
 
         case IRS_FULL_COVERAGE:
           return getIRSFullData(loc.getLocation());
@@ -522,12 +521,12 @@ public class DashboardService {
     FeatureSetResponse response = new FeatureSetResponse();
     response.setType("FeatureCollection");
     List<LocationResponse> locationResponses = locationDetails.stream()
-        .map(loc -> LocationResponseFactory.fromPlanLocationDetails(loc, request.getParentIdentifier()))
+        .map(loc -> LocationResponseFactory.fromPlanLocationDetails(loc, parentIdentifier))
         .collect(Collectors.toList());
 
     locationResponses.forEach(loc -> loc.getProperties().setColumnDataMap(rowDataMap.get(loc.getIdentifier()).getColumnDataMap()));
     response.setFeatures(locationResponses);
-    response.setIdentifier(request.getParentIdentifier());
+    response.setIdentifier(parentIdentifier);
     return response;
   }
 }

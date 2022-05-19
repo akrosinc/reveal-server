@@ -3,6 +3,7 @@ package com.revealprecision.revealserver.api.v1.controller;
 import com.revealprecision.revealserver.api.v1.dto.models.TableRow;
 import com.revealprecision.revealserver.api.v1.dto.request.ReportDataRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.TableReportRequest;
+import com.revealprecision.revealserver.api.v1.dto.response.FeatureSetResponse;
 import com.revealprecision.revealserver.enums.ApplicableReportsEnum;
 import com.revealprecision.revealserver.enums.ReportTypeEnum;
 import com.revealprecision.revealserver.persistence.domain.Plan;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RequiredArgsConstructor
@@ -46,9 +48,11 @@ public class ReportDashboardController {
   }
 
   @GetMapping("/reportData")
-  public ResponseEntity<?> getDataForReports(@Valid @RequestBody ReportDataRequest request) {
+  public ResponseEntity<FeatureSetResponse> getDataForReports(@RequestParam(name = "reportType") String reportType,
+      @RequestParam(name = "planIdentifier") UUID planIdentifier,
+      @RequestParam(name = "parentIdentifier") UUID parentIdentifier) {
     return ResponseEntity.status(HttpStatus.OK)
-        .body(dashboardService.getDataForReport(request));
+        .body(dashboardService.getDataForReport(reportType, planIdentifier, parentIdentifier));
   }
 
 }
