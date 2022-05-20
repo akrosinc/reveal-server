@@ -27,5 +27,6 @@ public class LocationPropertyResponse {
   private boolean assigned;
   private UUID parentIdentifier;
   private long childrenNumber;
+  private UUID id;
   private Map<String, ColumnData> columnDataMap;
 }

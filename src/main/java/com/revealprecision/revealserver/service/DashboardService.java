@@ -531,7 +531,10 @@ public class DashboardService {
         .map(loc -> LocationResponseFactory.fromPlanLocationDetails(loc, parentIdentifier))
         .collect(Collectors.toList());
 
-    locationResponses.forEach(loc -> loc.getProperties().setColumnDataMap(rowDataMap.get(loc.getIdentifier()).getColumnDataMap()));
+    locationResponses.forEach(loc -> {
+      loc.getProperties().setColumnDataMap(rowDataMap.get(loc.getIdentifier()).getColumnDataMap());
+      loc.getProperties().setId(loc.getIdentifier());
+    });
     response.setFeatures(locationResponses);
     response.setIdentifier(parentIdentifier);
     return response;
