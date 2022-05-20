@@ -1,10 +1,16 @@
 package com.revealprecision.revealserver.service;
 
+import com.revealprecision.revealserver.api.v1.dto.factory.LocationResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.models.ColumnData;
 import com.revealprecision.revealserver.api.v1.dto.models.RowData;
 import com.revealprecision.revealserver.api.v1.dto.models.TableRow;
+import com.revealprecision.revealserver.api.v1.dto.response.FeatureSetResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.LocationResponse;
+import com.revealprecision.revealserver.enums.ApplicableReportsEnum;
+import com.revealprecision.revealserver.enums.LookupUtil;
 import com.revealprecision.revealserver.enums.ReportTypeEnum;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
+import com.revealprecision.revealserver.exceptions.WrongEnumException;
 import com.revealprecision.revealserver.messaging.KafkaConstants;
 import com.revealprecision.revealserver.messaging.message.OperationalAreaVisitedCount;
 import com.revealprecision.revealserver.messaging.message.PersonBusinessStatus;
@@ -12,15 +18,16 @@ import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.PlanLocations;
+import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import com.revealprecision.revealserver.props.KafkaProperties;
 import java.util.AbstractMap.SimpleEntry;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import javax.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.apache.kafka.streams.StoreQueryParameters;
 import org.apache.kafka.streams.state.QueryableStoreTypes;
@@ -93,6 +100,12 @@ public class DashboardService {
     tableRow.setPlanIdentifier(planIdentifier);
     tableRow.setReportTypeEnum(reportTypeEnum);
     tableRow.setParentLocationIdentifier(parentLocationIdentifier);
+
+    Map<UUID, Long> childrenCount = locationRelationshipService.getLocationChildrenCount(plan.getLocationHierarchy().getIdentifier())
+        .stream().filter(loc -> loc.getParentIdentifier() != null)
+        .collect(Collectors.toMap(loc -> UUID.fromString(loc.getParentIdentifier()), loc -> loc.getChildrenCount()));
+
+    tableRow.getRowData().forEach(row -> row.setChildrenNumber(childrenCount.containsKey(row.getLocationIdentifier()) ? childrenCount.get(row.getLocationIdentifier()) : 0));
 
     return tableRow;
   }
@@ -485,5 +498,51 @@ public class DashboardService {
               QueryableStoreTypes.keyValueStore()));
       datastoresInitialized = true;
     }
+  }
+
+  public FeatureSetResponse getDataForReport(String reportType, UUID planIdentifier, UUID parentIdentifier) {
+    ReportTypeEnum reportTypeEnum = LookupUtil.lookup(ReportTypeEnum.class, reportType);
+    Plan plan = planService.getPlanByIdentifier(planIdentifier);
+    List<String> applicableReportTypes = ApplicableReportsEnum.valueOf(plan.getInterventionType().getCode()).getReportName();
+    if(!applicableReportTypes.contains(reportTypeEnum.name())) {
+      throw new WrongEnumException("Report type: '" + reportType + "' is not applicable to plan with identifier: '" + planIdentifier + "'");
+    }
+    List<PlanLocationDetails> locationDetails = new ArrayList<>();
+    if(parentIdentifier == null) {
+      locationDetails.add(locationService.getRootLocationByPlanIdentifier(planIdentifier));
+    }else {
+      locationDetails = locationService.getLocationsByParentIdentifierAndPlanIdentifier(parentIdentifier, planIdentifier);
+    }
+
+    initDataStoresIfNecessary();
+    Map<UUID, RowData> rowDataMap = locationDetails.stream().map(loc -> {
+      switch (reportTypeEnum) {
+
+        case MDA_FULL_COVERAGE:
+          return getMDAFullCoverageData(planIdentifier, plan, loc.getLocation());
+
+        case MDA_FULL_COVERAGE_OPERATIONAL_AREA_LEVEL:
+          return getMDAFullCoverageOperationalAreaLevelData(planIdentifier, plan, loc.getLocation());
+
+        case IRS_FULL_COVERAGE:
+          return getIRSFullData(loc.getLocation());
+
+      }
+      return null;
+    }).collect(Collectors.toMap(RowData::getLocationIdentifier, row -> row));
+
+    FeatureSetResponse response = new FeatureSetResponse();
+    response.setType("FeatureCollection");
+    List<LocationResponse> locationResponses = locationDetails.stream()
+        .map(loc -> LocationResponseFactory.fromPlanLocationDetails(loc, parentIdentifier))
+        .collect(Collectors.toList());
+
+    locationResponses.forEach(loc -> {
+      loc.getProperties().setColumnDataMap(rowDataMap.get(loc.getIdentifier()).getColumnDataMap());
+      loc.getProperties().setId(loc.getIdentifier());
+    });
+    response.setFeatures(locationResponses);
+    response.setIdentifier(parentIdentifier);
+    return response;
   }
 }

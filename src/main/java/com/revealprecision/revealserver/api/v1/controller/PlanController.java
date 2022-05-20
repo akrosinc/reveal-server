@@ -82,6 +82,17 @@ public class PlanController {
     }
   }
 
+
+  @GetMapping("/reports")
+  public ResponseEntity<Page<PlanResponse>> getPlansForReports(@RequestParam(name = "reportType", defaultValue = "") String reportType,
+      Pageable pageable,
+      @RequestParam(name = "_summary", defaultValue = "TRUE", required = false) SummaryEnum summary) {
+    return ResponseEntity.status(HttpStatus.OK)
+        .body(PlanResponseFactory.fromEntityPage(planService.getPlansForReports(reportType, pageable),
+            pageable,
+            summary));
+  }
+
   @GetMapping("/{identifier}")
   public ResponseEntity<PlanResponse> getByIdentifier(@PathVariable("identifier") UUID identifier) {
     return ResponseEntity

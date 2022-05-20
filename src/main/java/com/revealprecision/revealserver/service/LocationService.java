@@ -114,6 +114,16 @@ public class LocationService {
     return response;
   }
 
+  public PlanLocationDetails getRootLocationByPlanIdentifier(UUID planIdentifier) {
+    Plan plan = planService.getPlanByIdentifier(planIdentifier);
+    Map<UUID, Long> childrenCount = locationRelationshipService.getLocationChildrenCount(plan.getLocationHierarchy().getIdentifier())
+        .stream().filter(loc -> loc.getParentIdentifier() != null)
+        .collect(Collectors.toMap(loc -> UUID.fromString(loc.getParentIdentifier()), loc -> loc.getChildrenCount()));
+    PlanLocationDetails response = locationRelationshipService.getRootLocationDetailsByPlanId(planIdentifier);
+    response.setChildrenNumber(childrenCount.containsKey(response.getLocation().getIdentifier()) ? childrenCount.get(response.getLocation().getIdentifier()) : 0);
+    return response;
+  }
+
   public Set<Location> getAssignedLocationsFromPlanAssignments(
       Set<PlanAssignment> planAssignments) {
     return planAssignments.stream().map(PlanAssignment::getPlanLocations)
