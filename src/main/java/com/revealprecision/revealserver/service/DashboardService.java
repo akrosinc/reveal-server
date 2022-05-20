@@ -6,9 +6,11 @@ import com.revealprecision.revealserver.api.v1.dto.models.RowData;
 import com.revealprecision.revealserver.api.v1.dto.models.TableRow;
 import com.revealprecision.revealserver.api.v1.dto.response.FeatureSetResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationResponse;
+import com.revealprecision.revealserver.enums.ApplicableReportsEnum;
 import com.revealprecision.revealserver.enums.LookupUtil;
 import com.revealprecision.revealserver.enums.ReportTypeEnum;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
+import com.revealprecision.revealserver.exceptions.WrongEnumException;
 import com.revealprecision.revealserver.messaging.KafkaConstants;
 import com.revealprecision.revealserver.messaging.message.OperationalAreaVisitedCount;
 import com.revealprecision.revealserver.messaging.message.PersonBusinessStatus;
@@ -501,6 +503,10 @@ public class DashboardService {
   public FeatureSetResponse getDataForReport(String reportType, UUID planIdentifier, UUID parentIdentifier) {
     ReportTypeEnum reportTypeEnum = LookupUtil.lookup(ReportTypeEnum.class, reportType);
     Plan plan = planService.getPlanByIdentifier(planIdentifier);
+    List<String> applicableReportTypes = ApplicableReportsEnum.valueOf(plan.getInterventionType().getCode()).getReportName();
+    if(!applicableReportTypes.contains(reportTypeEnum.name())) {
+      throw new WrongEnumException("Report type: '" + reportType + "' is not applicable to plan with identifier: '" + planIdentifier + "'");
+    }
     List<PlanLocationDetails> locationDetails = new ArrayList<>();
     if(parentIdentifier == null) {
       locationDetails.add(locationService.getRootLocationByPlanIdentifier(planIdentifier));
