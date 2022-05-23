@@ -20,7 +20,7 @@ public class PlanFacadeService {
   public Set<Plan> getPlans(PlanRequestFacade planRequestFacade) {
     List<PlanAssignment> planAssignments = planAssignmentRepository.findPlansByOrganization(planRequestFacade.getOrganizations());
     return planAssignments.stream()
-        .map(planAssignment -> planAssignment.getPlanLocations().getPlan())
+        .map(planAssignment -> planAssignment.getPlanLocations().getPlan()).filter(plan -> plan.getServerVersion() >= planRequestFacade.getServerVersion())
         .collect(Collectors.toSet());
   }
 }

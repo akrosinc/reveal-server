@@ -87,7 +87,7 @@ public class LocationService {
   }
 
   public List<Location> getStructuresByParentIdentifiers(List<UUID> parentIdentifiers,
-      LocationHierarchy locationHierarchy) {
+      LocationHierarchy locationHierarchy,Long serverVersion) {
     List<LocationRelationship> locationRelationships = locationHierarchy.getLocationRelationships();
     List<Location> locations = locationRelationships.stream().filter(
             locationRelationship -> locationRelationship.getParentLocation() != null
@@ -95,7 +95,7 @@ public class LocationService {
         .map(LocationRelationship::getLocation).collect(Collectors.toList());
 
     return locations.stream()
-        .filter(location -> location.getGeographicLevel().getName().equalsIgnoreCase("structure"))
+        .filter(location -> location.getGeographicLevel().getName().equalsIgnoreCase("structure") && location.getServerVersion() >= serverVersion)
         .collect(Collectors.toList());//TODO: to update once we figure the target level part.
   }
 

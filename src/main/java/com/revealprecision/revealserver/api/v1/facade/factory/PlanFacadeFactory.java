@@ -32,8 +32,10 @@ public class PlanFacadeFactory {
     });
 
     List<JurisdictionFacade> jurisdictions = plan.getPlanLocations().stream()
-        .filter(planLocations -> planLocations.getLocation().getGeographicLevel().getName().equals("operational"))
-        .map(planLocations -> new JurisdictionFacade(planLocations.getLocation().getIdentifier().toString()))
+        .filter(planLocations -> planLocations.getLocation().getGeographicLevel().getName()
+            .equals("operational"))
+        .map(planLocations -> new JurisdictionFacade(
+            planLocations.getLocation().getIdentifier().toString()))
         .collect(Collectors.toList());
 
     return PlanFacade.builder()
@@ -49,6 +51,7 @@ public class PlanFacadeFactory {
         .jurisdiction(jurisdictions)
         .goals(goals)
         .actions(actions)
+        .serverVersion(plan.getServerVersion())
         .build();
   }
 }

@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.persistence.domain;
 
 import com.revealprecision.revealserver.api.v1.dto.request.LocationRequest;
+import com.revealprecision.revealserver.persistence.generator.LocationServerVersionGenerator;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import java.util.Set;
 import java.util.UUID;
@@ -19,6 +20,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.FieldNameConstants;
 import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.GenerationTime;
+import org.hibernate.annotations.GeneratorType;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
@@ -52,6 +55,9 @@ public class Location extends AbstractAuditableEntity {
   private String name;
   private String status;
   private UUID externalId;
+
+  @GeneratorType(type = LocationServerVersionGenerator.class, when = GenerationTime.ALWAYS)
+  private Long serverVersion;
 
   @ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "geographic_level_identifier")
