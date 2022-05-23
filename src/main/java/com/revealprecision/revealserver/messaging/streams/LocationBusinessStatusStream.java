@@ -4,7 +4,6 @@ import com.revealprecision.revealserver.messaging.KafkaConstants;
 import com.revealprecision.revealserver.messaging.message.LocationBusinessStatus;
 import com.revealprecision.revealserver.messaging.message.LocationMetadataEvent;
 import com.revealprecision.revealserver.messaging.message.LocationMetadataUnpackedEvent;
-import com.revealprecision.revealserver.messaging.message.TaskAggregate;
 import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
 import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.service.LocationHierarchyService;
@@ -25,7 +24,6 @@ import org.apache.kafka.streams.kstream.KGroupedStream;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KTable;
 import org.apache.kafka.streams.kstream.Materialized;
-import org.apache.kafka.streams.kstream.Printed;
 import org.apache.kafka.streams.state.KeyValueStore;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -38,7 +36,6 @@ public class LocationBusinessStatusStream {
 
 
   private final KafkaProperties kafkaProperties;
-  private final LocationService locationService;
   private final LocationRelationshipService locationRelationshipService;
   private final LocationHierarchyService locationHierarchyService;
 
@@ -149,6 +146,4 @@ public class LocationBusinessStatusStream {
 
     return locationMetadataStream;
   }
-
-
 }

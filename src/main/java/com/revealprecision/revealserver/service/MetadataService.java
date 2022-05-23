@@ -25,6 +25,7 @@ import java.util.OptionalInt;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.SerializationUtils;
 import org.springframework.data.util.Pair;
@@ -52,6 +53,7 @@ public class MetadataService {
         .orElse(null);
   }
 
+  @Transactional
   public PersonMetadata updatePersonMetadata(UUID personIdentifier, Object tagValue,
       UUID planIdentifier, UUID taskIdentifier,
       String user, String dataType, String tag, String type, Person person) {
