@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.persistence.domain;
 
 import com.revealprecision.revealserver.api.v1.dto.request.SettingRequest;
+import com.revealprecision.revealserver.persistence.generator.SettingServerVersionGenerator;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import java.util.List;
 import java.util.UUID;
@@ -14,6 +15,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.FieldNameConstants;
+import org.hibernate.annotations.GenerationTime;
+import org.hibernate.annotations.GeneratorType;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
@@ -45,6 +48,9 @@ public class Setting extends AbstractAuditableEntity {
   private List<Object> values;
   private String label;
   private String description;
+
+  @GeneratorType(type = SettingServerVersionGenerator.class, when = GenerationTime.ALWAYS)
+  private Long serverVersion;
 
 
   public Setting update(SettingRequest settingRequest) {

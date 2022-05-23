@@ -19,10 +19,10 @@ public class PhysicalLocationResponseFactory {
         .name(location.getName()).geographicLevel(location.getGeographicLevel().getName())
         .parentId(parentLocation != null ? parentLocation.getIdentifier().toString() : null)
         .build();
-    PhysicalLocation physicalLocation = PhysicalLocation.builder()
+    return PhysicalLocation.builder()
         .id(location.getIdentifier().toString()).type(location.getGeometry().getType())
-        .geometry(location.getGeometry()).properties(locationPropertyFacade).build();
-    return physicalLocation;
+        .geometry(location.getGeometry()).properties(locationPropertyFacade)
+        .serverVersion(location.getServerVersion()).build();
   }
 
   public static PhysicalLocation fromEntityLocationAndRelationship(Location location,

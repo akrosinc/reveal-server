@@ -2,6 +2,7 @@ package com.revealprecision.revealserver.persistence.domain;
 
 import com.revealprecision.revealserver.api.v1.dto.request.PlanRequest;
 import com.revealprecision.revealserver.enums.PlanStatusEnum;
+import com.revealprecision.revealserver.persistence.generator.PlanServerVersionGenerator;
 import java.time.LocalDate;
 import java.util.Set;
 import java.util.UUID;
@@ -22,6 +23,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.FieldNameConstants;
+import org.hibernate.annotations.GenerationTime;
+import org.hibernate.annotations.GeneratorType;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 import org.hibernate.envers.Audited;
@@ -46,6 +49,9 @@ public class Plan extends AbstractAuditableEntity {
   private LocalDate date;
   private LocalDate effectivePeriodStart;
   private LocalDate effectivePeriodEnd;
+
+  @GeneratorType(type = PlanServerVersionGenerator.class, when = GenerationTime.ALWAYS)
+  private Long serverVersion;
 
   @ManyToOne
   @JoinColumn(name = "hierarchy_identifier")

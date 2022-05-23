@@ -69,7 +69,8 @@ public class LocationFacadeService {
       List<UUID> parentIdentifiers = extractLocationIdentifiers(
           locationSyncRequest.getParentId());
       locations = locationService
-          .getStructuresByParentIdentifiers(parentIdentifiers, hierarchy);
+          .getStructuresByParentIdentifiers(parentIdentifiers, hierarchy,
+              locationSyncRequest.getServerVersion());
     }
     return locations;
   }
@@ -84,7 +85,10 @@ public class LocationFacadeService {
     } else {
       locations = locationService.getAllByNames(locationSyncRequest.getLocationNames());
     }
-    return locations.stream().filter(location -> !location.getGeographicLevel().getName().equalsIgnoreCase("structure")).collect(Collectors.toList()); //TODO: until we find way to differentiate target level and structures
+    return locations.stream().filter(
+        location -> !location.getGeographicLevel().getName().equalsIgnoreCase("structure")
+            && location.getServerVersion() >= locationSyncRequest.getServerVersion()).collect(
+        Collectors.toList()); //TODO: until we find way to differentiate target level and structures
   }
 
   private List<UUID> extractLocationIdentifiers(List<String> locationIds) {

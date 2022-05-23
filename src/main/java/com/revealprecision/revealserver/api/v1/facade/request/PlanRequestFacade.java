@@ -16,4 +16,5 @@ import lombok.Setter;
 public class PlanRequestFacade {
 
   List<UUID> organizations;
+  Long serverVersion;
 }
