@@ -124,7 +124,7 @@ public class PlanController {
     return ResponseEntity.status(HttpStatus.CREATED).build();
   }
 
-  @PostMapping("/{identifier}/multipleTeamAssign")//TODO DODATI BOOLEAN
+  @PostMapping("/{identifier}/multipleTeamAssign")
   public ResponseEntity<Void> multipleTeamAssign(@PathVariable UUID identifier,@Valid @RequestBody
       MultipleLocationTeamAssignRequest request) {
 
