@@ -196,8 +196,11 @@ public class TaskService {
       goals.stream().map(goal -> actionService.getActionsByGoalIdentifier(goal.getIdentifier()))
           .flatMap(Collection::stream)
           .forEach((action) -> generateTasksByAction(action, plan, ownerId));
+      log.info("TASK_GENERATION Completed generating tasks for Plan Id: {}", planIdentifier);
+    } else {
+      log.info("TASK_GENERATION Not run as plan is not active: {}", planIdentifier);
     }
-    log.info("TASK_GENERATION Completed generating tasks for Plan Id: {}", planIdentifier);
+
   }
 
   public void cancelApplicableTasksByPlanId(UUID planIdentifier, String ownerId) {
@@ -219,6 +222,7 @@ public class TaskService {
       List<Task> savedCancelledTask = taskRepository.saveAll(tasksToCancel);
 
       for (Task task : savedCancelledTask) {
+        businessStatusService.deactivateBusinessStatus(task);
         TaskEvent taskEvent = TaskEventFactory.getTaskEventFromTask(task);
         //TODO: we need to save the owner in the database, just so we can retrieve it here
         taskEvent.setOwnerId(ownerId);
@@ -487,16 +491,20 @@ public class TaskService {
 
     if (isActionForPerson && task.getPerson() != null && task.getPerson().getLocations() != null) {
 
-      if (task.getLocation().getGeographicLevel().getName().equals(STRUCTURE)) {
-        Location parentLocation = locationService.getLocationParent(task.getLocation(),
-            plan.getLocationHierarchy());
-        planLocationsForPerson = planLocationsService.getPlanLocationsByPlanAndLocationIdentifier(
-            parentLocation.getIdentifier(), plan.getIdentifier());
-      } else {
-        planLocationsForPerson = planLocationsService.getPlanLocationsByLocationIdentifierList(
-            task.getPerson().getLocations().stream().map(Location::getIdentifier)
-                .collect(Collectors.toList()));
-      }
+      return locationService.getLocationsByPeople(task.getPerson().getIdentifier()).stream()
+          .flatMap(location -> {
+            if (location.getGeographicLevel().getName().equals(STRUCTURE)) {
+              Location parentLocation = locationService.getLocationParent(location,
+                  plan.getLocationHierarchy());
+              return planLocationsService.getPlanLocationsByPlanAndLocationIdentifier(
+                  parentLocation.getIdentifier(), plan.getIdentifier()).stream();
+            } else {
+
+              return planLocationsService.getPlanLocationsByLocationIdentifierList(
+                  List.of(location.getIdentifier())).stream();
+            }
+          }).collect(Collectors.toList());
+
     }
     return planLocationsForPerson;
   }

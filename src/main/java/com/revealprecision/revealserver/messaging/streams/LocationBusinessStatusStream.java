@@ -5,10 +5,10 @@ import com.revealprecision.revealserver.messaging.message.LocationBusinessStatus
 import com.revealprecision.revealserver.messaging.message.LocationMetadataEvent;
 import com.revealprecision.revealserver.messaging.message.LocationMetadataUnpackedEvent;
 import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
+import com.revealprecision.revealserver.props.BusinessStatusProperties;
 import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.service.LocationHierarchyService;
 import com.revealprecision.revealserver.service.LocationRelationshipService;
-import com.revealprecision.revealserver.service.LocationService;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -38,6 +38,7 @@ public class LocationBusinessStatusStream {
   private final KafkaProperties kafkaProperties;
   private final LocationRelationshipService locationRelationshipService;
   private final LocationHierarchyService locationHierarchyService;
+  private final BusinessStatusProperties businessStatusProperties;
 
   @Bean
   KStream<UUID, LocationMetadataEvent> getLocationsRelationships2(StreamsBuilder streamsBuilder) {
@@ -79,7 +80,10 @@ public class LocationBusinessStatusStream {
         })
         .flatMapValues((k, locationMetadata) -> {
           List<LocationMetadataUnpackedEvent> locationMetadataEventsWithHierarchyAndAncestorNodeWithIndividualMetadata = locationMetadata.getMetaDataEvents()
-              .stream().map(metaDataEvent -> {
+              .stream()
+              .filter(metaDataEvent -> metaDataEvent.getType()
+                  .equals(businessStatusProperties.getBusinessStatusTagName()))
+              .map(metaDataEvent -> {
                 LocationMetadataUnpackedEvent locationMetadataUnpackedEvent = new LocationMetadataUnpackedEvent();
                 locationMetadataUnpackedEvent.setHierarchyIdentifier(
                     locationMetadata.getHierarchyIdentifier());
@@ -97,25 +101,16 @@ public class LocationBusinessStatusStream {
         });
 
     KGroupedStream<String, LocationMetadataUnpackedEvent> stringLocationMetadataUnpackedEventKGroupedStream = unpackedLocationMetadataStream
-        .selectKey((k,v)->k)
+        .selectKey((k, v) -> k)
         .groupByKey(
-        Grouped.with(Serdes.String(), new JsonSerde<>(LocationMetadataUnpackedEvent.class)));
+            Grouped.with(Serdes.String(), new JsonSerde<>(LocationMetadataUnpackedEvent.class)));
 
     KTable<String, LocationBusinessStatus> aggregate1 = stringLocationMetadataUnpackedEventKGroupedStream
         .aggregate(LocationBusinessStatus::new,
             (key, locationMetadataUnpackedEvent, aggregate) -> {
-              if (aggregate.getUpdateTime() == null) {
-                aggregate.setUpdateTime(
-                    locationMetadataUnpackedEvent.getMetaDataEvent().getTagData().getMeta()
-                        .getUpdateDateTime());
-                aggregate.setBusinessStatus(
-                    locationMetadataUnpackedEvent.getMetaDataEvent().getTagData().getValue()
-                        .getValueString());
-                aggregate.setEntityId(locationMetadataUnpackedEvent.getEntityId());
-              } else {
-                if (aggregate.getUpdateTime().isBefore(
-                    locationMetadataUnpackedEvent.getMetaDataEvent().getTagData().getMeta()
-                        .getUpdateDateTime())) {
+
+              if (locationMetadataUnpackedEvent.getMetaDataEvent().isActive()) {
+                if (aggregate.getUpdateTime() == null) {
                   aggregate.setUpdateTime(
                       locationMetadataUnpackedEvent.getMetaDataEvent().getTagData().getMeta()
                           .getUpdateDateTime());
@@ -123,26 +118,43 @@ public class LocationBusinessStatusStream {
                       locationMetadataUnpackedEvent.getMetaDataEvent().getTagData().getValue()
                           .getValueString());
                   aggregate.setEntityId(locationMetadataUnpackedEvent.getEntityId());
+                } else {
+                  if (aggregate.getUpdateTime().isBefore(
+                      locationMetadataUnpackedEvent.getMetaDataEvent().getTagData().getMeta()
+                          .getUpdateDateTime())) {
+                    aggregate.setUpdateTime(
+                        locationMetadataUnpackedEvent.getMetaDataEvent().getTagData().getMeta()
+                            .getUpdateDateTime());
+                    aggregate.setBusinessStatus(
+                        locationMetadataUnpackedEvent.getMetaDataEvent().getTagData().getValue()
+                            .getValueString());
+                    aggregate.setEntityId(locationMetadataUnpackedEvent.getEntityId());
+                  }
                 }
+              } else {
+                aggregate = null;
               }
               return aggregate;
             },
-            Materialized.<String, LocationBusinessStatus, KeyValueStore<Bytes, byte[]>>as(kafkaProperties.getStoreMap().get(KafkaConstants.locationBusinessStatus))
+            Materialized.<String, LocationBusinessStatus, KeyValueStore<Bytes, byte[]>>as(
+                    kafkaProperties.getStoreMap().get(KafkaConstants.locationBusinessStatus))
                 .withValueSerde(new JsonSerde<>(LocationBusinessStatus.class))
                 .withKeySerde(Serdes.String())
         );
 
     KTable<String, Long> count = aggregate1.groupBy((k, v) ->
             KeyValue.pair(k.split("_")[0] + "_" + //plan
-                k.split("_")[1] + "_" +  //ancestor
-                k.split("_")[2] + "_" + //hierarchy
-                v.getBusinessStatus(),    //business_status
+                    k.split("_")[1] + "_" +  //ancestor
+                    k.split("_")[2] + "_" + //hierarchy
+                    v.getBusinessStatus(),    //business_status
                 v),
         Grouped.with(Serdes.String(), new JsonSerde<>(LocationBusinessStatus.class))
-    ).count(Materialized.as(kafkaProperties.getStoreMap().get(KafkaConstants.locationBusinessStatusByPlanParentHierarchy)));
+    ).count(Materialized.as(kafkaProperties.getStoreMap()
+        .get(KafkaConstants.locationBusinessStatusByPlanParentHierarchy)));
 
 //    count.toStream().print(Printed.<String,Long>toSysOut());
-    count.toStream().to(kafkaProperties.getTopicMap().get(KafkaConstants.LOCATION_BUSINESS_STATUS_COUNTS));
+    count.toStream()
+        .to(kafkaProperties.getTopicMap().get(KafkaConstants.LOCATION_BUSINESS_STATUS_COUNTS));
 
     return locationMetadataStream;
   }

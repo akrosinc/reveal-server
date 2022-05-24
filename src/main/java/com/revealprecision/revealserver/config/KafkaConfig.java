@@ -7,7 +7,9 @@ import static org.apache.kafka.streams.StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_C
 import static org.springframework.kafka.annotation.KafkaStreamsDefaultConfiguration.DEFAULT_STREAMS_CONFIG_BEAN_NAME;
 
 import com.revealprecision.revealserver.props.KafkaProperties;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -56,11 +58,23 @@ public class KafkaConfig {
   @Bean
   public NewTopics setup() {
 
-    return new NewTopics(
-         kafkaProperties.getTopicNames().stream()
-            .map(topic -> TopicBuilder.name(topic)
-              .build()
-            ).collect(Collectors.toList()).toArray(NewTopic[]::new));
+    List<NewTopic> topicsThatExpireMessages = kafkaProperties.getTopicNames().stream()
+        .filter(topic -> kafkaProperties.getTopicConfigRetention().containsKey(topic))
+        .map(topic -> TopicBuilder.name(topic).config(TopicConfig.RETENTION_MS_CONFIG,
+            String.valueOf(kafkaProperties.getTopicConfigRetention().get(topic))).build())
+        .collect(Collectors.toList());
+
+    List<NewTopic> topicsThatDoNotExpireMessages = kafkaProperties.getTopicNames().stream()
+        .filter(topic -> !kafkaProperties.getTopicConfigRetention().containsKey(topic))
+        .map(topic -> TopicBuilder.name(topic)
+            .build()
+        ).collect(Collectors.toList());
+
+    List<NewTopic> newTopics = new ArrayList<>();
+    newTopics.addAll(topicsThatExpireMessages);
+    newTopics.addAll(topicsThatDoNotExpireMessages);
+
+    return new NewTopics(newTopics.toArray(NewTopic[]::new));
   }
 
   @Bean(name = DEFAULT_STREAMS_CONFIG_BEAN_NAME)

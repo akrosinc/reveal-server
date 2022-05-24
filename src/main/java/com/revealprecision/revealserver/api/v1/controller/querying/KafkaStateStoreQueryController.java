@@ -3,6 +3,7 @@ package com.revealprecision.revealserver.api.v1.controller.querying;
 import com.revealprecision.revealserver.messaging.KafkaConstants;
 import com.revealprecision.revealserver.messaging.Message;
 import com.revealprecision.revealserver.messaging.message.LocationAssigned;
+import com.revealprecision.revealserver.messaging.message.LocationBusinessStatus;
 import com.revealprecision.revealserver.messaging.message.OperationalAreaVisitedCount;
 import com.revealprecision.revealserver.messaging.message.PersonBusinessStatus;
 import com.revealprecision.revealserver.messaging.message.TaskAggregate;
@@ -16,7 +17,6 @@ import org.apache.kafka.streams.state.KeyValueIterator;
 import org.apache.kafka.streams.state.QueryableStoreTypes;
 import org.apache.kafka.streams.state.ReadOnlyKeyValueStore;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Profile;
 import org.springframework.kafka.config.StreamsBuilderFactoryBean;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/state-store")
 @Slf4j
-public class KafkaStateStore {
+public class KafkaStateStoreQueryController {
 
   @Autowired
   StreamsBuilderFactoryBean getKafkaStreams;
@@ -42,7 +42,9 @@ public class KafkaStateStore {
   public void personBusinessStatus() {
     KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
     ReadOnlyKeyValueStore<String, PersonBusinessStatus> counts = kafkaStreams.store(
-        StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap().get(KafkaConstants.personBusinessStatus), QueryableStoreTypes.keyValueStore())
+        StoreQueryParameters.fromNameAndType(
+            kafkaProperties.getStoreMap().get(KafkaConstants.personBusinessStatus),
+            QueryableStoreTypes.keyValueStore())
     );
     KeyValueIterator<String, PersonBusinessStatus> all = counts.all();
     log.info("Started");
@@ -50,7 +52,7 @@ public class KafkaStateStore {
       KeyValue<String, PersonBusinessStatus> keyValue = all.next();
       String key = keyValue.key;
       PersonBusinessStatus value = keyValue.value;
-      log.info("key: {} - value: {}",key,value);
+      log.info("key: {} - value: {}", key, value);
     }
     log.info("Ended");
 //    return counts.get(parentId);
@@ -61,7 +63,9 @@ public class KafkaStateStore {
   public void personBusinessStatusByPlanParentHierarchy() {
     KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
     ReadOnlyKeyValueStore<String, Long> counts = kafkaStreams.store(
-        StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap().get(KafkaConstants.personBusinessStatusByPlanParentHierarchy), QueryableStoreTypes.keyValueStore())
+        StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap()
+                .get(KafkaConstants.personBusinessStatusByPlanParentHierarchy),
+            QueryableStoreTypes.keyValueStore())
     );
     KeyValueIterator<String, Long> all = counts.all();
     log.info("Started");
@@ -69,7 +73,7 @@ public class KafkaStateStore {
       KeyValue<String, Long> keyValue = all.next();
       String key = keyValue.key;
       Long value = keyValue.value;
-      log.info("key: {} - value: {}",key,value);
+      log.info("key: {} - value: {}", key, value);
     }
     log.info("Ended");
 //    return counts.get(parentId);
@@ -80,7 +84,9 @@ public class KafkaStateStore {
   public void tableOfOperationalAreas() {
     KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
     ReadOnlyKeyValueStore<String, LocationAssigned> counts = kafkaStreams.store(
-        StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap().get(KafkaConstants.tableOfOperationalAreas), QueryableStoreTypes.keyValueStore())
+        StoreQueryParameters.fromNameAndType(
+            kafkaProperties.getStoreMap().get(KafkaConstants.tableOfOperationalAreas),
+            QueryableStoreTypes.keyValueStore())
     );
     KeyValueIterator<String, LocationAssigned> all = counts.all();
     log.info("Started");
@@ -88,7 +94,7 @@ public class KafkaStateStore {
       KeyValue<String, LocationAssigned> keyValue = all.next();
       String key = keyValue.key;
       LocationAssigned value = keyValue.value;
-      log.info("key: {} - value: {}",key,value);
+      log.info("key: {} - value: {}", key, value);
     }
     log.info("Ended");
 //    return counts.get(parentId);
@@ -98,7 +104,9 @@ public class KafkaStateStore {
   public Long locationBusinessStatusByPlanParentHierarchy(@PathVariable String parentId) {
     KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
     ReadOnlyKeyValueStore<String, Long> counts = kafkaStreams.store(
-        StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap().get(KafkaConstants.locationBusinessStatusByPlanParentHierarchy), QueryableStoreTypes.keyValueStore())
+        StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap()
+                .get(KafkaConstants.locationBusinessStatusByPlanParentHierarchy),
+            QueryableStoreTypes.keyValueStore())
     );
     KeyValueIterator<String, Long> all = counts.all();
     log.info("Started");
@@ -106,7 +114,7 @@ public class KafkaStateStore {
       KeyValue<String, Long> keyValue = all.next();
       String key = keyValue.key;
       Long value = keyValue.value;
-      log.info("key: {} - value: {}",key,value);
+      log.info("key: {} - value: {}", key, value);
     }
     log.info("Ended");
     return counts.get(parentId);
@@ -116,7 +124,9 @@ public class KafkaStateStore {
   public void countOfAssignedStructure() {
     KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
     ReadOnlyKeyValueStore<String, Long> counts = kafkaStreams.store(
-        StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap().get(KafkaConstants.assignedStructureCountPerParent), QueryableStoreTypes.keyValueStore())
+        StoreQueryParameters.fromNameAndType(
+            kafkaProperties.getStoreMap().get(KafkaConstants.assignedStructureCountPerParent),
+            QueryableStoreTypes.keyValueStore())
     );
     KeyValueIterator<String, Long> all = counts.all();
     log.info("Started");
@@ -124,20 +134,20 @@ public class KafkaStateStore {
       KeyValue<String, Long> keyValue = all.next();
       String key = keyValue.key;
       Long value = keyValue.value;
-      log.info("key: {} - value: {}",key,value);
+      log.info("key: {} - value: {}", key, value);
     }
     log.info("Ended");
 //    return counts.get(parentId);
   }
 
 
-
-
   @GetMapping("/tableOfOperationalAreaHierarchies")
   public void tableOfOperationalAreaHierarchies() {
     KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
     ReadOnlyKeyValueStore<String, OperationalAreaVisitedCount> counts = kafkaStreams.store(
-        StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap().get(KafkaConstants.tableOfOperationalAreaHierarchies), QueryableStoreTypes.keyValueStore())
+        StoreQueryParameters.fromNameAndType(
+            kafkaProperties.getStoreMap().get(KafkaConstants.tableOfOperationalAreaHierarchies),
+            QueryableStoreTypes.keyValueStore())
     );
     KeyValueIterator<String, OperationalAreaVisitedCount> all = counts.all();
     log.info("Started");
@@ -145,7 +155,7 @@ public class KafkaStateStore {
       KeyValue<String, OperationalAreaVisitedCount> keyValue = all.next();
       String key = keyValue.key;
       OperationalAreaVisitedCount value = keyValue.value;
-      log.info("key: {} - value: {}",key,value);
+      log.info("key: {} - value: {}", key, value);
     }
     log.info("Ended");
   }
@@ -154,7 +164,9 @@ public class KafkaStateStore {
   public void locationBusinessStatusByPlanParentHierarchy() {
     KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
     ReadOnlyKeyValueStore<String, Long> counts = kafkaStreams.store(
-        StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap().get(KafkaConstants.locationBusinessStatusByPlanParentHierarchy), QueryableStoreTypes.keyValueStore())
+        StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap()
+                .get(KafkaConstants.locationBusinessStatusByPlanParentHierarchy),
+            QueryableStoreTypes.keyValueStore())
     );
     KeyValueIterator<String, Long> all = counts.all();
     log.info("Started");
@@ -162,7 +174,26 @@ public class KafkaStateStore {
       KeyValue<String, Long> keyValue = all.next();
       String key = keyValue.key;
       Long value = keyValue.value;
-      log.info("key: {} - value: {}",key,value);
+      log.info("key: {} - value: {}", key, value);
+    }
+    log.info("Ended");
+  }
+
+  @GetMapping("/locationBusinessStatus")
+  public void locationBusinessStatus() {
+    KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
+    ReadOnlyKeyValueStore<String, LocationBusinessStatus> counts = kafkaStreams.store(
+        StoreQueryParameters.fromNameAndType(
+            kafkaProperties.getStoreMap().get(KafkaConstants.locationBusinessStatus),
+            QueryableStoreTypes.keyValueStore())
+    );
+    KeyValueIterator<String, LocationBusinessStatus> all = counts.all();
+    log.info("Started");
+    while (all.hasNext()) {
+      KeyValue<String, LocationBusinessStatus> keyValue = all.next();
+      String key = keyValue.key;
+      LocationBusinessStatus value = keyValue.value;
+      log.info("key: {} - value: {}", key, value);
     }
     log.info("Ended");
   }
@@ -171,7 +202,9 @@ public class KafkaStateStore {
   public void taskPlanParent() {
     KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
     ReadOnlyKeyValueStore<String, TaskEvent> counts = kafkaStreams.store(
-        StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap().get(KafkaConstants.taskPlanParent), QueryableStoreTypes.keyValueStore())
+        StoreQueryParameters.fromNameAndType(
+            kafkaProperties.getStoreMap().get(KafkaConstants.taskPlanParent),
+            QueryableStoreTypes.keyValueStore())
     );
     KeyValueIterator<String, TaskEvent> all = counts.all();
     log.info("Started");
@@ -179,17 +212,20 @@ public class KafkaStateStore {
       KeyValue<String, TaskEvent> keyValue = all.next();
       String key = keyValue.key;
       TaskEvent value = keyValue.value;
-      log.info("key: {} - value: {}",key,value);
+      log.info("key: {} - value: {}", key, value);
     }
     log.info("Ended");
 //    return counts.get(parentId);
   }
 
   @GetMapping("/taskPlanParent/{task}/{plan}/{parent}")
-  public TaskEvent taskPlanParent(@PathVariable("task") String task,@PathVariable("plan") String plan, @PathVariable("parent") String parent) {
+  public TaskEvent taskPlanParent(@PathVariable("task") String task,
+      @PathVariable("plan") String plan, @PathVariable("parent") String parent) {
     KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
     ReadOnlyKeyValueStore<String, TaskEvent> counts = kafkaStreams.store(
-        StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap().get(KafkaConstants.taskPlanParent), QueryableStoreTypes.keyValueStore())
+        StoreQueryParameters.fromNameAndType(
+            kafkaProperties.getStoreMap().get(KafkaConstants.taskPlanParent),
+            QueryableStoreTypes.keyValueStore())
     );
     KeyValueIterator<String, TaskEvent> all = counts.all();
 //    log.info("Started");
@@ -207,7 +243,9 @@ public class KafkaStateStore {
   public void taskParent() {
     KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
     ReadOnlyKeyValueStore<String, TaskAggregate> counts = kafkaStreams.store(
-        StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap().get(KafkaConstants.taskParent), QueryableStoreTypes.keyValueStore())
+        StoreQueryParameters.fromNameAndType(
+            kafkaProperties.getStoreMap().get(KafkaConstants.taskParent),
+            QueryableStoreTypes.keyValueStore())
     );
     KeyValueIterator<String, TaskAggregate> all = counts.all();
     log.info("Started");
@@ -215,7 +253,7 @@ public class KafkaStateStore {
       KeyValue<String, TaskAggregate> keyValue = all.next();
       String key = keyValue.key;
       TaskAggregate value = keyValue.value;
-      log.info("key: {} - value: {}",key,value);
+      log.info("key: {} - value: {}", key, value);
     }
     log.info("Ended");
 //    return counts.get(parentId);
@@ -225,7 +263,9 @@ public class KafkaStateStore {
   public void taskParentCount() {
     KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
     ReadOnlyKeyValueStore<String, TaskAggregate> counts = kafkaStreams.store(
-        StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap().get(KafkaConstants.taskParent), QueryableStoreTypes.keyValueStore())
+        StoreQueryParameters.fromNameAndType(
+            kafkaProperties.getStoreMap().get(KafkaConstants.taskParent),
+            QueryableStoreTypes.keyValueStore())
     );
     KeyValueIterator<String, TaskAggregate> all = counts.all();
     log.info("Started");
@@ -233,7 +273,7 @@ public class KafkaStateStore {
       KeyValue<String, TaskAggregate> keyValue = all.next();
       String key = keyValue.key;
       TaskAggregate value = keyValue.value;
-      log.info("key: {} - value: {}",key,value.getTaskIds().size());
+      log.info("key: {} - value: {}", key, value.getTaskIds().size());
     }
     log.info("Ended");
 //    return counts.get(parentId);
@@ -241,10 +281,13 @@ public class KafkaStateStore {
 
 
   @GetMapping("/taskParent/{plan}/{parent}")
-  public TaskAggregate taskParent(@PathVariable("plan") String plan, @PathVariable("parent") String parent) {
+  public TaskAggregate taskParent(@PathVariable("plan") String plan,
+      @PathVariable("parent") String parent) {
     KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
     ReadOnlyKeyValueStore<String, TaskAggregate> counts = kafkaStreams.store(
-        StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap().get(KafkaConstants.taskParent), QueryableStoreTypes.keyValueStore())
+        StoreQueryParameters.fromNameAndType(
+            kafkaProperties.getStoreMap().get(KafkaConstants.taskParent),
+            QueryableStoreTypes.keyValueStore())
     );
     KeyValueIterator<String, TaskAggregate> all = counts.all();
     return counts.get(plan.concat("_").concat(parent));
