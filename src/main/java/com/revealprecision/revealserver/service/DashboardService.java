@@ -101,11 +101,15 @@ public class DashboardService {
     tableRow.setReportTypeEnum(reportTypeEnum);
     tableRow.setParentLocationIdentifier(parentLocationIdentifier);
 
-    Map<UUID, Long> childrenCount = locationRelationshipService.getLocationChildrenCount(plan.getLocationHierarchy().getIdentifier())
+    Map<UUID, Long> childrenCount = locationRelationshipService.getLocationChildrenCount(
+            plan.getLocationHierarchy().getIdentifier())
         .stream().filter(loc -> loc.getParentIdentifier() != null)
-        .collect(Collectors.toMap(loc -> UUID.fromString(loc.getParentIdentifier()), loc -> loc.getChildrenCount()));
+        .collect(Collectors.toMap(loc -> UUID.fromString(loc.getParentIdentifier()),
+            loc -> loc.getChildrenCount()));
 
-    tableRow.getRowData().forEach(row -> row.setChildrenNumber(childrenCount.containsKey(row.getLocationIdentifier()) ? childrenCount.get(row.getLocationIdentifier()) : 0));
+    tableRow.getRowData().forEach(row -> row.setChildrenNumber(
+        childrenCount.containsKey(row.getLocationIdentifier()) ? childrenCount.get(
+            row.getLocationIdentifier()) : 0));
 
     return tableRow;
   }
@@ -500,18 +504,23 @@ public class DashboardService {
     }
   }
 
-  public FeatureSetResponse getDataForReport(String reportType, UUID planIdentifier, UUID parentIdentifier) {
+  public FeatureSetResponse getDataForReport(String reportType, UUID planIdentifier,
+      UUID parentIdentifier) {
     ReportTypeEnum reportTypeEnum = LookupUtil.lookup(ReportTypeEnum.class, reportType);
     Plan plan = planService.getPlanByIdentifier(planIdentifier);
-    List<String> applicableReportTypes = ApplicableReportsEnum.valueOf(plan.getInterventionType().getCode()).getReportName();
-    if(!applicableReportTypes.contains(reportTypeEnum.name())) {
-      throw new WrongEnumException("Report type: '" + reportType + "' is not applicable to plan with identifier: '" + planIdentifier + "'");
+    List<String> applicableReportTypes = ApplicableReportsEnum.valueOf(
+        plan.getInterventionType().getCode()).getReportName();
+    if (!applicableReportTypes.contains(reportTypeEnum.name())) {
+      throw new WrongEnumException(
+          "Report type: '" + reportType + "' is not applicable to plan with identifier: '"
+              + planIdentifier + "'");
     }
     List<PlanLocationDetails> locationDetails = new ArrayList<>();
-    if(parentIdentifier == null) {
+    if (parentIdentifier == null) {
       locationDetails.add(locationService.getRootLocationByPlanIdentifier(planIdentifier));
-    }else {
-      locationDetails = locationService.getLocationsByParentIdentifierAndPlanIdentifier(parentIdentifier, planIdentifier);
+    } else {
+      locationDetails = locationService.getLocationsByParentIdentifierAndPlanIdentifier(
+          parentIdentifier, planIdentifier);
     }
 
     initDataStoresIfNecessary();
@@ -522,7 +531,8 @@ public class DashboardService {
           return getMDAFullCoverageData(planIdentifier, plan, loc.getLocation());
 
         case MDA_FULL_COVERAGE_OPERATIONAL_AREA_LEVEL:
-          return getMDAFullCoverageOperationalAreaLevelData(planIdentifier, plan, loc.getLocation());
+          return getMDAFullCoverageOperationalAreaLevelData(planIdentifier, plan,
+              loc.getLocation());
 
         case IRS_FULL_COVERAGE:
           return getIRSFullData(loc.getLocation());
@@ -540,6 +550,12 @@ public class DashboardService {
     locationResponses.forEach(loc -> {
       loc.getProperties().setColumnDataMap(rowDataMap.get(loc.getIdentifier()).getColumnDataMap());
       loc.getProperties().setId(loc.getIdentifier());
+      if (rowDataMap.get(loc.getIdentifier()).getColumnDataMap().get("Distribution Coverage")
+          != null) {
+        loc.getProperties().setDistCoveragePercent(
+            rowDataMap.get(loc.getIdentifier()).getColumnDataMap().get("Distribution Coverage")
+                .getValue());
+      }
     });
     response.setFeatures(locationResponses);
     response.setIdentifier(parentIdentifier);
