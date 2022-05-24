@@ -539,6 +539,12 @@ public class DashboardService {
     locationResponses.forEach(loc -> {
       loc.getProperties().setColumnDataMap(rowDataMap.get(loc.getIdentifier()).getColumnDataMap());
       loc.getProperties().setId(loc.getIdentifier());
+      if (rowDataMap.get(loc.getIdentifier()).getColumnDataMap().get("Distribution Coverage")
+          != null) {
+        loc.getProperties().setDistCoveragePercent(
+            rowDataMap.get(loc.getIdentifier()).getColumnDataMap().get("Distribution Coverage")
+                .getValue());
+      }
     });
     response.setFeatures(locationResponses);
     response.setIdentifier(parentIdentifier);
