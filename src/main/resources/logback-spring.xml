@@ -9,30 +9,11 @@
   <springProperty scope="context" name="totalSizeCap" source="reveal.logging.total-size-cap"/>
 
   <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-    <!-- encoders are assigned the type
-         ch.qos.logback.classic.encoder.PatternLayoutEncoder by default -->
     <encoder>
       <pattern>${loggingPattern}</pattern>
     </encoder>
   </appender>
-<!--  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">-->
-<!--    &lt;!&ndash; encoders are assigned the type-->
-<!--         ch.qos.logback.classic.encoder.PatternLayoutEncoder by default &ndash;&gt;-->
-<!--    <encoder>-->
-<!--      <pattern>%date{dd-MM-yyyy;HH:mm:ss.SSS} [%40.40thread] %-5level %40.40logger{15}[%6.6L] - %msg %n</pattern>-->
-<!--    </encoder>-->
-<!--  </appender>-->
 
-
-<!--  <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">-->
-<!--    <file>C:\Code\AKROS\Docker\revealserver\logs\logFile.log</file>-->
-<!--    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">-->
-<!--      <fileNamePattern>C:\Code\AKROS\Docker\revealserver\logs\logFile.%d{yyyy-MM-dd_HH-mm}.log</fileNamePattern>-->
-<!--    </rollingPolicy>-->
-<!--    <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">-->
-<!--      <pattern>%date{dd-MM-yyyy;HH:mm:ss.SSS} [%40.40thread] %-5level %40.40logger{15}[%6.6L] - %msg %n</pattern>-->
-<!--    </encoder>-->
-<!--  </appender>-->
   <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
     <file>${loggingPath}${loggingFileName}</file>
     <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
@@ -45,11 +26,9 @@
       <pattern>${loggingPattern}</pattern>
     </encoder>
   </appender>
-  <!-- LOG everything at INFO level -->
-  <root level="info">
+
+  <root level="INFO">
     <appender-ref ref="FILE" />
     <appender-ref ref="STDOUT"/>
   </root>
-
-
 </configuration>
