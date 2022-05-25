@@ -28,13 +28,13 @@ public class KeycloakSecurityConfig extends KeycloakWebSecurityConfigurerAdapter
   @Override
   protected void configure(HttpSecurity http) throws Exception {
     super.configure(http);
-    http.authorizeRequests()
+    http
+        .authorizeRequests()
         .anyRequest().permitAll().and()
-        .antMatcher("/swagger**").authorizeRequests()
-        .and()
         .anonymous()
         .disable().exceptionHandling()
         .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED));
+
     CorsConfiguration corsConfiguration = new CorsConfiguration();
     corsConfiguration.setAllowedHeaders(
         List.of("Authorization", "Cache-Control", "Content-Type"));
