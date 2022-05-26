@@ -15,7 +15,7 @@ import lombok.Setter;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class LocationBusinessStatus extends Message {
+public class LocationBusinessStatusAggregate extends Message {
 
 
   private UUID entityId;

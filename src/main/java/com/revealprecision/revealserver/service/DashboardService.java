@@ -12,7 +12,7 @@ import com.revealprecision.revealserver.enums.ReportTypeEnum;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.exceptions.WrongEnumException;
 import com.revealprecision.revealserver.messaging.KafkaConstants;
-import com.revealprecision.revealserver.messaging.message.OperationalAreaVisitedCount2;
+import com.revealprecision.revealserver.messaging.message.OperationalAreaVisitedCount;
 import com.revealprecision.revealserver.messaging.message.PersonBusinessStatusAggregate;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
@@ -60,7 +60,7 @@ public class DashboardService {
   ReadOnlyKeyValueStore<String, Long> countOfAssignedStructures;
   ReadOnlyKeyValueStore<String, Long> structureCounts;
   ReadOnlyKeyValueStore<String, Long> countOfStructuresByBusinessStatus;
-  ReadOnlyKeyValueStore<String, OperationalAreaVisitedCount2> countOfOperationalArea;
+  ReadOnlyKeyValueStore<String, OperationalAreaVisitedCount> countOfOperationalArea;
   ReadOnlyKeyValueStore<String, PersonBusinessStatusAggregate> personBusinessStatus;
   boolean datastoresInitialized = false;
 
@@ -282,7 +282,7 @@ public class DashboardService {
   private Entry<String, ColumnData> operationalAreaVisitedCounts(UUID planIdentifier,
       Location childLocation) {
     String operationalAreaVisitedQueryKey = childLocation.getIdentifier()+ "_" +planIdentifier  ;
-    OperationalAreaVisitedCount2 operationalAreaVisitedObj = countOfOperationalArea.get(
+    OperationalAreaVisitedCount operationalAreaVisitedObj = countOfOperationalArea.get(
         operationalAreaVisitedQueryKey);
     double operationalAreaVisitedCount = 0;
     if (operationalAreaVisitedObj != null) {

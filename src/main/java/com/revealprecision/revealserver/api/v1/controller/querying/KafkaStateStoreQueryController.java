@@ -2,9 +2,9 @@ package com.revealprecision.revealserver.api.v1.controller.querying;
 
 import com.revealprecision.revealserver.messaging.KafkaConstants;
 import com.revealprecision.revealserver.messaging.Message;
-import com.revealprecision.revealserver.messaging.message.LocationBusinessStatus;
+import com.revealprecision.revealserver.messaging.message.LocationBusinessStatusAggregate;
 import com.revealprecision.revealserver.messaging.message.OperationalAreaAggregate;
-import com.revealprecision.revealserver.messaging.message.OperationalAreaVisitedCount2;
+import com.revealprecision.revealserver.messaging.message.OperationalAreaVisitedCount;
 import com.revealprecision.revealserver.messaging.message.PersonBusinessStatusAggregate;
 import com.revealprecision.revealserver.messaging.message.TaskAggregate;
 import com.revealprecision.revealserver.messaging.message.TaskEvent;
@@ -163,17 +163,17 @@ public class KafkaStateStoreQueryController {
   @GetMapping("/locationBusinessStatusByPlanParentHierarchy")
   public void locationBusinessStatusByPlanParentHierarchy() {
     KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
-    ReadOnlyKeyValueStore<String, OperationalAreaVisitedCount2> counts = kafkaStreams.store(
+    ReadOnlyKeyValueStore<String, OperationalAreaVisitedCount> counts = kafkaStreams.store(
         StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap()
                 .get(KafkaConstants.locationBusinessStatusByPlanParentHierarchy),
             QueryableStoreTypes.keyValueStore())
     );
-    KeyValueIterator<String, OperationalAreaVisitedCount2> all = counts.all();
+    KeyValueIterator<String, OperationalAreaVisitedCount> all = counts.all();
     log.info("Started");
     while (all.hasNext()) {
-      KeyValue<String, OperationalAreaVisitedCount2> keyValue = all.next();
+      KeyValue<String, OperationalAreaVisitedCount> keyValue = all.next();
       String key = keyValue.key;
-      OperationalAreaVisitedCount2 value = keyValue.value;
+      OperationalAreaVisitedCount value = keyValue.value;
       log.info("key: {} - value: {}", key, value);
     }
     log.info("Ended");
@@ -182,17 +182,17 @@ public class KafkaStateStoreQueryController {
   @GetMapping("/operationalAreaByPlanParentHierarchy")
   public void operationalAreaByPlanParentHierarchy() {
     KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
-    ReadOnlyKeyValueStore<String, OperationalAreaVisitedCount2> counts = kafkaStreams.store(
+    ReadOnlyKeyValueStore<String, OperationalAreaVisitedCount> counts = kafkaStreams.store(
         StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap()
                 .get(KafkaConstants.operationalAreaByPlanParentHierarchy),
             QueryableStoreTypes.keyValueStore())
     );
-    KeyValueIterator<String, OperationalAreaVisitedCount2> all = counts.all();
+    KeyValueIterator<String, OperationalAreaVisitedCount> all = counts.all();
     log.info("Started");
     while (all.hasNext()) {
-      KeyValue<String, OperationalAreaVisitedCount2> keyValue = all.next();
+      KeyValue<String, OperationalAreaVisitedCount> keyValue = all.next();
       String key = keyValue.key;
-      OperationalAreaVisitedCount2 value = keyValue.value;
+      OperationalAreaVisitedCount value = keyValue.value;
       log.info("key: {} - value: {}", key, value);
     }
     log.info("Ended");
@@ -202,17 +202,17 @@ public class KafkaStateStoreQueryController {
   @GetMapping("/locationBusinessStatus")
   public void locationBusinessStatus() {
     KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
-    ReadOnlyKeyValueStore<String, LocationBusinessStatus> counts = kafkaStreams.store(
+    ReadOnlyKeyValueStore<String, LocationBusinessStatusAggregate> counts = kafkaStreams.store(
         StoreQueryParameters.fromNameAndType(
             kafkaProperties.getStoreMap().get(KafkaConstants.locationBusinessStatus),
             QueryableStoreTypes.keyValueStore())
     );
-    KeyValueIterator<String, LocationBusinessStatus> all = counts.all();
+    KeyValueIterator<String, LocationBusinessStatusAggregate> all = counts.all();
     log.info("Started");
     while (all.hasNext()) {
-      KeyValue<String, LocationBusinessStatus> keyValue = all.next();
+      KeyValue<String, LocationBusinessStatusAggregate> keyValue = all.next();
       String key = keyValue.key;
-      LocationBusinessStatus value = keyValue.value;
+      LocationBusinessStatusAggregate value = keyValue.value;
       log.info("key: {} - value: {}", key, value);
     }
     log.info("Ended");
