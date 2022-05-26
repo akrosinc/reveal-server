@@ -62,15 +62,12 @@ public class LocationJobCompletionListener implements JobExecutionListener {
     int index = 0;
     for (Location location : addedLocations) {
       try {
-        locationRelationshipService.createRelationshipForImportedLocation(location);
+        locationRelationshipService.createRelationshipForImportedLocation(location, index,
+            addedLocations.size());
       } catch (IOException e) {
         e.printStackTrace();
       }
       index++;
-      if (index == addedLocations.size() - 1) {
-        locationBulk.setStatus(BulkStatusEnum.COMPLETE);
-        locationBulkRepository.save(locationBulk);
-      }
     }
 
     try {
