@@ -25,6 +25,7 @@ public class LocationFacade extends BaseDataObject {
   private Set<String> tags;
   private Map<String, Object> attributes;
 
+
   @Override
   public String toString() {
     return ToStringBuilder.reflectionToString(this);

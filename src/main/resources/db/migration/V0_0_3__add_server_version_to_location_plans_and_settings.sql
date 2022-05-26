@@ -1,0 +1,31 @@
+ALTER TABLE location
+ADD COLUMN server_version BIGINT;
+
+ALTER TABLE location_aud
+ADD COLUMN server_version BIGINT;
+
+
+ALTER TABLE plan
+ADD COLUMN server_version BIGINT;
+
+ALTER TABLE plan_aud
+    ADD COLUMN server_version BIGINT;
+
+ALTER TABLE setting
+ADD COLUMN server_version BIGINT;
+
+ALTER TABLE setting_aud
+    ADD COLUMN server_version BIGINT;
+
+CREATE SEQUENCE IF NOT EXISTS location_server_version_seq
+    START WITH 1
+    INCREMENT BY 1
+    MAXVALUE 9223372036854775807;
+CREATE SEQUENCE IF NOT EXISTS plan_server_version_seq
+    START WITH 1
+    INCREMENT BY 1
+    MAXVALUE 9223372036854775807;
+CREATE SEQUENCE IF NOT EXISTS setting_server_version_seq
+    START WITH 1
+    INCREMENT BY 1
+    MAXVALUE 9223372036854775807;
