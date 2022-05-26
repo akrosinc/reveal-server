@@ -8,6 +8,7 @@ import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.enums.LookupUtil;
 import com.revealprecision.revealserver.enums.PlanStatusEnum;
 import com.revealprecision.revealserver.enums.ReportTypeEnum;
+import com.revealprecision.revealserver.exceptions.ConflictException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.messaging.KafkaConstants;
 import com.revealprecision.revealserver.messaging.message.Message;
@@ -34,19 +35,21 @@ import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
-@RequiredArgsConstructor
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class PlanService {
 
   private final PlanRepository planRepository;
   private final FormService formService;
+  private final LocationBulkService locationBulkService;
   private final LocationHierarchyService locationHierarchyService;
   private final LookupInterventionTypeService lookupInterventionTypeService;
   private final LookupEntityTypeService lookupEntityTypeService;
@@ -122,14 +125,18 @@ public class PlanService {
 
   public void activatePlan(UUID planIdentifier) {
     Plan plan = getPlanByIdentifier(planIdentifier);
-    plan.setStatus(PlanStatusEnum.ACTIVE);
-    savePlan(plan);
-    PlanUpdateMessage planUpdateMessage = new PlanUpdateMessage();
-    planUpdateMessage.setPlanIdentifier(plan.getIdentifier());
-    planUpdateMessage.setPlanUpdateType(PlanUpdateType.ACTIVATE);
-    planUpdateMessage.setOwnerId(UserUtils.getCurrentPrincipleName());
+    if (locationBulkService.areRelationshipsGenerated()) {
+      plan.setStatus(PlanStatusEnum.ACTIVE);
+      savePlan(plan);
+      PlanUpdateMessage planUpdateMessage = new PlanUpdateMessage();
+      planUpdateMessage.setPlanIdentifier(plan.getIdentifier());
+      planUpdateMessage.setPlanUpdateType(PlanUpdateType.ACTIVATE);
+      planUpdateMessage.setOwnerId(UserUtils.getCurrentPrincipleName());
 
-    kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_UPDATE),planUpdateMessage);
+      kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_UPDATE),planUpdateMessage);
+    } else {
+      throw new ConflictException("Relationships still generating for this plan.");
+    }
   }
 
   public void updatePlan(PlanRequest request, UUID identifier) {

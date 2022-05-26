@@ -4,7 +4,9 @@ package com.revealprecision.revealserver.service;
 import com.revealprecision.revealserver.enums.BulkStatusEnum;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
+import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationBulk;
+import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.UserBulk;
 import com.revealprecision.revealserver.persistence.projection.LocationBulkProjection;
 import com.revealprecision.revealserver.persistence.repository.LocationBulkRepository;
@@ -55,5 +57,8 @@ public class LocationBulkService {
     return locationBulkRepository.findAll(pageable);
   }
 
+  public boolean areRelationshipsGenerated() {
+    return locationBulkRepository.countByStatusNot(BulkStatusEnum.COMPLETE) == 0;
+  }
 
 }

@@ -53,20 +53,25 @@ public class LocationJobCompletionListener implements JobExecutionListener {
     String filePath = jobExecution.getJobParameters().getString("filePath");
     LocationBulk locationBulk = locationBulkService.findById(UUID.fromString(locationBulkId));
 
+    locationBulk.setStatus(BulkStatusEnum.GENERATING_RELATIONSHIPS);
+    locationBulkRepository.save(locationBulk);
 
     List<Location> addedLocations = locationBulkRepository.getAllCreatedInBulk(
         locationBulk.getIdentifier());
-    log.info("addLocations size: {}",addedLocations.size());
-    addedLocations.forEach(location -> {
+    log.info("addLocations size: {}", addedLocations.size());
+    int index = 0;
+    for (Location location : addedLocations) {
       try {
         locationRelationshipService.createRelationshipForImportedLocation(location);
       } catch (IOException e) {
         e.printStackTrace();
       }
-    });
-
-    locationBulk.setStatus(BulkStatusEnum.COMPLETE);
-    locationBulkRepository.save(locationBulk);
+      index++;
+      if (index == addedLocations.size() - 1) {
+        locationBulk.setStatus(BulkStatusEnum.COMPLETE);
+        locationBulkRepository.save(locationBulk);
+      }
+    }
 
     try {
       storageService.deleteFile(filePath);
