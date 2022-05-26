@@ -89,6 +89,7 @@ public class LocationStream {
         kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_LOCATION_ASSIGNED),
         Consumed.with(Serdes.String(), new JsonSerde<>(PlanLocationAssignMessage.class)));
 
+    //TODO: remove hardcodings
     //Get structures from the locations assigned to plan
     KStream<String, PlanLocationAssignMessage> stringPlanLocationAssignMessageKStream = locationsAssignedStream
         .mapValues((k, planLocationAssignMessage) -> {
@@ -111,19 +112,9 @@ public class LocationStream {
         .flatMapValues(
             (k, planLocationAssignMessage) -> getStructuresAssignedAndUnAssigned(
                 planLocationAssignMessage))
-        .flatMapValues((k, locationAssigned) -> {
-          return locationAssigned.getAncestry().stream().map(ancestor -> {
-            LocationAssigned locationAssigned1 = new LocationAssigned();
-            locationAssigned1.setAssigned(locationAssigned.isAssigned());
-            locationAssigned1.setIdentifier(locationAssigned.getIdentifier());
-            locationAssigned1.setPlanIdentifier(locationAssigned.getPlanIdentifier());
-            locationAssigned1.setAncestor(ancestor);
-            return locationAssigned1;
-          }).collect(Collectors.toList());
-        })
-        .selectKey((key, locationAssigned) -> locationAssigned.getIdentifier() + "_"
-            + locationAssigned.getPlanIdentifier() + "_" + locationAssigned.getAncestor())
-        .mapValues((k, v) -> v.isAssigned() ? v : null);
+        .flatMapValues((k, locationAssigned) -> getLocationAssignedsUnpackedByAncestry(locationAssigned))
+        .selectKey((key, locationAssigned) -> getLocationPlanAncestorKey(locationAssigned))
+        .mapValues((key, locationAssigned) -> locationAssigned.isAssigned() ? locationAssigned : null);
 
     stringLocationAssignedKStream.to(
         kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_STRUCTURES_ASSIGNED));
@@ -141,140 +132,27 @@ public class LocationStream {
             Grouped.with(Serdes.String(), new JsonSerde<>(LocationAssigned.class)))
         .count(Materialized.as(
             kafkaProperties.getStoreMap().get(KafkaConstants.assignedStructureCountPerParent)));
-//    assignedStructureCountPerParent.toStream()
-//        .print(Printed.<String, Long>toSysOut());
     assignedStructureCountPerParent.toStream()
         .to(kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_STRUCTURES_COUNTS));
 
     return locationsAssignedStream;
   }
 
-  //  @Bean
-//  KStream<String, Long> getOperationalAreaCounts(StreamsBuilder streamsBuilder) {
-//
-//    KStream<String, Long> planStructureCounts = streamsBuilder.stream(
-//        kafkaProperties.getTopicMap().get(KafkaConstants.LOCATION_BUSINESS_STATUS_COUNTS),
-//        Consumed.with(Serdes.String(), Serdes.Long()));
-////    planStructureCounts.print(Printed.<String, Long>toSysOut());
-//
-//    KStream<String, LocationAssigned> stringLocationAssignedKStream = planStructureCounts
-//        .filter((k, v) -> locationService.findByIdentifier(UUID.fromString(k.split("_")[1]))
-//            .getGeographicLevel().getName().equals("operational"))
-//        .filter((k,v)->k.split("_")[3].equals("Not Visited"))
-//        .mapValues((k, v) -> {
-//          Plan plan = planService.getPlanByIdentifier(UUID.fromString(k.split("_")[0]));
-//
-//          LocationRelationship locationRelationshipsForLocation = locationRelationshipService.getLocationRelationshipsForLocation(
-//              plan.getLocationHierarchy().getIdentifier(), UUID.fromString(k.split("_")[1]));
-//          LocationAssigned locationAssigned = new LocationAssigned();
-//          locationAssigned.setAncestry(locationRelationshipsForLocation.getAncestry());
-//          locationAssigned.setIdentifier(k.split("_")[1]);
-//          locationAssigned.setPlanIdentifier(plan.getIdentifier().toString());
-//          locationAssigned.setCount(v);
-//          return locationAssigned;
-//        }).mapValues((k, v) -> {
-//
-//          String key = k.split("_")[0] + "_" +  //plan
-//              k.split("_")[1] ;  //ancestor
-//
-//          KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
-//          ReadOnlyKeyValueStore<String, Long> counts = kafkaStreams.store(
-//              StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap().get(KafkaConstants.assignedStructureCountPerParent), QueryableStoreTypes.keyValueStore())
-//          );
-//
-//
-//          if (counts.get(key) !=null) {
-//            Long countOfNotVisited = v.getCount();
-//            Long countOfAssigned = counts.get(key);
-//
-//            if (countOfAssigned.doubleValue() > 0) {
-//              double percentageOfNotVisited =
-//                  countOfNotVisited.doubleValue() / countOfAssigned.doubleValue() * 100;
-//
-//              log.info("{} countOfNotVisited/countOfAssigned {}/{} percentage: {}", key,
-//                  countOfNotVisited, countOfAssigned, percentageOfNotVisited);
-//
-//              if (percentageOfNotVisited < 80) {
-//                v.setVisited(true);
-//              } else {
-//                v.setVisited(false);
-//              }
-//            } else {
-//              v.setVisited(false);
-//            }
-//          } else {
-//            v.setVisited(false);
-//          }
-//          return v;
-//        }).selectKey((k,v)->v.getPlanIdentifier()+"_"+v.getIdentifier());
-////    stringLocationAssignedKStream.print(Printed.<String,LocationAssigned>toSysOut());
-//
-//    stringLocationAssignedKStream.to(kafkaProperties.getTopicMap().get(KafkaConstants.OPERATIONAL_AREA_COUNTS));
-//
-//    return planStructureCounts;
-//  }
-
-
-  public static void main(String[] args) {
-    Long a = 0L;
-
-    if (a.doubleValue() > 0) {
-      System.out.println("true");
-    } else {
-      System.out.println("false");
-    }
+  private String getLocationPlanAncestorKey(LocationAssigned locationAssigned) {
+    return locationAssigned.getIdentifier() + "_"
+        + locationAssigned.getPlanIdentifier() + "_" + locationAssigned.getAncestor();
   }
 
-//  @Bean("OperationalAreaTable")
-//  KStream<String, LocationAssigned> getOperationalAreaTable(StreamsBuilder streamsBuilder) {
-//
-//   KTable<String,LocationAssigned> operationalAreaTable = streamsBuilder.table(kafkaProperties.getTopicMap().get(KafkaConstants.OPERATIONAL_AREA_COUNTS),
-//            Consumed.with(Serdes.String(), new JsonSerde<>(LocationAssigned.class))
-//           , Materialized.as(kafkaProperties.getStoreMap()
-//               .get(KafkaConstants.tableOfOperationalAreas)));
-//
-//    KStream<String, LocationAssigned> stringLocationAssignedKStream1 = operationalAreaTable.toStream();
-//
-//    KStream<String, LocationAssigned> stringLocationAssignedKStream = stringLocationAssignedKStream1.flatMapValues(
-//        (k, v) -> {
-//          return v.getAncestry().stream().map(ancestor -> {
-//            LocationAssigned locationAssigned = new LocationAssigned();
-//            locationAssigned.setAssigned(v.isAssigned());
-//            locationAssigned.setVisited(v.isVisited());
-//            locationAssigned.setAncestor(ancestor);
-//            locationAssigned.setPlanIdentifier(v.getPlanIdentifier());
-//            locationAssigned.setIdentifier(v.getIdentifier());
-//            return locationAssigned;
-//          }).collect(Collectors.toList());
-//        }).selectKey((k,v)->{
-//          return v.getPlanIdentifier()+"_"+v.getIdentifier()+"_"+v.getAncestor();
-//    });
-//
-//    KTable<String, OperationalAreaVisitedCount> count = stringLocationAssignedKStream
-//        .mapValues((k, v) -> v.isVisited() ? v : null)
-//        .groupBy((k, v) ->
-//                k.split("_")[0] + "_" + k.split("_")[2]
-//            , Grouped.with(Serdes.String(), new JsonSerde<>(LocationAssigned.class)))
-//            .aggregate(OperationalAreaVisitedCount::new,
-//                (k,v,agg)->{
-//                    if (agg.getCount() != null){
-//                      if (!agg.getListOfKeys().contains(v.getPlanIdentifier()+"_"+v.getIdentifier()+"_"+v.getAncestor())){
-//                        List<String> listOfKeys = new ArrayList<>(agg.getListOfKeys());
-//                        listOfKeys.add(v.getPlanIdentifier()+"_"+v.getIdentifier()+"_"+v.getAncestor());
-//                        agg.setListOfKeys(listOfKeys);
-//                        agg.setCount(agg.getCount()+1);
-//                      }
-//                    } else {
-//                      agg.setCount(1L);
-//                      agg.setListOfKeys(List.of(v.getPlanIdentifier()+"_"+v.getIdentifier()+"_"+v.getAncestor()));
-//                    }
-//                    return agg;
-//                },Materialized.<String,OperationalAreaVisitedCount, KeyValueStore<Bytes, byte[]>>as(
-//            kafkaProperties.getStoreMap().get(KafkaConstants.tableOfOperationalAreaHierarchies))
-//                    .withKeySerde(Serdes.String())
-//                    .withValueSerde(new JsonSerde<>(OperationalAreaVisitedCount.class)));
-//    return stringLocationAssignedKStream1;
-//  }
+  private List<LocationAssigned> getLocationAssignedsUnpackedByAncestry(LocationAssigned locationAssigned) {
+    return locationAssigned.getAncestry().stream().map(ancestor -> {
+      LocationAssigned locationAssigned1 = new LocationAssigned();
+      locationAssigned1.setAssigned(locationAssigned.isAssigned());
+      locationAssigned1.setIdentifier(locationAssigned.getIdentifier());
+      locationAssigned1.setPlanIdentifier(locationAssigned.getPlanIdentifier());
+      locationAssigned1.setAncestor(ancestor);
+      return locationAssigned1;
+    }).collect(Collectors.toList());
+  }
 
 
   private List<LocationAssigned> getStructuresAssignedAndUnAssigned(
