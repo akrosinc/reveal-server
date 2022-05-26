@@ -2,22 +2,18 @@ package com.revealprecision.revealserver.api.v1.controller.querying;
 
 import com.revealprecision.revealserver.messaging.KafkaConstants;
 import com.revealprecision.revealserver.messaging.Message;
-import com.revealprecision.revealserver.messaging.message.LocationAssigned;
 import com.revealprecision.revealserver.messaging.message.LocationBusinessStatus;
 import com.revealprecision.revealserver.messaging.message.OperationalAreaAggregate;
-import com.revealprecision.revealserver.messaging.message.OperationalAreaVisitedCount;
 import com.revealprecision.revealserver.messaging.message.OperationalAreaVisitedCount2;
-import com.revealprecision.revealserver.messaging.message.PersonBusinessStatus;
+import com.revealprecision.revealserver.messaging.message.PersonBusinessStatusAggregate;
 import com.revealprecision.revealserver.messaging.message.TaskAggregate;
 import com.revealprecision.revealserver.messaging.message.TaskEvent;
 import com.revealprecision.revealserver.props.KafkaProperties;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.kafka.common.utils.Bytes;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StoreQueryParameters;
 import org.apache.kafka.streams.state.KeyValueIterator;
-import org.apache.kafka.streams.state.KeyValueStore;
 import org.apache.kafka.streams.state.QueryableStoreTypes;
 import org.apache.kafka.streams.state.ReadOnlyKeyValueStore;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,17 +41,17 @@ public class KafkaStateStoreQueryController {
   @GetMapping("/personBusinessStatus")
   public void personBusinessStatus() {
     KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
-    ReadOnlyKeyValueStore<String, PersonBusinessStatus> counts = kafkaStreams.store(
+    ReadOnlyKeyValueStore<String, PersonBusinessStatusAggregate> counts = kafkaStreams.store(
         StoreQueryParameters.fromNameAndType(
             kafkaProperties.getStoreMap().get(KafkaConstants.personBusinessStatus),
             QueryableStoreTypes.keyValueStore())
     );
-    KeyValueIterator<String, PersonBusinessStatus> all = counts.all();
+    KeyValueIterator<String, PersonBusinessStatusAggregate> all = counts.all();
     log.info("Started");
     while (all.hasNext()) {
-      KeyValue<String, PersonBusinessStatus> keyValue = all.next();
+      KeyValue<String, PersonBusinessStatusAggregate> keyValue = all.next();
       String key = keyValue.key;
-      PersonBusinessStatus value = keyValue.value;
+      PersonBusinessStatusAggregate value = keyValue.value;
       log.info("key: {} - value: {}", key, value);
     }
     log.info("Ended");

@@ -16,7 +16,7 @@ import lombok.Setter;
 @Data
 @AllArgsConstructor
 
-public class PersonBusinessStatus extends Message {
+public class PersonBusinessStatusAggregate extends Message {
 
   private Map<UUID,CurrentState> personState;
 
@@ -26,7 +26,7 @@ public class PersonBusinessStatus extends Message {
   private List<UUID> personTreated;
   private List<UUID> personEligible;
 
-  public PersonBusinessStatus(){
+  public PersonBusinessStatusAggregate(){
     this.isInitialized = false;
   }
   @Setter

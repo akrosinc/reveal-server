@@ -12,9 +12,8 @@ import com.revealprecision.revealserver.enums.ReportTypeEnum;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.exceptions.WrongEnumException;
 import com.revealprecision.revealserver.messaging.KafkaConstants;
-import com.revealprecision.revealserver.messaging.message.OperationalAreaVisitedCount;
 import com.revealprecision.revealserver.messaging.message.OperationalAreaVisitedCount2;
-import com.revealprecision.revealserver.messaging.message.PersonBusinessStatus;
+import com.revealprecision.revealserver.messaging.message.PersonBusinessStatusAggregate;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
 import com.revealprecision.revealserver.persistence.domain.Plan;
@@ -33,7 +32,6 @@ import lombok.RequiredArgsConstructor;
 import org.apache.kafka.streams.StoreQueryParameters;
 import org.apache.kafka.streams.state.QueryableStoreTypes;
 import org.apache.kafka.streams.state.ReadOnlyKeyValueStore;
-import org.springframework.context.annotation.DependsOn;
 import org.springframework.kafka.config.StreamsBuilderFactoryBean;
 import org.springframework.stereotype.Service;
 
@@ -63,7 +61,7 @@ public class DashboardService {
   ReadOnlyKeyValueStore<String, Long> structureCounts;
   ReadOnlyKeyValueStore<String, Long> countOfStructuresByBusinessStatus;
   ReadOnlyKeyValueStore<String, OperationalAreaVisitedCount2> countOfOperationalArea;
-  ReadOnlyKeyValueStore<String, PersonBusinessStatus> personBusinessStatus;
+  ReadOnlyKeyValueStore<String, PersonBusinessStatusAggregate> personBusinessStatus;
   boolean datastoresInitialized = false;
 
 
@@ -250,7 +248,7 @@ public class DashboardService {
     String personLocationBusinessStatusKey =
         planIdentifier + "_" + childLocation.getIdentifier() + "_" + plan.getLocationHierarchy()
             .getIdentifier();
-    PersonBusinessStatus personLocationBusinessStatusObj = personBusinessStatus.get(
+    PersonBusinessStatusAggregate personLocationBusinessStatusObj = personBusinessStatus.get(
         personLocationBusinessStatusKey);
 
     double noOfChildrenTreated = 0;
@@ -302,7 +300,7 @@ public class DashboardService {
     String personLocationBusinessStatusKey =
         planIdentifier + "_" + childLocation.getIdentifier() + "_" + plan.getLocationHierarchy()
             .getIdentifier();
-    PersonBusinessStatus personLocationBusinessStatusObj = personBusinessStatus.get(
+    PersonBusinessStatusAggregate personLocationBusinessStatusObj = personBusinessStatus.get(
         personLocationBusinessStatusKey);
 
     double noOfTreatedStructures = 0;
@@ -322,7 +320,7 @@ public class DashboardService {
     String personLocationBusinessStatusKey =
         planIdentifier + "_" + childLocation.getIdentifier() + "_" + plan.getLocationHierarchy()
             .getIdentifier();
-    PersonBusinessStatus personLocationBusinessStatusObj = personBusinessStatus.get(
+    PersonBusinessStatusAggregate personLocationBusinessStatusObj = personBusinessStatus.get(
         personLocationBusinessStatusKey);
 
     double noOfTreatedStructures = 0;
