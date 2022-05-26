@@ -46,11 +46,7 @@ import org.springframework.kafka.support.serializer.JsonSerde;
 @Slf4j
 public class TaskGenerationStream {
 
-  private final TaskRepository taskRepository;
-  private final BusinessStatusService businessStatusService;
-  private final PersonService personService;
   private final KafkaProperties kafkaProperties;
-  private final PlanService planService;
   private final UserService userService;
   private final LocationRelationshipService locationRelationshipService;
   private final LocationService locationService;
@@ -58,6 +54,8 @@ public class TaskGenerationStream {
 
   @Bean
   public KStream<String, TaskEvent> startTaskGeneration(StreamsBuilder streamsBuilder) {
+
+    //TODO: fix comments
     //get Input Tasks
     KStream<String, TaskEvent> taskStream = streamsBuilder
         .stream(kafkaProperties.getTopicMap().get(KafkaConstants.TASK),
@@ -74,7 +72,6 @@ public class TaskGenerationStream {
           return taskEvent;
         }))
         .selectKey((k, taskEvent) -> taskEvent.getBaseEntityIdentifier().toString());
-//    taskStream.print(Printed.<String, TaskEvent>toSysOut());
 
     //split task stream into personTask stream, locationTask stream and otherTask stream
     Map<String, KStream<String, TaskEvent>> splitStreamMap = taskStream
@@ -94,7 +91,6 @@ public class TaskGenerationStream {
         personStream
             .merge(splitStreamMap.get("splitLocationStream"))
             .merge(splitStreamMap.get("splitOtherStream"));
-//    mergedStream.print(Printed.<String, TaskEvent>toSysOut());
 
     KStream<String, TaskEvent> stringTaskEventKStream1 = mergedStream.mapValues((k, taskEvent) -> {
 
@@ -112,7 +108,6 @@ public class TaskGenerationStream {
         .flatMapValues((k, locationTask) -> duplicateTaskEventPerAncestor(locationTask))
         .selectKey((k, taskEvent) -> createTaskPlanAncestorKey(taskEvent));
     stringTaskEventKStream.to(kafkaProperties.getTopicMap().get(KafkaConstants.TASK_PARENT_PLAN));
-//    stringTaskEventKStream.print(Printed.<String, TaskEvent>toSysOut());
 
     // create a table of the records for task Events
     // keyed on task + "_" + plan + "_" + ancestor
@@ -137,7 +132,7 @@ public class TaskGenerationStream {
     // combining the taskId with plan and location ancestor
     // i.e taskId + "_" + planId + "_" + ancestorId;
     //
-    KTable<String, TaskAggregate> aggregatedTaskStream = stringStringKGroupedStream
+    stringStringKGroupedStream
         .aggregate(TaskAggregate::new,
             (k, taskEvent, aggregate) -> collectOrRemoveTaskEventsInTaskAggregateObject(taskEvent,
                 aggregate),
@@ -149,11 +144,6 @@ public class TaskGenerationStream {
     return taskStream;
   }
 
-  private String getTaskPlanKey(TaskEvent v) {
-    return v.getIdentifier().toString()
-        .concat("_")
-        .concat(v.getAction().getGoal().getPlan().getIdentifier().toString());
-  }
 
   private String createPlanAncestorKey(String k) {
     return k.split("_")[1] + "_" + k.split("_")[2];
