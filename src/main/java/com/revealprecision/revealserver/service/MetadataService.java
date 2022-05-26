@@ -12,6 +12,7 @@ import com.revealprecision.revealserver.persistence.domain.metadata.infra.TagDat
 import com.revealprecision.revealserver.persistence.domain.metadata.infra.TagValue;
 import com.revealprecision.revealserver.persistence.repository.LocationMetadataRepository;
 import com.revealprecision.revealserver.persistence.repository.PersonMetadataRepository;
+import com.revealprecision.revealserver.persistence.repository.PersonRepository;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -29,6 +30,7 @@ public class MetadataService {
 
   private final LocationMetadataRepository locationMetadataRepository;
   private final PersonMetadataRepository personMetadataRepository;
+  private final PersonRepository personRepository;
 
   public LocationMetadata getLocationMetadataByLocation(UUID locationIdentifier) {
     //TODO fix this
@@ -95,8 +97,7 @@ public class MetadataService {
       personMetadata = new PersonMetadata();
 
       //TODO: check this
-      Person person = new Person();
-      person.setIdentifier(personIdentifier);
+      Person person = personRepository.findByIdentifier(personIdentifier).get();
       personMetadata.setPerson(person);
 
       MetadataObj metadataObj = getMetadataObj(tagValue, planIdentifier, taskIdentifier, user,
@@ -105,6 +106,8 @@ public class MetadataService {
       MetadataList metadataList = new MetadataList();
       metadataList.setMetadataObjs(List.of(metadataObj));
       personMetadata.setEntityValue(metadataList);
+      personMetadata.setCreatedBy(UUID.randomUUID().toString());
+      personMetadata.setModifiedBy(UUID.randomUUID().toString());
 
       personMetadata.setEntityStatus(EntityStatus.ACTIVE);
     }
@@ -190,8 +193,8 @@ public class MetadataService {
     Metadata metadata = new Metadata();
     metadata.setPlanId(planIdentifier);
     metadata.setTaskId(taskIdentifier);
-    metadata.setCreateDateTime(LocalDateTime.now());
-    metadata.setUpdateDateTime(LocalDateTime.now());
+//    metadata.setCreateDateTime(LocalDateTime.now());
+//    metadata.setUpdateDateTime(LocalDateTime.now());
     metadata.setUserId(user);
 
     TagValue value = getTagValue(tagValue, dataType, new TagValue());

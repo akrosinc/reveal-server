@@ -11,9 +11,12 @@ import com.revealprecision.revealserver.api.v1.facade.models.ClientFacadeMetadat
 import com.revealprecision.revealserver.api.v1.facade.models.EventFacade;
 import com.revealprecision.revealserver.api.v1.facade.models.SyncParamFacade;
 import com.revealprecision.revealserver.api.v1.facade.util.DateTimeFormatter;
+import com.revealprecision.revealserver.enums.EntityPropertiesEnum;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.enums.NameUseEnum;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
+import com.revealprecision.revealserver.messaging.TopicConstants;
+import com.revealprecision.revealserver.messaging.message.EventMetadata;
 import com.revealprecision.revealserver.persistence.domain.Event;
 import com.revealprecision.revealserver.persistence.domain.Group;
 import com.revealprecision.revealserver.persistence.domain.Location;
@@ -45,6 +48,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -65,6 +69,11 @@ public class EventClientFacadeService {
   private final GroupService groupService;
 
   private final ObjectMapper objectMapper;
+
+  //field codes which are processed and saved as metadata
+  private static final List<String> metadataToProcess = List.of("referred", "rooms_eligible", "rooms_sprayed");
+
+  private final KafkaTemplate<String, EventMetadata> eventConsumptionTemplate;
 
 
   public Pair<List<EventFacade>, List<ClientFacade>> processEventsClientsRequest(
@@ -93,7 +102,43 @@ public class EventClientFacadeService {
     List<EventFacade> failedEvents = new ArrayList<>();
     eventFacadeList.forEach(eventFacade -> {
       try {
-        saveEvent(eventFacade);
+        //saveEvent(eventFacade);
+        eventFacade.getObs().forEach(obs -> {
+          if(metadataToProcess.contains(obs.getFieldCode())) {
+            UUID baseEntityId = UUID.fromString(eventFacade.getBaseEntityId());
+            if(personService.findByIdentifier(baseEntityId).isPresent()) {
+              eventConsumptionTemplate.send(TopicConstants.EVENT_CONSUMPTION, EventMetadata.builder()
+                  .baseEntityId(baseEntityId)
+                  .obs(obs)
+                  .entityPropertiesEnum(EntityPropertiesEnum.PERSON)
+                  .dataType(obs.getFieldDataType())
+                  .tag(obs.getFieldCode())
+                  .planIdentifier(UUID.fromString(eventFacade.getDetails().get("planIdentifier")))
+                  .taskIdentifier(UUID.fromString(eventFacade.getDetails().get("taskIdentifier")))
+                  .build());
+            }else {
+              Person blankPerson = Person.builder()
+                  .identifier(baseEntityId)
+                  .nameUse("")
+                  .nameText("")
+                  .nameFamily("")
+                  .nameGiven("")
+                  .namePrefix("")
+                  .nameSuffix("")
+                  .gender("")
+                  .build();
+              blankPerson.setCreatedBy("00000000-0000-0000-0000-000000000000");
+              blankPerson.setModifiedBy("00000000-0000-0000-0000-000000000000");
+              blankPerson.setEntityStatus(EntityStatus.ACTIVE);
+              personService.createPerson(blankPerson);
+              eventConsumptionTemplate.send(TopicConstants.EVENT_CONSUMPTION, EventMetadata.builder()
+                  .baseEntityId(baseEntityId)
+                  .obs(obs)
+                  .entityPropertiesEnum(EntityPropertiesEnum.PERSON)
+                  .build());
+            }
+          }
+        });
       } catch (Exception exception) {
         exception.printStackTrace();
         failedEvents.add(eventFacade);
