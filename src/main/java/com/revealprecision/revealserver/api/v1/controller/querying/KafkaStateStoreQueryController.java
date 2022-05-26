@@ -4,16 +4,20 @@ import com.revealprecision.revealserver.messaging.KafkaConstants;
 import com.revealprecision.revealserver.messaging.Message;
 import com.revealprecision.revealserver.messaging.message.LocationAssigned;
 import com.revealprecision.revealserver.messaging.message.LocationBusinessStatus;
+import com.revealprecision.revealserver.messaging.message.OperationalAreaAggregate;
 import com.revealprecision.revealserver.messaging.message.OperationalAreaVisitedCount;
+import com.revealprecision.revealserver.messaging.message.OperationalAreaVisitedCount2;
 import com.revealprecision.revealserver.messaging.message.PersonBusinessStatus;
 import com.revealprecision.revealserver.messaging.message.TaskAggregate;
 import com.revealprecision.revealserver.messaging.message.TaskEvent;
 import com.revealprecision.revealserver.props.KafkaProperties;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.common.utils.Bytes;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StoreQueryParameters;
 import org.apache.kafka.streams.state.KeyValueIterator;
+import org.apache.kafka.streams.state.KeyValueStore;
 import org.apache.kafka.streams.state.QueryableStoreTypes;
 import org.apache.kafka.streams.state.ReadOnlyKeyValueStore;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -83,17 +87,17 @@ public class KafkaStateStoreQueryController {
   @GetMapping("/tableOfOperationalAreas")
   public void tableOfOperationalAreas() {
     KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
-    ReadOnlyKeyValueStore<String, LocationAssigned> counts = kafkaStreams.store(
+    ReadOnlyKeyValueStore<String, OperationalAreaAggregate> counts = kafkaStreams.store(
         StoreQueryParameters.fromNameAndType(
             kafkaProperties.getStoreMap().get(KafkaConstants.tableOfOperationalAreas),
             QueryableStoreTypes.keyValueStore())
     );
-    KeyValueIterator<String, LocationAssigned> all = counts.all();
+    KeyValueIterator<String, OperationalAreaAggregate> all = counts.all();
     log.info("Started");
     while (all.hasNext()) {
-      KeyValue<String, LocationAssigned> keyValue = all.next();
+      KeyValue<String, OperationalAreaAggregate> keyValue = all.next();
       String key = keyValue.key;
-      LocationAssigned value = keyValue.value;
+      OperationalAreaAggregate value = keyValue.value;
       log.info("key: {} - value: {}", key, value);
     }
     log.info("Ended");
@@ -144,17 +148,17 @@ public class KafkaStateStoreQueryController {
   @GetMapping("/tableOfOperationalAreaHierarchies")
   public void tableOfOperationalAreaHierarchies() {
     KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
-    ReadOnlyKeyValueStore<String, OperationalAreaVisitedCount> counts = kafkaStreams.store(
+    ReadOnlyKeyValueStore<String, OperationalAreaAggregate> counts = kafkaStreams.store(
         StoreQueryParameters.fromNameAndType(
             kafkaProperties.getStoreMap().get(KafkaConstants.tableOfOperationalAreaHierarchies),
             QueryableStoreTypes.keyValueStore())
     );
-    KeyValueIterator<String, OperationalAreaVisitedCount> all = counts.all();
+    KeyValueIterator<String, OperationalAreaAggregate> all = counts.all();
     log.info("Started");
     while (all.hasNext()) {
-      KeyValue<String, OperationalAreaVisitedCount> keyValue = all.next();
+      KeyValue<String, OperationalAreaAggregate> keyValue = all.next();
       String key = keyValue.key;
-      OperationalAreaVisitedCount value = keyValue.value;
+      OperationalAreaAggregate value = keyValue.value;
       log.info("key: {} - value: {}", key, value);
     }
     log.info("Ended");
@@ -163,21 +167,41 @@ public class KafkaStateStoreQueryController {
   @GetMapping("/locationBusinessStatusByPlanParentHierarchy")
   public void locationBusinessStatusByPlanParentHierarchy() {
     KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
-    ReadOnlyKeyValueStore<String, Long> counts = kafkaStreams.store(
+    ReadOnlyKeyValueStore<String, OperationalAreaVisitedCount2> counts = kafkaStreams.store(
         StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap()
                 .get(KafkaConstants.locationBusinessStatusByPlanParentHierarchy),
             QueryableStoreTypes.keyValueStore())
     );
-    KeyValueIterator<String, Long> all = counts.all();
+    KeyValueIterator<String, OperationalAreaVisitedCount2> all = counts.all();
     log.info("Started");
     while (all.hasNext()) {
-      KeyValue<String, Long> keyValue = all.next();
+      KeyValue<String, OperationalAreaVisitedCount2> keyValue = all.next();
       String key = keyValue.key;
-      Long value = keyValue.value;
+      OperationalAreaVisitedCount2 value = keyValue.value;
       log.info("key: {} - value: {}", key, value);
     }
     log.info("Ended");
   }
+
+  @GetMapping("/operationalAreaByPlanParentHierarchy")
+  public void operationalAreaByPlanParentHierarchy() {
+    KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
+    ReadOnlyKeyValueStore<String, OperationalAreaVisitedCount2> counts = kafkaStreams.store(
+        StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap()
+                .get(KafkaConstants.operationalAreaByPlanParentHierarchy),
+            QueryableStoreTypes.keyValueStore())
+    );
+    KeyValueIterator<String, OperationalAreaVisitedCount2> all = counts.all();
+    log.info("Started");
+    while (all.hasNext()) {
+      KeyValue<String, OperationalAreaVisitedCount2> keyValue = all.next();
+      String key = keyValue.key;
+      OperationalAreaVisitedCount2 value = keyValue.value;
+      log.info("key: {} - value: {}", key, value);
+    }
+    log.info("Ended");
+  }
+
 
   @GetMapping("/locationBusinessStatus")
   public void locationBusinessStatus() {

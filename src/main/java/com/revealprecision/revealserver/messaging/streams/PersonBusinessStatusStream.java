@@ -48,11 +48,9 @@ public class PersonBusinessStatusStream {
   @Bean
   KStream<UUID, PersonMetadataEvent> getPersonRelationships2(StreamsBuilder streamsBuilder) {
 
-    //person imported
     KStream<UUID, PersonMetadataEvent> personMetadataStream = streamsBuilder.stream(
         kafkaProperties.getTopicMap().get(KafkaConstants.PERSON_METADATA_UPDATE),
         Consumed.with(Serdes.UUID(), new JsonSerde<>(PersonMetadataEvent.class)));
-//    locationMetadataStream.print(Printed.<UUID, LocationMetadataEvent>toSysOut());
 
     KStream<String, PersonMetadataUnpackedEvent> unpackedPersonMetadataStream = personMetadataStream
         .flatMapValues((k, personMetadata) -> {

@@ -323,6 +323,8 @@ public class TaskService {
               .equals(cancelledLookupTaskStatus.getCode())) {
             log.info("task for location: {} already exists", entityUUID);
             existingLocationTask.setLookupTaskStatus(readyLookupTaskStatus);
+            businessStatusService.setBusinessStatus(existingLocationTask,
+                existingLocationTask.getBusinessStatus());
           }
         }
         return existingLocationTasks;
@@ -341,6 +343,8 @@ public class TaskService {
               .equals(cancelledLookupTaskStatus.getCode())) {
             log.info("task for person: {} already exists", entityUUID);
             personTask.setLookupTaskStatus(readyLookupTaskStatus);
+            businessStatusService.setBusinessStatus(personTask,
+                personTask.getBusinessStatus());
           }
         }
         return existingPersonTasks;
@@ -404,9 +408,9 @@ public class TaskService {
   }
 
 
-  private Task markUnassignedTaskAsCancelled(Plan plan, LookupTaskStatus lookupTaskStatus,
+  private Task markUnassignedTaskAsCancelled(Plan plan, LookupTaskStatus cancelledLookupTaskStatus,
       Task task) {
-    log.debug("TASK_CANCEL Start updating location and organization assignments for task: {}",
+    log.debug("TASK_CANCEL Start cancellation for task: {}",
         task.getIdentifier());
     Action action = task.getAction();
 
@@ -417,11 +421,13 @@ public class TaskService {
     List<PlanLocations> planLocationsForPerson = getPlanLocationsForPerson(plan, task, action);
     log.debug("TASK_CANCEL got plan locations: {}", task.getIdentifier());
 
-    if (!task.getLookupTaskStatus().getCode().equals(lookupTaskStatus.getCode())) {
+    if (!task.getLookupTaskStatus().getCode().equals(cancelledLookupTaskStatus.getCode())) {
       if (planLocationsForLocation.isEmpty() && planLocationsForPerson.isEmpty()) {
-        task.setLookupTaskStatus(lookupTaskStatus);
+        task.setLookupTaskStatus(cancelledLookupTaskStatus);
+        log.debug("TASK_CANCEL task cancelled: {}", task.getIdentifier());
       }
     } else {
+      log.debug("TASK_CANCEL task not cancelled: {}", task.getIdentifier());
       return null;
     }
     return task;

@@ -27,6 +27,8 @@ public class KafkaConstants {
   public static final String taskParent = "taskParent";
   public static final String locationBusinessStatus = "locationBusinessStatus";
   public static final String locationBusinessStatusByPlanParentHierarchy = "locationBusinessStatusByPlanParentHierarchy";
+  public static final String operationalAreaByPlanParentHierarchy = "operationalAreaByPlanParentHierarchy";
+  public static final String locationBusinessStatusForOperationalAreas = "locationBusinessStatusForOperationalAreas";
   public static final String personBusinessStatus = "personBusinessStatus";
   public static final String personBusinessStatusByPlanParentHierarchy = "personBusinessStatusByPlanParentHierarchy";
 }

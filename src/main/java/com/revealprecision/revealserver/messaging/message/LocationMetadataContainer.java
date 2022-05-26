@@ -1,26 +1,26 @@
 package com.revealprecision.revealserver.messaging.message;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 
-
-@Setter
 @Getter
-@Data
-@AllArgsConstructor
+@Setter
+@Builder
 @NoArgsConstructor
-public class LocationBusinessStatus extends Message {
+@AllArgsConstructor
+@ToString
+public class LocationMetadataContainer extends Message{
 
+  private UUID locationIdentifier;
 
-  private UUID entityId;
-  private String businessStatus;
-  private LocalDateTime updateTime;
+  private MetaDataEvent metaDataEvent;
+
   private List<UUID> ancestry;
 
 }

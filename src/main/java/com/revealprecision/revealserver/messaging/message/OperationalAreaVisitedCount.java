@@ -13,6 +13,6 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 public class OperationalAreaVisitedCount extends Message {
-  Long count;
+  Long count = 0L;
   List<String> listOfKeys;
 }

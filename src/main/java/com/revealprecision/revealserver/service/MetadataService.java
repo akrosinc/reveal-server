@@ -194,7 +194,7 @@ public class MetadataService {
             .setUpdateDateTime(LocalDateTime.now());
         locationMetadata.getEntityValue().getMetadataObjs().get(arrIndex).getCurrent().getMeta()
             .setUserId(user);
-
+        locationMetadata.getEntityValue().getMetadataObjs().get(arrIndex).setActive(true);
         if (locationMetadata.getEntityValue().getMetadataObjs().get(arrIndex).getHistory()
             != null) {
           locationMetadata.getEntityValue().getMetadataObjs().get(arrIndex).getHistory()
@@ -404,6 +404,7 @@ public class MetadataService {
     metadataObj.setTag(tag);
     metadataObj.setType(type);
     metadataObj.setCurrent(tagData);
+    metadataObj.setActive(true);
     return metadataObj;
   }
 

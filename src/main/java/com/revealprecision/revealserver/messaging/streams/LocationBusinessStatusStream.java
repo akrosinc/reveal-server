@@ -151,11 +151,11 @@ public class LocationBusinessStatusStream {
         Grouped.with(Serdes.String(), new JsonSerde<>(LocationBusinessStatus.class))
     ).count(Materialized.as(kafkaProperties.getStoreMap()
         .get(KafkaConstants.locationBusinessStatusByPlanParentHierarchy)));
-
-//    count.toStream().print(Printed.<String,Long>toSysOut());
-    count.toStream()
-        .to(kafkaProperties.getTopicMap().get(KafkaConstants.LOCATION_BUSINESS_STATUS_COUNTS));
-
+//
+////    count.toStream().print(Printed.<String,Long>toSysOut());
+//    count.toStream()
+//        .to(kafkaProperties.getTopicMap().get(KafkaConstants.LOCATION_BUSINESS_STATUS_COUNTS));
+//
     return locationMetadataStream;
   }
 }

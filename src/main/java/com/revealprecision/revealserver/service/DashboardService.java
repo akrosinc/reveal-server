@@ -13,6 +13,7 @@ import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.exceptions.WrongEnumException;
 import com.revealprecision.revealserver.messaging.KafkaConstants;
 import com.revealprecision.revealserver.messaging.message.OperationalAreaVisitedCount;
+import com.revealprecision.revealserver.messaging.message.OperationalAreaVisitedCount2;
 import com.revealprecision.revealserver.messaging.message.PersonBusinessStatus;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
@@ -38,7 +39,7 @@ import org.springframework.stereotype.Service;
 
 @RequiredArgsConstructor
 @Service
-@DependsOn("OperationalAreaTable")
+//@DependsOn("OperationalAreaTable")
 public class DashboardService {
 
   public static final String TREATMENT_COVERAGE = "Treatment coverage";
@@ -61,7 +62,7 @@ public class DashboardService {
   ReadOnlyKeyValueStore<String, Long> countOfAssignedStructures;
   ReadOnlyKeyValueStore<String, Long> structureCounts;
   ReadOnlyKeyValueStore<String, Long> countOfStructuresByBusinessStatus;
-  ReadOnlyKeyValueStore<String, OperationalAreaVisitedCount> countOfOperationalArea;
+  ReadOnlyKeyValueStore<String, OperationalAreaVisitedCount2> countOfOperationalArea;
   ReadOnlyKeyValueStore<String, PersonBusinessStatus> personBusinessStatus;
   boolean datastoresInitialized = false;
 
@@ -282,12 +283,12 @@ public class DashboardService {
 
   private Entry<String, ColumnData> operationalAreaVisitedCounts(UUID planIdentifier,
       Location childLocation) {
-    String operationalAreaVisitedQueryKey = planIdentifier + "_" + childLocation.getIdentifier();
-    OperationalAreaVisitedCount operationalAreaVisitedObj = countOfOperationalArea.get(
+    String operationalAreaVisitedQueryKey = childLocation.getIdentifier()+ "_" +planIdentifier  ;
+    OperationalAreaVisitedCount2 operationalAreaVisitedObj = countOfOperationalArea.get(
         operationalAreaVisitedQueryKey);
     double operationalAreaVisitedCount = 0;
     if (operationalAreaVisitedObj != null) {
-      operationalAreaVisitedCount = operationalAreaVisitedObj.getCount();
+      operationalAreaVisitedCount = operationalAreaVisitedObj.getOperationalAreaVisitedCount();
     }
     ColumnData operationalAreaVisitedColumnData = new ColumnData();
     operationalAreaVisitedColumnData.setValue(operationalAreaVisitedCount);
@@ -371,17 +372,19 @@ public class DashboardService {
     if (notVisitedStructuresCountObj != null) {
       notVisitedStructuresCount = notVisitedStructuresCountObj;
     }
-    String notEligibleStructuresQueryKey =
-        planIdentifier + "_" + childLocation.getIdentifier() + "_" + plan.getLocationHierarchy()
-            .getIdentifier() + "_" + "Not Eligible";
-    Long notEligibleStructuresObj = countOfStructuresByBusinessStatus.get(
-        notEligibleStructuresQueryKey);
-    double notEligibleStructures = 0;
-    if (notEligibleStructuresObj != null) {
-      notEligibleStructures = notEligibleStructuresObj;
-    }
+//    String notEligibleStructuresQueryKey =
+//        planIdentifier + "_" + childLocation.getIdentifier() + "_" + plan.getLocationHierarchy()
+//            .getIdentifier() + "_" + "Not Eligible";
+//    Long notEligibleStructuresObj = countOfStructuresByBusinessStatus.get(
+//        notEligibleStructuresQueryKey);
+//    double notEligibleStructures = 0;
+//    if (notEligibleStructuresObj != null) {
+//      notEligibleStructures = notEligibleStructuresObj;
+//    }
+//    double totalStructuresFound =
+//        totalStructuresTargetedCount - (notVisitedStructuresCount + notEligibleStructures);
     double totalStructuresFound =
-        totalStructuresTargetedCount - (notVisitedStructuresCount + notEligibleStructures);
+        totalStructuresTargetedCount - (notVisitedStructuresCount);
 
     double totalFoundCoverage =
         totalStructuresTargetedCount > 0 ? totalStructuresFound / totalStructuresTargetedCount * 100
@@ -414,17 +417,19 @@ public class DashboardService {
     if (notVisitedStructuresCountObj != null) {
       notVisitedStructuresCount = notVisitedStructuresCountObj;
     }
-    String notEligibleStructuresQueryKey =
-        planIdentifier + "_" + childLocation.getIdentifier() + "_" + plan.getLocationHierarchy()
-            .getIdentifier() + "_" + "Not Eligible";
-    Long notEligibleStructuresObj = countOfStructuresByBusinessStatus.get(
-        notEligibleStructuresQueryKey);
-    double notEligibleStructures = 0;
-    if (notEligibleStructuresObj != null) {
-      notEligibleStructures = notEligibleStructuresObj;
-    }
+//    String notEligibleStructuresQueryKey =
+//        planIdentifier + "_" + childLocation.getIdentifier() + "_" + plan.getLocationHierarchy()
+//            .getIdentifier() + "_" + "Not Eligible";
+//    Long notEligibleStructuresObj = countOfStructuresByBusinessStatus.get(
+//        notEligibleStructuresQueryKey);
+//    double notEligibleStructures = 0;
+//    if (notEligibleStructuresObj != null) {
+//      notEligibleStructures = notEligibleStructuresObj;
+//    }
+//    double totalStructuresFound =
+//        totalStructuresTargetedCount - (notVisitedStructuresCount + notEligibleStructures);
     double totalStructuresFound =
-        totalStructuresTargetedCount - (notVisitedStructuresCount + notEligibleStructures);
+        totalStructuresTargetedCount - (notVisitedStructuresCount);
 
     ColumnData totalStructuresFoundColumnData = new ColumnData();
     totalStructuresFoundColumnData.setValue(totalStructuresFound);
@@ -482,7 +487,7 @@ public class DashboardService {
 
       countOfOperationalArea = getKafkaStreams.getKafkaStreams().store(
           StoreQueryParameters.fromNameAndType(
-              kafkaProperties.getStoreMap().get(KafkaConstants.tableOfOperationalAreaHierarchies),
+              kafkaProperties.getStoreMap().get(KafkaConstants.operationalAreaByPlanParentHierarchy),
               QueryableStoreTypes.keyValueStore()));
 
       personBusinessStatus = getKafkaStreams.getKafkaStreams().store(
