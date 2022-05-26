@@ -111,7 +111,7 @@ public class TaskGenerationStream {
 
     // create a table of the records for task Events
     // keyed on task + "_" + plan + "_" + ancestor
-    KTable<String, TaskEvent> taskParentPlanTable = streamsBuilder.table(
+    streamsBuilder.table(
         kafkaProperties.getTopicMap().get(KafkaConstants.TASK_PARENT_PLAN),
         Consumed.with(Serdes.String(), new JsonSerde<>(TaskEvent.class)),
         Materialized.as(kafkaProperties.getStoreMap().get(KafkaConstants.taskPlanParent)));
