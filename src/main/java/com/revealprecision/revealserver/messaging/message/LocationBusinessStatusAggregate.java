@@ -17,10 +17,12 @@ import lombok.Setter;
 @NoArgsConstructor
 public class LocationBusinessStatusAggregate extends Message {
 
-
   private UUID entityId;
+
   private String businessStatus;
+
   private LocalDateTime updateTime;
+
   private List<UUID> ancestry;
 
 }

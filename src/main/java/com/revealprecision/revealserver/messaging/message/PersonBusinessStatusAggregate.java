@@ -21,9 +21,11 @@ public class PersonBusinessStatusAggregate extends Message {
   private Map<UUID,CurrentState> personState;
 
   private boolean isInitialized;
+
   private List<UUID> locationsTreated;
 
   private List<UUID> personTreated;
+
   private List<UUID> personEligible;
 
   public PersonBusinessStatusAggregate(){
@@ -35,8 +37,11 @@ public class PersonBusinessStatusAggregate extends Message {
   @AllArgsConstructor
   @NoArgsConstructor
   public static class CurrentState{
+
     private String state;
+
     private LocalDateTime updateTime;
+
   }
 
 

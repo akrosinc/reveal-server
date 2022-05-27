@@ -29,6 +29,7 @@ public class TaskEvent  extends Message  {
   private List<String> baseLocationIds;
 
   private String ownerId;
+
   private String owner;
 
   private ActionEvent action;

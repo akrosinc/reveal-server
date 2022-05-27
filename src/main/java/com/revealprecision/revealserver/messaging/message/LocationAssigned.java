@@ -24,8 +24,11 @@ public class LocationAssigned extends Message{
   private String planIdentifier;
 
   private List<UUID> ancestry;
+
   private UUID ancestor;
+
   private Long count;
+
   private boolean isVisited;
 
 }

@@ -22,9 +22,13 @@ import lombok.ToString;
 public class OperationalAreaAggregate extends Message {
 
   UUID identifier;
+
   UUID ancestorIdentifier;
+
   Map<UUID, String> aggregate = new HashMap<>();
+
   Map<String, Set<UUID>> aggregatedLocations = new HashMap<>();
+
   Map<String, Long> aggregatedLocationCount = new HashMap<>();
 
 }

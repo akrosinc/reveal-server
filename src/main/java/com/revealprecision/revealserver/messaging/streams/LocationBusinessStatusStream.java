@@ -56,7 +56,7 @@ public class LocationBusinessStatusStream {
   private final PlanService planService;
 
   @Bean
-  KStream<UUID, LocationMetadataEvent> getLocationsRelationships2(StreamsBuilder streamsBuilder) {
+  KStream<UUID, LocationMetadataEvent> locationBusinessStatusCountsAggregator(StreamsBuilder streamsBuilder) {
     
     KStream<UUID, LocationMetadataEvent> locationMetadataStream = streamsBuilder.stream(
         kafkaProperties.getTopicMap().get(KafkaConstants.LOCATION_METADATA_UPDATE),

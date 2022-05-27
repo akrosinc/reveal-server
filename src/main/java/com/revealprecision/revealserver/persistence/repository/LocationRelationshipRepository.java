@@ -79,13 +79,6 @@ public interface LocationRelationshipRepository extends JpaRepository<LocationRe
       + "and lr.parentLocation.identifier = :locationIdentifier")
   List<Location> getChildren(@Param("hierarchyIdentifier") UUID hierarchyIdentifier, @Param("locationIdentifier") UUID locationIdentifier);
 
-//  @Query(value = "select cast(lr.location_identifier as varchar) as locationIdentifier, lr.ancestry "
-//      + "from location_relationship lr "
-//      + "left join location l on l.identifier = lr.location_identifier "
-//      + "where lr.location_hierarchy_identifier = :hierarchyIdentifier "
-//      + "and lr.parent_identifier = :locationIdentifier",nativeQuery = true)
-//  List<LocationWithAncestry> getChildrenWithAncestry(@Param("hierarchyIdentifier") UUID hierarchyIdentifier, @Param("locationIdentifier") UUID locationIdentifier);
-
   @Query(value = "select lr.location "
       + "from LocationRelationship lr "
       + "where lr.parentLocation.identifier in :parentLocationIdentifier "

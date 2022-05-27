@@ -26,6 +26,7 @@ public class OperationalAreaVisitedCount extends Message {
  public static class IndividualOperationalAreaCountsByBusinessStatus {
 
   Map<String,Long> counts = new HashMap<>();
+
   boolean operationalAreaIsVisited = false;
  }
 }

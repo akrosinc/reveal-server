@@ -15,6 +15,7 @@ import lombok.ToString;
 @AllArgsConstructor
 @ToString
 public class LookupTaskStatusEvent extends Message {
+
   private UUID identifier;
 
   private String code;

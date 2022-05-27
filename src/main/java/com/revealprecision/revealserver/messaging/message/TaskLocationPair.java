@@ -14,8 +14,11 @@ import lombok.ToString;
 @AllArgsConstructor
 @ToString
 public class TaskLocationPair extends Message {
+
   private String name;
+
   private String id;
+
   private Long serverVersion;
 
 }

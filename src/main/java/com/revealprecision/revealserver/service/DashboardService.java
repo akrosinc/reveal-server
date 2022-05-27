@@ -370,17 +370,7 @@ public class DashboardService {
     if (notVisitedStructuresCountObj != null) {
       notVisitedStructuresCount = notVisitedStructuresCountObj;
     }
-//    String notEligibleStructuresQueryKey =
-//        planIdentifier + "_" + childLocation.getIdentifier() + "_" + plan.getLocationHierarchy()
-//            .getIdentifier() + "_" + "Not Eligible";
-//    Long notEligibleStructuresObj = countOfStructuresByBusinessStatus.get(
-//        notEligibleStructuresQueryKey);
-//    double notEligibleStructures = 0;
-//    if (notEligibleStructuresObj != null) {
-//      notEligibleStructures = notEligibleStructuresObj;
-//    }
-//    double totalStructuresFound =
-//        totalStructuresTargetedCount - (notVisitedStructuresCount + notEligibleStructures);
+
     double totalStructuresFound =
         totalStructuresTargetedCount - (notVisitedStructuresCount);
 
@@ -415,17 +405,7 @@ public class DashboardService {
     if (notVisitedStructuresCountObj != null) {
       notVisitedStructuresCount = notVisitedStructuresCountObj;
     }
-//    String notEligibleStructuresQueryKey =
-//        planIdentifier + "_" + childLocation.getIdentifier() + "_" + plan.getLocationHierarchy()
-//            .getIdentifier() + "_" + "Not Eligible";
-//    Long notEligibleStructuresObj = countOfStructuresByBusinessStatus.get(
-//        notEligibleStructuresQueryKey);
-//    double notEligibleStructures = 0;
-//    if (notEligibleStructuresObj != null) {
-//      notEligibleStructures = notEligibleStructuresObj;
-//    }
-//    double totalStructuresFound =
-//        totalStructuresTargetedCount - (notVisitedStructuresCount + notEligibleStructures);
+
     double totalStructuresFound =
         totalStructuresTargetedCount - (notVisitedStructuresCount);
 

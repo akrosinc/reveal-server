@@ -16,7 +16,6 @@ import lombok.ToString;
 @ToString
 public class LookupInterventionTypeEvent extends Message {
 
-
   private UUID identifier;
 
   private String name;

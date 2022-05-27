@@ -15,8 +15,10 @@ import lombok.Setter;
 public class MetaDataEvent extends Message {
 
   private String tag;
+
   private TagData tagData;
 
   private String type;
+
   private boolean isActive;
 }

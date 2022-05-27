@@ -18,7 +18,6 @@ import lombok.ToString;
 @ToString
 public class GoalEvent extends AbstractAuditableEntity {
 
-
   private UUID identifier;
 
   private String description;

@@ -16,9 +16,14 @@ import lombok.Setter;
 public class PersonMetadataUnpackedEvent extends Message {
 
   private UUID identifier;
+
   private UUID entityId;
+
   private UUID ancestorNode;
+
   private UUID hierarchyIdentifier;
+
   private MetaDataEvent metaDataEvent;
+
   private UUID thisLocationId;
 }
