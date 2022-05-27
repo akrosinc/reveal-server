@@ -39,7 +39,7 @@ public class TaskFacadeFactory {
         .lastModified(
             DateTimeFormatter.getDateTimeFacadeStringFromLocalDateTime(task.getLastModified()))
         .status(TaskStatus.get(task.getLookupTaskStatus().getCode().toLowerCase()))
-        .businessStatus(businessStatus)
+        .businessStatus(task.getBusinessStatus())
         .owner(userName)
         .requester(userName)
         .groupIdentifier(group)
