@@ -215,7 +215,7 @@ public class TaskFacadeService {
 
     String taskCode = taskDto.getCode();
     Plan plan = planService.getPlanByIdentifier(UUID.fromString(taskDto.getPlanIdentifier()));
-    Action action = actionService.findByTitle(taskCode);
+    Action action = actionService.findByTitleAndPlanIdentifier(taskCode,plan.getIdentifier());
     List<LookupTaskStatus> lookupTaskStatuses = taskService.getAllTaskStatus();
 
     Optional<LookupTaskStatus> taskStatus = lookupTaskStatuses.stream().filter(
