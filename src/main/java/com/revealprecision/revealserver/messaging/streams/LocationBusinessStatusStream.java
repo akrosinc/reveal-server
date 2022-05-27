@@ -184,7 +184,7 @@ public class LocationBusinessStatusStream {
   }
 
   @Bean
-  KStream<UUID, LocationMetadataEvent> getOperationalAreaCounts2(StreamsBuilder streamsBuilder) {
+  KStream<UUID, LocationMetadataEvent> operationalAreaVisitedProcessor(StreamsBuilder streamsBuilder) {
 
     KStream<UUID, LocationMetadataEvent> locationMetadataStream = streamsBuilder.stream(
         kafkaProperties.getTopicMap().get(KafkaConstants.LOCATION_METADATA_UPDATE),
@@ -263,10 +263,11 @@ public class LocationBusinessStatusStream {
         .stream().reduce(0L, Long::sum);
     Long notVisitedStructures = operationalAreaAggregate.getAggregatedLocationCount().entrySet()
         .stream().filter(entry -> entry.getKey().equals("Not Visited")).map(Entry::getValue).reduce(0L, Long::sum);
+    log.trace("operational area: {} -  notVisitedStructures: {} / totalStructures: {} " ,operationalAreaAggregate.getIdentifier(),notVisitedStructures,totalStructures);
     boolean operationalAreaIsVisited = false;
     if (totalStructures > 0) {
       //TODO: configure percentage value
-      if (notVisitedStructures / totalStructures * 100 < 20) {
+      if (((double) notVisitedStructures / (double) totalStructures * 100) < 20) {
         operationalAreaIsVisited = true;
       }
     }

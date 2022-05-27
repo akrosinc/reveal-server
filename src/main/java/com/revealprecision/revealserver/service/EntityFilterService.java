@@ -90,7 +90,7 @@ public class EntityFilterService {
           locationsForTaskGeneration);
 
       log.debug("structures size: {}",structures.size());
-      log.debug("structures: {}",structures);
+      log.trace("structures: {}",structures);
 
       if (query == null) {
         if (ActionUtils.isActionForLocation(action)) {
