@@ -60,7 +60,7 @@ public class EntityFilterService {
         planIdentifier);
 
     log.debug("plan_locations size {} ",locations.size());
-    log.debug("plan_locations {} ",locations);
+    log.trace("plan_locations {} ",locations);
 
     if (locations.isEmpty()) {
       return new ArrayList<>();
