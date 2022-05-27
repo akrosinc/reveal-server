@@ -193,8 +193,8 @@ public class MetadataService {
     Metadata metadata = new Metadata();
     metadata.setPlanId(planIdentifier);
     metadata.setTaskId(taskIdentifier);
-//    metadata.setCreateDateTime(LocalDateTime.now());
-//    metadata.setUpdateDateTime(LocalDateTime.now());
+    metadata.setCreateDateTime(LocalDateTime.now());
+    metadata.setUpdateDateTime(LocalDateTime.now());
     metadata.setUserId(user);
 
     TagValue value = getTagValue(tagValue, dataType, new TagValue());

@@ -135,6 +135,10 @@ public class EventClientFacadeService {
                   .baseEntityId(baseEntityId)
                   .obs(obs)
                   .entityPropertiesEnum(EntityPropertiesEnum.PERSON)
+                  .dataType(obs.getFieldDataType())
+                  .tag(obs.getFieldCode())
+                  .planIdentifier(UUID.fromString(eventFacade.getDetails().get("planIdentifier")))
+                  .taskIdentifier(UUID.fromString(eventFacade.getDetails().get("taskIdentifier")))
                   .build());
             }
           }
