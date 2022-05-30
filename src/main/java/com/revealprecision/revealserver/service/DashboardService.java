@@ -72,23 +72,28 @@ public class DashboardService {
 
     Plan plan = planService.getPlanByIdentifier(planIdentifier);
 
-    parentLocationIdentifier = getParentLocation(planIdentifier, parentLocationIdentifier, plan);
+    //parentLocationIdentifier = getParentLocation(planIdentifier, parentLocationIdentifier, plan);
 
-    List<Location> childrenLocations = getChildrenLocations(parentLocationIdentifier, getChildren,
-        plan);
+    List<PlanLocationDetails> childrenLocations = new ArrayList<>();
+    if (parentLocationIdentifier == null) {
+      childrenLocations.add(locationService.getRootLocationByPlanIdentifier(planIdentifier));
+    } else {
+      childrenLocations = locationService.getAssignedLocationsByParentIdentifierAndPlanIdentifier(
+          parentLocationIdentifier, planIdentifier);
+    }
 
     List<RowData> rowDatas = childrenLocations.stream().map(childLocation -> {
 
       switch (reportTypeEnum) {
 
         case MDA_FULL_COVERAGE:
-          return getMDAFullCoverageData(planIdentifier, plan, childLocation);
+          return getMDAFullCoverageData(planIdentifier, plan, childLocation.getLocation());
 
         case MDA_FULL_COVERAGE_OPERATIONAL_AREA_LEVEL:
-          return getMDAFullCoverageOperationalAreaLevelData(planIdentifier, plan, childLocation);
+          return getMDAFullCoverageOperationalAreaLevelData(planIdentifier, plan, childLocation.getLocation());
 
         case IRS_FULL_COVERAGE:
-          return getIRSFullData(childLocation);
+          return getIRSFullData(childLocation.getLocation());
 
       }
       return null;
