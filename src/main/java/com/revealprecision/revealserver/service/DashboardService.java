@@ -496,8 +496,16 @@ public class DashboardService {
     if (parentIdentifier == null) {
       locationDetails.add(locationService.getRootLocationByPlanIdentifier(planIdentifier));
     } else {
-      locationDetails = locationService.getAssignedLocationsByParentIdentifierAndPlanIdentifier(
-          parentIdentifier, planIdentifier);
+      Location location = locationService.findByIdentifier(parentIdentifier);
+      int structureNodeIndex = plan.getLocationHierarchy().getNodeOrder().indexOf("structure");
+      int locationNodeIndex = plan.getLocationHierarchy().getNodeOrder().indexOf(location.getGeographicLevel().getName());
+      if(locationNodeIndex + 1 < structureNodeIndex) {
+        locationDetails = locationService.getAssignedLocationsByParentIdentifierAndPlanIdentifier(
+            parentIdentifier, planIdentifier);
+      }else {
+        locationDetails = locationService.getLocationsByParentIdentifierAndPlanIdentifier(
+            parentIdentifier, planIdentifier);
+      }
     }
 
     initDataStoresIfNecessary();
