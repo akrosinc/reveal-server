@@ -259,10 +259,15 @@ public class LocationBusinessStatusStream {
 
   private OperationalAreaVisitedCount getAggregatedOperationalAreaVisitedCount(
       OperationalAreaAggregate operationalAreaAggregate, OperationalAreaVisitedCount aggregate) {
-    Long totalStructures = operationalAreaAggregate.getAggregatedLocationCount().values()
+    Long sumOfStructures = operationalAreaAggregate.getAggregatedLocationCount().values()
         .stream().reduce(0L, Long::sum);
     Long notVisitedStructures = operationalAreaAggregate.getAggregatedLocationCount().entrySet()
         .stream().filter(entry -> entry.getKey().equals("Not Visited")).map(Entry::getValue).reduce(0L, Long::sum);
+    Long notEligibleStructures = operationalAreaAggregate.getAggregatedLocationCount().entrySet()
+        .stream().filter(entry -> entry.getKey().equals("Not Eligible")).map(Entry::getValue).reduce(0L, Long::sum);
+
+    Long totalStructures = sumOfStructures - notEligibleStructures;
+
     log.trace("operational area: {} -  notVisitedStructures: {} / totalStructures: {} " ,operationalAreaAggregate.getIdentifier(),notVisitedStructures,totalStructures);
     boolean operationalAreaIsVisited = false;
     if (totalStructures > 0) {

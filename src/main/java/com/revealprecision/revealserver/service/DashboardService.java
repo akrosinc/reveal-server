@@ -101,7 +101,7 @@ public class DashboardService {
               return getMDAFullCoverageOperationalAreaLevelData(plan,
                   childLocation);
             default:
-              return getMDAFullCoverageData(planIdentifier, plan, childLocation);
+              return getMDAFullCoverageData(plan, childLocation);
           }
 
         case IRS_FULL_COVERAGE:
@@ -191,7 +191,7 @@ public class DashboardService {
                   return getMDAFullCoverageOperationalAreaLevelData(plan,
                       loc.getLocation());
                 default:
-                  return getMDAFullCoverageData(planIdentifier, plan, loc.getLocation());
+                  return getMDAFullCoverageData(plan, loc.getLocation());
               }
 
             case IRS_FULL_COVERAGE:
@@ -295,7 +295,7 @@ public class DashboardService {
     return rowData;
   }
 
-  private RowData getMDAFullCoverageData(UUID planIdentifier, Plan plan, Location childLocation) {
+  private RowData getMDAFullCoverageData(Plan plan, Location childLocation) {
     Map<String, ColumnData> columns = new HashMap<>();
 
     Entry<String, ColumnData> totalStructuresCounts = getTotalStructuresCounts(plan, childLocation,
@@ -361,7 +361,7 @@ public class DashboardService {
     percentageOfChildrenTreatedToPeopleEligibleColumnData.setValue(
         percentageOfChildrenTreatedToPeopleEligible);
     percentageOfChildrenTreatedToPeopleEligibleColumnData.setMeta(
-        noOfChildrenTreated + " / " + noOfPeopleEligible);
+        "Number Of Children Treated: "+noOfChildrenTreated + " / " + "Number Of Children Eligible: "+noOfPeopleEligible);
     percentageOfChildrenTreatedToPeopleEligibleColumnData.setIsPercentage(true);
     return new SimpleEntry<>(columnName,
         percentageOfChildrenTreatedToPeopleEligibleColumnData);
@@ -428,21 +428,36 @@ public class DashboardService {
 
     String totalStructuresTargetedQueryKey =
         plan.getIdentifier() + "_" + childLocation.getIdentifier();
-    Long totalStructuresTargetedCountObj = countOfAssignedStructures.get(
+    Long totalStructuresInPlanLocationCountObj = countOfAssignedStructures.get(
         totalStructuresTargetedQueryKey);
-    double totalStructuresTargetedCount = 0;
-    if (totalStructuresTargetedCountObj != null) {
-      totalStructuresTargetedCount = totalStructuresTargetedCountObj;
+    double totalStructuresInPlanLocationCount = 0;
+    if (totalStructuresInPlanLocationCountObj != null) {
+      totalStructuresInPlanLocationCount = totalStructuresInPlanLocationCountObj;
     }
 
+    String notEligibleStructuresQueryKey =
+        plan.getIdentifier() + "_" + childLocation.getIdentifier() + "_" + plan.getLocationHierarchy()
+            .getIdentifier() + "_" + "Not Eligible";
+    Long notEligibleStructuresCountObj = countOfStructuresByBusinessStatus.get(
+        notEligibleStructuresQueryKey);
+    double notEligibleStructuresCount = 0;
+    if (notEligibleStructuresCountObj != null) {
+      notEligibleStructuresCount = notEligibleStructuresCountObj;
+    }
+
+    double totalStructuresTargeted = totalStructuresInPlanLocationCount - notEligibleStructuresCount;
+
+
     double percentageOfTreatedStructuresToTotalStructures =
-        totalStructuresTargetedCount > 0 ? noOfTreatedStructures / totalStructuresTargetedCount
+        totalStructuresInPlanLocationCount > 0 ? noOfTreatedStructures / totalStructuresTargeted
             * 100 : 0;
+
+
     ColumnData percentageOfTreatedStructuresToTotalStructureColumnData = new ColumnData();
     percentageOfTreatedStructuresToTotalStructureColumnData.setValue(
         percentageOfTreatedStructuresToTotalStructures);
     percentageOfTreatedStructuresToTotalStructureColumnData.setMeta(
-        noOfTreatedStructures + " / " + totalStructuresTargetedCount);
+        "No Of TreatedStructures: "+noOfTreatedStructures + " / " + "Total Structures Targeted: "+totalStructuresTargeted);
     percentageOfTreatedStructuresToTotalStructureColumnData.setIsPercentage(true);
     return new SimpleEntry<>(columnName,
         percentageOfTreatedStructuresToTotalStructureColumnData);
@@ -460,8 +475,14 @@ public class DashboardService {
     LocationBusinessStatusAggregate locationBusinessStatusAggregate = locationBusinessState.get(
         businessStateDataStoreQueryKey);
 
+    String businessStatus = "Not Applicable";
+
+    if (locationBusinessStatusAggregate != null) {
+      businessStatus = locationBusinessStatusAggregate.getBusinessStatus();
+    }
+
     ColumnData locationBusinessStateColumnData = new ColumnData();
-    locationBusinessStateColumnData.setValue(locationBusinessStatusAggregate.getBusinessStatus());
+    locationBusinessStateColumnData.setValue(businessStatus);
     locationBusinessStateColumnData.setMeta(null);
     locationBusinessStateColumnData.setDataType("string");
     locationBusinessStateColumnData.setIsPercentage(false);
@@ -500,11 +521,11 @@ public class DashboardService {
 
     String totalStructuresTargetedQueryKey =
         plan.getIdentifier() + "_" + childLocation.getIdentifier();
-    Long totalStructuresTargetedCountObj = countOfAssignedStructures.get(
+    Long totalStructuresInPlanLocationCountObj = countOfAssignedStructures.get(
         totalStructuresTargetedQueryKey);
-    double totalStructuresTargetedCount = 0;
-    if (totalStructuresTargetedCountObj != null) {
-      totalStructuresTargetedCount = totalStructuresTargetedCountObj;
+    double totalStructuresInPlanLocationCount = 0;
+    if (totalStructuresInPlanLocationCountObj != null) {
+      totalStructuresInPlanLocationCount = totalStructuresInPlanLocationCountObj;
     }
 
     String notVisitedStructuresQueryKey =
@@ -518,16 +539,26 @@ public class DashboardService {
       notVisitedStructuresCount = notVisitedStructuresCountObj;
     }
 
-    double totalStructuresFound =
-        totalStructuresTargetedCount - (notVisitedStructuresCount);
+    String notEligibleStructuresQueryKey =
+        plan.getIdentifier() + "_" + childLocation.getIdentifier() + "_" + plan.getLocationHierarchy()
+            .getIdentifier() + "_" + "Not Eligible";
+    Long notEligibleStructuresCountObj = countOfStructuresByBusinessStatus.get(
+        notEligibleStructuresQueryKey);
+    double notEligibleStructuresCount = 0;
+    if (notEligibleStructuresCountObj != null) {
+      notEligibleStructuresCount = notEligibleStructuresCountObj;
+    }
+
+    double totalStructuresTargeted = totalStructuresInPlanLocationCount - notEligibleStructuresCount;
+    double totalStructuresFound = (totalStructuresTargeted - notVisitedStructuresCount);
 
     double totalFoundCoverage =
-        totalStructuresTargetedCount > 0 ? totalStructuresFound / totalStructuresTargetedCount * 100
+        totalStructuresTargeted > 0 ? totalStructuresFound / totalStructuresTargeted * 100
             : 0;
     ColumnData totalFoundCoverageColumnData = new ColumnData();
     totalFoundCoverageColumnData.setValue(totalFoundCoverage);
     totalFoundCoverageColumnData.setMeta(
-        totalStructuresFound + " / " + totalStructuresTargetedCount);
+        "Total Structures Found: "+totalStructuresFound + " / " +  "Total Structures Targeted: "+totalStructuresTargeted);
     totalFoundCoverageColumnData.setIsPercentage(true);
     return new SimpleEntry<>(columnName, totalFoundCoverageColumnData);
   }
@@ -553,8 +584,18 @@ public class DashboardService {
       notVisitedStructuresCount = notVisitedStructuresCountObj;
     }
 
+    String notEligibleStructuresQueryKey =
+        plan.getIdentifier() + "_" + childLocation.getIdentifier() + "_" + plan.getLocationHierarchy()
+            .getIdentifier() + "_" + "Not Eligible";
+    Long notEligibleStructuresCountObj = countOfStructuresByBusinessStatus.get(
+        notEligibleStructuresQueryKey);
+    double notEligibleStructuresCount = 0;
+    if (notEligibleStructuresCountObj != null) {
+      notEligibleStructuresCount = notEligibleStructuresCountObj;
+    }
+
     double totalStructuresFound =
-        totalStructuresTargetedCount - (notVisitedStructuresCount);
+        ((totalStructuresTargetedCount - notEligibleStructuresCount) - notVisitedStructuresCount);
 
     ColumnData totalStructuresFoundColumnData = new ColumnData();
     totalStructuresFoundColumnData.setValue(totalStructuresFound);
@@ -569,12 +610,25 @@ public class DashboardService {
     String totalStructuresTargetedQueryKey = plan.getIdentifier() + "_" + childLocation.getIdentifier();
     Long totalStructuresTargetedCountObj = countOfAssignedStructures.get(
         totalStructuresTargetedQueryKey);
-    double totalStructuresTargetedCount = 0;
+    double totalStructuresInPlanLocationCount = 0;
     if (totalStructuresTargetedCountObj != null) {
-      totalStructuresTargetedCount = totalStructuresTargetedCountObj;
+      totalStructuresInPlanLocationCount = totalStructuresTargetedCountObj;
     }
+
+    String notEligibleStructuresQueryKey =
+        plan.getIdentifier() + "_" + childLocation.getIdentifier() + "_" + plan.getLocationHierarchy()
+            .getIdentifier() + "_" + "Not Eligible";
+    Long notEligibleStructuresCountObj = countOfStructuresByBusinessStatus.get(
+        notEligibleStructuresQueryKey);
+    double notEligibleStructuresCount = 0;
+    if (notEligibleStructuresCountObj != null) {
+      notEligibleStructuresCount = notEligibleStructuresCountObj;
+    }
+
+    double totalStructuresInTargetedCount = totalStructuresInPlanLocationCount - notEligibleStructuresCount;
+
     ColumnData totalStructuresTargetedColumnData = new ColumnData();
-    totalStructuresTargetedColumnData.setValue(totalStructuresTargetedCount);
+    totalStructuresTargetedColumnData.setValue(totalStructuresInTargetedCount);
     totalStructuresTargetedColumnData.setIsPercentage(false);
     return new SimpleEntry<>(columnName, totalStructuresTargetedColumnData);
   }
