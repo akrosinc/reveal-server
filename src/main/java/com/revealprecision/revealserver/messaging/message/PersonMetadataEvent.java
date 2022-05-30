@@ -11,7 +11,6 @@ import lombok.Setter;
 
 @Setter
 @Getter
-@Data
 @AllArgsConstructor
 @NoArgsConstructor
 public class PersonMetadataEvent extends Message {

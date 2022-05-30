@@ -26,10 +26,8 @@ import org.apache.kafka.streams.kstream.Grouped;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KTable;
 import org.apache.kafka.streams.kstream.Materialized;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.kafka.config.StreamsBuilderFactoryBean;
 import org.springframework.kafka.support.serializer.JsonSerde;
 
 @Configuration
@@ -41,9 +39,6 @@ public class LocationStream {
   private final LocationService locationService;
   private final KafkaProperties kafkaProperties;
   private final PlanService planService;
-
-  @Autowired
-  StreamsBuilderFactoryBean getKafkaStreams;
 
   @Bean
   KStream<String, LocationRelationshipMessage> getTotalStructures(
@@ -59,16 +54,16 @@ public class LocationStream {
         .flatMapValues(
             (k, locationRelationshipMessage) -> locationRelationshipMessage.getAncestry().stream()
                 .map(ancestor -> {
-                  LocationRelationshipMessage locationRelationshipMessage1 = new LocationRelationshipMessage();
-                  locationRelationshipMessage1.setLocationName(
+                  LocationRelationshipMessage locationRelationshipMessageWithAncestor = new LocationRelationshipMessage();
+                  locationRelationshipMessageWithAncestor.setLocationName(
                       locationRelationshipMessage.getLocationName());
-                  locationRelationshipMessage1.setGeoName(locationRelationshipMessage.getGeoName());
-                  locationRelationshipMessage1.setAncestor(ancestor);
-                  locationRelationshipMessage1.setLocationIdentifier(
+                  locationRelationshipMessageWithAncestor.setGeoName(locationRelationshipMessage.getGeoName());
+                  locationRelationshipMessageWithAncestor.setAncestor(ancestor);
+                  locationRelationshipMessageWithAncestor.setLocationIdentifier(
                       locationRelationshipMessage.getLocationIdentifier());
-                  locationRelationshipMessage1.setLocationHierarchyIdentifier(
+                  locationRelationshipMessageWithAncestor.setLocationHierarchyIdentifier(
                       locationRelationshipMessage.getLocationHierarchyIdentifier());
-                  return locationRelationshipMessage1;
+                  return locationRelationshipMessageWithAncestor;
                 }).collect(Collectors.toList()))
         .selectKey((k, locationRelationshipMessage) ->
             locationRelationshipMessage.getLocationHierarchyIdentifier() + "_"
