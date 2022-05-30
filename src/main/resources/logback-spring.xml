@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+  <springProperty scope="context" name="loggingPath" source="reveal.logging.path"/>
+  <springProperty scope="context" name="loggingFileName" source="reveal.logging.file-name"/>
+  <springProperty scope="context" name="loggingRollingFileName" source="reveal.logging.rolling-file-name"/>
+  <springProperty scope="context" name="loggingPattern" source="reveal.logging.pattern"/>
+  <springProperty scope="context" name="maxHistory" source="reveal.logging.max-history"/>
+  <springProperty scope="context" name="maxFileSize" source="reveal.logging.max-file-size"/>
+  <springProperty scope="context" name="totalSizeCap" source="reveal.logging.total-size-cap"/>
+
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>${loggingPattern}</pattern>
+    </encoder>
+  </appender>
+
+  <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${loggingPath}${loggingFileName}</file>
+    <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+      <fileNamePattern>${loggingPath}${loggingRollingFileName}</fileNamePattern>
+      <maxHistory>${maxHistory}</maxHistory>
+      <maxFileSize>${maxFileSize}</maxFileSize>
+      <totalSizeCap>${totalSizeCap}</totalSizeCap>
+    </rollingPolicy>
+    <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+      <pattern>${loggingPattern}</pattern>
+    </encoder>
+  </appender>
+
+  <root level="INFO">
+    <appender-ref ref="FILE" />
+    <appender-ref ref="STDOUT"/>
+  </root>
+</configuration>

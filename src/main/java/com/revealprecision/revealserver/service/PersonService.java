@@ -13,6 +13,7 @@ import com.revealprecision.revealserver.persistence.repository.PersonMetadataRep
 import com.revealprecision.revealserver.persistence.repository.PersonRepository;
 import com.revealprecision.revealserver.persistence.specification.PersonSpec;
 import com.revealprecision.revealserver.service.models.PersonSearchCriteria;
+import com.revealprecision.revealserver.util.UserUtils;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
@@ -65,6 +66,7 @@ public class PersonService {
     person.setGroups(groupList);
 
     person.setEntityStatus(EntityStatus.ACTIVE);
+    person.setCreatedBy(UserUtils.getCurrentPrinciple().getName());
     Person save = savePerson(person);
     log.info("Group saved to database as {}", person);
 
@@ -75,6 +77,7 @@ public class PersonService {
     return personRepository.findByIdentifier(personIdentifier).orElseThrow(
         () -> new NotFoundException(Pair.of(Fields.identifier, personIdentifier), Person.class));
   }
+
 
   public List<Person> getPeopleByLocations(List<Location> locations){
     return personRepository.findPersonByLocationsIn(locations);

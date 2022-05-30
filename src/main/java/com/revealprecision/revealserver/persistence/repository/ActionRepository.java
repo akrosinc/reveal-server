@@ -19,4 +19,6 @@ public interface ActionRepository extends EntityGraphJpaRepository<Action, UUID>
   List<Action> findActionsByGoal_Identifier(UUID goalIdentifier);
 
   Action findByTitle(String title);
+
+  Action findByTitleAndGoal_Plan_Identifier(String title, UUID planIdentifier);
 }

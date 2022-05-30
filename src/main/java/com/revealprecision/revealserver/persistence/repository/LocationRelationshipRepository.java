@@ -64,6 +64,14 @@ public interface LocationRelationshipRepository extends JpaRepository<LocationRe
       @Param("parentLocationIdentifier") UUID parentLocationIdentifier,
       @Param("planIdentifier") UUID planIdentifier);
 
+  @Query(value = "select "
+      + "new com.revealprecision.revealserver.persistence.projection.PlanLocationDetails(lr.location, count(pl), count(pa)) from LocationRelationship lr "
+      + "left join PlanLocations pl on lr.location.identifier = pl.location.identifier and pl.plan.identifier = :planIdentifier "
+      + "left join PlanAssignment pa on pa.planLocations.identifier = pl.identifier "
+      + "where lr.parentLocation.identifier is null group by lr.identifier")
+  PlanLocationDetails getRootLocationDetailsByAndPlanId(
+      @Param("planIdentifier") UUID planIdentifier);
+
 
   @Query(value = "select lr.location "
       + "from LocationRelationship lr "
@@ -83,4 +91,7 @@ public interface LocationRelationshipRepository extends JpaRepository<LocationRe
       + "where lr.location.identifier = :locationIdentifier "
       + "and lr.locationHierarchy.identifier = :hierarchyIdentifier")
   Location getParentLocationByLocationIdAndHierarchyId(@Param("locationIdentifier") UUID locationIdentifier, @Param("hierarchyIdentifier") UUID hierarchyIdentifier);
+
+  LocationRelationship getLocationRelationshipByLocation_IdentifierAndLocationHierarchy_Identifier(UUID locationIdentifier,UUID hierarchyIdentifier);
+
 }

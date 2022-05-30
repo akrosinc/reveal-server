@@ -293,7 +293,9 @@ public class EventClientFacadeService {
                 .getLocalDateTimeFromZonedAndroidFacadeString(eventFacade.getEventDate()))
         .eventType(eventFacade.getEventType())
         .details(objectMapper.valueToTree(eventFacade.getDetails()))
-        .locationIdentifier(UUID.fromString(eventFacade.getLocationId()))
+        .locationIdentifier(eventFacade.getLocationId()==null || Objects.equals(
+            eventFacade.getLocationId(), "")
+            ?UUID.fromString(objectMapper.valueToTree(eventFacade.getDetails()).get("location_id").toString()):UUID.fromString(eventFacade.getLocationId()))
         .organization(organizationService.findById(UUID.fromString(eventFacade.getTeamId()), false))
         .user(userService.getByUserName(eventFacade.getProviderId()))
         .planIdentifier(UUID.fromString(eventFacade.getDetails().get("planIdentifier")))

@@ -31,15 +31,36 @@ public class BusinessStatusService {
     }
 
     if (ActionUtils.isActionForLocation(task.getAction())) {
-      LocationMetadata locationMetadata = metadataService.updateLocationMetadata(task.getBaseEntityIdentifier(), businessStatus,
+      metadataService.updateLocationMetadata(task.getBaseEntityIdentifier(), businessStatus,
           planIdentifier, task.getIdentifier(), UserUtils.getCurrentPrincipleName(), "string",
-          businessStatusTagName, baseBusinessStatusTagName);
+          businessStatusTagName, baseBusinessStatusTagName, task.getLocation());
     }
 
     if (ActionUtils.isActionForPerson(task.getAction())) {
       metadataService.updatePersonMetadata(task.getBaseEntityIdentifier(), businessStatus,
           planIdentifier, task.getIdentifier(), UserUtils.getCurrentPrincipleName(), "string",
-          businessStatusTagName, baseBusinessStatusTagName);
+          businessStatusTagName, baseBusinessStatusTagName, task.getPerson());
+    }
+  }
+
+  public void deactivateBusinessStatus(Task task) {
+
+    UUID planIdentifier = task.getAction().getGoal().getPlan().getIdentifier();
+
+    String businessStatusTagName = businessStatusProperties.getBusinessStatusTagName();;
+    if (planIdentifier != null && task.getIdentifier() != null) {
+      businessStatusTagName = businessStatusTagName.concat("_")
+          .concat(planIdentifier.toString()).concat("_").concat(task.getIdentifier().toString());
+    }
+
+    if (ActionUtils.isActionForLocation(task.getAction())) {
+      metadataService.deactivateLocationMetadata(task.getBaseEntityIdentifier(),
+          businessStatusTagName);
+    }
+
+    if (ActionUtils.isActionForPerson(task.getAction())) {
+      metadataService.deactivatePersonMetadata(task.getBaseEntityIdentifier(),
+          businessStatusTagName);
     }
   }
 
@@ -54,7 +75,8 @@ public class BusinessStatusService {
             .filter(
                 metadataObj -> metadataObj.getTag()
                     .equals(businessStatusProperties.getBusinessStatusTagName().concat("_")
-                        .concat(task.getPlan().getIdentifier().toString()).concat("_").concat(task.getIdentifier().toString())))
+                        .concat(task.getPlan().getIdentifier().toString()).concat("_")
+                        .concat(task.getIdentifier().toString())))
             .map(metadataObj -> metadataObj.getCurrent().getValue().getValueString())
             .findFirst();
         if (businessStatusValueOptional.isPresent()) {
@@ -71,7 +93,8 @@ public class BusinessStatusService {
             .filter(
                 metadataObj -> metadataObj.getTag()
                     .equals(businessStatusProperties.getBusinessStatusTagName().concat("_")
-                        .concat(task.getPlan().getIdentifier().toString()).concat("_").concat(task.getIdentifier().toString())))
+                        .concat(task.getPlan().getIdentifier().toString()).concat("_")
+                        .concat(task.getIdentifier().toString())))
             .map(metadataObj -> metadataObj.getCurrent().getValue().getValueString())
             .findFirst();
         if (businessStatusValueOptional.isPresent()) {

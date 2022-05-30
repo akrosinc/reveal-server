@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.persistence.repository;
 
+import com.revealprecision.revealserver.enums.BulkStatusEnum;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationBulk;
 import com.revealprecision.revealserver.persistence.projection.LocationBulkProjection;
@@ -35,4 +36,6 @@ public interface LocationBulkRepository extends JpaRepository<LocationBulk, UUID
 
   @Query(value = "select l from Location l where l.locationBulk.identifier = :identifier")
   List<Location> getAllCreatedInBulk(@Param("identifier") UUID identifier);
+
+  Integer countByStatusNot(BulkStatusEnum bulkStatusEnum);
 }
