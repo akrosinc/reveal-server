@@ -9,6 +9,7 @@ import com.revealprecision.revealserver.messaging.message.PersonBusinessStatusAg
 import com.revealprecision.revealserver.messaging.message.TaskAggregate;
 import com.revealprecision.revealserver.messaging.message.TaskEvent;
 import com.revealprecision.revealserver.props.KafkaProperties;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.KeyValue;
@@ -27,16 +28,13 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/state-store")
 @Slf4j
+@RequiredArgsConstructor
 public class KafkaStateStoreQueryController {
 
-  @Autowired
-  StreamsBuilderFactoryBean getKafkaStreams;
 
-  @Autowired
-  KafkaProperties kafkaProperties;
+  private final StreamsBuilderFactoryBean getKafkaStreams;
+  private final KafkaProperties kafkaProperties;
 
-  @Autowired
-  KafkaTemplate<String, Message> kafkaTemplate;
 
   @GetMapping("/personBusinessStatus")
   public void personBusinessStatus() {

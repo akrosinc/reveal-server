@@ -14,7 +14,8 @@ import lombok.Setter;
 @Builder
 public class ColumnData implements Serializable {
 
-  private Double value;
+  private Object value;
   private Boolean isPercentage;
   private String meta;
+  private String dataType = "double";
 }
