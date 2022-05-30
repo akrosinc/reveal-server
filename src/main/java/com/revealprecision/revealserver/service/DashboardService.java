@@ -491,7 +491,7 @@ public class DashboardService {
     if (parentIdentifier == null) {
       locationDetails.add(locationService.getRootLocationByPlanIdentifier(planIdentifier));
     } else {
-      locationDetails = locationService.getLocationsByParentIdentifierAndPlanIdentifier(
+      locationDetails = locationService.getAssignedLocationsByParentIdentifierAndPlanIdentifier(
           parentIdentifier, planIdentifier);
     }
 

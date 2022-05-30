@@ -253,7 +253,7 @@ public class LocationBusinessStatusStream {
                     kafkaProperties.getStoreMap().get(KafkaConstants.operationalAreaByPlanParentHierarchy))
                 .withValueSerde(new JsonSerde<>(OperationalAreaVisitedCount.class))
                 .withKeySerde(Serdes.String()));
-    
+
     return locationMetadataStream;
   }
 
