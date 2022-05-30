@@ -13,9 +13,7 @@ import lombok.Setter;
 
 @Setter
 @Getter
-@Data
 @AllArgsConstructor
-
 public class PersonBusinessStatusAggregate extends Message {
 
   private Map<UUID,CurrentState> personState;
