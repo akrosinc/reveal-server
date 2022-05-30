@@ -185,29 +185,39 @@ public class LocationBusinessStatusStream {
 
   @Bean
   KStream<UUID, LocationMetadataEvent> operationalAreaVisitedProcessor(StreamsBuilder streamsBuilder) {
+    //TODO: remove hardcodings
 
     KStream<UUID, LocationMetadataEvent> locationMetadataStream = streamsBuilder.stream(
         kafkaProperties.getTopicMap().get(KafkaConstants.LOCATION_METADATA_UPDATE),
         Consumed.with(Serdes.UUID(), new JsonSerde<>(LocationMetadataEvent.class)));
 
-    //TODO: remove hardcodings
-    locationMetadataStream
-        .flatMapValues((k, locationMetadata) -> getLocationMetadataUnpackedPerMetadataItems(locationMetadata))
-        .selectKey((k, metadataEventContainer) -> metadataEventContainer.getLocationIdentifier())
-        .filter((k, metadataEventContainer) -> metadataEventContainer.getMetaDataEvent().getType().equals("business-status"))
-        .filter((k, metadataEventContainer) -> locationService.findByIdentifier(k).getGeographicLevel()
-                .getName().equals("structure"))
-        .mapValues((k, metadataEventContainer) -> getLocationMetadataContainerWithAncestry(metadataEventContainer))
+    KStream<UUID, LocationMetadataContainer> locationMetadataUnpackedPerMetadataItems = locationMetadataStream
+        .flatMapValues(
+            (k, locationMetadata) -> getLocationMetadataUnpackedPerMetadataItems(locationMetadata))
+        .selectKey((k, metadataEventContainer) -> metadataEventContainer.getLocationIdentifier());
 
+    KStream<UUID, LocationMetadataContainer> locationMetadataUnpackedPerMetadataItemsWithAncestor = locationMetadataUnpackedPerMetadataItems
+        .filter((k, metadataEventContainer) -> metadataEventContainer.getMetaDataEvent().getType()
+            .equals("business-status"))
+        .filter(
+            (k, metadataEventContainer) -> locationService.findByIdentifier(k).getGeographicLevel()
+                .getName().equals("structure"))
+        .mapValues((k, metadataEventContainer) -> getLocationMetadataContainerWithAncestry(
+            metadataEventContainer));
+
+    KTable<String, LocationBusinessStatusAggregate> latestBusinessStateAggregate = locationMetadataUnpackedPerMetadataItemsWithAncestor
         .groupBy(
             (k, metadataEventContainer) -> getLocationIdentifierPlanKey(metadataEventContainer))
         .aggregate(LocationBusinessStatusAggregate::new,
-            (key, metadataEventContainer, aggregate) -> aggregateSetLatestBusinessStatusOnLocation(metadataEventContainer, aggregate),
+            (key, metadataEventContainer, aggregate) -> aggregateSetLatestBusinessStatusOnLocation(
+                metadataEventContainer, aggregate),
             Materialized.<String, LocationBusinessStatusAggregate, KeyValueStore<Bytes, byte[]>>as(
-                    kafkaProperties.getStoreMap().get(KafkaConstants.locationBusinessStatusForOperationalAreas))
+                    kafkaProperties.getStoreMap()
+                        .get(KafkaConstants.locationBusinessStatusForOperationalAreas))
                 .withValueSerde(new JsonSerde<>(LocationBusinessStatusAggregate.class))
-                .withKeySerde(Serdes.String()))
+                .withKeySerde(Serdes.String()));
 
+    KTable<String, OperationalAreaAggregate> latestBusinessStateAggregatePerOperationalArea = latestBusinessStateAggregate
         .groupBy((key, locationBusinessStatus) ->
                 KeyValue.pair(getAncestryPlanKey(key, locationBusinessStatus), locationBusinessStatus),
             Grouped.with(Serdes.String(), new JsonSerde<>(LocationBusinessStatusAggregate.class)))
@@ -229,18 +239,21 @@ public class LocationBusinessStatusStream {
                     kafkaProperties.getStoreMap().get(KafkaConstants.tableOfOperationalAreas))
                 .withValueSerde(new JsonSerde<>(OperationalAreaAggregate.class))
                 .withKeySerde(Serdes.String())
-        )
+        );
 
+    KTable<String, OperationalAreaAggregate> restructuredOperationalAreaAggregate = latestBusinessStateAggregatePerOperationalArea
         .toStream()
         .flatMapValues(this::getOperationalAreaAggregatesUnpackedByAncestry)
-
         .groupBy(this::getAncestorOperationalAreaPlanIdKey)
         .aggregate(OperationalAreaAggregate::new,
-            (key, operationalAreaAggregate, aggregate) -> restructureOperationalAreaAggregate(operationalAreaAggregate, aggregate),
+            (key, operationalAreaAggregate, aggregate) -> restructureOperationalAreaAggregate(
+                operationalAreaAggregate, aggregate),
             Materialized.<String, OperationalAreaAggregate, KeyValueStore<Bytes, byte[]>>as(
                     kafkaProperties.getStoreMap().get(KafkaConstants.tableOfOperationalAreaHierarchies))
                 .withValueSerde(new JsonSerde<>(OperationalAreaAggregate.class))
-                .withKeySerde(Serdes.String()))
+                .withKeySerde(Serdes.String()));
+
+    restructuredOperationalAreaAggregate
         .toStream()
         .mapValues((k, operationalAreaAggregate) -> {
           operationalAreaAggregate.setIdentifier(UUID.fromString(k.split("_")[1]));

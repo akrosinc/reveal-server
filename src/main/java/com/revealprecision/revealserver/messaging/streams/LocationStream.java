@@ -120,15 +120,13 @@ public class LocationStream {
         , Materialized.as(kafkaProperties.getStoreMap()
             .get(KafkaConstants.tableOfAssignedStructuresWithParentKeyed)));
 
-    KTable<String, Long> assignedStructureCountPerParent = tableOfAssignedStructures
+    tableOfAssignedStructures
         .groupBy((key, locationAssigned) -> KeyValue.pair(
                 locationAssigned.getPlanIdentifier() + "_" + locationAssigned.getAncestor(),
                 locationAssigned),
             Grouped.with(Serdes.String(), new JsonSerde<>(LocationAssigned.class)))
         .count(Materialized.as(
             kafkaProperties.getStoreMap().get(KafkaConstants.assignedStructureCountPerParent)));
-    assignedStructureCountPerParent.toStream()
-        .to(kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_STRUCTURES_COUNTS));
 
     return locationsAssignedStream;
   }
