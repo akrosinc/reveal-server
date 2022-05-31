@@ -74,101 +74,6 @@ public class DashboardService {
   ReadOnlyKeyValueStore<String, LocationBusinessStatusAggregate> locationBusinessState;
   boolean datastoresInitialized = false;
 
-  public FeatureSetResponse getDataForReport(String reportType, UUID planIdentifier,
-      UUID parentIdentifier) {
-
-
-    ReportTypeEnum reportTypeEnum = LookupUtil.lookup(ReportTypeEnum.class, reportType);
-    Plan plan = planService.getPlanByIdentifier(planIdentifier);
-    List<String> applicableReportTypes = ApplicableReportsEnum.valueOf(
-        plan.getInterventionType().getCode()).getReportName();
-    if (!applicableReportTypes.contains(reportTypeEnum.name())) {
-      throw new WrongEnumException(
-          "Report type: '" + reportType + "' is not applicable to plan with identifier: '"
-              + planIdentifier + "'");
-    }
-    List<PlanLocationDetails> locationDetails = new ArrayList<>();
-    if (parentIdentifier == null) {
-      locationDetails.add(locationService.getRootLocationByPlanIdentifier(planIdentifier));
-    } else {
-      Location location = locationService.findByIdentifier(parentIdentifier);
-      int structureNodeIndex = plan.getLocationHierarchy().getNodeOrder().indexOf("structure");
-      int locationNodeIndex = plan.getLocationHierarchy().getNodeOrder().indexOf(location.getGeographicLevel().getName());
-      if(locationNodeIndex + 1 < structureNodeIndex) {
-        locationDetails = locationService.getAssignedLocationsByParentIdentifierAndPlanIdentifier(
-            parentIdentifier, planIdentifier);
-      }else {
-        locationDetails = locationService.getLocationsByParentIdentifierAndPlanIdentifier(
-            parentIdentifier, planIdentifier);
-      }
-    }
-
-    initDataStoresIfNecessary();
-    Map<UUID, RowData> rowDataMap = locationDetails.stream().map(loc -> {
-          switch (reportTypeEnum) {
-
-            case MDA_FULL_COVERAGE:
-
-              switch (loc.getLocation().getGeographicLevel().getName()) {
-                case "structure":
-                  return getMDAFullCoverageStructureLevelData(plan, loc.getLocation(),
-                      parentIdentifier);
-                case "operational":
-                  return getMDAFullCoverageOperationalAreaLevelData(plan,
-                      loc.getLocation());
-                default:
-                  return getMDAFullCoverageData(plan, loc.getLocation());
-              }
-
-            case IRS_FULL_COVERAGE:
-              return getIRSFullData(loc.getLocation());
-
-          }
-          return null;
-        }).filter(Objects::nonNull)
-        .collect(Collectors.toMap(RowData::getLocationIdentifier, row -> row));
-
-    FeatureSetResponse response = new FeatureSetResponse();
-    response.setType("FeatureCollection");
-    List<LocationResponse> locationResponses = locationDetails.stream()
-        .map(loc -> LocationResponseFactory.fromPlanLocationDetails(loc, parentIdentifier))
-        .collect(Collectors.toList());
-
-    locationResponses.forEach(loc -> {
-      loc.getProperties().setColumnDataMap(rowDataMap.get(loc.getIdentifier()).getColumnDataMap());
-      loc.getProperties().setId(loc.getIdentifier());
-
-
-      if (rowDataMap.get(loc.getIdentifier()).getColumnDataMap().get(DISTRIBUTION_COVERAGE)
-          != null) {
-        loc.getProperties().setDistCoveragePercent(
-            rowDataMap.get(loc.getIdentifier()).getColumnDataMap().get(DISTRIBUTION_COVERAGE)
-                .getValue());
-      }
-      if (rowDataMap.get(loc.getIdentifier()).getColumnDataMap().get(DISTRIBUTION_COVERAGE_PERCENTAGE)
-          != null) {
-        loc.getProperties().setDistCoveragePercent(
-            rowDataMap.get(loc.getIdentifier()).getColumnDataMap().get(DISTRIBUTION_COVERAGE_PERCENTAGE)
-                .getValue());
-      }
-      if (rowDataMap.get(loc.getIdentifier()).getColumnDataMap().get(NO_OF_ELIGIBLE_CHILDREN)
-          != null) {
-        loc.getProperties().setNumberOfChildrenEligible(
-            rowDataMap.get(loc.getIdentifier()).getColumnDataMap().get(NO_OF_ELIGIBLE_CHILDREN)
-                .getValue());
-      }
-      if (rowDataMap.get(loc.getIdentifier()).getColumnDataMap().get(NO_OF_TREATED_CHILDREN)
-          != null) {
-        loc.getProperties().setNumberOfChildrenTreated(
-            rowDataMap.get(loc.getIdentifier()).getColumnDataMap().get(NO_OF_TREATED_CHILDREN)
-                .getValue());
-      }
-    });
-    response.setFeatures(locationResponses);
-    response.setIdentifier(parentIdentifier);
-    return response;
-  }
-
 
   private RowData getIRSFullData(Location childLocation) {
     Map<String, ColumnData> columns = new HashMap<>();
@@ -628,5 +533,99 @@ public class DashboardService {
               QueryableStoreTypes.keyValueStore()));
       datastoresInitialized = true;
     }
+  }
+  public FeatureSetResponse getDataForReport(String reportType, UUID planIdentifier,
+      UUID parentIdentifier) {
+
+
+    ReportTypeEnum reportTypeEnum = LookupUtil.lookup(ReportTypeEnum.class, reportType);
+    Plan plan = planService.getPlanByIdentifier(planIdentifier);
+    List<String> applicableReportTypes = ApplicableReportsEnum.valueOf(
+        plan.getInterventionType().getCode()).getReportName();
+    if (!applicableReportTypes.contains(reportTypeEnum.name())) {
+      throw new WrongEnumException(
+          "Report type: '" + reportType + "' is not applicable to plan with identifier: '"
+              + planIdentifier + "'");
+    }
+    List<PlanLocationDetails> locationDetails = new ArrayList<>();
+    if (parentIdentifier == null) {
+      locationDetails.add(locationService.getRootLocationByPlanIdentifier(planIdentifier));
+    } else {
+      Location location = locationService.findByIdentifier(parentIdentifier);
+      int structureNodeIndex = plan.getLocationHierarchy().getNodeOrder().indexOf("structure");
+      int locationNodeIndex = plan.getLocationHierarchy().getNodeOrder().indexOf(location.getGeographicLevel().getName());
+      if(locationNodeIndex + 1 < structureNodeIndex) {
+        locationDetails = locationService.getAssignedLocationsByParentIdentifierAndPlanIdentifier(
+            parentIdentifier, planIdentifier);
+      }else {
+        locationDetails = locationService.getLocationsByParentIdentifierAndPlanIdentifier(
+            parentIdentifier, planIdentifier);
+      }
+    }
+
+    initDataStoresIfNecessary();
+    Map<UUID, RowData> rowDataMap = locationDetails.stream().map(loc -> {
+          switch (reportTypeEnum) {
+
+            case MDA_FULL_COVERAGE:
+
+              switch (loc.getLocation().getGeographicLevel().getName()) {
+                case "structure":
+                  return getMDAFullCoverageStructureLevelData(plan, loc.getLocation(),
+                      parentIdentifier);
+                case "operational":
+                  return getMDAFullCoverageOperationalAreaLevelData(plan,
+                      loc.getLocation());
+                default:
+                  return getMDAFullCoverageData(plan, loc.getLocation());
+              }
+
+            case IRS_FULL_COVERAGE:
+              return getIRSFullData(loc.getLocation());
+
+          }
+          return null;
+        }).filter(Objects::nonNull)
+        .collect(Collectors.toMap(RowData::getLocationIdentifier, row -> row));
+
+    FeatureSetResponse response = new FeatureSetResponse();
+    response.setType("FeatureCollection");
+    List<LocationResponse> locationResponses = locationDetails.stream()
+        .map(loc -> LocationResponseFactory.fromPlanLocationDetails(loc, parentIdentifier))
+        .collect(Collectors.toList());
+
+    locationResponses.forEach(loc -> {
+      loc.getProperties().setColumnDataMap(rowDataMap.get(loc.getIdentifier()).getColumnDataMap());
+      loc.getProperties().setId(loc.getIdentifier());
+
+
+      if (rowDataMap.get(loc.getIdentifier()).getColumnDataMap().get(DISTRIBUTION_COVERAGE)
+          != null) {
+        loc.getProperties().setDistCoveragePercent(
+            rowDataMap.get(loc.getIdentifier()).getColumnDataMap().get(DISTRIBUTION_COVERAGE)
+                .getValue());
+      }
+      if (rowDataMap.get(loc.getIdentifier()).getColumnDataMap().get(DISTRIBUTION_COVERAGE_PERCENTAGE)
+          != null) {
+        loc.getProperties().setDistCoveragePercent(
+            rowDataMap.get(loc.getIdentifier()).getColumnDataMap().get(DISTRIBUTION_COVERAGE_PERCENTAGE)
+                .getValue());
+      }
+      if (rowDataMap.get(loc.getIdentifier()).getColumnDataMap().get(NO_OF_ELIGIBLE_CHILDREN)
+          != null) {
+        loc.getProperties().setNumberOfChildrenEligible(
+            rowDataMap.get(loc.getIdentifier()).getColumnDataMap().get(NO_OF_ELIGIBLE_CHILDREN)
+                .getValue());
+      }
+      if (rowDataMap.get(loc.getIdentifier()).getColumnDataMap().get(NO_OF_TREATED_CHILDREN)
+          != null) {
+        loc.getProperties().setNumberOfChildrenTreated(
+            rowDataMap.get(loc.getIdentifier()).getColumnDataMap().get(NO_OF_TREATED_CHILDREN)
+                .getValue());
+      }
+    });
+    response.setFeatures(locationResponses);
+    response.setIdentifier(parentIdentifier);
+    return response;
   }
 }
