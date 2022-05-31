@@ -211,10 +211,30 @@ public class DashboardService {
     locationResponses.forEach(loc -> {
       loc.getProperties().setColumnDataMap(rowDataMap.get(loc.getIdentifier()).getColumnDataMap());
       loc.getProperties().setId(loc.getIdentifier());
-      if (rowDataMap.get(loc.getIdentifier()).getColumnDataMap().get("Distribution Coverage")
+
+
+      if (rowDataMap.get(loc.getIdentifier()).getColumnDataMap().get(DISTRIBUTION_COVERAGE)
           != null) {
         loc.getProperties().setDistCoveragePercent(
-            rowDataMap.get(loc.getIdentifier()).getColumnDataMap().get("Distribution Coverage")
+            rowDataMap.get(loc.getIdentifier()).getColumnDataMap().get(DISTRIBUTION_COVERAGE)
+                .getValue());
+      }
+      if (rowDataMap.get(loc.getIdentifier()).getColumnDataMap().get(DISTRIBUTION_COVERAGE_PERCENTAGE)
+          != null) {
+        loc.getProperties().setDistCoveragePercent(
+            rowDataMap.get(loc.getIdentifier()).getColumnDataMap().get(DISTRIBUTION_COVERAGE_PERCENTAGE)
+                .getValue());
+      }
+      if (rowDataMap.get(loc.getIdentifier()).getColumnDataMap().get(NO_OF_ELIGIBLE_CHILDREN)
+          != null) {
+        loc.getProperties().setNumberOfChildrenEligible(
+            rowDataMap.get(loc.getIdentifier()).getColumnDataMap().get(NO_OF_ELIGIBLE_CHILDREN)
+                .getValue());
+      }
+      if (rowDataMap.get(loc.getIdentifier()).getColumnDataMap().get(NO_OF_TREATED_CHILDREN)
+          != null) {
+        loc.getProperties().setNumberOfChildrenTreated(
+            rowDataMap.get(loc.getIdentifier()).getColumnDataMap().get(NO_OF_TREATED_CHILDREN)
                 .getValue());
       }
     });
