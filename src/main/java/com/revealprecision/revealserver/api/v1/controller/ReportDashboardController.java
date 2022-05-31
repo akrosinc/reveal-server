@@ -1,7 +1,5 @@
 package com.revealprecision.revealserver.api.v1.controller;
 
-import com.revealprecision.revealserver.api.v1.dto.models.TableRow;
-import com.revealprecision.revealserver.api.v1.dto.request.TableReportRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.FeatureSetResponse;
 import com.revealprecision.revealserver.enums.ApplicableReportsEnum;
 import com.revealprecision.revealserver.enums.ReportTypeEnum;
@@ -26,12 +24,6 @@ public class ReportDashboardController {
 
   private final DashboardService dashboardService;
   private final PlanService planService;
-
-  @GetMapping("/row")
-  public TableRow getRow(TableReportRequest tableReportRequest) {
-    return dashboardService.getRowData(tableReportRequest.getPlanIdentifier(),
-        tableReportRequest.getParentLocationIdentifier(), tableReportRequest.getGetChildren(), tableReportRequest.getReportTypeEnum());
-  }
 
   @GetMapping("/reportTypes")
   public ReportTypeEnum[] getReportTypes() {
