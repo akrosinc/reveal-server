@@ -72,14 +72,20 @@ public class DashboardService {
 
     Plan plan = planService.getPlanByIdentifier(planIdentifier);
 
-    //parentLocationIdentifier = getParentLocation(planIdentifier, parentLocationIdentifier, plan);
-
     List<PlanLocationDetails> childrenLocations = new ArrayList<>();
     if (parentLocationIdentifier == null) {
       childrenLocations.add(locationService.getRootLocationByPlanIdentifier(planIdentifier));
     } else {
-      childrenLocations = locationService.getAssignedLocationsByParentIdentifierAndPlanIdentifier(
-          parentLocationIdentifier, planIdentifier);
+      Location location = locationService.findByIdentifier(parentLocationIdentifier);
+      int structureNodeIndex = plan.getLocationHierarchy().getNodeOrder().indexOf("structure");
+      int locationNodeIndex = plan.getLocationHierarchy().getNodeOrder().indexOf(location.getGeographicLevel().getName());
+      if(locationNodeIndex + 1 < structureNodeIndex) {
+        childrenLocations = locationService.getAssignedLocationsByParentIdentifierAndPlanIdentifier(
+            parentLocationIdentifier, planIdentifier);
+      }else {
+        childrenLocations = locationService.getLocationsByParentIdentifierAndPlanIdentifier(
+            parentLocationIdentifier, planIdentifier);
+      }
     }
 
     List<RowData> rowDatas = childrenLocations.stream().map(childLocation -> {
