@@ -74,35 +74,6 @@ public class DashboardService {
   ReadOnlyKeyValueStore<String, LocationBusinessStatusAggregate> locationBusinessState;
   boolean datastoresInitialized = false;
 
-  private List<Location> getChildrenLocations(UUID parentLocationIdentifier, Boolean getChildren,
-      Plan plan) {
-    List<Location> childrenLocations;
-    if (getChildren) {
-      childrenLocations = locationRelationshipService.getChildrenLocations(
-          plan.getLocationHierarchy().getIdentifier(), parentLocationIdentifier);
-    } else {
-      childrenLocations = List.of(locationService.findByIdentifier(parentLocationIdentifier));
-    }
-    return childrenLocations;
-  }
-
-  private UUID getParentLocation(UUID planIdentifier, UUID parentLocationIdentifier, Plan plan) {
-    if (parentLocationIdentifier == null) {
-      List<PlanLocations> planLocations = planLocationsService.getPlanLocationsByPlanIdentifier(
-          planIdentifier);
-      LocationRelationship locationRelationshipfetched = planLocations.stream().map(
-              planLocation -> locationRelationshipService.getLocationRelationshipsForLocation(
-                  plan.getLocationHierarchy().getIdentifier(),
-                  planLocation.getLocation().getIdentifier()))
-          .filter(locationRelationship -> locationRelationship.getParentLocation() == null)
-          .findFirst().orElseThrow(() -> new NotFoundException("no parent"));
-
-      parentLocationIdentifier = locationRelationshipfetched.getLocation().getIdentifier();
-
-    }
-    return parentLocationIdentifier;
-  }
-
   public FeatureSetResponse getDataForReport(String reportType, UUID planIdentifier,
       UUID parentIdentifier) {
 
