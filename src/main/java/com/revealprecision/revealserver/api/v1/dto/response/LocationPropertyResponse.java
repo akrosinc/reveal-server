@@ -27,7 +27,9 @@ public class LocationPropertyResponse {
   private boolean assigned;
   private UUID parentIdentifier;
   private long childrenNumber;
-  private Double distCoveragePercent;
+  private Object distCoveragePercent;
+  private Object numberOfChildrenTreated;
+  private Object numberOfChildrenEligible;
   private UUID id;
   private Map<String, ColumnData> columnDataMap;
 }

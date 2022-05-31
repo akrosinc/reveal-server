@@ -101,14 +101,15 @@ public class TaskGenerationStream {
     KStream<String, TaskEvent> stringTaskEventKStream = stringTaskEventKStream1
         .flatMapValues((k, locationTask) -> duplicateTaskEventPerAncestor(locationTask))
         .selectKey((k, taskEvent) -> createTaskPlanAncestorKey(taskEvent));
-    stringTaskEventKStream.to(kafkaProperties.getTopicMap().get(KafkaConstants.TASK_PARENT_PLAN));
 
     // create a table of the records for task Events
     // keyed on task + "_" + plan + "_" + ancestor
-    streamsBuilder.table(
-        kafkaProperties.getTopicMap().get(KafkaConstants.TASK_PARENT_PLAN),
-        Consumed.with(Serdes.String(), new JsonSerde<>(TaskEvent.class)),
-        Materialized.as(kafkaProperties.getStoreMap().get(KafkaConstants.taskPlanParent)));
+   stringTaskEventKStream
+        .repartition()
+       .toTable(Materialized.<String, TaskEvent, KeyValueStore<Bytes, byte[]>>
+           as(kafkaProperties.getStoreMap().get(KafkaConstants.taskPlanParent))
+           .withValueSerde(new JsonSerde<>(TaskEvent.class))
+           .withKeySerde(Serdes.String()));
 
     // ignore records where the key does not have format task + "_" + plan + "_" + ancestor
     KStream<String, TaskEvent> stringStringKStream = stringTaskEventKStream
@@ -125,7 +126,6 @@ public class TaskGenerationStream {
     // using the taskIds retrieve the applicable tasks from the taskParentPlanTable above by
     // combining the taskId with plan and location ancestor
     // i.e taskId + "_" + planId + "_" + ancestorId;
-    //
     stringStringKGroupedStream
         .aggregate(TaskAggregate::new,
             (k, taskEvent, aggregate) -> collectOrRemoveTaskEventsInTaskAggregateObject(taskEvent,
