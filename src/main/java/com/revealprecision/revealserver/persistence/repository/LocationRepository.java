@@ -61,4 +61,6 @@ public interface LocationRepository extends JpaRepository<Location, UUID> {
       + "     ) "
       + "      select cast(a.id as varchar) from ancestors a", nativeQuery = true)
   List<UUID> getAllLocationChildren(UUID locationIdentifier, UUID hierarchyIdentifier);
+
+  List<Location> getLocationsByPeople_Identifier(UUID personIdentifier);
 }

@@ -28,6 +28,7 @@ import com.revealprecision.revealserver.service.OrganizationService;
 import com.revealprecision.revealserver.service.PersonService;
 import com.revealprecision.revealserver.service.UserService;
 import com.revealprecision.revealserver.service.models.EventSearchCriteria;
+import com.revealprecision.revealserver.util.UserUtils;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -102,7 +103,7 @@ public class EventClientFacadeService {
     List<EventFacade> failedEvents = new ArrayList<>();
     eventFacadeList.forEach(eventFacade -> {
       try {
-        //saveEvent(eventFacade);
+//        saveEvent(eventFacade);
         eventFacade.getObs().forEach(obs -> {
           if(metadataToProcess.contains(obs.getFieldCode())) {
             UUID baseEntityId = UUID.fromString(eventFacade.getBaseEntityId());
@@ -115,6 +116,7 @@ public class EventClientFacadeService {
                   .tag(obs.getFieldCode())
                   .planIdentifier(UUID.fromString(eventFacade.getDetails().get("planIdentifier")))
                   .taskIdentifier(UUID.fromString(eventFacade.getDetails().get("taskIdentifier")))
+                  .user(UserUtils.getCurrentPrincipleName())
                   .build());
             }else {
               Person blankPerson = Person.builder()
@@ -139,6 +141,7 @@ public class EventClientFacadeService {
                   .tag(obs.getFieldCode())
                   .planIdentifier(UUID.fromString(eventFacade.getDetails().get("planIdentifier")))
                   .taskIdentifier(UUID.fromString(eventFacade.getDetails().get("taskIdentifier")))
+                  .user(UserUtils.getCurrentPrincipleName())
                   .build());
             }
           }
@@ -342,7 +345,9 @@ public class EventClientFacadeService {
                 .getLocalDateTimeFromZonedAndroidFacadeString(eventFacade.getEventDate()))
         .eventType(eventFacade.getEventType())
         .details(objectMapper.valueToTree(eventFacade.getDetails()))
-        .locationIdentifier(UUID.fromString(eventFacade.getLocationId()))
+        .locationIdentifier(eventFacade.getLocationId()==null || Objects.equals(
+            eventFacade.getLocationId(), "")
+            ?UUID.fromString(objectMapper.valueToTree(eventFacade.getDetails()).get("location_id").toString()):UUID.fromString(eventFacade.getLocationId()))
         .organization(organizationService.findById(UUID.fromString(eventFacade.getTeamId()), false))
         .user(userService.getByUserName(eventFacade.getProviderId()))
         .planIdentifier(UUID.fromString(eventFacade.getDetails().get("planIdentifier")))

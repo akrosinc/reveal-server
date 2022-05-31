@@ -13,7 +13,6 @@ import com.revealprecision.revealserver.persistence.domain.PlanLocations;
 import com.revealprecision.revealserver.persistence.projection.LocationCoordinatesProjection;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import com.revealprecision.revealserver.persistence.repository.LocationRepository;
-import com.revealprecision.revealserver.props.BusinessStatusProperties;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -32,8 +31,6 @@ public class LocationService {
   private final LocationRepository locationRepository;
   private final GeographicLevelService geographicLevelService;
   private final LocationRelationshipService locationRelationshipService;
-  private final BusinessStatusService businessStatusService;
-  private final BusinessStatusProperties businessStatusProperties;
   private final PlanService planService;
 
   public Location createLocation(LocationRequest locationRequest) {
@@ -87,7 +84,7 @@ public class LocationService {
   }
 
   public List<Location> getStructuresByParentIdentifiers(List<UUID> parentIdentifiers,
-      LocationHierarchy locationHierarchy,Long serverVersion) {
+      LocationHierarchy locationHierarchy, Long serverVersion) {
     List<LocationRelationship> locationRelationships = locationHierarchy.getLocationRelationships();
     List<Location> locations = locationRelationships.stream().filter(
             locationRelationship -> locationRelationship.getParentLocation() != null
@@ -95,7 +92,8 @@ public class LocationService {
         .map(LocationRelationship::getLocation).collect(Collectors.toList());
 
     return locations.stream()
-        .filter(location -> location.getGeographicLevel().getName().equalsIgnoreCase("structure") && location.getServerVersion() >= serverVersion)
+        .filter(location -> location.getGeographicLevel().getName().equalsIgnoreCase("structure")
+            && location.getServerVersion() >= serverVersion)
         .collect(Collectors.toList());//TODO: to update once we figure the target level part.
   }
 
@@ -104,13 +102,32 @@ public class LocationService {
       UUID planIdentifier) {
     Plan plan = planService.getPlanByIdentifier(planIdentifier);
     Location location = findByIdentifier(parentIdentifier);
-    Map<UUID, Long> childrenCount = locationRelationshipService.getLocationChildrenCount(plan.getLocationHierarchy().getIdentifier())
+    Map<UUID, Long> childrenCount = locationRelationshipService.getLocationChildrenCount(
+            plan.getLocationHierarchy().getIdentifier())
         .stream().filter(loc -> loc.getParentIdentifier() != null)
-        .collect(Collectors.toMap(loc -> UUID.fromString(loc.getParentIdentifier()), loc -> loc.getChildrenCount()));
+        .collect(Collectors.toMap(loc -> UUID.fromString(loc.getParentIdentifier()),
+            loc -> loc.getChildrenCount()));
     List<PlanLocationDetails> response = locationRelationshipService
         .getLocationChildrenByLocationParentIdentifierAndPlanIdentifier(
             parentIdentifier, planIdentifier);
-    response.forEach(resp -> resp.setChildrenNumber(childrenCount.containsKey(resp.getLocation().getIdentifier()) ? childrenCount.get(resp.getLocation().getIdentifier()) : 0));
+    response.forEach(resp -> resp.setChildrenNumber(
+        childrenCount.containsKey(resp.getLocation().getIdentifier()) ? childrenCount.get(
+            resp.getLocation().getIdentifier()) : 0));
+    return response;
+  }
+
+  public PlanLocationDetails getRootLocationByPlanIdentifier(UUID planIdentifier) {
+    Plan plan = planService.getPlanByIdentifier(planIdentifier);
+    Map<UUID, Long> childrenCount = locationRelationshipService.getLocationChildrenCount(
+            plan.getLocationHierarchy().getIdentifier())
+        .stream().filter(loc -> loc.getParentIdentifier() != null)
+        .collect(Collectors.toMap(loc -> UUID.fromString(loc.getParentIdentifier()),
+            loc -> loc.getChildrenCount()));
+    PlanLocationDetails response = locationRelationshipService.getRootLocationDetailsByPlanId(
+        planIdentifier);
+    response.setChildrenNumber(
+        childrenCount.containsKey(response.getLocation().getIdentifier()) ? childrenCount.get(
+            response.getLocation().getIdentifier()) : 0);
     return response;
   }
 
@@ -143,5 +160,9 @@ public class LocationService {
 
   public List<UUID> getAllLocationChildren(UUID locationIdentifier, UUID hierarchyIdentifier) {
     return locationRepository.getAllLocationChildren(locationIdentifier, hierarchyIdentifier);
+  }
+
+  public List<Location> getLocationsByPeople(UUID personIdentifier) {
+    return locationRepository.getLocationsByPeople_Identifier(personIdentifier);
   }
 }

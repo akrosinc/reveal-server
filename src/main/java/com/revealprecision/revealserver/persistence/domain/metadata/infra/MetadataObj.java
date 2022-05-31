@@ -18,4 +18,6 @@ public class MetadataObj implements Serializable {
   private TagData current;
 
   private List<TagData> history;
+
+  private boolean isActive = true;
 }

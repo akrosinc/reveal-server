@@ -11,6 +11,10 @@ import com.revealprecision.revealserver.enums.TaskPriorityEnum;
 import com.revealprecision.revealserver.exceptions.DuplicateTaskCreationException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.exceptions.QueryGenerationException;
+import com.revealprecision.revealserver.messaging.KafkaConstants;
+import com.revealprecision.revealserver.messaging.TaskEventFactory;
+import com.revealprecision.revealserver.messaging.message.Message;
+import com.revealprecision.revealserver.messaging.message.TaskEvent;
 import com.revealprecision.revealserver.persistence.domain.Action;
 import com.revealprecision.revealserver.persistence.domain.Condition;
 import com.revealprecision.revealserver.persistence.domain.Goal;
@@ -29,6 +33,7 @@ import com.revealprecision.revealserver.persistence.repository.LookupTaskStatusR
 import com.revealprecision.revealserver.persistence.repository.TaskRepository;
 import com.revealprecision.revealserver.persistence.specification.TaskSpec;
 import com.revealprecision.revealserver.props.BusinessStatusProperties;
+import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.service.models.TaskSearchCriteria;
 import com.revealprecision.revealserver.util.ActionUtils;
 import com.revealprecision.revealserver.util.ConditionQueryUtil;
@@ -47,6 +52,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 
@@ -71,6 +77,8 @@ public class TaskService {
   private final LocationRelationshipService locationRelationshipService;
   private final BusinessStatusProperties businessStatusProperties;
   private final BusinessStatusService businessStatusService;
+  private final KafkaTemplate<String, Message> kafkaTemplate;
+  private final KafkaProperties kafkaProperties;
 
   @Autowired
   @Lazy
@@ -81,7 +89,9 @@ public class TaskService {
       ConditionService conditionService, PlanLocationsService planLocationsService,
       LocationRelationshipService locationRelationshipService,
       BusinessStatusProperties businessStatusProperties,
-      BusinessStatusService businessStatusService) {
+      BusinessStatusService businessStatusService,
+      KafkaTemplate<String, Message> kafkaTemplate,
+      KafkaProperties kafkaProperties) {
     this.taskRepository = taskRepository;
     this.planService = planService;
     this.actionService = actionService;
@@ -95,6 +105,8 @@ public class TaskService {
     this.locationRelationshipService = locationRelationshipService;
     this.businessStatusProperties = businessStatusProperties;
     this.businessStatusService = businessStatusService;
+    this.kafkaTemplate = kafkaTemplate;
+    this.kafkaProperties = kafkaProperties;
   }
 
   public Page<Task> searchTasks(TaskSearchCriteria taskSearchCriteria, Pageable pageable) {
@@ -174,7 +186,7 @@ public class TaskService {
     return lookupTaskStatusRepository.findAll();
   }
 
-  public void generateTasksByPlanId(UUID planIdentifier) {
+  public void generateTasksByPlanId(UUID planIdentifier, String ownerId) {
 
     log.info("TASK_GENERATION Start generate tasks for Plan Id: {}", planIdentifier);
     Plan plan = planService.getPlanByIdentifier(planIdentifier);
@@ -182,26 +194,40 @@ public class TaskService {
       List<Goal> goals = goalService.getGoalsByPlanIdentifier(planIdentifier);
 
       goals.stream().map(goal -> actionService.getActionsByGoalIdentifier(goal.getIdentifier()))
-          .flatMap(Collection::stream).forEach((action) -> generateTasksByAction(action, plan));
+          .flatMap(Collection::stream)
+          .forEach((action) -> generateTasksByAction(action, plan, ownerId));
+      log.info("TASK_GENERATION Completed generating tasks for Plan Id: {}", planIdentifier);
+    } else {
+      log.info("TASK_GENERATION Not run as plan is not active: {}", planIdentifier);
     }
-    log.info("TASK_GENERATION Completed generating tasks for Plan Id: {}", planIdentifier);
+
   }
 
-  public void cancelApplicableTasksByPlanId(UUID planIdentifier) {
+  public void cancelApplicableTasksByPlanId(UUID planIdentifier, String ownerId) {
 
     log.info("TASK_CANCELLATION Start cancellation for tasks for Plan Id: {}", planIdentifier);
-    LookupTaskStatus lookupTaskStatus = lookupTaskStatusRepository.findByCode(TASK_STATUS_CANCELLED)
+    LookupTaskStatus cancelledLookupTaskStatus = lookupTaskStatusRepository.findByCode(
+            TASK_STATUS_CANCELLED)
         .orElseThrow(() -> new NotFoundException(
             Pair.of(LookupTaskStatus.Fields.code, TASK_STATUS_CANCELLED), LookupTaskStatus.class));
     List<Task> tasksByPlan = taskRepository.findTasksByPlan_Identifier(planIdentifier);
     Plan plan = planService.getPlanByIdentifier(planIdentifier);
     if (plan.getStatus().equals(PlanStatusEnum.ACTIVE)) {
       List<Task> tasksToCancel = tasksByPlan.stream()
-          .map((task) -> markUnassignedTaskAsCancelled(plan, lookupTaskStatus, task))
+          .map((task) -> markUnassignedTaskAsCancelled(plan, cancelledLookupTaskStatus, task))
           .filter(Objects::nonNull)
-          .filter(task -> task.getLookupTaskStatus().getCode().equals(lookupTaskStatus.getCode()))
+          .filter(task -> task.getLookupTaskStatus().getCode()
+              .equals(cancelledLookupTaskStatus.getCode()))
           .collect(Collectors.toList());
-      taskRepository.saveAll(tasksToCancel);
+      List<Task> savedCancelledTask = taskRepository.saveAll(tasksToCancel);
+
+      for (Task task : savedCancelledTask) {
+        businessStatusService.deactivateBusinessStatus(task);
+        TaskEvent taskEvent = TaskEventFactory.getTaskEventFromTask(task);
+        //TODO: we need to save the owner in the database, just so we can retrieve it here
+        taskEvent.setOwnerId(ownerId);
+        kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.TASK), taskEvent);
+      }
     } else {
       log.info("Cannot cancel tasks as plan is not active");
     }
@@ -209,7 +235,7 @@ public class TaskService {
   }
 
 
-  public void generateTasksByAction(Action action, Plan plan) {
+  public void generateTasksByAction(Action action, Plan plan, String ownerId) {
 
     List<Condition> conditions = conditionService.getConditionsByActionIdentifier(
         action.getIdentifier());
@@ -219,7 +245,7 @@ public class TaskService {
     if (conditions == null || conditions.isEmpty()) {
       try {
         uuids = entityFilterService.filterEntities(null, plan.getIdentifier(),
-            plan.getLocationHierarchy().getIdentifier(),action);
+            plan.getLocationHierarchy().getIdentifier(), action);
 
 
       } catch (QueryGenerationException e) {
@@ -233,7 +259,7 @@ public class TaskService {
 
         try {
           List<UUID> filteredUUIDs = entityFilterService.filterEntities(query, plan.getIdentifier(),
-              plan.getLocationHierarchy().getIdentifier(),action);
+              plan.getLocationHierarchy().getIdentifier(), action);
 
           uuids.addAll(filteredUUIDs);
 
@@ -256,6 +282,7 @@ public class TaskService {
         () -> new NotFoundException(Pair.of(LookupTaskStatus.Fields.code, TASK_STATUS_READY),
             LookupTaskStatus.class));
 
+    log.trace("entityUUID list: {}", uuids);
     for (UUID entityUUID : uuids) {
 
       List<Task> taskObjs = createOrUpdateTaskObjectFromActionAndEntityId(action,
@@ -267,7 +294,14 @@ public class TaskService {
     }
 
     log.info("no of tasks to be generate for action: {} is: {}", action.getTitle(), tasks.size());
-    taskRepository.saveAll(tasks);
+    List<Task> savedTasks = taskRepository.saveAll(tasks);
+
+    for (Task task : savedTasks) {
+      log.trace("task: {} entity: {}", task.getIdentifier(), task.getBaseEntityIdentifier());
+      TaskEvent taskEvent = TaskEventFactory.getTaskEventFromTask(task);
+      taskEvent.setOwnerId(ownerId);
+      kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.TASK), taskEvent);
+    }
   }
 
 
@@ -289,6 +323,8 @@ public class TaskService {
               .equals(cancelledLookupTaskStatus.getCode())) {
             log.info("task for location: {} already exists", entityUUID);
             existingLocationTask.setLookupTaskStatus(readyLookupTaskStatus);
+            businessStatusService.setBusinessStatus(existingLocationTask,
+                existingLocationTask.getBusinessStatus());
           }
         }
         return existingLocationTasks;
@@ -307,6 +343,8 @@ public class TaskService {
               .equals(cancelledLookupTaskStatus.getCode())) {
             log.info("task for person: {} already exists", entityUUID);
             personTask.setLookupTaskStatus(readyLookupTaskStatus);
+            businessStatusService.setBusinessStatus(personTask,
+                personTask.getBusinessStatus());
           }
         }
         return existingPersonTasks;
@@ -370,9 +408,9 @@ public class TaskService {
   }
 
 
-  private Task markUnassignedTaskAsCancelled(Plan plan, LookupTaskStatus lookupTaskStatus,
+  private Task markUnassignedTaskAsCancelled(Plan plan, LookupTaskStatus cancelledLookupTaskStatus,
       Task task) {
-    log.debug("TASK_CANCEL Start updating location and organization assignments for task: {}",
+    log.debug("TASK_CANCEL Start cancellation for task: {}",
         task.getIdentifier());
     Action action = task.getAction();
 
@@ -383,11 +421,13 @@ public class TaskService {
     List<PlanLocations> planLocationsForPerson = getPlanLocationsForPerson(plan, task, action);
     log.debug("TASK_CANCEL got plan locations: {}", task.getIdentifier());
 
-    if (!task.getLookupTaskStatus().getCode().equals(lookupTaskStatus.getCode())) {
+    if (!task.getLookupTaskStatus().getCode().equals(cancelledLookupTaskStatus.getCode())) {
       if (planLocationsForLocation.isEmpty() && planLocationsForPerson.isEmpty()) {
-        task.setLookupTaskStatus(lookupTaskStatus);
+        task.setLookupTaskStatus(cancelledLookupTaskStatus);
+        log.debug("TASK_CANCEL task cancelled: {}", task.getIdentifier());
       }
     } else {
+      log.debug("TASK_CANCEL task not cancelled: {}", task.getIdentifier());
       return null;
     }
     return task;
@@ -457,16 +497,20 @@ public class TaskService {
 
     if (isActionForPerson && task.getPerson() != null && task.getPerson().getLocations() != null) {
 
-      if (task.getLocation().getGeographicLevel().getName().equals(STRUCTURE)) {
-        Location parentLocation = locationService.getLocationParent(task.getLocation(),
-            plan.getLocationHierarchy());
-        planLocationsForPerson = planLocationsService.getPlanLocationsByLocationIdentifier(
-            parentLocation.getIdentifier());
-      } else {
-        planLocationsForPerson = planLocationsService.getPlanLocationsByLocationIdentifierList(
-            task.getPerson().getLocations().stream().map(Location::getIdentifier)
-                .collect(Collectors.toList()));
-      }
+      return locationService.getLocationsByPeople(task.getPerson().getIdentifier()).stream()
+          .flatMap(location -> {
+            if (location.getGeographicLevel().getName().equals(STRUCTURE)) {
+              Location parentLocation = locationService.getLocationParent(location,
+                  plan.getLocationHierarchy());
+              return planLocationsService.getPlanLocationsByPlanAndLocationIdentifier(
+                  parentLocation.getIdentifier(), plan.getIdentifier()).stream();
+            } else {
+
+              return planLocationsService.getPlanLocationsByLocationIdentifierList(
+                  List.of(location.getIdentifier())).stream();
+            }
+          }).collect(Collectors.toList());
+
     }
     return planLocationsForPerson;
   }
@@ -484,12 +528,12 @@ public class TaskService {
 
           Location parentLocation = locationService.getLocationParent(task.getLocation(),
               plan.getLocationHierarchy());
-          planLocationsForLocation = planLocationsService.getPlanLocationsByLocationIdentifier(
-              parentLocation.getIdentifier());
+          planLocationsForLocation = planLocationsService.getPlanLocationsByPlanAndLocationIdentifier(
+              parentLocation.getIdentifier(), plan.getIdentifier());
 
         } else {
-          planLocationsForLocation = planLocationsService.getPlanLocationsByLocationIdentifier(
-              task.getLocation().getIdentifier());
+          planLocationsForLocation = planLocationsService.getPlanLocationsByPlanAndLocationIdentifier(
+              task.getLocation().getIdentifier(), plan.getIdentifier());
         }
       }
     }
