@@ -64,66 +64,6 @@ public class DashboardService {
   ReadOnlyKeyValueStore<String, PersonBusinessStatusAggregate> personBusinessStatus;
   boolean datastoresInitialized = false;
 
-
-  public TableRow getRowData(UUID planIdentifier, UUID parentLocationIdentifier,
-      Boolean getChildren, ReportTypeEnum reportTypeEnum) {
-
-    initDataStoresIfNecessary();
-
-    Plan plan = planService.getPlanByIdentifier(planIdentifier);
-
-    List<PlanLocationDetails> childrenLocations = new ArrayList<>();
-    if (parentLocationIdentifier == null) {
-      childrenLocations.add(locationService.getRootLocationByPlanIdentifier(planIdentifier));
-    } else {
-      Location location = locationService.findByIdentifier(parentLocationIdentifier);
-      int structureNodeIndex = plan.getLocationHierarchy().getNodeOrder().indexOf("structure");
-      int locationNodeIndex = plan.getLocationHierarchy().getNodeOrder().indexOf(location.getGeographicLevel().getName());
-      if(locationNodeIndex + 1 < structureNodeIndex) {
-        childrenLocations = locationService.getAssignedLocationsByParentIdentifierAndPlanIdentifier(
-            parentLocationIdentifier, planIdentifier);
-      }else {
-        childrenLocations = locationService.getLocationsByParentIdentifierAndPlanIdentifier(
-            parentLocationIdentifier, planIdentifier);
-      }
-    }
-
-    List<RowData> rowDatas = childrenLocations.stream().map(childLocation -> {
-
-      switch (reportTypeEnum) {
-
-        case MDA_FULL_COVERAGE:
-          return getMDAFullCoverageData(planIdentifier, plan, childLocation.getLocation());
-
-        case MDA_FULL_COVERAGE_OPERATIONAL_AREA_LEVEL:
-          return getMDAFullCoverageOperationalAreaLevelData(planIdentifier, plan, childLocation.getLocation());
-
-        case IRS_FULL_COVERAGE:
-          return getIRSFullData(childLocation.getLocation());
-
-      }
-      return null;
-    }).collect(Collectors.toList());
-
-    TableRow tableRow = new TableRow();
-    tableRow.setRowData(rowDatas);
-    tableRow.setPlanIdentifier(planIdentifier);
-    tableRow.setReportTypeEnum(reportTypeEnum);
-    tableRow.setParentLocationIdentifier(parentLocationIdentifier);
-
-    Map<UUID, Long> childrenCount = locationRelationshipService.getLocationChildrenCount(
-            plan.getLocationHierarchy().getIdentifier())
-        .stream().filter(loc -> loc.getParentIdentifier() != null)
-        .collect(Collectors.toMap(loc -> UUID.fromString(loc.getParentIdentifier()),
-            loc -> loc.getChildrenCount()));
-
-    tableRow.getRowData().forEach(row -> row.setChildrenNumber(
-        childrenCount.containsKey(row.getLocationIdentifier()) ? childrenCount.get(
-            row.getLocationIdentifier()) : 0));
-
-    return tableRow;
-  }
-
   private RowData getIRSFullData(Location childLocation) {
     Map<String, ColumnData> columns = new HashMap<>();
     RowData rowData = new RowData();
