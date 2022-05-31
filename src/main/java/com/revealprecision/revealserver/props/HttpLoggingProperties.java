@@ -20,5 +20,5 @@ public class HttpLoggingProperties {
   private boolean shouldLogToConsole = true;
   private boolean shouldLogToDatabase = true;
 
-  private final Integer logLength = 2000;
+  private  Integer logLength = 2000;
 }
