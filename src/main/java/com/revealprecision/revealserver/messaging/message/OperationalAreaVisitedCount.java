@@ -4,14 +4,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
-import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Setter
 @Getter
-@Data
 @AllArgsConstructor
 @NoArgsConstructor
 public class OperationalAreaVisitedCount extends Message {
@@ -20,7 +18,6 @@ public class OperationalAreaVisitedCount extends Message {
 
  @Setter
  @Getter
- @Data
  @AllArgsConstructor
  @NoArgsConstructor
  public static class IndividualOperationalAreaCountsByBusinessStatus {

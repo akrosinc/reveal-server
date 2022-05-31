@@ -60,7 +60,7 @@ public class EntityFilterService {
         planIdentifier);
 
     log.debug("plan_locations size {} ",locations.size());
-    log.debug("plan_locations {} ",locations);
+    log.trace("plan_locations {} ",locations);
 
     if (locations.isEmpty()) {
       return new ArrayList<>();
@@ -90,7 +90,7 @@ public class EntityFilterService {
           locationsForTaskGeneration);
 
       log.debug("structures size: {}",structures.size());
-      log.debug("structures: {}",structures);
+      log.trace("structures: {}",structures);
 
       if (query == null) {
         if (ActionUtils.isActionForLocation(action)) {

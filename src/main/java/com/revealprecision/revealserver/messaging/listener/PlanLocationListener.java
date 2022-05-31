@@ -17,7 +17,7 @@ public class PlanLocationListener extends Listener {
 
   @KafkaListener(topics = "#{kafkaConfigProperties.topicMap.get('PLAN_LOCATION_ASSIGNED')}", groupId = "reveal_server_group")
   public void listenGroupFoo(PlanLocationAssignMessage message) {
-    System.out.println("Received Message in group foo: " + message.toString());
+    log.info("Received Message in group foo: {}" , message.toString());
     init();
     taskService.generateTasksByPlanId(UUID.fromString(message.getPlanIdentifier()),message.getOwnerId());
     taskService.cancelApplicableTasksByPlanId(UUID.fromString(message.getPlanIdentifier()),message.getOwnerId());

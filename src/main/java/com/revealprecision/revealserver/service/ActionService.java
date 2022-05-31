@@ -85,4 +85,8 @@ public class ActionService {
   public Action findByTitle(String title) {
     return actionRepository.findByTitle(title);
   }
+
+  public Action findByTitleAndPlanIdentifier(String title, UUID planIdentifier) {
+    return actionRepository.findByTitleAndGoal_Plan_Identifier(title, planIdentifier);
+  }
 }
