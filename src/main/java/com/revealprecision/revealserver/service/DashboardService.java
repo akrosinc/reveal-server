@@ -39,7 +39,6 @@ import org.springframework.stereotype.Service;
 
 @RequiredArgsConstructor
 @Service
-//@DependsOn("OperationalAreaTable")
 public class DashboardService {
 
   public static final String TREATMENT_COVERAGE = "Treatment coverage";
