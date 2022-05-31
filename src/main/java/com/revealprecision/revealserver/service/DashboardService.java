@@ -75,60 +75,6 @@ public class DashboardService {
   ReadOnlyKeyValueStore<String, LocationBusinessStatusAggregate> locationBusinessState;
   boolean datastoresInitialized = false;
 
-  public TableRow getRowData(UUID planIdentifier, UUID parentLocationIdentifier,
-      Boolean getChildren, ReportTypeEnum reportTypeEnum) {
-
-    initDataStoresIfNecessary();
-
-    Plan plan = planService.getPlanByIdentifier(planIdentifier);
-
-    parentLocationIdentifier = getParentLocation(planIdentifier, parentLocationIdentifier, plan);
-    UUID effectiveParentLocationIdentifier = parentLocationIdentifier;
-
-    List<Location> childrenLocations = getChildrenLocations(parentLocationIdentifier, getChildren,
-        plan);
-
-    List<RowData> rowDatas = childrenLocations.stream().map(childLocation -> {
-
-      switch (reportTypeEnum) {
-
-        case MDA_FULL_COVERAGE:
-          switch (childLocation.getGeographicLevel().getName()) {
-            case "structure":
-              return getMDAFullCoverageStructureLevelData(plan, childLocation,
-                  effectiveParentLocationIdentifier);
-            case "operational":
-              return getMDAFullCoverageOperationalAreaLevelData(plan,
-                  childLocation);
-            default:
-              return getMDAFullCoverageData(plan, childLocation);
-          }
-
-        case IRS_FULL_COVERAGE:
-          return getIRSFullData(childLocation);
-      }
-      return null;
-    }).collect(Collectors.toList());
-
-    TableRow tableRow = new TableRow();
-    tableRow.setRowData(rowDatas);
-    tableRow.setPlanIdentifier(planIdentifier);
-    tableRow.setReportTypeEnum(reportTypeEnum);
-    tableRow.setParentLocationIdentifier(parentLocationIdentifier);
-
-    Map<UUID, Long> childrenCount = locationRelationshipService.getLocationChildrenCount(
-            plan.getLocationHierarchy().getIdentifier())
-        .stream().filter(loc -> loc.getParentIdentifier() != null)
-        .collect(Collectors.toMap(loc -> UUID.fromString(loc.getParentIdentifier()),
-            loc -> loc.getChildrenCount()));
-
-    tableRow.getRowData().forEach(row -> row.setChildrenNumber(
-        childrenCount.containsKey(row.getLocationIdentifier()) ? childrenCount.get(
-            row.getLocationIdentifier()) : 0));
-
-    return tableRow;
-  }
-
   private List<Location> getChildrenLocations(UUID parentLocationIdentifier, Boolean getChildren,
       Plan plan) {
     List<Location> childrenLocations;
@@ -160,6 +106,8 @@ public class DashboardService {
 
   public FeatureSetResponse getDataForReport(String reportType, UUID planIdentifier,
       UUID parentIdentifier) {
+
+
     ReportTypeEnum reportTypeEnum = LookupUtil.lookup(ReportTypeEnum.class, reportType);
     Plan plan = planService.getPlanByIdentifier(planIdentifier);
     List<String> applicableReportTypes = ApplicableReportsEnum.valueOf(
@@ -173,8 +121,16 @@ public class DashboardService {
     if (parentIdentifier == null) {
       locationDetails.add(locationService.getRootLocationByPlanIdentifier(planIdentifier));
     } else {
-      locationDetails = locationService.getLocationsByParentIdentifierAndPlanIdentifier(
-          parentIdentifier, planIdentifier);
+      Location location = locationService.findByIdentifier(parentIdentifier);
+      int structureNodeIndex = plan.getLocationHierarchy().getNodeOrder().indexOf("structure");
+      int locationNodeIndex = plan.getLocationHierarchy().getNodeOrder().indexOf(location.getGeographicLevel().getName());
+      if(locationNodeIndex + 1 < structureNodeIndex) {
+        locationDetails = locationService.getAssignedLocationsByParentIdentifierAndPlanIdentifier(
+            parentIdentifier, planIdentifier);
+      }else {
+        locationDetails = locationService.getLocationsByParentIdentifierAndPlanIdentifier(
+            parentIdentifier, planIdentifier);
+      }
     }
 
     initDataStoresIfNecessary();

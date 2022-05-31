@@ -264,6 +264,12 @@ public class LocationRelationshipService {
         parentLocationIdentifiers, planIdentifier);
   }
 
+  public List<PlanLocationDetails> getAssignedLocationChildrenByLocationParentIdentifierAndPlanIdentifier(
+      UUID parentLocationIdentifiers, UUID planIdentifier) {
+    return locationRelationshipRepository.getAssignedLocationDetailsByParentIdAndPlanId(
+        parentLocationIdentifiers, planIdentifier);
+  }
+
   public PlanLocationDetails getRootLocationDetailsByPlanId(UUID planIdentifier) {
     return locationRelationshipRepository.getRootLocationDetailsByAndPlanId(planIdentifier);
   }
