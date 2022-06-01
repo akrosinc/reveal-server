@@ -141,9 +141,8 @@ public class PersonBusinessStatusStream {
           aggregate.setPersonTreated(personTreated);
         }
       }
-      if (!personState.get(personMetadataUnpackedEvent.getEntityId()).getState()
-          .equals("Not Visited") && (!personState.get(personMetadataUnpackedEvent.getEntityId())
-          .getState().equals("Ineligible"))) {
+      if (!personState.get(personMetadataUnpackedEvent.getEntityId())
+          .getState().equals("Ineligible")) {
         if (!aggregate.getPersonEligible().contains(personMetadataUnpackedEvent.getEntityId())) {
           List<UUID> personEligible = aggregate.getPersonEligible();
           personEligible.add(personMetadataUnpackedEvent.getEntityId());

@@ -4,9 +4,6 @@ public class KafkaConstants {
 
   public static final String PLAN_UPDATE = "PLAN_UPDATE";
   public static final String TASK = "TASK";
-  public static final String TASK_PARENT_PLAN = "TASK_PARENT_PLAN";
-  public static final String PLAN_STRUCTURES_ASSIGNED = "PLAN_STRUCTURES_ASSIGNED";
-  public static final String PLAN_STRUCTURES_COUNTS = "PLAN_STRUCTURES_COUNTS";
   public static final String PLAN_LOCATION_ASSIGNED = "PLAN_LOCATION_ASSIGNED";
   public static final String LOCATIONS_IMPORTED = "LOCATIONS_IMPORTED";
   public static final String LOCATION_METADATA_UPDATE = "LOCATION_METADATA_UPDATE";

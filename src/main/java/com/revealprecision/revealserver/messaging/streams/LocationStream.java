@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.serialization.Serdes;
+import org.apache.kafka.common.utils.Bytes;
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.Consumed;
@@ -26,6 +27,7 @@ import org.apache.kafka.streams.kstream.Grouped;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KTable;
 import org.apache.kafka.streams.kstream.Materialized;
+import org.apache.kafka.streams.state.KeyValueStore;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.support.serializer.JsonSerde;
@@ -111,24 +113,20 @@ public class LocationStream {
         .selectKey((key, locationAssigned) -> getLocationPlanAncestorKey(locationAssigned))
         .mapValues((key, locationAssigned) -> locationAssigned.isAssigned() ? locationAssigned : null);
 
-    stringLocationAssignedKStream.to(
-        kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_STRUCTURES_ASSIGNED));
+    KTable<String, LocationAssigned> tableOfAssignedStructures = stringLocationAssignedKStream
+        .repartition()
+        .toTable(Materialized.<String, LocationAssigned, KeyValueStore<Bytes, byte[]>>as(kafkaProperties.getStoreMap()
+            .get(KafkaConstants.tableOfAssignedStructuresWithParentKeyed))
+            .withKeySerde(Serdes.String())
+            .withValueSerde(new JsonSerde<>(LocationAssigned.class)));
 
-    KTable<String, LocationAssigned> tableOfAssignedStructures = streamsBuilder.table(
-        kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_STRUCTURES_ASSIGNED)
-        , Consumed.with(Serdes.String(), new JsonSerde<>(LocationAssigned.class))
-        , Materialized.as(kafkaProperties.getStoreMap()
-            .get(KafkaConstants.tableOfAssignedStructuresWithParentKeyed)));
-
-    KTable<String, Long> assignedStructureCountPerParent = tableOfAssignedStructures
+    tableOfAssignedStructures
         .groupBy((key, locationAssigned) -> KeyValue.pair(
                 locationAssigned.getPlanIdentifier() + "_" + locationAssigned.getAncestor(),
                 locationAssigned),
             Grouped.with(Serdes.String(), new JsonSerde<>(LocationAssigned.class)))
         .count(Materialized.as(
             kafkaProperties.getStoreMap().get(KafkaConstants.assignedStructureCountPerParent)));
-    assignedStructureCountPerParent.toStream()
-        .to(kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_STRUCTURES_COUNTS));
 
     return locationsAssignedStream;
   }
