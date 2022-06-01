@@ -103,7 +103,7 @@ public class EventClientFacadeService {
     List<EventFacade> failedEvents = new ArrayList<>();
     eventFacadeList.forEach(eventFacade -> {
       try {
-//        saveEvent(eventFacade);
+        saveEvent(eventFacade);
         eventFacade.getObs().forEach(obs -> {
           if(metadataToProcess.contains(obs.getFieldCode())) {
             UUID baseEntityId = UUID.fromString(eventFacade.getBaseEntityId());
@@ -129,8 +129,6 @@ public class EventClientFacadeService {
                   .nameSuffix("")
                   .gender("")
                   .build();
-              blankPerson.setCreatedBy("00000000-0000-0000-0000-000000000000");
-              blankPerson.setModifiedBy("00000000-0000-0000-0000-000000000000");
               blankPerson.setEntityStatus(EntityStatus.ACTIVE);
               personService.createPerson(blankPerson);
               eventConsumptionTemplate.send(TopicConstants.EVENT_CONSUMPTION, EventMetadata.builder()
