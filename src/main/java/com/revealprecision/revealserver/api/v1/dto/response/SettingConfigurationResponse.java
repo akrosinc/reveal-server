@@ -9,6 +9,5 @@ import lombok.Setter;
 @Setter
 @Builder
 public class SettingConfigurationResponse {
-  private String identifier; //not uuid, but the identifier of configuration, like global_configs
   private List<SettingResponse> settings;
 }

@@ -12,7 +12,7 @@ public class SettingConfigurationResponseFactory {
 
   public static SettingConfigurationResponse fromSettingsAndSettingTypeIdentifier(List<Setting> settings,String settingTypeIdentifier) {
     SettingConfigurationResponse settingConfigurationResponse = SettingConfigurationResponse
-        .builder().identifier(settingTypeIdentifier).settings(settings.stream().map(SettingResponseFactory::fromEntity).collect(
+        .builder().settings(settings.stream().map(SettingResponseFactory::fromEntity).collect(
             Collectors.toList())).build();
     return settingConfigurationResponse;
   }
