@@ -9,5 +9,6 @@ import lombok.Setter;
 @Setter
 @Builder
 public class SettingConfigurationResponse {
+  private String identifier;
   private List<SettingResponse> settings;
 }
