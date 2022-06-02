@@ -121,8 +121,8 @@ public class LocationService {
       UUID planIdentifier) {
     Plan plan = planService.getPlanByIdentifier(planIdentifier);
     Location location = findByIdentifier(parentIdentifier);
-    Map<UUID, Long> childrenCount = locationRelationshipService.getLocationChildrenCount(
-            plan.getLocationHierarchy().getIdentifier())
+    Map<UUID, Long> childrenCount = locationRelationshipService.getLocationAssignedChildrenCount(
+            plan.getLocationHierarchy().getIdentifier(), planIdentifier)
         .stream().filter(loc -> loc.getParentIdentifier() != null)
         .collect(Collectors.toMap(loc -> UUID.fromString(loc.getParentIdentifier()),
             loc -> loc.getChildrenCount()));

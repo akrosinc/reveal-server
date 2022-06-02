@@ -247,6 +247,11 @@ public class LocationRelationshipService {
     return locationRelationshipRepository.getLocationChildrenCount(locationHierarchyIdentifier);
   }
 
+  public List<LocationChildrenCountProjection> getLocationAssignedChildrenCount(
+      UUID locationHierarchyIdentifier, UUID planIdentifier) {
+    return locationRelationshipRepository.getLocationAssignedChildrenCount(locationHierarchyIdentifier, planIdentifier);
+  }
+
   public long getNumberOfChildren(UUID locationIdentifier) {
     return locationRelationshipRepository.getChildrenNumber(locationIdentifier);
   }
