@@ -56,7 +56,6 @@ public class Setting extends AbstractAuditableEntity {
   public Setting update(SettingRequest settingRequest) {
     this.settingIdentifier = settingRequest.getIdentifier();
     this.type = settingRequest.getType();
-    this.key = settingRequest.getKey();
     this.value = settingRequest.getValue();
     this.values = settingRequest.getValues();
     this.label = settingRequest.getLabel();
