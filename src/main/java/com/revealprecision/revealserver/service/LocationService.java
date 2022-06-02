@@ -118,14 +118,24 @@ public class LocationService {
 
   public List<PlanLocationDetails> getAssignedLocationsByParentIdentifierAndPlanIdentifier(
       UUID parentIdentifier,
-      UUID planIdentifier) {
+      UUID planIdentifier,
+      boolean isBeforeStructure) {
     Plan plan = planService.getPlanByIdentifier(planIdentifier);
     Location location = findByIdentifier(parentIdentifier);
-    Map<UUID, Long> childrenCount = locationRelationshipService.getLocationAssignedChildrenCount(
-            plan.getLocationHierarchy().getIdentifier(), planIdentifier)
-        .stream().filter(loc -> loc.getParentIdentifier() != null)
-        .collect(Collectors.toMap(loc -> UUID.fromString(loc.getParentIdentifier()),
-            loc -> loc.getChildrenCount()));
+    Map<UUID, Long> childrenCount;
+    if(!isBeforeStructure) {
+     childrenCount = locationRelationshipService.getLocationAssignedChildrenCount(
+              plan.getLocationHierarchy().getIdentifier(), planIdentifier)
+          .stream().filter(loc -> loc.getParentIdentifier() != null)
+          .collect(Collectors.toMap(loc -> UUID.fromString(loc.getParentIdentifier()),
+              loc -> loc.getChildrenCount()));
+    }else {
+      childrenCount = locationRelationshipService.getLocationChildrenCount(
+              plan.getLocationHierarchy().getIdentifier())
+          .stream().filter(loc -> loc.getParentIdentifier() != null)
+          .collect(Collectors.toMap(loc -> UUID.fromString(loc.getParentIdentifier()),
+              loc -> loc.getChildrenCount()));
+    }
     List<PlanLocationDetails> response = locationRelationshipService
         .getAssignedLocationChildrenByLocationParentIdentifierAndPlanIdentifier(
             parentIdentifier, planIdentifier);
