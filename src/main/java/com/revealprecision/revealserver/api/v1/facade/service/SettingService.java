@@ -27,7 +27,7 @@ public class SettingService {
     Setting setting = Setting.builder().key(request.getKey()).value(request.getValue())
         .values(request.getValues()).label(request.getLabel()).description(request.getDescription())
         .settingIdentifier(
-            request.getIdentifier()).type(request.getType()).build();
+            request.getSettingIdentifier()).type(request.getType()).build();
     setting.setEntityStatus(EntityStatus.ACTIVE);
     return settingRepository.save(setting);
   }
