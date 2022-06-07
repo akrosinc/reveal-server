@@ -6,10 +6,12 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
 @Setter
 @Getter
 @JsonInclude(value = Include.NON_NULL)
+@ToString
 public class TagValue implements Serializable {
 
   private String valueString;

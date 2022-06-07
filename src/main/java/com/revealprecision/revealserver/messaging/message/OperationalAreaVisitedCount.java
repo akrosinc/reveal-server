@@ -7,11 +7,13 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 
 @Setter
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor
+@ToString
 public class OperationalAreaVisitedCount extends Message {
  private Map<UUID, IndividualOperationalAreaCountsByBusinessStatus> operationalObj = new HashMap<>();
  private Long operationalAreaVisitedCount;
@@ -20,6 +22,7 @@ public class OperationalAreaVisitedCount extends Message {
  @Getter
  @AllArgsConstructor
  @NoArgsConstructor
+ @ToString
  public static class IndividualOperationalAreaCountsByBusinessStatus {
 
   Map<String,Long> counts = new HashMap<>();

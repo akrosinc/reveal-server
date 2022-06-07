@@ -9,11 +9,13 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 
 
 @Setter
 @Getter
 @AllArgsConstructor
+@ToString
 public class PersonBusinessStatusAggregate extends Message {
 
   private Map<UUID,CurrentState> personState;
@@ -34,6 +36,7 @@ public class PersonBusinessStatusAggregate extends Message {
   @Data
   @AllArgsConstructor
   @NoArgsConstructor
+  @ToString
   public static class CurrentState{
 
     private String state;

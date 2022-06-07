@@ -28,6 +28,8 @@ import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KTable;
 import org.apache.kafka.streams.kstream.Materialized;
 import org.apache.kafka.streams.state.KeyValueStore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.support.serializer.JsonSerde;
@@ -41,6 +43,7 @@ public class LocationStream {
   private final LocationService locationService;
   private final KafkaProperties kafkaProperties;
   private final PlanService planService;
+  private final Logger streamLog = LoggerFactory.getLogger("stream-file");
 
   @Bean
   KStream<String, LocationRelationshipMessage> getTotalStructures(
@@ -86,6 +89,8 @@ public class LocationStream {
         kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_LOCATION_ASSIGNED),
         Consumed.with(Serdes.String(), new JsonSerde<>(PlanLocationAssignMessage.class)));
 
+    locationsAssignedStream.peek((k,v)->streamLog.debug("locationsAssignedStream - k: {} v: {}", k,v));
+
     //TODO: remove hardcodings
     //Get structures from the locations assigned to plan
     KStream<String, PlanLocationAssignMessage> stringPlanLocationAssignMessageKStream = locationsAssignedStream
@@ -105,6 +110,8 @@ public class LocationStream {
           return planLocationAssignMessage;
         });
 
+    stringPlanLocationAssignMessageKStream.peek((k,v)->streamLog.debug("stringPlanLocationAssignMessageKStream - k: {} v: {}", k,v));
+
     KStream<String, LocationAssigned> stringLocationAssignedKStream = stringPlanLocationAssignMessageKStream
         .flatMapValues(
             (k, planLocationAssignMessage) -> getStructuresAssignedAndUnAssigned(
@@ -113,6 +120,9 @@ public class LocationStream {
         .selectKey((key, locationAssigned) -> getLocationPlanAncestorKey(locationAssigned))
         .mapValues((key, locationAssigned) -> locationAssigned.isAssigned() ? locationAssigned : null);
 
+    stringLocationAssignedKStream.peek((k,v)->streamLog.debug("stringLocationAssignedKStream - k: {} v: {}", k,v));
+
+
     KTable<String, LocationAssigned> tableOfAssignedStructures = stringLocationAssignedKStream
         .repartition()
         .toTable(Materialized.<String, LocationAssigned, KeyValueStore<Bytes, byte[]>>as(kafkaProperties.getStoreMap()
@@ -120,7 +130,9 @@ public class LocationStream {
             .withKeySerde(Serdes.String())
             .withValueSerde(new JsonSerde<>(LocationAssigned.class)));
 
-    tableOfAssignedStructures
+    tableOfAssignedStructures.toStream().peek((k,v)->streamLog.debug("tableOfAssignedStructures.toStream() - k: {} v: {}", k,v));
+
+    KTable<String, Long> count = tableOfAssignedStructures
         .groupBy((key, locationAssigned) -> KeyValue.pair(
                 locationAssigned.getPlanIdentifier() + "_" + locationAssigned.getAncestor(),
                 locationAssigned),
@@ -128,6 +140,7 @@ public class LocationStream {
         .count(Materialized.as(
             kafkaProperties.getStoreMap().get(KafkaConstants.assignedStructureCountPerParent)));
 
+    count.toStream().peek((k,v)->streamLog.debug("count.toStream() - k: {} v: {}", k,v));
     return locationsAssignedStream;
   }
 

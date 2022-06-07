@@ -33,9 +33,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -47,6 +49,8 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.util.Pair;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -65,6 +69,7 @@ public class LocationRelationshipService {
   private final KafkaTemplate<String, LocationRelationshipMessage> kafkaTemplate;
   private final KafkaProperties kafkaProperties;
   private final LocationBulkRepository locationBulkRepository;
+  private final Logger importLog = LoggerFactory.getLogger("location-import-file");
 
   @Autowired
   public LocationRelationshipService(LocationRelationshipRepository locationRelationshipRepository,
@@ -299,7 +304,6 @@ public class LocationRelationshipService {
         double x = Double.parseDouble(centroid.split(" ")[0]);
         double y = Double.parseDouble(centroid.split(" ")[1]);
         BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
-        boolQuery.must(QueryBuilders.matchQuery("level", parentGeographicLevelName));
         boolQuery.filter(QueryBuilders.geoShapeQuery("geometry", new Point(x, y)).relation(
             ShapeRelation.CONTAINS));
         SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
@@ -310,23 +314,22 @@ public class LocationRelationshipService {
         if (searchResponse.getHits().getHits().length == 0) {
           break;
         } else {
-          BoolQueryBuilder allParentsQuery = QueryBuilders.boolQuery();
-          allParentsQuery.filter(QueryBuilders.geoShapeQuery("geometry", new Point(x, y)).relation(
-              ShapeRelation.CONTAINS));
-          SearchSourceBuilder allParentsSourceBuilder = new SearchSourceBuilder();
-          allParentsSourceBuilder.query(allParentsQuery);
-          SearchRequest allParentsSearchRequest = new SearchRequest("location");
-          allParentsSearchRequest.source(allParentsSourceBuilder);
-          SearchResponse allParentsSearchResponse = client.search(allParentsSearchRequest,
-              RequestOptions.DEFAULT);
-
           Map<String, Object> parents = Arrays.stream(
-                  allParentsSearchResponse.getHits().getHits())
+                  searchResponse.getHits().getHits())
               .filter(SearchHit::hasSource).map(SearchHit::getSourceAsMap)
               .map(sourceMap -> new SimpleEntry<String, Object>(
                   String.valueOf(sourceMap.get("level")), sourceMap.get("id")))
               .collect(Collectors.toMap(Entry::getKey, Entry::getValue, (a, b) -> {
-                log.info("a: {} - b: {}", a, b);
+                importLog.info("Duplicate Key - Results from Elastic Search - {}",
+                    Arrays.stream(searchResponse.getHits().getHits()).map(SearchHit::getSourceAsMap)
+                        .map(sourceMap -> sourceMap.get("externalId") +" -> "+sourceMap.get("level"))
+                        .collect(Collectors.joining(","))
+                        .concat(" for ")
+                        .concat(location.getExternalId().toString())
+                        .concat(" -> ")
+                        .concat(location.getName())
+                        .concat(" - ")
+                        .concat(location.getGeographicLevel().getName()));
                 return b;
               }));
           List<UUID> parentIds = new ArrayList<>();
@@ -341,11 +344,23 @@ public class LocationRelationshipService {
           } catch (NullPointerException e) {
             e.printStackTrace();
             log.error("Error building ancestry - {}", e.getMessage());
+            importLog.debug("Current Ancestry: {}", parents.entrySet().stream()
+                .map(entry -> entry.getValue() + " - > "+entry.getKey())
+                .collect(Collectors.joining(","))
+                .concat(" for ")
+                .concat(location.getExternalId().toString())
+                .concat(" -> ")
+                .concat(location.getName())
+                .concat(" - ")
+                .concat(location.getGeographicLevel().getName()));
           }
 
-          UUID parentLocation = UUID.fromString(searchResponse.getHits().getAt(0).getId());
-          if (parentLocation != null) {
-            Location parentLoc = Location.builder().identifier(parentLocation).build();
+          Optional<SearchHit> immediateParent = Arrays.stream(searchResponse.getHits().getHits())
+              .filter(hit -> hit.getSourceAsMap().get("level").equals(parentGeographicLevelName))
+              .findFirst();
+
+          if (immediateParent.isPresent()) {
+            Location parentLoc = Location.builder().identifier(UUID.fromString(immediateParent.get().getId())).build();
             LocationRelationship locationRelationshipToSave = LocationRelationship.builder()
                 .parentLocation(parentLoc)
                 .location(location)
