@@ -20,6 +20,7 @@ import com.revealprecision.revealserver.props.KafkaProperties;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -143,7 +144,7 @@ public class DashboardService {
   }
 
   private RowData getMDAFullCoverageData(Plan plan, Location childLocation) {
-    Map<String, ColumnData> columns = new HashMap<>();
+    Map<String, ColumnData> columns = new LinkedHashMap<>();
 
     Entry<String, ColumnData> totalStructuresCounts = getTotalStructuresCounts(plan, childLocation,
         TOTAL_STRUCTURES);
@@ -153,30 +154,31 @@ public class DashboardService {
         plan, childLocation, TOTAL_STRUCTURES_TARGETED);
     columns.put(totalStructuresTargetedCount.getKey(), totalStructuresTargetedCount.getValue());
 
-    Entry<String, ColumnData> totalStructuresFound = getTotalStructuresFound(plan,
-        childLocation, TOTAL_STRUCTURES_FOUND);
-    columns.put(totalStructuresFound.getKey(), totalStructuresFound.getValue());
-
-    Entry<String, ColumnData> totalFoundCoverage = getTotalFoundCoverage(plan,
-        childLocation, FOUND_COVERAGE);
-    columns.put(totalFoundCoverage.getKey(), totalFoundCoverage.getValue());
-
-    Entry<String, ColumnData> operationalAreaVisited = operationalAreaVisitedCounts(plan, childLocation, OPERATIONAL_AREA_VISITED);
-    columns.put(operationalAreaVisited.getKey(), operationalAreaVisited.getValue());
+    Entry<String, ColumnData> percentageOfChildrenTreatedToPeopleEligible = getPercentageOfChildrenTreatedToPeopleEligible(
+        plan, childLocation, TREATMENT_COVERAGE);
+    columns.put(percentageOfChildrenTreatedToPeopleEligible.getKey(),
+        percentageOfChildrenTreatedToPeopleEligible.getValue());
 
     Entry<String, ColumnData> noOfTreatedStructures = getNoOfTreatedStructures(plan,
         childLocation, TOTAL_STRUCTURES_RECEIVED_SPAQ);
     columns.put(noOfTreatedStructures.getKey(), noOfTreatedStructures.getValue());
+
+    Entry<String, ColumnData> totalStructuresFound = getTotalStructuresFound(plan,
+        childLocation, TOTAL_STRUCTURES_FOUND);
+    columns.put(totalStructuresFound.getKey(), totalStructuresFound.getValue());
+
+    Entry<String, ColumnData> operationalAreaVisited = operationalAreaVisitedCounts(plan, childLocation, OPERATIONAL_AREA_VISITED);
+    columns.put(operationalAreaVisited.getKey(), operationalAreaVisited.getValue());
+
+    Entry<String, ColumnData> totalFoundCoverage = getTotalFoundCoverage(plan,
+        childLocation, FOUND_COVERAGE);
+    columns.put(totalFoundCoverage.getKey(), totalFoundCoverage.getValue());
 
     Entry<String, ColumnData> percentageOfTreatedStructuresToTotalStructures = getPercentageOfTreatedStructuresToTotalStructures(
         plan, childLocation, DISTRIBUTION_COVERAGE);
     columns.put(percentageOfTreatedStructuresToTotalStructures.getKey(),
         percentageOfTreatedStructuresToTotalStructures.getValue());
 
-    Entry<String, ColumnData> percentageOfChildrenTreatedToPeopleEligible = getPercentageOfChildrenTreatedToPeopleEligible(
-       plan, childLocation, TREATMENT_COVERAGE);
-    columns.put(percentageOfChildrenTreatedToPeopleEligible.getKey(),
-        percentageOfChildrenTreatedToPeopleEligible.getValue());
 
     RowData rowData = new RowData();
     rowData.setLocationIdentifier(childLocation.getIdentifier());
