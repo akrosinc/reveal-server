@@ -37,6 +37,12 @@ public interface LocationRelationshipRepository extends JpaRepository<LocationRe
       + "group by lr.parent_identifier", nativeQuery = true)
   List<LocationChildrenCountProjection> getLocationChildrenCount(UUID locationHierarchyIdentifier);
 
+  @Query(value = "select cast(lr.parent_identifier as varchar) as parentIdentifier, count(lr.parent_identifier) as childrenCount from location_relationship lr "
+      + "inner join plan_locations pl on pl.plan_identifier = :planIdentifier and pl.location_identifier = lr.location_identifier "
+      + "where lr.location_hierarchy_identifier = :locationHierarchyIdentifier "
+      + "group by lr.parent_identifier", nativeQuery = true)
+  List<LocationChildrenCountProjection> getLocationAssignedChildrenCount(UUID locationHierarchyIdentifier, UUID planIdentifier);
+
   @Query(value = "select count(*) from location_relationship lr "
       + "where lr.parent_identifier = :locationIdentifier "
       + "group by lr.parent_identifier", nativeQuery = true)

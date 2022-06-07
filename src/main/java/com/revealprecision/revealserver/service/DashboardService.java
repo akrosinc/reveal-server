@@ -3,27 +3,24 @@ package com.revealprecision.revealserver.service;
 import com.revealprecision.revealserver.api.v1.dto.factory.LocationResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.models.ColumnData;
 import com.revealprecision.revealserver.api.v1.dto.models.RowData;
-import com.revealprecision.revealserver.api.v1.dto.models.TableRow;
 import com.revealprecision.revealserver.api.v1.dto.response.FeatureSetResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationResponse;
 import com.revealprecision.revealserver.enums.ApplicableReportsEnum;
 import com.revealprecision.revealserver.enums.LookupUtil;
 import com.revealprecision.revealserver.enums.ReportTypeEnum;
-import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.exceptions.WrongEnumException;
 import com.revealprecision.revealserver.messaging.KafkaConstants;
 import com.revealprecision.revealserver.messaging.message.LocationBusinessStatusAggregate;
 import com.revealprecision.revealserver.messaging.message.OperationalAreaVisitedCount;
 import com.revealprecision.revealserver.messaging.message.PersonBusinessStatusAggregate;
 import com.revealprecision.revealserver.persistence.domain.Location;
-import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
 import com.revealprecision.revealserver.persistence.domain.Plan;
-import com.revealprecision.revealserver.persistence.domain.PlanLocations;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import com.revealprecision.revealserver.props.KafkaProperties;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -147,7 +144,7 @@ public class DashboardService {
   }
 
   private RowData getMDAFullCoverageData(Plan plan, Location childLocation) {
-    Map<String, ColumnData> columns = new HashMap<>();
+    Map<String, ColumnData> columns = new LinkedHashMap<>();
 
     Entry<String, ColumnData> totalStructuresCounts = getTotalStructuresCounts(plan, childLocation,
         TOTAL_STRUCTURES);
@@ -157,30 +154,31 @@ public class DashboardService {
         plan, childLocation, TOTAL_STRUCTURES_TARGETED);
     columns.put(totalStructuresTargetedCount.getKey(), totalStructuresTargetedCount.getValue());
 
-    Entry<String, ColumnData> totalStructuresFound = getTotalStructuresFound(plan,
-        childLocation, TOTAL_STRUCTURES_FOUND);
-    columns.put(totalStructuresFound.getKey(), totalStructuresFound.getValue());
-
-    Entry<String, ColumnData> totalFoundCoverage = getTotalFoundCoverage(plan,
-        childLocation, FOUND_COVERAGE);
-    columns.put(totalFoundCoverage.getKey(), totalFoundCoverage.getValue());
-
-    Entry<String, ColumnData> operationalAreaVisited = operationalAreaVisitedCounts(plan, childLocation, OPERATIONAL_AREA_VISITED);
-    columns.put(operationalAreaVisited.getKey(), operationalAreaVisited.getValue());
+    Entry<String, ColumnData> percentageOfChildrenTreatedToPeopleEligible = getPercentageOfChildrenTreatedToPeopleEligible(
+        plan, childLocation, TREATMENT_COVERAGE);
+    columns.put(percentageOfChildrenTreatedToPeopleEligible.getKey(),
+        percentageOfChildrenTreatedToPeopleEligible.getValue());
 
     Entry<String, ColumnData> noOfTreatedStructures = getNoOfTreatedStructures(plan,
         childLocation, TOTAL_STRUCTURES_RECEIVED_SPAQ);
     columns.put(noOfTreatedStructures.getKey(), noOfTreatedStructures.getValue());
+
+    Entry<String, ColumnData> totalStructuresFound = getTotalStructuresFound(plan,
+        childLocation, TOTAL_STRUCTURES_FOUND);
+    columns.put(totalStructuresFound.getKey(), totalStructuresFound.getValue());
+
+    Entry<String, ColumnData> operationalAreaVisited = operationalAreaVisitedCounts(plan, childLocation, OPERATIONAL_AREA_VISITED);
+    columns.put(operationalAreaVisited.getKey(), operationalAreaVisited.getValue());
+
+    Entry<String, ColumnData> totalFoundCoverage = getTotalFoundCoverage(plan,
+        childLocation, FOUND_COVERAGE);
+    columns.put(totalFoundCoverage.getKey(), totalFoundCoverage.getValue());
 
     Entry<String, ColumnData> percentageOfTreatedStructuresToTotalStructures = getPercentageOfTreatedStructuresToTotalStructures(
         plan, childLocation, DISTRIBUTION_COVERAGE);
     columns.put(percentageOfTreatedStructuresToTotalStructures.getKey(),
         percentageOfTreatedStructuresToTotalStructures.getValue());
 
-    Entry<String, ColumnData> percentageOfChildrenTreatedToPeopleEligible = getPercentageOfChildrenTreatedToPeopleEligible(
-       plan, childLocation, TREATMENT_COVERAGE);
-    columns.put(percentageOfChildrenTreatedToPeopleEligible.getKey(),
-        percentageOfChildrenTreatedToPeopleEligible.getValue());
 
     RowData rowData = new RowData();
     rowData.setLocationIdentifier(childLocation.getIdentifier());
@@ -556,7 +554,7 @@ public class DashboardService {
       int locationNodeIndex = plan.getLocationHierarchy().getNodeOrder().indexOf(location.getGeographicLevel().getName());
       if(locationNodeIndex + 1 < structureNodeIndex) {
         locationDetails = locationService.getAssignedLocationsByParentIdentifierAndPlanIdentifier(
-            parentIdentifier, planIdentifier);
+            parentIdentifier, planIdentifier, (locationNodeIndex + 2) == structureNodeIndex);
       }else {
         locationDetails = locationService.getLocationsByParentIdentifierAndPlanIdentifier(
             parentIdentifier, planIdentifier);
