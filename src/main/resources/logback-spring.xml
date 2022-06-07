@@ -11,7 +11,8 @@
   <springProperty scope="context" name="totalSizeCap" source="reveal.logging.total-size-cap"/>
   <springProperty scope="context" name="loggingLocationImportFileName" source="reveal.logging.location-import-file-name"/>
   <springProperty scope="context" name="loggingLocationImportRollingFileName" source="reveal.logging.location-import-rolling-file-name"/>
-
+  <springProperty scope="context" name="loggingMonitorFileName" source="reveal.logging.monitor-file-name"/>
+  <springProperty scope="context" name="loggingMonitorRollingFileName" source="reveal.logging.monitor-rolling-file-name"/>
 
   <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
     <encoder>
@@ -45,6 +46,19 @@
     </encoder>
   </appender>
 
+  <appender name="MONITOR-FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${loggingPath}${loggingMonitorFileName}</file>
+    <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+      <fileNamePattern>${loggingPath}${loggingMonitorRollingFileName}</fileNamePattern>
+      <maxHistory>${maxHistory}</maxHistory>
+      <maxFileSize>${maxFileSize}</maxFileSize>
+      <totalSizeCap>${totalSizeCap}</totalSizeCap>
+    </rollingPolicy>
+    <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+      <pattern>${loggingPattern}</pattern>
+    </encoder>
+  </appender>
+
   <appender name="LOCATION-IMPORT-FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
     <file>${loggingPath}${loggingLocationImportFileName}</file>
     <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
@@ -58,6 +72,10 @@
 
   <logger name="stream-file" level="DEBUG" additivity="false" >
     <appender-ref ref="STREAM-FILE" />
+  </logger>
+
+  <logger name="monitor-file" level="DEBUG" additivity="false" >
+    <appender-ref ref="MONITOR-FILE" />
   </logger>
 
   <logger name="location-import-file" level="DEBUG" additivity="false" >
