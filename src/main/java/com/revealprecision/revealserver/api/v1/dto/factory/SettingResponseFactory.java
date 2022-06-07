@@ -12,6 +12,6 @@ public class SettingResponseFactory {
     return SettingResponse.builder().id(setting.getIdentifier())
         .key(setting.getKey()).value(setting.getValue()).values(setting.getValues())
         .label(setting.getLabel()).description(setting.getDescription())
-        .identifier(setting.getSettingIdentifier()).type(setting.getType()).build();
+        .settingIdentifier(setting.getSettingIdentifier()).type(setting.getType()).build();
   }
 }

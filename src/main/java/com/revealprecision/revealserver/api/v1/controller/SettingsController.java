@@ -8,6 +8,7 @@ import com.revealprecision.revealserver.api.v1.dto.response.SettingResponse;
 import com.revealprecision.revealserver.api.v1.facade.service.SettingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -32,12 +33,12 @@ public class SettingsController {
   @Operation(summary = "Fetch Settings Configuration by specifying settingsIdentifier", description = "Fetch Settings Configuration by specifying settingsTypeIdentifier, to support mobile application the search parameter is call identifier (don't be confused)", tags = {
       "Setting"})
   @GetMapping(value = "/sync", produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<SettingConfigurationResponse> getSettings(
+  public ResponseEntity<List<SettingConfigurationResponse>> getSettings(
       @Parameter(description = "used to filter the type of configs to fetch") @RequestParam(name = "identifier", defaultValue = "global_configs") String identifier,
       @Parameter(description = "Required by previous implementation, currently not used") @RequestParam(name = "serverVersion", defaultValue = "0") String serverVersion) {
-    return ResponseEntity.status(HttpStatus.OK).body(SettingConfigurationResponseFactory
+    return ResponseEntity.status(HttpStatus.OK).body(List.of(SettingConfigurationResponseFactory
         .fromSettingsAndSettingTypeIdentifier(
-            settingService.findExistingSettingsByTypeIdentifier(identifier), identifier));
+            settingService.findExistingSettingsByTypeIdentifier(identifier), identifier)));
   }
 
   @Operation(summary = "Create a setting by supplying key and other required details", description = "Create a setting by supplying key and other required details", tags = {

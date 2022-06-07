@@ -20,6 +20,6 @@ public class SettingResponse {
   private List<Object> values;
   private String label;
   private String description;
-  private String identifier; //not uuid but the type of setting, like global_config
+  private String settingIdentifier;
   private String type;
 }
