@@ -9,8 +9,10 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
 @Setter @Getter
+@ToString
 public class Metadata implements Serializable {
 
   private UUID planId;

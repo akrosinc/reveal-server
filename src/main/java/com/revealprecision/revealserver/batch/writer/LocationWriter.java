@@ -24,6 +24,7 @@ public class LocationWriter implements ItemWriter<Location> {
       LocationElastic loc = new LocationElastic();
       loc.setId(location.getIdentifier().toString());
       loc.setLevel(location.getGeographicLevel().getName());
+      loc.setExternalId(location.getExternalId().toString());
       loc.setGeometry(location.getGeometry());
       locations.add(loc);
     });

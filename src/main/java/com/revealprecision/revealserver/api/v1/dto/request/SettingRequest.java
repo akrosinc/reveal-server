@@ -21,7 +21,7 @@ public class SettingRequest {
   @NotBlank
   private String description;
   @NotBlank
-  private String identifier;          //not uuid but the type of setting, like global_config
+  private String settingIdentifier;
   @NotBlank
   private String type;
 }
