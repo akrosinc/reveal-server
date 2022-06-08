@@ -184,7 +184,6 @@ public class TaskGenerationStream {
 
   private TaskEvent getPersonTaskEventWithLocation(TaskEvent personTask, Location personLocation) {
     TaskEvent taskEvent = TaskEventFactory.copyTaskEvent(personTask);
-    taskEvent.setBaseEntityIdentifier(personLocation.getIdentifier());
     return taskEvent;
   }
 
