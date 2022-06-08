@@ -24,6 +24,9 @@ public class LocationElastic {
   @Field(type = FieldType.Text)
   private String level;
 
+  @Field(type = FieldType.Text)
+  private String externalId;
+
   @GeoShapeField
   Geometry geometry;
 }
