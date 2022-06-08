@@ -177,10 +177,10 @@ public class TaskEventFactory {
         .ownerId(taskEventOriginal.getOwnerId())
         .build();
     if (taskEventOriginal.getLocationId()!=null){
-      taskEvent.setLocationId(taskEvent.getLocationId());
+      taskEvent.setLocationId(taskEventOriginal.getLocationId());
     }
     if (taskEventOriginal.getPersonId()!=null){
-      taskEvent.setPersonId(taskEvent.getPersonId());
+      taskEvent.setPersonId(taskEventOriginal.getPersonId());
     }
     return taskEvent;
   }
