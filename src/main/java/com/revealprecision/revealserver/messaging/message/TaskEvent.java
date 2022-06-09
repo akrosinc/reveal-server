@@ -44,6 +44,8 @@ public class TaskEvent  extends Message  {
 
   private String personId;
 
+  private UUID personLocationId;
+
   private String locationId;
 
   private UUID baseEntityIdentifier;
@@ -59,4 +61,5 @@ public class TaskEvent  extends Message  {
   private List<UUID> ancestors;
 
   private UUID flattenedLocationAncestor;
+
 }

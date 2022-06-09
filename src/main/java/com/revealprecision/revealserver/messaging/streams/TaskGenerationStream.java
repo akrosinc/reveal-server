@@ -78,7 +78,7 @@ public class TaskGenerationStream {
     // for each person task get that persons locations and create a task event for each location
     KStream<String, TaskEvent> personStream = splitStreamMap.get("splitPersonStream")
         .flatMapValues((k, personTask) -> duplicatePersonTasksPerPersonsLocation(personTask))
-        .selectKey((k, taskEvent) -> taskEvent.getBaseEntityIdentifier().toString());
+        .selectKey((k, taskEvent) -> taskEvent.getPersonLocationId().toString());
 
     // merge all streams back together (now that person locations are known)
     KStream<String, TaskEvent> mergedStream =
@@ -90,7 +90,7 @@ public class TaskGenerationStream {
 
       LocationRelationship locationRelationshipsForLocation = locationRelationshipService.getLocationRelationshipsForLocation(
           taskEvent.getAction().getGoal().getPlan().getLocationHierarchy().getIdentifier(),
-          taskEvent.getBaseEntityIdentifier());
+          taskEvent.getPersonLocationId()!= null ? taskEvent.getPersonLocationId() : taskEvent.getBaseEntityIdentifier());
 
       taskEvent.setAncestors(locationRelationshipsForLocation.getAncestry());
       return taskEvent;
@@ -184,7 +184,7 @@ public class TaskGenerationStream {
 
   private TaskEvent getPersonTaskEventWithLocation(TaskEvent personTask, Location personLocation) {
     TaskEvent taskEvent = TaskEventFactory.copyTaskEvent(personTask);
-    taskEvent.setBaseEntityIdentifier(personLocation.getIdentifier());
+    taskEvent.setPersonLocationId(personLocation.getIdentifier());
     return taskEvent;
   }
 
