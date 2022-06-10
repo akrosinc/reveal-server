@@ -81,12 +81,25 @@ public class LocationStream {
   }
 
   @Bean
+  KStream<String, PlanLocationAssignMessage> propogateLocationAssignment(
+      StreamsBuilder streamsBuilder) {
+
+    KStream<String, PlanLocationAssignMessage> locationsAssignedStream = streamsBuilder.stream(
+        kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_LOCATION_ASSIGNED),
+        Consumed.with(Serdes.String(), new JsonSerde<>(PlanLocationAssignMessage.class)));
+
+    //Doing this so that we can rewind this topic without rewinding to cause task generation from running again....
+    locationsAssignedStream.to(kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_LOCATION_ASSIGNED_STREAM));
+    return locationsAssignedStream;
+  }
+
+  @Bean
   KStream<String, PlanLocationAssignMessage> getAssignedStructures(
       StreamsBuilder streamsBuilder) {
 
     // getting values from plan assignment
     KStream<String, PlanLocationAssignMessage> locationsAssignedStream = streamsBuilder.stream(
-        kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_LOCATION_ASSIGNED),
+        kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_LOCATION_ASSIGNED_STREAM),
         Consumed.with(Serdes.String(), new JsonSerde<>(PlanLocationAssignMessage.class)));
 
     locationsAssignedStream.peek((k,v)->streamLog.debug("locationsAssignedStream - k: {} v: {}", k,v));
