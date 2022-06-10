@@ -11,6 +11,7 @@ import com.revealprecision.revealserver.enums.ReportTypeEnum;
 import com.revealprecision.revealserver.exceptions.WrongEnumException;
 import com.revealprecision.revealserver.messaging.KafkaConstants;
 import com.revealprecision.revealserver.messaging.message.LocationBusinessStatusAggregate;
+import com.revealprecision.revealserver.messaging.message.LocationPersonBusinessStateCountAggregate;
 import com.revealprecision.revealserver.messaging.message.OperationalAreaVisitedCount;
 import com.revealprecision.revealserver.messaging.message.PersonBusinessStatusAggregate;
 import com.revealprecision.revealserver.persistence.domain.Location;
@@ -51,7 +52,7 @@ public class DashboardService {
   public static final String DISTRIBUTION_COVERAGE_PERCENTAGE = "Distribution Coverage Percentage";
   public static final String STRUCTURE_DISTRIBUTION_EFFECTIVENESS_PERCENTAGE = "Structure Distribution Effectiveness Percentage";
   public static final String INDIVIDUAL_DISTRIBUTION_EFFECTIVENESS_PERCENTAGE = "Individual Distribution Effectiveness Percentage";
-  public static final String STRUCTURE_BUSINESS_STATE = "Structure Business State";
+  public static final String STRUCTURE_STATUS = "Structure Status";
   public static final String NO_OF_ELIGIBLE_CHILDREN = "Number of Eligible Children";
   public static final String NO_OF_TREATED_CHILDREN = "Number of Treated Children";
 
@@ -59,9 +60,7 @@ public class DashboardService {
   private final StreamsBuilderFactoryBean getKafkaStreams;
   private final KafkaProperties kafkaProperties;
   private final LocationService locationService;
-  private final LocationRelationshipService locationRelationshipService;
   private final PlanService planService;
-  private final PlanLocationsService planLocationsService;
 
   ReadOnlyKeyValueStore<String, Long> countOfAssignedStructures;
   ReadOnlyKeyValueStore<String, Long> structureCounts;
@@ -69,6 +68,7 @@ public class DashboardService {
   ReadOnlyKeyValueStore<String, OperationalAreaVisitedCount> countOfOperationalArea;
   ReadOnlyKeyValueStore<String, PersonBusinessStatusAggregate> personBusinessStatus;
   ReadOnlyKeyValueStore<String, LocationBusinessStatusAggregate> locationBusinessState;
+  ReadOnlyKeyValueStore<String, LocationPersonBusinessStateCountAggregate> structurePeopleCounts;
   boolean datastoresInitialized = false;
 
 
@@ -87,18 +87,18 @@ public class DashboardService {
     Map<String, ColumnData> columns = new HashMap<>();
 
     Entry<String, ColumnData> businessStateColumnData = getLocationBusinessState(plan,
-        childLocation, STRUCTURE_BUSINESS_STATE, parentLocationIdentifier);
+        childLocation, STRUCTURE_STATUS, parentLocationIdentifier);
     columns.put(businessStateColumnData.getKey(), businessStateColumnData.getValue());
 
     Entry<String, ColumnData> noOfEligibleChildrenByLocationColumnData = getNoOfEligibleChildrenByLocation(
         plan,
-        childLocation, NO_OF_ELIGIBLE_CHILDREN, parentLocationIdentifier);
+        childLocation, NO_OF_ELIGIBLE_CHILDREN);
     columns.put(noOfEligibleChildrenByLocationColumnData.getKey(),
         noOfEligibleChildrenByLocationColumnData.getValue());
 
     Entry<String, ColumnData> noOfTreatedChildrenByLocationColumnData = getNoOfTreatedChildrenByLocation(
         plan,
-        childLocation, NO_OF_TREATED_CHILDREN, parentLocationIdentifier);
+        childLocation, NO_OF_TREATED_CHILDREN);
     columns.put(noOfTreatedChildrenByLocationColumnData.getKey(),
         noOfTreatedChildrenByLocationColumnData.getValue());
 
@@ -317,8 +317,8 @@ public class DashboardService {
 
     String businessStateDataStoreQueryKey =
         plan.getIdentifier() + "_" +
-            plan.getLocationHierarchy().getIdentifier() + "_" +
             parentLocationIdentifier + "_" +
+            plan.getLocationHierarchy().getIdentifier() + "_" +
             childLocation.getIdentifier();
 
     LocationBusinessStatusAggregate locationBusinessStatusAggregate = locationBusinessState.get(
@@ -339,26 +339,67 @@ public class DashboardService {
     return new SimpleEntry<>(columnName, locationBusinessStateColumnData);
   }
 
-  private Entry<String, ColumnData> getNoOfEligibleChildrenByLocation(Plan plan,
-      Location childLocation, String columnName, UUID parentLocationIdentifier) {
+  private Entry<String, ColumnData> getNoOfTreatedChildrenByLocation(Plan plan,
+      Location childLocation, String columnName) {
 
 //TODO: need to create a datastore for this metric
+    String structurePeopleQueryKey =
+        plan.getIdentifier() + "_" + childLocation.getIdentifier();
+    LocationPersonBusinessStateCountAggregate locationPersonBusinessStateCountAggregate = structurePeopleCounts.get(
+        structurePeopleQueryKey);
 
-    ColumnData noOfEligibleChildrenColumnData = new ColumnData();
-    noOfEligibleChildrenColumnData.setValue(0L);
-    noOfEligibleChildrenColumnData.setMeta(null);
-    noOfEligibleChildrenColumnData.setIsPercentage(false);
+    Long allTreatedPeopleInStructure = 0L;
 
-    return new SimpleEntry<>(columnName, noOfEligibleChildrenColumnData);
+    if (locationPersonBusinessStateCountAggregate != null) {
+      Long allSMCCompletePeopleInStructure = locationPersonBusinessStateCountAggregate.getStructureBusinessStateCountMap()
+          .entrySet()
+          .stream()
+          .filter(entry -> entry.getKey().equals("SMC Complete"))
+          .map(entry -> entry.getValue() != null ? entry.getValue() : 0L)
+          .reduce(0L, Long::sum);
+
+      Long allSPAQCompletePeopleInStructure = locationPersonBusinessStateCountAggregate.getStructureBusinessStateCountMap()
+          .entrySet()
+          .stream().filter(entry -> entry.getKey().equals("SPAQ Complete"))
+          .map(entry -> entry.getValue() != null ? entry.getValue() : 0L)
+          .reduce(0L, Long::sum);
+
+      allTreatedPeopleInStructure =
+          allSMCCompletePeopleInStructure + allSPAQCompletePeopleInStructure;
+    }
+    ColumnData allTreatedPeopleInStructureColumnData = new ColumnData();
+    allTreatedPeopleInStructureColumnData.setValue(allTreatedPeopleInStructure);
+    allTreatedPeopleInStructureColumnData.setMeta(null);
+    allTreatedPeopleInStructureColumnData.setIsPercentage(false);
+
+    return new SimpleEntry<>(columnName, allTreatedPeopleInStructureColumnData);
   }
 
-  private Entry<String, ColumnData> getNoOfTreatedChildrenByLocation(Plan plan,
-      Location childLocation, String columnName, UUID parentLocationIdentifier) {
+  private Entry<String, ColumnData> getNoOfEligibleChildrenByLocation(Plan plan,
+      Location childLocation, String columnName) {
 
-//TODO: need to create a datastore for this metric
+    String structurePeopleQueryKey =
+        plan.getIdentifier() + "_" + childLocation.getIdentifier();
+    LocationPersonBusinessStateCountAggregate locationPersonBusinessStateCountAggregate = structurePeopleCounts.get(
+        structurePeopleQueryKey);
 
+    Long totalEligiblePeople = 0L;
+
+    if (locationPersonBusinessStateCountAggregate != null) {
+      Long allPeopleInStructure = locationPersonBusinessStateCountAggregate.getStructureBusinessStateCountMap()
+          .entrySet().stream().map(entry -> entry.getValue() != null ? entry.getValue() : 0L)
+          .reduce(0L, Long::sum);
+
+      Long allIneligiblePeopleInStructure = locationPersonBusinessStateCountAggregate.getStructureBusinessStateCountMap()
+          .entrySet()
+          .stream().filter(entry -> entry.getKey().equals("Ineligible"))
+          .map(entry -> entry.getValue() != null ? entry.getValue() : 0L)
+          .reduce(0L, Long::sum);
+
+      totalEligiblePeople = allPeopleInStructure - allIneligiblePeopleInStructure;
+    }
     ColumnData noOfTreatedChildrenColumnData = new ColumnData();
-    noOfTreatedChildrenColumnData.setValue(0L);
+    noOfTreatedChildrenColumnData.setValue(totalEligiblePeople);
     noOfTreatedChildrenColumnData.setMeta(null);
     noOfTreatedChildrenColumnData.setIsPercentage(false);
 
@@ -529,6 +570,13 @@ public class DashboardService {
           StoreQueryParameters.fromNameAndType(
               kafkaProperties.getStoreMap().get(KafkaConstants.locationBusinessStatus),
               QueryableStoreTypes.keyValueStore()));
+
+
+      structurePeopleCounts = getKafkaStreams.getKafkaStreams().store(
+          StoreQueryParameters.fromNameAndType(
+              kafkaProperties.getStoreMap().get(KafkaConstants.structurePeopleCounts),
+              QueryableStoreTypes.keyValueStore()));
+
       datastoresInitialized = true;
     }
   }
