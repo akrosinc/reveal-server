@@ -11,6 +11,7 @@ import com.revealprecision.revealserver.messaging.message.OperationalAreaVisited
 import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.props.BusinessStatusProperties;
+import com.revealprecision.revealserver.props.DashboardProperties;
 import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.service.LocationHierarchyService;
 import com.revealprecision.revealserver.service.LocationRelationshipService;
@@ -38,6 +39,8 @@ import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KTable;
 import org.apache.kafka.streams.kstream.Materialized;
 import org.apache.kafka.streams.state.KeyValueStore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.support.serializer.JsonSerde;
@@ -52,8 +55,10 @@ public class LocationBusinessStatusStream {
   private final LocationRelationshipService locationRelationshipService;
   private final LocationHierarchyService locationHierarchyService;
   private final BusinessStatusProperties businessStatusProperties;
+  private final DashboardProperties dashboardProperties;
   private final LocationService locationService;
   private final PlanService planService;
+  private final Logger streamLog = LoggerFactory.getLogger("stream-file");
 
   @Bean
   KStream<UUID, LocationMetadataEvent> locationBusinessStatusCountsAggregator(StreamsBuilder streamsBuilder) {
@@ -62,11 +67,15 @@ public class LocationBusinessStatusStream {
         kafkaProperties.getTopicMap().get(KafkaConstants.LOCATION_METADATA_UPDATE),
         Consumed.with(Serdes.UUID(), new JsonSerde<>(LocationMetadataEvent.class)));
 
+    locationMetadataStream.peek((k,v)->streamLog.debug("locationMetadataStream - k: {} v: {}", k,v));
+
     KStream<String, LocationMetadataUnpackedEvent> unpackedLocationMetadataStream = locationMetadataStream
         .flatMapValues((k, locationMetadata) -> getLocationMetadataUnpackedByLocationHierarchy(locationMetadata))
         .flatMapValues((k, locationMetadata) -> getLocationMetadataUnpackedByAncestry(locationMetadata))
         .flatMapValues((k, locationMetadata) -> getLocationMetadataUnpackedByMetadataItems(locationMetadata))
         .selectKey((k, locationMetadata) -> getPlanAncestorHierarchyEntityKey(locationMetadata));
+
+    unpackedLocationMetadataStream.peek((k,v)->streamLog.debug("unpackedLocationMetadataStream - k: {} v: {}", k,v));
 
     KGroupedStream<String, LocationMetadataUnpackedEvent> stringLocationMetadataUnpackedEventKGroupedStream = unpackedLocationMetadataStream
         .selectKey((k, v) -> k)
@@ -284,8 +293,8 @@ public class LocationBusinessStatusStream {
     log.trace("operational area: {} -  notVisitedStructures: {} / totalStructures: {} " ,operationalAreaAggregate.getIdentifier(),notVisitedStructures,totalStructures);
     boolean operationalAreaIsVisited = false;
     if (totalStructures > 0) {
-      //TODO: configure percentage value
-      if (((double) notVisitedStructures / (double) totalStructures * 100) < 20) {
+
+      if ((100 - ((double) notVisitedStructures / (double) totalStructures * 100)) >= (double) dashboardProperties.getOperationalAreaVisitedThreshold()) {
         operationalAreaIsVisited = true;
       }
     }

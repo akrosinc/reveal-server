@@ -24,6 +24,8 @@ public class DashboardProperties {
           ,"FOUND_COVERAGE",new ColumnMeta("Found Coverage",true)
           ,"OPERATIONAL_AREA_VISITED",new ColumnMeta("Operational Area Visited",false)));
 
+  private Long operationalAreaVisitedThreshold = 20L;
+
   @Setter
   @Getter
   @AllArgsConstructor
