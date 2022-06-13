@@ -91,25 +91,6 @@ public class KafkaStateStoreQueryController<T> {
     iterateThroughStore(counts);
   }
 
-  @GetMapping("/test")
-  public void test() {
-    KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
-    ReadOnlyKeyValueStore<String, LocationPersonBusinessStateCountAggregate> counts = kafkaStreams.store(
-        StoreQueryParameters.fromNameAndType("test",
-            QueryableStoreTypes.keyValueStore())
-    );
-    iterateThroughStore(counts);
-  }
-  @GetMapping("/test2")
-  public void test2() {
-    KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
-    ReadOnlyKeyValueStore<String, LocationPersonBusinessStateCountAggregate> counts = kafkaStreams.store(
-        StoreQueryParameters.fromNameAndType("test2",
-            QueryableStoreTypes.keyValueStore())
-    );
-    iterateThroughStore(counts);
-  }
-
   @GetMapping("/assignedStructureCountPerParent")
   public void countOfAssignedStructure() {
     KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
