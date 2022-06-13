@@ -10,6 +10,7 @@ import com.revealprecision.revealserver.messaging.message.OperationalAreaVisited
 import com.revealprecision.revealserver.messaging.message.PersonBusinessStatusAggregate;
 import com.revealprecision.revealserver.messaging.message.TaskAggregate;
 import com.revealprecision.revealserver.messaging.message.TaskEvent;
+import com.revealprecision.revealserver.messaging.message.TreatedOperationalAreaAggregate;
 import com.revealprecision.revealserver.props.KafkaProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -91,20 +92,78 @@ public class KafkaStateStoreQueryController<T> {
     iterateThroughStore(counts);
   }
 
-  @GetMapping("/test")
+  @GetMapping("/hierarchicalPeopleTreatmentData")
   public void test() {
     KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
     ReadOnlyKeyValueStore<String, LocationPersonBusinessStateCountAggregate> counts = kafkaStreams.store(
-        StoreQueryParameters.fromNameAndType("test",
+        StoreQueryParameters.fromNameAndType(
+            kafkaProperties.getStoreMap().get(KafkaConstants.hierarchicalPeopleTreatmentData),
             QueryableStoreTypes.keyValueStore())
     );
     iterateThroughStore(counts);
   }
-  @GetMapping("/test2")
-  public void test2() {
+
+  @GetMapping("/hierarchicalPeopleTreatmentCounts")
+  public void hierarchicalPeopleTreatmentCounts() {
     KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
     ReadOnlyKeyValueStore<String, LocationPersonBusinessStateCountAggregate> counts = kafkaStreams.store(
-        StoreQueryParameters.fromNameAndType("test2",
+        StoreQueryParameters.fromNameAndType(
+            kafkaProperties.getStoreMap().get(KafkaConstants.hierarchicalPeopleTreatmentCounts),
+            QueryableStoreTypes.keyValueStore())
+    );
+    iterateThroughStore(counts);
+  }
+
+  @GetMapping("/operationalAreaTreatmentData")
+  public void operationalAreaTreatmentData() {
+    KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
+    ReadOnlyKeyValueStore<String, LocationPersonBusinessStateCountAggregate> counts = kafkaStreams.store(
+        StoreQueryParameters.fromNameAndType(
+            kafkaProperties.getStoreMap().get(KafkaConstants.operationalAreaTreatmentData),
+            QueryableStoreTypes.keyValueStore())
+    );
+    iterateThroughStore(counts);
+  }
+
+  @GetMapping("/restructuredOperationalAreaTreatmentData")
+  public void restructuredOperationalAreaTreatmentData() {
+    KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
+    ReadOnlyKeyValueStore<String, LocationPersonBusinessStateCountAggregate> counts = kafkaStreams.store(
+        StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap()
+                .get(KafkaConstants.restructuredOperationalAreaTreatmentData),
+            QueryableStoreTypes.keyValueStore())
+    );
+    iterateThroughStore(counts);
+  }
+
+  @GetMapping("/tableOfOperationalAreaHierarchiesForPersonStream")
+  public void tableOfOperationalAreaHierarchiesForPersonStream() {
+    KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
+    ReadOnlyKeyValueStore<String, OperationalAreaAggregate> counts = kafkaStreams.store(
+        StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap()
+                .get(KafkaConstants.tableOfOperationalAreaHierarchiesForPersonStream),
+            QueryableStoreTypes.keyValueStore())
+    );
+    iterateThroughStore(counts);
+  }
+
+  @GetMapping("/joinedOperationalAreaTreatmentData")
+  public void joinedOperationalAreaTreatmentData() {
+    KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
+    ReadOnlyKeyValueStore<String, TreatedOperationalAreaAggregate> counts = kafkaStreams.store(
+        StoreQueryParameters.fromNameAndType(
+            kafkaProperties.getStoreMap().get(KafkaConstants.joinedOperationalAreaTreatmentData),
+            QueryableStoreTypes.keyValueStore())
+    );
+    iterateThroughStore(counts);
+  }
+
+  @GetMapping("/operationalTreatedCounts")
+  public void operationalTreatedCounts() {
+    KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
+    ReadOnlyKeyValueStore<String, TreatedOperationalAreaAggregate> counts = kafkaStreams.store(
+        StoreQueryParameters.fromNameAndType(
+            kafkaProperties.getStoreMap().get(KafkaConstants.operationalTreatedCounts),
             QueryableStoreTypes.keyValueStore())
     );
     iterateThroughStore(counts);
