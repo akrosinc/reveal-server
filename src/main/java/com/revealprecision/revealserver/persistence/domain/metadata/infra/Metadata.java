@@ -16,5 +16,6 @@ public class Metadata implements Serializable {
   private LocalDateTime createDateTime;
   private LocalDateTime updateDateTime;
   private UUID taskId;
+  private String taskType;
 
 }

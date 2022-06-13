@@ -3,6 +3,8 @@ package com.revealprecision.revealserver.api.v1.controller.querying;
 import com.revealprecision.revealserver.messaging.KafkaConstants;
 import com.revealprecision.revealserver.messaging.Message;
 import com.revealprecision.revealserver.messaging.message.LocationBusinessStatusAggregate;
+import com.revealprecision.revealserver.messaging.message.LocationPersonBusinessStateAggregate;
+import com.revealprecision.revealserver.messaging.message.LocationPersonBusinessStateCountAggregate;
 import com.revealprecision.revealserver.messaging.message.OperationalAreaAggregate;
 import com.revealprecision.revealserver.messaging.message.OperationalAreaVisitedCount;
 import com.revealprecision.revealserver.messaging.message.PersonBusinessStatusAggregate;
@@ -34,6 +36,28 @@ public class KafkaStateStoreQueryController<T> {
   private final KafkaProperties kafkaProperties;
   private final KafkaTemplate<String, Message> kafkaTemplate;
 
+  @GetMapping("/structurePeople")
+  public void structurePeople() {
+    KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
+    ReadOnlyKeyValueStore<String, LocationPersonBusinessStateAggregate> counts = kafkaStreams.store(
+        StoreQueryParameters.fromNameAndType(
+            kafkaProperties.getStoreMap().get(KafkaConstants.structurePeople),
+            QueryableStoreTypes.keyValueStore())
+    );
+    iterateThroughStore(counts);
+  }
+
+  @GetMapping("/structurePeopleCounts")
+  public void structurePeopleCounts() {
+    KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
+    ReadOnlyKeyValueStore<String, LocationPersonBusinessStateCountAggregate> counts = kafkaStreams.store(
+        StoreQueryParameters.fromNameAndType(
+            kafkaProperties.getStoreMap().get(KafkaConstants.structurePeopleCounts),
+            QueryableStoreTypes.keyValueStore())
+    );
+    iterateThroughStore(counts);
+  }
+
   @GetMapping("/personBusinessStatus")
   public void personBusinessStatus() {
     KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
@@ -56,7 +80,16 @@ public class KafkaStateStoreQueryController<T> {
     iterateThroughStore(counts);
   }
 
-
+  @GetMapping("/structureCountPerParent")
+  public void structureCountPerParent() {
+    KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
+    ReadOnlyKeyValueStore<String, Long> counts = kafkaStreams.store(
+        StoreQueryParameters.fromNameAndType(
+            kafkaProperties.getStoreMap().get(KafkaConstants.structureCountPerParent),
+            QueryableStoreTypes.keyValueStore())
+    );
+    iterateThroughStore(counts);
+  }
 
   @GetMapping("/assignedStructureCountPerParent")
   public void countOfAssignedStructure() {

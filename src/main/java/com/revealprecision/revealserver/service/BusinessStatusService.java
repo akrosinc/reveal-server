@@ -20,34 +20,34 @@ public class BusinessStatusService {
 
   public void setBusinessStatus(Task task, String businessStatus) {
 
-    UUID planIdentifier = task.getAction().getGoal().getPlan().getIdentifier();
+      UUID planIdentifier = task.getAction().getGoal().getPlan().getIdentifier();
 
-    String baseBusinessStatusTagName = businessStatusProperties.getBusinessStatusTagName();
+      String baseBusinessStatusTagName = businessStatusProperties.getBusinessStatusTagName();
 
-    String businessStatusTagName = baseBusinessStatusTagName;
-    if (planIdentifier != null && task.getIdentifier() != null) {
-      businessStatusTagName = businessStatusTagName.concat("_")
-          .concat(planIdentifier.toString()).concat("_").concat(task.getIdentifier().toString());
-    }
+      String businessStatusTagName = baseBusinessStatusTagName;
+      if (planIdentifier != null && task.getIdentifier() != null) {
+        businessStatusTagName = businessStatusTagName.concat("_")
+            .concat(planIdentifier.toString()).concat("_").concat(task.getIdentifier().toString());
+      }
 
-    if (ActionUtils.isActionForLocation(task.getAction())) {
-      metadataService.updateLocationMetadata(task.getBaseEntityIdentifier(), businessStatus,
-          planIdentifier, task.getIdentifier(), UserUtils.getCurrentPrincipleName(), "string",
-          businessStatusTagName, baseBusinessStatusTagName, task.getLocation());
-    }
+      if (ActionUtils.isActionForLocation(task.getAction())) {
+        metadataService.updateLocationMetadata(task.getBaseEntityIdentifier(), businessStatus,
+            planIdentifier, task.getIdentifier(), UserUtils.getCurrentPrincipleName(), "string",
+            businessStatusTagName, baseBusinessStatusTagName, task.getLocation(), task.getAction().getTitle());
+      }
 
-    if (ActionUtils.isActionForPerson(task.getAction())) {
-      metadataService.updatePersonMetadata(task.getBaseEntityIdentifier(), businessStatus,
-          planIdentifier, task.getIdentifier(), UserUtils.getCurrentPrincipleName(), "string",
-          businessStatusTagName, baseBusinessStatusTagName, task.getPerson());
-    }
+      if (ActionUtils.isActionForPerson(task.getAction())) {
+        metadataService.updatePersonMetadata(task.getBaseEntityIdentifier(), businessStatus,
+            planIdentifier, task.getIdentifier(), UserUtils.getCurrentPrincipleName(), "string",
+            businessStatusTagName, baseBusinessStatusTagName, task.getPerson(), task.getAction().getTitle());
+      }
   }
 
   public void deactivateBusinessStatus(Task task) {
 
     UUID planIdentifier = task.getAction().getGoal().getPlan().getIdentifier();
 
-    String businessStatusTagName = businessStatusProperties.getBusinessStatusTagName();;
+    String businessStatusTagName = businessStatusProperties.getBusinessStatusTagName();
     if (planIdentifier != null && task.getIdentifier() != null) {
       businessStatusTagName = businessStatusTagName.concat("_")
           .concat(planIdentifier.toString()).concat("_").concat(task.getIdentifier().toString());

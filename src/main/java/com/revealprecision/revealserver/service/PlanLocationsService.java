@@ -37,7 +37,6 @@ public class PlanLocationsService {
   private final LocationService locationService;
   private final LocationHierarchyService locationHierarchyService;
   private final PlanAssignmentService planAssignmentService;
-  private final PlanRepository planRepository;
   private final KafkaTemplate<String, PlanLocationAssignMessage> kafkaTemplate;
   private final KafkaProperties kafkaProperties;
 
@@ -54,7 +53,6 @@ public class PlanLocationsService {
     this.locationService = locationService;
     this.locationHierarchyService = locationHierarchyService;
     this.planAssignmentService = planAssignmentService;
-    this.planRepository = planRepository;
     this.kafkaTemplate = kafkaTemplate;
     this.kafkaProperties=kafkaProperties;
 
@@ -95,6 +93,20 @@ public class PlanLocationsService {
         .map(loc -> new PlanLocations(plan, loc))
         .collect(Collectors.toList());
     planLocationsRepository.saveAll(addPlanLocations);
+
+    PlanLocationAssignMessage planLocationAssignMessage = new PlanLocationAssignMessage();
+    planLocationAssignMessage.setPlanIdentifier(planIdentifier.toString());
+    planLocationAssignMessage.setLocationsAdded(
+        locationsToAdd.stream()
+            .map(UUID::toString)
+            .collect(Collectors.toList())
+    );
+    planLocationAssignMessage.setOwnerId(UserUtils.getCurrentPrincipleName());
+    planLocationAssignMessage.setLocationsRemoved( new ArrayList<>());
+
+    kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_LOCATION_ASSIGNED), planLocationAssignMessage);
+    log.info("sent plan location");
+
   }
 
   public void selectPlanLocations(UUID planIdentifier, Set<UUID> locations) {
@@ -158,9 +170,7 @@ public class PlanLocationsService {
     Map<UUID, List<PlanAssignment>> planAssignmentMap = planAssignments.stream()
         .collect(Collectors.groupingBy(
             planAssignment -> planAssignment.getPlanLocations().getLocation().getIdentifier()));
-    geoTreeResponses.forEach(el -> {
-      assignLocations(locationMap, el, planAssignmentMap);
-    });
+    geoTreeResponses.forEach(el -> assignLocations(locationMap, el, planAssignmentMap));
     return geoTreeResponses;
   }
 
@@ -175,11 +185,7 @@ public class PlanLocationsService {
           .collect(Collectors.toList());
       geoTreeResponse.setTeams(teams);
     }
-    if (locationMap.containsKey(geoTreeResponse.getIdentifier())) {
-      geoTreeResponse.setActive(true);
-    } else {
-      geoTreeResponse.setActive(false);
-    }
+    geoTreeResponse.setActive(locationMap.containsKey(geoTreeResponse.getIdentifier()));
     if(geoTreeResponse.getChildren() != null) {
       geoTreeResponse.getChildren().forEach(el -> assignLocations(locationMap, el, planAssignmentMap));
     }

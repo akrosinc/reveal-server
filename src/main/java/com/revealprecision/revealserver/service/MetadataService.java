@@ -60,7 +60,7 @@ public class MetadataService {
   @Transactional
   public PersonMetadata updatePersonMetadata(UUID personIdentifier, Object tagValue,
       UUID planIdentifier, UUID taskIdentifier,
-      String user, String dataType, String tag, String type, Person person) {
+      String user, String dataType, String tag, String type, Person person, String taskType) {
 
     PersonMetadata personMetadata;
 
@@ -90,6 +90,8 @@ public class MetadataService {
             .setUpdateDateTime(LocalDateTime.now());
         personMetadata.getEntityValue().getMetadataObjs().get(arrIndex).getCurrent().getMeta()
             .setUserId(user);
+        personMetadata.getEntityValue().getMetadataObjs().get(arrIndex).getCurrent().getMeta()
+            .setTaskType(taskType);
 
         if (personMetadata.getEntityValue().getMetadataObjs().get(arrIndex).getHistory() != null) {
           List<TagData> history = new ArrayList<>(
@@ -106,7 +108,7 @@ public class MetadataService {
       } else {
         // tag does not exist in list
         MetadataObj metadataObj = getMetadataObj(tagValue, planIdentifier, taskIdentifier, user,
-            dataType, tag, type);
+            dataType, tag, type,taskType);
 
         personMetadata = optionalPersonMetadata.get();
         List<MetadataObj> metadataObjs = new ArrayList<>(
@@ -123,7 +125,7 @@ public class MetadataService {
       personMetadata.setPerson(person);
 
       MetadataObj metadataObj = getMetadataObj(tagValue, planIdentifier, taskIdentifier, user,
-          dataType, tag, type);
+          dataType, tag, type,taskType);
 
       MetadataList metadataList = new MetadataList();
       metadataList.setMetadataObjs(List.of(metadataObj));
@@ -162,7 +164,7 @@ public class MetadataService {
 
   public LocationMetadata updateLocationMetadata(UUID locationIdentifier, Object tagValue,
       UUID planIdentifier, UUID taskIdentifier,
-      String user, String dataType, String tag, String type, Location location) {
+      String user, String dataType, String tag, String type, Location location, String taskType) {
 
     LocationMetadata locationMetadata;
 
@@ -194,6 +196,9 @@ public class MetadataService {
             .setUpdateDateTime(LocalDateTime.now());
         locationMetadata.getEntityValue().getMetadataObjs().get(arrIndex).getCurrent().getMeta()
             .setUserId(user);
+        locationMetadata.getEntityValue().getMetadataObjs().get(arrIndex).getCurrent().getMeta()
+            .setTaskType(taskType);
+
         locationMetadata.getEntityValue().getMetadataObjs().get(arrIndex).setActive(true);
         if (locationMetadata.getEntityValue().getMetadataObjs().get(arrIndex).getHistory()
             != null) {
@@ -207,7 +212,7 @@ public class MetadataService {
       } else {
         // tag does not exist in list
         MetadataObj metadataObj = getMetadataObj(tagValue, planIdentifier, taskIdentifier, user,
-            dataType, tag, type);
+            dataType, tag, type, taskType);
 
         locationMetadata = locationMetadataOptional.get();
         locationMetadata.getEntityValue().getMetadataObjs().add(metadataObj);
@@ -222,7 +227,7 @@ public class MetadataService {
       locationMetadata.setLocation(location);
 
       MetadataObj metadataObj = getMetadataObj(tagValue, planIdentifier, taskIdentifier, user,
-          dataType, tag, type);
+          dataType, tag, type, taskType);
 
       MetadataList metadataList = new MetadataList();
       metadataList.setMetadataObjs(List.of(metadataObj));
@@ -385,10 +390,11 @@ public class MetadataService {
 
   private MetadataObj getMetadataObj(Object tagValue, UUID planIdentifier, UUID taskIdentifier,
       String user,
-      String dataType, String tag, String type) {
+      String dataType, String tag, String type, String taskType) {
     Metadata metadata = new Metadata();
     metadata.setPlanId(planIdentifier);
     metadata.setTaskId(taskIdentifier);
+    metadata.setTaskType(taskType);
     metadata.setCreateDateTime(LocalDateTime.now());
     metadata.setUpdateDateTime(LocalDateTime.now());
     metadata.setUserId(user);
