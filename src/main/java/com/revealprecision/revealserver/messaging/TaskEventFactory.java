@@ -65,7 +65,6 @@ public class TaskEventFactory {
         .lastModified(taskSaved.getLastModified())
         .identifier(taskSaved.getIdentifier())
         .priority(taskSaved.getPriority())
-        .serverVersion(taskSaved.getServerVersion())
         .build();
 
     if (ActionUtils.isActionForPerson(taskSaved.getAction())){
