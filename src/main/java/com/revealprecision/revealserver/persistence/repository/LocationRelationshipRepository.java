@@ -20,28 +20,46 @@ public interface LocationRelationshipRepository extends JpaRepository<LocationRe
   Optional<LocationRelationship> findByLocationHierarchyIdentifierAndLocationIdentifier(
       UUID locationHierarchyIdentifier, UUID locationIdentifier);
 
-  @Query(value = "SELECT cast(lr.identifier as varchar) identifier, l.name locationName, cast(l.identifier as varchar) locationIdentifier, cast(lr.parent_identifier as varchar) parentIdentifier, gl.name geographicLevelName FROM location_relationship lr "
-      + "LEFT JOIN location l ON lr.location_identifier = l.identifier "
-      + "LEFT JOIN geographic_level gl ON l.geographic_level_identifier = gl.identifier ", nativeQuery = true)
+  @Query(value =
+      "SELECT cast(lr.identifier as varchar) identifier, l.name locationName, cast(l.identifier as varchar) locationIdentifier, cast(lr.parent_identifier as varchar) parentIdentifier, gl.name geographicLevelName FROM location_relationship lr "
+          + "LEFT JOIN location l ON lr.location_identifier = l.identifier "
+          + "LEFT JOIN geographic_level gl ON l.geographic_level_identifier = gl.identifier ", nativeQuery = true)
   List<LocationRelationshipProjection> findByLocationHierarchyIdentifier(
       UUID locationHierarchyIdentifier);
 
-  @Query(value = "SELECT cast(lr.identifier as varchar) identifier, l.name locationName, cast(l.identifier as varchar) locationIdentifier, cast(lr.parent_identifier as varchar) parentIdentifier, gl.name geographicLevelName FROM location_relationship lr "
-      + "LEFT JOIN location l ON lr.location_identifier = l.identifier "
-      + "LEFT JOIN geographic_level gl ON l.geographic_level_identifier = gl.identifier "
-      + "WHERE gl.name NOT LIKE 'structure'", nativeQuery = true)
-  List<LocationRelationshipProjection>findByLocationHierarchyWithoutStructures(UUID locationHierarchyIdentifier);
-
-  @Query(value = "select cast(lr.parent_identifier as varchar) as parentIdentifier, count(lr.parent_identifier) as childrenCount from location_relationship lr "
+  @Query(value = "SELECT count(*) FROM location_relationship lr "
+      + "                  INNER JOIN location l on l.identifier = lr.location_identifier "
+      + "                  LEFT JOIN geographic_level gl on l.geographic_level_identifier = gl.identifier "
       + "where lr.location_hierarchy_identifier = :locationHierarchyIdentifier "
-      + "group by lr.parent_identifier", nativeQuery = true)
+      + "  AND gl.name = :geographicLevelName AND "
+      + "        CAST(STRING_TO_ARRAY(:locationIdentifier,',')as uuid[]) && lr.ancestry", nativeQuery = true)
+  Long getNumberOfChildrenByGeoLevelNameWithinLocationAndHierarchy(
+      @Param("geographicLevelName") String geographicLevelName,
+      @Param("locationIdentifier") String locationIdentifier,
+      @Param("locationHierarchyIdentifier") UUID locationHierarchyIdentifier);
+
+
+  @Query(value =
+      "SELECT cast(lr.identifier as varchar) identifier, l.name locationName, cast(l.identifier as varchar) locationIdentifier, cast(lr.parent_identifier as varchar) parentIdentifier, gl.name geographicLevelName FROM location_relationship lr "
+          + "LEFT JOIN location l ON lr.location_identifier = l.identifier "
+          + "LEFT JOIN geographic_level gl ON l.geographic_level_identifier = gl.identifier "
+          + "WHERE gl.name NOT LIKE 'structure'", nativeQuery = true)
+  List<LocationRelationshipProjection> findByLocationHierarchyWithoutStructures(
+      UUID locationHierarchyIdentifier);
+
+  @Query(value =
+      "select cast(lr.parent_identifier as varchar) as parentIdentifier, count(lr.parent_identifier) as childrenCount from location_relationship lr "
+          + "where lr.location_hierarchy_identifier = :locationHierarchyIdentifier "
+          + "group by lr.parent_identifier", nativeQuery = true)
   List<LocationChildrenCountProjection> getLocationChildrenCount(UUID locationHierarchyIdentifier);
 
-  @Query(value = "select cast(lr.parent_identifier as varchar) as parentIdentifier, count(lr.parent_identifier) as childrenCount from location_relationship lr "
-      + "inner join plan_locations pl on pl.plan_identifier = :planIdentifier and pl.location_identifier = lr.location_identifier "
-      + "where lr.location_hierarchy_identifier = :locationHierarchyIdentifier "
-      + "group by lr.parent_identifier", nativeQuery = true)
-  List<LocationChildrenCountProjection> getLocationAssignedChildrenCount(UUID locationHierarchyIdentifier, UUID planIdentifier);
+  @Query(value =
+      "select cast(lr.parent_identifier as varchar) as parentIdentifier, count(lr.parent_identifier) as childrenCount from location_relationship lr "
+          + "inner join plan_locations pl on pl.plan_identifier = :planIdentifier and pl.location_identifier = lr.location_identifier "
+          + "where lr.location_hierarchy_identifier = :locationHierarchyIdentifier "
+          + "group by lr.parent_identifier", nativeQuery = true)
+  List<LocationChildrenCountProjection> getLocationAssignedChildrenCount(
+      UUID locationHierarchyIdentifier, UUID planIdentifier);
 
   @Query(value = "select count(*) from location_relationship lr "
       + "where lr.parent_identifier = :locationIdentifier "
@@ -92,7 +110,8 @@ public interface LocationRelationshipRepository extends JpaRepository<LocationRe
       + "from LocationRelationship lr "
       + "where lr.locationHierarchy.identifier = :hierarchyIdentifier "
       + "and lr.parentLocation.identifier = :locationIdentifier")
-  List<Location> getChildren(@Param("hierarchyIdentifier") UUID hierarchyIdentifier, @Param("locationIdentifier") UUID locationIdentifier);
+  List<Location> getChildren(@Param("hierarchyIdentifier") UUID hierarchyIdentifier,
+      @Param("locationIdentifier") UUID locationIdentifier);
 
   @Query(value = "select lr.location "
       + "from LocationRelationship lr "
@@ -105,8 +124,11 @@ public interface LocationRelationshipRepository extends JpaRepository<LocationRe
   @Query(value = "select lr.parentLocation from LocationRelationship lr "
       + "where lr.location.identifier = :locationIdentifier "
       + "and lr.locationHierarchy.identifier = :hierarchyIdentifier")
-  Location getParentLocationByLocationIdAndHierarchyId(@Param("locationIdentifier") UUID locationIdentifier, @Param("hierarchyIdentifier") UUID hierarchyIdentifier);
+  Location getParentLocationByLocationIdAndHierarchyId(
+      @Param("locationIdentifier") UUID locationIdentifier,
+      @Param("hierarchyIdentifier") UUID hierarchyIdentifier);
 
-  LocationRelationship getLocationRelationshipByLocation_IdentifierAndLocationHierarchy_Identifier(UUID locationIdentifier,UUID hierarchyIdentifier);
+  LocationRelationship getLocationRelationshipByLocation_IdentifierAndLocationHierarchy_Identifier(
+      UUID locationIdentifier, UUID hierarchyIdentifier);
 
 }

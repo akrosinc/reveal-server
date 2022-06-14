@@ -11,13 +11,21 @@ import com.revealprecision.revealserver.enums.ReportTypeEnum;
 import com.revealprecision.revealserver.exceptions.WrongEnumException;
 import com.revealprecision.revealserver.messaging.KafkaConstants;
 import com.revealprecision.revealserver.messaging.message.LocationBusinessStatusAggregate;
+import com.revealprecision.revealserver.messaging.message.LocationPersonBusinessStateAggregate;
 import com.revealprecision.revealserver.messaging.message.LocationPersonBusinessStateCountAggregate;
 import com.revealprecision.revealserver.messaging.message.OperationalAreaVisitedCount;
 import com.revealprecision.revealserver.messaging.message.PersonBusinessStatusAggregate;
+import com.revealprecision.revealserver.messaging.message.TreatedOperationalAreaAggregate;
 import com.revealprecision.revealserver.persistence.domain.Location;
+import com.revealprecision.revealserver.persistence.domain.Person;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import com.revealprecision.revealserver.props.KafkaProperties;
+import java.io.Serializable;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.Period;
+import java.time.ZoneId;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,6 +36,9 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.apache.kafka.streams.StoreQueryParameters;
 import org.apache.kafka.streams.state.QueryableStoreTypes;
@@ -44,6 +55,7 @@ public class DashboardService {
   public static final String OPERATIONAL_AREA_VISITED = "Operational Area Visited";
   public static final String TOTAL_STRUCTURES_RECEIVED_SPAQ = "Total Structures Received SPAQ";
   public static final String DISTRIBUTION_COVERAGE = "Distribution Coverage";
+  public static final String DISTRIBUTION_EFFECTIVENESS = "Distribution Effectiveness";
   public static final String FOUND_COVERAGE = "Found Coverage";
   public static final String TOTAL_STRUCTURES_FOUND = "Total Structures Found";
   public static final String TOTAL_STRUCTURES_TARGETED = "Total Structures Targeted";
@@ -55,12 +67,17 @@ public class DashboardService {
   public static final String STRUCTURE_STATUS = "Structure Status";
   public static final String NO_OF_ELIGIBLE_CHILDREN = "Number of Eligible Children";
   public static final String NO_OF_TREATED_CHILDREN = "Number of Treated Children";
+  public static final String PERSON_FULLNAME = "Person full name";
+  public static final String PERSON_AGE = "Person age";
+  public static final String PERSON_STATE = "Person state";
 
 
   private final StreamsBuilderFactoryBean getKafkaStreams;
   private final KafkaProperties kafkaProperties;
   private final LocationService locationService;
   private final PlanService planService;
+  private final LocationRelationshipService locationRelationshipService;
+  private final PersonService personService;
 
   ReadOnlyKeyValueStore<String, Long> countOfAssignedStructures;
   ReadOnlyKeyValueStore<String, Long> structureCounts;
@@ -69,20 +86,22 @@ public class DashboardService {
   ReadOnlyKeyValueStore<String, PersonBusinessStatusAggregate> personBusinessStatus;
   ReadOnlyKeyValueStore<String, LocationBusinessStatusAggregate> locationBusinessState;
   ReadOnlyKeyValueStore<String, LocationPersonBusinessStateCountAggregate> structurePeopleCounts;
+  ReadOnlyKeyValueStore<String, TreatedOperationalAreaAggregate> treatedOperationalCounts;
+  ReadOnlyKeyValueStore<String, LocationPersonBusinessStateAggregate> structurePeople;
   boolean datastoresInitialized = false;
 
 
-  private RowData getIRSFullData(Location childLocation) {
+  private List<RowData> getIRSFullData(Location childLocation) {
     Map<String, ColumnData> columns = new HashMap<>();
     RowData rowData = new RowData();
     rowData.setLocationIdentifier(childLocation.getIdentifier());
     rowData.setColumnDataMap(columns);
     rowData.setLocationName(childLocation.getName());
-    return rowData;
+    return List.of(rowData);
   }
 
   //TODO: dont really need the parent Identifier - using it for now to query the datastore, however ideally a datastore should be availble that can query on just plan and structure id
-  private RowData getMDAFullCoverageStructureLevelData(Plan plan,
+  private List<RowData> getMDAFullCoverageStructureLevelData(Plan plan,
       Location childLocation, UUID parentLocationIdentifier) {
     Map<String, ColumnData> columns = new HashMap<>();
 
@@ -110,11 +129,60 @@ public class DashboardService {
     rowData.setLocationIdentifier(childLocation.getIdentifier());
     rowData.setColumnDataMap(columns);
     rowData.setLocationName(childLocation.getName());
-    return rowData;
+    return List.of(rowData);
+  }
+
+  private List<RowData> getMDAFullWithinStructureLevelData(Plan plan,
+      Location parentLocation) {
+    Map<String, ColumnData> columns = new HashMap<>();
+
+    List<PersonState> personData = getPersonData(plan, parentLocation.getIdentifier());
+
+    List<RowData> rowDatas = new ArrayList<>();
+
+    for (PersonState personState : personData) {
+
+      ColumnData personFullName = new ColumnData();
+      personFullName.setValue(
+          personState.getPerson().getNameText() + " " + personState.getPerson().getNameFamily());
+      personFullName.setMeta("personId: " + personState.getPerson().getIdentifier());
+      personFullName.setDataType("string");
+      personFullName.setIsPercentage(false);
+      columns.put(PERSON_FULLNAME, personFullName);
+
+      ColumnData personStateString = new ColumnData();
+      personStateString.setValue(personState.getState());
+      personStateString.setMeta(null);
+      personStateString.setDataType("string");
+      personStateString.setIsPercentage(false);
+      columns.put(PERSON_STATE, personStateString);
+
+      ColumnData personAge = new ColumnData();
+      Period between = Period.between(
+          Instant.ofEpochMilli(personState.getPerson().getBirthDate().getTime())
+              .atZone(ZoneId.systemDefault())
+              .toLocalDate(), LocalDate.now());
+      personAge.setValue(
+          between.getYears() + " years " + (between.getMonths() > 0 ? between.getMonths()
+              + " months" : ""));
+      personAge.setMeta(" DOB: " + personState.getPerson().getBirthDate());
+      personAge.setDataType("string");
+      personAge.setIsPercentage(false);
+
+      columns.put(PERSON_AGE, personAge);
+
+      RowData rowData = new RowData();
+      rowData.setLocationIdentifier(parentLocation.getIdentifier());
+      rowData.setColumnDataMap(columns);
+      rowData.setLocationName(parentLocation.getName());
+      rowDatas.add(rowData);
+    }
+
+    return rowDatas;
   }
 
 
-  private RowData getMDAFullCoverageOperationalAreaLevelData(Plan plan,
+  private List<RowData> getMDAFullCoverageOperationalAreaLevelData(Plan plan,
       Location childLocation) {
     Map<String, ColumnData> columns = new HashMap<>();
 
@@ -140,10 +208,10 @@ public class DashboardService {
     rowData.setLocationIdentifier(childLocation.getIdentifier());
     rowData.setColumnDataMap(columns);
     rowData.setLocationName(childLocation.getName());
-    return rowData;
+    return List.of(rowData);
   }
 
-  private RowData getMDAFullCoverageData(Plan plan, Location childLocation) {
+  private List<RowData> getMDAFullCoverageData(Plan plan, Location childLocation) {
     Map<String, ColumnData> columns = new LinkedHashMap<>();
 
     Entry<String, ColumnData> totalStructuresCounts = getTotalStructuresCounts(plan, childLocation,
@@ -167,7 +235,8 @@ public class DashboardService {
         childLocation, TOTAL_STRUCTURES_FOUND);
     columns.put(totalStructuresFound.getKey(), totalStructuresFound.getValue());
 
-    Entry<String, ColumnData> operationalAreaVisited = operationalAreaVisitedCounts(plan, childLocation, OPERATIONAL_AREA_VISITED);
+    Entry<String, ColumnData> operationalAreaVisited = operationalAreaVisitedCounts(plan,
+        childLocation, OPERATIONAL_AREA_VISITED);
     columns.put(operationalAreaVisited.getKey(), operationalAreaVisited.getValue());
 
     Entry<String, ColumnData> totalFoundCoverage = getTotalFoundCoverage(plan,
@@ -179,20 +248,25 @@ public class DashboardService {
     columns.put(percentageOfTreatedStructuresToTotalStructures.getKey(),
         percentageOfTreatedStructuresToTotalStructures.getValue());
 
+    Entry<String, ColumnData> percentageOfTreatedOperationalAreasToTotalOperationalAreas = operationalAreaTreatedPercentage(
+        plan, childLocation, DISTRIBUTION_EFFECTIVENESS);
+    columns.put(percentageOfTreatedOperationalAreasToTotalOperationalAreas.getKey(),
+        percentageOfTreatedOperationalAreasToTotalOperationalAreas.getValue());
 
     RowData rowData = new RowData();
     rowData.setLocationIdentifier(childLocation.getIdentifier());
     rowData.setColumnDataMap(columns);
     rowData.setLocationName(childLocation.getName());
-    return rowData;
+    return List.of(rowData);
   }
 
 
   private Entry<String, ColumnData> getPercentageOfChildrenTreatedToPeopleEligible(
-     Plan plan, Location childLocation, String columnName) {
+      Plan plan, Location childLocation, String columnName) {
 
     String personLocationBusinessStatusKey =
-        plan.getIdentifier() + "_" + childLocation.getIdentifier() + "_" + plan.getLocationHierarchy()
+        plan.getIdentifier() + "_" + childLocation.getIdentifier() + "_"
+            + plan.getLocationHierarchy()
             .getIdentifier();
     PersonBusinessStatusAggregate personLocationBusinessStatusObj = personBusinessStatus.get(
         personLocationBusinessStatusKey);
@@ -210,7 +284,8 @@ public class DashboardService {
     percentageOfChildrenTreatedToPeopleEligibleColumnData.setValue(
         percentageOfChildrenTreatedToPeopleEligible);
     percentageOfChildrenTreatedToPeopleEligibleColumnData.setMeta(
-        "Number Of Children Treated: "+noOfChildrenTreated + " / " + "Number Of Children Eligible: "+noOfPeopleEligible);
+        "Number Of Children Treated: " + noOfChildrenTreated + " / "
+            + "Number Of Children Eligible: " + noOfPeopleEligible);
     percentageOfChildrenTreatedToPeopleEligibleColumnData.setIsPercentage(true);
     return new SimpleEntry<>(columnName,
         percentageOfChildrenTreatedToPeopleEligibleColumnData);
@@ -227,7 +302,8 @@ public class DashboardService {
 
   private Entry<String, ColumnData> operationalAreaVisitedCounts(Plan plan,
       Location childLocation, String columnName) {
-    String operationalAreaVisitedQueryKey = childLocation.getIdentifier() + "_" + plan.getIdentifier();
+    String operationalAreaVisitedQueryKey =
+        childLocation.getIdentifier() + "_" + plan.getIdentifier();
     OperationalAreaVisitedCount operationalAreaVisitedObj = countOfOperationalArea.get(
         operationalAreaVisitedQueryKey);
     double operationalAreaVisitedCount = 0;
@@ -240,11 +316,44 @@ public class DashboardService {
     return new SimpleEntry<>(columnName, operationalAreaVisitedColumnData);
   }
 
+  private Entry<String, ColumnData> operationalAreaTreatedPercentage(Plan plan,
+      Location childLocation, String columnName) {
+    String operationalAreaVisitedQueryKey =
+        plan.getIdentifier() + "_" + childLocation.getIdentifier() + "_"
+            + plan.getLocationHierarchy()
+            .getIdentifier();
+    TreatedOperationalAreaAggregate treatedOperationalAreaAggregate = treatedOperationalCounts.get(
+        operationalAreaVisitedQueryKey);
+    double treatedOperationalAreaCount = 0;
+    if (treatedOperationalAreaAggregate != null) {
+      treatedOperationalAreaCount = (double) treatedOperationalAreaAggregate.getTreatLocationCount();
+    }
+
+    Long totalOperationAreaCounts = locationRelationshipService.getNumberOfChildrenByGeoLevelNameWithinLocationAndHierarchy(
+        "operational", childLocation.getIdentifier(), plan.getLocationHierarchy().getIdentifier());
+
+    double distributionEffectiveness = 0;
+
+    if (totalOperationAreaCounts > 0) {
+      distributionEffectiveness =
+          treatedOperationalAreaCount / (double) totalOperationAreaCounts * 100;
+    }
+
+    ColumnData treatedOperationalAreaColumnData = new ColumnData();
+    treatedOperationalAreaColumnData.setValue(distributionEffectiveness);
+    treatedOperationalAreaColumnData.setMeta(
+        "treatedOperationalAreaCount: " + treatedOperationalAreaCount + " / "
+            + "totalOperationAreaCounts: " + totalOperationAreaCounts);
+    treatedOperationalAreaColumnData.setIsPercentage(true);
+    return new SimpleEntry<>(columnName, treatedOperationalAreaColumnData);
+  }
+
   private Entry<String, ColumnData> getNoOfTreatedStructures(Plan plan,
       Location childLocation, String columnName) {
 
     String personLocationBusinessStatusKey =
-        plan.getIdentifier() + "_" + childLocation.getIdentifier() + "_" + plan.getLocationHierarchy()
+        plan.getIdentifier() + "_" + childLocation.getIdentifier() + "_"
+            + plan.getLocationHierarchy()
             .getIdentifier();
     PersonBusinessStatusAggregate personLocationBusinessStatusObj = personBusinessStatus.get(
         personLocationBusinessStatusKey);
@@ -285,7 +394,8 @@ public class DashboardService {
     }
 
     String notEligibleStructuresQueryKey =
-        plan.getIdentifier() + "_" + childLocation.getIdentifier() + "_" + plan.getLocationHierarchy()
+        plan.getIdentifier() + "_" + childLocation.getIdentifier() + "_"
+            + plan.getLocationHierarchy()
             .getIdentifier() + "_" + "Not Eligible";
     Long notEligibleStructuresCountObj = countOfStructuresByBusinessStatus.get(
         notEligibleStructuresQueryKey);
@@ -294,22 +404,49 @@ public class DashboardService {
       notEligibleStructuresCount = notEligibleStructuresCountObj;
     }
 
-    double totalStructuresTargeted = totalStructuresInPlanLocationCount - notEligibleStructuresCount;
-
+    double totalStructuresTargeted =
+        totalStructuresInPlanLocationCount - notEligibleStructuresCount;
 
     double percentageOfTreatedStructuresToTotalStructures =
         totalStructuresInPlanLocationCount > 0 ? noOfTreatedStructures / totalStructuresTargeted
             * 100 : 0;
 
-
     ColumnData percentageOfTreatedStructuresToTotalStructureColumnData = new ColumnData();
     percentageOfTreatedStructuresToTotalStructureColumnData.setValue(
         percentageOfTreatedStructuresToTotalStructures);
     percentageOfTreatedStructuresToTotalStructureColumnData.setMeta(
-        "No Of TreatedStructures: "+noOfTreatedStructures + " / " + "Total Structures Targeted: "+totalStructuresTargeted);
+        "No Of TreatedStructures: " + noOfTreatedStructures + " / " + "Total Structures Targeted: "
+            + totalStructuresTargeted);
     percentageOfTreatedStructuresToTotalStructureColumnData.setIsPercentage(true);
     return new SimpleEntry<>(columnName,
         percentageOfTreatedStructuresToTotalStructureColumnData);
+  }
+
+  private List<PersonState> getPersonData(Plan plan,
+      UUID parentLocationIdentifier) {
+
+    String locationForPersonQueryKey =
+        plan.getIdentifier() + "_" +
+            parentLocationIdentifier;
+
+    LocationPersonBusinessStateAggregate locationForPerson = structurePeople.get(
+        locationForPersonQueryKey);
+
+    if (locationForPerson != null) {
+      return locationForPerson.getPersonBusinessStatusMap()
+          .entrySet().stream().map(entry -> {
+            PersonState personState = new PersonState();
+            Person person = personService.getPersonByIdentifier(entry.getKey());
+            personState.setPerson(person);
+            personState.setState(entry.getValue().getStatus());
+            return personState;
+          })
+          .collect(Collectors.toList());
+    } else {
+      return new ArrayList<>();
+    }
+
+
   }
 
   private Entry<String, ColumnData> getLocationBusinessState(Plan plan,
@@ -430,7 +567,8 @@ public class DashboardService {
     }
 
     String notEligibleStructuresQueryKey =
-        plan.getIdentifier() + "_" + childLocation.getIdentifier() + "_" + plan.getLocationHierarchy()
+        plan.getIdentifier() + "_" + childLocation.getIdentifier() + "_"
+            + plan.getLocationHierarchy()
             .getIdentifier() + "_" + "Not Eligible";
     Long notEligibleStructuresCountObj = countOfStructuresByBusinessStatus.get(
         notEligibleStructuresQueryKey);
@@ -439,7 +577,8 @@ public class DashboardService {
       notEligibleStructuresCount = notEligibleStructuresCountObj;
     }
 
-    double totalStructuresTargeted = totalStructuresInPlanLocationCount - notEligibleStructuresCount;
+    double totalStructuresTargeted =
+        totalStructuresInPlanLocationCount - notEligibleStructuresCount;
     double totalStructuresFound = (totalStructuresTargeted - notVisitedStructuresCount);
 
     double totalFoundCoverage =
@@ -448,7 +587,8 @@ public class DashboardService {
     ColumnData totalFoundCoverageColumnData = new ColumnData();
     totalFoundCoverageColumnData.setValue(totalFoundCoverage);
     totalFoundCoverageColumnData.setMeta(
-        "Total Structures Found: "+totalStructuresFound + " / " +  "Total Structures Targeted: "+totalStructuresTargeted);
+        "Total Structures Found: " + totalStructuresFound + " / " + "Total Structures Targeted: "
+            + totalStructuresTargeted);
     totalFoundCoverageColumnData.setIsPercentage(true);
     return new SimpleEntry<>(columnName, totalFoundCoverageColumnData);
   }
@@ -456,7 +596,8 @@ public class DashboardService {
   private Entry<String, ColumnData> getTotalStructuresFound(Plan plan,
       Location childLocation, String columnName) {
 
-    String totalStructuresTargetedQueryKey = plan.getIdentifier() + "_" + childLocation.getIdentifier();
+    String totalStructuresTargetedQueryKey =
+        plan.getIdentifier() + "_" + childLocation.getIdentifier();
     Long totalStructuresTargetedCountObj = countOfAssignedStructures.get(
         totalStructuresTargetedQueryKey);
     double totalStructuresTargetedCount = 0;
@@ -465,7 +606,8 @@ public class DashboardService {
     }
 
     String notVisitedStructuresQueryKey =
-        plan.getIdentifier() + "_" + childLocation.getIdentifier() + "_" + plan.getLocationHierarchy()
+        plan.getIdentifier() + "_" + childLocation.getIdentifier() + "_"
+            + plan.getLocationHierarchy()
             .getIdentifier() + "_" + "Not Visited";
     Long notVisitedStructuresCountObj = countOfStructuresByBusinessStatus.get(
         notVisitedStructuresQueryKey);
@@ -475,7 +617,8 @@ public class DashboardService {
     }
 
     String notEligibleStructuresQueryKey =
-        plan.getIdentifier() + "_" + childLocation.getIdentifier() + "_" + plan.getLocationHierarchy()
+        plan.getIdentifier() + "_" + childLocation.getIdentifier() + "_"
+            + plan.getLocationHierarchy()
             .getIdentifier() + "_" + "Not Eligible";
     Long notEligibleStructuresCountObj = countOfStructuresByBusinessStatus.get(
         notEligibleStructuresQueryKey);
@@ -497,7 +640,8 @@ public class DashboardService {
   private Entry<String, ColumnData> getTotalStructuresTargetedCount(Plan plan,
       Location childLocation, String columnName) {
 
-    String totalStructuresTargetedQueryKey = plan.getIdentifier() + "_" + childLocation.getIdentifier();
+    String totalStructuresTargetedQueryKey =
+        plan.getIdentifier() + "_" + childLocation.getIdentifier();
     Long totalStructuresTargetedCountObj = countOfAssignedStructures.get(
         totalStructuresTargetedQueryKey);
     double totalStructuresInPlanLocationCount = 0;
@@ -506,7 +650,8 @@ public class DashboardService {
     }
 
     String notEligibleStructuresQueryKey =
-        plan.getIdentifier() + "_" + childLocation.getIdentifier() + "_" + plan.getLocationHierarchy()
+        plan.getIdentifier() + "_" + childLocation.getIdentifier() + "_"
+            + plan.getLocationHierarchy()
             .getIdentifier() + "_" + "Not Eligible";
     Long notEligibleStructuresCountObj = countOfStructuresByBusinessStatus.get(
         notEligibleStructuresQueryKey);
@@ -515,7 +660,8 @@ public class DashboardService {
       notEligibleStructuresCount = notEligibleStructuresCountObj;
     }
 
-    double totalStructuresInTargetedCount = totalStructuresInPlanLocationCount - notEligibleStructuresCount;
+    double totalStructuresInTargetedCount =
+        totalStructuresInPlanLocationCount - notEligibleStructuresCount;
 
     ColumnData totalStructuresTargetedColumnData = new ColumnData();
     totalStructuresTargetedColumnData.setValue(totalStructuresInTargetedCount);
@@ -571,18 +717,27 @@ public class DashboardService {
               kafkaProperties.getStoreMap().get(KafkaConstants.locationBusinessStatus),
               QueryableStoreTypes.keyValueStore()));
 
-
       structurePeopleCounts = getKafkaStreams.getKafkaStreams().store(
           StoreQueryParameters.fromNameAndType(
               kafkaProperties.getStoreMap().get(KafkaConstants.structurePeopleCounts),
               QueryableStoreTypes.keyValueStore()));
 
+      treatedOperationalCounts = getKafkaStreams.getKafkaStreams().store(
+          StoreQueryParameters.fromNameAndType(
+              kafkaProperties.getStoreMap().get(KafkaConstants.operationalTreatedCounts),
+              QueryableStoreTypes.keyValueStore()));
+
+      structurePeople = getKafkaStreams.getKafkaStreams().store(
+          StoreQueryParameters.fromNameAndType(
+              kafkaProperties.getStoreMap().get(KafkaConstants.structurePeople),
+              QueryableStoreTypes.keyValueStore()));
+
       datastoresInitialized = true;
     }
   }
+
   public FeatureSetResponse getDataForReport(String reportType, UUID planIdentifier,
       UUID parentIdentifier) {
-
 
     ReportTypeEnum reportTypeEnum = LookupUtil.lookup(ReportTypeEnum.class, reportType);
     Plan plan = planService.getPlanByIdentifier(planIdentifier);
@@ -593,45 +748,46 @@ public class DashboardService {
           "Report type: '" + reportType + "' is not applicable to plan with identifier: '"
               + planIdentifier + "'");
     }
+    Location parentLocation = null;
+    if (parentIdentifier != null) {
+      parentLocation = locationService.findByIdentifier(parentIdentifier);
+    }
+
     List<PlanLocationDetails> locationDetails = new ArrayList<>();
-    if (parentIdentifier == null) {
-      locationDetails.add(locationService.getRootLocationByPlanIdentifier(planIdentifier));
-    } else {
-      Location location = locationService.findByIdentifier(parentIdentifier);
-      int structureNodeIndex = plan.getLocationHierarchy().getNodeOrder().indexOf("structure");
-      int locationNodeIndex = plan.getLocationHierarchy().getNodeOrder().indexOf(location.getGeographicLevel().getName());
-      if(locationNodeIndex + 1 < structureNodeIndex) {
-        locationDetails = locationService.getAssignedLocationsByParentIdentifierAndPlanIdentifier(
-            parentIdentifier, planIdentifier, (locationNodeIndex + 2) == structureNodeIndex);
-      }else {
-        locationDetails = locationService.getLocationsByParentIdentifierAndPlanIdentifier(
-            parentIdentifier, planIdentifier);
+    if (parentLocation == null ||
+        !parentLocation.getGeographicLevel().getName().equals("structure")) {
+
+      if (parentIdentifier == null) {
+        locationDetails.add(locationService.getRootLocationByPlanIdentifier(planIdentifier));
+      } else {
+
+        int structureNodeIndex = plan.getLocationHierarchy().getNodeOrder().indexOf("structure");
+        int locationNodeIndex = plan.getLocationHierarchy().getNodeOrder()
+            .indexOf(parentLocation.getGeographicLevel().getName());
+        if (locationNodeIndex + 1 < structureNodeIndex) {
+          locationDetails = locationService.getAssignedLocationsByParentIdentifierAndPlanIdentifier(
+              parentIdentifier, planIdentifier, (locationNodeIndex + 2) == structureNodeIndex);
+        } else {
+          locationDetails = locationService.getLocationsByParentIdentifierAndPlanIdentifier(
+              parentIdentifier, planIdentifier);
+        }
       }
+    } else {
+      PlanLocationDetails planLocations = new PlanLocationDetails();
+      planLocations.setParentLocation(parentLocation);
+      planLocations.setLocation(parentLocation);
+      planLocations.setHasChildren(false);
+      planLocations.setAssignedLocations(0L);
+      planLocations.setChildrenNumber(0L);
+      planLocations.setAssignedTeams(0L);
+      locationDetails.add(planLocations);
     }
 
     initDataStoresIfNecessary();
-    Map<UUID, RowData> rowDataMap = locationDetails.stream().map(loc -> {
-          switch (reportTypeEnum) {
 
-            case MDA_FULL_COVERAGE:
-
-              switch (loc.getLocation().getGeographicLevel().getName()) {
-                case "structure":
-                  return getMDAFullCoverageStructureLevelData(plan, loc.getLocation(),
-                      parentIdentifier);
-                case "operational":
-                  return getMDAFullCoverageOperationalAreaLevelData(plan,
-                      loc.getLocation());
-                default:
-                  return getMDAFullCoverageData(plan, loc.getLocation());
-              }
-
-            case IRS_FULL_COVERAGE:
-              return getIRSFullData(loc.getLocation());
-
-          }
-          return null;
-        }).filter(Objects::nonNull)
+    Map<UUID, RowData> rowDataMap = locationDetails.stream().flatMap(loc -> Objects.requireNonNull(
+                getRowData(loc.getParentLocation(), reportTypeEnum, plan, loc))
+            .stream()).filter(Objects::nonNull)
         .collect(Collectors.toMap(RowData::getLocationIdentifier, row -> row));
 
     FeatureSetResponse response = new FeatureSetResponse();
@@ -644,17 +800,18 @@ public class DashboardService {
       loc.getProperties().setColumnDataMap(rowDataMap.get(loc.getIdentifier()).getColumnDataMap());
       loc.getProperties().setId(loc.getIdentifier());
 
-
       if (rowDataMap.get(loc.getIdentifier()).getColumnDataMap().get(DISTRIBUTION_COVERAGE)
           != null) {
         loc.getProperties().setDistCoveragePercent(
             rowDataMap.get(loc.getIdentifier()).getColumnDataMap().get(DISTRIBUTION_COVERAGE)
                 .getValue());
       }
-      if (rowDataMap.get(loc.getIdentifier()).getColumnDataMap().get(DISTRIBUTION_COVERAGE_PERCENTAGE)
+      if (rowDataMap.get(loc.getIdentifier()).getColumnDataMap()
+          .get(DISTRIBUTION_COVERAGE_PERCENTAGE)
           != null) {
         loc.getProperties().setDistCoveragePercent(
-            rowDataMap.get(loc.getIdentifier()).getColumnDataMap().get(DISTRIBUTION_COVERAGE_PERCENTAGE)
+            rowDataMap.get(loc.getIdentifier()).getColumnDataMap()
+                .get(DISTRIBUTION_COVERAGE_PERCENTAGE)
                 .getValue());
       }
       if (rowDataMap.get(loc.getIdentifier()).getColumnDataMap().get(NO_OF_ELIGIBLE_CHILDREN)
@@ -673,5 +830,43 @@ public class DashboardService {
     response.setFeatures(locationResponses);
     response.setIdentifier(parentIdentifier);
     return response;
+  }
+
+  private List<RowData> getRowData(Location parentLocation, ReportTypeEnum reportTypeEnum, Plan plan,
+      PlanLocationDetails loc) {
+    switch (reportTypeEnum) {
+
+      case MDA_FULL_COVERAGE:
+
+        if (loc.isHasChildren()) {
+
+          switch (loc.getLocation().getGeographicLevel().getName()) {
+            case "structure":
+              return getMDAFullCoverageStructureLevelData(plan, loc.getLocation(),
+                  parentLocation.getIdentifier());
+            case "operational":
+              return getMDAFullCoverageOperationalAreaLevelData(plan,
+                  loc.getLocation());
+            default:
+              return getMDAFullCoverageData(plan, loc.getLocation());
+          }
+        } else {
+          return getMDAFullWithinStructureLevelData(plan, parentLocation);
+        }
+
+      case IRS_FULL_COVERAGE:
+        return getIRSFullData(loc.getLocation());
+
+    }
+    return null;
+  }
+
+  @Data
+  @NoArgsConstructor
+  @AllArgsConstructor
+  public static class PersonState implements Serializable {
+
+    private Person person;
+    private String state;
   }
 }

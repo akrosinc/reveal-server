@@ -9,6 +9,7 @@ public class KafkaConstants {
   public static final String LOCATIONS_IMPORTED = "LOCATIONS_IMPORTED";
   public static final String LOCATION_METADATA_UPDATE = "LOCATION_METADATA_UPDATE";
   public static final String PERSON_METADATA_UPDATE = "PERSON_METADATA_UPDATE";
+  public static final String tableOfOperationalAreaHierarchiesTOPIC = "tableOfOperationalAreaHierarchiesTOPIC";
 
 
   ///Materialized stores
@@ -26,4 +27,11 @@ public class KafkaConstants {
   public static final String personBusinessStatus = "personBusinessStatus";
   public static final String structurePeople = "structurePeople";
   public static final String structurePeopleCounts = "structurePeopleCounts";
+  public static final String hierarchicalPeopleTreatmentData = "hierarchicalPeopleTreatmentData";
+  public static final String hierarchicalPeopleTreatmentCounts = "hierarchicalPeopleTreatmentCounts";
+  public static final String operationalAreaTreatmentData = "operationalAreaTreatmentData";
+  public static final String restructuredOperationalAreaTreatmentData = "restructuredOperationalAreaTreatmentData";
+  public static final String tableOfOperationalAreaHierarchiesForPersonStream = "tableOfOperationalAreaHierarchiesForPersonStream";
+  public static final String joinedOperationalAreaTreatmentData = "joinedOperationalAreaTreatmentData";
+  public static final String operationalTreatedCounts = "operationalTreatedCounts";
 }
