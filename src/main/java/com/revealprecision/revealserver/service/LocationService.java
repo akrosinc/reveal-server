@@ -10,6 +10,7 @@ import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.PlanAssignment;
 import com.revealprecision.revealserver.persistence.domain.PlanLocations;
+import com.revealprecision.revealserver.persistence.projection.LocationChildrenCountProjection;
 import com.revealprecision.revealserver.persistence.projection.LocationCoordinatesProjection;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import com.revealprecision.revealserver.persistence.repository.LocationRepository;
@@ -102,17 +103,23 @@ public class LocationService {
       UUID planIdentifier) {
     Plan plan = planService.getPlanByIdentifier(planIdentifier);
     Location location = findByIdentifier(parentIdentifier);
+
     Map<UUID, Long> childrenCount = locationRelationshipService.getLocationChildrenCount(
             plan.getLocationHierarchy().getIdentifier())
         .stream().filter(loc -> loc.getParentIdentifier() != null)
         .collect(Collectors.toMap(loc -> UUID.fromString(loc.getParentIdentifier()),
-            loc -> loc.getChildrenCount()));
+            LocationChildrenCountProjection::getChildrenCount));
     List<PlanLocationDetails> response = locationRelationshipService
         .getLocationChildrenByLocationParentIdentifierAndPlanIdentifier(
             parentIdentifier, planIdentifier);
     response.forEach(resp -> resp.setChildrenNumber(
         childrenCount.containsKey(resp.getLocation().getIdentifier()) ? childrenCount.get(
             resp.getLocation().getIdentifier()) : 0));
+    if (location != null) {
+      response = response.stream()
+          .peek(planLocationDetail -> planLocationDetail.setParentLocation(location))
+          .collect(Collectors.toList());
+    }
     return response;
   }
 
@@ -123,18 +130,18 @@ public class LocationService {
     Plan plan = planService.getPlanByIdentifier(planIdentifier);
     Location location = findByIdentifier(parentIdentifier);
     Map<UUID, Long> childrenCount;
-    if(!isBeforeStructure) {
-     childrenCount = locationRelationshipService.getLocationAssignedChildrenCount(
+    if (!isBeforeStructure) {
+      childrenCount = locationRelationshipService.getLocationAssignedChildrenCount(
               plan.getLocationHierarchy().getIdentifier(), planIdentifier)
           .stream().filter(loc -> loc.getParentIdentifier() != null)
           .collect(Collectors.toMap(loc -> UUID.fromString(loc.getParentIdentifier()),
-              loc -> loc.getChildrenCount()));
-    }else {
+              LocationChildrenCountProjection::getChildrenCount));
+    } else {
       childrenCount = locationRelationshipService.getLocationChildrenCount(
               plan.getLocationHierarchy().getIdentifier())
           .stream().filter(loc -> loc.getParentIdentifier() != null)
           .collect(Collectors.toMap(loc -> UUID.fromString(loc.getParentIdentifier()),
-              loc -> loc.getChildrenCount()));
+              LocationChildrenCountProjection::getChildrenCount));
     }
     List<PlanLocationDetails> response = locationRelationshipService
         .getAssignedLocationChildrenByLocationParentIdentifierAndPlanIdentifier(
@@ -142,6 +149,11 @@ public class LocationService {
     response.forEach(resp -> resp.setChildrenNumber(
         childrenCount.containsKey(resp.getLocation().getIdentifier()) ? childrenCount.get(
             resp.getLocation().getIdentifier()) : 0));
+    if (location != null) {
+      response = response.stream()
+          .peek(planLocationDetail -> planLocationDetail.setParentLocation(location))
+          .collect(Collectors.toList());
+    }
     return response;
   }
 
@@ -151,7 +163,7 @@ public class LocationService {
             plan.getLocationHierarchy().getIdentifier())
         .stream().filter(loc -> loc.getParentIdentifier() != null)
         .collect(Collectors.toMap(loc -> UUID.fromString(loc.getParentIdentifier()),
-            loc -> loc.getChildrenCount()));
+            LocationChildrenCountProjection::getChildrenCount));
     PlanLocationDetails response = locationRelationshipService.getRootLocationDetailsByPlanId(
         planIdentifier);
     response.setChildrenNumber(
