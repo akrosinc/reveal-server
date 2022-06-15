@@ -1,7 +1,9 @@
 package com.revealprecision.revealserver.service;
 
 import com.revealprecision.revealserver.api.v1.dto.factory.EntityTagFactory;
+import com.revealprecision.revealserver.api.v1.dto.factory.EntityTagResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.EntityTagRequest;
+import com.revealprecision.revealserver.api.v1.dto.response.EntityTagResponse;
 import com.revealprecision.revealserver.persistence.domain.EntityTag;
 import com.revealprecision.revealserver.persistence.domain.LookupEntityType;
 import com.revealprecision.revealserver.persistence.repository.EntityTagRepository;
@@ -41,6 +43,20 @@ public class EntityTagService {
         entityTagRequest.getEntityType().getLookupEntityType());
 
     return entityTagRepository.save(EntityTagFactory.toEntity(entityTagRequest, lookupEntityType));
+  }
+
+  public List<EntityTagResponse> getTagsAndCoreFields(UUID lookupEntityTypeIdentifier) {
+    LookupEntityType lookupEntityType = lookupEntityTypeService.getLookUpEntityTypeById(lookupEntityTypeIdentifier);
+    List<EntityTagResponse> response = new ArrayList<>();
+
+    lookupEntityType.getEntityTags().forEach(entityTag -> {
+      response.add(EntityTagResponseFactory.fromEntity(entityTag));
+    });
+
+    lookupEntityType.getCoreFields().forEach(coreField -> {
+      response.add(EntityTagResponseFactory.fromCoreField(coreField));
+    });
+    return response;
   }
 
 }
