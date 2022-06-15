@@ -61,21 +61,27 @@ public class LocationBusinessStatusStream {
   private final Logger streamLog = LoggerFactory.getLogger("stream-file");
 
   @Bean
-  KStream<UUID, LocationMetadataEvent> locationBusinessStatusCountsAggregator(StreamsBuilder streamsBuilder) {
-    
+  KStream<UUID, LocationMetadataEvent> locationBusinessStatusCountsAggregator(
+      StreamsBuilder streamsBuilder) {
+
     KStream<UUID, LocationMetadataEvent> locationMetadataStream = streamsBuilder.stream(
         kafkaProperties.getTopicMap().get(KafkaConstants.LOCATION_METADATA_UPDATE),
         Consumed.with(Serdes.UUID(), new JsonSerde<>(LocationMetadataEvent.class)));
 
-    locationMetadataStream.peek((k,v)->streamLog.debug("locationMetadataStream - k: {} v: {}", k,v));
+    locationMetadataStream.peek(
+        (k, v) -> streamLog.debug("locationMetadataStream - k: {} v: {}", k, v));
 
     KStream<String, LocationMetadataUnpackedEvent> unpackedLocationMetadataStream = locationMetadataStream
-        .flatMapValues((k, locationMetadata) -> getLocationMetadataUnpackedByLocationHierarchy(locationMetadata))
-        .flatMapValues((k, locationMetadata) -> getLocationMetadataUnpackedByAncestry(locationMetadata))
-        .flatMapValues((k, locationMetadata) -> getLocationMetadataUnpackedByMetadataItems(locationMetadata))
+        .flatMapValues((k, locationMetadata) -> getLocationMetadataUnpackedByLocationHierarchy(
+            locationMetadata))
+        .flatMapValues(
+            (k, locationMetadata) -> getLocationMetadataUnpackedByAncestry(locationMetadata))
+        .flatMapValues(
+            (k, locationMetadata) -> getLocationMetadataUnpackedByMetadataItems(locationMetadata))
         .selectKey((k, locationMetadata) -> getPlanAncestorHierarchyEntityKey(locationMetadata));
 
-    unpackedLocationMetadataStream.peek((k,v)->streamLog.debug("unpackedLocationMetadataStream - k: {} v: {}", k,v));
+    unpackedLocationMetadataStream.peek(
+        (k, v) -> streamLog.debug("unpackedLocationMetadataStream - k: {} v: {}", k, v));
 
     KGroupedStream<String, LocationMetadataUnpackedEvent> stringLocationMetadataUnpackedEventKGroupedStream = unpackedLocationMetadataStream
         .selectKey((k, v) -> k)
@@ -84,7 +90,8 @@ public class LocationBusinessStatusStream {
 
     KTable<String, LocationBusinessStatusAggregate> individualLocationByBusinessStatusTable = stringLocationMetadataUnpackedEventKGroupedStream
         .aggregate(LocationBusinessStatusAggregate::new,
-            (key, locationMetadataUnpackedEvent, aggregate) -> getLocationMetadataAggregate(locationMetadataUnpackedEvent, aggregate),
+            (key, locationMetadataUnpackedEvent, aggregate) -> getLocationMetadataAggregate(
+                locationMetadataUnpackedEvent, aggregate),
             Materialized.<String, LocationBusinessStatusAggregate, KeyValueStore<Bytes, byte[]>>as(
                     kafkaProperties.getStoreMap().get(KafkaConstants.locationBusinessStatus))
                 .withValueSerde(new JsonSerde<>(LocationBusinessStatusAggregate.class))
@@ -92,14 +99,17 @@ public class LocationBusinessStatusStream {
 
     individualLocationByBusinessStatusTable
         .groupBy((k, locationBusinessStatusAggregate) ->
-            KeyValue.pair(getPlanAncestorHierarchyBusinessStatusKey(k, locationBusinessStatusAggregate), locationBusinessStatusAggregate),
+                KeyValue.pair(
+                    getPlanAncestorHierarchyBusinessStatusKey(k, locationBusinessStatusAggregate),
+                    locationBusinessStatusAggregate),
             Grouped.with(Serdes.String(), new JsonSerde<>(LocationBusinessStatusAggregate.class)))
         .count(Materialized.as(kafkaProperties.getStoreMap()
-        .get(KafkaConstants.locationBusinessStatusByPlanParentHierarchy)));
+            .get(KafkaConstants.locationBusinessStatusByPlanParentHierarchy)));
     return locationMetadataStream;
   }
 
-  private String getPlanAncestorHierarchyBusinessStatusKey(String k, LocationBusinessStatusAggregate locationBusinessStatusAggregate) {
+  private String getPlanAncestorHierarchyBusinessStatusKey(String k,
+      LocationBusinessStatusAggregate locationBusinessStatusAggregate) {
     return k.split("_")[0] + "_" + //plan
         k.split("_")[1] + "_" +  //ancestor
         k.split("_")[2] + "_" + //hierarchy
@@ -144,7 +154,8 @@ public class LocationBusinessStatusStream {
         v.getEntityId();
   }
 
-  private List<LocationMetadataUnpackedEvent> getLocationMetadataUnpackedByMetadataItems(LocationMetadataEvent locationMetadata) {
+  private List<LocationMetadataUnpackedEvent> getLocationMetadataUnpackedByMetadataItems(
+      LocationMetadataEvent locationMetadata) {
     return locationMetadata.getMetaDataEvents()
         .stream()
         .filter(metaDataEvent -> metaDataEvent.getType()
@@ -166,10 +177,12 @@ public class LocationBusinessStatusStream {
         locationMetadata.getHierarchyIdentifier(), locationMetadata.getEntityId());
     return locationRelationShip.getAncestry()
         .stream()
-        .map(ancestorNode -> getLocationMetadataEventPerAncestor(locationMetadata, ancestorNode)).collect(Collectors.toList());
+        .map(ancestorNode -> getLocationMetadataEventPerAncestor(locationMetadata, ancestorNode))
+        .collect(Collectors.toList());
   }
 
-  private LocationMetadataEvent getLocationMetadataEventPerAncestor(LocationMetadataEvent locationMetadata,
+  private LocationMetadataEvent getLocationMetadataEventPerAncestor(
+      LocationMetadataEvent locationMetadata,
       UUID ancestorNode) {
     LocationMetadataEvent locationMetadataEvent = new LocationMetadataEvent();
     locationMetadataEvent.setHierarchyIdentifier(
@@ -180,7 +193,8 @@ public class LocationBusinessStatusStream {
     return locationMetadataEvent;
   }
 
-  private List<LocationMetadataEvent> getLocationMetadataUnpackedByLocationHierarchy(LocationMetadataEvent locationMetadata) {
+  private List<LocationMetadataEvent> getLocationMetadataUnpackedByLocationHierarchy(
+      LocationMetadataEvent locationMetadata) {
     return locationHierarchyService.getAll()
         .stream()
         .map(locationHierarchy -> {
@@ -193,7 +207,8 @@ public class LocationBusinessStatusStream {
   }
 
   @Bean
-  KStream<UUID, LocationMetadataEvent> operationalAreaVisitedProcessor(StreamsBuilder streamsBuilder) {
+  KStream<UUID, LocationMetadataEvent> operationalAreaVisitedProcessor(
+      StreamsBuilder streamsBuilder) {
     //TODO: remove hardcodings
 
     KStream<UUID, LocationMetadataEvent> locationMetadataStream = streamsBuilder.stream(
@@ -270,11 +285,16 @@ public class LocationBusinessStatusStream {
         })
         .groupBy((k, entry) -> getAncestryPlanKey(k))
         .aggregate((OperationalAreaVisitedCount::new),
-            (k, operationalAreaAggregate, aggregate) -> getAggregatedOperationalAreaVisitedCount(operationalAreaAggregate, aggregate),
+            (k, operationalAreaAggregate, aggregate) -> getAggregatedOperationalAreaVisitedCount(
+                operationalAreaAggregate, aggregate),
             Materialized.<String, OperationalAreaVisitedCount, KeyValueStore<Bytes, byte[]>>as(
-                    kafkaProperties.getStoreMap().get(KafkaConstants.operationalAreaByPlanParentHierarchy))
+                    kafkaProperties.getStoreMap()
+                        .get(KafkaConstants.operationalAreaByPlanParentHierarchy))
                 .withValueSerde(new JsonSerde<>(OperationalAreaVisitedCount.class))
                 .withKeySerde(Serdes.String()));
+
+    restructuredOperationalAreaAggregate.toStream().to(kafkaProperties.getTopicMap()
+        .get(KafkaConstants.tableOfOperationalAreaHierarchiesTOPIC));
 
     return locationMetadataStream;
   }
@@ -284,33 +304,41 @@ public class LocationBusinessStatusStream {
     Long sumOfStructures = operationalAreaAggregate.getAggregatedLocationCount().values()
         .stream().reduce(0L, Long::sum);
     Long notVisitedStructures = operationalAreaAggregate.getAggregatedLocationCount().entrySet()
-        .stream().filter(entry -> entry.getKey().equals("Not Visited")).map(Entry::getValue).reduce(0L, Long::sum);
+        .stream().filter(entry -> entry.getKey().equals("Not Visited")).map(Entry::getValue)
+        .reduce(0L, Long::sum);
     Long notEligibleStructures = operationalAreaAggregate.getAggregatedLocationCount().entrySet()
-        .stream().filter(entry -> entry.getKey().equals("Not Eligible")).map(Entry::getValue).reduce(0L, Long::sum);
+        .stream().filter(entry -> entry.getKey().equals("Not Eligible")).map(Entry::getValue)
+        .reduce(0L, Long::sum);
 
     Long totalStructures = sumOfStructures - notEligibleStructures;
 
-    log.trace("operational area: {} -  notVisitedStructures: {} / totalStructures: {} " ,operationalAreaAggregate.getIdentifier(),notVisitedStructures,totalStructures);
+    log.trace("operational area: {} -  notVisitedStructures: {} / totalStructures: {} ",
+        operationalAreaAggregate.getIdentifier(), notVisitedStructures, totalStructures);
     boolean operationalAreaIsVisited = false;
     if (totalStructures > 0) {
 
-      if ((100 - ((double) notVisitedStructures / (double) totalStructures * 100)) >= (double) dashboardProperties.getOperationalAreaVisitedThreshold()) {
+      if ((100 - ((double) notVisitedStructures / (double) totalStructures * 100))
+          >= (double) dashboardProperties.getOperationalAreaVisitedThreshold()) {
         operationalAreaIsVisited = true;
       }
     }
 
-    if (aggregate.getOperationalObj().containsKey(operationalAreaAggregate.getIdentifier())){
+    if (aggregate.getOperationalObj().containsKey(operationalAreaAggregate.getIdentifier())) {
       IndividualOperationalAreaCountsByBusinessStatus individualOperationalAreaCountsByBusinessStatus = aggregate.getOperationalObj()
           .get(operationalAreaAggregate.getIdentifier());
-      individualOperationalAreaCountsByBusinessStatus.setCounts(operationalAreaAggregate.getAggregatedLocationCount());
-      individualOperationalAreaCountsByBusinessStatus.setOperationalAreaIsVisited(operationalAreaIsVisited);
-      aggregate.getOperationalObj().put(operationalAreaAggregate.getIdentifier(),individualOperationalAreaCountsByBusinessStatus);
+      individualOperationalAreaCountsByBusinessStatus.setCounts(
+          operationalAreaAggregate.getAggregatedLocationCount());
+      individualOperationalAreaCountsByBusinessStatus.setOperationalAreaIsVisited(
+          operationalAreaIsVisited);
+      aggregate.getOperationalObj().put(operationalAreaAggregate.getIdentifier(),
+          individualOperationalAreaCountsByBusinessStatus);
 
-    }else{
+    } else {
       IndividualOperationalAreaCountsByBusinessStatus operationalAreaVisitedCount3 = new IndividualOperationalAreaCountsByBusinessStatus();
       operationalAreaVisitedCount3.setCounts(operationalAreaAggregate.getAggregatedLocationCount());
       operationalAreaVisitedCount3.setOperationalAreaIsVisited(operationalAreaIsVisited);
-      aggregate.getOperationalObj().put(operationalAreaAggregate.getIdentifier(),operationalAreaVisitedCount3);
+      aggregate.getOperationalObj()
+          .put(operationalAreaAggregate.getIdentifier(), operationalAreaVisitedCount3);
     }
 
     long countOfVisitedOperationalAreas = aggregate.getOperationalObj().entrySet().stream()
@@ -350,7 +378,8 @@ public class LocationBusinessStatusStream {
     return aggregate;
   }
 
-  private String getAncestorOperationalAreaPlanIdKey(String k, OperationalAreaAggregate operationalAreaAggregate) {
+  private String getAncestorOperationalAreaPlanIdKey(String k,
+      OperationalAreaAggregate operationalAreaAggregate) {
     return operationalAreaAggregate.getAncestorIdentifier() + "_"
         + operationalAreaAggregate.getIdentifier() + "_" + k.split("_")[k.split("_").length - 1];
   }
@@ -374,7 +403,8 @@ public class LocationBusinessStatusStream {
     return operationalAreaAggregateConstructed;
   }
 
-  private String getAncestryPlanKey(String key, LocationBusinessStatusAggregate locationBusinessStatus) {
+  private String getAncestryPlanKey(String key,
+      LocationBusinessStatusAggregate locationBusinessStatus) {
     return locationBusinessStatus.getAncestry().stream().map(UUID::toString)
         .collect(Collectors.joining("_")) + "_" + key.split("_")[key.split("_").length - 1];
   }
@@ -386,7 +416,8 @@ public class LocationBusinessStatusStream {
             .toString());
   }
 
-  private List<LocationMetadataContainer> getLocationMetadataUnpackedPerMetadataItems(LocationMetadataEvent locationMetadata) {
+  private List<LocationMetadataContainer> getLocationMetadataUnpackedPerMetadataItems(
+      LocationMetadataEvent locationMetadata) {
     return locationMetadata.getMetaDataEvents().stream()
         .map(metaDataEvent -> new LocationMetadataContainer(locationMetadata.getEntityId(),
             metaDataEvent, null)).collect(
