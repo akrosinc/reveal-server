@@ -28,7 +28,7 @@ public class ConditionService {
 
   public Page<Condition> getConditions(UUID planIdentifier, UUID goalIdentifier,
       UUID actionIdentifier, Pageable pageable) {
-    Plan plan = planService.getPlanByIdentifier(planIdentifier);
+    Plan plan = planService.findPlanByIdentifier(planIdentifier);
     Goal goal = goalService.findByIdentifier(goalIdentifier);
     Action action = actionService.getByIdentifier(actionIdentifier);
 
@@ -42,7 +42,7 @@ public class ConditionService {
 
   public void createCondition(UUID planIdentifier, UUID goalIdentifier,
       UUID actionIdentifier, ConditionRequest request) {
-    Plan plan = planService.getPlanByIdentifier(planIdentifier);
+    Plan plan = planService.findPlanByIdentifier(planIdentifier);
     Goal goal = goalService.findByIdentifier(goalIdentifier);
     Action action = actionService.getByIdentifier(actionIdentifier);
 
@@ -52,7 +52,7 @@ public class ConditionService {
 
   public void deleteCondition(UUID planIdentifier, UUID goalIdentifier,
       UUID actionIdentifier, UUID conditionIdentifier) {
-    Plan plan = planService.getPlanByIdentifier(planIdentifier);
+    Plan plan = planService.findPlanByIdentifier(planIdentifier);
     Goal goal = goalService.findByIdentifier(goalIdentifier);
     Action action = actionService.getByIdentifier(actionIdentifier);
     Condition condition = getCondition(conditionIdentifier);

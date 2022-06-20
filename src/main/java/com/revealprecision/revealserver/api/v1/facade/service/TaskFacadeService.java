@@ -1,6 +1,5 @@
 package com.revealprecision.revealserver.api.v1.facade.service;
 
-import com.revealprecision.revealserver.api.v1.dto.request.PersonRequest;
 import com.revealprecision.revealserver.api.v1.facade.factory.TaskFacadeFactory;
 import com.revealprecision.revealserver.api.v1.facade.models.TaskDto;
 import com.revealprecision.revealserver.api.v1.facade.models.TaskFacade;
@@ -43,7 +42,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.streams.KafkaStreams;
@@ -195,12 +193,12 @@ public class TaskFacadeService {
     return Optional.ofNullable(identifier.toString());
   }
 
-  public List<TaskDto> addTasks(List<TaskDto> taskDtos) {
+  public List<TaskDto> addTaskDtos(List<TaskDto> taskDtos) {
     List<TaskDto> unprocessedTaskIds = new ArrayList<>();
 
     taskDtos.forEach(taskDto -> {
       try {
-        saveTask(taskDto);
+        saveTaskDto(taskDto);
       } catch (Exception e) {
         log.error(e.toString());
         e.printStackTrace();
@@ -211,10 +209,10 @@ public class TaskFacadeService {
     return unprocessedTaskIds;
   }
 
-  private void saveTask(TaskDto taskDto) {
+  private void saveTaskDto(TaskDto taskDto) {
 
     String taskCode = taskDto.getCode();
-    Plan plan = planService.getPlanByIdentifier(UUID.fromString(taskDto.getPlanIdentifier()));
+    Plan plan = planService.findPlanByIdentifier(UUID.fromString(taskDto.getPlanIdentifier()));
     Action action = actionService.findByTitleAndPlanIdentifier(taskCode,plan.getIdentifier());
     List<LookupTaskStatus> lookupTaskStatuses = taskService.getAllTaskStatus();
 
@@ -222,6 +220,12 @@ public class TaskFacadeService {
             lookupTaskStatus -> lookupTaskStatus.getCode().equalsIgnoreCase(taskDto.getStatus().name()))
         .findFirst();
 
+    Task task = saveTask(taskDto, plan, action, taskStatus);
+
+  }
+
+  private Task saveTask(TaskDto taskDto, Plan plan, Action action,
+      Optional<LookupTaskStatus> taskStatus) {
     Task task;
     try {
       task = taskService.getTaskByIdentifier(UUID.fromString(taskDto.getIdentifier()));
@@ -297,13 +301,12 @@ public class TaskFacadeService {
       TaskEvent taskEvent = TaskEventFactory.getTaskEventFromTask(taskSaved);
       taskEvent.setOwnerId(UserUtils.getCurrentPrincipleName());
       kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.TASK), taskEvent);
-
+      return taskSaved;
     } else {
       log.error("Unknown task state in sync: {}", taskDto.getStatus().name());
       throw new NotFoundException(
           Pair.of(Fields.code, taskDto.getStatus().name()),
           LookupTaskStatus.class);
     }
-
   }
 }

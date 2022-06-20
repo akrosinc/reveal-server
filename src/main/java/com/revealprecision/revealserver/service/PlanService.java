@@ -35,7 +35,6 @@ import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
@@ -60,11 +59,14 @@ public class PlanService {
     return c == null || c.isEmpty();
   }
 
-  public Plan getPlanByIdentifier(UUID planIdentifier) {
+  public Plan findPlanByIdentifier(UUID planIdentifier) {
     return planRepository.findById(planIdentifier).orElseThrow(
         () -> new NotFoundException(Pair.of(Fields.identifier, planIdentifier), Plan.class));
   }
 
+  public Plan getPlanByIdentifier(UUID planIdentifier) {
+    return planRepository.getById(planIdentifier);
+  }
 
   public List<Location> findLocationsForPlan(UUID planIdentifier) {
     return planRepository.findLocationsForPlan(planIdentifier);
@@ -124,7 +126,7 @@ public class PlanService {
   }
 
   public void activatePlan(UUID planIdentifier) {
-    Plan plan = getPlanByIdentifier(planIdentifier);
+    Plan plan = findPlanByIdentifier(planIdentifier);
     if (locationBulkService.areRelationshipsGenerated()) {
       plan.setStatus(PlanStatusEnum.ACTIVE);
       savePlan(plan);
@@ -140,7 +142,7 @@ public class PlanService {
   }
 
   public void updatePlan(PlanRequest request, UUID identifier) {
-    Plan plan = getPlanByIdentifier(identifier);
+    Plan plan = findPlanByIdentifier(identifier);
     LocationHierarchy hierarchy = locationHierarchyService.findByIdentifier(
         request.getLocationHierarchy());
     LookupInterventionType interventionType = lookupInterventionTypeService.findByIdentifier(

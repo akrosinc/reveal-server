@@ -30,14 +30,14 @@ public class GoalService {
   }
 
   public void createGoal(UUID planIdentifier, GoalRequest goalRequest) {
-    Plan plan = planService.getPlanByIdentifier(planIdentifier);
+    Plan plan = planService.findPlanByIdentifier(planIdentifier);
     Goal goal = GoalEntityFactory.toEntityWithoutAction(goalRequest, plan);
     goalRepository.save(goal);
   }
 
   public void updateGoal(UUID identifier, UUID planIdentifier,
       GoalUpdateRequest goalUpdateRequest) {
-    Plan plan = planService.getPlanByIdentifier(planIdentifier);
+    Plan plan = planService.findPlanByIdentifier(planIdentifier);
     Goal goal = findByIdentifier(identifier);
     if (!plan.getGoals().contains(goal)) {
       throw new ConflictException(Goal.class, identifier, Plan.class, planIdentifier);
@@ -47,7 +47,7 @@ public class GoalService {
   }
 
   public void deleteGoal(UUID identifier, UUID planIdentifier) {
-    Plan plan = planService.getPlanByIdentifier(planIdentifier);
+    Plan plan = planService.findPlanByIdentifier(planIdentifier);
     Goal goal = findByIdentifier(identifier);
 
     goalRepository.delete(goal);

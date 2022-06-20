@@ -178,9 +178,9 @@ public class LocationStream {
       PlanLocationAssignMessage planLocationAssignMessage) {
 
     List<LocationAssigned> locations = new ArrayList<>();
-    String planIdentifier = planLocationAssignMessage.getPlanIdentifier();
+    String planIdentifier = planLocationAssignMessage.getPlanIdentifier().toString();
 
-    Plan plan = planService.getPlanByIdentifier(UUID.fromString(planIdentifier));
+    Plan plan = planService.findPlanByIdentifier(UUID.fromString(planIdentifier));
 
     if (planLocationAssignMessage.getLocationsAdded() != null) {
 

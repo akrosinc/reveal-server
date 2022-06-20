@@ -10,6 +10,7 @@ public class KafkaConstants {
   public static final String LOCATION_METADATA_UPDATE = "LOCATION_METADATA_UPDATE";
   public static final String PERSON_METADATA_UPDATE = "PERSON_METADATA_UPDATE";
   public static final String tableOfOperationalAreaHierarchiesTOPIC = "tableOfOperationalAreaHierarchiesTOPIC";
+  public static final String TASK_CANDIDATE = "TASK_CANDIDATE";
 
 
   ///Materialized stores

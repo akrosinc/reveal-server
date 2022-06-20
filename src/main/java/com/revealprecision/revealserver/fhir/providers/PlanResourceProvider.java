@@ -40,7 +40,7 @@ public class PlanResourceProvider implements IResourceProvider {
   @Transactional
   public PlanDefinition read(@IdParam IdType theId) {
 
-    Plan plan = planService.getPlanByIdentifier(UUID.fromString(theId.getIdPart()));
+    Plan plan = planService.findPlanByIdentifier(UUID.fromString(theId.getIdPart()));
 
     PlanDefinition planDefinition = new PlanDefinition();
 

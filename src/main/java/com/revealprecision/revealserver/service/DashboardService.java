@@ -740,7 +740,7 @@ public class DashboardService {
       UUID parentIdentifier) {
 
     ReportTypeEnum reportTypeEnum = LookupUtil.lookup(ReportTypeEnum.class, reportType);
-    Plan plan = planService.getPlanByIdentifier(planIdentifier);
+    Plan plan = planService.findPlanByIdentifier(planIdentifier);
     List<String> applicableReportTypes = ApplicableReportsEnum.valueOf(
         plan.getInterventionType().getCode()).getReportName();
     if (!applicableReportTypes.contains(reportTypeEnum.name())) {

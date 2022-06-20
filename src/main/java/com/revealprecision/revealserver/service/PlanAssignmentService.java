@@ -69,7 +69,7 @@ public class PlanAssignmentService {
   @Transactional
   public void assignOrganizationsWithChildrenToLocation(Set<UUID> organizationIdentifiers,
       UUID locationId, UUID planId) {
-    Plan plan = planService.getPlanByIdentifier(planId);
+    Plan plan = planService.findPlanByIdentifier(planId);
     Location location = locationService.findByIdentifier(locationId);
 
     List<UUID> locationsToAdd = locationService.getAllLocationChildren(locationId, plan.getLocationHierarchy().getIdentifier());
@@ -121,7 +121,7 @@ public class PlanAssignmentService {
   }
 
   public void assignMultipleTeams(UUID planIdentifier, MultipleLocationTeamAssignRequest request) {
-    Plan plan = planService.getPlanByIdentifier(planIdentifier);
+    Plan plan = planService.findPlanByIdentifier(planIdentifier);
     List<PlanLocations> planLocations = planLocationsService.getByPlanIdAndLocationIdentifiers(plan.getIdentifier(), List.copyOf(request.getLocations()));
     if(request.getTeams().isEmpty()){
       planLocations.forEach(pl -> pl.getPlanAssignments().clear());
