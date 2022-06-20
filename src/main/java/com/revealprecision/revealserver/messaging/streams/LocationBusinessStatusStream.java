@@ -458,7 +458,7 @@ public class LocationBusinessStatusStream {
 
   private LocationMetadataContainer getLocationMetadataContainerWithAncestry(
       LocationMetadataContainer metadataEventContainer) {
-    Plan plan = planService.getPlanByIdentifier(
+    Plan plan = planService.findPlanByIdentifier(
         metadataEventContainer.getMetaDataEvent().getTagData().getMeta().getPlanId());
     LocationMetadataContainer locationMetadataContainer = new LocationMetadataContainer();
     locationMetadataContainer.setLocationIdentifier(

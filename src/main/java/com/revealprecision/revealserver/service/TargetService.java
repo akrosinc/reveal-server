@@ -33,7 +33,7 @@ public class TargetService {
 
   public void createTarget(TargetRequest targetRequest, UUID planIdentifier,
       UUID goalIdentifier) {
-    Plan plan = planService.getPlanByIdentifier(planIdentifier);
+    Plan plan = planService.findPlanByIdentifier(planIdentifier);
     Goal goal = goalService.findByIdentifier(goalIdentifier);
     //TODO: finish target creation
   }
@@ -41,7 +41,7 @@ public class TargetService {
   public void updateTarget(TargetRequest targetRequest, UUID planIdentifier, UUID goalIdentifier,
       UUID targetIdentifier) {
     Target target = getByIdentifier(targetIdentifier);
-    Plan plan = planService.getPlanByIdentifier(planIdentifier);
+    Plan plan = planService.findPlanByIdentifier(planIdentifier);
     Goal goal = goalService.findByIdentifier(goalIdentifier);
 
     target.update(targetRequest);
@@ -50,7 +50,7 @@ public class TargetService {
 
   public Page<Target> getAll(UUID planIdentifier, UUID goalIdentifier, UUID actionIdentifier,
       UUID conditionIdentifier, Pageable pageable) {
-    Plan plan = planService.getPlanByIdentifier(planIdentifier);
+    Plan plan = planService.findPlanByIdentifier(planIdentifier);
     Goal goal = goalService.findByIdentifier(goalIdentifier);
     Action action = actionService.getByIdentifier(actionIdentifier);
     Condition condition = conditionService.getCondition(conditionIdentifier);

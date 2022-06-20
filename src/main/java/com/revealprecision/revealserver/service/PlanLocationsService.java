@@ -3,6 +3,8 @@ package com.revealprecision.revealserver.service;
 import com.revealprecision.revealserver.api.v1.dto.factory.OrganizationResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.response.GeoTreeResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.OrganizationResponse;
+import com.revealprecision.revealserver.enums.ProcessTrackerEnum;
+import com.revealprecision.revealserver.enums.ProcessType;
 import com.revealprecision.revealserver.messaging.KafkaConstants;
 import com.revealprecision.revealserver.messaging.message.PlanLocationAssignMessage;
 import com.revealprecision.revealserver.persistence.domain.Location;
@@ -10,6 +12,7 @@ import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.PlanAssignment;
 import com.revealprecision.revealserver.persistence.domain.PlanLocations;
+import com.revealprecision.revealserver.persistence.domain.ProcessTracker;
 import com.revealprecision.revealserver.persistence.repository.PlanLocationsRepository;
 import com.revealprecision.revealserver.persistence.repository.PlanRepository;
 import com.revealprecision.revealserver.props.KafkaProperties;
@@ -45,7 +48,6 @@ public class PlanLocationsService {
       @Lazy PlanService planService, LocationService locationService,
       LocationHierarchyService locationHierarchyService,
       @Lazy PlanAssignmentService planAssignmentService,
-      PlanRepository planRepository,
       KafkaTemplate<String, PlanLocationAssignMessage> kafkaTemplate,
       KafkaProperties kafkaProperties) {
     this.planLocationsRepository = planLocationsRepository;
@@ -54,7 +56,7 @@ public class PlanLocationsService {
     this.locationHierarchyService = locationHierarchyService;
     this.planAssignmentService = planAssignmentService;
     this.kafkaTemplate = kafkaTemplate;
-    this.kafkaProperties=kafkaProperties;
+    this.kafkaProperties = kafkaProperties;
 
   }
 
@@ -64,7 +66,8 @@ public class PlanLocationsService {
 
   public List<PlanLocations> getPlanLocationsByPlanAndLocationIdentifier(UUID locationIdentifier,
       UUID planIdentifier) {
-    return planLocationsRepository.findByLocation_IdentifierAndPlan_Identifier(locationIdentifier, planIdentifier);
+    return planLocationsRepository.findByLocation_IdentifierAndPlan_Identifier(locationIdentifier,
+        planIdentifier);
   }
 
   public List<PlanLocations> getPlanLocationsByLocationIdentifierList(
@@ -84,10 +87,11 @@ public class PlanLocationsService {
   }
 
   public void assignLocation(UUID planIdentifier, UUID locationIdentifier) {
-    Plan plan = planService.getPlanByIdentifier(planIdentifier);
+    Plan plan = planService.findPlanByIdentifier(planIdentifier);
     Location location = locationService.findByIdentifier(locationIdentifier);
 
-    List<UUID> locationsToAdd = locationService.getAllLocationChildren(locationIdentifier, plan.getLocationHierarchy().getIdentifier());
+    List<UUID> locationsToAdd = locationService.getAllLocationChildren(locationIdentifier,
+        plan.getLocationHierarchy().getIdentifier());
     locationsToAdd.add(locationIdentifier);
     List<PlanLocations> addPlanLocations = locationsToAdd.stream()
         .map(loc -> new PlanLocations(plan, loc))
@@ -95,25 +99,26 @@ public class PlanLocationsService {
     planLocationsRepository.saveAll(addPlanLocations);
 
     PlanLocationAssignMessage planLocationAssignMessage = new PlanLocationAssignMessage();
-    planLocationAssignMessage.setPlanIdentifier(planIdentifier.toString());
+    planLocationAssignMessage.setPlanIdentifier(planIdentifier);
     planLocationAssignMessage.setLocationsAdded(
         locationsToAdd.stream()
             .map(UUID::toString)
             .collect(Collectors.toList())
     );
     planLocationAssignMessage.setOwnerId(UserUtils.getCurrentPrincipleName());
-    planLocationAssignMessage.setLocationsRemoved( new ArrayList<>());
+    planLocationAssignMessage.setLocationsRemoved(new ArrayList<>());
 
-    kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_LOCATION_ASSIGNED), planLocationAssignMessage);
+    kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_LOCATION_ASSIGNED),
+        planLocationAssignMessage);
     log.info("sent plan location");
 
   }
 
   public void selectPlanLocations(UUID planIdentifier, Set<UUID> locations) {
-    Plan plan = planService.getPlanByIdentifier(planIdentifier);
+    Plan plan = planService.findPlanByIdentifier(planIdentifier);
 
     PlanLocationAssignMessage planLocationAssignMessage = new PlanLocationAssignMessage();
-    planLocationAssignMessage.setPlanIdentifier(planIdentifier.toString());
+    planLocationAssignMessage.setPlanIdentifier(planIdentifier);
     planLocationAssignMessage.setLocationsAdded(
         locations.stream()
             .map(UUID::toString)
@@ -121,18 +126,28 @@ public class PlanLocationsService {
     );
     planLocationAssignMessage.setOwnerId(UserUtils.getCurrentPrincipleName());
 
-    List<UUID> removedPlanLocations = plan.getPlanLocations().stream().map(PlanLocations::getLocation)
+    List<UUID> removedPlanLocations = plan.getPlanLocations().stream()
+        .map(PlanLocations::getLocation)
         .map(Location::getIdentifier).collect(Collectors.toList());
     removedPlanLocations.removeAll(locations);
     List<String> removedPlanLocationsString = removedPlanLocations.stream().map(UUID::toString)
         .collect(Collectors.toList());
     planLocationAssignMessage.setLocationsRemoved(removedPlanLocationsString);
 
+    int deleteByPlan = -1;
+    int saveAll = -1;
+    int deleteByPlanAndLocation = -1;
+
     if (locations.size() == 0) {
-      planLocationsRepository.deleteByPlanIdentifier(planIdentifier);
-      kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_LOCATION_ASSIGNED), planLocationAssignMessage);
+      deleteByPlan = planLocationsRepository.deleteByPlanIdentifier(planIdentifier);
+      planLocationAssignMessage.setDeleteByPlan(deleteByPlan);
+      planLocationAssignMessage.setDeleteByPlanAndLocation(deleteByPlanAndLocation);
+      planLocationAssignMessage.setSaveAll(saveAll);
+      kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_LOCATION_ASSIGNED),
+          planLocationAssignMessage);
     } else {
-      Set<UUID> currentLocation = planLocationsRepository.findByPlan_Identifier(planIdentifier).stream()
+      Set<UUID> currentLocation = planLocationsRepository.findByPlan_Identifier(planIdentifier)
+          .stream()
           .map(planLocations1 -> planLocations1.getLocation().getIdentifier()).collect(
               Collectors.toSet());
       Set<UUID> locationsToAdd = new HashSet<>(locations);
@@ -144,25 +159,33 @@ public class PlanLocationsService {
           .collect(Collectors.toList());
 
       if (addPlanLocations.size() > 0) {
-        planLocationsRepository.saveAll(addPlanLocations);
+        List<PlanLocations> planLocations = planLocationsRepository.saveAll(addPlanLocations);
+        saveAll = planLocations.size();
       }
       if (currentLocation.size() > 0) {
-        planLocationsRepository.deletePlanLocationsByPlanAndLocation(planIdentifier,
+        deleteByPlanAndLocation = planLocationsRepository.deletePlanLocationsByPlanAndLocation(
+            planIdentifier,
             new ArrayList<>(currentLocation));
       }
-
-      kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_LOCATION_ASSIGNED), planLocationAssignMessage);
+      planLocationAssignMessage.setDeleteByPlan(deleteByPlan);
+      planLocationAssignMessage.setDeleteByPlanAndLocation(deleteByPlanAndLocation);
+      planLocationAssignMessage.setSaveAll(saveAll);
+      kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_LOCATION_ASSIGNED),
+          planLocationAssignMessage);
       log.info("sent plan location");
     }
+
   }
 
   public List<GeoTreeResponse> getHierarchyByPlanIdentifier(UUID identifier) {
-    Plan plan = planService.getPlanByIdentifier((identifier));
+    Plan plan = planService.findPlanByIdentifier((identifier));
     LocationHierarchy locationHierarchy = locationHierarchyService.findByIdentifier(
         plan.getLocationHierarchy().getIdentifier());
 
-    List<GeoTreeResponse> geoTreeResponses = locationHierarchyService.getGeoTreeFromLocationHierarchyWithoutStructure(locationHierarchy);
-    Set<Location> locations = planLocationsRepository.findLocationsByPlan_Identifier(plan.getIdentifier());
+    List<GeoTreeResponse> geoTreeResponses = locationHierarchyService.getGeoTreeFromLocationHierarchyWithoutStructure(
+        locationHierarchy);
+    Set<Location> locations = planLocationsRepository.findLocationsByPlan_Identifier(
+        plan.getIdentifier());
     Map<UUID, Location> locationMap = locations.stream()
         .collect(Collectors.toMap(Location::getIdentifier, location -> location));
     List<PlanAssignment> planAssignments = planAssignmentService.getPlanAssignmentsByPlanIdentifier(
@@ -186,17 +209,20 @@ public class PlanLocationsService {
       geoTreeResponse.setTeams(teams);
     }
     geoTreeResponse.setActive(locationMap.containsKey(geoTreeResponse.getIdentifier()));
-    if(geoTreeResponse.getChildren() != null) {
-      geoTreeResponse.getChildren().forEach(el -> assignLocations(locationMap, el, planAssignmentMap));
+    if (geoTreeResponse.getChildren() != null) {
+      geoTreeResponse.getChildren()
+          .forEach(el -> assignLocations(locationMap, el, planAssignmentMap));
     }
   }
 
   public Long getPlanLocationsCount(UUID planIdentifier) {
-    Plan plan = planService.getPlanByIdentifier(planIdentifier);
+    Plan plan = planService.findPlanByIdentifier(planIdentifier);
     return planLocationsRepository.countByPlan_Identifier(plan.getIdentifier());
   }
 
-  public Set<PlanLocations> getPlanLocationsByPlanIdAndLocationIds(UUID planId, List<UUID> locationIds) {
-    return planLocationsRepository.getPlanLocationsByPlanIdAndLocationIdentifiers(planId, locationIds);
+  public Set<PlanLocations> getPlanLocationsByPlanIdAndLocationIds(UUID planId,
+      List<UUID> locationIds) {
+    return planLocationsRepository.getPlanLocationsByPlanIdAndLocationIdentifiers(planId,
+        locationIds);
   }
 }

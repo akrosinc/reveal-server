@@ -97,7 +97,7 @@ public class PlanController {
   public ResponseEntity<PlanResponse> getByIdentifier(@PathVariable("identifier") UUID identifier) {
     return ResponseEntity
         .status(HttpStatus.OK)
-        .body(PlanResponseFactory.fromEntity(planService.getPlanByIdentifier(identifier)));
+        .body(PlanResponseFactory.fromEntity(planService.findPlanByIdentifier(identifier)));
   }
 
   @GetMapping("/{identifier}/locationHierarchy")

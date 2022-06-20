@@ -32,7 +32,7 @@ public class ReportDashboardController {
 
   @GetMapping("/applicableReports/{identifier}")
   public List<String> getReportTypes(@PathVariable("identifier") UUID identifier) {
-    Plan plan = planService.getPlanByIdentifier(identifier);
+    Plan plan = planService.findPlanByIdentifier(identifier);
     return ApplicableReportsEnum.valueOf(plan.getInterventionType().getCode()).getReportName();
   }
 

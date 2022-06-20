@@ -104,7 +104,7 @@ public class LocationService {
   public List<PlanLocationDetails> getLocationsByParentIdentifierAndPlanIdentifier(
       UUID parentIdentifier,
       UUID planIdentifier) {
-    Plan plan = planService.getPlanByIdentifier(planIdentifier);
+    Plan plan = planService.findPlanByIdentifier(planIdentifier);
     Location location = findByIdentifier(parentIdentifier);
 
     Map<UUID, Long> childrenCount = locationRelationshipService.getLocationChildrenCount(
@@ -130,7 +130,7 @@ public class LocationService {
       UUID parentIdentifier,
       UUID planIdentifier,
       boolean isBeforeStructure) {
-    Plan plan = planService.getPlanByIdentifier(planIdentifier);
+    Plan plan = planService.findPlanByIdentifier(planIdentifier);
     Location location = findByIdentifier(parentIdentifier);
     Map<UUID, Long> childrenCount;
     if (!isBeforeStructure) {
@@ -161,7 +161,7 @@ public class LocationService {
   }
 
   public PlanLocationDetails getRootLocationByPlanIdentifier(UUID planIdentifier) {
-    Plan plan = planService.getPlanByIdentifier(planIdentifier);
+    Plan plan = planService.findPlanByIdentifier(planIdentifier);
     Map<UUID, Long> childrenCount = locationRelationshipService.getLocationChildrenCount(
             plan.getLocationHierarchy().getIdentifier())
         .stream().filter(loc -> loc.getParentIdentifier() != null)
@@ -188,7 +188,7 @@ public class LocationService {
 
   public PlanLocationDetails getLocationDetailsByIdentifierAndPlanIdentifier(
       UUID locationIdentifier, UUID planIdentifier) {
-    Plan plan = planService.getPlanByIdentifier(planIdentifier);
+    Plan plan = planService.findPlanByIdentifier(planIdentifier);
     PlanLocationDetails details = locationRepository.getLocationDetailsByIdentifierAndPlanIdentifier(
         locationIdentifier, plan.getIdentifier());
 
