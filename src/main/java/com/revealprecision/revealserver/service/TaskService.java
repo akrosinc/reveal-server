@@ -246,11 +246,8 @@ public class TaskService {
         Collectors.toList());
 
     List<UUID> existingTaskUuids = existingTaskObjs.stream()
-        .peek((k)-> log.debug("1. k: {}",k))
         .map(TaskProjectionObj::getBaseIdentifier)
-        .peek((k)-> log.debug("2. k: {}",k))
         .map(UUID::fromString)
-        .peek((k)-> log.debug("3. k: {}",k))
         .collect(
         Collectors.toList());
 
@@ -523,7 +520,7 @@ public class TaskService {
 
     if (taskOptional.isPresent()) {
       Task task = taskOptional.get();
-      if (task.getLookupTaskStatus().getCode().equals(TASK_STATUS_READY)) {
+      if (!task.getLookupTaskStatus().getCode().equals(TASK_STATUS_CANCELLED)) {
         task.setLookupTaskStatus(this.cancelledLookupTaskStatus);
         savedTask = saveTaskAndBusinessState(task, taskProcessEvent.getOwner());
       }
@@ -535,13 +532,17 @@ public class TaskService {
 
   public Task saveTaskAndBusinessState(Task task, String ownerId){
 
-    businessStatusService.setBusinessStatus(task,
-        businessStatusProperties.getDefaultLocationBusinessStatus());
-
     Task savedTask = taskRepository.save(task);
 
-    log.trace("task: {} entity: {}", task.getIdentifier(), task.getBaseEntityIdentifier());
-    TaskEvent taskEvent = TaskEventFactory.getTaskEventFromTask(task);
+    if (savedTask.getLookupTaskStatus().getCode().equals(TASK_STATUS_CANCELLED)){
+      businessStatusService.deactivateBusinessStatus(savedTask);
+    } else {
+      businessStatusService.setBusinessStatus(task,
+          businessStatusProperties.getDefaultLocationBusinessStatus());
+    }
+
+    log.trace("task: {} entity: {}", savedTask.getIdentifier(), savedTask.getBaseEntityIdentifier());
+    TaskEvent taskEvent = TaskEventFactory.getTaskEventFromTask(savedTask);
     taskEvent.setOwnerId(ownerId);
     kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.TASK), taskEvent);
 
