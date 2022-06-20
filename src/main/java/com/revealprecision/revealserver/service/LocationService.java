@@ -42,6 +42,9 @@ public class LocationService {
         .name(locationRequest.getProperties().getName())
         .status(locationRequest.getProperties().getStatus())
         .externalId(locationRequest.getProperties().getExternalId()).build();
+    if (locationRequest.getProperties().getExternalId() != null) {
+      locationToSave.setIdentifier(locationRequest.getProperties().getExternalId());
+    }
     locationToSave.setEntityStatus(EntityStatus.ACTIVE);
     var savedLocation = locationRepository.save(locationToSave);
     locationRelationshipService.updateLocationRelationshipsForNewLocation(savedLocation);

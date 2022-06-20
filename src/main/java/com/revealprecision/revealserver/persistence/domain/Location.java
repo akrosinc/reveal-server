@@ -1,12 +1,15 @@
 package com.revealprecision.revealserver.persistence.domain;
 
 import com.revealprecision.revealserver.api.v1.dto.request.LocationRequest;
+import com.revealprecision.revealserver.enums.LocationStatus;
 import com.revealprecision.revealserver.persistence.generator.LocationServerVersionGenerator;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import java.util.Set;
 import java.util.UUID;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
@@ -22,6 +25,7 @@ import lombok.experimental.FieldNameConstants;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.GenerationTime;
 import org.hibernate.annotations.GeneratorType;
+import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
@@ -42,7 +46,8 @@ import org.hibernate.envers.Audited;
 public class Location extends AbstractAuditableEntity {
 
   @Id
-  @GeneratedValue
+  @GeneratedValue(generator = "custom-generator")
+  @GenericGenerator(name = "custom-generator", strategy = "com.revealprecision.revealserver.persistence.generator.CustomIdentifierGenerator")
   private UUID identifier;
 
   @ColumnDefault(value = "feature")
@@ -53,7 +58,9 @@ public class Location extends AbstractAuditableEntity {
   private Geometry geometry;
 
   private String name;
-  private String status;
+
+  @Enumerated(EnumType.STRING)
+  private LocationStatus status;
   private UUID externalId;
 
   @GeneratorType(type = LocationServerVersionGenerator.class, when = GenerationTime.ALWAYS)
@@ -70,7 +77,7 @@ public class Location extends AbstractAuditableEntity {
   @ManyToMany(mappedBy = "locations")
   private Set<Person> people;
 
-  public Location(UUID identifier, String type, String name, String status, UUID externalId,
+  public Location(UUID identifier, String type, String name, LocationStatus status, UUID externalId,
       GeographicLevel geographicLevel,
       LocationBulk locationBulk) {
     this.identifier = identifier;

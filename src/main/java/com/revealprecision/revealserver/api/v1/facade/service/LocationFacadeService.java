@@ -2,7 +2,7 @@ package com.revealprecision.revealserver.api.v1.facade.service;
 
 import com.revealprecision.revealserver.api.v1.dto.request.LocationRequest;
 import com.revealprecision.revealserver.api.v1.facade.factory.LocationRequestFactory;
-import com.revealprecision.revealserver.api.v1.facade.models.PhysicalLocation;
+import com.revealprecision.revealserver.api.v1.facade.models.CreateLocationRequest;
 import com.revealprecision.revealserver.api.v1.facade.request.LocationSyncRequest;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
@@ -45,10 +45,10 @@ public class LocationFacadeService {
     return headers;
   }
 
-  public Set<String> saveSyncedLocations(List<PhysicalLocation> physicalLocationRequests) {
+  public Set<String> saveSyncedLocations(List<CreateLocationRequest> createLocationRequests) {
     Set<String> locationRequestsWithErrors = new HashSet<>();
     List<LocationRequest> locationRequests = LocationRequestFactory
-        .fromPhysicalLocationRequests(physicalLocationRequests);
+        .fromPhysicalLocationRequests(createLocationRequests);
     for (LocationRequest locationRequest : locationRequests) {
       try {
         locationService.createLocation(locationRequest);

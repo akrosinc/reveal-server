@@ -1,6 +1,6 @@
 package com.revealprecision.revealserver.api.v1.facade.service;
 
-import com.revealprecision.revealserver.api.v1.dto.request.PersonRequest;
+import com.revealprecision.revealserver.api.v1.dto.request.LocationRequest;
 import com.revealprecision.revealserver.api.v1.facade.factory.TaskFacadeFactory;
 import com.revealprecision.revealserver.api.v1.facade.models.TaskDto;
 import com.revealprecision.revealserver.api.v1.facade.models.TaskFacade;
@@ -9,8 +9,8 @@ import com.revealprecision.revealserver.api.v1.facade.util.DateTimeFormatter;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.enums.TaskPriorityEnum;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
-import com.revealprecision.revealserver.messaging.TaskEventFactory;
 import com.revealprecision.revealserver.messaging.KafkaConstants;
+import com.revealprecision.revealserver.messaging.TaskEventFactory;
 import com.revealprecision.revealserver.messaging.message.Message;
 import com.revealprecision.revealserver.messaging.message.TaskAggregate;
 import com.revealprecision.revealserver.messaging.message.TaskEvent;
@@ -43,7 +43,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.streams.KafkaStreams;
@@ -262,10 +261,16 @@ public class TaskFacadeService {
       } catch (NotFoundException notFoundException) {
         locationFound = false;
       }
-      //TODO: We will need to handle the location creation process here for dropped points. Will require android "task add" change.
       if (locationFound) {
         boolean isActionForLocation = ActionUtils.isActionForLocation(action);
         if (isActionForLocation) {
+          task.setLocation(location);
+        }
+      } else {
+        //Let's add the new location
+        LocationRequest locationRequest = taskDto.getLocationRequest();
+        location = locationService.createLocation(locationRequest);
+        if(ActionUtils.isActionForLocation(action)){
           task.setLocation(location);
         }
       }
