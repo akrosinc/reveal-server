@@ -3,6 +3,7 @@ package com.revealprecision.revealserver.service;
 import com.cosium.spring.data.jpa.entity.graph.domain.EntityGraphUtils;
 import com.revealprecision.revealserver.api.v1.dto.factory.PlanEntityFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.PlanRequest;
+import com.revealprecision.revealserver.constants.LocationConstants;
 import com.revealprecision.revealserver.enums.ApplicableReportsEnum;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.enums.LookupUtil;
@@ -17,6 +18,7 @@ import com.revealprecision.revealserver.messaging.message.PlanUpdateType;
 import com.revealprecision.revealserver.persistence.domain.Action;
 import com.revealprecision.revealserver.persistence.domain.Condition;
 import com.revealprecision.revealserver.persistence.domain.Form;
+import com.revealprecision.revealserver.persistence.domain.GeographicLevel;
 import com.revealprecision.revealserver.persistence.domain.Goal;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
@@ -24,6 +26,7 @@ import com.revealprecision.revealserver.persistence.domain.LookupEntityType;
 import com.revealprecision.revealserver.persistence.domain.LookupInterventionType;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.Plan.Fields;
+import com.revealprecision.revealserver.persistence.domain.PlanTargetType;
 import com.revealprecision.revealserver.persistence.repository.PlanRepository;
 import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.util.UserUtils;
@@ -54,6 +57,7 @@ public class PlanService {
   private final LookupEntityTypeService lookupEntityTypeService;
   private final KafkaTemplate<String, Message> kafkaTemplate;
   private final KafkaProperties kafkaProperties;
+  private final GeographicLevelService geographicLevelService;
 
   public static boolean isNullOrEmpty(final Collection<?> c) {
     return c == null || c.isEmpty();
@@ -120,6 +124,27 @@ public class PlanService {
 
     Plan plan = PlanEntityFactory.toEntity(planRequest, interventionType, locationHierarchy,
         foundForms, allLookUpEntityTypes);
+
+    PlanTargetType planTargetType = new PlanTargetType();
+    planTargetType.setPlan(plan);
+
+    if (!interventionType.getCode().equals("MDA Lite") && !interventionType.getCode().equals("IRS Lite")){
+      GeographicLevel geographicLevel = geographicLevelService.findByName(LocationConstants.STRUCTURE);
+      planTargetType.setGeographicLevel(geographicLevel);
+    }else{
+      String geographicLevelName = null;
+      if (planRequest.getGeographicLevelRequest() == null){
+        geographicLevelName = "operational";
+      } else {
+        geographicLevelName = planRequest.getGeographicLevelRequest().getName();
+      }
+
+      GeographicLevel geographicLevel = geographicLevelService.findByName(geographicLevelName);
+      planTargetType.setGeographicLevel(geographicLevel);
+    }
+    planTargetType.setEntityStatus(EntityStatus.ACTIVE);
+    plan.setPlanTargetType(planTargetType);
+
     plan.setEntityStatus(EntityStatus.ACTIVE);
 
     savePlan(plan);

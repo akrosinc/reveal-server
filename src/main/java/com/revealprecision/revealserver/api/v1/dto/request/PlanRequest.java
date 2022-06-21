@@ -36,4 +36,6 @@ public class PlanRequest {
 
   @Valid
   private Set<GoalRequest> goals;
+
+  private GeographicLevelRequest geographicLevelRequest;
 }
