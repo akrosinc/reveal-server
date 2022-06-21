@@ -24,6 +24,7 @@ public class EntityTagResponseFactory {
         .tag(entityTag.getTag())
         .definition(entityTag.getDefinition())
         .valueType(entityTag.getValueType())
+        .fieldType("tag")
         .lookupEntityType(
             LookupEntityTagResponseFactory.fromEntity(entityTag.getLookupEntityType())).build();
   }
@@ -35,6 +36,7 @@ public class EntityTagResponseFactory {
         .tag(coreField.getField())
         .definition(coreField.getDefinition())
         .valueType(coreField.getValueType())
+        .fieldType("core")
         .lookupEntityType(
             LookupEntityTagResponseFactory.fromEntity(coreField.getLookupEntityType())).build();
   }
