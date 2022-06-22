@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.service;
 
 import com.revealprecision.revealserver.api.v1.dto.request.LocationRequest;
+import com.revealprecision.revealserver.constants.LocationConstants;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.GeographicLevel;
@@ -96,7 +97,8 @@ public class LocationService {
         .map(LocationRelationship::getLocation).collect(Collectors.toList());
 
     return locations.stream()
-        .filter(location -> location.getGeographicLevel().getName().equalsIgnoreCase("structure")
+        .filter(location -> location.getGeographicLevel().getName().equalsIgnoreCase(
+            LocationConstants.STRUCTURE)
             && location.getServerVersion() >= serverVersion)
         .collect(Collectors.toList());//TODO: to update once we figure the target level part.
   }
@@ -200,6 +202,10 @@ public class LocationService {
 
   public Location getLocationParent(Location location, LocationHierarchy locationHierarchy) {
     return locationRelationshipService.getLocationParent(location, locationHierarchy);
+  }
+
+  public Location getLocationParentByLocationIdentifierAndHierarchyIdentifier(UUID locationIdentifier, UUID locationHierarchyIdentifier) {
+    return locationRelationshipService.getLocationParentByLocationIdentifierAndHierarchyIdentifier(locationIdentifier, locationHierarchyIdentifier);
   }
 
   public List<UUID> getAllLocationChildren(UUID locationIdentifier, UUID hierarchyIdentifier) {

@@ -85,7 +85,7 @@ public class TaskFacadeFactory {
         .businessStatus(task.getBusinessStatus())
         .owner(task.getOwner())
         .requester(requester)
-        .groupIdentifier(taskPlanParentId.split("_")[2])
+        .groupIdentifier(taskPlanParentId.split("_").length>2?taskPlanParentId.split("_")[2]:taskPlanParentId)
         .structureId(task.getBaseEntityIdentifier().toString())
         .serverVersion(task.getServerVersion() == null ? 0 : task.getServerVersion())
         .build();

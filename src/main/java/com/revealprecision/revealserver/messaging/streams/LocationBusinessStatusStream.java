@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.messaging.streams;
 
+import com.revealprecision.revealserver.constants.LocationConstants;
 import com.revealprecision.revealserver.messaging.KafkaConstants;
 import com.revealprecision.revealserver.messaging.message.LocationBusinessStatusAggregate;
 import com.revealprecision.revealserver.messaging.message.LocationMetadataContainer;
@@ -225,7 +226,7 @@ public class LocationBusinessStatusStream {
             .equals("business-status"))
         .filter(
             (k, metadataEventContainer) -> locationService.findByIdentifier(k).getGeographicLevel()
-                .getName().equals("structure"))
+                .getName().equals(LocationConstants.STRUCTURE))
         .mapValues((k, metadataEventContainer) -> getLocationMetadataContainerWithAncestry(
             metadataEventContainer));
 

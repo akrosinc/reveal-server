@@ -134,7 +134,7 @@ public class PlanService {
     }else{
       String geographicLevelName = null;
       if (planRequest.getGeographicLevelRequest() == null){
-        geographicLevelName = "operational";
+        geographicLevelName = LocationConstants.OPERATIONAL;
       } else {
         geographicLevelName = planRequest.getGeographicLevelRequest().getName();
       }

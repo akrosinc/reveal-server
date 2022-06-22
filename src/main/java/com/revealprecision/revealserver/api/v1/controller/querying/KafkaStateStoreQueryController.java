@@ -236,6 +236,17 @@ public class KafkaStateStoreQueryController<T> {
     iterateThroughStore(counts);
   }
 
+  @GetMapping("/task")
+  public void task() {
+    KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
+    ReadOnlyKeyValueStore<String, TaskEvent> counts = kafkaStreams.store(
+        StoreQueryParameters.fromNameAndType(
+            kafkaProperties.getStoreMap().get(KafkaConstants.task),
+            QueryableStoreTypes.keyValueStore())
+    );
+    iterateThroughStore(counts);
+  }
+
   @GetMapping("/taskPlanParent/{task}/{plan}/{parent}")
   public TaskEvent taskPlanParent(@PathVariable("task") String task,
       @PathVariable("plan") String plan, @PathVariable("parent") String parent) {

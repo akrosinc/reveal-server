@@ -35,4 +35,5 @@ public class KafkaConstants {
   public static final String tableOfOperationalAreaHierarchiesForPersonStream = "tableOfOperationalAreaHierarchiesForPersonStream";
   public static final String joinedOperationalAreaTreatmentData = "joinedOperationalAreaTreatmentData";
   public static final String operationalTreatedCounts = "operationalTreatedCounts";
+  public static final String task = "task";
 }
