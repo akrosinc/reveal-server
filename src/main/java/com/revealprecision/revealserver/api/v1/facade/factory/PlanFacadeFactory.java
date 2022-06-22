@@ -5,7 +5,9 @@ import com.revealprecision.revealserver.api.v1.facade.models.ActionFacade;
 import com.revealprecision.revealserver.api.v1.facade.models.JurisdictionFacade;
 import com.revealprecision.revealserver.api.v1.facade.models.PlanFacade;
 import com.revealprecision.revealserver.api.v1.facade.models.UseContext;
+import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.Plan;
+import com.revealprecision.revealserver.persistence.domain.PlanTargetType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -31,9 +33,14 @@ public class PlanFacadeFactory {
       actions.addAll(addActions);
     });
 
+    PlanTargetType planTargetType = plan.getPlanTargetType();
+    LocationHierarchy locationHierarchy = plan.getLocationHierarchy();
+    List<String> geographicLevelsForHierarchy = locationHierarchy.getNodeOrder();
+    String planJurisdictionLevelName = geographicLevelsForHierarchy.get(
+        geographicLevelsForHierarchy.indexOf(planTargetType.getGeographicLevel().getName()) - 1);
     List<JurisdictionFacade> jurisdictions = plan.getPlanLocations().stream()
         .filter(planLocations -> planLocations.getLocation().getGeographicLevel().getName()
-            .equals("operational"))
+            .equals(planJurisdictionLevelName))
         .map(planLocations -> new JurisdictionFacade(
             planLocations.getLocation().getIdentifier().toString()))
         .collect(Collectors.toList());
