@@ -94,7 +94,7 @@ public class TaskFacadeService {
             QueryableStoreTypes.keyValueStore()));
 
     ReadOnlyKeyValueStore<String, TaskEvent> taskStore = kafkaStreams.store(
-        StoreQueryParameters.fromNameAndType("task", QueryableStoreTypes.keyValueStore()));
+        StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap().get(KafkaConstants.task), QueryableStoreTypes.keyValueStore()));
 
     log.debug("Before task sync");
 
