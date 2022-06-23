@@ -250,6 +250,10 @@ public class LocationRelationshipService {
         Collectors.toList());
   }
 
+  public List<LocationRelationshipProjection> getLocationRelationshipsNotLike(LocationHierarchy locationHierarchy, List<String> notLike) {
+    return locationRelationshipRepository.findByLocationHierarchyWithoutStructuresNotLike(notLike);
+  }
+
   public List<LocationRelationshipProjection> getLocationRelationshipsWithoutStructure(
       LocationHierarchy locationHierarchy) {
     return locationRelationshipRepository.findByLocationHierarchyWithoutStructures(

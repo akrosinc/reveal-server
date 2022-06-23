@@ -3,8 +3,10 @@ package com.revealprecision.revealserver.service;
 import com.revealprecision.revealserver.api.v1.dto.factory.OrganizationResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.response.GeoTreeResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.OrganizationResponse;
+import com.revealprecision.revealserver.constants.LocationConstants;
 import com.revealprecision.revealserver.enums.ProcessTrackerEnum;
 import com.revealprecision.revealserver.enums.ProcessType;
+import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.messaging.KafkaConstants;
 import com.revealprecision.revealserver.messaging.message.PlanLocationAssignMessage;
 import com.revealprecision.revealserver.persistence.domain.Location;
@@ -18,9 +20,12 @@ import com.revealprecision.revealserver.persistence.repository.PlanRepository;
 import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.util.UserUtils;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -90,8 +95,29 @@ public class PlanLocationsService {
     Plan plan = planService.findPlanByIdentifier(planIdentifier);
     Location location = locationService.findByIdentifier(locationIdentifier);
 
-    List<UUID> locationsToAdd = locationService.getAllLocationChildren(locationIdentifier,
-        plan.getLocationHierarchy().getIdentifier());
+    List<UUID> locationsToAdd;
+
+    if (!plan.getInterventionType().getCode().equals("MDA Lite") && !plan.getInterventionType()
+        .getCode()
+        .equals("IRS Lite")) {
+      locationsToAdd = locationService.getAllLocationChildren(locationIdentifier,
+          plan.getLocationHierarchy().getIdentifier());
+    } else {
+      if (plan.getPlanTargetType() == null) {
+        locationsToAdd = locationService.getAllLocationChildrenNotLike(locationIdentifier,
+            plan.getLocationHierarchy().getIdentifier(),
+            new ArrayList<>(Collections.singletonList(LocationConstants.OPERATIONAL)));
+      } else {
+        LocationHierarchy locationHierarchy = plan.getLocationHierarchy();
+        int i = locationHierarchy.getNodeOrder()
+            .indexOf(plan.getPlanTargetType().getGeographicLevel().getName());
+        List<String> elList = locationHierarchy.getNodeOrder()
+            .subList(i + 1, locationHierarchy.getNodeOrder().size());
+        locationsToAdd = locationService.getAllLocationChildrenNotLike(locationIdentifier,
+            plan.getLocationHierarchy().getIdentifier(), elList);
+      }
+    }
+
     locationsToAdd.add(locationIdentifier);
     List<PlanLocations> addPlanLocations = locationsToAdd.stream()
         .map(loc -> new PlanLocations(plan, loc))
@@ -182,8 +208,19 @@ public class PlanLocationsService {
     LocationHierarchy locationHierarchy = locationHierarchyService.findByIdentifier(
         plan.getLocationHierarchy().getIdentifier());
 
-    List<GeoTreeResponse> geoTreeResponses = locationHierarchyService.getGeoTreeFromLocationHierarchyWithoutStructure(
-        locationHierarchy);
+    List<GeoTreeResponse> geoTreeResponses;
+    if (plan.getInterventionType().getName().toLowerCase().contains("lite")) {
+      int i = locationHierarchy.getNodeOrder()
+          .indexOf(plan.getPlanTargetType().getGeographicLevel().getName());
+      List<String> elList = locationHierarchy.getNodeOrder()
+          .subList(i + 1, locationHierarchy.getNodeOrder().size());
+      geoTreeResponses = locationHierarchyService.getGeoTreeFromLocationHierarchyWithoutStructure(
+          locationHierarchy, elList);
+    } else {
+      geoTreeResponses = locationHierarchyService.getGeoTreeFromLocationHierarchyWithoutStructure(
+          locationHierarchy, null);
+    }
+
     Set<Location> locations = planLocationsRepository.findLocationsByPlan_Identifier(
         plan.getIdentifier());
     Map<UUID, Location> locationMap = locations.stream()

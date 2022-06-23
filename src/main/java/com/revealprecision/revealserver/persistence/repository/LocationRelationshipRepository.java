@@ -48,6 +48,13 @@ public interface LocationRelationshipRepository extends JpaRepository<LocationRe
       UUID locationHierarchyIdentifier);
 
   @Query(value =
+      "SELECT cast(lr.identifier as varchar) identifier, l.name locationName, cast(l.identifier as varchar) locationIdentifier, cast(lr.parent_identifier as varchar) parentIdentifier, gl.name geographicLevelName FROM location_relationship lr "
+          + "LEFT JOIN location l ON lr.location_identifier = l.identifier "
+          + "LEFT JOIN geographic_level gl ON l.geographic_level_identifier = gl.identifier "
+          + "WHERE gl.name NOT IN :nodeList", nativeQuery = true)
+  List<LocationRelationshipProjection> findByLocationHierarchyWithoutStructuresNotLike(@Param("nodeList") List<String> nodeList);
+
+  @Query(value =
       "select cast(lr.parent_identifier as varchar) as parentIdentifier, count(lr.parent_identifier) as childrenCount from location_relationship lr "
           + "where lr.location_hierarchy_identifier = :locationHierarchyIdentifier "
           + "group by lr.parent_identifier", nativeQuery = true)
