@@ -4,7 +4,9 @@ import com.google.common.base.Predicates;
 import com.google.common.collect.Maps;
 import com.revealprecision.revealserver.api.v1.dto.request.AssignTeamHierarchyRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.MultipleLocationTeamAssignRequest;
+import com.revealprecision.revealserver.constants.LocationConstants;
 import com.revealprecision.revealserver.persistence.domain.Location;
+import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.Organization;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.PlanAssignment;
@@ -13,6 +15,7 @@ import com.revealprecision.revealserver.persistence.projection.PlanLocationProje
 import com.revealprecision.revealserver.persistence.repository.PlanAssignmentRepository;
 import com.revealprecision.revealserver.persistence.repository.PlanLocationsRepository;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -72,7 +75,29 @@ public class PlanAssignmentService {
     Plan plan = planService.findPlanByIdentifier(planId);
     Location location = locationService.findByIdentifier(locationId);
 
-    List<UUID> locationsToAdd = locationService.getAllLocationChildren(locationId, plan.getLocationHierarchy().getIdentifier());
+    List<UUID> locationsToAdd;
+
+    if (!plan.getInterventionType().getCode().equals("MDA Lite") && !plan.getInterventionType()
+        .getCode()
+        .equals("IRS Lite")) {
+      locationsToAdd = locationService.getAllLocationChildren(locationId,
+          plan.getLocationHierarchy().getIdentifier());
+    } else {
+      if (plan.getPlanTargetType() == null) {
+        locationsToAdd = locationService.getAllLocationChildrenNotLike(locationId,
+            plan.getLocationHierarchy().getIdentifier(),
+            new ArrayList<>(Collections.singletonList(LocationConstants.OPERATIONAL)));
+      } else {
+        LocationHierarchy locationHierarchy = plan.getLocationHierarchy();
+        int i = locationHierarchy.getNodeOrder()
+            .indexOf(plan.getPlanTargetType().getGeographicLevel().getName());
+        List<String> elList = locationHierarchy.getNodeOrder()
+            .subList(i + 1, locationHierarchy.getNodeOrder().size());
+        locationsToAdd = locationService.getAllLocationChildrenNotLike(locationId,
+            plan.getLocationHierarchy().getIdentifier(), elList);
+      }
+    }
+
     locationsToAdd.add(locationId);
     List<PlanLocationProjection> planLocationProjections = planAssignmentRepository.getPlanLocationsIdentifiers(planId);
     List<UUID> existingLocations = planLocationProjections.stream()
