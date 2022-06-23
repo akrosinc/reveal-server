@@ -15,7 +15,7 @@ import com.revealprecision.revealserver.util.ActionUtils;
 import java.util.Optional;
 
 public class TaskFacadeFactory {
-  public static TaskFacade getTaskFacadeObj(String requester, String taskPlanParentId, TaskEvent task) {
+  public static TaskFacade getTaskFacadeObj(String requester, String groupId, TaskEvent task) {
     return TaskFacade.builder()
         .code(task.getAction().getTitle())
         .authoredOn(
@@ -37,7 +37,7 @@ public class TaskFacadeFactory {
         .businessStatus(task.getBusinessStatus())
         .owner(task.getOwner())
         .requester(requester)
-        .groupIdentifier(taskPlanParentId.split("_").length>2?taskPlanParentId.split("_")[2]:taskPlanParentId)
+        .groupIdentifier(groupId)
         .structureId(task.getBaseEntityIdentifier().toString())
         .serverVersion(task.getServerVersion() == null ? 0 : task.getServerVersion())
         .build();

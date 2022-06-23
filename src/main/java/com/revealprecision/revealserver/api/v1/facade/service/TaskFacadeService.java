@@ -91,7 +91,8 @@ public class TaskFacadeService {
             QueryableStoreTypes.keyValueStore()));
 
     ReadOnlyKeyValueStore<String, TaskEvent> taskStore = kafkaStreams.store(
-        StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap().get(KafkaConstants.task), QueryableStoreTypes.keyValueStore()));
+        StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap().get(KafkaConstants.task),
+            QueryableStoreTypes.keyValueStore()));
 
     log.debug("Before task sync");
 
@@ -116,8 +117,12 @@ public class TaskFacadeService {
         .map(location -> plan.getIdentifier() + "_" + location.getIdentifier().toString())
         .map(taskStore::get)
         .filter(taskEvent -> taskEvent.getServerVersion() > serverVersion)
-        .map(taskEvent -> TaskFacadeFactory.getTaskFacadeObj(requester,
-            taskEvent.getBaseEntityIdentifier().toString(), taskEvent))
+        .map(taskEvent -> {
+          TaskFacade taskFacadeObj = TaskFacadeFactory.getTaskFacadeObj(requester,
+              taskEvent.getParentLocation().toString()
+              , taskEvent);
+          return taskFacadeObj;
+        })
         .collect(Collectors.toList()).stream();
   }
 
@@ -143,7 +148,9 @@ public class TaskFacadeService {
                   taskId -> taskId.getId() + "_" + plan.getIdentifier() + "_"
                       + jurisdictionIdentifier.getIdentifier()).map(taskPlanParentId -> {
                 TaskEvent task = taskPlanParent.get(taskPlanParentId);
-                return TaskFacadeFactory.getTaskFacadeObj(requester, taskPlanParentId, task);
+                String locationParent = taskPlanParentId.split("_")[2];
+                return TaskFacadeFactory.getTaskFacadeObj(requester, locationParent,
+                    task);
               });
         });
   }
@@ -155,8 +162,11 @@ public class TaskFacadeService {
         .filter(location -> {
           if (plan.getPlanTargetType().getGeographicLevel().getName()
               .equals(LocationConstants.STRUCTURE)) {
-            return location.getGeographicLevel().getName()
-                .equals(LocationConstants.OPERATIONAL);
+            return
+                location.getGeographicLevel().getName().equals(
+                    plan.getLocationHierarchy().getNodeOrder().get(
+                        plan.getLocationHierarchy().getNodeOrder()
+                            .indexOf(LocationConstants.STRUCTURE) - 1));
           } else {
             return location.getGeographicLevel().getName()
                 .equals(plan.getPlanTargetType().getGeographicLevel().getName());

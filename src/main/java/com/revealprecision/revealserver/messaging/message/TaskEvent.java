@@ -62,4 +62,6 @@ public class TaskEvent  extends Message  {
 
   private UUID flattenedLocationAncestor;
 
+  private UUID parentLocation;
+
 }
