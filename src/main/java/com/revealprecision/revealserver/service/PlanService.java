@@ -87,13 +87,13 @@ public class PlanService {
   }
 
   public Page<Plan> getPlansForReports(String reportType, Pageable pageable) {
-    if(reportType.isBlank()) {
+    if (reportType.isBlank()) {
       return planRepository.findPlansByInterventionType(reportType, pageable);
-    }else{
+    } else {
       ApplicableReportsEnum applicableReportsEnum = null;
       ReportTypeEnum reportTypeEnum = LookupUtil.lookup(ReportTypeEnum.class, reportType);
-      for(ApplicableReportsEnum applicableReport : ApplicableReportsEnum.values()) {
-        if(applicableReport.getReportName().contains(reportType)) {
+      for (ApplicableReportsEnum applicableReport : ApplicableReportsEnum.values()) {
+        if (applicableReport.getReportName().contains(reportType)) {
           applicableReportsEnum = applicableReport;
           break;
         }
@@ -125,23 +125,20 @@ public class PlanService {
     Plan plan = PlanEntityFactory.toEntity(planRequest, interventionType, locationHierarchy,
         foundForms, allLookUpEntityTypes);
 
-    PlanTargetType planTargetType = new PlanTargetType();
-    planTargetType.setPlan(plan);
+    GeographicLevel geographicLevel;
 
-    if (!interventionType.getCode().equals("MDA Lite") && !interventionType.getCode().equals("IRS Lite")){
-      GeographicLevel geographicLevel = geographicLevelService.findByName(LocationConstants.STRUCTURE);
-      planTargetType.setGeographicLevel(geographicLevel);
-    }else{
-      String geographicLevelName = null;
-      if (planRequest.getGeographicLevelRequest() == null){
-        geographicLevelName = LocationConstants.OPERATIONAL;
+    if (!interventionType.getCode().equals("MDA Lite") && !interventionType.getCode()
+        .equals("IRS Lite")) {
+      geographicLevel = geographicLevelService.findByName(LocationConstants.STRUCTURE);
+    } else {
+      if (planRequest.getHierarchyLevelTarget() == null) {
+        geographicLevel = geographicLevelService.findByName(LocationConstants.OPERATIONAL);
       } else {
-        geographicLevelName = planRequest.getGeographicLevelRequest().getName();
+        geographicLevel = geographicLevelService.findByName(planRequest.getHierarchyLevelTarget());
       }
-
-      GeographicLevel geographicLevel = geographicLevelService.findByName(geographicLevelName);
-      planTargetType.setGeographicLevel(geographicLevel);
     }
+    PlanTargetType planTargetType = PlanTargetType.builder().plan(plan)
+        .geographicLevel(geographicLevel).build();
     planTargetType.setEntityStatus(EntityStatus.ACTIVE);
     plan.setPlanTargetType(planTargetType);
 
@@ -160,7 +157,8 @@ public class PlanService {
       planUpdateMessage.setPlanUpdateType(PlanUpdateType.ACTIVATE);
       planUpdateMessage.setOwnerId(UserUtils.getCurrentPrincipleName());
 
-      kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_UPDATE),planUpdateMessage);
+      kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_UPDATE),
+          planUpdateMessage);
     } else {
       throw new ConflictException("Relationships still generating for this plan.");
     }

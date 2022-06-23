@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -182,8 +183,17 @@ public class PlanLocationsService {
     LocationHierarchy locationHierarchy = locationHierarchyService.findByIdentifier(
         plan.getLocationHierarchy().getIdentifier());
 
-    List<GeoTreeResponse> geoTreeResponses = locationHierarchyService.getGeoTreeFromLocationHierarchyWithoutStructure(
-        locationHierarchy);
+    List<GeoTreeResponse> geoTreeResponses;
+    if (plan.getInterventionType().getName().toLowerCase().contains("lite")) {
+      int i = locationHierarchy.getNodeOrder()
+          .indexOf(plan.getPlanTargetType().getGeographicLevel().getName());
+      List<String> elList = locationHierarchy.getNodeOrder().subList(i + 1, locationHierarchy.getNodeOrder().size());
+      geoTreeResponses = locationHierarchyService.getGeoTreeFromLocationHierarchyWithoutStructure(locationHierarchy, elList);
+    } else {
+      geoTreeResponses = locationHierarchyService.getGeoTreeFromLocationHierarchyWithoutStructure(
+          locationHierarchy, null);
+    }
+
     Set<Location> locations = planLocationsRepository.findLocationsByPlan_Identifier(
         plan.getIdentifier());
     Map<UUID, Location> locationMap = locations.stream()

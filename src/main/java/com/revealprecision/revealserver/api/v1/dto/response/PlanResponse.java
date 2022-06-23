@@ -3,6 +3,7 @@ package com.revealprecision.revealserver.api.v1.dto.response;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.revealprecision.revealserver.api.v1.dto.request.EffectivePeriod;
 import com.revealprecision.revealserver.enums.PlanStatusEnum;
+import com.revealprecision.revealserver.persistence.domain.PlanTargetType;
 import java.time.LocalDate;
 import java.util.Set;
 import java.util.UUID;
@@ -29,5 +30,6 @@ public class PlanResponse {
   private LocationHierarchyResponse locationHierarchy;
   private LookupInterventionTypeResponse interventionType;
   private Set<GoalResponse> goals;
+  private String planTargetType;
 
 }
