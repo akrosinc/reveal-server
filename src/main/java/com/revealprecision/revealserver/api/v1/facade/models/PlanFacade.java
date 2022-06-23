@@ -34,4 +34,6 @@ public class PlanFacade {
   private List<GoalFacade> goals;
   private List<ActionFacade> actions;
   private boolean experimental;
+  private String targetGeographicLevel;
+  private List<String> hierarchyGeographicLevels;
 }
