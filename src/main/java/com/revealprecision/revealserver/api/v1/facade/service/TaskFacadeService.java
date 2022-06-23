@@ -23,7 +23,6 @@ import com.revealprecision.revealserver.persistence.domain.LookupTaskStatus.Fiel
 import com.revealprecision.revealserver.persistence.domain.Person;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.Task;
-import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.service.ActionService;
 import com.revealprecision.revealserver.service.BusinessStatusService;
@@ -31,7 +30,6 @@ import com.revealprecision.revealserver.service.LocationService;
 import com.revealprecision.revealserver.service.PersonService;
 import com.revealprecision.revealserver.service.PlanService;
 import com.revealprecision.revealserver.service.TaskService;
-import com.revealprecision.revealserver.service.UserService;
 import com.revealprecision.revealserver.util.ActionUtils;
 import com.revealprecision.revealserver.util.UserUtils;
 import java.time.LocalDateTime;
@@ -62,7 +60,6 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class TaskFacadeService {
 
-  private final UserService userService;
   private final TaskService taskService;
   private final ActionService actionService;
   private final PlanService planService;
@@ -167,33 +164,6 @@ public class TaskFacadeService {
         }).collect(Collectors.toList());
     return new SimpleEntry<UUID, List<Location>>(plan.getIdentifier(),
         collect);
-  }
-
-
-  private List<TaskFacade> getTaskFacades(Entry<UUID, List<Task>> groupTaskListEntry) {
-    List<Task> tasks = groupTaskListEntry.getValue();
-    String groupIdentifier = groupTaskListEntry.getKey().toString();
-    return tasks.stream().map(task -> getTaskFacade(groupIdentifier, task))
-        .collect(Collectors.toList());
-  }
-
-  private TaskFacade getTaskFacade(String groupIdentifier, Task task) {
-    String businessStatus = businessStatusService.getBusinessStatus(task);
-    String createdBy = task.getAction().getGoal().getPlan()
-        .getCreatedBy(); //TODO: confirm business rule for task creation user(owner)
-    User user = getUser(createdBy);
-    log.debug("Creating task facade with task identifier: {}", task.getIdentifier());
-    return TaskFacadeFactory.getEntity(task, businessStatus, user, groupIdentifier);
-  }
-
-  private User getUser(String createdByUserIdentifier) {
-    User user = null;
-    try {
-      user = userService.getByKeycloakId(UUID.fromString(createdByUserIdentifier));
-    } catch (NotFoundException exception) {
-      log.debug(String.format("CreatedBy user not found exception: %s", exception.getMessage()));
-    }
-    return user;
   }
 
 
