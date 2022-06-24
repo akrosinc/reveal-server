@@ -104,7 +104,6 @@ public class LocationStream {
 
     locationsAssignedStream.peek((k,v)->streamLog.debug("locationsAssignedStream - k: {} v: {}", k,v));
 
-    //TODO: remove hardcodings
     //Get structures from the locations assigned to plan
     KStream<String, PlanLocationAssignMessage> stringPlanLocationAssignMessageKStream = locationsAssignedStream
         .mapValues((k, planLocationAssignMessage) -> {
@@ -112,13 +111,13 @@ public class LocationStream {
               planLocationAssignMessage.getLocationsRemoved().stream()
                   .filter(locationRemoved -> locationService.findByIdentifier(
                           UUID.fromString(locationRemoved)).getGeographicLevel().getName()
-                      .equals("operational")).collect(
+                      .equals(LocationConstants.OPERATIONAL)).collect(
                       Collectors.toList()));
           planLocationAssignMessage.setLocationsAdded(
               planLocationAssignMessage.getLocationsAdded().stream()
                   .filter(locationAdded -> locationService.findByIdentifier(
                           UUID.fromString(locationAdded)).getGeographicLevel().getName()
-                      .equals("operational")).collect(
+                      .equals(LocationConstants.OPERATIONAL)).collect(
                       Collectors.toList()));
           return planLocationAssignMessage;
         });
@@ -129,7 +128,7 @@ public class LocationStream {
         .flatMapValues(
             (k, planLocationAssignMessage) -> getStructuresAssignedAndUnAssigned(
                 planLocationAssignMessage))
-        .flatMapValues((k, locationAssigned) -> getLocationAssignedsUnpackedByAncestry(locationAssigned))
+        .flatMapValues((k, locationAssigned) -> getLocationAssignedUnpackedByAncestry(locationAssigned))
         .selectKey((key, locationAssigned) -> getLocationPlanAncestorKey(locationAssigned))
         .mapValues((key, locationAssigned) -> locationAssigned.isAssigned() ? locationAssigned : null);
 
@@ -157,12 +156,13 @@ public class LocationStream {
     return locationsAssignedStream;
   }
 
+
   private String getLocationPlanAncestorKey(LocationAssigned locationAssigned) {
     return locationAssigned.getIdentifier() + "_"
         + locationAssigned.getPlanIdentifier() + "_" + locationAssigned.getAncestor();
   }
 
-  private List<LocationAssigned> getLocationAssignedsUnpackedByAncestry(LocationAssigned locationAssigned) {
+  private List<LocationAssigned> getLocationAssignedUnpackedByAncestry(LocationAssigned locationAssigned) {
     return locationAssigned.getAncestry().stream().map(ancestor -> {
       LocationAssigned locationAssigned1 = new LocationAssigned();
       locationAssigned1.setAssigned(locationAssigned.isAssigned());

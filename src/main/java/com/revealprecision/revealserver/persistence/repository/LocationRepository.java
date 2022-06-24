@@ -62,5 +62,20 @@ public interface LocationRepository extends JpaRepository<Location, UUID> {
       + "      select cast(a.id as varchar) from ancestors a", nativeQuery = true)
   List<UUID> getAllLocationChildren(UUID locationIdentifier, UUID hierarchyIdentifier);
 
+  @Query(value = "WITH RECURSIVE ancestors(id, parent_id, lvl) AS ( "
+      + "      SELECT lr.location_identifier, lr.parent_identifier,1 AS lvl "
+      + "      FROM location_relationship lr "
+      + "      WHERE lr.parent_identifier = :locationIdentifier and lr.location_hierarchy_identifier = :hierarchyIdentifier"
+      + "      UNION ALL "
+      + "      SELECT parent.location_identifier, parent.parent_identifier, child.lvl + 1 AS lvl "
+      + "      FROM location_relationship parent "
+      + "        JOIN ancestors child ON parent.parent_identifier = child.id "
+      + "        join location loc on parent.location_identifier = loc.identifier "
+      + "        join geographic_level gl on gl.identifier = loc.geographic_level_identifier "
+      + "    where gl.name NOT IN :nodeList and parent.location_hierarchy_identifier = :hierarchyIdentifier"
+      + "     ) "
+      + "      select cast(a.id as varchar) from ancestors a", nativeQuery = true)
+  List<UUID> getAllLocationChildrenNotLike(UUID locationIdentifier, UUID hierarchyIdentifier, List<String> nodeList);
+
   List<Location> getLocationsByPeople_Identifier(UUID personIdentifier);
 }

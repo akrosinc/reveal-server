@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.messaging.streams;
 
+import com.revealprecision.revealserver.constants.LocationConstants;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.messaging.KafkaConstants;
 import com.revealprecision.revealserver.messaging.TaskEventFactory;
@@ -7,12 +8,13 @@ import com.revealprecision.revealserver.messaging.message.TaskAggregate;
 import com.revealprecision.revealserver.messaging.message.TaskEvent;
 import com.revealprecision.revealserver.messaging.message.TaskLocationPair;
 import com.revealprecision.revealserver.persistence.domain.Location;
-import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
 import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.service.LocationRelationshipService;
 import com.revealprecision.revealserver.service.LocationService;
 import com.revealprecision.revealserver.service.UserService;
+import com.revealprecision.revealserver.util.ActionUtils;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -54,6 +56,8 @@ public class TaskGenerationStream {
     KStream<String, TaskEvent> taskStream = streamsBuilder
         .stream(kafkaProperties.getTopicMap().get(KafkaConstants.TASK),
             Consumed.with(Serdes.String(), new JsonSerde<>(TaskEvent.class)))
+        .filter((k,taskEvent)->taskEvent.getAction().getGoal().getPlan().getPlanTargetTypeEvent().getGeographicLevelName().equals(
+            LocationConstants.STRUCTURE))
         .mapValues(((k, taskEvent) -> {
           if (taskEvent.getOwnerId()!=null) {
             try {
@@ -88,11 +92,18 @@ public class TaskGenerationStream {
 
     KStream<String, TaskEvent> stringTaskEventKStream1 = mergedStream.mapValues((k, taskEvent) -> {
 
-      LocationRelationship locationRelationshipsForLocation = locationRelationshipService.getLocationRelationshipsForLocation(
-          taskEvent.getAction().getGoal().getPlan().getLocationHierarchy().getIdentifier(),
-          taskEvent.getPersonLocationId()!= null ? taskEvent.getPersonLocationId() : taskEvent.getBaseEntityIdentifier());
+//      LocationRelationship locationRelationshipsForLocation = locationRelationshipService.getLocationRelationshipsForLocation(
+//          taskEvent.getAction().getGoal().getPlan().getLocationHierarchy().getIdentifier(),
+//          taskEvent.getPersonLocationId()!= null ? taskEvent.getPersonLocationId() : taskEvent.getBaseEntityIdentifier());
 
-      taskEvent.setAncestors(locationRelationshipsForLocation.getAncestry());
+      Location locationParent = locationService.getLocationParentByLocationIdentifierAndHierarchyIdentifier(
+          taskEvent.getPersonLocationId() != null ? taskEvent.getPersonLocationId()
+              : taskEvent.getBaseEntityIdentifier(),
+          taskEvent.getAction().getGoal().getPlan().getLocationHierarchy().getIdentifier());
+
+      //TODO: this should change in the event the android task sync request changes to request items by specifying items above the operational area
+      //This is updated to make the task aggregation a little bit leaner
+      taskEvent.setAncestors(List.of(locationParent.getIdentifier()));
       return taskEvent;
     });
 
@@ -138,6 +149,68 @@ public class TaskGenerationStream {
     return taskStream;
   }
 
+  @Bean
+  public KStream<String, TaskEvent> startTaskGenerationLite(StreamsBuilder streamsBuilder) {
+
+    //TODO: fix comments
+    //get Input Tasks
+    KStream<String, TaskEvent> taskStream = streamsBuilder
+        .stream(kafkaProperties.getTopicMap().get(KafkaConstants.TASK),
+            Consumed.with(Serdes.String(), new JsonSerde<>(TaskEvent.class)))
+        .filter((k,taskEvent)->!taskEvent.getAction().getGoal().getPlan().getPlanTargetTypeEvent().getGeographicLevelName().equals(
+            LocationConstants.STRUCTURE))
+        .flatMapValues(((k, taskEvent) -> {
+          List<TaskEvent> taskEvents = new ArrayList<>();
+          if (taskEvent.getOwnerId()!=null) {
+            try {
+              User user = userService.getByKeycloakId(UUID.fromString(taskEvent.getOwnerId()));
+              taskEvent.setOwner(user.getUsername());
+            }catch (NotFoundException e){
+              log.error("error getting user: {}",e.getMessage());
+            }
+          }
+
+          UUID groupId = null;
+
+          if (ActionUtils.isActionForLocation(taskEvent.getAction())){
+            Location locationParent = locationService.getLocationParentByLocationIdentifierAndHierarchyIdentifier(
+                taskEvent.getBaseEntityIdentifier(),
+                taskEvent.getAction().getGoal().getPlan().getLocationHierarchy().getIdentifier());
+
+            if (locationParent != null){
+              groupId = locationParent.getIdentifier();
+            }
+            taskEvent.setParentLocation(groupId);
+            taskEvents.add(taskEvent);
+          }
+          if (ActionUtils.isActionForPerson(taskEvent.getAction())){
+            List<TaskEvent> taskEventObjs = duplicatePersonTasksPerPersonsLocation(taskEvent);
+            taskEvents.addAll(taskEventObjs);
+          }
+
+          return taskEvents;
+        }))
+        .selectKey((k, taskEvent) -> {
+
+          String locationId = "";
+              if (ActionUtils.isActionForLocation(taskEvent.getAction())) {
+                locationId = taskEvent.getBaseEntityIdentifier().toString();
+              }
+              if (ActionUtils.isActionForPerson(taskEvent.getAction())) {
+                locationId = taskEvent.getPersonLocationId().toString();
+              }
+
+              return taskEvent.getAction().getGoal().getPlan().getIdentifier()+"_"+
+                  locationId;
+        });
+
+    taskStream.repartition().toTable(Materialized.<String, TaskEvent, KeyValueStore<Bytes, byte[]>>
+            as(kafkaProperties.getStoreMap().get(KafkaConstants.task))
+        .withValueSerde(new JsonSerde<>(TaskEvent.class))
+        .withKeySerde(Serdes.String()));
+
+    return taskStream;
+  }
 
   private String createPlanAncestorKey(String k) {
     return k.split("_")[1] + "_" + k.split("_")[2];
@@ -185,8 +258,13 @@ public class TaskGenerationStream {
   private TaskEvent getPersonTaskEventWithLocation(TaskEvent personTask, Location personLocation) {
     TaskEvent taskEvent = TaskEventFactory.copyTaskEvent(personTask);
     taskEvent.setPersonLocationId(personLocation.getIdentifier());
+
+    Location locationParent = locationService.getLocationParentByLocationIdentifierAndHierarchyIdentifier(
+        personLocation.getIdentifier(),
+        taskEvent.getAction().getGoal().getPlan().getLocationHierarchy().getIdentifier());
+    taskEvent.setParentLocation(locationParent.getIdentifier());
+
     return taskEvent;
   }
-
 
 }

@@ -428,7 +428,7 @@ public class TaskService {
 
     if (conditions == null || conditions.isEmpty()) {
       try {
-        uuids = entityFilterService.filterEntities(null, plan.getIdentifier(),
+        uuids = entityFilterService.filterEntities(null, plan,
             plan.getLocationHierarchy().getIdentifier(), action);
 
 
@@ -442,7 +442,7 @@ public class TaskService {
             action.getLookupEntityType().getCode());
 
         try {
-          List<UUID> filteredUUIDs = entityFilterService.filterEntities(query, plan.getIdentifier(),
+          List<UUID> filteredUUIDs = entityFilterService.filterEntities(query, plan,
               plan.getLocationHierarchy().getIdentifier(), action);
 
           uuids.addAll(filteredUUIDs);

@@ -12,7 +12,6 @@ public class KafkaConstants {
   public static final String tableOfOperationalAreaHierarchiesTOPIC = "tableOfOperationalAreaHierarchiesTOPIC";
   public static final String TASK_CANDIDATE = "TASK_CANDIDATE";
 
-
   ///Materialized stores
   public static final String structureCountPerParent = "structureCountPerParent";
   public static final String assignedStructureCountPerParent = "assignedStructureCountPerParent";
@@ -35,4 +34,6 @@ public class KafkaConstants {
   public static final String tableOfOperationalAreaHierarchiesForPersonStream = "tableOfOperationalAreaHierarchiesForPersonStream";
   public static final String joinedOperationalAreaTreatmentData = "joinedOperationalAreaTreatmentData";
   public static final String operationalTreatedCounts = "operationalTreatedCounts";
+  public static final String task = "task";
+  public static final String assignedOperationalCountPerParent = "assignedOperationalCountPerParent";
 }

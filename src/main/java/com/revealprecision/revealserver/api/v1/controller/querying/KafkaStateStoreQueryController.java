@@ -59,6 +59,18 @@ public class KafkaStateStoreQueryController<T> {
     iterateThroughStore(counts);
   }
 
+
+  @GetMapping("/assignedOperationalCountPerParent")
+  public void assignedOperationalCountPerParent() {
+    KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
+    ReadOnlyKeyValueStore<String, Long> counts = kafkaStreams.store(
+        StoreQueryParameters.fromNameAndType(
+            kafkaProperties.getStoreMap().get(KafkaConstants.assignedOperationalCountPerParent),
+            QueryableStoreTypes.keyValueStore())
+    );
+    iterateThroughStore(counts);
+  }
+
   @GetMapping("/personBusinessStatus")
   public void personBusinessStatus() {
     KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
@@ -231,6 +243,17 @@ public class KafkaStateStoreQueryController<T> {
     ReadOnlyKeyValueStore<String, TaskEvent> counts = kafkaStreams.store(
         StoreQueryParameters.fromNameAndType(
             kafkaProperties.getStoreMap().get(KafkaConstants.taskPlanParent),
+            QueryableStoreTypes.keyValueStore())
+    );
+    iterateThroughStore(counts);
+  }
+
+  @GetMapping("/task")
+  public void task() {
+    KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
+    ReadOnlyKeyValueStore<String, TaskEvent> counts = kafkaStreams.store(
+        StoreQueryParameters.fromNameAndType(
+            kafkaProperties.getStoreMap().get(KafkaConstants.task),
             QueryableStoreTypes.keyValueStore())
     );
     iterateThroughStore(counts);

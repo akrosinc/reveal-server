@@ -16,7 +16,6 @@ public class PlanUpdateListener extends Listener {
 
   @KafkaListener(topics = "#{kafkaConfigProperties.topicMap.get('PLAN_UPDATE')}", groupId = "reveal_server_group")
   public void listenGroupFoo(PlanUpdateMessage message) {
-    //TODO: make this traceable - i.e. the application should know when task generation starts / ends
     log.info("Received Message in group foo: {}" , message.toString());
     init();
     taskService.processPlanUpdateForTasks(message.getPlanIdentifier(),message.getOwnerId());

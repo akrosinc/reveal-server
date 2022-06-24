@@ -12,7 +12,8 @@ public enum ActionTitleEnum {
   RACD_REGISTER_FAMILY("RACD Register Family", LookupEntityTypeCodeEnum.LOCATION_CODE),
   MDA_DISPENSE("MDA Dispense", LookupEntityTypeCodeEnum.PERSON_CODE),
   MDA_ADHERENCE("MDA Adherence", LookupEntityTypeCodeEnum.PERSON_CODE),
-  IRS("IRS", LookupEntityTypeCodeEnum.LOCATION_CODE);
+  IRS("IRS", LookupEntityTypeCodeEnum.LOCATION_CODE),
+  IRS_VERIFICATION("IRS Verification",LookupEntityTypeCodeEnum.LOCATION_CODE);
 
 
   private final String actionTitle;

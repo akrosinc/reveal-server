@@ -36,6 +36,7 @@ public class PlanResponseFactory {
         .interventionType(
             LookupInterventionTypeResponseFactory.fromEntity(plan.getInterventionType()))
         .goals(goals)
+        .planTargetType(plan.getPlanTargetType().getGeographicLevel().getName())
         .build();
   }
 

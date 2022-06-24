@@ -3,6 +3,7 @@ package com.revealprecision.revealserver.service;
 import com.cosium.spring.data.jpa.entity.graph.domain.EntityGraphUtils;
 import com.revealprecision.revealserver.api.v1.dto.factory.PlanEntityFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.PlanRequest;
+import com.revealprecision.revealserver.constants.LocationConstants;
 import com.revealprecision.revealserver.enums.ApplicableReportsEnum;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.enums.LookupUtil;
@@ -17,6 +18,7 @@ import com.revealprecision.revealserver.messaging.message.PlanUpdateType;
 import com.revealprecision.revealserver.persistence.domain.Action;
 import com.revealprecision.revealserver.persistence.domain.Condition;
 import com.revealprecision.revealserver.persistence.domain.Form;
+import com.revealprecision.revealserver.persistence.domain.GeographicLevel;
 import com.revealprecision.revealserver.persistence.domain.Goal;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
@@ -24,6 +26,7 @@ import com.revealprecision.revealserver.persistence.domain.LookupEntityType;
 import com.revealprecision.revealserver.persistence.domain.LookupInterventionType;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.Plan.Fields;
+import com.revealprecision.revealserver.persistence.domain.PlanTargetType;
 import com.revealprecision.revealserver.persistence.repository.PlanRepository;
 import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.util.UserUtils;
@@ -54,6 +57,7 @@ public class PlanService {
   private final LookupEntityTypeService lookupEntityTypeService;
   private final KafkaTemplate<String, Message> kafkaTemplate;
   private final KafkaProperties kafkaProperties;
+  private final GeographicLevelService geographicLevelService;
 
   public static boolean isNullOrEmpty(final Collection<?> c) {
     return c == null || c.isEmpty();
@@ -83,13 +87,13 @@ public class PlanService {
   }
 
   public Page<Plan> getPlansForReports(String reportType, Pageable pageable) {
-    if(reportType.isBlank()) {
+    if (reportType.isBlank()) {
       return planRepository.findPlansByInterventionType(reportType, pageable);
-    }else{
+    } else {
       ApplicableReportsEnum applicableReportsEnum = null;
       ReportTypeEnum reportTypeEnum = LookupUtil.lookup(ReportTypeEnum.class, reportType);
-      for(ApplicableReportsEnum applicableReport : ApplicableReportsEnum.values()) {
-        if(applicableReport.getReportName().contains(reportType)) {
+      for (ApplicableReportsEnum applicableReport : ApplicableReportsEnum.values()) {
+        if (applicableReport.getReportName().contains(reportType)) {
           applicableReportsEnum = applicableReport;
           break;
         }
@@ -120,6 +124,24 @@ public class PlanService {
 
     Plan plan = PlanEntityFactory.toEntity(planRequest, interventionType, locationHierarchy,
         foundForms, allLookUpEntityTypes);
+
+    GeographicLevel geographicLevel;
+
+    if (!interventionType.getCode().equals("MDA Lite") && !interventionType.getCode()
+        .equals("IRS Lite")) {
+      geographicLevel = geographicLevelService.findByName(LocationConstants.STRUCTURE);
+    } else {
+      if (planRequest.getHierarchyLevelTarget() == null) {
+        geographicLevel = geographicLevelService.findByName(LocationConstants.OPERATIONAL);
+      } else {
+        geographicLevel = geographicLevelService.findByName(planRequest.getHierarchyLevelTarget());
+      }
+    }
+    PlanTargetType planTargetType = PlanTargetType.builder().plan(plan)
+        .geographicLevel(geographicLevel).build();
+    planTargetType.setEntityStatus(EntityStatus.ACTIVE);
+    plan.setPlanTargetType(planTargetType);
+
     plan.setEntityStatus(EntityStatus.ACTIVE);
 
     savePlan(plan);
@@ -135,7 +157,8 @@ public class PlanService {
       planUpdateMessage.setPlanUpdateType(PlanUpdateType.ACTIVATE);
       planUpdateMessage.setOwnerId(UserUtils.getCurrentPrincipleName());
 
-      kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_UPDATE),planUpdateMessage);
+      kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_UPDATE),
+          planUpdateMessage);
     } else {
       throw new ConflictException("Relationships still generating for this plan.");
     }

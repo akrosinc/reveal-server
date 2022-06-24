@@ -296,7 +296,7 @@ public class EventClientFacadeService {
         .details(objectMapper.valueToTree(details))
         .locationIdentifier(eventFacade.getLocationId() == null || Objects.equals(
             eventFacade.getLocationId(), "")
-            ? UUID.fromString(objectMapper.valueToTree(details).get("location_id").toString())
+            ? UUID.fromString(objectMapper.valueToTree(details).get("location_id").toString().replaceAll("\\\"",""))
             : UUID.fromString(eventFacade.getLocationId()))
         .organization(organizationService.findById(UUID.fromString(eventFacade.getTeamId()), false))
         .user(userService.getByUserName(eventFacade.getProviderId()))

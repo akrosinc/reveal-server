@@ -1,8 +1,10 @@
 package com.revealprecision.revealserver.service;
 
 import com.revealprecision.revealserver.api.v1.dto.request.LocationRequest;
+import com.revealprecision.revealserver.constants.LocationConstants;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
+import com.revealprecision.revealserver.exceptions.handler.CustomExceptionHandler;
 import com.revealprecision.revealserver.persistence.domain.GeographicLevel;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
@@ -14,8 +16,10 @@ import com.revealprecision.revealserver.persistence.projection.LocationChildrenC
 import com.revealprecision.revealserver.persistence.projection.LocationCoordinatesProjection;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import com.revealprecision.revealserver.persistence.repository.LocationRepository;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -96,7 +100,8 @@ public class LocationService {
         .map(LocationRelationship::getLocation).collect(Collectors.toList());
 
     return locations.stream()
-        .filter(location -> location.getGeographicLevel().getName().equalsIgnoreCase("structure")
+        .filter(location -> location.getGeographicLevel().getName().equalsIgnoreCase(
+            LocationConstants.STRUCTURE)
             && location.getServerVersion() >= serverVersion)
         .collect(Collectors.toList());//TODO: to update once we figure the target level part.
   }
@@ -106,6 +111,12 @@ public class LocationService {
       UUID planIdentifier) {
     Plan plan = planService.findPlanByIdentifier(planIdentifier);
     Location location = findByIdentifier(parentIdentifier);
+
+    // if location is at plan target level do not load child location
+    if(Objects.equals(plan.getPlanTargetType().getGeographicLevel().getName(),
+        location.getGeographicLevel().getName())) {
+      throw new NotFoundException("Child location is not in plan target level");
+    }
 
     Map<UUID, Long> childrenCount = locationRelationshipService.getLocationChildrenCount(
             plan.getLocationHierarchy().getIdentifier())
@@ -202,8 +213,16 @@ public class LocationService {
     return locationRelationshipService.getLocationParent(location, locationHierarchy);
   }
 
+  public Location getLocationParentByLocationIdentifierAndHierarchyIdentifier(UUID locationIdentifier, UUID locationHierarchyIdentifier) {
+    return locationRelationshipService.getLocationParentByLocationIdentifierAndHierarchyIdentifier(locationIdentifier, locationHierarchyIdentifier);
+  }
+
   public List<UUID> getAllLocationChildren(UUID locationIdentifier, UUID hierarchyIdentifier) {
     return locationRepository.getAllLocationChildren(locationIdentifier, hierarchyIdentifier);
+  }
+
+  public List<UUID> getAllLocationChildrenNotLike(UUID locationIdentifier, UUID hierarchyIdentifier, List<String> targetNode) {
+    return locationRepository.getAllLocationChildrenNotLike(locationIdentifier, hierarchyIdentifier, targetNode);
   }
 
   public List<Location> getLocationsByPeople(UUID personIdentifier) {

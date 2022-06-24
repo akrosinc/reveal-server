@@ -250,6 +250,10 @@ public class LocationRelationshipService {
         Collectors.toList());
   }
 
+  public List<LocationRelationshipProjection> getLocationRelationshipsNotLike(LocationHierarchy locationHierarchy, List<String> notLike) {
+    return locationRelationshipRepository.findByLocationHierarchyWithoutStructuresNotLike(notLike);
+  }
+
   public List<LocationRelationshipProjection> getLocationRelationshipsWithoutStructure(
       LocationHierarchy locationHierarchy) {
     return locationRelationshipRepository.findByLocationHierarchyWithoutStructures(
@@ -359,7 +363,7 @@ public class LocationRelationshipService {
             Collections.reverse(parentIds);
           } catch (NullPointerException e) {
             e.printStackTrace();
-            log.error("Error building ancestry - {}", e.getMessage());
+            log.error("Error building ancestry - {}", e.getMessage(),e);
             importLog.debug("Current Ancestry: {}", parents.entrySet().stream()
                 .map(entry -> entry.getValue() + " - > " + entry.getKey())
                 .collect(Collectors.joining(","))
@@ -465,6 +469,9 @@ public class LocationRelationshipService {
     return locationRelationshipRepository.getParentLocationByLocationIdAndHierarchyId(
         location.getIdentifier(), locationHierarchy.getIdentifier());
   }
-
+  public Location getLocationParentByLocationIdentifierAndHierarchyIdentifier(UUID locationIdentifier, UUID locationHierarchyIdentifier) {
+    return locationRelationshipRepository.getParentLocationByLocationIdAndHierarchyId(
+        locationIdentifier, locationHierarchyIdentifier);
+  }
 
 }

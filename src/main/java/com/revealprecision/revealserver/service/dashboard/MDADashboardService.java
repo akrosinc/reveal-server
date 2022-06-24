@@ -1,14 +1,9 @@
-package com.revealprecision.revealserver.service;
+package com.revealprecision.revealserver.service.dashboard;
 
-import com.revealprecision.revealserver.api.v1.dto.factory.LocationResponseFactory;
+
 import com.revealprecision.revealserver.api.v1.dto.models.ColumnData;
 import com.revealprecision.revealserver.api.v1.dto.models.RowData;
-import com.revealprecision.revealserver.api.v1.dto.response.FeatureSetResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationResponse;
-import com.revealprecision.revealserver.enums.ApplicableReportsEnum;
-import com.revealprecision.revealserver.enums.LookupUtil;
-import com.revealprecision.revealserver.enums.ReportTypeEnum;
-import com.revealprecision.revealserver.exceptions.WrongEnumException;
 import com.revealprecision.revealserver.messaging.KafkaConstants;
 import com.revealprecision.revealserver.messaging.message.LocationBusinessStatusAggregate;
 import com.revealprecision.revealserver.messaging.message.LocationPersonBusinessStateAggregate;
@@ -19,8 +14,11 @@ import com.revealprecision.revealserver.messaging.message.TreatedOperationalArea
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.Person;
 import com.revealprecision.revealserver.persistence.domain.Plan;
-import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import com.revealprecision.revealserver.props.KafkaProperties;
+import com.revealprecision.revealserver.service.LocationRelationshipService;
+import com.revealprecision.revealserver.service.LocationService;
+import com.revealprecision.revealserver.service.PersonService;
+import com.revealprecision.revealserver.service.PlanService;
 import java.io.Serializable;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -33,7 +31,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
@@ -48,8 +45,15 @@ import org.springframework.stereotype.Service;
 
 @RequiredArgsConstructor
 @Service
-public class DashboardService {
+public class MDADashboardService {
+  private final StreamsBuilderFactoryBean getKafkaStreams;
+  private final KafkaProperties kafkaProperties;
+  private final LocationService locationService;
+  private final PlanService planService;
+  private final LocationRelationshipService locationRelationshipService;
+  private final PersonService personService;
 
+  //MDA
   public static final String TREATMENT_COVERAGE = "Treatment coverage";
   public static final String HEALTH_FACILITY_REFERRALS = "Health Facility Referrals";
   public static final String OPERATIONAL_AREA_VISITED = "Operational Area Visited";
@@ -59,7 +63,7 @@ public class DashboardService {
   public static final String FOUND_COVERAGE = "Found Coverage";
   public static final String TOTAL_STRUCTURES_FOUND = "Total Structures Found";
   public static final String TOTAL_STRUCTURES_TARGETED = "Total Structures Targeted";
-  public static final String TOTAL_STRUCTURES = "Total Structures";
+  public static final String TOTAL_STRUCTURES_MDA = "Total Structures";
   public static final String VISITATION_COVERAGE_PERCENTAGE = "Visitation Coverage Percentage";
   public static final String DISTRIBUTION_COVERAGE_PERCENTAGE = "Distribution Coverage Percentage";
   public static final String STRUCTURE_DISTRIBUTION_EFFECTIVENESS_PERCENTAGE = "Structure Distribution Effectiveness Percentage";
@@ -71,13 +75,6 @@ public class DashboardService {
   public static final String PERSON_AGE = "Person age";
   public static final String PERSON_STATE = "Person state";
 
-
-  private final StreamsBuilderFactoryBean getKafkaStreams;
-  private final KafkaProperties kafkaProperties;
-  private final LocationService locationService;
-  private final PlanService planService;
-  private final LocationRelationshipService locationRelationshipService;
-  private final PersonService personService;
 
   ReadOnlyKeyValueStore<String, Long> countOfAssignedStructures;
   ReadOnlyKeyValueStore<String, Long> structureCounts;
@@ -91,17 +88,8 @@ public class DashboardService {
   boolean datastoresInitialized = false;
 
 
-  private List<RowData> getIRSFullData(Location childLocation) {
-    Map<String, ColumnData> columns = new HashMap<>();
-    RowData rowData = new RowData();
-    rowData.setLocationIdentifier(childLocation.getIdentifier());
-    rowData.setColumnDataMap(columns);
-    rowData.setLocationName(childLocation.getName());
-    return List.of(rowData);
-  }
-
   //TODO: dont really need the parent Identifier - using it for now to query the datastore, however ideally a datastore should be availble that can query on just plan and structure id
-  private List<RowData> getMDAFullCoverageStructureLevelData(Plan plan,
+  public List<RowData> getMDAFullCoverageStructureLevelData(Plan plan,
       Location childLocation, UUID parentLocationIdentifier) {
     Map<String, ColumnData> columns = new HashMap<>();
 
@@ -125,6 +113,10 @@ public class DashboardService {
         HEALTH_FACILITY_REFERRALS);
     columns.put(healthFacilityReferrals.getKey(), healthFacilityReferrals.getValue());
 
+    Entry<String, ColumnData> totalStructuresTargetedCount = getTotalStructuresTargetedCount(
+        plan, childLocation, TOTAL_STRUCTURES_TARGETED);
+    columns.put(totalStructuresTargetedCount.getKey(), totalStructuresTargetedCount.getValue());
+
     RowData rowData = new RowData();
     rowData.setLocationIdentifier(childLocation.getIdentifier());
     rowData.setColumnDataMap(columns);
@@ -132,7 +124,7 @@ public class DashboardService {
     return List.of(rowData);
   }
 
-  private List<RowData> getMDAFullWithinStructureLevelData(Plan plan,
+  public List<RowData> getMDAFullWithinStructureLevelData(Plan plan,
       Location parentLocation) {
     Map<String, ColumnData> columns = new HashMap<>();
 
@@ -182,7 +174,7 @@ public class DashboardService {
   }
 
 
-  private List<RowData> getMDAFullCoverageOperationalAreaLevelData(Plan plan,
+  public List<RowData> getMDAFullCoverageOperationalAreaLevelData(Plan plan,
       Location childLocation) {
     Map<String, ColumnData> columns = new HashMap<>();
 
@@ -211,11 +203,11 @@ public class DashboardService {
     return List.of(rowData);
   }
 
-  private List<RowData> getMDAFullCoverageData(Plan plan, Location childLocation) {
+  public List<RowData> getMDAFullCoverageData(Plan plan, Location childLocation) {
     Map<String, ColumnData> columns = new LinkedHashMap<>();
 
     Entry<String, ColumnData> totalStructuresCounts = getTotalStructuresCounts(plan, childLocation,
-        TOTAL_STRUCTURES);
+        TOTAL_STRUCTURES_MDA);
     columns.put(totalStructuresCounts.getKey(), totalStructuresCounts.getValue());
 
     Entry<String, ColumnData> totalStructuresTargetedCount = getTotalStructuresTargetedCount(
@@ -308,7 +300,7 @@ public class DashboardService {
         operationalAreaVisitedQueryKey);
     double operationalAreaVisitedCount = 0;
     if (operationalAreaVisitedObj != null) {
-      operationalAreaVisitedCount = operationalAreaVisitedObj.getOperationalAreaVisitedCount();
+      operationalAreaVisitedCount = operationalAreaVisitedObj.getOperationalAreaVisitedCountMDA();
     }
     ColumnData operationalAreaVisitedColumnData = new ColumnData();
     operationalAreaVisitedColumnData.setValue(operationalAreaVisitedCount);
@@ -683,8 +675,7 @@ public class DashboardService {
     totalStructuresColumnData.setIsPercentage(false);
     return new SimpleEntry<>(columnName, totalStructuresColumnData);
   }
-
-  private void initDataStoresIfNecessary() {
+  public void initDataStoresIfNecessary() {
     if (!datastoresInitialized) {
       countOfAssignedStructures = getKafkaStreams.getKafkaStreams().store(
           StoreQueryParameters.fromNameAndType(
@@ -735,68 +726,8 @@ public class DashboardService {
       datastoresInitialized = true;
     }
   }
-
-  public FeatureSetResponse getDataForReport(String reportType, UUID planIdentifier,
-      UUID parentIdentifier) {
-
-    ReportTypeEnum reportTypeEnum = LookupUtil.lookup(ReportTypeEnum.class, reportType);
-    Plan plan = planService.findPlanByIdentifier(planIdentifier);
-    List<String> applicableReportTypes = ApplicableReportsEnum.valueOf(
-        plan.getInterventionType().getCode()).getReportName();
-    if (!applicableReportTypes.contains(reportTypeEnum.name())) {
-      throw new WrongEnumException(
-          "Report type: '" + reportType + "' is not applicable to plan with identifier: '"
-              + planIdentifier + "'");
-    }
-    Location parentLocation = null;
-    if (parentIdentifier != null) {
-      parentLocation = locationService.findByIdentifier(parentIdentifier);
-    }
-
-    List<PlanLocationDetails> locationDetails = new ArrayList<>();
-    if (parentLocation == null ||
-        !parentLocation.getGeographicLevel().getName().equals("structure")) {
-
-      if (parentIdentifier == null) {
-        locationDetails.add(locationService.getRootLocationByPlanIdentifier(planIdentifier));
-      } else {
-
-        int structureNodeIndex = plan.getLocationHierarchy().getNodeOrder().indexOf("structure");
-        int locationNodeIndex = plan.getLocationHierarchy().getNodeOrder()
-            .indexOf(parentLocation.getGeographicLevel().getName());
-        if (locationNodeIndex + 1 < structureNodeIndex) {
-          locationDetails = locationService.getAssignedLocationsByParentIdentifierAndPlanIdentifier(
-              parentIdentifier, planIdentifier, (locationNodeIndex + 2) == structureNodeIndex);
-        } else {
-          locationDetails = locationService.getLocationsByParentIdentifierAndPlanIdentifier(
-              parentIdentifier, planIdentifier);
-        }
-      }
-    } else {
-      PlanLocationDetails planLocations = new PlanLocationDetails();
-      planLocations.setParentLocation(parentLocation);
-      planLocations.setLocation(parentLocation);
-      planLocations.setHasChildren(false);
-      planLocations.setAssignedLocations(0L);
-      planLocations.setChildrenNumber(0L);
-      planLocations.setAssignedTeams(0L);
-      locationDetails.add(planLocations);
-    }
-
-    initDataStoresIfNecessary();
-
-    Map<UUID, RowData> rowDataMap = locationDetails.stream().flatMap(loc -> Objects.requireNonNull(
-                getRowData(loc.getParentLocation(), reportTypeEnum, plan, loc))
-            .stream()).filter(Objects::nonNull)
-        .collect(Collectors.toMap(RowData::getLocationIdentifier, row -> row));
-
-    FeatureSetResponse response = new FeatureSetResponse();
-    response.setType("FeatureCollection");
-    List<LocationResponse> locationResponses = locationDetails.stream()
-        .map(loc -> LocationResponseFactory.fromPlanLocationDetails(loc, parentIdentifier))
-        .collect(Collectors.toList());
-
-    locationResponses.forEach(loc -> {
+  public List<LocationResponse> setGeoJsonProperties(Map<UUID, RowData> rowDataMap, List<LocationResponse> locationResponses) {
+    return locationResponses.stream().peek(loc -> {
       loc.getProperties().setColumnDataMap(rowDataMap.get(loc.getIdentifier()).getColumnDataMap());
       loc.getProperties().setId(loc.getIdentifier());
 
@@ -826,41 +757,8 @@ public class DashboardService {
             rowDataMap.get(loc.getIdentifier()).getColumnDataMap().get(NO_OF_TREATED_CHILDREN)
                 .getValue());
       }
-    });
-    response.setFeatures(locationResponses);
-    response.setIdentifier(parentIdentifier);
-    return response;
+    }).collect(Collectors.toList());
   }
-
-  private List<RowData> getRowData(Location parentLocation, ReportTypeEnum reportTypeEnum, Plan plan,
-      PlanLocationDetails loc) {
-    switch (reportTypeEnum) {
-
-      case MDA_FULL_COVERAGE:
-
-        if (loc.isHasChildren()) {
-
-          switch (loc.getLocation().getGeographicLevel().getName()) {
-            case "structure":
-              return getMDAFullCoverageStructureLevelData(plan, loc.getLocation(),
-                  parentLocation.getIdentifier());
-            case "operational":
-              return getMDAFullCoverageOperationalAreaLevelData(plan,
-                  loc.getLocation());
-            default:
-              return getMDAFullCoverageData(plan, loc.getLocation());
-          }
-        } else {
-          return getMDAFullWithinStructureLevelData(plan, parentLocation);
-        }
-
-      case IRS_FULL_COVERAGE:
-        return getIRSFullData(loc.getLocation());
-
-    }
-    return null;
-  }
-
   @Data
   @NoArgsConstructor
   @AllArgsConstructor
