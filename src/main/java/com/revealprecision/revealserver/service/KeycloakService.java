@@ -12,6 +12,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
@@ -80,8 +81,18 @@ public class KeycloakService {
       return kcCreatedUser.getId();
     } else if (response.getStatus() == 409) {
       JSONObject error = new JSONObject(output);
-      userRepository.setApiResponse(identifier, error.getString("errorMessage"));
-      throw new ConflictException(error.getString("errorMessage"));
+      List<UserRepresentation> userList = usersResource.search(userRequest.getUsername());
+      if (!userList.isEmpty()) {
+        UserRepresentation user = userList.get(0);
+        updateUser(user.getId(), UserUpdateRequest.builder().email(userRequest.getEmail())
+            .firstName(userRequest.getFirstName()).lastName(userRequest.getLastName())
+            .email(userRequest.getEmail()).organizations(userRequest.getOrganizations())
+            .securityGroups(userRequest.getSecurityGroups()).build());
+        return user.getId();
+      } else {
+        userRepository.setApiResponse(identifier, error.getString("errorMessage"));
+        throw new ConflictException(error.getString("errorMessage"));
+      }
     } else {
       userRepository.setApiResponse(identifier, "Unknown error on Keycloak");
       throw new KeycloakException("Unknown error on Keycloak");
