@@ -39,6 +39,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -116,6 +117,7 @@ public class TaskFacadeService {
     return planTargetsMap.get(plan.getIdentifier()).stream()
         .map(location -> plan.getIdentifier() + "_" + location.getIdentifier().toString())
         .map(taskStore::get)
+        .filter(Objects::nonNull)
         .filter(taskEvent -> taskEvent.getServerVersion() > serverVersion)
         .map(taskEvent -> {
           TaskFacade taskFacadeObj = TaskFacadeFactory.getTaskFacadeObj(requester,

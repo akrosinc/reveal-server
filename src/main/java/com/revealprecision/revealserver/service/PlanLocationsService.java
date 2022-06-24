@@ -64,6 +64,17 @@ public class PlanLocationsService {
     return planLocationsRepository.findByPlan_Identifier(planIdentifier);
   }
 
+  public Long getNumberOfAssignedChildrenByGeoLevelNameWithinLocationAndHierarchyAndPlan(UUID planIdentifier,
+      String geoLevelName, UUID locationIdentifier,UUID locationHierarchyIdentifier
+      ) {
+    return planLocationsRepository.getNumberOfAssignedChildrenByGeoLevelNameWithinLocationAndHierarchyAndPlan(
+        geoLevelName,
+        locationIdentifier.toString(),
+        locationHierarchyIdentifier,
+        planIdentifier);
+  }
+
+
   public List<PlanLocations> getPlanLocationsByPlanAndLocationIdentifier(UUID locationIdentifier,
       UUID planIdentifier) {
     return planLocationsRepository.findByLocation_IdentifierAndPlan_Identifier(locationIdentifier,

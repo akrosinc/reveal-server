@@ -31,6 +31,7 @@ public class LocationPropertyResponse {
   private Object distCoveragePercent;
   private Object numberOfChildrenTreated;
   private Object numberOfChildrenEligible;
+  private Object sprayCoverage;
   private UUID id;
   private Map<String, ColumnData> columnDataMap;
 }

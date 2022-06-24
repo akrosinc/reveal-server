@@ -25,6 +25,7 @@ public class DashboardProperties {
           ,"OPERATIONAL_AREA_VISITED",new ColumnMeta("Operational Area Visited",false)));
 
   private Long operationalAreaVisitedThreshold = 20L;
+  private Long operationalAreaVisitedEffectivelyThreshold = 85L;
 
   @Setter
   @Getter

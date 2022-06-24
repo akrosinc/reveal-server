@@ -316,11 +316,16 @@ public class LocationBusinessStatusStream {
     log.trace("operational area: {} -  notVisitedStructures: {} / totalStructures: {} ",
         operationalAreaAggregate.getIdentifier(), notVisitedStructures, totalStructures);
     boolean operationalAreaIsVisited = false;
+    boolean operationalAreaIsVisitedEffectively = false;
     if (totalStructures > 0) {
 
       if ((100 - ((double) notVisitedStructures / (double) totalStructures * 100))
           >= (double) dashboardProperties.getOperationalAreaVisitedThreshold()) {
         operationalAreaIsVisited = true;
+      }
+      if ((100 - ((double) notVisitedStructures / (double) totalStructures * 100))
+          >= (double) dashboardProperties.getOperationalAreaVisitedEffectivelyThreshold()) {
+        operationalAreaIsVisitedEffectively = true;
       }
     }
 
@@ -331,6 +336,7 @@ public class LocationBusinessStatusStream {
           operationalAreaAggregate.getAggregatedLocationCount());
       individualOperationalAreaCountsByBusinessStatus.setOperationalAreaIsVisited(
           operationalAreaIsVisited);
+      individualOperationalAreaCountsByBusinessStatus.setOperationalAreaIsVisitedEffectively(operationalAreaIsVisitedEffectively);
       aggregate.getOperationalObj().put(operationalAreaAggregate.getIdentifier(),
           individualOperationalAreaCountsByBusinessStatus);
 
@@ -338,13 +344,17 @@ public class LocationBusinessStatusStream {
       IndividualOperationalAreaCountsByBusinessStatus operationalAreaVisitedCount3 = new IndividualOperationalAreaCountsByBusinessStatus();
       operationalAreaVisitedCount3.setCounts(operationalAreaAggregate.getAggregatedLocationCount());
       operationalAreaVisitedCount3.setOperationalAreaIsVisited(operationalAreaIsVisited);
+      operationalAreaVisitedCount3.setOperationalAreaIsVisitedEffectively(operationalAreaIsVisitedEffectively);
       aggregate.getOperationalObj()
           .put(operationalAreaAggregate.getIdentifier(), operationalAreaVisitedCount3);
     }
 
     long countOfVisitedOperationalAreas = aggregate.getOperationalObj().entrySet().stream()
         .filter(entry -> entry.getValue().isOperationalAreaIsVisited()).count();
+    long countOfVisitedEffectivelyOperationalAreas = aggregate.getOperationalObj().entrySet().stream()
+        .filter(entry -> entry.getValue().isOperationalAreaIsVisitedEffectively()).count();
     aggregate.setOperationalAreaVisitedCount(countOfVisitedOperationalAreas);
+    aggregate.setOperationalAreaVisitedEffectivelyCount(countOfVisitedEffectivelyOperationalAreas);
 
     return aggregate;
   }
