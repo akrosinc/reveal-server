@@ -54,15 +54,15 @@ public class MDADashboardService {
   private final PersonService personService;
 
   //MDA
-  public static final String MDA_TREATMENT_COVERAGE = "Treatment coverage";
-  public static final String MDA_HEALTH_FACILITY_REFERRALS = "Health Facility Referrals";
-  public static final String MDA_OPERATIONAL_AREA_VISITED = "Operational Area Visited";
+  public static final String TREATMENT_COVERAGE = "Treatment coverage";
+  public static final String HEALTH_FACILITY_REFERRALS = "Health Facility Referrals";
+  public static final String OPERATIONAL_AREA_VISITED = "Operational Area Visited";
   public static final String TOTAL_STRUCTURES_RECEIVED_SPAQ = "Total Structures Received SPAQ";
   public static final String DISTRIBUTION_COVERAGE = "Distribution Coverage";
   public static final String DISTRIBUTION_EFFECTIVENESS = "Distribution Effectiveness";
   public static final String FOUND_COVERAGE = "Found Coverage";
   public static final String TOTAL_STRUCTURES_FOUND = "Total Structures Found";
-  public static final String MDA_TOTAL_STRUCTURES_TARGETED = "Total Structures Targeted";
+  public static final String TOTAL_STRUCTURES_TARGETED = "Total Structures Targeted";
   public static final String TOTAL_STRUCTURES_MDA = "Total Structures";
   public static final String VISITATION_COVERAGE_PERCENTAGE = "Visitation Coverage Percentage";
   public static final String DISTRIBUTION_COVERAGE_PERCENTAGE = "Distribution Coverage Percentage";
@@ -110,11 +110,11 @@ public class MDADashboardService {
         noOfTreatedChildrenByLocationColumnData.getValue());
 
     Entry<String, ColumnData> healthFacilityReferrals = getHealthFacilityReferrals(
-        MDA_HEALTH_FACILITY_REFERRALS);
+        HEALTH_FACILITY_REFERRALS);
     columns.put(healthFacilityReferrals.getKey(), healthFacilityReferrals.getValue());
 
     Entry<String, ColumnData> totalStructuresTargetedCount = getTotalStructuresTargetedCount(
-        plan, childLocation, MDA_TOTAL_STRUCTURES_TARGETED);
+        plan, childLocation, TOTAL_STRUCTURES_TARGETED);
     columns.put(totalStructuresTargetedCount.getKey(), totalStructuresTargetedCount.getValue());
 
     RowData rowData = new RowData();
@@ -193,7 +193,7 @@ public class MDADashboardService {
         percentageOfChildrenTreatedToPeopleEligible.getValue());
 
     Entry<String, ColumnData> healthFacilityReferrals = getHealthFacilityReferrals(
-        MDA_HEALTH_FACILITY_REFERRALS);
+        HEALTH_FACILITY_REFERRALS);
     columns.put(healthFacilityReferrals.getKey(), healthFacilityReferrals.getValue());
 
     RowData rowData = new RowData();
@@ -211,11 +211,11 @@ public class MDADashboardService {
     columns.put(totalStructuresCounts.getKey(), totalStructuresCounts.getValue());
 
     Entry<String, ColumnData> totalStructuresTargetedCount = getTotalStructuresTargetedCount(
-        plan, childLocation, MDA_TOTAL_STRUCTURES_TARGETED);
+        plan, childLocation, TOTAL_STRUCTURES_TARGETED);
     columns.put(totalStructuresTargetedCount.getKey(), totalStructuresTargetedCount.getValue());
 
     Entry<String, ColumnData> percentageOfChildrenTreatedToPeopleEligible = getPercentageOfChildrenTreatedToPeopleEligible(
-        plan, childLocation, MDA_TREATMENT_COVERAGE);
+        plan, childLocation, TREATMENT_COVERAGE);
     columns.put(percentageOfChildrenTreatedToPeopleEligible.getKey(),
         percentageOfChildrenTreatedToPeopleEligible.getValue());
 
@@ -228,7 +228,7 @@ public class MDADashboardService {
     columns.put(totalStructuresFound.getKey(), totalStructuresFound.getValue());
 
     Entry<String, ColumnData> operationalAreaVisited = operationalAreaVisitedCounts(plan,
-        childLocation, MDA_OPERATIONAL_AREA_VISITED);
+        childLocation, OPERATIONAL_AREA_VISITED);
     columns.put(operationalAreaVisited.getKey(), operationalAreaVisited.getValue());
 
     Entry<String, ColumnData> totalFoundCoverage = getTotalFoundCoverage(plan,
