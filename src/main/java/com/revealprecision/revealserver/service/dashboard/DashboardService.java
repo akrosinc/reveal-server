@@ -145,7 +145,24 @@ public class DashboardService {
         }
 
       case IRS_FULL_COVERAGE:
-        return irsDashboardService.getIRSFullData(plan, loc.getLocation());
+      if (loc.isHasChildren()) {
+        switch (loc.getLocation().getGeographicLevel().getName()) {
+          case LocationConstants.STRUCTURE:
+            return irsDashboardService.getIRSFullCoverageStructureLevelData(plan,
+                loc.getLocation(),
+                parentLocation.getIdentifier());
+          case LocationConstants.OPERATIONAL:
+            return irsDashboardService.getIRSFullDataOperational(plan,
+                loc.getLocation());
+          default:
+            return irsDashboardService.getIRSFullData(plan, loc.getLocation());
+        }
+      } else {
+        return irsDashboardService.getIRSFullCoverageStructureLevelData(plan,
+            loc.getLocation(),
+            parentLocation.getIdentifier());
+      }
+
 
     }
     return null;

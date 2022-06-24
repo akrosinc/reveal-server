@@ -300,7 +300,7 @@ public class MDADashboardService {
         operationalAreaVisitedQueryKey);
     double operationalAreaVisitedCount = 0;
     if (operationalAreaVisitedObj != null) {
-      operationalAreaVisitedCount = operationalAreaVisitedObj.getOperationalAreaVisitedCount();
+      operationalAreaVisitedCount = operationalAreaVisitedObj.getOperationalAreaVisitedCountMDA();
     }
     ColumnData operationalAreaVisitedColumnData = new ColumnData();
     operationalAreaVisitedColumnData.setValue(operationalAreaVisitedCount);

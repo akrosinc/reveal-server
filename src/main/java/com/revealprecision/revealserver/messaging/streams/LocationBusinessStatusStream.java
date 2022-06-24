@@ -286,7 +286,7 @@ public class LocationBusinessStatusStream {
         })
         .groupBy((k, entry) -> getAncestryPlanKey(k))
         .aggregate((OperationalAreaVisitedCount::new),
-            (k, operationalAreaAggregate, aggregate) -> getAggregatedOperationalAreaVisitedCount(
+            (k, operationalAreaAggregate, aggregate) -> getAggregatedOperationalAreaVisitedCountForMDA(
                 operationalAreaAggregate, aggregate),
             Materialized.<String, OperationalAreaVisitedCount, KeyValueStore<Bytes, byte[]>>as(
                     kafkaProperties.getStoreMap()
@@ -300,7 +300,7 @@ public class LocationBusinessStatusStream {
     return locationMetadataStream;
   }
 
-  private OperationalAreaVisitedCount getAggregatedOperationalAreaVisitedCount(
+  private OperationalAreaVisitedCount getAggregatedOperationalAreaVisitedCountForMDA(
       OperationalAreaAggregate operationalAreaAggregate, OperationalAreaVisitedCount aggregate) {
     Long sumOfStructures = operationalAreaAggregate.getAggregatedLocationCount().values()
         .stream().reduce(0L, Long::sum);
@@ -311,53 +311,76 @@ public class LocationBusinessStatusStream {
         .stream().filter(entry -> entry.getKey().equals("Not Eligible")).map(Entry::getValue)
         .reduce(0L, Long::sum);
 
-    Long totalStructures = sumOfStructures - notEligibleStructures;
+    Long notSprayedStructures = operationalAreaAggregate.getAggregatedLocationCount().entrySet()
+        .stream().filter(entry -> entry.getKey().equals("Not Sprayed")).map(Entry::getValue)
+        .reduce(0L, Long::sum);
+
+
+    Long totalStructuresMDA = sumOfStructures - notEligibleStructures;
 
     log.trace("operational area: {} -  notVisitedStructures: {} / totalStructures: {} ",
-        operationalAreaAggregate.getIdentifier(), notVisitedStructures, totalStructures);
-    boolean operationalAreaIsVisited = false;
-    boolean operationalAreaIsVisitedEffectively = false;
-    if (totalStructures > 0) {
+        operationalAreaAggregate.getIdentifier(), notVisitedStructures, totalStructuresMDA);
+    boolean operationalAreaIsVisitedMDA = false;
 
-      if ((100 - ((double) notVisitedStructures / (double) totalStructures * 100))
+    if (totalStructuresMDA > 0) {
+
+      if ((100 - ((double) notVisitedStructures / (double) totalStructuresMDA * 100))
           >= (double) dashboardProperties.getOperationalAreaVisitedThreshold()) {
-        operationalAreaIsVisited = true;
+        operationalAreaIsVisitedMDA = true;
       }
-      if ((100 - ((double) notVisitedStructures / (double) totalStructures * 100))
+    }
+
+    Long totalStructuresIRS = sumOfStructures - notEligibleStructures - notSprayedStructures;
+
+    boolean operationalAreaIsVisitedIRS = false;
+    boolean operationalAreaIsVisitedEffectivelyIRS = false;
+
+    if (totalStructuresIRS > 0) {
+
+      if ((100 - ((double) notVisitedStructures / (double) totalStructuresIRS * 100))
+          >= (double) dashboardProperties.getOperationalAreaVisitedThreshold()) {
+        operationalAreaIsVisitedIRS = true;
+      }
+      if ((100 - ((double) notVisitedStructures / (double) totalStructuresIRS * 100))
           >= (double) dashboardProperties.getOperationalAreaVisitedEffectivelyThreshold()) {
-        operationalAreaIsVisitedEffectively = true;
+        operationalAreaIsVisitedEffectivelyIRS = true;
       }
     }
 
+    IndividualOperationalAreaCountsByBusinessStatus individualOperationalAreaCountsByBusinessStatus;
     if (aggregate.getOperationalObj().containsKey(operationalAreaAggregate.getIdentifier())) {
-      IndividualOperationalAreaCountsByBusinessStatus individualOperationalAreaCountsByBusinessStatus = aggregate.getOperationalObj()
+      individualOperationalAreaCountsByBusinessStatus = aggregate.getOperationalObj()
           .get(operationalAreaAggregate.getIdentifier());
-      individualOperationalAreaCountsByBusinessStatus.setCounts(
-          operationalAreaAggregate.getAggregatedLocationCount());
-      individualOperationalAreaCountsByBusinessStatus.setOperationalAreaIsVisited(
-          operationalAreaIsVisited);
-      individualOperationalAreaCountsByBusinessStatus.setOperationalAreaIsVisitedEffectively(operationalAreaIsVisitedEffectively);
-      aggregate.getOperationalObj().put(operationalAreaAggregate.getIdentifier(),
-          individualOperationalAreaCountsByBusinessStatus);
-
     } else {
-      IndividualOperationalAreaCountsByBusinessStatus operationalAreaVisitedCount3 = new IndividualOperationalAreaCountsByBusinessStatus();
-      operationalAreaVisitedCount3.setCounts(operationalAreaAggregate.getAggregatedLocationCount());
-      operationalAreaVisitedCount3.setOperationalAreaIsVisited(operationalAreaIsVisited);
-      operationalAreaVisitedCount3.setOperationalAreaIsVisitedEffectively(operationalAreaIsVisitedEffectively);
-      aggregate.getOperationalObj()
-          .put(operationalAreaAggregate.getIdentifier(), operationalAreaVisitedCount3);
+      individualOperationalAreaCountsByBusinessStatus = new IndividualOperationalAreaCountsByBusinessStatus();
     }
 
-    long countOfVisitedOperationalAreas = aggregate.getOperationalObj().entrySet().stream()
-        .filter(entry -> entry.getValue().isOperationalAreaIsVisited()).count();
-    long countOfVisitedEffectivelyOperationalAreas = aggregate.getOperationalObj().entrySet().stream()
-        .filter(entry -> entry.getValue().isOperationalAreaIsVisitedEffectively()).count();
-    aggregate.setOperationalAreaVisitedCount(countOfVisitedOperationalAreas);
-    aggregate.setOperationalAreaVisitedEffectivelyCount(countOfVisitedEffectivelyOperationalAreas);
+    individualOperationalAreaCountsByBusinessStatus.setCounts(
+        operationalAreaAggregate.getAggregatedLocationCount());
+    individualOperationalAreaCountsByBusinessStatus.setOperationalAreaIsVisitedMDA(
+        operationalAreaIsVisitedMDA);
+    individualOperationalAreaCountsByBusinessStatus.setOperationalAreaIsVisitedIRS(operationalAreaIsVisitedIRS);
+    individualOperationalAreaCountsByBusinessStatus.setOperationalAreaIsVisitedEffectivelyIRS(operationalAreaIsVisitedEffectivelyIRS);
+    aggregate.getOperationalObj().put(operationalAreaAggregate.getIdentifier(),
+        individualOperationalAreaCountsByBusinessStatus);
+
+
+    long countOfVisitedOperationalAreasMDA = aggregate.getOperationalObj().entrySet().stream()
+        .filter(entry -> entry.getValue().isOperationalAreaIsVisitedMDA()).count();
+
+    long countOfVisitedOperationalAreasIRS = aggregate.getOperationalObj().entrySet().stream()
+        .filter(entry -> entry.getValue().isOperationalAreaIsVisitedIRS()).count();
+
+    long countOfVisitedEffectivelyOperationalAreasIRS = aggregate.getOperationalObj().entrySet().stream()
+        .filter(entry -> entry.getValue().isOperationalAreaIsVisitedEffectivelyIRS()).count();
+
+    aggregate.setOperationalAreaVisitedCountMDA(countOfVisitedOperationalAreasMDA);
+    aggregate.setOperationalAreaVisitedCountIRS(countOfVisitedOperationalAreasIRS);
+    aggregate.setOperationalAreaVisitedEffectivelyIRSCount(countOfVisitedEffectivelyOperationalAreasIRS);
 
     return aggregate;
   }
+
 
   private String getAncestryPlanKey(String k) {
     return k.split("_")[0] + "_" + k.split("_")[k.split("_").length - 1];
