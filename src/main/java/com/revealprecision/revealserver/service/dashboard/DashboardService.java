@@ -1,30 +1,23 @@
 package com.revealprecision.revealserver.service.dashboard;
 
-import com.revealprecision.revealserver.api.v1.dto.factory.LocationResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.models.RowData;
 import com.revealprecision.revealserver.api.v1.dto.response.FeatureSetResponse;
-import com.revealprecision.revealserver.api.v1.dto.response.LocationResponse;
 import com.revealprecision.revealserver.constants.LocationConstants;
 import com.revealprecision.revealserver.enums.ApplicableReportsEnum;
 import com.revealprecision.revealserver.enums.LookupUtil;
 import com.revealprecision.revealserver.enums.ReportTypeEnum;
 import com.revealprecision.revealserver.exceptions.WrongEnumException;
 import com.revealprecision.revealserver.persistence.domain.Location;
-import com.revealprecision.revealserver.persistence.domain.Person;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import com.revealprecision.revealserver.service.LocationService;
 import com.revealprecision.revealserver.service.PlanService;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -36,6 +29,11 @@ public class DashboardService {
   private final PlanService planService;
   private final MDADashboardService mdaDashboardService;
   private final IRSDashboardService irsDashboardService;
+
+  public static final String WITHIN_STRUCTURE_LEVEL = "Within Structure";
+  public static final String STRUCTURE_LEVEL = "Structure";
+  public static final String DIRECTLY_ABOVE_STRUCTURE_LEVEL = "Directly Above Structure";
+  public static final String ALL_OTHER_LEVELS = "All Other Levels";
 
   public FeatureSetResponse getDataForReport(String reportType, UUID planIdentifier,
       UUID parentIdentifier) {
@@ -54,6 +52,98 @@ public class DashboardService {
       parentLocation = locationService.findByIdentifier(parentIdentifier);
     }
 
+    List<PlanLocationDetails> locationDetails = getPlanLocationDetails(
+        planIdentifier, parentIdentifier, plan, parentLocation);
+
+    initialDataStores(reportTypeEnum);
+
+    String reportLevel = getReportLevel(plan, parentLocation);
+
+    Map<UUID, RowData> rowDataMap = locationDetails.stream().flatMap(loc -> Objects.requireNonNull(
+                getRowData(loc.getParentLocation(), reportTypeEnum, plan, loc, reportLevel))
+            .stream()).filter(Objects::nonNull)
+        .collect(Collectors.toMap(RowData::getLocationIdentifier, row -> row));
+
+    return getFeatureSetResponse(parentIdentifier, locationDetails, rowDataMap, reportLevel,
+        reportTypeEnum);
+  }
+
+  private List<RowData> getRowData(Location parentLocation, ReportTypeEnum reportTypeEnum,
+      Plan plan,
+      PlanLocationDetails loc, String reportLevel) {
+
+    switch (reportTypeEnum) {
+      case MDA_FULL_COVERAGE:
+
+        switch (reportLevel) {
+          case WITHIN_STRUCTURE_LEVEL:
+            return mdaDashboardService.getMDAFullWithinStructureLevelData(plan, parentLocation);
+
+          case STRUCTURE_LEVEL:
+            return mdaDashboardService.getMDAFullCoverageStructureLevelData(plan,
+                loc.getLocation(),
+                parentLocation.getIdentifier());
+
+          case DIRECTLY_ABOVE_STRUCTURE_LEVEL:
+            return mdaDashboardService.getMDAFullCoverageOperationalAreaLevelData(plan,
+                loc.getLocation());
+
+          case ALL_OTHER_LEVELS:
+            return mdaDashboardService.getMDAFullCoverageData(plan, loc.getLocation());
+        }
+
+      case IRS_FULL_COVERAGE:
+
+        switch (reportLevel) {
+          case WITHIN_STRUCTURE_LEVEL:
+          case STRUCTURE_LEVEL:
+            return irsDashboardService.getIRSFullCoverageStructureLevelData(plan,
+                loc.getLocation(),
+                parentLocation.getIdentifier());
+
+          case DIRECTLY_ABOVE_STRUCTURE_LEVEL:
+            return irsDashboardService.getIRSFullDataOperational(plan,
+                loc.getLocation());
+
+          case ALL_OTHER_LEVELS:
+            return irsDashboardService.getIRSFullData(plan, loc.getLocation());
+        }
+
+    }
+    return null;
+  }
+
+  public FeatureSetResponse getFeatureSetResponse(UUID parentIdentifier,
+      List<PlanLocationDetails> locationDetails,
+      Map<UUID, RowData> rowDataMap, String reportLevel, ReportTypeEnum reportTypeEnum) {
+    switch (reportTypeEnum) {
+
+      case MDA_FULL_COVERAGE:
+        return mdaDashboardService.getFeatureSetResponse(parentIdentifier, locationDetails,
+            rowDataMap, reportLevel);
+
+      case IRS_FULL_COVERAGE:
+        return irsDashboardService.getFeatureSetResponse(parentIdentifier, locationDetails,
+            rowDataMap, reportLevel);
+    }
+    return null;
+  }
+
+
+  private void initialDataStores(ReportTypeEnum reportTypeEnum) {
+    switch (reportTypeEnum) {
+
+      case MDA_FULL_COVERAGE:
+        mdaDashboardService.initDataStoresIfNecessary();
+        ;
+        break;
+      case IRS_FULL_COVERAGE:
+        irsDashboardService.initDataStoresIfNecessary();
+    }
+  }
+
+  private List<PlanLocationDetails> getPlanLocationDetails(UUID planIdentifier,
+      UUID parentIdentifier, Plan plan, Location parentLocation) {
     List<PlanLocationDetails> locationDetails = new ArrayList<>();
     if (parentLocation == null ||
         !parentLocation.getGeographicLevel().getName().equals(LocationConstants.STRUCTURE)) {
@@ -70,6 +160,7 @@ public class DashboardService {
           locationDetails = locationService.getAssignedLocationsByParentIdentifierAndPlanIdentifier(
               parentIdentifier, planIdentifier, (locationNodeIndex + 2) == structureNodeIndex);
         } else {
+
           locationDetails = locationService.getLocationsByParentIdentifierAndPlanIdentifier(
               parentIdentifier, planIdentifier);
         }
@@ -84,88 +175,45 @@ public class DashboardService {
       planLocations.setAssignedTeams(0L);
       locationDetails.add(planLocations);
     }
-
-
-
-    switch (reportTypeEnum) {
-
-      case MDA_FULL_COVERAGE:
-        mdaDashboardService.initDataStoresIfNecessary();;
-        break;
-      case IRS_FULL_COVERAGE:
-        irsDashboardService.initDataStoresIfNecessary();
-    }
-
-    Map<UUID, RowData> rowDataMap = locationDetails.stream().flatMap(loc -> Objects.requireNonNull(
-                getRowData(loc.getParentLocation(), reportTypeEnum, plan, loc))
-            .stream()).filter(Objects::nonNull)
-        .collect(Collectors.toMap(RowData::getLocationIdentifier, row -> row));
-
-    FeatureSetResponse response = new FeatureSetResponse();
-    response.setType("FeatureCollection");
-    List<LocationResponse> locationResponses = locationDetails.stream()
-        .map(loc -> LocationResponseFactory.fromPlanLocationDetails(loc, parentIdentifier))
-        .collect(Collectors.toList());
-
-    switch (reportTypeEnum) {
-
-      case MDA_FULL_COVERAGE:
-        locationResponses = mdaDashboardService.setGeoJsonProperties(rowDataMap, locationResponses);
-        break;
-      case IRS_FULL_COVERAGE:
-        locationResponses = irsDashboardService.setGeoJsonProperties(rowDataMap, locationResponses);
-    }
-
-    response.setFeatures(locationResponses);
-    response.setIdentifier(parentIdentifier);
-    return response;
+    return locationDetails;
   }
 
 
-  private List<RowData> getRowData(Location parentLocation, ReportTypeEnum reportTypeEnum,
-      Plan plan,
-      PlanLocationDetails loc) {
-    switch (reportTypeEnum) {
+  private String getReportLevel(Plan plan, Location parentLocation) {
 
-      case MDA_FULL_COVERAGE:
-        if (loc.isHasChildren()) {
-          switch (loc.getLocation().getGeographicLevel().getName()) {
-            case LocationConstants.STRUCTURE:
-              return mdaDashboardService.getMDAFullCoverageStructureLevelData(plan,
-                  loc.getLocation(),
-                  parentLocation.getIdentifier());
-            case LocationConstants.OPERATIONAL:
-              return mdaDashboardService.getMDAFullCoverageOperationalAreaLevelData(plan,
-                  loc.getLocation());
-            default:
-              return mdaDashboardService.getMDAFullCoverageData(plan, loc.getLocation());
-          }
-        } else {
-          return mdaDashboardService.getMDAFullWithinStructureLevelData(plan, parentLocation);
-        }
-
-      case IRS_FULL_COVERAGE:
-      if (loc.isHasChildren()) {
-        switch (loc.getLocation().getGeographicLevel().getName()) {
-          case LocationConstants.STRUCTURE:
-            return irsDashboardService.getIRSFullCoverageStructureLevelData(plan,
-                loc.getLocation(),
-                parentLocation.getIdentifier());
-          case LocationConstants.OPERATIONAL:
-            return irsDashboardService.getIRSFullDataOperational(plan,
-                loc.getLocation());
-          default:
-            return irsDashboardService.getIRSFullData(plan, loc.getLocation());
-        }
-      } else {
-        return irsDashboardService.getIRSFullCoverageStructureLevelData(plan,
-            loc.getLocation(),
-            parentLocation.getIdentifier());
-      }
-
-
+    String parentOfGeoLevelDirectlyAboveStructure = null;
+    if (plan.getLocationHierarchy().getNodeOrder().contains(LocationConstants.STRUCTURE)) {
+      parentOfGeoLevelDirectlyAboveStructure = plan.getLocationHierarchy().getNodeOrder().get(
+          plan.getLocationHierarchy().getNodeOrder().indexOf(LocationConstants.STRUCTURE) - 2);
     }
-    return null;
+
+    String geoLevelDirectlyAboveStructure = null;
+    if (plan.getLocationHierarchy().getNodeOrder().contains(LocationConstants.STRUCTURE)) {
+      geoLevelDirectlyAboveStructure = plan.getLocationHierarchy().getNodeOrder().get(
+          plan.getLocationHierarchy().getNodeOrder().indexOf(LocationConstants.STRUCTURE) - 1);
+    }
+
+    if (parentLocation == null) {
+      return ALL_OTHER_LEVELS;
+    } else {
+      if (parentLocation.getGeographicLevel().getName().equals(LocationConstants.STRUCTURE)) {
+        return WITHIN_STRUCTURE_LEVEL;
+      } else if (geoLevelDirectlyAboveStructure != null) {
+        String reportLevel = ALL_OTHER_LEVELS;
+
+        if (parentLocation.getGeographicLevel().getName().equals(geoLevelDirectlyAboveStructure)) {
+          reportLevel = STRUCTURE_LEVEL;
+        }
+        if (parentLocation.getGeographicLevel().getName()
+            .equals(parentOfGeoLevelDirectlyAboveStructure)) {
+          reportLevel = DIRECTLY_ABOVE_STRUCTURE_LEVEL;
+        }
+        return reportLevel;
+      } else {
+        return ALL_OTHER_LEVELS;
+      }
+    }
+
   }
 
 

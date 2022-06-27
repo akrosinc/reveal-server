@@ -19,5 +19,6 @@ public class FeatureSetResponse {
 
   private UUID identifier;
   private String type;
+  private String defaultDisplayColumn;
   private List<LocationResponse> features;
 }

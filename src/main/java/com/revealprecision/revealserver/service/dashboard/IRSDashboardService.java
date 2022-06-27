@@ -1,8 +1,10 @@
 package com.revealprecision.revealserver.service.dashboard;
 
 
+import com.revealprecision.revealserver.api.v1.dto.factory.LocationResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.models.ColumnData;
 import com.revealprecision.revealserver.api.v1.dto.models.RowData;
+import com.revealprecision.revealserver.api.v1.dto.response.FeatureSetResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationResponse;
 import com.revealprecision.revealserver.constants.LocationConstants;
 import com.revealprecision.revealserver.messaging.KafkaConstants;
@@ -14,6 +16,8 @@ import com.revealprecision.revealserver.messaging.message.PersonBusinessStatusAg
 import com.revealprecision.revealserver.messaging.message.TreatedOperationalAreaAggregate;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.Plan;
+import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
+import com.revealprecision.revealserver.props.DashboardProperties;
 import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.service.LocationRelationshipService;
 import com.revealprecision.revealserver.service.PlanLocationsService;
@@ -39,23 +43,25 @@ public class IRSDashboardService {
   private final KafkaProperties kafkaProperties;
   private final PlanLocationsService planLocationsService;
   private final LocationRelationshipService locationRelationshipService;
+  private final DashboardProperties dashboardProperties;
 
-  public static final String TOTAL_SPRAY_AREAS = "Total spray areas";
-  public static final String TARGET_SPRAY_AREAS = "Targeted spray areas";
-  public static final String VISITED_AREAS = "Total spray areas visited";
+  private static final String TOTAL_SPRAY_AREAS = "Total spray areas";
+  private static final String TARGET_SPRAY_AREAS = "Targeted spray areas";
+  private static final String VISITED_AREAS = "Total spray areas visited";
   public static final String SPRAY_COVERAGE_OF_TARGETED = "Spray coverage of targeted (Progress)";
-  public static final String TOTAL_STRUCTURES = "Total structures";
-  public static final String TOTAL_STRUCTURES_TARGETED = "Total Structures Targeted";
-  public static final String TOTAL_STRUCTURES_FOUND = "Total Structures Found";
-  public static final String STRUCTURES_SPRAYED = "Total Structures Sprayed";
-  public static final String SPRAY_COVERAGE = "Spray Coverage (Effectiveness)";
-  public static final String SPRAY_SUCCESS = "Spray Success Rate (PMI SC)";
-  public static final String PERCENTAGE_VISITED_EFFECTIVELY = "Spray Areas Effectively sprayed";
-  public static final String STRUCTURE_STATUS = "Structure Status";
-  public static final String NO_OF_ROOMS = "No of Rooms";
-  public static final String NO_OF_MALES = "No of Males";
-  public static final String NO_OF_FEMALES = "No of Females";
-  public static final String NO_OF_PREGNANT_WOMEN = "No of Pregnant Women";
+  private static final String TOTAL_STRUCTURES = "Total structures";
+  private static final String TOTAL_STRUCTURES_TARGETED = "Total Structures Targeted";
+  private static final String TOTAL_STRUCTURES_FOUND = "Total Structures Found";
+  private static final String STRUCTURES_SPRAYED = "Total Structures Sprayed";
+  private static final String SPRAY_COVERAGE = "Spray Coverage (Effectiveness)";
+  private static final String SPRAY_SUCCESS = "Spray Success Rate (PMI SC)";
+  private static final String PERCENTAGE_VISITED_EFFECTIVELY = "Spray Areas Effectively sprayed";
+  private static final String STRUCTURE_STATUS = "Structure Status";
+  private static final String NO_OF_ROOMS = "No of Rooms";
+  private static final String NO_OF_MALES = "No of Males";
+  private static final String NO_OF_FEMALES = "No of Females";
+  private static final String NO_OF_PREGNANT_WOMEN = "No of Pregnant Women";
+
 
 
   ReadOnlyKeyValueStore<String, Long> countOfAssignedStructures;
@@ -71,6 +77,13 @@ public class IRSDashboardService {
 
 
   public List<RowData> getIRSFullData(Plan plan, Location childLocation) {
+
+    String geoNameDirectlyAboveStructure = null;
+    if (plan.getLocationHierarchy().getNodeOrder().contains(LocationConstants.STRUCTURE)) {
+      geoNameDirectlyAboveStructure = plan.getLocationHierarchy().getNodeOrder().get(
+          plan.getLocationHierarchy().getNodeOrder().indexOf(LocationConstants.STRUCTURE) - 1);
+    }
+
     Map<String, ColumnData> columns = new HashMap<>();
 
     Entry<String, ColumnData> totalStructuresCounts = getTotalStructuresCounts(plan, childLocation,
@@ -94,7 +107,7 @@ public class IRSDashboardService {
     columns.put(targetAreas.getKey(), targetAreas.getValue());
 
     Entry<String, ColumnData> totalAreas = getTotalAreas(plan,
-        childLocation, TOTAL_SPRAY_AREAS);
+        childLocation, TOTAL_SPRAY_AREAS, geoNameDirectlyAboveStructure);
     columns.put(totalAreas.getKey(), totalAreas.getValue());
 
     Entry<String, ColumnData> totalStructuresSprayed = getTotalStructuresSprayed(plan,
@@ -361,10 +374,10 @@ public class IRSDashboardService {
   }
 
   private Entry<String, ColumnData> getTotalAreas(Plan plan,
-      Location childLocation, String columnName) {
+      Location childLocation, String columnName, String geoNameDirectlyAboveStructure) {
 
     Long totalOperationAreaCounts = locationRelationshipService.getNumberOfChildrenByGeoLevelNameWithinLocationAndHierarchy(
-        "operational", childLocation.getIdentifier(), plan.getLocationHierarchy().getIdentifier());
+        geoNameDirectlyAboveStructure, childLocation.getIdentifier(), plan.getLocationHierarchy().getIdentifier());
 
     Long totalOperationAreaCountsValue = 0L;
 
@@ -630,7 +643,7 @@ public class IRSDashboardService {
     }
   }
 
-  public List<LocationResponse> setGeoJsonProperties(Map<UUID, RowData> rowDataMap,
+  private List<LocationResponse> setGeoJsonProperties(Map<UUID, RowData> rowDataMap,
       List<LocationResponse> locationResponses) {
     return locationResponses.stream().peek(loc -> {
       loc.getProperties().setColumnDataMap(rowDataMap.get(loc.getIdentifier()).getColumnDataMap());
@@ -642,5 +655,19 @@ public class IRSDashboardService {
                 .getValue());
       }
     }).collect(Collectors.toList());
+  }
+  public FeatureSetResponse getFeatureSetResponse(UUID parentIdentifier, List<PlanLocationDetails> locationDetails,
+      Map<UUID, RowData> rowDataMap, String reportLevel) {
+    FeatureSetResponse response = new FeatureSetResponse();
+    response.setType("FeatureCollection");
+    List<LocationResponse> locationResponses = locationDetails.stream()
+        .map(loc -> LocationResponseFactory.fromPlanLocationDetails(loc, parentIdentifier))
+        .collect(Collectors.toList());
+
+    locationResponses = setGeoJsonProperties(rowDataMap, locationResponses);
+    response.setDefaultDisplayColumn(dashboardProperties.getIrsDefaultDisplayColumns().getOrDefault(reportLevel, null));
+    response.setFeatures(locationResponses);
+    response.setIdentifier(parentIdentifier);
+    return response;
   }
 }
