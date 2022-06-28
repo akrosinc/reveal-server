@@ -13,8 +13,9 @@ public enum ActionTitleEnum {
   MDA_DISPENSE("MDA Dispense", LookupEntityTypeCodeEnum.PERSON_CODE),
   MDA_ADHERENCE("MDA Adherence", LookupEntityTypeCodeEnum.PERSON_CODE),
   IRS("IRS", LookupEntityTypeCodeEnum.LOCATION_CODE),
-  IRS_VERIFICATION("IRS Verification",LookupEntityTypeCodeEnum.LOCATION_CODE);
-
+  IRS_VERIFICATION("IRS Verification", LookupEntityTypeCodeEnum.LOCATION_CODE),
+  CDD_SUPERVISION ("CDD Supervision", LookupEntityTypeCodeEnum.LOCATION_CODE),
+  CELL_COORDINATION("Cell Coordination", LookupEntityTypeCodeEnum.LOCATION_CODE);
 
   private final String actionTitle;
   private final LookupEntityTypeCodeEnum entityType;
