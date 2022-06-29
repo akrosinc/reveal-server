@@ -7,6 +7,7 @@ import com.revealprecision.revealserver.constants.LocationConstants;
 import com.revealprecision.revealserver.enums.ApplicableReportsEnum;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.enums.LookupUtil;
+import com.revealprecision.revealserver.enums.PlanInterventionTypeEnum;
 import com.revealprecision.revealserver.enums.PlanStatusEnum;
 import com.revealprecision.revealserver.enums.ReportTypeEnum;
 import com.revealprecision.revealserver.exceptions.ConflictException;
@@ -127,8 +128,8 @@ public class PlanService {
 
     GeographicLevel geographicLevel;
 
-    if (!interventionType.getCode().equals("MDA Lite") && !interventionType.getCode()
-        .equals("IRS Lite")) {
+    if (!interventionType.getCode().equals(PlanInterventionTypeEnum.IRS_LITE.name()) && !interventionType.getCode()
+        .equals(PlanInterventionTypeEnum.IRS_LITE.name())) {
       geographicLevel = geographicLevelService.findByName(LocationConstants.STRUCTURE);
     } else {
       if (planRequest.getHierarchyLevelTarget() == null) {

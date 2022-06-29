@@ -7,6 +7,7 @@ import com.revealprecision.revealserver.messaging.message.MetaDataEvent;
 import com.revealprecision.revealserver.messaging.message.PersonMetadataEvent;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.Person;
+import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.metadata.LocationMetadata;
 import com.revealprecision.revealserver.persistence.domain.metadata.PersonMetadata;
 import com.revealprecision.revealserver.persistence.domain.metadata.infra.Metadata;
@@ -59,7 +60,7 @@ public class MetadataService {
 
   @Transactional
   public PersonMetadata updatePersonMetadata(UUID personIdentifier, Object tagValue,
-      UUID planIdentifier, UUID taskIdentifier,
+      Plan plan, UUID taskIdentifier,
       String user, String dataType, String tag, String type, Person person, String taskType) {
 
     PersonMetadata personMetadata;
@@ -107,7 +108,7 @@ public class MetadataService {
 
       } else {
         // tag does not exist in list
-        MetadataObj metadataObj = getMetadataObj(tagValue, planIdentifier, taskIdentifier, user,
+        MetadataObj metadataObj = getMetadataObj(tagValue, plan.getIdentifier(), taskIdentifier, user,
             dataType, tag, type,taskType);
 
         personMetadata = optionalPersonMetadata.get();
@@ -124,7 +125,7 @@ public class MetadataService {
       person.setIdentifier(personIdentifier);
       personMetadata.setPerson(person);
 
-      MetadataObj metadataObj = getMetadataObj(tagValue, planIdentifier, taskIdentifier, user,
+      MetadataObj metadataObj = getMetadataObj(tagValue, plan.getIdentifier(), taskIdentifier, user,
           dataType, tag, type,taskType);
 
       MetadataList metadataList = new MetadataList();
@@ -163,7 +164,7 @@ public class MetadataService {
 
 
   public LocationMetadata updateLocationMetadata(UUID locationIdentifier, Object tagValue,
-      UUID planIdentifier, UUID taskIdentifier,
+      Plan plan, UUID taskIdentifier,
       String user, String dataType, String tag, String type, Location location, String taskType) {
 
     LocationMetadata locationMetadata;
@@ -211,7 +212,7 @@ public class MetadataService {
 
       } else {
         // tag does not exist in list
-        MetadataObj metadataObj = getMetadataObj(tagValue, planIdentifier, taskIdentifier, user,
+        MetadataObj metadataObj = getMetadataObj(tagValue, plan.getIdentifier(), taskIdentifier, user,
             dataType, tag, type, taskType);
 
         locationMetadata = locationMetadataOptional.get();
@@ -226,7 +227,7 @@ public class MetadataService {
       location.setIdentifier(locationIdentifier);
       locationMetadata.setLocation(location);
 
-      MetadataObj metadataObj = getMetadataObj(tagValue, planIdentifier, taskIdentifier, user,
+      MetadataObj metadataObj = getMetadataObj(tagValue, plan.getIdentifier(), taskIdentifier, user,
           dataType, tag, type, taskType);
 
       MetadataList metadataList = new MetadataList();
@@ -238,7 +239,10 @@ public class MetadataService {
     LocationMetadata savedLocationMetadata = locationMetadataRepository.save(locationMetadata);
 
     LocationMetadataEvent locationMetadataEvent = new LocationMetadataEvent();
+    locationMetadataEvent.setPlanTargetType(plan.getPlanTargetType().getGeographicLevel().getName());
     locationMetadataEvent.setIdentifier(savedLocationMetadata.getIdentifier());
+    locationMetadataEvent.setEntityGeographicLevel(location.getGeographicLevel().getName());
+    locationMetadataEvent.setHierarchyIdentifier(plan.getLocationHierarchy().getIdentifier());
     locationMetadataEvent.setMetaDataEvents(
         savedLocationMetadata.getEntityValue().getMetadataObjs().stream().map(metadataObj -> {
           MetaDataEvent metaDataEvent = new MetaDataEvent();
@@ -256,7 +260,7 @@ public class MetadataService {
     return savedLocationMetadata;
   }
 
-  public LocationMetadata deactivateLocationMetadata(UUID locationIdentifier, String tag) {
+  public LocationMetadata deactivateLocationMetadata(UUID locationIdentifier, String tag, Plan plan) {
 
     LocationMetadata locationMetadata;
 
@@ -295,6 +299,9 @@ public class MetadataService {
 
         LocationMetadataEvent locationMetadataEvent = new LocationMetadataEvent();
         locationMetadataEvent.setIdentifier(savedLocationMetadata.getIdentifier());
+        locationMetadataEvent.setPlanIdentifier(plan.getIdentifier());
+        locationMetadataEvent.setPlanTargetType(plan.getPlanTargetType().getGeographicLevel().getName());
+        locationMetadataEvent.setHierarchyIdentifier(plan.getLocationHierarchy().getIdentifier());
         locationMetadataEvent.setMetaDataEvents(
             savedLocationMetadata.getEntityValue().getMetadataObjs().stream().map(metadataObj -> {
               MetaDataEvent metaDataEvent = new MetaDataEvent();
@@ -322,7 +329,7 @@ public class MetadataService {
     return null;
   }
 
-  public PersonMetadata deactivatePersonMetadata(UUID locationIdentifier, String tag) {
+  public PersonMetadata deactivatePersonMetadata(UUID locationIdentifier, String tag, Plan plan) {
 
     PersonMetadata personMetadata;
 
@@ -361,6 +368,7 @@ public class MetadataService {
 
         PersonMetadataEvent personMetadataEvent = new PersonMetadataEvent();
         personMetadataEvent.setIdentifier(savedPersonMetadata.getIdentifier());
+        personMetadataEvent.setHierarchyIdentifier(plan.getLocationHierarchy().getIdentifier());
         personMetadataEvent.setMetaDataEvents(
             savedPersonMetadata.getEntityValue().getMetadataObjs().stream().map(metadataObj -> {
               MetaDataEvent metaDataEvent = new MetaDataEvent();
@@ -373,7 +381,7 @@ public class MetadataService {
         personMetadataEvent.setEntityId(savedPersonMetadata.getPerson().getIdentifier());
 
         personMetadataKafkaTemplate.send(
-            kafkaProperties.getTopicMap().get(KafkaConstants.LOCATION_METADATA_UPDATE),
+            kafkaProperties.getTopicMap().get(KafkaConstants.PERSON_METADATA_UPDATE),
             personMetadataEvent);
         return savedPersonMetadata;
       } else {

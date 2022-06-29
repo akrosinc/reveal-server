@@ -1,5 +1,7 @@
 package com.revealprecision.revealserver.messaging.message;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -15,15 +17,28 @@ import lombok.ToString;
 @NoArgsConstructor
 @ToString
 @Builder
-public class LocationMetadataUnpackedEvent extends Message {
+public class LocationStructureBusinessStatusAggregate extends Message {
 
-  private UUID identifier;
   private UUID entityId;
-  private UUID ancestorNode;
+
+  private String businessStatus;
+
+  private LocalDateTime updateTime;
+
+  private List<UUID> ancestry;
+
+  private String previousBusinessStatus;
+
+  private String businessStatusKey;
+
+  private Long structureCounts;
+
   private UUID hierarchyIdentifier;
-  private MetaDataEvent metaDataEvent;
   private UUID plan;
   private String planTargetType;
   private String entityGeoLevel;
-  private Long structureCounts;
+  private UUID ancestorNode;
+
+  private Long structureSum = 0L;
+
 }

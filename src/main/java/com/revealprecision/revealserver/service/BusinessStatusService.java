@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.service;
 
+import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.Task;
 import com.revealprecision.revealserver.persistence.domain.metadata.LocationMetadata;
 import com.revealprecision.revealserver.persistence.domain.metadata.PersonMetadata;
@@ -20,32 +21,33 @@ public class BusinessStatusService {
 
   public void setBusinessStatus(Task task, String businessStatus) {
 
-      UUID planIdentifier = task.getAction().getGoal().getPlan().getIdentifier();
+      Plan plan = task.getAction().getGoal().getPlan();
 
       String baseBusinessStatusTagName = businessStatusProperties.getBusinessStatusTagName();
 
       String businessStatusTagName = baseBusinessStatusTagName;
-      if (planIdentifier != null && task.getIdentifier() != null) {
+      if (plan != null && task.getIdentifier() != null) {
         businessStatusTagName = businessStatusTagName.concat("_")
-            .concat(planIdentifier.toString()).concat("_").concat(task.getIdentifier().toString());
+            .concat(plan.getIdentifier().toString()).concat("_").concat(task.getIdentifier().toString());
       }
 
       if (ActionUtils.isActionForLocation(task.getAction())) {
         metadataService.updateLocationMetadata(task.getBaseEntityIdentifier(), businessStatus,
-            planIdentifier, task.getIdentifier(), UserUtils.getCurrentPrincipleName(), "string",
+            plan, task.getIdentifier(), UserUtils.getCurrentPrincipleName(), "string",
             businessStatusTagName, baseBusinessStatusTagName, task.getLocation(), task.getAction().getTitle());
       }
 
       if (ActionUtils.isActionForPerson(task.getAction())) {
         metadataService.updatePersonMetadata(task.getBaseEntityIdentifier(), businessStatus,
-            planIdentifier, task.getIdentifier(), UserUtils.getCurrentPrincipleName(), "string",
+            plan, task.getIdentifier(), UserUtils.getCurrentPrincipleName(), "string",
             businessStatusTagName, baseBusinessStatusTagName, task.getPerson(), task.getAction().getTitle());
       }
   }
 
   public void deactivateBusinessStatus(Task task) {
 
-    UUID planIdentifier = task.getAction().getGoal().getPlan().getIdentifier();
+    Plan plan = task.getAction().getGoal().getPlan();
+    UUID planIdentifier = plan.getIdentifier();
 
     String businessStatusTagName = businessStatusProperties.getBusinessStatusTagName();
     if (planIdentifier != null && task.getIdentifier() != null) {
@@ -55,12 +57,12 @@ public class BusinessStatusService {
 
     if (ActionUtils.isActionForLocation(task.getAction())) {
       metadataService.deactivateLocationMetadata(task.getBaseEntityIdentifier(),
-          businessStatusTagName);
+          businessStatusTagName, plan);
     }
 
     if (ActionUtils.isActionForPerson(task.getAction())) {
       metadataService.deactivatePersonMetadata(task.getBaseEntityIdentifier(),
-          businessStatusTagName);
+          businessStatusTagName, plan);
     }
   }
 

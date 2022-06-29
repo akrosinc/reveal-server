@@ -36,4 +36,7 @@ public class KafkaConstants {
   public static final String operationalTreatedCounts = "operationalTreatedCounts";
   public static final String task = "task";
   public static final String assignedOperationalCountPerParent = "assignedOperationalCountPerParent";
+  public static final String locationStructureBusinessStatus = "locationStructureBusinessStatus";
+  public static final String locationStructureHierarchyBusinessStatus = "locationStructureHierarchyBusinessStatus";
+
 }

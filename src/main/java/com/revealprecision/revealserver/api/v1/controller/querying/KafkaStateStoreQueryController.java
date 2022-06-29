@@ -5,6 +5,7 @@ import com.revealprecision.revealserver.messaging.Message;
 import com.revealprecision.revealserver.messaging.message.LocationBusinessStatusAggregate;
 import com.revealprecision.revealserver.messaging.message.LocationPersonBusinessStateAggregate;
 import com.revealprecision.revealserver.messaging.message.LocationPersonBusinessStateCountAggregate;
+import com.revealprecision.revealserver.messaging.message.LocationStructureBusinessStatusAggregate;
 import com.revealprecision.revealserver.messaging.message.OperationalAreaAggregate;
 import com.revealprecision.revealserver.messaging.message.OperationalAreaVisitedCount;
 import com.revealprecision.revealserver.messaging.message.PersonBusinessStatusAggregate;
@@ -43,6 +44,29 @@ public class KafkaStateStoreQueryController<T> {
     ReadOnlyKeyValueStore<String, LocationPersonBusinessStateAggregate> counts = kafkaStreams.store(
         StoreQueryParameters.fromNameAndType(
             kafkaProperties.getStoreMap().get(KafkaConstants.structurePeople),
+            QueryableStoreTypes.keyValueStore())
+    );
+    iterateThroughStore(counts);
+  }
+
+
+  @GetMapping("/locationStructureBusinessStatus")
+  public void locationStructureBusinessStatus() {
+    KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
+    ReadOnlyKeyValueStore<String, LocationStructureBusinessStatusAggregate> counts = kafkaStreams.store(
+        StoreQueryParameters.fromNameAndType(
+            kafkaProperties.getStoreMap().get(KafkaConstants.locationStructureBusinessStatus),
+            QueryableStoreTypes.keyValueStore())
+    );
+    iterateThroughStore(counts);
+  }
+
+  @GetMapping("/locationStructureHierarchyBusinessStatus")
+  public void locationStructureHierarchyBusinessStatus() {
+    KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
+    ReadOnlyKeyValueStore<String, LocationStructureBusinessStatusAggregate> counts = kafkaStreams.store(
+        StoreQueryParameters.fromNameAndType(
+            kafkaProperties.getStoreMap().get(KafkaConstants.locationStructureHierarchyBusinessStatus),
             QueryableStoreTypes.keyValueStore())
     );
     iterateThroughStore(counts);

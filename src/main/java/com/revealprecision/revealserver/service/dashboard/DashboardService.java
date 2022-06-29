@@ -29,11 +29,13 @@ public class DashboardService {
   private final PlanService planService;
   private final MDADashboardService mdaDashboardService;
   private final IRSDashboardService irsDashboardService;
+  private final IRSLiteDashboardService irsLiteDashboardService;
 
   public static final String WITHIN_STRUCTURE_LEVEL = "Within Structure";
   public static final String STRUCTURE_LEVEL = "Structure";
   public static final String DIRECTLY_ABOVE_STRUCTURE_LEVEL = "Directly Above Structure";
   public static final String ALL_OTHER_LEVELS = "All Other Levels";
+  public static final String LOWEST_LITE_TOUCH_LEVEL = "Lowest Lite Touch Level";
 
   public FeatureSetResponse getDataForReport(String reportType, UUID planIdentifier,
       UUID parentIdentifier) {
@@ -108,6 +110,16 @@ public class DashboardService {
           case ALL_OTHER_LEVELS:
             return irsDashboardService.getIRSFullData(plan, loc.getLocation());
         }
+      case IRS_LITE_COVERAGE:
+        switch (reportLevel) {
+          case DIRECTLY_ABOVE_STRUCTURE_LEVEL:
+          case LOWEST_LITE_TOUCH_LEVEL:
+            return irsLiteDashboardService.getIRSFullDataOperational(plan,
+                loc.getLocation());
+
+          case ALL_OTHER_LEVELS:
+            return irsLiteDashboardService.getIRSFullData(plan, loc.getLocation());
+        }
 
     }
     return null;
@@ -125,6 +137,10 @@ public class DashboardService {
       case IRS_FULL_COVERAGE:
         return irsDashboardService.getFeatureSetResponse(parentIdentifier, locationDetails,
             rowDataMap, reportLevel);
+
+      case IRS_LITE_COVERAGE:
+        return irsLiteDashboardService.getFeatureSetResponse(parentIdentifier, locationDetails,
+            rowDataMap, reportLevel);
     }
     return null;
   }
@@ -132,13 +148,14 @@ public class DashboardService {
 
   private void initialDataStores(ReportTypeEnum reportTypeEnum) {
     switch (reportTypeEnum) {
-
       case MDA_FULL_COVERAGE:
         mdaDashboardService.initDataStoresIfNecessary();
-        ;
         break;
       case IRS_FULL_COVERAGE:
         irsDashboardService.initDataStoresIfNecessary();
+        break;
+      case IRS_LITE_COVERAGE:
+        irsLiteDashboardService.initDataStoresIfNecessary();
     }
   }
 
@@ -193,28 +210,39 @@ public class DashboardService {
           plan.getLocationHierarchy().getNodeOrder().indexOf(LocationConstants.STRUCTURE) - 1);
     }
 
+    boolean containsStructure = plan.getLocationHierarchy().getNodeOrder().contains(LocationConstants.STRUCTURE);
+
+    String lowestLevel = plan.getLocationHierarchy().getNodeOrder().get(plan.getLocationHierarchy().getNodeOrder().size() - 1);
+
     if (parentLocation == null) {
       return ALL_OTHER_LEVELS;
     } else {
-      if (parentLocation.getGeographicLevel().getName().equals(LocationConstants.STRUCTURE)) {
-        return WITHIN_STRUCTURE_LEVEL;
-      } else if (geoLevelDirectlyAboveStructure != null) {
-        String reportLevel = ALL_OTHER_LEVELS;
+      if (containsStructure) {
+        if (parentLocation.getGeographicLevel().getName().equals(LocationConstants.STRUCTURE)) {
+          return WITHIN_STRUCTURE_LEVEL;
+        } else if (geoLevelDirectlyAboveStructure != null) {
+          String reportLevel = ALL_OTHER_LEVELS;
 
-        if (parentLocation.getGeographicLevel().getName().equals(geoLevelDirectlyAboveStructure)) {
-          reportLevel = STRUCTURE_LEVEL;
+          if (parentLocation.getGeographicLevel().getName()
+              .equals(geoLevelDirectlyAboveStructure)) {
+            reportLevel = STRUCTURE_LEVEL;
+          }
+          if (parentLocation.getGeographicLevel().getName()
+              .equals(parentOfGeoLevelDirectlyAboveStructure)) {
+            reportLevel = DIRECTLY_ABOVE_STRUCTURE_LEVEL;
+          }
+          return reportLevel;
+        } else {
+          return ALL_OTHER_LEVELS;
         }
-        if (parentLocation.getGeographicLevel().getName()
-            .equals(parentOfGeoLevelDirectlyAboveStructure)) {
-          reportLevel = DIRECTLY_ABOVE_STRUCTURE_LEVEL;
+      }else{
+        if (parentLocation.getGeographicLevel().getName().equals(lowestLevel)){
+          return LOWEST_LITE_TOUCH_LEVEL;
+        } else {
+          return ALL_OTHER_LEVELS;
         }
-        return reportLevel;
-      } else {
-        return ALL_OTHER_LEVELS;
       }
     }
 
   }
-
-
 }
