@@ -5,6 +5,7 @@ import com.google.common.collect.Maps;
 import com.revealprecision.revealserver.api.v1.dto.request.AssignTeamHierarchyRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.MultipleLocationTeamAssignRequest;
 import com.revealprecision.revealserver.constants.LocationConstants;
+import com.revealprecision.revealserver.enums.PlanInterventionTypeEnum;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.Organization;
@@ -77,9 +78,9 @@ public class PlanAssignmentService {
 
     List<UUID> locationsToAdd;
 
-    if (!plan.getInterventionType().getCode().equals("MDA Lite") && !plan.getInterventionType()
+    if (!plan.getInterventionType().getCode().equals(PlanInterventionTypeEnum.IRS_LITE.name()) && !plan.getInterventionType()
         .getCode()
-        .equals("IRS Lite")) {
+        .equals(PlanInterventionTypeEnum.MDA_LITE.name())) {
       locationsToAdd = locationService.getAllLocationChildren(locationId,
           plan.getLocationHierarchy().getIdentifier());
     } else {

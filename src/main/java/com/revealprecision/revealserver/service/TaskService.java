@@ -9,8 +9,8 @@ import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.enums.PlanStatusEnum;
 import com.revealprecision.revealserver.enums.ProcessTrackerEnum;
 import com.revealprecision.revealserver.enums.ProcessType;
-import com.revealprecision.revealserver.enums.TaskProcessEnum;
 import com.revealprecision.revealserver.enums.TaskPriorityEnum;
+import com.revealprecision.revealserver.enums.TaskProcessEnum;
 import com.revealprecision.revealserver.exceptions.DuplicateTaskCreationException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.exceptions.QueryGenerationException;
@@ -60,6 +60,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import javax.annotation.PostConstruct;
 import javax.transaction.Transactional;
@@ -220,9 +221,27 @@ public class TaskService {
     if (plan.getStatus().equals(PlanStatusEnum.ACTIVE)) {
       List<Goal> goals = goalService.getGoalsByPlanIdentifier(planIdentifier);
 
-      goals.stream().map(goal -> actionService.getActionsByGoalIdentifier(goal.getIdentifier()))
-          .flatMap(Collection::stream)
-          .forEach((action) -> processPlanUpdatePerActionForTasks(action, plan, ownerId));
+      List<ProcessTracker> processTrackerList = processTrackerService.findProcessTrackerByPlanIdentifierAndProcessTypeAndState(
+          plan, ProcessType.PLAN_LOCATION_ASSIGNMENT, ProcessTrackerEnum.NEW);
+
+      if (processTrackerList.size() >= 1) {
+        ProcessTracker processTracker = processTrackerList.get(0);
+        goals.stream().map(goal -> actionService.getActionsByGoalIdentifier(goal.getIdentifier()))
+            .flatMap(Collection::stream)
+            .forEach((action) -> processPlanUpdatePerActionForTasks(action, plan, ownerId, processTracker));
+
+        processTrackerService.updateProcessTracker(processTracker.getIdentifier(),
+            ProcessTrackerEnum.BUSY);
+
+        if (processTrackerList.size() > 1) {
+          log.debug("cancelling remaining process trackers for this plan as there should only ever be one");
+          IntStream.range(1, processTrackerList.size() - 1)
+              .mapToObj(i -> processTrackerList.get(i).getIdentifier())
+              .forEach(processTrackerIdentifier -> processTrackerService.updateProcessTracker(
+                  processTrackerIdentifier,
+                  ProcessTrackerEnum.CANCELLED));
+        }
+      }
       log.info("TASK_GENERATION Completed generating tasks for Plan Id: {}", planIdentifier);
     } else {
       log.info("TASK_GENERATION Not run as plan is not active: {}", planIdentifier);
@@ -230,7 +249,7 @@ public class TaskService {
 
   }
 
-  public void processPlanUpdatePerActionForTasks(Action action, Plan plan, String ownerId) {
+  public void processPlanUpdatePerActionForTasks(Action action, Plan plan, String ownerId, ProcessTracker processTracker) {
 
     List<Condition> conditions = conditionService.getConditionsByActionIdentifier(
         action.getIdentifier());
@@ -249,7 +268,7 @@ public class TaskService {
         .map(TaskProjectionObj::getBaseIdentifier)
         .map(UUID::fromString)
         .collect(
-        Collectors.toList());
+            Collectors.toList());
 
     List<UUID> potentialUuidsToReactivate = new ArrayList<>(uuids);
     potentialUuidsToReactivate.retainAll(existingTaskUuids);
@@ -277,7 +296,7 @@ public class TaskService {
     uuidToGenerate.removeAll(existingTaskUuids);
 
     List<TaskGen> tasksToGenerate = uuidToGenerate
-        .stream().map(identifier -> new TaskGen(TaskProcessEnum.GENERATE,identifier))
+        .stream().map(identifier -> new TaskGen(TaskProcessEnum.GENERATE, identifier))
         .collect(Collectors.toList());
 
     List<TaskGen> tasksToProcess = new ArrayList<>();
@@ -285,66 +304,64 @@ public class TaskService {
     tasksToProcess.addAll(tasksToCancel);
     tasksToProcess.addAll(tasksToReactivate);
 
-    List<ProcessTracker> processTrackerList = processTrackerService.findProcessTrackerByPlanIdentifierAndProcessTypeAndState(
-        plan, ProcessType.PLAN_LOCATION_ASSIGNMENT, ProcessTrackerEnum.NEW);
+    log.debug("tasksToGenerate: {} tasksToCancel: {} tasksToReactivate: {} existingTasks: {}",
+        tasksToGenerate.size(), tasksToCancel.size(), tasksToReactivate.size(), existingTaskUuids.size());
 
-      for (ProcessTracker processTracker : processTrackerList) {
-          List<TaskProcessStage> collect = tasksToProcess.stream()
-              .map(taskGen -> {
-                TaskProcessStage taskGenerationStage = new TaskProcessStage();
-                taskGenerationStage.setState(ProcessTrackerEnum.NEW);
-                taskGenerationStage.setProcessTracker(processTracker);
-                taskGenerationStage.setEntityStatus(EntityStatus.ACTIVE);
-                taskGenerationStage.setTaskProcess(taskGen.getTaskProcessEnum());
 
-                if (taskGen.getBaseEntityIdentifier() != null) {
-                  taskGenerationStage.setBaseEntityIdentifier(taskGen.getBaseEntityIdentifier());
-                }
-                if (taskGen.getIdentifier() != null) {
-                  taskGenerationStage.setTaskIdentifier(taskGen.getIdentifier());
-                }
-                return taskGenerationStage;
-              }).collect(Collectors.toList());
+      List<TaskProcessStage> collect = tasksToProcess.stream()
+          .map(taskGen -> {
+            TaskProcessStage taskGenerationStage = new TaskProcessStage();
+            taskGenerationStage.setState(ProcessTrackerEnum.NEW);
+            taskGenerationStage.setProcessTracker(processTracker);
+            taskGenerationStage.setEntityStatus(EntityStatus.ACTIVE);
+            taskGenerationStage.setTaskProcess(taskGen.getTaskProcessEnum());
 
-          List<TaskProcessStage> taskProcessStages = taskProcessStageRepository.saveAll(
-              collect);
+            if (taskGen.getBaseEntityIdentifier() != null) {
+              taskGenerationStage.setBaseEntityIdentifier(taskGen.getBaseEntityIdentifier());
+            }
+            if (taskGen.getIdentifier() != null) {
+              taskGenerationStage.setTaskIdentifier(taskGen.getIdentifier());
+            }
+            return taskGenerationStage;
+          }).collect(Collectors.toList());
 
-          taskProcessStages.forEach(taskProcessStage -> {
-                TaskProcessEvent taskProcessEvent = TaskProcessEvent.builder()
-                    .baseEntityIdentifier(taskProcessStage.getBaseEntityIdentifier())
-                    .owner(ownerId)
-                    .taskProcessEnum(taskProcessStage.getTaskProcess())
-                    .actionEvent(ActionEvent.builder()
-                        .identifier(action.getIdentifier())
-                        .lookupEntityType(LookupEntityTypeEvent.builder()
-                            .code(action.getLookupEntityType().getCode())
-                            .build())
+      List<TaskProcessStage> taskProcessStages = taskProcessStageRepository.saveAll(
+          collect);
+
+      taskProcessStages.forEach(taskProcessStage -> {
+            TaskProcessEvent taskProcessEvent = TaskProcessEvent.builder()
+                .baseEntityIdentifier(taskProcessStage.getBaseEntityIdentifier())
+                .owner(ownerId)
+                .taskProcessEnum(taskProcessStage.getTaskProcess())
+                .actionEvent(ActionEvent.builder()
+                    .identifier(action.getIdentifier())
+                    .lookupEntityType(LookupEntityTypeEvent.builder()
+                        .code(action.getLookupEntityType().getCode())
                         .build())
-                    .planEvent(PlanEvent.builder()
-                        .identifier(plan.getIdentifier())
-                        .build())
-                    .state(taskProcessStage.getState())
-                    .processTracker(ProcessTrackerEvent.builder()
-                        .processTriggerIdentifier(
-                            taskProcessStage.getProcessTracker().getProcessTriggerIdentifier())
-                        .processType(taskProcessStage.getProcessTracker().getProcessType())
-                        .planIdentifier(taskProcessStage.getProcessTracker().getPlanIdentifier())
-                        .identifier(taskProcessStage.getProcessTracker().getIdentifier())
-                        .build()
-                    )
-                    .taskIdentifier(taskProcessStage.getTaskIdentifier())
-                    .identifier(taskProcessStage.getIdentifier())
-                    .build();
-                kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.TASK_CANDIDATE),
-                    taskProcessEvent);
-              }
+                    .build())
+                .planEvent(PlanEvent.builder()
+                    .identifier(plan.getIdentifier())
+                    .build())
+                .state(taskProcessStage.getState())
+                .processTracker(ProcessTrackerEvent.builder()
+                    .processTriggerIdentifier(
+                        taskProcessStage.getProcessTracker().getProcessTriggerIdentifier())
+                    .processType(taskProcessStage.getProcessTracker().getProcessType())
+                    .planIdentifier(taskProcessStage.getProcessTracker().getPlanIdentifier())
+                    .identifier(taskProcessStage.getProcessTracker().getIdentifier())
+                    .build()
+                )
+                .taskIdentifier(taskProcessStage.getTaskIdentifier())
+                .identifier(taskProcessStage.getIdentifier())
+                .build();
+            kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.TASK_CANDIDATE),
+                taskProcessEvent);
+          }
 
-          );
-          processTrackerService.updateProcessTracker(processTracker.getIdentifier(),
-              ProcessTrackerEnum.BUSY);
-      }
+      );
+    }
 
-  }
+
 
   @Transactional
   public void cancelTaskProcessStagesByProcessTrackerIdentifier(
@@ -387,7 +404,7 @@ public class TaskService {
 
       String ownerId = taskProcessEvent.getOwner();
       taskObjs = createTaskObjectFromActionAndEntityId(action,
-         uuid, plan, ownerId);
+          uuid, plan, ownerId);
 
       TaskProcessStage taskGenerationStage = taskGenerationStageOptional.get();
       taskGenerationStage.setState(ProcessTrackerEnum.DONE);
@@ -405,14 +422,14 @@ public class TaskService {
     Optional<TaskProcessStage> byId = taskProcessStageRepository.findById(
         taskProcessEvent.getIdentifier());
 
-    if (byId.isPresent()){
+    if (byId.isPresent()) {
       TaskProcessStage taskProcessStage = byId.get();
       taskProcessStage.setState(ProcessTrackerEnum.DONE);
       taskProcessStageRepository.save(taskProcessStage);
     }
 
     int countOfTaskProcessStages = taskProcessStageRepository.countByProcessTracker_IdentifierAndStateNot(
-        taskProcessEvent.getProcessTracker().getIdentifier(),ProcessTrackerEnum.DONE);
+        taskProcessEvent.getProcessTracker().getIdentifier(), ProcessTrackerEnum.DONE);
 
     if (countOfTaskProcessStages == 0) {
       processTrackerService.updateProcessTracker(
@@ -490,14 +507,15 @@ public class TaskService {
       task.setPerson(person);
     }
 
-    Task savedTask = saveTaskAndBusinessState( task,  ownerId);
+    Task savedTask = saveTaskAndBusinessState(task, ownerId);
 
     log.debug("TASK_GENERATION completed creating individual task for plan: {} and action: {}",
         plan.getIdentifier(), action.getIdentifier());
 
     return savedTask;
   }
-  public Task reactivateTask(TaskProcessEvent taskProcessEvent){
+
+  public Task reactivateTask(TaskProcessEvent taskProcessEvent) {
 
     Task savedTask = null;
     Optional<Task> taskOptional = taskRepository.findById(taskProcessEvent.getTaskIdentifier());
@@ -513,7 +531,8 @@ public class TaskService {
     updateProcessTracker(taskProcessEvent);
     return savedTask;
   }
-  public Task cancelTask(TaskProcessEvent taskProcessEvent){
+
+  public Task cancelTask(TaskProcessEvent taskProcessEvent) {
 
     Task savedTask = null;
     Optional<Task> taskOptional = taskRepository.findById(taskProcessEvent.getTaskIdentifier());
@@ -530,18 +549,19 @@ public class TaskService {
     return savedTask;
   }
 
-  public Task saveTaskAndBusinessState(Task task, String ownerId){
+  public Task saveTaskAndBusinessState(Task task, String ownerId) {
 
     Task savedTask = taskRepository.save(task);
 
-    if (savedTask.getLookupTaskStatus().getCode().equals(TASK_STATUS_CANCELLED)){
+    if (savedTask.getLookupTaskStatus().getCode().equals(TASK_STATUS_CANCELLED)) {
       businessStatusService.deactivateBusinessStatus(savedTask);
     } else {
-      businessStatusService.setBusinessStatus(task,
+      businessStatusService.setBusinessStatus(savedTask,
           businessStatusProperties.getDefaultLocationBusinessStatus());
     }
 
-    log.trace("task: {} entity: {}", savedTask.getIdentifier(), savedTask.getBaseEntityIdentifier());
+    log.trace("task: {} entity: {}", savedTask.getIdentifier(),
+        savedTask.getBaseEntityIdentifier());
     TaskEvent taskEvent = TaskEventFactory.getTaskEventFromTask(savedTask);
     taskEvent.setOwnerId(ownerId);
     kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.TASK), taskEvent);

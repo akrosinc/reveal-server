@@ -1,8 +1,15 @@
 package com.revealprecision.revealserver.service.dashboard;
 
 
+import static com.revealprecision.revealserver.service.dashboard.DashboardService.ALL_OTHER_LEVELS;
+import static com.revealprecision.revealserver.service.dashboard.DashboardService.DIRECTLY_ABOVE_STRUCTURE_LEVEL;
+import static com.revealprecision.revealserver.service.dashboard.DashboardService.STRUCTURE_LEVEL;
+import static com.revealprecision.revealserver.service.dashboard.DashboardService.WITHIN_STRUCTURE_LEVEL;
+
+import com.revealprecision.revealserver.api.v1.dto.factory.LocationResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.models.ColumnData;
 import com.revealprecision.revealserver.api.v1.dto.models.RowData;
+import com.revealprecision.revealserver.api.v1.dto.response.FeatureSetResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationResponse;
 import com.revealprecision.revealserver.messaging.KafkaConstants;
 import com.revealprecision.revealserver.messaging.message.LocationBusinessStatusAggregate;
@@ -14,6 +21,8 @@ import com.revealprecision.revealserver.messaging.message.TreatedOperationalArea
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.Person;
 import com.revealprecision.revealserver.persistence.domain.Plan;
+import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
+import com.revealprecision.revealserver.props.DashboardProperties;
 import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.service.LocationRelationshipService;
 import com.revealprecision.revealserver.service.LocationService;
@@ -46,34 +55,37 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 @Service
 public class MDADashboardService {
+
   private final StreamsBuilderFactoryBean getKafkaStreams;
   private final KafkaProperties kafkaProperties;
   private final LocationService locationService;
   private final PlanService planService;
   private final LocationRelationshipService locationRelationshipService;
   private final PersonService personService;
+  private final DashboardProperties dashboardProperties;
 
   //MDA
-  public static final String TREATMENT_COVERAGE = "Treatment coverage";
-  public static final String HEALTH_FACILITY_REFERRALS = "Health Facility Referrals";
-  public static final String OPERATIONAL_AREA_VISITED = "Operational Area Visited";
-  public static final String TOTAL_STRUCTURES_RECEIVED_SPAQ = "Total Structures Received SPAQ";
+  private static final String TREATMENT_COVERAGE = "Treatment coverage";
+  private static final String HEALTH_FACILITY_REFERRALS = "Health Facility Referrals";
+  private static final String OPERATIONAL_AREA_VISITED = "Operational Area Visited";
+  private static final String TOTAL_STRUCTURES_RECEIVED_SPAQ = "Total Structures Received SPAQ";
   public static final String DISTRIBUTION_COVERAGE = "Distribution Coverage";
-  public static final String DISTRIBUTION_EFFECTIVENESS = "Distribution Effectiveness";
-  public static final String FOUND_COVERAGE = "Found Coverage";
-  public static final String TOTAL_STRUCTURES_FOUND = "Total Structures Found";
-  public static final String TOTAL_STRUCTURES_TARGETED = "Total Structures Targeted";
-  public static final String TOTAL_STRUCTURES_MDA = "Total Structures";
-  public static final String VISITATION_COVERAGE_PERCENTAGE = "Visitation Coverage Percentage";
-  public static final String DISTRIBUTION_COVERAGE_PERCENTAGE = "Distribution Coverage Percentage";
-  public static final String STRUCTURE_DISTRIBUTION_EFFECTIVENESS_PERCENTAGE = "Structure Distribution Effectiveness Percentage";
-  public static final String INDIVIDUAL_DISTRIBUTION_EFFECTIVENESS_PERCENTAGE = "Individual Distribution Effectiveness Percentage";
-  public static final String STRUCTURE_STATUS = "Structure Status";
-  public static final String NO_OF_ELIGIBLE_CHILDREN = "Number of Eligible Children";
-  public static final String NO_OF_TREATED_CHILDREN = "Number of Treated Children";
-  public static final String PERSON_FULLNAME = "Person full name";
-  public static final String PERSON_AGE = "Person age";
-  public static final String PERSON_STATE = "Person state";
+  private static final String DISTRIBUTION_EFFECTIVENESS = "Distribution Effectiveness";
+  private static final String FOUND_COVERAGE = "Found Coverage";
+  private static final String TOTAL_STRUCTURES_FOUND = "Total Structures Found";
+  private static final String TOTAL_STRUCTURES_TARGETED = "Total Structures Targeted";
+  private static final String TOTAL_STRUCTURES_MDA = "Total Structures";
+  private static final String VISITATION_COVERAGE_PERCENTAGE = "Visitation Coverage Percentage";
+  private static final String DISTRIBUTION_COVERAGE_PERCENTAGE = "Distribution Coverage Percentage";
+  private static final String STRUCTURE_DISTRIBUTION_EFFECTIVENESS_PERCENTAGE = "Structure Distribution Effectiveness Percentage";
+  private static final String INDIVIDUAL_DISTRIBUTION_EFFECTIVENESS_PERCENTAGE = "Individual Distribution Effectiveness Percentage";
+  private static final String STRUCTURE_STATUS = "Structure Status";
+  private static final String NO_OF_ELIGIBLE_CHILDREN = "Number of Eligible Children";
+  private static final String NO_OF_TREATED_CHILDREN = "Number of Treated Children";
+  private static final String PERSON_FULLNAME = "Person full name";
+  private static final String PERSON_AGE = "Person age";
+  private static final String PERSON_STATE = "Person state";
+
 
 
   ReadOnlyKeyValueStore<String, Long> countOfAssignedStructures;
@@ -675,6 +687,7 @@ public class MDADashboardService {
     totalStructuresColumnData.setIsPercentage(false);
     return new SimpleEntry<>(columnName, totalStructuresColumnData);
   }
+
   public void initDataStoresIfNecessary() {
     if (!datastoresInitialized) {
       countOfAssignedStructures = getKafkaStreams.getKafkaStreams().store(
@@ -726,7 +739,9 @@ public class MDADashboardService {
       datastoresInitialized = true;
     }
   }
-  public List<LocationResponse> setGeoJsonProperties(Map<UUID, RowData> rowDataMap, List<LocationResponse> locationResponses) {
+
+  private List<LocationResponse> setGeoJsonProperties(Map<UUID, RowData> rowDataMap,
+      List<LocationResponse> locationResponses) {
     return locationResponses.stream().peek(loc -> {
       loc.getProperties().setColumnDataMap(rowDataMap.get(loc.getIdentifier()).getColumnDataMap());
       loc.getProperties().setId(loc.getIdentifier());
@@ -759,6 +774,25 @@ public class MDADashboardService {
       }
     }).collect(Collectors.toList());
   }
+
+  public FeatureSetResponse getFeatureSetResponse(UUID parentIdentifier,
+      List<PlanLocationDetails> locationDetails,
+      Map<UUID, RowData> rowDataMap, String reportLevel) {
+    FeatureSetResponse response = new FeatureSetResponse();
+    response.setType("FeatureCollection");
+    List<LocationResponse> locationResponses = locationDetails.stream()
+        .map(loc -> LocationResponseFactory.fromPlanLocationDetails(loc, parentIdentifier))
+        .collect(Collectors.toList());
+
+    if (!rowDataMap.isEmpty()) {
+      locationResponses = setGeoJsonProperties(rowDataMap, locationResponses);
+    }
+    response.setDefaultDisplayColumn(dashboardProperties.getMdaDefaultDisplayColumns().get(reportLevel));
+    response.setFeatures(locationResponses);
+    response.setIdentifier(parentIdentifier);
+    return response;
+  }
+
   @Data
   @NoArgsConstructor
   @AllArgsConstructor

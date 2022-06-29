@@ -4,6 +4,7 @@ import com.revealprecision.revealserver.api.v1.dto.factory.OrganizationResponseF
 import com.revealprecision.revealserver.api.v1.dto.response.GeoTreeResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.OrganizationResponse;
 import com.revealprecision.revealserver.constants.LocationConstants;
+import com.revealprecision.revealserver.enums.PlanInterventionTypeEnum;
 import com.revealprecision.revealserver.enums.ProcessTrackerEnum;
 import com.revealprecision.revealserver.enums.ProcessType;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
@@ -108,9 +109,9 @@ public class PlanLocationsService {
 
     List<UUID> locationsToAdd;
 
-    if (!plan.getInterventionType().getCode().equals("MDA Lite") && !plan.getInterventionType()
+    if (!plan.getInterventionType().getCode().equals(PlanInterventionTypeEnum.IRS_LITE.name()) && !plan.getInterventionType()
         .getCode()
-        .equals("IRS Lite")) {
+        .equals(PlanInterventionTypeEnum.MDA_LITE.name())) {
       locationsToAdd = locationService.getAllLocationChildren(locationIdentifier,
           plan.getLocationHierarchy().getIdentifier());
     } else {
@@ -220,7 +221,9 @@ public class PlanLocationsService {
         plan.getLocationHierarchy().getIdentifier());
 
     List<GeoTreeResponse> geoTreeResponses;
-    if (plan.getInterventionType().getName().toLowerCase().contains("lite")) {
+    if ((plan.getInterventionType().getCode().equals(PlanInterventionTypeEnum.IRS_LITE.name()) || plan.getInterventionType()
+        .getCode()
+        .equals(PlanInterventionTypeEnum.MDA_LITE.name()))) {
       int i = locationHierarchy.getNodeOrder()
           .indexOf(plan.getPlanTargetType().getGeographicLevel().getName());
       List<String> elList = locationHierarchy.getNodeOrder()

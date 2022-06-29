@@ -11,6 +11,7 @@ import com.revealprecision.revealserver.messaging.KafkaConstants;
 import com.revealprecision.revealserver.messaging.message.LocationBusinessStatusAggregate;
 import com.revealprecision.revealserver.messaging.message.LocationPersonBusinessStateAggregate;
 import com.revealprecision.revealserver.messaging.message.LocationPersonBusinessStateCountAggregate;
+import com.revealprecision.revealserver.messaging.message.LocationStructureBusinessStatusAggregate;
 import com.revealprecision.revealserver.messaging.message.OperationalAreaVisitedCount;
 import com.revealprecision.revealserver.messaging.message.PersonBusinessStatusAggregate;
 import com.revealprecision.revealserver.messaging.message.TreatedOperationalAreaAggregate;
@@ -37,7 +38,7 @@ import org.springframework.stereotype.Service;
 
 @RequiredArgsConstructor
 @Service
-public class IRSDashboardService {
+public class IRSLiteDashboardService {
 
   private final StreamsBuilderFactoryBean getKafkaStreams;
   private final KafkaProperties kafkaProperties;
@@ -48,31 +49,29 @@ public class IRSDashboardService {
   private static final String TOTAL_SPRAY_AREAS = "Total spray areas";
   private static final String TARGET_SPRAY_AREAS = "Targeted spray areas";
   private static final String VISITED_AREAS = "Total spray areas visited";
+  private static final String SPRAYED_AREAS = "Total spray areas sprayed";
   public static final String SPRAY_COVERAGE_OF_TARGETED = "Spray coverage of targeted (Progress)";
+  public static final String SPRAY_COVERAGE_OF_FOUND = "Spray coverage of Found Structures";
+  public static final String FOUND_COVERAGE_OF_TARGETED = "Found coverage of targeted (Progress)";
   private static final String TOTAL_STRUCTURES = "Total structures";
   private static final String TOTAL_STRUCTURES_TARGETED = "Total Structures Targeted";
   private static final String TOTAL_STRUCTURES_FOUND = "Total Structures Found";
   private static final String STRUCTURES_SPRAYED = "Total Structures Sprayed";
-  private static final String SPRAY_COVERAGE = "Spray Coverage (Effectiveness)";
-  private static final String SPRAY_SUCCESS = "Spray Success Rate (PMI SC)";
-  private static final String PERCENTAGE_VISITED_EFFECTIVELY = "Spray Areas Effectively sprayed";
-  private static final String STRUCTURE_STATUS = "Structure Status";
-  private static final String NO_OF_ROOMS = "No of Rooms";
-  private static final String NO_OF_MALES = "No of Males";
-  private static final String NO_OF_FEMALES = "No of Females";
-  private static final String NO_OF_PREGNANT_WOMEN = "No of Pregnant Women";
-
-
+  private static final String AREA_VISITED = "Area Visited";
 
   ReadOnlyKeyValueStore<String, Long> countOfAssignedStructures;
   ReadOnlyKeyValueStore<String, Long> structureCounts;
-  ReadOnlyKeyValueStore<String, Long> countOfStructuresByBusinessStatus;
+  ReadOnlyKeyValueStore<String, Long> countOfLocationsByBusinessStatus;
+  ReadOnlyKeyValueStore<String, LocationStructureBusinessStatusAggregate> countOfLocationStructuresByBusinessStatus;
+  ReadOnlyKeyValueStore<String, LocationStructureBusinessStatusAggregate> countOfLocationStructuresByBusinessStatusInSprayArea;
   ReadOnlyKeyValueStore<String, OperationalAreaVisitedCount> countOfOperationalArea;
   ReadOnlyKeyValueStore<String, PersonBusinessStatusAggregate> personBusinessStatus;
   ReadOnlyKeyValueStore<String, LocationBusinessStatusAggregate> locationBusinessState;
   ReadOnlyKeyValueStore<String, LocationPersonBusinessStateCountAggregate> structurePeopleCounts;
   ReadOnlyKeyValueStore<String, TreatedOperationalAreaAggregate> treatedOperationalCounts;
   ReadOnlyKeyValueStore<String, LocationPersonBusinessStateAggregate> structurePeople;
+
+
   boolean datastoresInitialized = false;
 
 
@@ -102,6 +101,10 @@ public class IRSDashboardService {
         childLocation, VISITED_AREAS);
     columns.put(operationalAreaVisited.getKey(), operationalAreaVisited.getValue());
 
+    Entry<String, ColumnData> operationalAreaSprayed = operationalAreaSprayedCounts(plan,
+        childLocation, SPRAYED_AREAS);
+    columns.put(operationalAreaSprayed.getKey(), operationalAreaSprayed.getValue());
+
     Entry<String, ColumnData> targetAreas = getTargetedAreas(plan,
         childLocation, TARGET_SPRAY_AREAS);
     columns.put(targetAreas.getKey(), targetAreas.getValue());
@@ -114,17 +117,21 @@ public class IRSDashboardService {
         childLocation, STRUCTURES_SPRAYED);
     columns.put(totalStructuresSprayed.getKey(), totalStructuresSprayed.getValue());
 
-    Entry<String, ColumnData> sprayCoverageOfTargeted = getSprayCoverageOfTargeted(plan,
+    Entry<String, ColumnData> totalStructuresFound = getTotalStructuresFoundCount(plan,
+        childLocation, TOTAL_STRUCTURES_FOUND);
+    columns.put(totalStructuresFound.getKey(), totalStructuresFound.getValue());
+
+    Entry<String, ColumnData> foundCoverageOfTargeted = getFoundCoverage(plan,
+        childLocation, FOUND_COVERAGE_OF_TARGETED);
+    columns.put(foundCoverageOfTargeted.getKey(), foundCoverageOfTargeted.getValue());
+
+    Entry<String, ColumnData> sprayCoverageOfTargeted = getSprayCoverage(plan,
         childLocation, SPRAY_COVERAGE_OF_TARGETED);
     columns.put(sprayCoverageOfTargeted.getKey(), sprayCoverageOfTargeted.getValue());
 
-    Entry<String, ColumnData> spraySuccess = getSprayedSuccess(plan,
-        childLocation, SPRAY_SUCCESS);
-    columns.put(spraySuccess.getKey(), spraySuccess.getValue());
-
-    Entry<String, ColumnData> sprayCoverageEffectively = getSprayedEffectively(plan,
-        childLocation, PERCENTAGE_VISITED_EFFECTIVELY);
-    columns.put(sprayCoverageEffectively.getKey(), sprayCoverageEffectively.getValue());
+    Entry<String, ColumnData> sprayCoverageOfFound = getSprayCoverageOfFound(plan,
+        childLocation, SPRAY_COVERAGE_OF_FOUND);
+    columns.put(sprayCoverageOfFound.getKey(), sprayCoverageOfFound.getValue());
 
     RowData rowData = new RowData();
     rowData.setLocationIdentifier(childLocation.getIdentifier());
@@ -144,211 +151,96 @@ public class IRSDashboardService {
         plan, childLocation, TOTAL_STRUCTURES_TARGETED);
     columns.put(totalStructuresTargetedCount.getKey(), totalStructuresTargetedCount.getValue());
 
-    Entry<String, ColumnData> totalStructuresFoundCount = getTotalStructuresFoundCount(
+    Entry<String, ColumnData> totalStructuresFoundCount = getTotalStructuresFoundCountInSprayArea(
         plan, childLocation, TOTAL_STRUCTURES_FOUND);
     columns.put(totalStructuresFoundCount.getKey(), totalStructuresFoundCount.getValue());
 
-    Entry<String, ColumnData> totalStructuresSprayed = getTotalStructuresSprayed(plan,
+    Entry<String, ColumnData> totalStructuresSprayed = getTotalStructuresSprayedCountInSprayArea(plan,
         childLocation, STRUCTURES_SPRAYED);
     columns.put(totalStructuresSprayed.getKey(), totalStructuresSprayed.getValue());
 
-    Entry<String, ColumnData> sprayCoverageOfTargeted = getSprayCoverageOfTargeted(plan,
-        childLocation, SPRAY_COVERAGE_OF_TARGETED);
-    columns.put(sprayCoverageOfTargeted.getKey(), sprayCoverageOfTargeted.getValue());
-
-    Entry<String, ColumnData> spraySuccess = getSprayedSuccess(plan,
-        childLocation, SPRAY_SUCCESS);
-    columns.put(spraySuccess.getKey(), spraySuccess.getValue());
-
-    Entry<String, ColumnData> sprayCoverage = getSprayCoverage(plan,
-        childLocation, SPRAY_COVERAGE);
-    columns.put(sprayCoverage.getKey(), sprayCoverage.getValue());
+    Entry<String, ColumnData> areaVisited = getAreaVisitedInSprayArea(plan,
+        childLocation, AREA_VISITED);
+    columns.put(areaVisited.getKey(), areaVisited.getValue());
 
     RowData rowData = new RowData();
     rowData.setLocationIdentifier(childLocation.getIdentifier());
     rowData.setColumnDataMap(columns);
     rowData.setLocationName(childLocation.getName());
     return List.of(rowData);
-  }
-
-  public List<RowData> getIRSFullCoverageStructureLevelData(Plan plan,
-      Location childLocation, UUID parentLocationIdentifier) {
-    Map<String, ColumnData> columns = new HashMap<>();
-
-    Entry<String, ColumnData> businessStateColumnData = getLocationBusinessState(plan,
-        childLocation, STRUCTURE_STATUS, parentLocationIdentifier);
-    columns.put(businessStateColumnData.getKey(), businessStateColumnData.getValue());
-
-    ColumnData blankColumnData = new ColumnData();
-    blankColumnData.setValue(0L);
-
-    Entry<String, ColumnData> noOfMalesColumnData = new SimpleEntry<>(NO_OF_MALES, blankColumnData);
-    columns.put(noOfMalesColumnData.getKey(), noOfMalesColumnData.getValue());
-
-    Entry<String, ColumnData> noOfFemalesColumnData = new SimpleEntry<>(NO_OF_FEMALES,
-        blankColumnData);
-    columns.put(noOfFemalesColumnData.getKey(), noOfFemalesColumnData.getValue());
-
-    Entry<String, ColumnData> noOfRoomsColumnData = new SimpleEntry<>(NO_OF_ROOMS, blankColumnData);
-    columns.put(noOfRoomsColumnData.getKey(), noOfRoomsColumnData.getValue());
-
-    Entry<String, ColumnData> noOfPregnantWomenColumnData = new SimpleEntry<>(NO_OF_PREGNANT_WOMEN,
-        blankColumnData);
-    columns.put(noOfPregnantWomenColumnData.getKey(), noOfPregnantWomenColumnData.getValue());
-
-    RowData rowData = new RowData();
-    rowData.setLocationIdentifier(childLocation.getIdentifier());
-    rowData.setColumnDataMap(columns);
-    rowData.setLocationName(childLocation.getName());
-    return List.of(rowData);
-  }
-
-  private Entry<String, ColumnData> getLocationBusinessState(Plan plan,
-      Location childLocation, String columnName, UUID parentLocationIdentifier) {
-
-    String businessStateDataStoreQueryKey =
-        plan.getIdentifier() + "_" +
-            parentLocationIdentifier + "_" +
-            plan.getLocationHierarchy().getIdentifier() + "_" +
-            childLocation.getIdentifier();
-
-    LocationBusinessStatusAggregate locationBusinessStatusAggregate = locationBusinessState.get(
-        businessStateDataStoreQueryKey);
-
-    String businessStatus = "Not Applicable";
-
-    if (locationBusinessStatusAggregate != null) {
-      businessStatus = locationBusinessStatusAggregate.getBusinessStatus();
-    }
-
-    ColumnData locationBusinessStateColumnData = new ColumnData();
-    locationBusinessStateColumnData.setValue(businessStatus);
-    locationBusinessStateColumnData.setMeta(null);
-    locationBusinessStateColumnData.setDataType("string");
-    locationBusinessStateColumnData.setIsPercentage(false);
-
-    return new SimpleEntry<>(columnName, locationBusinessStateColumnData);
   }
 
   private Entry<String, ColumnData> getTotalStructuresSprayed(Plan plan,
       Location childLocation, String columnName) {
 
-    String completedStructuresQueryKey =
-        plan.getIdentifier() + "_" + childLocation.getIdentifier() + "_"
-            + plan.getLocationHierarchy()
-            .getIdentifier() + "_" + "Complete";
-    Long completedStructuresCountObj = countOfStructuresByBusinessStatus.get(
-        completedStructuresQueryKey);
-    double completedStructuresCount = 0;
-    if (completedStructuresCountObj != null) {
-      completedStructuresCount = completedStructuresCountObj;
+    String sprayedLocationsQueryKey =
+        plan.getIdentifier() + "_" + childLocation.getIdentifier() + "_" + "Sprayed";
+    LocationStructureBusinessStatusAggregate sprayedLocationsCountObj = countOfLocationStructuresByBusinessStatus.get(
+        sprayedLocationsQueryKey);
+    double sprayedLocationsCount = 0;
+    if (sprayedLocationsCountObj != null) {
+      sprayedLocationsCount = sprayedLocationsCountObj.getStructureSum();
     }
 
     ColumnData totalStructuresFoundColumnData = new ColumnData();
-    totalStructuresFoundColumnData.setValue(completedStructuresCount);
+    totalStructuresFoundColumnData.setValue(sprayedLocationsCount);
     totalStructuresFoundColumnData.setIsPercentage(false);
     return new SimpleEntry<>(columnName, totalStructuresFoundColumnData);
 
   }
 
-
-  private Entry<String, ColumnData> getSprayedSuccess(Plan plan,
+  private Entry<String, ColumnData> operationalAreaVisitedCounts(Plan plan,
       Location childLocation, String columnName) {
 
-    String completedStructuresQueryKey =
+    String sprayedLocationsQueryKey =
         plan.getIdentifier() + "_" + childLocation.getIdentifier() + "_"
             + plan.getLocationHierarchy()
-            .getIdentifier() + "_" + "Complete";
-    Long completedStructuresCountObj = countOfStructuresByBusinessStatus.get(
-        completedStructuresQueryKey);
-    double completedStructuresCount = 0;
-    if (completedStructuresCountObj != null) {
-      completedStructuresCount = completedStructuresCountObj;
+            .getIdentifier() + "_" + "Sprayed";
+    Long sprayedLocationsObj = countOfLocationsByBusinessStatus.get(
+        sprayedLocationsQueryKey);
+    double sprayedLocationsCount = 0;
+    if (sprayedLocationsObj != null){
+      sprayedLocationsCount = sprayedLocationsObj;
     }
 
-    String notSprayedStructuresQueryKey =
+    String notSprayedLocationsQueryKey =
         plan.getIdentifier() + "_" + childLocation.getIdentifier() + "_"
             + plan.getLocationHierarchy()
             .getIdentifier() + "_" + "Not Sprayed";
-    Long notSprayedStructuresCountObj = countOfStructuresByBusinessStatus.get(
-        notSprayedStructuresQueryKey);
-    double notSprayedStructuresCount = 0;
-    if (notSprayedStructuresCountObj != null) {
-      notSprayedStructuresCount = notSprayedStructuresCountObj;
+    Long notSprayedLocationsObj = countOfLocationsByBusinessStatus.get(
+        notSprayedLocationsQueryKey);
+    double notSprayedLocationsCount = 0;
+    if (notSprayedLocationsObj != null){
+      notSprayedLocationsCount = notSprayedLocationsObj;
     }
 
-    double totalStructuresFound =
-        notSprayedStructuresCount + completedStructuresCount;
+    double visitedAreas = sprayedLocationsCount + notSprayedLocationsCount;
 
-    double spraySuccess = 0;
-    if (totalStructuresFound > 0) {
-      spraySuccess = completedStructuresCount / totalStructuresFound * 100;
-    }
-    ColumnData totalStructuresFoundColumnData = new ColumnData();
-    totalStructuresFoundColumnData.setValue(spraySuccess);
-    totalStructuresFoundColumnData.setIsPercentage(true);
-    totalStructuresFoundColumnData.setMeta(
-        "completedStructuresCount: " + completedStructuresCount + " / " + "totalStructuresFound: "
-            + totalStructuresFound
-    );
-    return new SimpleEntry<>(columnName, totalStructuresFoundColumnData);
 
-  }
-
-  private Entry<String, ColumnData> getSprayedEffectively(Plan plan,
-      Location childLocation, String columnName) {
-
-    String operationalAreaVisitedQueryKey =
-        childLocation.getIdentifier() + "_" + plan.getIdentifier();
-    OperationalAreaVisitedCount operationalAreaVisitedObj = countOfOperationalArea.get(
-        operationalAreaVisitedQueryKey);
-    double operationalAreaVisitedCount = 0;
-    if (operationalAreaVisitedObj != null) {
-      operationalAreaVisitedCount = operationalAreaVisitedObj.getOperationalAreaVisitedCountIRS();
-    }
-
-    String operationalAreaVisitedEffectivelyQueryKey =
-        childLocation.getIdentifier() + "_" + plan.getIdentifier();
-    OperationalAreaVisitedCount operationalAreaVisitedEffectivelyObj = countOfOperationalArea.get(
-        operationalAreaVisitedEffectivelyQueryKey);
-    double operationalAreaVisitedEffectivelyCount = 0;
-    if (operationalAreaVisitedEffectivelyObj != null) {
-      operationalAreaVisitedEffectivelyCount = operationalAreaVisitedEffectivelyObj.getOperationalAreaVisitedEffectivelyIRSCount();
-    }
-
-    double percentageSprayedEffectively = 0;
-    if (operationalAreaVisitedCount > 0) {
-      percentageSprayedEffectively =
-          operationalAreaVisitedEffectivelyCount / operationalAreaVisitedCount * 100;
-    }
-
-    ColumnData percentageSprayedEffectivelyColumnData = new ColumnData();
-    percentageSprayedEffectivelyColumnData.setValue(percentageSprayedEffectively);
-    percentageSprayedEffectivelyColumnData.setIsPercentage(true);
-    percentageSprayedEffectivelyColumnData.setMeta(
-        "operationalAreaVisitedEffectivelyCount: " + operationalAreaVisitedEffectivelyCount + " / "
-            + "operationalAreaVisitedCount: "
-            + operationalAreaVisitedCount
-    );
-
-    return new SimpleEntry<>(columnName, percentageSprayedEffectivelyColumnData);
-
-  }
-
-  private Entry<String, ColumnData> operationalAreaVisitedCounts(Plan plan,
-      Location childLocation, String columnName) {
-    String operationalAreaVisitedQueryKey =
-        childLocation.getIdentifier() + "_" + plan.getIdentifier();
-    OperationalAreaVisitedCount operationalAreaVisitedObj = countOfOperationalArea.get(
-        operationalAreaVisitedQueryKey);
-    double operationalAreaVisitedCount = 0;
-    if (operationalAreaVisitedObj != null) {
-      operationalAreaVisitedCount = operationalAreaVisitedObj.getOperationalAreaVisitedCountIRS();
-    }
     ColumnData operationalAreaVisitedColumnData = new ColumnData();
-    operationalAreaVisitedColumnData.setValue(operationalAreaVisitedCount);
+    operationalAreaVisitedColumnData.setValue(visitedAreas);
     operationalAreaVisitedColumnData.setIsPercentage(false);
     return new SimpleEntry<>(columnName, operationalAreaVisitedColumnData);
+  }
+
+  private Entry<String, ColumnData> operationalAreaSprayedCounts(Plan plan,
+      Location childLocation, String columnName) {
+
+    String sprayedLocationsQueryKey =
+        plan.getIdentifier() + "_" + childLocation.getIdentifier() + "_"
+            + plan.getLocationHierarchy()
+            .getIdentifier() + "_" + "Sprayed";
+    Long sprayedLocationsObj = countOfLocationsByBusinessStatus.get(
+        sprayedLocationsQueryKey);
+    double sprayedLocationsCount = 0;
+    if (sprayedLocationsObj != null){
+      sprayedLocationsCount = sprayedLocationsObj;
+    }
+
+    ColumnData operationalAreaSprayedColumnData = new ColumnData();
+    operationalAreaSprayedColumnData.setValue(sprayedLocationsCount);
+    operationalAreaSprayedColumnData.setIsPercentage(false);
+    return new SimpleEntry<>(columnName, operationalAreaSprayedColumnData);
   }
 
   private Entry<String, ColumnData> getTargetedAreas(Plan plan,
@@ -405,7 +297,7 @@ public class IRSDashboardService {
         plan.getIdentifier() + "_" + childLocation.getIdentifier() + "_"
             + plan.getLocationHierarchy()
             .getIdentifier() + "_" + "Not Eligible";
-    Long notEligibleStructuresCountObj = countOfStructuresByBusinessStatus.get(
+    Long notEligibleStructuresCountObj = countOfLocationsByBusinessStatus.get(
         notEligibleStructuresQueryKey);
     double notEligibleStructuresCount = 0;
     if (notEligibleStructuresCountObj != null) {
@@ -436,7 +328,7 @@ public class IRSDashboardService {
         plan.getIdentifier() + "_" + childLocation.getIdentifier() + "_"
             + plan.getLocationHierarchy()
             .getIdentifier() + "_" + "Not Eligible";
-    Long notEligibleStructuresCountObj = countOfStructuresByBusinessStatus.get(
+    Long notEligibleStructuresCountObj = countOfLocationsByBusinessStatus.get(
         notEligibleStructuresQueryKey);
     double notEligibleStructuresCount = 0;
     if (notEligibleStructuresCountObj != null) {
@@ -455,30 +347,48 @@ public class IRSDashboardService {
   private Entry<String, ColumnData> getTotalStructuresFoundCount(Plan plan,
       Location childLocation, String columnName) {
 
-    String completeStructuresQueryKey =
-        plan.getIdentifier() + "_" + childLocation.getIdentifier() + "_"
-            + plan.getLocationHierarchy()
-            .getIdentifier() + "_" + "Complete";
-    Long completeStructuresCountObj = countOfStructuresByBusinessStatus.get(
-        completeStructuresQueryKey);
-    double completeStructuresCount = 0;
-    if (completeStructuresCountObj != null) {
-      completeStructuresCount = completeStructuresCountObj;
+    String sprayedLocationsQueryKey =
+        plan.getIdentifier() + "_" + childLocation.getIdentifier() + "_" + "Sprayed";
+    LocationStructureBusinessStatusAggregate sprayedLocationsCountObj = countOfLocationStructuresByBusinessStatus.get(
+        sprayedLocationsQueryKey);
+    double sprayedLocationsCount = 0;
+    if (sprayedLocationsCountObj != null) {
+      sprayedLocationsCount = sprayedLocationsCountObj.getStructureSum();
     }
 
-    String notSprayedStructuresQueryKey =
-        plan.getIdentifier() + "_" + childLocation.getIdentifier() + "_"
-            + plan.getLocationHierarchy()
-            .getIdentifier() + "_" + "Not Sprayed";
-    Long notSprayedStructuresCountObj = countOfStructuresByBusinessStatus.get(
-        notSprayedStructuresQueryKey);
-    double notSprayedStructuresCount = 0;
-    if (notSprayedStructuresCountObj != null) {
-      notSprayedStructuresCount = notSprayedStructuresCountObj;
+    String notSprayedLocationsQueryKey =
+        plan.getIdentifier() + "_" + childLocation.getIdentifier() + "_" + "Not Sprayed";
+    LocationStructureBusinessStatusAggregate notSprayedLocationsCountObj = countOfLocationStructuresByBusinessStatus.get(
+        notSprayedLocationsQueryKey);
+    double notSprayedLocationsCount = 0;
+    if (notSprayedLocationsCountObj != null) {
+      notSprayedLocationsCount = notSprayedLocationsCountObj.getStructureSum();
     }
 
-    double totalStructuresFound =
-        notSprayedStructuresCount + completeStructuresCount;
+    double totalStructuresFound = sprayedLocationsCount + notSprayedLocationsCount;
+
+    ColumnData totalStructuresFoundColumnData = new ColumnData();
+    totalStructuresFoundColumnData.setValue(totalStructuresFound);
+    totalStructuresFoundColumnData.setIsPercentage(false);
+    return new SimpleEntry<>(columnName, totalStructuresFoundColumnData);
+  }
+  private Entry<String, ColumnData> getTotalStructuresFoundCountInSprayArea(Plan plan,
+      Location childLocation, String columnName) {
+
+    String locationStructureBusinessStatusAggregateQueryKey =
+        plan.getIdentifier() + "_" + childLocation.getIdentifier();
+    LocationStructureBusinessStatusAggregate locationStructureBusinessStatusAggregate = countOfLocationStructuresByBusinessStatusInSprayArea.get(
+        locationStructureBusinessStatusAggregateQueryKey);
+    double totalStructuresFound = 0;
+    if (locationStructureBusinessStatusAggregate != null) {
+      if (locationStructureBusinessStatusAggregate.getBusinessStatus().equals("Sprayed") ||
+      locationStructureBusinessStatusAggregate.getBusinessStatus().equals("Not Sprayed")){
+        if (locationStructureBusinessStatusAggregate.getStructureCounts()!=null ){
+                 totalStructuresFound = locationStructureBusinessStatusAggregate.getStructureCounts();
+        }
+
+      }
+    }
 
     ColumnData totalStructuresFoundColumnData = new ColumnData();
     totalStructuresFoundColumnData.setValue(totalStructuresFound);
@@ -486,7 +396,50 @@ public class IRSDashboardService {
     return new SimpleEntry<>(columnName, totalStructuresFoundColumnData);
   }
 
-  private Entry<String, ColumnData> getSprayCoverageOfTargeted(Plan plan,
+  private Entry<String, ColumnData> getTotalStructuresSprayedCountInSprayArea(Plan plan,
+      Location childLocation, String columnName) {
+
+    String locationStructureBusinessStatusAggregateQueryKey =
+        plan.getIdentifier() + "_" + childLocation.getIdentifier();
+    LocationStructureBusinessStatusAggregate locationStructureBusinessStatusAggregate = countOfLocationStructuresByBusinessStatusInSprayArea.get(
+        locationStructureBusinessStatusAggregateQueryKey);
+    double totalStructuresSprayed = 0;
+    if (locationStructureBusinessStatusAggregate != null) {
+      if (locationStructureBusinessStatusAggregate.getBusinessStatus().equals("Sprayed")){
+        if (locationStructureBusinessStatusAggregate.getStructureCounts()!=null ){
+          totalStructuresSprayed = locationStructureBusinessStatusAggregate.getStructureCounts();
+        }
+
+      }
+    }
+
+    ColumnData totalStructuresSprayedColumnData = new ColumnData();
+    totalStructuresSprayedColumnData.setValue(totalStructuresSprayed);
+    totalStructuresSprayedColumnData.setIsPercentage(false);
+    return new SimpleEntry<>(columnName, totalStructuresSprayedColumnData);
+  }
+  private Entry<String, ColumnData> getAreaVisitedInSprayArea(Plan plan,
+      Location childLocation, String columnName) {
+
+    String locationStructureBusinessStatusAggregateQueryKey =
+        plan.getIdentifier() + "_" + childLocation.getIdentifier();
+    LocationStructureBusinessStatusAggregate locationStructureBusinessStatusAggregate = countOfLocationStructuresByBusinessStatusInSprayArea.get(
+        locationStructureBusinessStatusAggregateQueryKey);
+    String areaVisited = "no";
+    if (locationStructureBusinessStatusAggregate != null) {
+      if (!locationStructureBusinessStatusAggregate.getBusinessStatus().equals("Not Visited")){
+        areaVisited = "yes";
+      }
+    }
+
+    ColumnData areaVisitedColumnData = new ColumnData();
+    areaVisitedColumnData.setValue(areaVisited);
+    areaVisitedColumnData.setIsPercentage(false);
+    areaVisitedColumnData.setDataType("string");
+    return new SimpleEntry<>(columnName, areaVisitedColumnData);
+  }
+
+  private Entry<String, ColumnData> getFoundCoverage(Plan plan,
       Location childLocation, String columnName) {
 
     String totalStructuresTargetedQueryKey =
@@ -502,7 +455,7 @@ public class IRSDashboardService {
         plan.getIdentifier() + "_" + childLocation.getIdentifier() + "_"
             + plan.getLocationHierarchy()
             .getIdentifier() + "_" + "Not Eligible";
-    Long notEligibleStructuresCountObj = countOfStructuresByBusinessStatus.get(
+    Long notEligibleStructuresCountObj = countOfLocationsByBusinessStatus.get(
         notEligibleStructuresQueryKey);
     double notEligibleStructuresCount = 0;
     if (notEligibleStructuresCountObj != null) {
@@ -512,84 +465,133 @@ public class IRSDashboardService {
     double totalStructuresInTargetedCount =
         totalStructuresInPlanLocationCount - notEligibleStructuresCount;
 
-    String completedStructuresQueryKey =
-        plan.getIdentifier() + "_" + childLocation.getIdentifier() + "_"
-            + plan.getLocationHierarchy()
-            .getIdentifier() + "_" + "Complete";
-    Long completedStructuresCountObj = countOfStructuresByBusinessStatus.get(
-        completedStructuresQueryKey);
-    double completedStructuresCount = 0;
-    if (completedStructuresCountObj != null) {
-      completedStructuresCount = completedStructuresCountObj;
+    String sprayedLocationsQueryKey =
+        plan.getIdentifier() + "_" + childLocation.getIdentifier() + "_" + "Sprayed";
+    LocationStructureBusinessStatusAggregate sprayedLocationsCountObj = countOfLocationStructuresByBusinessStatus.get(
+        sprayedLocationsQueryKey);
+    double sprayedLocationsCount = 0;
+    if (sprayedLocationsCountObj != null) {
+      sprayedLocationsCount = sprayedLocationsCountObj.getStructureSum();
     }
 
-    double percentageOfSprayedToTargeted = 0;
-    if (totalStructuresInTargetedCount > 0) {
-      percentageOfSprayedToTargeted =
-          completedStructuresCount / totalStructuresInTargetedCount * 100;
+    String notSprayedLocationsQueryKey =
+        plan.getIdentifier() + "_" + childLocation.getIdentifier() + "_" + "Not Sprayed";
+    LocationStructureBusinessStatusAggregate notSprayedLocationsCountObj = countOfLocationStructuresByBusinessStatus.get(
+        notSprayedLocationsQueryKey);
+    double notSprayedLocationsCount = 0;
+    if (notSprayedLocationsCountObj != null) {
+      notSprayedLocationsCount = notSprayedLocationsCountObj.getStructureSum();
     }
 
-    ColumnData totalStructuresTargetedColumnData = new ColumnData();
-    totalStructuresTargetedColumnData.setValue(percentageOfSprayedToTargeted);
-    totalStructuresTargetedColumnData.setMeta(
-        "Total Structures Sprayed: " + completedStructuresCount + " / "
+    double totalStructuresFound = sprayedLocationsCount + notSprayedLocationsCount;
+
+    double foundCoverage = 0;
+
+    if (totalStructuresInTargetedCount > 0){
+      foundCoverage = totalStructuresFound / totalStructuresInTargetedCount * 100;
+    }
+
+    ColumnData foundCoverageColumnData = new ColumnData();
+    foundCoverageColumnData.setValue(foundCoverage);
+    foundCoverageColumnData.setMeta(
+        "Total Structures Found: " + totalStructuresFound + " / "
             + "Total Structures Targeted: "
             + totalStructuresInTargetedCount);
-    totalStructuresTargetedColumnData.setIsPercentage(true);
-    return new SimpleEntry<>(columnName, totalStructuresTargetedColumnData);
+    foundCoverageColumnData.setIsPercentage(true);
+    return new SimpleEntry<>(columnName, foundCoverageColumnData);
+  }
+
+
+  private Entry<String, ColumnData> getSprayCoverageOfFound(Plan plan,
+      Location childLocation, String columnName) {
+
+
+    String sprayedLocationsQueryKey =
+        plan.getIdentifier() + "_" + childLocation.getIdentifier() + "_" + "Sprayed";
+    LocationStructureBusinessStatusAggregate sprayedLocationsCountObj = countOfLocationStructuresByBusinessStatus.get(
+        sprayedLocationsQueryKey);
+    double sprayedLocationsCount = 0;
+    if (sprayedLocationsCountObj != null) {
+      sprayedLocationsCount = sprayedLocationsCountObj.getStructureSum();
+    }
+
+    String notSprayedLocationsQueryKey =
+        plan.getIdentifier() + "_" + childLocation.getIdentifier() + "_" + "Not Sprayed";
+    LocationStructureBusinessStatusAggregate notSprayedLocationsCountObj = countOfLocationStructuresByBusinessStatus.get(
+        notSprayedLocationsQueryKey);
+    double notSprayedLocationsCount = 0;
+    if (notSprayedLocationsCountObj != null) {
+      notSprayedLocationsCount = notSprayedLocationsCountObj.getStructureSum();
+    }
+
+    double totalStructuresFound = sprayedLocationsCount + notSprayedLocationsCount;
+
+    double sprayCoverageOfFound = 0;
+
+    if (totalStructuresFound > 0){
+      sprayCoverageOfFound = sprayedLocationsCount / totalStructuresFound * 100;
+    }
+
+    ColumnData sprayCoverageOfFoundColumnData = new ColumnData();
+    sprayCoverageOfFoundColumnData.setValue(sprayCoverageOfFound);
+    sprayCoverageOfFoundColumnData.setMeta(
+        "Total Structures Sprayed: " + sprayedLocationsCount + " / "
+            + "Total Structures Found: "
+            + totalStructuresFound);
+    sprayCoverageOfFoundColumnData.setIsPercentage(true);
+    return new SimpleEntry<>(columnName, sprayCoverageOfFoundColumnData);
   }
 
   private Entry<String, ColumnData> getSprayCoverage(Plan plan,
       Location childLocation, String columnName) {
 
-    String totalStructuresQueryKey =
-        plan.getLocationHierarchy().getIdentifier() + "_" + childLocation.getIdentifier();
-    Long totalStructuresCountObj = structureCounts.get(totalStructuresQueryKey);
-    double totalStructuresCount = 0;
-    if (totalStructuresCountObj != null) {
-      totalStructuresCount = totalStructuresCountObj;
+    String totalStructuresTargetedQueryKey =
+        plan.getIdentifier() + "_" + childLocation.getIdentifier();
+    Long totalStructuresTargetedCountObj = countOfAssignedStructures.get(
+        totalStructuresTargetedQueryKey);
+    double totalStructuresInPlanLocationCount = 0;
+    if (totalStructuresTargetedCountObj != null) {
+      totalStructuresInPlanLocationCount = totalStructuresTargetedCountObj;
     }
 
     String notEligibleStructuresQueryKey =
         plan.getIdentifier() + "_" + childLocation.getIdentifier() + "_"
             + plan.getLocationHierarchy()
             .getIdentifier() + "_" + "Not Eligible";
-    Long notEligibleStructuresCountObj = countOfStructuresByBusinessStatus.get(
+    Long notEligibleStructuresCountObj = countOfLocationsByBusinessStatus.get(
         notEligibleStructuresQueryKey);
     double notEligibleStructuresCount = 0;
     if (notEligibleStructuresCountObj != null) {
       notEligibleStructuresCount = notEligibleStructuresCountObj;
     }
 
-    String completedStructuresQueryKey =
-        plan.getIdentifier() + "_" + childLocation.getIdentifier() + "_"
-            + plan.getLocationHierarchy()
-            .getIdentifier() + "_" + "Complete";
-    Long completedStructuresCountObj = countOfStructuresByBusinessStatus.get(
-        completedStructuresQueryKey);
-    double completedStructuresCount = 0;
-    if (completedStructuresCountObj != null) {
-      completedStructuresCount = completedStructuresCountObj;
+    double totalStructuresInTargetedCount =
+        totalStructuresInPlanLocationCount - notEligibleStructuresCount;
+
+    String sprayedLocationsQueryKey =
+        plan.getIdentifier() + "_" + childLocation.getIdentifier() + "_" + "Sprayed";
+    LocationStructureBusinessStatusAggregate sprayedLocationsCountObj = countOfLocationStructuresByBusinessStatus.get(
+        sprayedLocationsQueryKey);
+    double sprayedLocationsCount = 0;
+    if (sprayedLocationsCountObj != null) {
+      sprayedLocationsCount = sprayedLocationsCountObj.getStructureSum();
     }
 
-    double totalStructuresExcludingNotEligible = totalStructuresCount - notEligibleStructuresCount;
+    double sprayCoverage = 0;
 
-    double percentageOfSprayedToTotal = 0;
-    if (totalStructuresExcludingNotEligible > 0) {
-      percentageOfSprayedToTotal =
-          completedStructuresCount / totalStructuresExcludingNotEligible * 100;
+    if (totalStructuresInTargetedCount > 0){
+      sprayCoverage = sprayedLocationsCount / totalStructuresInTargetedCount * 100;
     }
 
-    ColumnData percentageOfSprayedToTotalColumnData = new ColumnData();
-    percentageOfSprayedToTotalColumnData.setValue(percentageOfSprayedToTotal);
-    percentageOfSprayedToTotalColumnData.setMeta(
-        "Total Structures Sprayed: " + completedStructuresCount + " / "
-            + "Total Structures: "
-            + totalStructuresExcludingNotEligible);
-    percentageOfSprayedToTotalColumnData.setIsPercentage(true);
-    return new SimpleEntry<>(columnName, percentageOfSprayedToTotalColumnData);
+    ColumnData sprayCoverageColumnData = new ColumnData();
+    sprayCoverageColumnData.setValue(sprayCoverage);
+    sprayCoverageColumnData.setMeta(
+        "Total Structures Sprayed: " + sprayedLocationsCount + " / "
+            + "Total Structures Targeted: "
+            + totalStructuresInTargetedCount);
+    sprayCoverageColumnData.setIsPercentage(true);
+    return new SimpleEntry<>(columnName, sprayCoverageColumnData);
   }
-
 
   public void initDataStoresIfNecessary() {
     if (!datastoresInitialized) {
@@ -603,7 +605,7 @@ public class IRSDashboardService {
               kafkaProperties.getStoreMap().get(KafkaConstants.structureCountPerParent),
               QueryableStoreTypes.keyValueStore()));
 
-      countOfStructuresByBusinessStatus = getKafkaStreams.getKafkaStreams().store(
+      countOfLocationsByBusinessStatus = getKafkaStreams.getKafkaStreams().store(
           StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap()
                   .get(KafkaConstants.locationBusinessStatusByPlanParentHierarchy),
               QueryableStoreTypes.keyValueStore()));
@@ -638,6 +640,18 @@ public class IRSDashboardService {
           StoreQueryParameters.fromNameAndType(
               kafkaProperties.getStoreMap().get(KafkaConstants.structurePeople),
               QueryableStoreTypes.keyValueStore()));
+
+      countOfLocationStructuresByBusinessStatus = getKafkaStreams.getKafkaStreams().store(
+          StoreQueryParameters.fromNameAndType(
+              kafkaProperties.getStoreMap().get(KafkaConstants.locationStructureHierarchyBusinessStatus),
+              QueryableStoreTypes.keyValueStore())
+      );
+
+      countOfLocationStructuresByBusinessStatusInSprayArea = getKafkaStreams.getKafkaStreams().store(
+          StoreQueryParameters.fromNameAndType(
+              kafkaProperties.getStoreMap().get(KafkaConstants.locationStructureBusinessStatus),
+              QueryableStoreTypes.keyValueStore())
+      );
 
       datastoresInitialized = true;
     }
