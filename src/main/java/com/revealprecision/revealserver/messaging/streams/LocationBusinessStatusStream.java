@@ -62,7 +62,7 @@ public class LocationBusinessStatusStream {
 
 
   @Bean
-  KStream<UUID, LocationMetadataEvent> locationBusinessStatusCountsAggregator2(
+  KStream<UUID, LocationMetadataEvent> locationBusinessStatusCountsAggregator(
       StreamsBuilder streamsBuilder) {
 
     KStream<UUID, LocationMetadataEvent> locationMetadataStream = streamsBuilder.stream(
