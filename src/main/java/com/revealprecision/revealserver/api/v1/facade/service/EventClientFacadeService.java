@@ -287,21 +287,26 @@ public class EventClientFacadeService {
 
 
   private Event saveEvent(EventFacade eventFacade) {
+    String eventId = eventFacade.getEventId();
+    Event event = new Event();
     Map<String, String> details = eventFacade.getDetails();
-    Event event = Event.builder()
-        .additionalInformation(objectMapper.valueToTree(eventFacade)).captureDatetime(
-            DateTimeFormatter
-                .getLocalDateTimeFromZonedAndroidFacadeString(eventFacade.getEventDate()))
-        .eventType(eventFacade.getEventType())
-        .details(objectMapper.valueToTree(details))
-        .locationIdentifier(eventFacade.getLocationId() == null || Objects.equals(
-            eventFacade.getLocationId(), "")
-            ? UUID.fromString(objectMapper.valueToTree(details).get("location_id").toString().replaceAll("\\\"",""))
-            : UUID.fromString(eventFacade.getLocationId()))
-        .organization(organizationService.findById(UUID.fromString(eventFacade.getTeamId()), false))
-        .user(userService.getByUserName(eventFacade.getProviderId()))
-        .planIdentifier(UUID.fromString(details.get("planIdentifier")))
-        .build();
+
+    if (eventId != null) {
+      try {
+        event = eventService.findEventByIdentifier(UUID.fromString(eventId));
+      } catch (NotFoundException e) {
+        event.setIdentifier(UUID.fromString(eventId));
+      }
+    }
+    event.setAdditionalInformation(objectMapper.valueToTree(eventFacade));
+    event.setCaptureDatetime(
+        DateTimeFormatter.getLocalDateTimeFromZonedAndroidFacadeString(eventFacade.getEventDate()));
+    event.setEventType(eventFacade.getEventType());
+    event.setDetails(objectMapper.valueToTree(details));
+    event.setOrganization(
+        organizationService.findById(UUID.fromString(eventFacade.getTeamId()), false));
+    event.setUser(userService.getByUserName(eventFacade.getProviderId()));
+    event.setPlanIdentifier(UUID.fromString(details.get("planIdentifier")));
     String taskIdentifier = details.get("taskIdentifier");
     if (StringUtils.isNotBlank(taskIdentifier)) {
       event.setTaskIdentifier(UUID.fromString(taskIdentifier));
@@ -310,9 +315,15 @@ public class EventClientFacadeService {
     if (StringUtils.isNotBlank(baseEntityId)) {
       event.setBaseEntityIdentifier(UUID.fromString(baseEntityId));
     }
+    String locationIdentifier = eventFacade.getLocationId() == null ? details.get("location_id")
+        : eventFacade.getLocationId();
+    if (StringUtils.isNotBlank(locationIdentifier)) {
+      event.setLocationIdentifier(UUID.fromString(locationIdentifier));
+    }
     event.setEntityStatus(EntityStatus.ACTIVE);
     return eventService.saveEvent(event);
   }
+
 
   public Page<Event> searchEvents(EventSearchCriteria eventSearchCriteria, Pageable pageable) {
     return eventService.searchEvents(eventSearchCriteria, pageable);
