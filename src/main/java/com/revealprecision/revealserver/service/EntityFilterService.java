@@ -1,15 +1,24 @@
 package com.revealprecision.revealserver.service;
 
+import com.revealprecision.revealserver.api.v1.dto.factory.LocationResponseFactory;
+import com.revealprecision.revealserver.api.v1.dto.request.EntityFilterRequest;
+import com.revealprecision.revealserver.api.v1.dto.response.FeatureSetResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.LocationResponse;
 import com.revealprecision.revealserver.constants.LocationConstants;
+import com.revealprecision.revealserver.exceptions.ConflictException;
 import com.revealprecision.revealserver.exceptions.QueryGenerationException;
 import com.revealprecision.revealserver.persistence.domain.Action;
+import com.revealprecision.revealserver.persistence.domain.CoreField;
+import com.revealprecision.revealserver.persistence.domain.EntityTag;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
+import com.revealprecision.revealserver.persistence.domain.LookupEntityType;
 import com.revealprecision.revealserver.persistence.domain.Person;
 import com.revealprecision.revealserver.persistence.domain.actioncondition.Condition;
 import com.revealprecision.revealserver.persistence.domain.actioncondition.Query;
 import com.revealprecision.revealserver.props.ConditionQueryProperties;
 import com.revealprecision.revealserver.util.ActionUtils;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -18,6 +27,14 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.util.Pair;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -32,6 +49,10 @@ public class EntityFilterService {
   private final LocationRelationshipService locationRelationshipService;
   private final LocationHierarchyService locationHierarchyService;
   private final PersonService personService;
+  private final LookupEntityTypeService lookupEntityTypeService;
+  private final EntityTagService entityTagService;
+  private final CoreFieldService coreFieldService;
+  private final RestHighLevelClient client;
 
   private final static String WHERE = " WHERE ";
 
@@ -44,12 +65,20 @@ public class EntityFilterService {
       ConditionQueryProperties conditionQueryProperties,
       LocationRelationshipService locationRelationshipService,
       LocationHierarchyService locationHierarchyService,
-      PersonService personService) {
+      PersonService personService,
+      LookupEntityTypeService lookupEntityTypeService,
+      EntityTagService entityTagService,
+      CoreFieldService coreFieldService,
+      RestHighLevelClient client) {
     this.conditionQueryProperties = conditionQueryProperties;
     this.jdbcTemplate = jdbcTemplate;
     this.locationRelationshipService = locationRelationshipService;
     this.locationHierarchyService = locationHierarchyService;
     this.personService = personService;
+    this.lookupEntityTypeService = lookupEntityTypeService;
+    this.entityTagService = entityTagService;
+    this.coreFieldService = coreFieldService;
+    this.client = client;
   }
 
   public List<UUID> filterEntities(Query query, UUID planIdentifier,
@@ -59,8 +88,8 @@ public class EntityFilterService {
     List<Pair<UUID, String>> locations = queryDBAndRetrieveListOfLocationsLinkedToPlanJurisdiction(
         planIdentifier);
 
-    log.debug("plan_locations size {} ",locations.size());
-    log.trace("plan_locations {} ",locations);
+    log.debug("plan_locations size {} ", locations.size());
+    log.trace("plan_locations {} ", locations);
 
     if (locations.isEmpty()) {
       return new ArrayList<>();
@@ -89,8 +118,8 @@ public class EntityFilterService {
           locationHierarchy,
           locationsForTaskGeneration);
 
-      log.debug("structures size: {}",structures.size());
-      log.trace("structures: {}",structures);
+      log.debug("structures size: {}", structures.size());
+      log.trace("structures: {}", structures);
 
       if (query == null) {
         if (ActionUtils.isActionForLocation(action)) {
@@ -402,5 +431,164 @@ public class EntityFilterService {
     }
 
     return conditionList;
+  }
+//( Person.[tag_string]eye_color = "brown" OR Person.[tag_string]eye_color = "black" ) AND Person.[tag_integer]weight>10
+  public String generateQuery(List<EntityFilterRequest> requests) {
+    String response = "";
+    int index = 0;
+
+    for(EntityFilterRequest request : requests){
+      String addToQuery = "";
+      LookupEntityType lookupEntityType = lookupEntityTypeService.getLookUpEntityTypeById(request.getEntityIdentifier());
+      String dataType = "";
+      String fieldName = "";
+      if(request.getFieldType().equals("tag")){
+        EntityTag entityTag = entityTagService.getEntityTagByIdentifier(request.getFieldIdentifier());
+        dataType = entityTag.getValueType();
+        fieldName = entityTag.getTag();
+      }else {
+        CoreField coreField = coreFieldService.getCoreFieldByIdentifier(request.getFieldIdentifier());
+        dataType = coreField.getValueType();
+        fieldName = coreField.getField();
+      }
+
+      if(request.getValues() == null && request.getRange() == null) {
+        if(dataType.equals("string") && !request.getSearchValue().getSign().equals("=")) {
+          throw new ConflictException("For string data type sign must be set to '='.");
+        }
+
+        if(index > 0) {
+          addToQuery += " AND ";
+        }
+        if(dataType.equals("number")) {
+          addToQuery += lookupEntityType.getCode() + ".[" + request.getFieldType() + "_" + dataType + "]"
+              + fieldName + " = " + request.getSearchValue().getValue();
+        }else {
+          addToQuery += lookupEntityType.getCode() + ".[" + request.getFieldType() + "_" + dataType + "]"
+              + fieldName + " = \"" + request.getSearchValue().getValue() + "\"";
+        }
+      }
+      response += addToQuery;
+      index++;
+    }
+//    filterEntites(requests);
+    return response;
+  }
+
+//  public List<UUID> filterEntites(List<EntityFilterRequest> requests) {
+//    String strQuery = generateQuery(requests);
+//
+//    Query query = ConditionQueryUtil.getQueryObject(strQuery, "Person"); //just for now
+//    String finalQuery = conditionQueryProperties.getFilterPersonMetadata();
+//
+//    int index = 0;
+//    for(EntityFilterRequest request : requests){
+//      LookupEntityType lookupEntityType = lookupEntityTypeService.getLookUpEntityTypeById(request.getEntityIdentifier());
+//      if(index > 0) {
+//       finalQuery += " AND ";
+//      }
+//
+//      String fieldName;
+//      String dataType;
+//      String alias;
+//      if(request.getFieldType().equals("tag")){
+//        EntityTag entityTag = entityTagService.getEntityTagByIdentifier(request.getFieldIdentifier());
+//        dataType = entityTag.getValueType();
+//        fieldName = entityTag.getTag();
+//        alias = "pm.";
+//      }else {
+//        CoreField coreField = coreFieldService.getCoreFieldByIdentifier(request.getFieldIdentifier());
+//        dataType = coreField.getValueType();
+//        fieldName = coreField.getField();
+//        alias = "p.";
+//      }
+//
+//      if(dataType.equals("number")) {
+//        finalQuery += alias + fieldName + " " + request.getSearchValue().getSign() + " " + request.getSearchValue().getValue();
+//      }else {
+//        finalQuery += alias + fieldName + " " + request.getSearchValue().getSign() + " '" + request.getSearchValue().getValue() + "'";
+//      }
+//      index++;
+//    }
+//    List<UUID> response = jdbcTemplate.query(finalQuery,
+//        (rs, rowNum) -> ((UUID) rs.getObject("identifier")));
+//
+//    return response;
+//  }
+
+  public FeatureSetResponse filterEntites(List<EntityFilterRequest> requests) throws IOException {
+    BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
+    for(EntityFilterRequest request : requests) {
+
+      if (request.getRange() == null && request.getValues() == null) {
+        boolQuery.must(mustStatment(request));
+      }else if(request.getSearchValue() == null && request.getValues() == null) {
+        boolQuery.must(rangeStatement(request));
+      }
+    }
+
+    SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+    sourceBuilder.query(boolQuery);
+    SearchRequest searchRequest = new SearchRequest("location");
+    searchRequest.source(sourceBuilder);
+    SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+
+    List<LocationResponse> locationResponses = new ArrayList<>();
+
+    for(SearchHit hit : searchResponse.getHits().getHits()) {
+      locationResponses.add(LocationResponseFactory.fromSearchHit(hit));
+    }
+    FeatureSetResponse response = new FeatureSetResponse();
+    response.setType("FeatureCollection");
+    response.setFeatures(locationResponses);
+    return response;
+  }
+
+  private BoolQueryBuilder mustStatment(EntityFilterRequest request) {
+    LookupEntityType lookupEntityType = lookupEntityTypeService.getLookUpEntityTypeById(request.getEntityIdentifier());
+
+    BoolQueryBuilder andStatement = QueryBuilders.boolQuery();
+    String searchField;
+    if(request.getFieldType().equals("tag")){
+        EntityTag entityTag = entityTagService.getEntityTagByIdentifier(request.getFieldIdentifier());
+      searchField = lookupEntityType.getTableName().concat(".metadata.");
+      andStatement.must(QueryBuilders.matchQuery(searchField.concat("type"), entityTag.getTag()));
+      andStatement.must(QueryBuilders.matchQuery(searchField.concat("value"), request.getSearchValue().getValue()));
+      }else if(request.getFieldType().equals("core")){
+        CoreField coreField = coreFieldService.getCoreFieldByIdentifier(request.getFieldIdentifier());
+      searchField = lookupEntityType.getTableName().concat(coreField.getField());
+      andStatement.must(QueryBuilders.matchQuery(searchField, request.getSearchValue().getValue()));
+      } else {
+      throw new ConflictException("Unexpected field type: " + request.getFieldType());
+    }
+    return andStatement;
+  }
+
+  private BoolQueryBuilder rangeStatement(EntityFilterRequest request) {
+    BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
+    LookupEntityType lookupEntityType = lookupEntityTypeService.getLookUpEntityTypeById(request.getEntityIdentifier());
+    String searchField;
+    if(request.getRange().getMaxValue() != null && request.getRange().getMinValue() != null) {
+      if(request.getFieldType().equals("tag")){
+        EntityTag entityTag = entityTagService.getEntityTagByIdentifier(request.getFieldIdentifier());
+        searchField = lookupEntityType.getTableName().concat(".metadata.");
+        boolQuery.must(QueryBuilders.matchQuery(searchField.concat("type"), entityTag.getTag()));
+        boolQuery.must(QueryBuilders.rangeQuery(searchField.concat("value"))
+            .lte(request.getRange().getMaxValue())
+            .gte(request.getRange().getMinValue()));
+      }else if(request.getFieldType().equals("core")){
+        CoreField coreField = coreFieldService.getCoreFieldByIdentifier(request.getFieldIdentifier());
+        searchField = lookupEntityType.getTableName().concat(coreField.getField());
+        boolQuery.must(QueryBuilders.rangeQuery(searchField)
+            .lte(request.getRange().getMaxValue())
+            .gte(request.getRange().getMinValue()));
+      } else {
+        throw new ConflictException("Unexpected field type: " + request.getFieldType());
+      }
+    }else {
+      throw new ConflictException("Must set min and max value for range.");
+    }
+
+    return boolQuery;
   }
 }

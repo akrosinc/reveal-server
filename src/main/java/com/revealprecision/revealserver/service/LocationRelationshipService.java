@@ -14,6 +14,7 @@ import com.revealprecision.revealserver.persistence.domain.LocationBulk;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
 import com.revealprecision.revealserver.persistence.projection.LocationChildrenCountProjection;
+import com.revealprecision.revealserver.persistence.projection.LocationMainData;
 import com.revealprecision.revealserver.persistence.projection.LocationRelationshipProjection;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import com.revealprecision.revealserver.persistence.repository.GeographicLevelRepository;
@@ -466,5 +467,7 @@ public class LocationRelationshipService {
         location.getIdentifier(), locationHierarchy.getIdentifier());
   }
 
-
+  public List<LocationMainData> getLocationsByHierarchyIdAndLevelName(UUID hierarchyIdentifier, String levelName) {
+    return locationRelationshipRepository.getLocationsByHierarchyIdAndLevelName(hierarchyIdentifier, levelName);
+  }
 }

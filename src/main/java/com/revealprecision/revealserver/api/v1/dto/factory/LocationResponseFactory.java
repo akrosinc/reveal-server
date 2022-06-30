@@ -1,14 +1,18 @@
 package com.revealprecision.revealserver.api.v1.dto.factory;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationPropertyResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationResponse;
 import com.revealprecision.revealserver.enums.SummaryEnum;
 import com.revealprecision.revealserver.persistence.domain.Location;
+import com.revealprecision.revealserver.persistence.es.LocationElastic;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import org.elasticsearch.search.SearchHit;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -74,5 +78,23 @@ public class LocationResponseFactory {
                 .childrenNumber(planLocationDetails.getChildrenNumber())
                 .build())
         .build();
+  }
+
+  public static LocationResponse fromElasticModel(LocationElastic locationElastic) {
+    return LocationResponse.builder()
+        .geometry(locationElastic.getGeometry())
+        .identifier(UUID.fromString(locationElastic.getId()))
+        .type("Feature")
+        .properties(LocationPropertyResponse.builder()
+            .name(locationElastic.getName()).build())
+        .build(); //TODO: add other properties
+  }
+
+  public static LocationResponse fromSearchHit(SearchHit hit) throws JsonProcessingException {
+    ObjectMapper mapper = new ObjectMapper();
+    String source = hit.getSourceAsString();
+    LocationElastic locationElastic = mapper.readValue(source, LocationElastic.class);
+
+    return fromElasticModel(locationElastic);
   }
 }

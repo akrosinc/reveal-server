@@ -253,6 +253,7 @@ public class MetadataService {
     locationMetadataKafkaTemplate.send(
         kafkaProperties.getTopicMap().get(KafkaConstants.LOCATION_METADATA_UPDATE),
         locationMetadataEvent);
+    //TODO: save person metadata
     return savedLocationMetadata;
   }
 

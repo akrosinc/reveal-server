@@ -9,6 +9,7 @@ import com.revealprecision.revealserver.api.v1.dto.response.LocationHierarchyRes
 import com.revealprecision.revealserver.api.v1.dto.response.LocationResponse;
 import com.revealprecision.revealserver.enums.SummaryEnum;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
+import com.revealprecision.revealserver.persistence.projection.LocationMainData;
 import com.revealprecision.revealserver.service.LocationHierarchyService;
 import com.revealprecision.revealserver.service.LocationRelationshipService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -116,5 +117,10 @@ public class LocationHierarchyController {
       @Parameter(description = "LocationHierarchy Identifier") @PathVariable UUID identifier) {
     locationHierarchyService.deleteLocationHierarchyAndAssociatedLocationRelationships(identifier);
     return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+  }
+
+  @GetMapping("/{identifier}/{levelName}")
+      public ResponseEntity<List<LocationMainData>> getLocationsByHierarchyIdAndLevelName(@PathVariable UUID identifier, @PathVariable String levelName) {
+    return ResponseEntity.status(HttpStatus.OK).body(locationRelationshipService.getLocationsByHierarchyIdAndLevelName(identifier, levelName));
   }
 }

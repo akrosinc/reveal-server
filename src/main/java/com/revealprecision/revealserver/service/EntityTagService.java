@@ -4,7 +4,9 @@ import com.revealprecision.revealserver.api.v1.dto.factory.EntityTagFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.EntityTagResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.EntityTagRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.EntityTagResponse;
+import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.EntityTag;
+import com.revealprecision.revealserver.persistence.domain.EntityTag.Fields;
 import com.revealprecision.revealserver.persistence.domain.LookupEntityType;
 import com.revealprecision.revealserver.persistence.repository.EntityTagRepository;
 import java.util.ArrayList;
@@ -14,6 +16,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -35,6 +38,11 @@ public class EntityTagService {
 
   public Optional<EntityTag> getEntityTagByTagName(String name) {
     return entityTagRepository.getFirstByTag(name);
+  }
+
+  public EntityTag getEntityTagByIdentifier(UUID identifier) {
+    return entityTagRepository.findById(identifier).orElseThrow(() -> new NotFoundException(
+        Pair.of(Fields.identifier, identifier), EntityTag.class));
   }
 
   public EntityTag createEntityTag(EntityTagRequest entityTagRequest) {
