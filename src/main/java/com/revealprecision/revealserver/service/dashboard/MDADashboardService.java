@@ -60,9 +60,6 @@ public class MDADashboardService {
 
   private final StreamsBuilderFactoryBean getKafkaStreams;
   private final KafkaProperties kafkaProperties;
-  private final LocationService locationService;
-  private final PlanService planService;
-  private final LocationRelationshipService locationRelationshipService;
   private final PersonService personService;
   private final DashboardProperties dashboardProperties;
   private final PlanLocationsService planLocationsService;
