@@ -11,6 +11,7 @@ import com.revealprecision.revealserver.api.v1.dto.models.ColumnData;
 import com.revealprecision.revealserver.api.v1.dto.models.RowData;
 import com.revealprecision.revealserver.api.v1.dto.response.FeatureSetResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationResponse;
+import com.revealprecision.revealserver.constants.LocationConstants;
 import com.revealprecision.revealserver.messaging.KafkaConstants;
 import com.revealprecision.revealserver.messaging.message.LocationBusinessStatusAggregate;
 import com.revealprecision.revealserver.messaging.message.LocationPersonBusinessStateAggregate;
@@ -27,6 +28,7 @@ import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.service.LocationRelationshipService;
 import com.revealprecision.revealserver.service.LocationService;
 import com.revealprecision.revealserver.service.PersonService;
+import com.revealprecision.revealserver.service.PlanLocationsService;
 import com.revealprecision.revealserver.service.PlanService;
 import java.io.Serializable;
 import java.time.Instant;
@@ -63,6 +65,7 @@ public class MDADashboardService {
   private final LocationRelationshipService locationRelationshipService;
   private final PersonService personService;
   private final DashboardProperties dashboardProperties;
+  private final PlanLocationsService planLocationsService;
 
   //MDA
   private static final String TREATMENT_COVERAGE = "Treatment coverage";
@@ -333,8 +336,13 @@ public class MDADashboardService {
       treatedOperationalAreaCount = (double) treatedOperationalAreaAggregate.getTreatLocationCount();
     }
 
-    Long totalOperationAreaCounts = locationRelationshipService.getNumberOfChildrenByGeoLevelNameWithinLocationAndHierarchy(
-        "operational", childLocation.getIdentifier(), plan.getLocationHierarchy().getIdentifier());
+    Long totalOperationAreaCounts = planLocationsService
+        .getNumberOfAssignedChildrenByGeoLevelNameWithinLocationAndHierarchyAndPlan(
+            plan.getIdentifier(),
+            LocationConstants.OPERATIONAL,
+            childLocation.getIdentifier(),
+            plan.getLocationHierarchy().getIdentifier()
+        );
 
     double distributionEffectiveness = 0;
 
