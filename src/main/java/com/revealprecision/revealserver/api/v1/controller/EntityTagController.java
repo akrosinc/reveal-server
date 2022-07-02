@@ -2,17 +2,23 @@ package com.revealprecision.revealserver.api.v1.controller;
 
 import com.revealprecision.revealserver.api.v1.dto.factory.EntityTagResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.LookupEntityTagResponseFactory;
+import com.revealprecision.revealserver.api.v1.dto.request.DataFilterRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.EntityTagRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.EntityTagResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.FeatureSetResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LookupEntityTypeResponse;
+import com.revealprecision.revealserver.persistence.repository.LocationElasticRepository;
+import com.revealprecision.revealserver.service.EntityFilterService;
 import com.revealprecision.revealserver.service.EntityTagService;
 import com.revealprecision.revealserver.service.LookupEntityTypeService;
 import io.swagger.v3.oas.annotations.Operation;
+import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -31,7 +37,10 @@ import org.springframework.web.bind.annotation.RestController;
 public class EntityTagController {
 
   private final EntityTagService entityTagService;
+  private final EntityFilterService entityFilterService;
   private final LookupEntityTypeService lookupEntityTypeService;
+  private final LocationElasticRepository locationElasticRepository;
+  private final RestHighLevelClient client;
 
   @Operation(summary = "Create Tag", description = "Create Tag", tags = {"Entity Tags"})
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -62,4 +71,9 @@ public class EntityTagController {
         LookupEntityTagResponseFactory::fromEntity).collect(Collectors.toList()));
   }
 
+  @PostMapping("/filter")
+  public ResponseEntity<FeatureSetResponse> filterEntities(@RequestBody DataFilterRequest request)
+      throws IOException {
+    return ResponseEntity.ok().body(entityFilterService.filterEntites(request));
+  }
 }

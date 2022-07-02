@@ -1,9 +1,14 @@
 package com.revealprecision.revealserver.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.revealprecision.revealserver.api.v1.dto.factory.LocationResponseFactory;
+import com.revealprecision.revealserver.api.v1.dto.request.DataFilterRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.EntityFilterRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.FeatureSetResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.LocationPropertyResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.PersonMainData;
 import com.revealprecision.revealserver.constants.LocationConstants;
 import com.revealprecision.revealserver.exceptions.ConflictException;
 import com.revealprecision.revealserver.exceptions.QueryGenerationException;
@@ -16,6 +21,7 @@ import com.revealprecision.revealserver.persistence.domain.LookupEntityType;
 import com.revealprecision.revealserver.persistence.domain.Person;
 import com.revealprecision.revealserver.persistence.domain.actioncondition.Condition;
 import com.revealprecision.revealserver.persistence.domain.actioncondition.Query;
+import com.revealprecision.revealserver.persistence.es.PersonElastic;
 import com.revealprecision.revealserver.props.ConditionQueryProperties;
 import com.revealprecision.revealserver.util.ActionUtils;
 import java.io.IOException;
@@ -27,13 +33,17 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.lucene.search.join.ScoreMode;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.InnerHitBuilder;
+import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.util.Pair;
@@ -432,99 +442,35 @@ public class EntityFilterService {
 
     return conditionList;
   }
-//( Person.[tag_string]eye_color = "brown" OR Person.[tag_string]eye_color = "black" ) AND Person.[tag_integer]weight>10
-  public String generateQuery(List<EntityFilterRequest> requests) {
-    String response = "";
-    int index = 0;
 
-    for(EntityFilterRequest request : requests){
-      String addToQuery = "";
-      LookupEntityType lookupEntityType = lookupEntityTypeService.getLookUpEntityTypeById(request.getEntityIdentifier());
-      String dataType = "";
-      String fieldName = "";
-      if(request.getFieldType().equals("tag")){
-        EntityTag entityTag = entityTagService.getEntityTagByIdentifier(request.getFieldIdentifier());
-        dataType = entityTag.getValueType();
-        fieldName = entityTag.getTag();
-      }else {
-        CoreField coreField = coreFieldService.getCoreFieldByIdentifier(request.getFieldIdentifier());
-        dataType = coreField.getValueType();
-        fieldName = coreField.getField();
-      }
-
-      if(request.getValues() == null && request.getRange() == null) {
-        if(dataType.equals("string") && !request.getSearchValue().getSign().equals("=")) {
-          throw new ConflictException("For string data type sign must be set to '='.");
-        }
-
-        if(index > 0) {
-          addToQuery += " AND ";
-        }
-        if(dataType.equals("number")) {
-          addToQuery += lookupEntityType.getCode() + ".[" + request.getFieldType() + "_" + dataType + "]"
-              + fieldName + " = " + request.getSearchValue().getValue();
-        }else {
-          addToQuery += lookupEntityType.getCode() + ".[" + request.getFieldType() + "_" + dataType + "]"
-              + fieldName + " = \"" + request.getSearchValue().getValue() + "\"";
-        }
-      }
-      response += addToQuery;
-      index++;
-    }
-//    filterEntites(requests);
-    return response;
-  }
-
-//  public List<UUID> filterEntites(List<EntityFilterRequest> requests) {
-//    String strQuery = generateQuery(requests);
-//
-//    Query query = ConditionQueryUtil.getQueryObject(strQuery, "Person"); //just for now
-//    String finalQuery = conditionQueryProperties.getFilterPersonMetadata();
-//
-//    int index = 0;
-//    for(EntityFilterRequest request : requests){
-//      LookupEntityType lookupEntityType = lookupEntityTypeService.getLookUpEntityTypeById(request.getEntityIdentifier());
-//      if(index > 0) {
-//       finalQuery += " AND ";
-//      }
-//
-//      String fieldName;
-//      String dataType;
-//      String alias;
-//      if(request.getFieldType().equals("tag")){
-//        EntityTag entityTag = entityTagService.getEntityTagByIdentifier(request.getFieldIdentifier());
-//        dataType = entityTag.getValueType();
-//        fieldName = entityTag.getTag();
-//        alias = "pm.";
-//      }else {
-//        CoreField coreField = coreFieldService.getCoreFieldByIdentifier(request.getFieldIdentifier());
-//        dataType = coreField.getValueType();
-//        fieldName = coreField.getField();
-//        alias = "p.";
-//      }
-//
-//      if(dataType.equals("number")) {
-//        finalQuery += alias + fieldName + " " + request.getSearchValue().getSign() + " " + request.getSearchValue().getValue();
-//      }else {
-//        finalQuery += alias + fieldName + " " + request.getSearchValue().getSign() + " '" + request.getSearchValue().getValue() + "'";
-//      }
-//      index++;
-//    }
-//    List<UUID> response = jdbcTemplate.query(finalQuery,
-//        (rs, rowNum) -> ((UUID) rs.getObject("identifier")));
-//
-//    return response;
-//  }
-
-  public FeatureSetResponse filterEntites(List<EntityFilterRequest> requests) throws IOException {
+  public FeatureSetResponse filterEntites(DataFilterRequest request) throws IOException {
     BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
-    for(EntityFilterRequest request : requests) {
+    List<EntityFilterRequest> personFilters = new ArrayList<>();
+    List<EntityFilterRequest> locationFilters = new ArrayList<>();
 
-      if (request.getRange() == null && request.getValues() == null) {
-        boolQuery.must(mustStatment(request));
-      }else if(request.getSearchValue() == null && request.getValues() == null) {
-        boolQuery.must(rangeStatement(request));
+
+
+    for(EntityFilterRequest req : request.getEntityFilters()) {
+      LookupEntityType lookupEntityType = lookupEntityTypeService.getLookUpEntityTypeById(req.getEntityIdentifier());
+      if(lookupEntityType.getTableName().equals("person")) {
+        personFilters.add(req);
+      }else {
+        locationFilters.add(req);
       }
+    }
+
+    boolQuery.must(nestedPersonQuery(personFilters));
+
+    for(EntityFilterRequest req : locationFilters) {
+      if (req.getRange() == null && req.getValues() == null) {
+        boolQuery.must(mustStatement(req));
+      }else if(req.getSearchValue() == null && req.getValues() == null) {
+        boolQuery.must(rangeStatement(req));
+      }
+    }
+
+    if(request.getHierarchyIdentifier() != null && request.getLocationIdentifier() != null) {
+      boolQuery.filter(QueryBuilders.termQuery("ancestry.".concat(request.getHierarchyIdentifier().toString()), request.getLocationIdentifier().toString()));
     }
 
     SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
@@ -536,7 +482,12 @@ public class EntityFilterService {
     List<LocationResponse> locationResponses = new ArrayList<>();
 
     for(SearchHit hit : searchResponse.getHits().getHits()) {
-      locationResponses.add(LocationResponseFactory.fromSearchHit(hit));
+      LocationResponse locToAdd = LocationResponseFactory.fromSearchHit(hit);
+
+      if(hit.getInnerHits() != null) {
+        addPersonsToLocationProperties(hit.getInnerHits(), locToAdd.getProperties());
+      }
+      locationResponses.add(locToAdd);
     }
     FeatureSetResponse response = new FeatureSetResponse();
     response.setType("FeatureCollection");
@@ -544,7 +495,39 @@ public class EntityFilterService {
     return response;
   }
 
-  private BoolQueryBuilder mustStatment(EntityFilterRequest request) {
+  private void addPersonsToLocationProperties(Map<String, SearchHits> innerHits, LocationPropertyResponse propertyResponse)
+      throws JsonProcessingException {
+    propertyResponse.setPersons(new ArrayList<>());
+    ObjectMapper mapper = new ObjectMapper();
+    if(innerHits.containsKey("person")) {
+      for(SearchHit hit : innerHits.get("person")) {
+        String source = hit.getSourceAsString();
+        PersonElastic personElastic = mapper.readValue(source, PersonElastic.class);
+        propertyResponse.getPersons().add(PersonMainData.builder()
+            .nameUse(personElastic.getNameUse())
+            .nameFamily(personElastic.getNameFamily())
+            .build());
+      }
+    }
+
+  }
+
+  public NestedQueryBuilder nestedPersonQuery(List<EntityFilterRequest> requests) {
+    BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+    for(EntityFilterRequest req : requests) {
+      if (req.getRange() == null && req.getValues() == null) {
+        boolQueryBuilder.must(mustStatement(req));
+//        MatchQueryBuilder matchQuery = QueryBuilders.matchQuery("person.metadata.value", "female");
+//        boolQueryBuilder.must(matchQuery);
+      }else if(req.getSearchValue() == null && req.getValues() == null) {
+        boolQueryBuilder.must(rangeStatement(req));
+      }
+    }
+    return QueryBuilders.nestedQuery("person", boolQueryBuilder, ScoreMode.None).innerHit(
+        new InnerHitBuilder());
+  }
+
+  private BoolQueryBuilder mustStatement(EntityFilterRequest request) {
     LookupEntityType lookupEntityType = lookupEntityTypeService.getLookUpEntityTypeById(request.getEntityIdentifier());
 
     BoolQueryBuilder andStatement = QueryBuilders.boolQuery();

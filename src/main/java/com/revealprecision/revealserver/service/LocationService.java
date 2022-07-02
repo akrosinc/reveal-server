@@ -14,6 +14,7 @@ import com.revealprecision.revealserver.persistence.projection.LocationChildrenC
 import com.revealprecision.revealserver.persistence.projection.LocationCoordinatesProjection;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import com.revealprecision.revealserver.persistence.repository.LocationRepository;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -34,7 +35,7 @@ public class LocationService {
   private final LocationRelationshipService locationRelationshipService;
   private final PlanService planService;
 
-  public Location createLocation(LocationRequest locationRequest) {
+  public Location createLocation(LocationRequest locationRequest) throws IOException {
     GeographicLevel geographicLevel = geographicLevelService.findByName(
         locationRequest.getProperties().getGeographicLevel());
     var locationToSave = Location.builder().geographicLevel(geographicLevel)

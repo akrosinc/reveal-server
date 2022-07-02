@@ -28,6 +28,7 @@ import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -40,12 +41,15 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.geo.ShapeRelation;
 import org.elasticsearch.geometry.Point;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.script.Script;
+import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
@@ -111,7 +115,11 @@ public class LocationRelationshipService {
             .get(geographicLevels.get(geographicLevels.indexOf(item.getKey()) + 1));
         for (Location location : parentLocations) {
           for (Location potentialChild : potentialChildren) {
-            createParentChildRelationship(location, potentialChild, locationHierarchy);
+            try {
+              createParentChildRelationship(location, potentialChild, locationHierarchy);
+            } catch (IOException e) {
+              e.printStackTrace();
+            }
           }
         }
       }
@@ -139,7 +147,7 @@ public class LocationRelationshipService {
     locationRelationshipRepository.save(locationRelationshipToSave);
   }
 
-  public void updateLocationRelationshipsForNewLocation(Location location) {
+  public void updateLocationRelationshipsForNewLocation(Location location) throws IOException {
     var locationHierarchies = locationHierarchyRepository
         .findLocationHierarchiesByNodeOrderContaining(location.getGeographicLevel().getName());
     for (var locationHierarchy : locationHierarchies) {
@@ -156,9 +164,10 @@ public class LocationRelationshipService {
             .findByGeographicLevelIdentifier(parentGeographicLevel.get()
                 .getIdentifier());
 
-        upperGeographicLevelLocations.stream().forEach(
-            parentLocation -> createParentChildRelationship(parentLocation, location,
-                locationHierarchy));
+        for(Location parentLocation : upperGeographicLevelLocations){
+          createParentChildRelationship(parentLocation, location,
+              locationHierarchy);
+        }
       } else if (nodePosition == -1) {
         createRelationshipForRoot(location, locationHierarchy);
       }
@@ -174,16 +183,16 @@ public class LocationRelationshipService {
             .findByGeographicLevelIdentifier(lowerGeographicLevel.get()
                 .getIdentifier());
 
-        lowerGeographicLevelLocations.stream().forEach(
-            childLocation -> createParentChildRelationship(location, childLocation,
-                locationHierarchy));
-
+        for(Location childLocation : lowerGeographicLevelLocations) {
+          createParentChildRelationship(location, childLocation,
+              locationHierarchy);
+        }
       }
     }
   }
 
   private void createParentChildRelationship(Location parentLocation, Location childLocation,
-      LocationHierarchy locationHierarchy) {
+      LocationHierarchy locationHierarchy) throws IOException {
     ObjectMapper mapper = new ObjectMapper();
     String parentGeometry = null;
     String childGeometry = null;
@@ -206,6 +215,25 @@ public class LocationRelationshipService {
     }
   }
 
+
+  private void updateElasticWithAncestry(LocationRelationship locationRelationship)
+      throws IOException {
+    Map<String, Object> parameters = new HashMap<>();
+    Map<String, List<String>> object = new HashMap<>();
+    object.put(locationRelationship.getLocationHierarchy().getIdentifier().toString(),
+        locationRelationship.getAncestry().stream()
+            .map(UUID::toString)
+            .collect(Collectors.toList()));
+    parameters.put("object", object);
+    parameters.put("key", locationRelationship.getLocationHierarchy().getIdentifier().toString());
+    Script inline = new Script(ScriptType.INLINE, "painless",
+        "ctx._source.ancestry.add(params.object);",parameters);
+    UpdateRequest request = new UpdateRequest(
+        "location",
+        locationRelationship.getLocation().getIdentifier().toString());
+    request.script(inline);
+    client.update(request, RequestOptions.DEFAULT);
+  }
 
   private void createRelationshipForRoot(Location location, LocationHierarchy locationHierarchy) {
     LocationRelationship locationRelationship = LocationRelationship.builder()
@@ -387,6 +415,7 @@ public class LocationRelationshipService {
                 .build();
             locationRelationshipToSave.setEntityStatus(EntityStatus.ACTIVE);
             locationRelationshipRepository.save(locationRelationshipToSave);
+            updateElasticWithAncestry(locationRelationshipToSave);
 
             LocationRelationshipMessage locationRelationshipMessage = new LocationRelationshipMessage();
             locationRelationshipMessage.setLocationIdentifier(

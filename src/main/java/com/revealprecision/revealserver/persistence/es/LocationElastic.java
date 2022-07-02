@@ -2,6 +2,7 @@ package com.revealprecision.revealserver.persistence.es;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.revealprecision.revealserver.persistence.domain.Geometry;
+import java.util.ArrayList;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -33,8 +34,11 @@ public class LocationElastic {
   @Field(type = FieldType.Text)
   private String externalId;
 
+  @Field(type = FieldType.Nested)
+  private List<PersonElastic> person = new ArrayList<>();
+
   @Field(type = FieldType.Flattened)
-  private List<PersonElastic> person;
+  private List<Object> ancestry = new ArrayList<>();
 
   @GeoShapeField
   Geometry geometry;
