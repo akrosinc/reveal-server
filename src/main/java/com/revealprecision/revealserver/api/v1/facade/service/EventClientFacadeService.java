@@ -287,26 +287,17 @@ public class EventClientFacadeService {
 
 
   private Event saveEvent(EventFacade eventFacade) {
-    String eventId = eventFacade.getEventId();
-    Event event = new Event();
     Map<String, String> details = eventFacade.getDetails();
-
-    if (eventId != null) {
-      try {
-        event = eventService.findEventByIdentifier(UUID.fromString(eventId));
-      } catch (NotFoundException e) {
-        event.setIdentifier(UUID.fromString(eventId));
-      }
-    }
-    event.setAdditionalInformation(objectMapper.valueToTree(eventFacade));
-    event.setCaptureDatetime(
-        DateTimeFormatter.getLocalDateTimeFromZonedAndroidFacadeString(eventFacade.getEventDate()));
-    event.setEventType(eventFacade.getEventType());
-    event.setDetails(objectMapper.valueToTree(details));
-    event.setOrganization(
-        organizationService.findById(UUID.fromString(eventFacade.getTeamId()), false));
-    event.setUser(userService.getByUserName(eventFacade.getProviderId()));
-    event.setPlanIdentifier(UUID.fromString(details.get("planIdentifier")));
+    Event event = Event.builder()
+        .additionalInformation(objectMapper.valueToTree(eventFacade)).captureDatetime(
+            DateTimeFormatter
+                .getLocalDateTimeFromZonedAndroidFacadeString(eventFacade.getEventDate()))
+        .eventType(eventFacade.getEventType())
+        .details(objectMapper.valueToTree(details))
+        .organization(organizationService.findById(UUID.fromString(eventFacade.getTeamId()), false))
+        .user(userService.getByUserName(eventFacade.getProviderId()))
+        .planIdentifier(UUID.fromString(details.get("planIdentifier")))
+        .build();
     String taskIdentifier = details.get("taskIdentifier");
     if (StringUtils.isNotBlank(taskIdentifier)) {
       event.setTaskIdentifier(UUID.fromString(taskIdentifier));
