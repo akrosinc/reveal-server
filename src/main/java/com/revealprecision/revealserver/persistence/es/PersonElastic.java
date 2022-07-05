@@ -1,5 +1,7 @@
 package com.revealprecision.revealserver.persistence.es;
 
+import com.revealprecision.revealserver.persistence.domain.Person;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -46,4 +48,18 @@ public class PersonElastic {
   private List<PersonMetadataElastic> metadata;
 
 
+  public PersonElastic(Person person) {
+    this.identifier = person.getIdentifier();
+    this.active = person.isActive();
+    this.nameUse = person.getNameUse();
+    this.nameText = person.getNameText();
+    this.nameFamily = person.getNameFamily();
+    this.nameGiven = person.getNameGiven();
+    this.namePrefix = person.getNamePrefix();
+    this.nameSuffix = person.getNameSuffix();
+    this.gender = person.getGender();
+    this.birthDate = person.getBirthDate();
+    this.deathDate = person.getDeathDate();
+    this.metadata = new ArrayList<>();
+  }
 }

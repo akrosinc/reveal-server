@@ -5,11 +5,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.revealprecision.revealserver.api.v1.dto.factory.LocationResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.DataFilterRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.EntityFilterRequest;
+import com.revealprecision.revealserver.api.v1.dto.request.SearchValue;
 import com.revealprecision.revealserver.api.v1.dto.response.FeatureSetResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationPropertyResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.PersonMainData;
 import com.revealprecision.revealserver.constants.LocationConstants;
+import com.revealprecision.revealserver.enums.SignEntity;
 import com.revealprecision.revealserver.exceptions.ConflictException;
 import com.revealprecision.revealserver.exceptions.QueryGenerationException;
 import com.revealprecision.revealserver.persistence.domain.Action;
@@ -42,6 +44,7 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.InnerHitBuilder;
 import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -466,6 +469,10 @@ public class EntityFilterService {
         boolQuery.must(mustStatement(req));
       }else if(req.getSearchValue() == null && req.getValues() == null) {
         boolQuery.must(rangeStatement(req));
+      } else if(req.getSearchValue() == null && req.getRange() == null) {
+        boolQuery.must(shouldStatement(req));
+      }else {
+        throw new ConflictException("Request object bad formatted.");
       }
     }
 
@@ -517,11 +524,13 @@ public class EntityFilterService {
     for(EntityFilterRequest req : requests) {
       if (req.getRange() == null && req.getValues() == null) {
         boolQueryBuilder.must(mustStatement(req));
-//        MatchQueryBuilder matchQuery = QueryBuilders.matchQuery("person.metadata.value", "female");
-//        boolQueryBuilder.must(matchQuery);
       }else if(req.getSearchValue() == null && req.getValues() == null) {
         boolQueryBuilder.must(rangeStatement(req));
-      }
+      } else if(req.getSearchValue() == null && req.getRange() == null) {
+        boolQueryBuilder.must(shouldStatement(req));
+    }else {
+      throw new ConflictException("Request object bad formatted.");
+    }
     }
     return QueryBuilders.nestedQuery("person", boolQueryBuilder, ScoreMode.None).innerHit(
         new InnerHitBuilder());
@@ -536,15 +545,50 @@ public class EntityFilterService {
         EntityTag entityTag = entityTagService.getEntityTagByIdentifier(request.getFieldIdentifier());
       searchField = lookupEntityType.getTableName().concat(".metadata.");
       andStatement.must(QueryBuilders.matchQuery(searchField.concat("type"), entityTag.getTag()));
-      andStatement.must(QueryBuilders.matchQuery(searchField.concat("value"), request.getSearchValue().getValue()));
+      if(request.getSearchValue().getSign() == SignEntity.EQ) {
+        andStatement.must(QueryBuilders.matchQuery(searchField.concat("value"), request.getSearchValue().getValue()));
+      }else {
+        andStatement.must(rangeQuery(request.getSearchValue().getSign(), searchField.concat("value"), request.getSearchValue().getValue()));
+      }
       }else if(request.getFieldType().equals("core")){
         CoreField coreField = coreFieldService.getCoreFieldByIdentifier(request.getFieldIdentifier());
-      searchField = lookupEntityType.getTableName().concat(coreField.getField());
-      andStatement.must(QueryBuilders.matchQuery(searchField, request.getSearchValue().getValue()));
+        searchField = lookupEntityType.getTableName().concat(coreField.getField());
+        if(request.getSearchValue().getSign() == SignEntity.EQ) {
+          andStatement.must(QueryBuilders.matchQuery(searchField, request.getSearchValue().getValue()));
+        }else {
+          andStatement.must(rangeQuery(request.getSearchValue().getSign(), searchField, request.getSearchValue().getValue()));
+        }
       } else {
       throw new ConflictException("Unexpected field type: " + request.getFieldType());
     }
     return andStatement;
+  }
+
+  private BoolQueryBuilder shouldStatement(EntityFilterRequest request) {
+    LookupEntityType lookupEntityType = lookupEntityTypeService.getLookUpEntityTypeById(request.getEntityIdentifier());
+
+    BoolQueryBuilder shouldStatement = QueryBuilders.boolQuery();
+    String searchField;
+    if(request.getFieldType().equals("tag")){
+      EntityTag entityTag = entityTagService.getEntityTagByIdentifier(request.getFieldIdentifier());
+      searchField = lookupEntityType.getTableName().concat(".metadata.");
+      shouldStatement.must(QueryBuilders.termQuery(searchField.concat("type"), entityTag.getTag()));
+      BoolQueryBuilder orStatement = QueryBuilders.boolQuery();
+      for(SearchValue value : request.getValues()) {
+        orStatement.should(QueryBuilders.termQuery(searchField.concat("value"), value.getValue()));
+      }
+      shouldStatement.must(orStatement);
+      return shouldStatement;
+    }else if(request.getFieldType().equals("core")){
+      CoreField coreField = coreFieldService.getCoreFieldByIdentifier(request.getFieldIdentifier());
+      searchField = lookupEntityType.getTableName().concat(coreField.getField());
+      for(SearchValue value : request.getValues()) {
+        shouldStatement.should(QueryBuilders.termQuery(searchField, value.getValue()));
+      }
+      return shouldStatement;
+    } else {
+      throw new ConflictException("Unexpected field type: " + request.getFieldType());
+    }
   }
 
   private BoolQueryBuilder rangeStatement(EntityFilterRequest request) {
@@ -573,5 +617,24 @@ public class EntityFilterService {
     }
 
     return boolQuery;
+  }
+
+  private RangeQueryBuilder rangeQuery(SignEntity sign, String searchField,Object value) {
+    RangeQueryBuilder rangeQuery = new RangeQueryBuilder(searchField);
+    switch (sign){
+      case GT:
+        rangeQuery.gt(value);
+        break;
+      case GTE:
+        rangeQuery.gte(value);
+        break;
+      case LT:
+        rangeQuery.lt(value);
+        break;
+      case LTE:
+        rangeQuery.lte(value);
+        break;
+    }
+    return rangeQuery;
   }
 }

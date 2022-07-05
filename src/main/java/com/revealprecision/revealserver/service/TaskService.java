@@ -37,6 +37,7 @@ import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.service.models.TaskSearchCriteria;
 import com.revealprecision.revealserver.util.ActionUtils;
 import com.revealprecision.revealserver.util.ConditionQueryUtil;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -195,7 +196,13 @@ public class TaskService {
 
       goals.stream().map(goal -> actionService.getActionsByGoalIdentifier(goal.getIdentifier()))
           .flatMap(Collection::stream)
-          .forEach((action) -> generateTasksByAction(action, plan, ownerId));
+          .forEach((action) -> {
+            try {
+              generateTasksByAction(action, plan, ownerId);
+            } catch (IOException e) {
+              e.printStackTrace();
+            }
+          });
       log.info("TASK_GENERATION Completed generating tasks for Plan Id: {}", planIdentifier);
     } else {
       log.info("TASK_GENERATION Not run as plan is not active: {}", planIdentifier);
@@ -235,7 +242,7 @@ public class TaskService {
   }
 
 
-  public void generateTasksByAction(Action action, Plan plan, String ownerId) {
+  public void generateTasksByAction(Action action, Plan plan, String ownerId) throws IOException {
 
     List<Condition> conditions = conditionService.getConditionsByActionIdentifier(
         action.getIdentifier());
@@ -307,7 +314,7 @@ public class TaskService {
 
   private List<Task> createOrUpdateTaskObjectFromActionAndEntityId(Action action,
       LookupTaskStatus cancelledLookupTaskStatus, LookupTaskStatus readyLookupTaskStatus,
-      UUID entityUUID, Plan plan) {
+      UUID entityUUID, Plan plan) throws IOException {
     log.debug("TASK_GENERATION  create individual task for plan: {} and action: {}",
         plan.getIdentifier(), action.getIdentifier());
 

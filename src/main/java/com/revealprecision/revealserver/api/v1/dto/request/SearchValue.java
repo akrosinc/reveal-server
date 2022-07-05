@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.api.v1.dto.request;
 
+import com.revealprecision.revealserver.enums.SignEntity;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -14,5 +15,5 @@ import lombok.Setter;
 public class SearchValue {
 
   private Object value;
-  private String sign; //maybe put Enum
+  private SignEntity sign;
 }
