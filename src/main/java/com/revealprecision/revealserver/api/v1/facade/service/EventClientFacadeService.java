@@ -294,10 +294,6 @@ public class EventClientFacadeService {
                 .getLocalDateTimeFromZonedAndroidFacadeString(eventFacade.getEventDate()))
         .eventType(eventFacade.getEventType())
         .details(objectMapper.valueToTree(details))
-        .locationIdentifier(eventFacade.getLocationId() == null || Objects.equals(
-            eventFacade.getLocationId(), "")
-            ? UUID.fromString(objectMapper.valueToTree(details).get("location_id").toString().replaceAll("\\\"",""))
-            : UUID.fromString(eventFacade.getLocationId()))
         .organization(organizationService.findById(UUID.fromString(eventFacade.getTeamId()), false))
         .user(userService.getByUserName(eventFacade.getProviderId()))
         .planIdentifier(UUID.fromString(details.get("planIdentifier")))
@@ -310,9 +306,15 @@ public class EventClientFacadeService {
     if (StringUtils.isNotBlank(baseEntityId)) {
       event.setBaseEntityIdentifier(UUID.fromString(baseEntityId));
     }
+    String locationIdentifier = eventFacade.getLocationId() == null ? details.get("location_id")
+        : eventFacade.getLocationId();
+    if (StringUtils.isNotBlank(locationIdentifier)) {
+      event.setLocationIdentifier(UUID.fromString(locationIdentifier));
+    }
     event.setEntityStatus(EntityStatus.ACTIVE);
     return eventService.saveEvent(event);
   }
+
 
   public Page<Event> searchEvents(EventSearchCriteria eventSearchCriteria, Pageable pageable) {
     return eventService.searchEvents(eventSearchCriteria, pageable);
