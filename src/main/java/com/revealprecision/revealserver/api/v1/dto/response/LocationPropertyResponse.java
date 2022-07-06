@@ -3,6 +3,7 @@ package com.revealprecision.revealserver.api.v1.dto.response;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.revealprecision.revealserver.api.v1.dto.models.ColumnData;
 import java.util.List;
+import com.revealprecision.revealserver.enums.LocationStatus;
 import java.util.Map;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -21,7 +22,7 @@ import lombok.Setter;
 public class LocationPropertyResponse {
 
   private String name;
-  private String status;
+  private LocationStatus status;
   private UUID externalId;
   private String geographicLevel;
   private Long numberOfTeams;
@@ -31,6 +32,7 @@ public class LocationPropertyResponse {
   private Object distCoveragePercent;
   private Object numberOfChildrenTreated;
   private Object numberOfChildrenEligible;
+  private Object sprayCoverage;
   private UUID id;
   private Map<String, ColumnData> columnDataMap;
   private List<PersonMainData> persons;

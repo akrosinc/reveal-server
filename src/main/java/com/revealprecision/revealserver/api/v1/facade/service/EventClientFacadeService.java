@@ -18,6 +18,7 @@ import com.revealprecision.revealserver.persistence.domain.Event;
 import com.revealprecision.revealserver.persistence.domain.Group;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.Person;
+import com.revealprecision.revealserver.persistence.es.PersonElastic;
 import com.revealprecision.revealserver.service.EventService;
 import com.revealprecision.revealserver.service.GroupService;
 import com.revealprecision.revealserver.service.LocationService;
@@ -25,6 +26,8 @@ import com.revealprecision.revealserver.service.OrganizationService;
 import com.revealprecision.revealserver.service.PersonService;
 import com.revealprecision.revealserver.service.UserService;
 import com.revealprecision.revealserver.service.models.EventSearchCriteria;
+import com.revealprecision.revealserver.util.ElasticModelUtil;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -41,6 +44,12 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.reindex.UpdateByQueryRequest;
+import org.elasticsearch.script.Script;
+import org.elasticsearch.script.ScriptType;
 import org.json.JSONObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -66,6 +75,8 @@ public class EventClientFacadeService {
   private final GroupService groupService;
 
   private final ObjectMapper objectMapper;
+
+  private final RestHighLevelClient client;
 
 
   public Pair<List<EventFacade>, List<ClientFacade>> processEventsClientsRequest(
@@ -121,7 +132,7 @@ public class EventClientFacadeService {
     return failedClients;
   }
 
-  private void savePerson(ClientFacade clientFacade, Location location) {
+  private void savePerson(ClientFacade clientFacade, Location location) throws IOException {
     Person person = getExistingOrNewPersonFromClientFacade(clientFacade);
     Set<Group> groups = getPersonGroups(clientFacade);
 
@@ -141,7 +152,23 @@ public class EventClientFacadeService {
 
     ClientFacadeMetadata personAdditionalInfo = getAdditionalInfo(clientFacade);
     person.setAdditionalInfo(objectMapper.valueToTree(personAdditionalInfo));
-    personService.savePerson(person);
+    person = personService.savePerson(person);
+
+    PersonElastic personElastic = new PersonElastic(person);
+    Map<String, Object> parameters = new HashMap<>();
+
+    parameters.put("person", ElasticModelUtil.toMapFromPersonElastic(personElastic));
+    UpdateByQueryRequest request = new UpdateByQueryRequest("location");
+    List<String> locationIds = person.getLocations().stream().map(loc -> loc.getIdentifier().toString()).collect(
+        Collectors.toList());
+
+    request.setQuery(QueryBuilders.termsQuery("_id", locationIds));
+    request.setScript(new Script(
+        ScriptType.INLINE, "painless",
+        "ctx._source.person.add(params.person);",
+        parameters
+    ));
+    client.updateByQuery(request, RequestOptions.DEFAULT);
   }
 
   private void saveGroup(ClientFacade clientFacade, Location location) {
@@ -296,7 +323,7 @@ public class EventClientFacadeService {
         .details(objectMapper.valueToTree(details))
         .locationIdentifier(eventFacade.getLocationId() == null || Objects.equals(
             eventFacade.getLocationId(), "")
-            ? UUID.fromString(objectMapper.valueToTree(details).get("location_id").toString())
+            ? UUID.fromString(objectMapper.valueToTree(details).get("location_id").toString().replaceAll("\\\"",""))
             : UUID.fromString(eventFacade.getLocationId()))
         .organization(organizationService.findById(UUID.fromString(eventFacade.getTeamId()), false))
         .user(userService.getByUserName(eventFacade.getProviderId()))

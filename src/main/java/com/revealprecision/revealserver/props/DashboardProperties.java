@@ -1,6 +1,10 @@
 package com.revealprecision.revealserver.props;
 
-import java.util.Collections;
+import static com.revealprecision.revealserver.service.dashboard.DashboardService.ALL_OTHER_LEVELS;
+import static com.revealprecision.revealserver.service.dashboard.DashboardService.DIRECTLY_ABOVE_STRUCTURE_LEVEL;
+import static com.revealprecision.revealserver.service.dashboard.IRSDashboardService.SPRAY_COVERAGE_OF_TARGETED;
+import static com.revealprecision.revealserver.service.dashboard.MDADashboardService.DISTRIBUTION_COVERAGE;
+
 import java.util.List;
 import java.util.Map;
 import lombok.AllArgsConstructor;
@@ -24,7 +28,17 @@ public class DashboardProperties {
           ,"FOUND_COVERAGE",new ColumnMeta("Found Coverage",true)
           ,"OPERATIONAL_AREA_VISITED",new ColumnMeta("Operational Area Visited",false)));
 
+  private final Map<String, String> mdaDefaultDisplayColumns =
+      Map.of(DIRECTLY_ABOVE_STRUCTURE_LEVEL,DISTRIBUTION_COVERAGE,
+          ALL_OTHER_LEVELS,DISTRIBUTION_COVERAGE);
+
+  private final Map<String, String> irsDefaultDisplayColumns =
+      Map.of(DIRECTLY_ABOVE_STRUCTURE_LEVEL,SPRAY_COVERAGE_OF_TARGETED,
+          ALL_OTHER_LEVELS,SPRAY_COVERAGE_OF_TARGETED);
+
+
   private Long operationalAreaVisitedThreshold = 20L;
+  private Long operationalAreaVisitedEffectivelyThreshold = 85L;
 
   @Setter
   @Getter

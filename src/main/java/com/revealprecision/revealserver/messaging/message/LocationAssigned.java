@@ -27,7 +27,7 @@ public class LocationAssigned extends Message{
 
   private UUID ancestor;
 
-  private Long count;
+  private Long count = 0L;
 
   private boolean isVisited;
 

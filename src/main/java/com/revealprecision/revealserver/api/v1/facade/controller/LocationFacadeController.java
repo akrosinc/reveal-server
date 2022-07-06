@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.api.v1.facade.controller;
 
 import com.revealprecision.revealserver.api.v1.facade.factory.PhysicalLocationResponseFactory;
+import com.revealprecision.revealserver.api.v1.facade.models.CreateLocationRequest;
 import com.revealprecision.revealserver.api.v1.facade.models.PhysicalLocation;
 import com.revealprecision.revealserver.api.v1.facade.request.LocationSyncRequest;
 import com.revealprecision.revealserver.api.v1.facade.service.LocationFacadeService;
@@ -33,7 +34,7 @@ public class LocationFacadeController {
 
 
   @Operation(summary = "Sync Locations for Reveal mobile app", description = "Sync Locations for Reveal mobile app", tags = {
-      "Location Sync Facade"})
+      "Location"})
   @PostMapping(value = "/sync", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<List<PhysicalLocation>> getLocations(
       @RequestBody LocationSyncRequest locationSyncRequest) {
@@ -49,13 +50,13 @@ public class LocationFacadeController {
   }
 
   @Operation(summary = "Update server with structure/Location created from reveal mobile app", description = "Update server with structure/Location created from reveal mobile app", tags = {
-      "Location Sync Facade"})
+      "Location"})
   @PostMapping(value = "/add", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<String> addSyncedStructures(
-      @RequestBody List<PhysicalLocation> physicalLocations,
+      @RequestBody List<CreateLocationRequest> locations,
       @RequestParam(value = IS_JURISDICTION, defaultValue = FALSE, required = false) boolean isJurisdiction) {
     Set<String> locationRequestsWithErrors = locationFacadeService
-        .saveSyncedLocations(physicalLocations);
+        .saveSyncedLocations(locations);
     String message = locationRequestsWithErrors.isEmpty() ? "All Locations  processed"
         : ("Locations with Ids not processed: " + String.join(",", locationRequestsWithErrors));
     return ResponseEntity.status(HttpStatus.CREATED).body(message);

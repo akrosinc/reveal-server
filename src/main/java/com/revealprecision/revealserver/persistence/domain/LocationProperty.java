@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.persistence.domain;
 
+import com.revealprecision.revealserver.enums.LocationStatus;
 import java.util.UUID;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
@@ -16,11 +17,12 @@ import lombok.Setter;
 @Builder
 public class LocationProperty {
 
+
   @NotBlank
   private String name;
 
   @NotNull
-  private String status;
+  private LocationStatus status;
 
   private UUID externalId;
   @NotNull

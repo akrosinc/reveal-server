@@ -29,6 +29,7 @@ public class LocationWriter implements ItemWriter<Location> {
       loc.setGeometry(location.getGeometry());
       locations.add(loc);
     });
+
     locationElasticRepository.saveAll(locations);
   }
 }

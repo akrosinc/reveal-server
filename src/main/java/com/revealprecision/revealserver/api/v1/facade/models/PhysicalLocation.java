@@ -3,12 +3,18 @@ package com.revealprecision.revealserver.api.v1.facade.models;
 import com.revealprecision.revealserver.persistence.domain.Geometry;
 import java.io.Serializable;
 import java.util.Set;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @EqualsAndHashCode(of = "id")
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class PhysicalLocation implements Serializable {
 

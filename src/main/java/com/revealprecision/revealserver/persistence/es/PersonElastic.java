@@ -4,7 +4,6 @@ import com.revealprecision.revealserver.persistence.domain.Person;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -19,7 +18,7 @@ import org.springframework.data.elasticsearch.annotations.FieldType;
 public class PersonElastic {
 
   @Field(type = FieldType.Text)
-  private UUID identifier;
+  private String identifier;
   @Field(type = FieldType.Text)
   private boolean active;
   @Field(type = FieldType.Text)
@@ -49,7 +48,7 @@ public class PersonElastic {
 
 
   public PersonElastic(Person person) {
-    this.identifier = person.getIdentifier();
+    this.identifier = person.getIdentifier().toString();
     this.active = person.isActive();
     this.nameUse = person.getNameUse();
     this.nameText = person.getNameText();

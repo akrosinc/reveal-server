@@ -7,6 +7,7 @@ import com.revealprecision.revealserver.messaging.message.LookupEntityTypeEvent;
 import com.revealprecision.revealserver.messaging.message.LookupInterventionTypeEvent;
 import com.revealprecision.revealserver.messaging.message.LookupTaskStatusEvent;
 import com.revealprecision.revealserver.messaging.message.PlanEvent;
+import com.revealprecision.revealserver.messaging.message.PlanTargetTypeEvent;
 import com.revealprecision.revealserver.messaging.message.TaskEvent;
 import com.revealprecision.revealserver.persistence.domain.Action;
 import com.revealprecision.revealserver.persistence.domain.Goal;
@@ -130,6 +131,9 @@ public class TaskEventFactory {
         .status(plan.getStatus())
         .title(plan.getTitle())
         .name(plan.getName())
+        .planTargetTypeEvent(PlanTargetTypeEvent.builder()
+            .geographicLevelName(plan.getPlanTargetType().getGeographicLevel().getName())
+            .build())
         .identifier(plan.getIdentifier())
         .build();
   }
@@ -231,6 +235,9 @@ public class TaskEventFactory {
         .title(planEvent.getTitle())
         .name(planEvent.getName())
         .identifier(planEvent.getIdentifier())
+        .planTargetTypeEvent(PlanTargetTypeEvent.builder()
+            .geographicLevelName(planEvent.getName())
+            .build())
         .build();
   }
 

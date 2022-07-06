@@ -4,7 +4,7 @@ import com.revealprecision.revealserver.api.v1.dto.response.FeatureSetResponse;
 import com.revealprecision.revealserver.enums.ApplicableReportsEnum;
 import com.revealprecision.revealserver.enums.ReportTypeEnum;
 import com.revealprecision.revealserver.persistence.domain.Plan;
-import com.revealprecision.revealserver.service.DashboardService;
+import com.revealprecision.revealserver.service.dashboard.DashboardService;
 import com.revealprecision.revealserver.service.PlanService;
 import java.util.List;
 import java.util.UUID;
@@ -32,7 +32,7 @@ public class ReportDashboardController {
 
   @GetMapping("/applicableReports/{identifier}")
   public List<String> getReportTypes(@PathVariable("identifier") UUID identifier) {
-    Plan plan = planService.getPlanByIdentifier(identifier);
+    Plan plan = planService.findPlanByIdentifier(identifier);
     return ApplicableReportsEnum.valueOf(plan.getInterventionType().getCode()).getReportName();
   }
 
