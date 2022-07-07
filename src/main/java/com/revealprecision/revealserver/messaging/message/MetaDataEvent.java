@@ -20,5 +20,7 @@ public class MetaDataEvent extends Message {
 
   private String type;
 
+  private String dataType;
+
   private boolean isActive;
 }

@@ -47,7 +47,7 @@ public class PersonMetadataElastic {
     this.type = metadataObj.getType();
     this.isActive = metadataObj.isActive();
 
-    switch (metadataObj.getType()){
+    switch (metadataObj.getDataType()){
       case "string":
         this.value = metadataObj.getTagData().getValue().getValueString();
         break;

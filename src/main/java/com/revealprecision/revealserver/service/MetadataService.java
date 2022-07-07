@@ -31,7 +31,6 @@ import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.SerializationUtils;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.data.util.Pair;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
@@ -47,7 +46,6 @@ public class MetadataService {
   private final KafkaTemplate<String, PersonMetadataEvent> personMetadataKafkaTemplate;
   private final KafkaProperties kafkaProperties;
   private final LocationService locationService;
-  private final RestHighLevelClient client;
 
   public LocationMetadata getLocationMetadataByLocation(UUID locationIdentifier) {
     //TODO fix this
@@ -148,6 +146,7 @@ public class MetadataService {
           MetaDataEvent metaDataEvent = new MetaDataEvent();
           metaDataEvent.setTag(metadataObj.getTag());
           metaDataEvent.setTagData(metadataObj.getCurrent());
+          metaDataEvent.setDataType(metadataObj.getDataType());
           metaDataEvent.setActive(metadataObj.isActive());
           metaDataEvent.setType(metadataObj.getType());
           return metaDataEvent;

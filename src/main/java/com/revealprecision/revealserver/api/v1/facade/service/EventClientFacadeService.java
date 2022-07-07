@@ -32,6 +32,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
@@ -51,6 +52,7 @@ import org.elasticsearch.index.reindex.UpdateByQueryRequest;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
 import org.json.JSONObject;
+import org.springframework.core.env.Environment;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -77,6 +79,8 @@ public class EventClientFacadeService {
   private final ObjectMapper objectMapper;
 
   private final RestHighLevelClient client;
+
+  private final Environment env;
 
 
   public Pair<List<EventFacade>, List<ClientFacade>> processEventsClientsRequest(
@@ -154,23 +158,26 @@ public class EventClientFacadeService {
     person.setAdditionalInfo(objectMapper.valueToTree(personAdditionalInfo));
     person = personService.savePerson(person);
 
-    PersonElastic personElastic = new PersonElastic(person);
-    Map<String, Object> parameters = new HashMap<>();
+    if(Arrays.asList(env.getActiveProfiles()).contains("ops")) { //TODO: remove when needed
+      PersonElastic personElastic = new PersonElastic(person);
+      Map<String, Object> parameters = new HashMap<>();
 
-    parameters.put("person", ElasticModelUtil.toMapFromPersonElastic(personElastic));
-    parameters.put("personId", personElastic.getIdentifier());
-    UpdateByQueryRequest request = new UpdateByQueryRequest("location");
-    List<String> locationIds = person.getLocations().stream().map(loc -> loc.getIdentifier().toString()).collect(
-        Collectors.toList());
+      parameters.put("person", ElasticModelUtil.toMapFromPersonElastic(personElastic));
+      parameters.put("personId", personElastic.getIdentifier());
+      UpdateByQueryRequest request = new UpdateByQueryRequest("location");
+      List<String> locationIds = person.getLocations().stream()
+          .map(loc -> loc.getIdentifier().toString()).collect(
+              Collectors.toList());
 
-    request.setQuery(QueryBuilders.termsQuery("_id", locationIds));
-    request.setScript(new Script(
-        ScriptType.INLINE, "painless",
-        "def foundPerson = ctx._source.person.find(attr-> attr.identifier == params.personId);"
-            + " if(foundPerson == null) {ctx._source.person.add(params.person);}",
-        parameters
-    ));
-    client.updateByQuery(request, RequestOptions.DEFAULT);
+      request.setQuery(QueryBuilders.termsQuery("_id", locationIds));
+      request.setScript(new Script(
+          ScriptType.INLINE, "painless",
+          "def foundPerson = ctx._source.person.find(attr-> attr.identifier == params.personId);"
+              + " if(foundPerson == null) {ctx._source.person.add(params.person);}",
+          parameters
+      ));
+      client.updateByQuery(request, RequestOptions.DEFAULT);
+    }
   }
 
   private void saveGroup(ClientFacade clientFacade, Location location) {

@@ -55,6 +55,7 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.data.util.Pair;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Async;
@@ -73,13 +74,15 @@ public class LocationRelationshipService {
   private final KafkaProperties kafkaProperties;
   private final LocationBulkRepository locationBulkRepository;
   private final Logger importLog = LoggerFactory.getLogger("location-import-file");
+  private final Environment env;
 
   @Autowired
   public LocationRelationshipService(LocationRelationshipRepository locationRelationshipRepository,
       GeographicLevelRepository geographicLevelRepository, LocationRepository locationRepository,
       LocationHierarchyRepository locationHierarchyRepository, RestHighLevelClient client,
       KafkaTemplate<String, LocationRelationshipMessage> kafkaTemplate,
-      KafkaProperties kafkaProperties, LocationBulkRepository locationBulkRepository) {
+      KafkaProperties kafkaProperties, LocationBulkRepository locationBulkRepository,
+      Environment env) {
     this.locationRelationshipRepository = locationRelationshipRepository;
     this.geographicLevelRepository = geographicLevelRepository;
     this.locationRepository = locationRepository;
@@ -88,6 +91,7 @@ public class LocationRelationshipService {
     this.kafkaTemplate = kafkaTemplate;
     this.kafkaProperties = kafkaProperties;
     this.locationBulkRepository = locationBulkRepository;
+    this.env = env;
   }
 
 
@@ -214,7 +218,6 @@ public class LocationRelationshipService {
       locationRelationshipRepository.save(locationRelationshipToSave);
     }
   }
-
 
   private void updateElasticWithAncestry(LocationRelationship locationRelationship)
       throws IOException {
@@ -423,8 +426,10 @@ public class LocationRelationshipService {
                 .build();
             locationRelationshipToSave.setEntityStatus(EntityStatus.ACTIVE);
             locationRelationshipRepository.save(locationRelationshipToSave);
-            updateElasticWithAncestry(locationRelationshipToSave);
 
+            if(Arrays.asList(env.getActiveProfiles()).contains("ops")) { //TODO: remove when needed
+              updateElasticWithAncestry(locationRelationshipToSave);
+            }
             LocationRelationshipMessage locationRelationshipMessage = new LocationRelationshipMessage();
             locationRelationshipMessage.setLocationIdentifier(
                 locationRelationshipToSave.getLocation().getIdentifier());

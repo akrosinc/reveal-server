@@ -18,23 +18,26 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.reindex.UpdateByQueryRequest;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
+import org.springframework.context.annotation.Profile;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.stereotype.Service;
 
 @RequiredArgsConstructor
-public class PersonMetadataUpdateListener {
+@Service
+public class PersonMetadataUpdateListener extends Listener{
 
   private final RestHighLevelClient client;
 
+  @Profile("Simulation")
   @KafkaListener(topics = "#{kafkaConfigProperties.topicMap.get('PERSON_METADATA_UPDATE')}", groupId = "reveal_server_group")
   public void updatePersonMetadata(PersonMetadataEvent event) throws IOException {
-    System.out.println("KAFKAAAAAAAAAAAAAAAA");
     Map<String, Object> parameters = new HashMap<>();
     List<Map<String, Object>> metadata = new ArrayList<>();
     for(MetaDataEvent metadataObj : event.getMetaDataEvents()) {
       metadata.add(ElasticModelUtil.toMapFromPersonMetadata(new PersonMetadataElastic(metadataObj)));
     }
     parameters.put("new_metadata", metadata);
-    parameters.put("personId", event.getIdentifier().toString());
+    parameters.put("personId", event.getEntityId().toString());
 
     Script inline = new Script(ScriptType.INLINE, "painless",
         "def persons = ctx._source.person.findAll( "

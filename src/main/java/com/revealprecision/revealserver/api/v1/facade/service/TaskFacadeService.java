@@ -38,6 +38,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -61,6 +62,7 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.reindex.UpdateByQueryRequest;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
+import org.springframework.core.env.Environment;
 import org.springframework.data.util.Pair;
 import org.springframework.kafka.config.StreamsBuilderFactoryBean;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -81,6 +83,7 @@ public class TaskFacadeService {
   private final StreamsBuilderFactoryBean getKafkaStreams;
   private final KafkaProperties kafkaProperties;
   private final RestHighLevelClient client;
+  private final Environment env;
 
   public List<TaskFacade> syncTasks(List<String> planIdentifiers,
       List<UUID> jurisdictionIdentifiers, Long serverVersion, String requester) {
@@ -332,23 +335,26 @@ public class TaskFacadeService {
           } else {
             person.setLocations(Set.of(location));
           }
-          //TODO: save persons into ES, this could be async if needed
-          PersonElastic personElastic = new PersonElastic(person);
-          Map<String, Object> parameters = new HashMap<>();
-          parameters.put("person", ElasticModelUtil.toMapFromPersonElastic(personElastic));
-          parameters.put("personId", personElastic.getIdentifier());
-          UpdateByQueryRequest request = new UpdateByQueryRequest("location");
-          List<String> locationIds = person.getLocations().stream().map(loc -> loc.getIdentifier().toString()).collect(
-              Collectors.toList());
 
-          request.setQuery(QueryBuilders.termsQuery("_id", locationIds));
-          request.setScript(new Script(
-              ScriptType.INLINE, "painless",
-              "def foundPerson = ctx._source.person.find(attr-> attr.identifier == params.personId);"
-                  + " if(foundPerson == null) {ctx._source.person.add(params.person);}",
-              parameters
-          ));
-          client.updateByQuery(request, RequestOptions.DEFAULT);
+          if(Arrays.asList(env.getActiveProfiles()).contains("ops")) {
+            PersonElastic personElastic = new PersonElastic(person);
+            Map<String, Object> parameters = new HashMap<>();
+            parameters.put("person", ElasticModelUtil.toMapFromPersonElastic(personElastic));
+            parameters.put("personId", personElastic.getIdentifier());
+            UpdateByQueryRequest request = new UpdateByQueryRequest("location");
+            List<String> locationIds = person.getLocations().stream()
+                .map(loc -> loc.getIdentifier().toString()).collect(
+                    Collectors.toList());
+
+            request.setQuery(QueryBuilders.termsQuery("_id", locationIds));
+            request.setScript(new Script(
+                ScriptType.INLINE, "painless",
+                "def foundPerson = ctx._source.person.find(attr-> attr.identifier == params.personId);"
+                    + " if(foundPerson == null) {ctx._source.person.add(params.person);}",
+                parameters
+            ));
+            client.updateByQuery(request, RequestOptions.DEFAULT);
+          }
         }
         task.setPerson(person);
       }
