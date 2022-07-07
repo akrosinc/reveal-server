@@ -39,7 +39,7 @@ public interface PlanLocationsRepository extends EntityGraphJpaRepository<PlanLo
   @Transactional
   @Modifying
   @Query(value = "delete from PlanLocations pl where pl.plan.identifier = :planIdentifier and pl.location.identifier in :locations")
-  void deletePlanLocationsByPlanAndLocation(@Param("planIdentifier") UUID identifier,
+  int deletePlanLocationsByPlanAndLocation(@Param("planIdentifier") UUID identifier,
       @Param("locations") List<UUID> locations);
 
 
@@ -49,5 +49,21 @@ public interface PlanLocationsRepository extends EntityGraphJpaRepository<PlanLo
   @Transactional
   @Modifying
   @Query(value = "delete from PlanLocations pl where pl.plan.identifier = :planIdentifier")
-  void deleteByPlanIdentifier(UUID planIdentifier);
+  int deleteByPlanIdentifier(UUID planIdentifier);
+
+
+  @Query(value = "SELECT count(*)\n"
+      + "FROM plan_locations pl\n"
+      + "         INNER JOIN location_relationship lr on pl.location_identifier = lr.location_identifier\n"
+      + "         INNER JOIN location l on l.identifier = lr.location_identifier\n"
+      + "         LEFT JOIN geographic_level gl on l.geographic_level_identifier = gl.identifier\n"
+      + "where lr.location_hierarchy_identifier = :locationHierarchyIdentifier \n"
+      + "  AND gl.name = :geographicLevelName \n"
+      + "  AND CAST(STRING_TO_ARRAY(:locationIdentifier, ',') as uuid[]) && lr.ancestry\n"
+      + "  and pl.plan_identifier = :planIdentifier ", nativeQuery = true)
+  Long getNumberOfAssignedChildrenByGeoLevelNameWithinLocationAndHierarchyAndPlan(
+      @Param("geographicLevelName") String geographicLevelName,
+      @Param("locationIdentifier") String locationIdentifier,
+      @Param("locationHierarchyIdentifier") UUID locationHierarchyIdentifier,
+      @Param("planIdentifier") UUID planIdentifier);
 }

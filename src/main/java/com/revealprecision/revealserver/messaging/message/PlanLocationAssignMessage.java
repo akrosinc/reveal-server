@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.messaging.message;
 
 import java.util.List;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -16,12 +17,16 @@ import lombok.ToString;
 @ToString
 public class PlanLocationAssignMessage extends Message {
 
-  private String planIdentifier;
+  private UUID planIdentifier;
 
   private List<String> locationsAdded;
 
   private List<String> locationsRemoved;
 
   private String ownerId;
+
+  int deleteByPlan;
+  int saveAll;
+  int deleteByPlanAndLocation;
 
 }

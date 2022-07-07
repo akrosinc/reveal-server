@@ -16,6 +16,7 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
+import javax.persistence.OneToOne;
 import javax.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -66,6 +67,9 @@ public class Plan extends AbstractAuditableEntity {
   @NotNull
   @Enumerated(EnumType.STRING)
   private PlanStatusEnum status;
+
+  @OneToOne(mappedBy = "plan", fetch = FetchType.EAGER,  cascade = CascadeType.ALL)
+  private PlanTargetType planTargetType;
 
   @ManyToOne
   @JoinColumn(name = "lookup_intervention_type_identifier")

@@ -36,4 +36,6 @@ public class PlanEvent extends Message {
 
   private LookupInterventionTypeEvent interventionType;
 
+  private PlanTargetTypeEvent planTargetTypeEvent;
+
 }

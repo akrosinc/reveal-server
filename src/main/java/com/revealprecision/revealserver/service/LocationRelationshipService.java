@@ -33,11 +33,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.OptionalInt;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -234,11 +232,26 @@ public class LocationRelationshipService {
     return ancestry;
   }
 
+  public Long getNumberOfChildrenByGeoLevelNameWithinLocationAndHierarchy(
+      String geographicLevelName
+      , UUID locationIdentifier,
+      UUID locationHierarchyIdentifier) {
+
+    return locationRelationshipRepository.getNumberOfChildrenByGeoLevelNameWithinLocationAndHierarchy(
+        geographicLevelName
+        , locationIdentifier.toString(), locationHierarchyIdentifier);
+
+  }
+
   public List<LocationRelationship> getLocationRelationshipsForLocationHierarchy(
       LocationHierarchy locationHierarchy) {
     return locationRelationshipRepository.findByLocationHierarchyIdentifier(
         locationHierarchy.getIdentifier()).stream().map((LocationRelationship::new)).collect(
         Collectors.toList());
+  }
+
+  public List<LocationRelationshipProjection> getLocationRelationshipsNotLike(LocationHierarchy locationHierarchy, List<String> notLike) {
+    return locationRelationshipRepository.findByLocationHierarchyWithoutStructuresNotLike(notLike);
   }
 
   public List<LocationRelationshipProjection> getLocationRelationshipsWithoutStructure(
@@ -254,7 +267,8 @@ public class LocationRelationshipService {
 
   public List<LocationChildrenCountProjection> getLocationAssignedChildrenCount(
       UUID locationHierarchyIdentifier, UUID planIdentifier) {
-    return locationRelationshipRepository.getLocationAssignedChildrenCount(locationHierarchyIdentifier, planIdentifier);
+    return locationRelationshipRepository.getLocationAssignedChildrenCount(
+        locationHierarchyIdentifier, planIdentifier);
   }
 
   public long getNumberOfChildren(UUID locationIdentifier) {
@@ -327,7 +341,8 @@ public class LocationRelationshipService {
               .collect(Collectors.toMap(Entry::getKey, Entry::getValue, (a, b) -> {
                 importLog.info("Duplicate Key - Results from Elastic Search - {}",
                     Arrays.stream(searchResponse.getHits().getHits()).map(SearchHit::getSourceAsMap)
-                        .map(sourceMap -> sourceMap.get("externalId") +" -> "+sourceMap.get("level"))
+                        .map(sourceMap -> sourceMap.get("externalId") + " -> " + sourceMap.get(
+                            "level"))
                         .collect(Collectors.joining(","))
                         .concat(" for ")
                         .concat(location.getExternalId().toString())
@@ -348,9 +363,9 @@ public class LocationRelationshipService {
             Collections.reverse(parentIds);
           } catch (NullPointerException e) {
             e.printStackTrace();
-            log.error("Error building ancestry - {}", e.getMessage());
+            log.error("Error building ancestry - {}", e.getMessage(),e);
             importLog.debug("Current Ancestry: {}", parents.entrySet().stream()
-                .map(entry -> entry.getValue() + " - > "+entry.getKey())
+                .map(entry -> entry.getValue() + " - > " + entry.getKey())
                 .collect(Collectors.joining(","))
                 .concat(" for ")
                 .concat(location.getExternalId().toString())
@@ -365,7 +380,8 @@ public class LocationRelationshipService {
               .findFirst();
 
           if (immediateParent.isPresent()) {
-            Location parentLoc = Location.builder().identifier(UUID.fromString(immediateParent.get().getId())).build();
+            Location parentLoc = Location.builder()
+                .identifier(UUID.fromString(immediateParent.get().getId())).build();
             LocationRelationship locationRelationshipToSave = LocationRelationship.builder()
                 .parentLocation(parentLoc)
                 .location(location)
@@ -453,6 +469,9 @@ public class LocationRelationshipService {
     return locationRelationshipRepository.getParentLocationByLocationIdAndHierarchyId(
         location.getIdentifier(), locationHierarchy.getIdentifier());
   }
-
+  public Location getLocationParentByLocationIdentifierAndHierarchyIdentifier(UUID locationIdentifier, UUID locationHierarchyIdentifier) {
+    return locationRelationshipRepository.getParentLocationByLocationIdAndHierarchyId(
+        locationIdentifier, locationHierarchyIdentifier);
+  }
 
 }

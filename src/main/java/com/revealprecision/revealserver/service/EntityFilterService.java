@@ -6,6 +6,7 @@ import com.revealprecision.revealserver.persistence.domain.Action;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.Person;
+import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.actioncondition.Condition;
 import com.revealprecision.revealserver.persistence.domain.actioncondition.Query;
 import com.revealprecision.revealserver.props.ConditionQueryProperties;
@@ -52,12 +53,12 @@ public class EntityFilterService {
     this.personService = personService;
   }
 
-  public List<UUID> filterEntities(Query query, UUID planIdentifier,
+  public List<UUID> filterEntities(Query query, Plan plan,
       UUID locationHierarchyIdentifier, Action action)
       throws QueryGenerationException {
 
     List<Pair<UUID, String>> locations = queryDBAndRetrieveListOfLocationsLinkedToPlanJurisdiction(
-        planIdentifier);
+        plan.getIdentifier());
 
     log.debug("plan_locations size {} ",locations.size());
     log.trace("plan_locations {} ",locations);
@@ -71,43 +72,49 @@ public class EntityFilterService {
 
       List<Pair<UUID, String>> locationsForTaskGeneration = new ArrayList<>();
 
-      if (locationHierarchy.getNodeOrder().contains(LocationConstants.STRUCTURE)) {
+
+      if (plan.getPlanTargetType().getGeographicLevel().getName().equals(LocationConstants.STRUCTURE)){
         String nodeAboveStructure = locationHierarchy.getNodeOrder().get(
             locationHierarchy.getNodeOrder().indexOf(LocationConstants.STRUCTURE) - 1);
         locationsForTaskGeneration.addAll(locations.stream()
             .filter(location -> location.getSecond().equals(nodeAboveStructure))
             .collect(Collectors.toList()));
-      } else {
-        String lowestNode = locationHierarchy.getNodeOrder().get(
-            locationHierarchy.getNodeOrder().size() - 1);
+      } else{
         locationsForTaskGeneration.addAll(locations.stream()
-            .filter(location -> location.getSecond().equals(lowestNode))
+            .filter(location -> location.getSecond().equals(plan.getPlanTargetType().getGeographicLevel().getName()))
             .collect(Collectors.toList()));
       }
 
-      Set<Location> structures = locationRelationshipService.getStructuresForPlanIfHierarchyHasStructure(
-          locationHierarchy,
-          locationsForTaskGeneration);
-
-      log.debug("structures size: {}",structures.size());
-      log.trace("structures: {}",structures);
-
+      List<String> taskLocationUuids = new ArrayList<>();
       if (query == null) {
-        if (ActionUtils.isActionForLocation(action)) {
-          return structures.stream().map(Location::getIdentifier).collect(Collectors.toList());
-        } else if (ActionUtils.isActionForPerson(action)) {
-          return personService.getPeopleByLocations(new ArrayList<>(structures)).stream().map(
-              Person::getIdentifier).collect(Collectors.toList());
+
+        if (plan.getPlanTargetType().getGeographicLevel().getName().equals(LocationConstants.STRUCTURE)) {
+          Set<Location> structures = locationRelationshipService.getStructuresForPlanIfHierarchyHasStructure(
+              locationHierarchy,
+              locationsForTaskGeneration);
+
+          log.debug("structures size: {}",structures.size());
+          log.trace("structures: {}",structures);
+
+          taskLocationUuids.addAll(
+              structures.stream().map(Location::getIdentifier).map(UUID::toString)
+                  .collect(Collectors.toList()));
+
+          if (ActionUtils.isActionForLocation(action)) {
+            return structures.stream().map(Location::getIdentifier).collect(Collectors.toList());
+          } else if (ActionUtils.isActionForPerson(action)) {
+            return personService.getPeopleByLocations(new ArrayList<>(structures)).stream().map(
+                Person::getIdentifier).collect(Collectors.toList());
+          } else {
+            return structures.stream().map(Location::getIdentifier).collect(Collectors.toList());
+          }
         } else {
-          return structures.stream().map(Location::getIdentifier).collect(Collectors.toList());
+          return locationsForTaskGeneration.stream().map(Pair::getFirst).collect(
+              Collectors.toList());
         }
       } else {
-        List<String> taskLocationUuids = locations.stream().map(Pair::getFirst).map(UUID::toString)
+        taskLocationUuids = locations.stream().map(Pair::getFirst).map(UUID::toString)
             .collect(Collectors.toList());
-
-        taskLocationUuids.addAll(
-            structures.stream().map(Location::getIdentifier).map(UUID::toString)
-                .collect(Collectors.toList()));
 
         String planLocations = getConditionFragmentsForPlanLocations(taskLocationUuids);
 

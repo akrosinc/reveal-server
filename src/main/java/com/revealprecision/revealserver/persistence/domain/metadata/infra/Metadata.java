@@ -24,5 +24,6 @@ public class Metadata implements Serializable {
   @JsonDeserialize(using = LocalDateTimeDeserializer.class)
   private LocalDateTime updateDateTime;
   private UUID taskId;
+  private String taskType;
 
 }

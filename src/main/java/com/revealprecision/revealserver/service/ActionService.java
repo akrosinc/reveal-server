@@ -37,7 +37,7 @@ public class ActionService {
 
   public void createAction(UUID planIdentifier, UUID goalIdentifier,
       ActionRequest actionRequest) {
-    Plan plan = planService.getPlanByIdentifier(planIdentifier);
+    Plan plan = planService.findPlanByIdentifier(planIdentifier);
     Goal goal = goalService.findByIdentifier(goalIdentifier);
     Form form = formService.findById(actionRequest.getFormIdentifier());
 
@@ -51,7 +51,7 @@ public class ActionService {
 
   public void updateAction(UUID planIdentifier, UUID goalIdentifier,
       ActionRequest actionRequest, UUID actionIdentifier) {
-    Plan plan = planService.getPlanByIdentifier(planIdentifier);
+    Plan plan = planService.findPlanByIdentifier(planIdentifier);
     Goal goal = goalService.findByIdentifier(goalIdentifier);
     Form form = formService.findById(actionRequest.getFormIdentifier());
 
@@ -61,7 +61,7 @@ public class ActionService {
   }
 
   public void deleteAction(UUID planIdentifier, UUID goalIdentifier, UUID actionIdentifier) {
-    Plan plan = planService.getPlanByIdentifier(planIdentifier);
+    Plan plan = planService.findPlanByIdentifier(planIdentifier);
     Goal goal = goalService.findByIdentifier(goalIdentifier);
     Action action = getByIdentifier(actionIdentifier);
 
@@ -69,7 +69,7 @@ public class ActionService {
   }
 
   public Page<Action> getActions(UUID planIdentifier, UUID goalIdentifier, Pageable pageable) {
-    Plan plan = planService.getPlanByIdentifier(planIdentifier);
+    Plan plan = planService.findPlanByIdentifier(planIdentifier);
     Goal goal = goalService.findByIdentifier(goalIdentifier);
     if (!plan.getGoals().contains(goal)) {
       throw new ConflictException(Goal.class, goal.getIdentifier(), Plan.class,

@@ -16,7 +16,9 @@ import lombok.ToString;
 @ToString
 public class OperationalAreaVisitedCount extends Message {
  private Map<UUID, IndividualOperationalAreaCountsByBusinessStatus> operationalObj = new HashMap<>();
- private Long operationalAreaVisitedCount;
+ private Long operationalAreaVisitedCountMDA;
+ private Long operationalAreaVisitedCountIRS;
+ private Long operationalAreaVisitedEffectivelyIRSCount;
 
  @Setter
  @Getter
@@ -27,6 +29,8 @@ public class OperationalAreaVisitedCount extends Message {
 
   Map<String,Long> counts = new HashMap<>();
 
-  boolean operationalAreaIsVisited = false;
+  boolean operationalAreaIsVisitedMDA = false;
+  boolean operationalAreaIsVisitedIRS = false;
+  boolean operationalAreaIsVisitedEffectivelyIRS = false;
  }
 }

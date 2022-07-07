@@ -21,4 +21,7 @@ public class LocationMetadataEvent extends Message {
   private UUID entityId;
   private UUID ancestorNode;
   private UUID hierarchyIdentifier;
+  private UUID planIdentifier;
+  private String planTargetType;
+  private String entityGeographicLevel;
 }

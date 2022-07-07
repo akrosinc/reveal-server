@@ -81,17 +81,29 @@ public class LocationStream {
   }
 
   @Bean
+  KStream<String, PlanLocationAssignMessage> propogateLocationAssignment(
+      StreamsBuilder streamsBuilder) {
+
+    KStream<String, PlanLocationAssignMessage> locationsAssignedStream = streamsBuilder.stream(
+        kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_LOCATION_ASSIGNED),
+        Consumed.with(Serdes.String(), new JsonSerde<>(PlanLocationAssignMessage.class)));
+
+    //Doing this so that we can rewind this topic without rewinding to cause task generation from running again....
+    locationsAssignedStream.to(kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_LOCATION_ASSIGNED_STREAM));
+    return locationsAssignedStream;
+  }
+
+  @Bean
   KStream<String, PlanLocationAssignMessage> getAssignedStructures(
       StreamsBuilder streamsBuilder) {
 
     // getting values from plan assignment
     KStream<String, PlanLocationAssignMessage> locationsAssignedStream = streamsBuilder.stream(
-        kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_LOCATION_ASSIGNED),
+        kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_LOCATION_ASSIGNED_STREAM),
         Consumed.with(Serdes.String(), new JsonSerde<>(PlanLocationAssignMessage.class)));
 
     locationsAssignedStream.peek((k,v)->streamLog.debug("locationsAssignedStream - k: {} v: {}", k,v));
 
-    //TODO: remove hardcodings
     //Get structures from the locations assigned to plan
     KStream<String, PlanLocationAssignMessage> stringPlanLocationAssignMessageKStream = locationsAssignedStream
         .mapValues((k, planLocationAssignMessage) -> {
@@ -99,13 +111,13 @@ public class LocationStream {
               planLocationAssignMessage.getLocationsRemoved().stream()
                   .filter(locationRemoved -> locationService.findByIdentifier(
                           UUID.fromString(locationRemoved)).getGeographicLevel().getName()
-                      .equals("operational")).collect(
+                      .equals(LocationConstants.OPERATIONAL)).collect(
                       Collectors.toList()));
           planLocationAssignMessage.setLocationsAdded(
               planLocationAssignMessage.getLocationsAdded().stream()
                   .filter(locationAdded -> locationService.findByIdentifier(
                           UUID.fromString(locationAdded)).getGeographicLevel().getName()
-                      .equals("operational")).collect(
+                      .equals(LocationConstants.OPERATIONAL)).collect(
                       Collectors.toList()));
           return planLocationAssignMessage;
         });
@@ -116,7 +128,7 @@ public class LocationStream {
         .flatMapValues(
             (k, planLocationAssignMessage) -> getStructuresAssignedAndUnAssigned(
                 planLocationAssignMessage))
-        .flatMapValues((k, locationAssigned) -> getLocationAssignedsUnpackedByAncestry(locationAssigned))
+        .flatMapValues((k, locationAssigned) -> getLocationAssignedUnpackedByAncestry(locationAssigned))
         .selectKey((key, locationAssigned) -> getLocationPlanAncestorKey(locationAssigned))
         .mapValues((key, locationAssigned) -> locationAssigned.isAssigned() ? locationAssigned : null);
 
@@ -144,12 +156,13 @@ public class LocationStream {
     return locationsAssignedStream;
   }
 
+
   private String getLocationPlanAncestorKey(LocationAssigned locationAssigned) {
     return locationAssigned.getIdentifier() + "_"
         + locationAssigned.getPlanIdentifier() + "_" + locationAssigned.getAncestor();
   }
 
-  private List<LocationAssigned> getLocationAssignedsUnpackedByAncestry(LocationAssigned locationAssigned) {
+  private List<LocationAssigned> getLocationAssignedUnpackedByAncestry(LocationAssigned locationAssigned) {
     return locationAssigned.getAncestry().stream().map(ancestor -> {
       LocationAssigned locationAssigned1 = new LocationAssigned();
       locationAssigned1.setAssigned(locationAssigned.isAssigned());
@@ -165,9 +178,9 @@ public class LocationStream {
       PlanLocationAssignMessage planLocationAssignMessage) {
 
     List<LocationAssigned> locations = new ArrayList<>();
-    String planIdentifier = planLocationAssignMessage.getPlanIdentifier();
+    String planIdentifier = planLocationAssignMessage.getPlanIdentifier().toString();
 
-    Plan plan = planService.getPlanByIdentifier(UUID.fromString(planIdentifier));
+    Plan plan = planService.findPlanByIdentifier(UUID.fromString(planIdentifier));
 
     if (planLocationAssignMessage.getLocationsAdded() != null) {
 

@@ -44,6 +44,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.json.JSONObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -336,24 +337,34 @@ public class EventClientFacadeService {
 
 
   private Event saveEvent(EventFacade eventFacade) {
+    Map<String, String> details = eventFacade.getDetails();
     Event event = Event.builder()
-        .taskIdentifier(UUID.fromString(eventFacade.getDetails().get("taskIdentifier")))
         .additionalInformation(objectMapper.valueToTree(eventFacade)).captureDatetime(
             DateTimeFormatter
                 .getLocalDateTimeFromZonedAndroidFacadeString(eventFacade.getEventDate()))
         .eventType(eventFacade.getEventType())
-        .details(objectMapper.valueToTree(eventFacade.getDetails()))
-        .locationIdentifier(eventFacade.getLocationId()==null || Objects.equals(
-            eventFacade.getLocationId(), "")
-            ?UUID.fromString(objectMapper.valueToTree(eventFacade.getDetails()).get("location_id").toString()):UUID.fromString(eventFacade.getLocationId()))
+        .details(objectMapper.valueToTree(details))
         .organization(organizationService.findById(UUID.fromString(eventFacade.getTeamId()), false))
         .user(userService.getByUserName(eventFacade.getProviderId()))
-        .planIdentifier(UUID.fromString(eventFacade.getDetails().get("planIdentifier")))
-        .baseEntityIdentifier(UUID.fromString(eventFacade.getBaseEntityId()))
+        .planIdentifier(UUID.fromString(details.get("planIdentifier")))
         .build();
+    String taskIdentifier = details.get("taskIdentifier");
+    if (StringUtils.isNotBlank(taskIdentifier)) {
+      event.setTaskIdentifier(UUID.fromString(taskIdentifier));
+    }
+    String baseEntityId = eventFacade.getBaseEntityId();
+    if (StringUtils.isNotBlank(baseEntityId)) {
+      event.setBaseEntityIdentifier(UUID.fromString(baseEntityId));
+    }
+    String locationIdentifier = eventFacade.getLocationId() == null ? details.get("location_id")
+        : eventFacade.getLocationId();
+    if (StringUtils.isNotBlank(locationIdentifier)) {
+      event.setLocationIdentifier(UUID.fromString(locationIdentifier));
+    }
     event.setEntityStatus(EntityStatus.ACTIVE);
     return eventService.saveEvent(event);
   }
+
 
   public Page<Event> searchEvents(EventSearchCriteria eventSearchCriteria, Pageable pageable) {
     return eventService.searchEvents(eventSearchCriteria, pageable);
@@ -362,10 +373,10 @@ public class EventClientFacadeService {
   public ClientFacade getClientFacade(Person person) {
 
     ClientFacade clientFacade = ClientFacade.builder().birthdate(
-        person.getBirthDate() == null ? null
-            : DateTimeFormatter.getDateTimeFacadeStringFromDate(person.getBirthDate())).deathdate(
-        person.getDeathDate() == null ? null
-            : DateTimeFormatter.getDateTimeFacadeStringFromDate(person.getDeathDate()))
+            person.getBirthDate() == null ? null
+                : DateTimeFormatter.getDateTimeFacadeStringFromDate(person.getBirthDate())).deathdate(
+            person.getDeathDate() == null ? null
+                : DateTimeFormatter.getDateTimeFacadeStringFromDate(person.getDeathDate()))
         .birthdateApprox(person.isBirthDateApprox()).deathdateApprox(person.isDeathDateApprox())
         .firstName(person.getNameText()).gender(person.getGender()).lastName(person.getNameFamily())
         .clientType("Client").build();
@@ -390,8 +401,8 @@ public class EventClientFacadeService {
   public ClientFacade getGroupClientFacade(Group group) {
 
     ClientFacade clientFacade = ClientFacade.builder().birthdate(
-        DateTimeFormatter.getDateTimeFacadeStringFromLocalDateTime(
-            LocalDateTime.ofEpochSecond(0, 0, ZoneOffset.UTC))).clientType(group.getType())
+            DateTimeFormatter.getDateTimeFacadeStringFromLocalDateTime(
+                LocalDateTime.ofEpochSecond(0, 0, ZoneOffset.UTC))).clientType(group.getType())
         .firstName(group.getName()).lastName(group.getType()).build();
 
     try {
@@ -436,9 +447,8 @@ public class EventClientFacadeService {
   }
 
   public List<Person> searchPeople(List<Event> searchEvents) {
-    return searchEvents.stream()
-        .map(event -> event.getAdditionalInformation().get("baseEntityId").textValue())
-        .map(UUID::fromString).map(personIdentifier -> {
+    return searchEvents.stream().filter(event -> event.getBaseEntityIdentifier() != null)
+        .map(Event::getBaseEntityIdentifier).map(personIdentifier -> {
           try {
             return personService.getPersonByIdentifier(personIdentifier);
           } catch (NotFoundException notFoundException) {
@@ -507,7 +517,7 @@ public class EventClientFacadeService {
     return new ArrayList<>(eventMap.values());
   }
 
-  public  Pair<List<EventFacade>, List<ClientFacade>> getSyncedEventsAndClients(
+  public Pair<List<EventFacade>, List<ClientFacade>> getSyncedEventsAndClients(
       SyncParamFacade syncParam) {
     EventSearchCriteria eventSearchCriteria = EventSearchCriteriaFactory.getEventSearchCriteria(
         syncParam);
@@ -523,7 +533,7 @@ public class EventClientFacadeService {
 
     List<ClientFacade> combinedClientFacade = getClientFacades(events);
 
-     return Pair.of(eventFacades,combinedClientFacade);
+    return Pair.of(eventFacades, combinedClientFacade);
   }
 
 }

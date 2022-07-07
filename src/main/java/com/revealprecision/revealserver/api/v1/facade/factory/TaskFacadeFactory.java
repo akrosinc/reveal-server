@@ -15,55 +15,7 @@ import com.revealprecision.revealserver.util.ActionUtils;
 import java.util.Optional;
 
 public class TaskFacadeFactory {
-
-  public static TaskFacade getEntity(Task task, String businessStatus, User user,
-      String group) {
-    String userName = user != null ? user.getUsername() : null;
-    Action action = task.getAction();
-    String structureId = getStructureId(task, action);
-    return TaskFacade.builder()
-        .code(task.getAction().getTitle())
-        .authoredOn(
-            DateTimeFormatter.getDateTimeFacadeStringFromLocalDateTime(task.getAuthoredOn()))
-        .description(task.getAction().getDescription())
-        .executionPeriod(Period
-            .between(DateTimeFormatter.getDateTimeFacadeStringFromLocalDateTime(
-                    task.getExecutionPeriodStart().atStartOfDay())
-                , DateTimeFormatter.getDateTimeFacadeStringFromLocalDateTime(
-                    task.getExecutionPeriodEnd().atStartOfDay())))
-        .focus(task.getAction().getIdentifier().toString())
-        .forEntity(task.getBaseEntityIdentifier().toString())
-        .identifier(task.getIdentifier().toString())
-        .planIdentifier(task.getAction().getGoal().getPlan().getIdentifier().toString())
-        .priority(TaskPriority.get(task.getPriority().name().toLowerCase()))
-        .lastModified(
-            DateTimeFormatter.getDateTimeFacadeStringFromLocalDateTime(task.getLastModified()))
-        .status(TaskStatus.get(task.getLookupTaskStatus().getCode().toLowerCase()))
-        .businessStatus(task.getBusinessStatus())
-        .owner(userName)
-        .requester(userName)
-        .groupIdentifier(group)
-        .structureId(structureId)
-        .serverVersion(task.getServerVersion())
-        .build();
-  }
-
-  private static String getStructureId(Task task, Action action ){
-    String structureId = null;
-    if(ActionUtils.isActionForLocation(action)){
-      structureId = task.getLocation().getIdentifier().toString();
-    } else {
-      //other entity we have is Person for now
-      Person person = task.getPerson();
-      Optional<Location> personLocation = person.getLocations().stream().findFirst();//TODO; update needed here , we are getting first but there could be based on model design
-      if(personLocation.isPresent()){
-        structureId = personLocation.get().getIdentifier().toString();
-      }
-    }
-    return structureId;
-  }
-
-  public static TaskFacade getTaskFacadeObj(String requester, String taskPlanParentId, TaskEvent task) {
+  public static TaskFacade getTaskFacadeObj(String requester, String groupId, TaskEvent task) {
     return TaskFacade.builder()
         .code(task.getAction().getTitle())
         .authoredOn(
@@ -85,7 +37,7 @@ public class TaskFacadeFactory {
         .businessStatus(task.getBusinessStatus())
         .owner(task.getOwner())
         .requester(requester)
-        .groupIdentifier(taskPlanParentId.split("_")[2])
+        .groupIdentifier(groupId)
         .structureId(task.getBaseEntityIdentifier().toString())
         .serverVersion(task.getServerVersion() == null ? 0 : task.getServerVersion())
         .build();

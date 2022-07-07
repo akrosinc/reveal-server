@@ -1,6 +1,6 @@
 package com.revealprecision.revealserver.api.v1.facade.models;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.revealprecision.revealserver.enums.LocationStatus;
 import java.io.Serializable;
 import java.util.Date;
 import java.util.Map;
@@ -15,25 +15,13 @@ public class LocationPropertyFacade implements Serializable {
 
   private static final long serialVersionUID = 1L;
 
-  public enum PropertyStatus {
-    @JsonProperty("Active")
-    ACTIVE,
-    @JsonProperty("Inactive")
-    INACTIVE,
-    @JsonProperty("Pending Review")
-    PENDING_REVIEW,
-    @JsonProperty("Not Eligible")
-    NOT_ELIGIBLE
-
-  }
-
   private String uid;
 
   private String code;
 
   private String type;
 
-  private PropertyStatus status;
+  private LocationStatus status;
 
   private String parentId;
 

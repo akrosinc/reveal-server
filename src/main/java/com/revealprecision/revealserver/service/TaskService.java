@@ -7,14 +7,24 @@ import com.revealprecision.revealserver.api.v1.dto.request.TaskCreateRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.TaskUpdateRequest;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.enums.PlanStatusEnum;
+import com.revealprecision.revealserver.enums.ProcessTrackerEnum;
+import com.revealprecision.revealserver.enums.ProcessType;
 import com.revealprecision.revealserver.enums.TaskPriorityEnum;
+import com.revealprecision.revealserver.enums.TaskProcessEnum;
 import com.revealprecision.revealserver.exceptions.DuplicateTaskCreationException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.exceptions.QueryGenerationException;
 import com.revealprecision.revealserver.messaging.KafkaConstants;
 import com.revealprecision.revealserver.messaging.TaskEventFactory;
+import com.revealprecision.revealserver.messaging.dto.TaskGen;
+import com.revealprecision.revealserver.messaging.message.ActionEvent;
+import com.revealprecision.revealserver.messaging.message.LookupEntityTypeEvent;
 import com.revealprecision.revealserver.messaging.message.Message;
+import com.revealprecision.revealserver.messaging.message.PlanEvent;
+import com.revealprecision.revealserver.messaging.message.ProcessTrackerEvent;
 import com.revealprecision.revealserver.messaging.message.TaskEvent;
+import com.revealprecision.revealserver.messaging.message.TaskProcessEvent;
+import com.revealprecision.revealserver.messaging.message.TaskProjectionObj;
 import com.revealprecision.revealserver.persistence.domain.Action;
 import com.revealprecision.revealserver.persistence.domain.Condition;
 import com.revealprecision.revealserver.persistence.domain.Goal;
@@ -26,10 +36,14 @@ import com.revealprecision.revealserver.persistence.domain.Person;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.PlanAssignment;
 import com.revealprecision.revealserver.persistence.domain.PlanLocations;
+import com.revealprecision.revealserver.persistence.domain.ProcessTracker;
 import com.revealprecision.revealserver.persistence.domain.Task;
 import com.revealprecision.revealserver.persistence.domain.Task.Fields;
+import com.revealprecision.revealserver.persistence.domain.TaskProcessStage;
 import com.revealprecision.revealserver.persistence.domain.actioncondition.Query;
+import com.revealprecision.revealserver.persistence.projection.TaskProjection;
 import com.revealprecision.revealserver.persistence.repository.LookupTaskStatusRepository;
+import com.revealprecision.revealserver.persistence.repository.TaskProcessStageRepository;
 import com.revealprecision.revealserver.persistence.repository.TaskRepository;
 import com.revealprecision.revealserver.persistence.specification.TaskSpec;
 import com.revealprecision.revealserver.props.BusinessStatusProperties;
@@ -43,9 +57,13 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+import javax.annotation.PostConstruct;
+import javax.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -79,6 +97,12 @@ public class TaskService {
   private final BusinessStatusService businessStatusService;
   private final KafkaTemplate<String, Message> kafkaTemplate;
   private final KafkaProperties kafkaProperties;
+  private final TaskProcessStageRepository taskProcessStageRepository;
+  private final ProcessTrackerService processTrackerService;
+
+
+  private LookupTaskStatus cancelledLookupTaskStatus;
+  private LookupTaskStatus readyLookupTaskStatus;
 
   @Autowired
   @Lazy
@@ -91,7 +115,9 @@ public class TaskService {
       BusinessStatusProperties businessStatusProperties,
       BusinessStatusService businessStatusService,
       KafkaTemplate<String, Message> kafkaTemplate,
-      KafkaProperties kafkaProperties) {
+      KafkaProperties kafkaProperties,
+      TaskProcessStageRepository taskProcessStageRepository,
+      ProcessTrackerService processTrackerService) {
     this.taskRepository = taskRepository;
     this.planService = planService;
     this.actionService = actionService;
@@ -107,6 +133,8 @@ public class TaskService {
     this.businessStatusService = businessStatusService;
     this.kafkaTemplate = kafkaTemplate;
     this.kafkaProperties = kafkaProperties;
+    this.taskProcessStageRepository = taskProcessStageRepository;
+    this.processTrackerService = processTrackerService;
   }
 
   public Page<Task> searchTasks(TaskSearchCriteria taskSearchCriteria, Pageable pageable) {
@@ -186,16 +214,34 @@ public class TaskService {
     return lookupTaskStatusRepository.findAll();
   }
 
-  public void generateTasksByPlanId(UUID planIdentifier, String ownerId) {
+  public void processPlanUpdateForTasks(UUID planIdentifier, String ownerId) {
 
     log.info("TASK_GENERATION Start generate tasks for Plan Id: {}", planIdentifier);
-    Plan plan = planService.getPlanByIdentifier(planIdentifier);
+    Plan plan = planService.findPlanByIdentifier(planIdentifier);
     if (plan.getStatus().equals(PlanStatusEnum.ACTIVE)) {
       List<Goal> goals = goalService.getGoalsByPlanIdentifier(planIdentifier);
 
-      goals.stream().map(goal -> actionService.getActionsByGoalIdentifier(goal.getIdentifier()))
-          .flatMap(Collection::stream)
-          .forEach((action) -> generateTasksByAction(action, plan, ownerId));
+      List<ProcessTracker> processTrackerList = processTrackerService.findProcessTrackerByPlanIdentifierAndProcessTypeAndState(
+          plan, ProcessType.PLAN_LOCATION_ASSIGNMENT, ProcessTrackerEnum.NEW);
+
+      if (processTrackerList.size() >= 1) {
+        ProcessTracker processTracker = processTrackerList.get(0);
+        goals.stream().map(goal -> actionService.getActionsByGoalIdentifier(goal.getIdentifier()))
+            .flatMap(Collection::stream)
+            .forEach((action) -> processPlanUpdatePerActionForTasks(action, plan, ownerId, processTracker));
+
+        processTrackerService.updateProcessTracker(processTracker.getIdentifier(),
+            ProcessTrackerEnum.BUSY);
+
+        if (processTrackerList.size() > 1) {
+          log.debug("cancelling remaining process trackers for this plan as there should only ever be one");
+          IntStream.range(1, processTrackerList.size() - 1)
+              .mapToObj(i -> processTrackerList.get(i).getIdentifier())
+              .forEach(processTrackerIdentifier -> processTrackerService.updateProcessTracker(
+                  processTrackerIdentifier,
+                  ProcessTrackerEnum.CANCELLED));
+        }
+      }
       log.info("TASK_GENERATION Completed generating tasks for Plan Id: {}", planIdentifier);
     } else {
       log.info("TASK_GENERATION Not run as plan is not active: {}", planIdentifier);
@@ -203,48 +249,203 @@ public class TaskService {
 
   }
 
-  public void cancelApplicableTasksByPlanId(UUID planIdentifier, String ownerId) {
-
-    log.info("TASK_CANCELLATION Start cancellation for tasks for Plan Id: {}", planIdentifier);
-    LookupTaskStatus cancelledLookupTaskStatus = lookupTaskStatusRepository.findByCode(
-            TASK_STATUS_CANCELLED)
-        .orElseThrow(() -> new NotFoundException(
-            Pair.of(LookupTaskStatus.Fields.code, TASK_STATUS_CANCELLED), LookupTaskStatus.class));
-    List<Task> tasksByPlan = taskRepository.findTasksByPlan_Identifier(planIdentifier);
-    Plan plan = planService.getPlanByIdentifier(planIdentifier);
-    if (plan.getStatus().equals(PlanStatusEnum.ACTIVE)) {
-      List<Task> tasksToCancel = tasksByPlan.stream()
-          .map((task) -> markUnassignedTaskAsCancelled(plan, cancelledLookupTaskStatus, task))
-          .filter(Objects::nonNull)
-          .filter(task -> task.getLookupTaskStatus().getCode()
-              .equals(cancelledLookupTaskStatus.getCode()))
-          .collect(Collectors.toList());
-      List<Task> savedCancelledTask = taskRepository.saveAll(tasksToCancel);
-
-      for (Task task : savedCancelledTask) {
-        businessStatusService.deactivateBusinessStatus(task);
-        TaskEvent taskEvent = TaskEventFactory.getTaskEventFromTask(task);
-        //TODO: we need to save the owner in the database, just so we can retrieve it here
-        taskEvent.setOwnerId(ownerId);
-        kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.TASK), taskEvent);
-      }
-    } else {
-      log.info("Cannot cancel tasks as plan is not active");
-    }
-    log.info("TASK_CANCELLATION Completed cancellation tasks for Plan Id: {}", planIdentifier);
-  }
-
-
-  public void generateTasksByAction(Action action, Plan plan, String ownerId) {
+  public void processPlanUpdatePerActionForTasks(Action action, Plan plan, String ownerId, ProcessTracker processTracker) {
 
     List<Condition> conditions = conditionService.getConditionsByActionIdentifier(
         action.getIdentifier());
 
+    List<UUID> uuids = getUuidsForTaskGeneration(action, plan, conditions);
+
+    List<TaskProjection> existingTasks = taskRepository.findUniqueByPlanAndActionidentifier(
+        plan, action.getIdentifier());
+
+    List<TaskProjectionObj> existingTaskObjs = existingTasks.stream().map(
+        existingTask -> new TaskProjectionObj(existingTask.getIdentifier(),
+            existingTask.getBaseEntityIdentifier())).collect(
+        Collectors.toList());
+
+    List<UUID> existingTaskUuids = existingTaskObjs.stream()
+        .map(TaskProjectionObj::getBaseIdentifier)
+        .map(UUID::fromString)
+        .collect(
+            Collectors.toList());
+
+    List<UUID> potentialUuidsToReactivate = new ArrayList<>(uuids);
+    potentialUuidsToReactivate.retainAll(existingTaskUuids);
+
+    List<TaskGen> tasksToReactivate = existingTaskObjs.stream().filter(
+            existingTask -> potentialUuidsToReactivate.contains(
+                UUID.fromString(existingTask.getBaseIdentifier())))
+        .map(TaskProjectionObj::getIdentifier)
+        .map(identifier -> new TaskGen(UUID.fromString(identifier), TaskProcessEnum.REACTIVATE))
+        .collect(
+            Collectors.toList());
+
+    List<UUID> uuidsToCancel = new ArrayList<>(existingTaskUuids);
+    uuidsToCancel.removeAll(uuids);
+
+    List<TaskGen> tasksToCancel = existingTaskObjs.stream().filter(
+            existingTask -> uuidsToCancel.contains(
+                UUID.fromString(existingTask.getBaseIdentifier())))
+        .map(TaskProjectionObj::getIdentifier)
+        .map(identifier -> new TaskGen(UUID.fromString(identifier), TaskProcessEnum.CANCEL))
+        .collect(
+            Collectors.toList());
+
+    List<UUID> uuidToGenerate = new ArrayList<>(uuids);
+    uuidToGenerate.removeAll(existingTaskUuids);
+
+    List<TaskGen> tasksToGenerate = uuidToGenerate
+        .stream().map(identifier -> new TaskGen(TaskProcessEnum.GENERATE, identifier))
+        .collect(Collectors.toList());
+
+    List<TaskGen> tasksToProcess = new ArrayList<>();
+    tasksToProcess.addAll(tasksToGenerate);
+    tasksToProcess.addAll(tasksToCancel);
+    tasksToProcess.addAll(tasksToReactivate);
+
+    log.debug("tasksToGenerate: {} tasksToCancel: {} tasksToReactivate: {} existingTasks: {}",
+        tasksToGenerate.size(), tasksToCancel.size(), tasksToReactivate.size(), existingTaskUuids.size());
+
+
+      List<TaskProcessStage> collect = tasksToProcess.stream()
+          .map(taskGen -> {
+            TaskProcessStage taskGenerationStage = new TaskProcessStage();
+            taskGenerationStage.setState(ProcessTrackerEnum.NEW);
+            taskGenerationStage.setProcessTracker(processTracker);
+            taskGenerationStage.setEntityStatus(EntityStatus.ACTIVE);
+            taskGenerationStage.setTaskProcess(taskGen.getTaskProcessEnum());
+
+            if (taskGen.getBaseEntityIdentifier() != null) {
+              taskGenerationStage.setBaseEntityIdentifier(taskGen.getBaseEntityIdentifier());
+            }
+            if (taskGen.getIdentifier() != null) {
+              taskGenerationStage.setTaskIdentifier(taskGen.getIdentifier());
+            }
+            return taskGenerationStage;
+          }).collect(Collectors.toList());
+
+      List<TaskProcessStage> taskProcessStages = taskProcessStageRepository.saveAll(
+          collect);
+
+      taskProcessStages.forEach(taskProcessStage -> {
+            TaskProcessEvent taskProcessEvent = TaskProcessEvent.builder()
+                .baseEntityIdentifier(taskProcessStage.getBaseEntityIdentifier())
+                .owner(ownerId)
+                .taskProcessEnum(taskProcessStage.getTaskProcess())
+                .actionEvent(ActionEvent.builder()
+                    .identifier(action.getIdentifier())
+                    .lookupEntityType(LookupEntityTypeEvent.builder()
+                        .code(action.getLookupEntityType().getCode())
+                        .build())
+                    .build())
+                .planEvent(PlanEvent.builder()
+                    .identifier(plan.getIdentifier())
+                    .build())
+                .state(taskProcessStage.getState())
+                .processTracker(ProcessTrackerEvent.builder()
+                    .processTriggerIdentifier(
+                        taskProcessStage.getProcessTracker().getProcessTriggerIdentifier())
+                    .processType(taskProcessStage.getProcessTracker().getProcessType())
+                    .planIdentifier(taskProcessStage.getProcessTracker().getPlanIdentifier())
+                    .identifier(taskProcessStage.getProcessTracker().getIdentifier())
+                    .build()
+                )
+                .taskIdentifier(taskProcessStage.getTaskIdentifier())
+                .identifier(taskProcessStage.getIdentifier())
+                .build();
+            kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.TASK_CANDIDATE),
+                taskProcessEvent);
+          }
+
+      );
+    }
+
+
+
+  @Transactional
+  public void cancelTaskProcessStagesByProcessTrackerIdentifier(
+      UUID processTrackerIdentifier) {
+    Stream.of(ProcessTrackerEnum.BUSY, ProcessTrackerEnum.NEW)
+        .forEach(trackerEnum -> taskProcessStageRepository.updateTaskGenerationState(
+            ProcessTrackerEnum.CANCELLED,
+            processTrackerIdentifier, trackerEnum)
+        );
+  }
+
+  @PostConstruct
+  private void getLookTaskStatuses() {
+    cancelledLookupTaskStatus = lookupTaskStatusRepository.findByCode(
+        TASK_STATUS_CANCELLED).orElseThrow(
+        () -> new NotFoundException(Pair.of(LookupTaskStatus.Fields.code, TASK_STATUS_CANCELLED),
+            LookupTaskStatus.class));
+
+    readyLookupTaskStatus = lookupTaskStatusRepository.findByCode(
+        TASK_STATUS_READY).orElseThrow(
+        () -> new NotFoundException(Pair.of(LookupTaskStatus.Fields.code, TASK_STATUS_READY),
+            LookupTaskStatus.class));
+  }
+
+  public Task generateTaskForTaskProcess(TaskProcessEvent taskProcessEvent) {
+    Task taskObjs = null;
+    Optional<TaskProcessStage> taskGenerationStageOptional = taskProcessStageRepository.findById(
+        taskProcessEvent.getIdentifier());
+
+    if (taskGenerationStageOptional.isPresent() && taskGenerationStageOptional.get().getState()
+        .equals(ProcessTrackerEnum.NEW)) {
+
+      UUID uuid = taskProcessEvent.getBaseEntityIdentifier();
+
+      Plan plan = planService.getPlanByIdentifier(
+          taskProcessEvent.getPlanEvent().getIdentifier());
+
+      Action action = actionService.getByIdentifier(
+          taskProcessEvent.getActionEvent().getIdentifier());
+
+      String ownerId = taskProcessEvent.getOwner();
+      taskObjs = createTaskObjectFromActionAndEntityId(action,
+          uuid, plan, ownerId);
+
+      TaskProcessStage taskGenerationStage = taskGenerationStageOptional.get();
+      taskGenerationStage.setState(ProcessTrackerEnum.DONE);
+      taskProcessStageRepository.save(taskGenerationStage);
+
+      updateProcessTracker(taskProcessEvent);
+
+    }
+
+    return taskObjs;
+  }
+
+  private void updateProcessTracker(TaskProcessEvent taskProcessEvent) {
+
+    Optional<TaskProcessStage> byId = taskProcessStageRepository.findById(
+        taskProcessEvent.getIdentifier());
+
+    if (byId.isPresent()) {
+      TaskProcessStage taskProcessStage = byId.get();
+      taskProcessStage.setState(ProcessTrackerEnum.DONE);
+      taskProcessStageRepository.save(taskProcessStage);
+    }
+
+    int countOfTaskProcessStages = taskProcessStageRepository.countByProcessTracker_IdentifierAndStateNot(
+        taskProcessEvent.getProcessTracker().getIdentifier(), ProcessTrackerEnum.DONE);
+
+    if (countOfTaskProcessStages == 0) {
+      processTrackerService.updateProcessTracker(
+          taskProcessEvent.getProcessTracker().getIdentifier(),
+          ProcessTrackerEnum.DONE);
+    }
+  }
+
+
+  private List<UUID> getUuidsForTaskGeneration(Action action, Plan plan,
+      List<Condition> conditions) {
     List<UUID> uuids = new ArrayList<>();
 
     if (conditions == null || conditions.isEmpty()) {
       try {
-        uuids = entityFilterService.filterEntities(null, plan.getIdentifier(),
+        uuids = entityFilterService.filterEntities(null, plan,
             plan.getLocationHierarchy().getIdentifier(), action);
 
 
@@ -258,7 +459,7 @@ public class TaskService {
             action.getLookupEntityType().getCode());
 
         try {
-          List<UUID> filteredUUIDs = entityFilterService.filterEntities(query, plan.getIdentifier(),
+          List<UUID> filteredUUIDs = entityFilterService.filterEntities(query, plan,
               plan.getLocationHierarchy().getIdentifier(), action);
 
           uuids.addAll(filteredUUIDs);
@@ -270,86 +471,18 @@ public class TaskService {
         }
       }
     }
-
-    List<Task> tasks = new ArrayList<>();
-    LookupTaskStatus cancelledLookupTaskStatus = lookupTaskStatusRepository.findByCode(
-        TASK_STATUS_CANCELLED).orElseThrow(
-        () -> new NotFoundException(Pair.of(LookupTaskStatus.Fields.code, TASK_STATUS_CANCELLED),
-            LookupTaskStatus.class));
-
-    LookupTaskStatus readyLookupTaskStatus = lookupTaskStatusRepository.findByCode(
-        TASK_STATUS_READY).orElseThrow(
-        () -> new NotFoundException(Pair.of(LookupTaskStatus.Fields.code, TASK_STATUS_READY),
-            LookupTaskStatus.class));
-
-    log.trace("entityUUID list: {}", uuids);
-    for (UUID entityUUID : uuids) {
-
-      List<Task> taskObjs = createOrUpdateTaskObjectFromActionAndEntityId(action,
-          cancelledLookupTaskStatus, readyLookupTaskStatus, entityUUID, plan);
-      if (taskObjs.isEmpty()) {
-        continue;
-      }
-      tasks.addAll(taskObjs);
-    }
-
-    log.info("no of tasks to be generate for action: {} is: {}", action.getTitle(), tasks.size());
-    List<Task> savedTasks = taskRepository.saveAll(tasks);
-
-    for (Task task : savedTasks) {
-      log.trace("task: {} entity: {}", task.getIdentifier(), task.getBaseEntityIdentifier());
-      TaskEvent taskEvent = TaskEventFactory.getTaskEventFromTask(task);
-      taskEvent.setOwnerId(ownerId);
-      kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.TASK), taskEvent);
-    }
+    return uuids;
   }
 
 
-  private List<Task> createOrUpdateTaskObjectFromActionAndEntityId(Action action,
-      LookupTaskStatus cancelledLookupTaskStatus, LookupTaskStatus readyLookupTaskStatus,
-      UUID entityUUID, Plan plan) {
+  private Task createTaskObjectFromActionAndEntityId(Action action,
+      UUID entityUUID, Plan plan, String ownerId) {
     log.debug("TASK_GENERATION  create individual task for plan: {} and action: {}",
         plan.getIdentifier(), action.getIdentifier());
 
     boolean isActionForLocation = ActionUtils.isActionForLocation(action);
 
-    List<Task> existingLocationTasks = taskRepository.findTasksByAction_IdentifierAndLocation_Identifier(
-        action.getIdentifier(), entityUUID);
-
-    if (existingLocationTasks.size() > 0) {
-      if (isActionForLocation) {
-        for (Task existingLocationTask : existingLocationTasks) {
-          if (existingLocationTask.getLookupTaskStatus().getCode()
-              .equals(cancelledLookupTaskStatus.getCode())) {
-            log.info("task for location: {} already exists", entityUUID);
-            existingLocationTask.setLookupTaskStatus(readyLookupTaskStatus);
-            businessStatusService.setBusinessStatus(existingLocationTask,
-                existingLocationTask.getBusinessStatus());
-          }
-        }
-        return existingLocationTasks;
-      }
-    }
-
-    List<Task> existingPersonTasks = taskRepository.findTasksByAction_IdentifierAndPerson_Identifier(
-        action.getIdentifier(), entityUUID);
     boolean isActionForPerson = ActionUtils.isActionForPerson(action);
-
-    if (existingPersonTasks.size() > 0) {
-
-      if (isActionForPerson) {
-        for (Task personTask : existingPersonTasks) {
-          if (personTask.getLookupTaskStatus().getCode()
-              .equals(cancelledLookupTaskStatus.getCode())) {
-            log.info("task for person: {} already exists", entityUUID);
-            personTask.setLookupTaskStatus(readyLookupTaskStatus);
-            businessStatusService.setBusinessStatus(personTask,
-                personTask.getBusinessStatus());
-          }
-        }
-        return existingPersonTasks;
-      }
-    }
 
     Task task = Task.builder().lookupTaskStatus(
             lookupTaskStatusRepository.findByCode(TASK_STATUS_READY).orElseThrow(
@@ -374,12 +507,66 @@ public class TaskService {
       task.setPerson(person);
     }
 
-    businessStatusService.setBusinessStatus(task,
-        businessStatusProperties.getDefaultLocationBusinessStatus());
+    Task savedTask = saveTaskAndBusinessState(task, ownerId);
+
     log.debug("TASK_GENERATION completed creating individual task for plan: {} and action: {}",
         plan.getIdentifier(), action.getIdentifier());
 
-    return List.of(task);
+    return savedTask;
+  }
+
+  public Task reactivateTask(TaskProcessEvent taskProcessEvent) {
+
+    Task savedTask = null;
+    Optional<Task> taskOptional = taskRepository.findById(taskProcessEvent.getTaskIdentifier());
+
+    if (taskOptional.isPresent()) {
+      Task task = taskOptional.get();
+      if (task.getLookupTaskStatus().getCode().equals(TASK_STATUS_CANCELLED)) {
+        task.setLookupTaskStatus(this.readyLookupTaskStatus);
+        savedTask = saveTaskAndBusinessState(task, taskProcessEvent.getOwner());
+      }
+
+    }
+    updateProcessTracker(taskProcessEvent);
+    return savedTask;
+  }
+
+  public Task cancelTask(TaskProcessEvent taskProcessEvent) {
+
+    Task savedTask = null;
+    Optional<Task> taskOptional = taskRepository.findById(taskProcessEvent.getTaskIdentifier());
+
+    if (taskOptional.isPresent()) {
+      Task task = taskOptional.get();
+      if (!task.getLookupTaskStatus().getCode().equals(TASK_STATUS_CANCELLED)) {
+        task.setLookupTaskStatus(this.cancelledLookupTaskStatus);
+        savedTask = saveTaskAndBusinessState(task, taskProcessEvent.getOwner());
+      }
+
+    }
+    updateProcessTracker(taskProcessEvent);
+    return savedTask;
+  }
+
+  public Task saveTaskAndBusinessState(Task task, String ownerId) {
+
+    Task savedTask = taskRepository.save(task);
+
+    if (savedTask.getLookupTaskStatus().getCode().equals(TASK_STATUS_CANCELLED)) {
+      businessStatusService.deactivateBusinessStatus(savedTask);
+    } else {
+      businessStatusService.setBusinessStatus(savedTask,
+          businessStatusProperties.getDefaultLocationBusinessStatus());
+    }
+
+    log.trace("task: {} entity: {}", savedTask.getIdentifier(),
+        savedTask.getBaseEntityIdentifier());
+    TaskEvent taskEvent = TaskEventFactory.getTaskEventFromTask(savedTask);
+    taskEvent.setOwnerId(ownerId);
+    kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.TASK), taskEvent);
+
+    return savedTask;
   }
 
 
@@ -388,7 +575,7 @@ public class TaskService {
 
     List<Task> tasksByPlan = taskRepository.findTasksByPlan_Identifier(planIdentifier);
 //TODO - resolve the dependency injection issue so that @Lazy is not used in this class
-    Plan plan = planService.getPlanByIdentifier(planIdentifier);
+    Plan plan = planService.findPlanByIdentifier(planIdentifier);
 
     LookupTaskStatus lookupTaskStatus = lookupTaskStatusRepository.findByCode(TASK_STATUS_CANCELLED)
         .orElseThrow(() -> new NotFoundException(
@@ -553,7 +740,7 @@ public class TaskService {
       List<UUID> jurisdictionIdentifiers, Long serverVersion) {
     Map<UUID, List<Task>> tasksToJurisdictions = new HashMap<>();
     try {
-      Plan plan = planService.getPlanByIdentifier(planIdentifier);
+      Plan plan = planService.findPlanByIdentifier(planIdentifier);
       LocationHierarchy locationHierarchy = plan.getLocationHierarchy();
 
       jurisdictionIdentifiers.forEach(jurisdictionIdentifier -> {
