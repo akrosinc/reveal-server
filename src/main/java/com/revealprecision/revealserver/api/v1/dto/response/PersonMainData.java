@@ -13,6 +13,6 @@ import lombok.Setter;
 @Builder
 public class PersonMainData {
 
-  private String nameUse;
-  private String nameFamily;
+  private String firstName;
+  private String lastName;
 }

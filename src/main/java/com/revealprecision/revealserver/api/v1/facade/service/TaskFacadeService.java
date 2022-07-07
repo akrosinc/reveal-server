@@ -38,7 +38,6 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -337,14 +336,16 @@ public class TaskFacadeService {
           PersonElastic personElastic = new PersonElastic(person);
           Map<String, Object> parameters = new HashMap<>();
           parameters.put("person", ElasticModelUtil.toMapFromPersonElastic(personElastic));
+          parameters.put("personId", personElastic.getIdentifier());
           UpdateByQueryRequest request = new UpdateByQueryRequest("location");
-          List<String> locationIds = locations.stream().map(loc -> loc.getIdentifier().toString()).collect(
+          List<String> locationIds = person.getLocations().stream().map(loc -> loc.getIdentifier().toString()).collect(
               Collectors.toList());
 
           request.setQuery(QueryBuilders.termsQuery("_id", locationIds));
           request.setScript(new Script(
               ScriptType.INLINE, "painless",
-              "ctx._source.person.add(params.person);",
+              "def foundPerson = ctx._source.person.find(attr-> attr.identifier == params.personId);"
+                  + " if(foundPerson == null) {ctx._source.person.add(params.person);}",
               parameters
           ));
           client.updateByQuery(request, RequestOptions.DEFAULT);

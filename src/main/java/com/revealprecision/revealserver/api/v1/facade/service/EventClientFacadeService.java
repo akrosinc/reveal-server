@@ -158,6 +158,7 @@ public class EventClientFacadeService {
     Map<String, Object> parameters = new HashMap<>();
 
     parameters.put("person", ElasticModelUtil.toMapFromPersonElastic(personElastic));
+    parameters.put("personId", personElastic.getIdentifier());
     UpdateByQueryRequest request = new UpdateByQueryRequest("location");
     List<String> locationIds = person.getLocations().stream().map(loc -> loc.getIdentifier().toString()).collect(
         Collectors.toList());
@@ -165,7 +166,8 @@ public class EventClientFacadeService {
     request.setQuery(QueryBuilders.termsQuery("_id", locationIds));
     request.setScript(new Script(
         ScriptType.INLINE, "painless",
-        "ctx._source.person.add(params.person);",
+        "def foundPerson = ctx._source.person.find(attr-> attr.identifier == params.personId);"
+            + " if(foundPerson == null) {ctx._source.person.add(params.person);}",
         parameters
     ));
     client.updateByQuery(request, RequestOptions.DEFAULT);

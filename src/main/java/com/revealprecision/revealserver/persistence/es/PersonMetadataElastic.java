@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.persistence.es;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.revealprecision.revealserver.messaging.message.MetaDataEvent;
 import com.revealprecision.revealserver.persistence.domain.metadata.infra.MetadataObj;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -38,6 +39,29 @@ public class PersonMetadataElastic {
         break;
       case "boolean":
         this.value = metadataObj.getCurrent().getValue().getValueBoolean();
+        break;
+    }
+  }
+
+  public PersonMetadataElastic(MetaDataEvent metadataObj) {
+    this.type = metadataObj.getType();
+    this.isActive = metadataObj.isActive();
+
+    switch (metadataObj.getType()){
+      case "string":
+        this.value = metadataObj.getTagData().getValue().getValueString();
+        break;
+      case "integer":
+        this.value = metadataObj.getTagData().getValue().getValueInteger();
+        break;
+      case "double":
+        this.value = metadataObj.getTagData().getValue().getValueDouble();
+        break;
+      case "date":
+        this.value = metadataObj.getTagData().getValue().getValueDate();
+        break;
+      case "boolean":
+        this.value = metadataObj.getTagData().getValue().getValueBoolean();
         break;
     }
   }

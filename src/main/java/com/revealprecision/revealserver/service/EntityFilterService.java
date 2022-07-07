@@ -518,8 +518,8 @@ public class EntityFilterService {
         String source = hit.getSourceAsString();
         PersonElastic personElastic = mapper.readValue(source, PersonElastic.class);
         propertyResponse.getPersons().add(PersonMainData.builder()
-            .nameUse(personElastic.getNameUse())
-            .nameFamily(personElastic.getNameFamily())
+            .firstName(personElastic.getNameText())
+            .lastName(personElastic.getNameFamily())
             .build());
       }
     }
@@ -559,7 +559,7 @@ public class EntityFilterService {
       }
       }else if(request.getFieldType().equals("core")){
         CoreField coreField = coreFieldService.getCoreFieldByIdentifier(request.getFieldIdentifier());
-        searchField = lookupEntityType.getTableName().concat(coreField.getField());
+        searchField = lookupEntityType.getTableName().concat(".").concat(coreField.getField());
         if(request.getSearchValue().getSign() == SignEntity.EQ) {
           andStatement.must(QueryBuilders.matchQuery(searchField, request.getSearchValue().getValue()));
         }else {
@@ -588,7 +588,7 @@ public class EntityFilterService {
       return shouldStatement;
     }else if(request.getFieldType().equals("core")){
       CoreField coreField = coreFieldService.getCoreFieldByIdentifier(request.getFieldIdentifier());
-      searchField = lookupEntityType.getTableName().concat(coreField.getField());
+      searchField = lookupEntityType.getTableName().concat(".").concat(coreField.getField());
       for(SearchValue value : request.getValues()) {
         shouldStatement.should(QueryBuilders.termQuery(searchField, value.getValue()));
       }
@@ -612,7 +612,7 @@ public class EntityFilterService {
             .gte(request.getRange().getMinValue()));
       }else if(request.getFieldType().equals("core")){
         CoreField coreField = coreFieldService.getCoreFieldByIdentifier(request.getFieldIdentifier());
-        searchField = lookupEntityType.getTableName().concat(coreField.getField());
+        searchField = lookupEntityType.getTableName().concat(".").concat(coreField.getField());
         boolQuery.must(QueryBuilders.rangeQuery(searchField)
             .lte(request.getRange().getMaxValue())
             .gte(request.getRange().getMinValue()));

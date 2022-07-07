@@ -15,16 +15,13 @@ import com.revealprecision.revealserver.persistence.domain.metadata.infra.Metada
 import com.revealprecision.revealserver.persistence.domain.metadata.infra.MetadataObj;
 import com.revealprecision.revealserver.persistence.domain.metadata.infra.TagData;
 import com.revealprecision.revealserver.persistence.domain.metadata.infra.TagValue;
-import com.revealprecision.revealserver.persistence.es.PersonMetadataElastic;
 import com.revealprecision.revealserver.persistence.repository.LocationMetadataRepository;
 import com.revealprecision.revealserver.persistence.repository.PersonMetadataRepository;
 import com.revealprecision.revealserver.props.KafkaProperties;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.UUID;
@@ -34,12 +31,7 @@ import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.SerializationUtils;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.reindex.UpdateByQueryRequest;
-import org.elasticsearch.script.Script;
-import org.elasticsearch.script.ScriptType;
 import org.springframework.data.util.Pair;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
@@ -171,27 +163,6 @@ public class MetadataService {
         kafkaProperties.getTopicMap().get(KafkaConstants.PERSON_METADATA_UPDATE),
         personMetadataEvent);
 
-    List<PersonMetadataElastic> personMetadataES = new ArrayList<>();
-    for(MetadataObj metadataObj : savedLocationMetadata.getEntityValue().getMetadataObjs()) {
-      personMetadataES.add(new PersonMetadataElastic(metadataObj));
-    }
-
-    Map<String, Object> parameters = new HashMap<>();
-    parameters.put("new_metadata", personMetadataES);
-    parameters.put("personId", savedLocationMetadata.getPerson().getIdentifier().toString());
-
-    Script inline = new Script(ScriptType.INLINE, "painless",
-        "def persons = ctx._source.person.findAll( "
-            + "pers -> pers.identifier == params.personId); "
-            + "for(per in persons) { "
-            + " per.metadata = params.new_metadata "
-            + "} ",parameters);
-    List<String> locationIds = savedLocationMetadata.getPerson().getLocations().stream().map(loc -> loc.getIdentifier().toString()).collect(
-        Collectors.toList());
-    UpdateByQueryRequest request = new UpdateByQueryRequest("location");
-    request.setQuery(QueryBuilders.termsQuery("_id", locationIds));
-    request.setScript(inline);
-    client.updateByQuery(request, RequestOptions.DEFAULT);
     return savedLocationMetadata;
   }
 
