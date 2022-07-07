@@ -427,7 +427,7 @@ public class LocationRelationshipService {
             locationRelationshipToSave.setEntityStatus(EntityStatus.ACTIVE);
             locationRelationshipRepository.save(locationRelationshipToSave);
 
-            if(Arrays.asList(env.getActiveProfiles()).contains("ops")) { //TODO: remove when needed
+            if(Arrays.asList(env.getActiveProfiles()).contains("Simulation")) { //TODO: remove when needed
               updateElasticWithAncestry(locationRelationshipToSave);
             }
             LocationRelationshipMessage locationRelationshipMessage = new LocationRelationshipMessage();

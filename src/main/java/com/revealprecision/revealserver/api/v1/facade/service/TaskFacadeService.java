@@ -336,7 +336,7 @@ public class TaskFacadeService {
             person.setLocations(Set.of(location));
           }
 
-          if(Arrays.asList(env.getActiveProfiles()).contains("ops")) {
+          if(Arrays.asList(env.getActiveProfiles()).contains("Simulation")) {
             PersonElastic personElastic = new PersonElastic(person);
             Map<String, Object> parameters = new HashMap<>();
             parameters.put("person", ElasticModelUtil.toMapFromPersonElastic(personElastic));

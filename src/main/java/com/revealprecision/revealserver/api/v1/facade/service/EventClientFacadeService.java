@@ -158,7 +158,7 @@ public class EventClientFacadeService {
     person.setAdditionalInfo(objectMapper.valueToTree(personAdditionalInfo));
     person = personService.savePerson(person);
 
-    if(Arrays.asList(env.getActiveProfiles()).contains("ops")) { //TODO: remove when needed
+    if(Arrays.asList(env.getActiveProfiles()).contains("Simulation")) { //TODO: remove when needed
       PersonElastic personElastic = new PersonElastic(person);
       Map<String, Object> parameters = new HashMap<>();
 
