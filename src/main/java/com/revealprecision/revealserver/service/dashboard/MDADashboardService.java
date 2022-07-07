@@ -1,11 +1,6 @@
 package com.revealprecision.revealserver.service.dashboard;
 
 
-import static com.revealprecision.revealserver.service.dashboard.DashboardService.ALL_OTHER_LEVELS;
-import static com.revealprecision.revealserver.service.dashboard.DashboardService.DIRECTLY_ABOVE_STRUCTURE_LEVEL;
-import static com.revealprecision.revealserver.service.dashboard.DashboardService.STRUCTURE_LEVEL;
-import static com.revealprecision.revealserver.service.dashboard.DashboardService.WITHIN_STRUCTURE_LEVEL;
-
 import com.revealprecision.revealserver.api.v1.dto.factory.LocationResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.models.ColumnData;
 import com.revealprecision.revealserver.api.v1.dto.models.RowData;
@@ -25,11 +20,8 @@ import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import com.revealprecision.revealserver.props.DashboardProperties;
 import com.revealprecision.revealserver.props.KafkaProperties;
-import com.revealprecision.revealserver.service.LocationRelationshipService;
-import com.revealprecision.revealserver.service.LocationService;
 import com.revealprecision.revealserver.service.PersonService;
 import com.revealprecision.revealserver.service.PlanLocationsService;
-import com.revealprecision.revealserver.service.PlanService;
 import java.io.Serializable;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -76,7 +68,7 @@ public class MDADashboardService {
   private static final String TOTAL_STRUCTURES_TARGETED = "Total Structures Targeted";
   private static final String TOTAL_STRUCTURES_MDA = "Total Structures";
   private static final String VISITATION_COVERAGE_PERCENTAGE = "Visitation Coverage Percentage";
-  private static final String DISTRIBUTION_COVERAGE_PERCENTAGE = "Distribution Coverage Percentage";
+  public static final String DISTRIBUTION_COVERAGE_PERCENTAGE = "Distribution Coverage Percentage";
   private static final String STRUCTURE_DISTRIBUTION_EFFECTIVENESS_PERCENTAGE = "Structure Distribution Effectiveness Percentage";
   private static final String INDIVIDUAL_DISTRIBUTION_EFFECTIVENESS_PERCENTAGE = "Individual Distribution Effectiveness Percentage";
   private static final String STRUCTURE_STATUS = "Structure Status";
