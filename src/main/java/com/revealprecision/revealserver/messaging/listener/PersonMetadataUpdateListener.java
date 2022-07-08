@@ -24,11 +24,11 @@ import org.springframework.stereotype.Service;
 
 @RequiredArgsConstructor
 @Service
+@Profile("Simulation")
 public class PersonMetadataUpdateListener extends Listener{
 
   private final RestHighLevelClient client;
 
-  @Profile("Simulation")
   @KafkaListener(topics = "#{kafkaConfigProperties.topicMap.get('PERSON_METADATA_UPDATE')}", groupId = "reveal_server_group")
   public void updatePersonMetadata(PersonMetadataEvent event) throws IOException {
     Map<String, Object> parameters = new HashMap<>();

@@ -28,7 +28,6 @@ import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -41,15 +40,12 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.geo.ShapeRelation;
 import org.elasticsearch.geometry.Point;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.script.Script;
-import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
@@ -217,25 +213,6 @@ public class LocationRelationshipService {
       locationRelationshipToSave.setEntityStatus(EntityStatus.ACTIVE);
       locationRelationshipRepository.save(locationRelationshipToSave);
     }
-  }
-
-  private void updateElasticWithAncestry(LocationRelationship locationRelationship)
-      throws IOException {
-    Map<String, Object> parameters = new HashMap<>();
-    Map<String, List<String>> object = new HashMap<>();
-    object.put(locationRelationship.getLocationHierarchy().getIdentifier().toString(),
-        locationRelationship.getAncestry().stream()
-            .map(UUID::toString)
-            .collect(Collectors.toList()));
-    parameters.put("object", object);
-    parameters.put("key", locationRelationship.getLocationHierarchy().getIdentifier().toString());
-    Script inline = new Script(ScriptType.INLINE, "painless",
-        "ctx._source.ancestry.add(params.object);",parameters);
-    UpdateRequest request = new UpdateRequest(
-        "location",
-        locationRelationship.getLocation().getIdentifier().toString());
-    request.script(inline);
-    client.update(request, RequestOptions.DEFAULT);
   }
 
   private void createRelationshipForRoot(Location location, LocationHierarchy locationHierarchy) {
@@ -427,9 +404,6 @@ public class LocationRelationshipService {
             locationRelationshipToSave.setEntityStatus(EntityStatus.ACTIVE);
             locationRelationshipRepository.save(locationRelationshipToSave);
 
-            if(Arrays.asList(env.getActiveProfiles()).contains("Simulation")) { //TODO: remove when needed
-              updateElasticWithAncestry(locationRelationshipToSave);
-            }
             LocationRelationshipMessage locationRelationshipMessage = new LocationRelationshipMessage();
             locationRelationshipMessage.setLocationIdentifier(
                 locationRelationshipToSave.getLocation().getIdentifier());
