@@ -21,4 +21,5 @@ public class FeatureSetResponse {
   private String type;
   private String defaultDisplayColumn;
   private List<LocationResponse> features;
+  private List<LocationResponse> parents;
 }

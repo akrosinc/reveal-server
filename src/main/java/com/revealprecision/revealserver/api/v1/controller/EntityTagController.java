@@ -7,12 +7,14 @@ import com.revealprecision.revealserver.api.v1.dto.request.EntityTagRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.EntityTagResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.FeatureSetResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LookupEntityTypeResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.PersonMainData;
 import com.revealprecision.revealserver.persistence.repository.LocationElasticRepository;
 import com.revealprecision.revealserver.service.EntityFilterService;
 import com.revealprecision.revealserver.service.EntityTagService;
 import com.revealprecision.revealserver.service.LookupEntityTypeService;
 import io.swagger.v3.oas.annotations.Operation;
 import java.io.IOException;
+import java.text.ParseException;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -73,7 +75,13 @@ public class EntityTagController {
 
   @PostMapping("/filter")
   public ResponseEntity<FeatureSetResponse> filterEntities(@RequestBody DataFilterRequest request)
-      throws IOException {
+      throws IOException, ParseException {
     return ResponseEntity.ok().body(entityFilterService.filterEntites(request));
+  }
+
+  @GetMapping("/person/{personIdentifier}")
+  public ResponseEntity<PersonMainData> getPersonDetails(@PathVariable UUID personIdentifier)
+      throws IOException {
+    return ResponseEntity.ok().body(entityFilterService.getPersonsDetails(personIdentifier));
   }
 }

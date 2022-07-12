@@ -8,6 +8,9 @@ import com.revealprecision.revealserver.enums.SummaryEnum;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.es.LocationElastic;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.AccessLevel;
@@ -90,11 +93,14 @@ public class LocationResponseFactory {
         .build(); //TODO: add other properties
   }
 
-  public static LocationResponse fromSearchHit(SearchHit hit) throws JsonProcessingException {
+  public static LocationResponse fromSearchHit(SearchHit hit, List<String> parents, String hierarchyId) throws JsonProcessingException {
     ObjectMapper mapper = new ObjectMapper();
     String source = hit.getSourceAsString();
     LocationElastic locationElastic = mapper.readValue(source, LocationElastic.class);
-
+    Optional<Map<String, List<String>>> ancestry =  locationElastic.getAncestry().stream().filter(anc -> anc.containsKey(hierarchyId)).findFirst();
+    if(ancestry.isPresent()) {
+      parents.addAll(ancestry.get().get(hierarchyId));
+    }
     return fromElasticModel(locationElastic);
   }
 }

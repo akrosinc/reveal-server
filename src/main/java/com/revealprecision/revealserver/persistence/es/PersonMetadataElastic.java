@@ -2,7 +2,7 @@ package com.revealprecision.revealserver.persistence.es;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.revealprecision.revealserver.messaging.message.MetaDataEvent;
-import com.revealprecision.revealserver.persistence.domain.metadata.infra.MetadataObj;
+import com.revealprecision.revealserver.util.ElasticModelUtil;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -20,33 +20,17 @@ public class PersonMetadataElastic {
   private MetaDataElastic metadata;
   private boolean isActive = true;
 
-  public PersonMetadataElastic(MetadataObj metadataObj) {
-    this.type = metadataObj.getDataType();
-    this.isActive = metadataObj.isActive();
-
-    switch (metadataObj.getDataType()){
-      case "string":
-        this.value = metadataObj.getCurrent().getValue().getValueString();
-        break;
-      case "integer":
-        this.value = metadataObj.getCurrent().getValue().getValueInteger();
-        break;
-      case "double":
-        this.value = metadataObj.getCurrent().getValue().getValueDouble();
-        break;
-      case "date":
-        this.value = metadataObj.getCurrent().getValue().getValueDate();
-        break;
-      case "boolean":
-        this.value = metadataObj.getCurrent().getValue().getValueBoolean();
-        break;
-    }
-  }
-
   public PersonMetadataElastic(MetaDataEvent metadataObj) {
     this.type = metadataObj.getType();
     this.isActive = metadataObj.isActive();
-
+    this.metadata = MetaDataElastic.builder()
+        .planId(metadataObj.getTagData().getMeta().getPlanId().toString())
+        .userId(metadataObj.getTagData().getMeta().getUserId())
+        .createDateTime(ElasticModelUtil.toDateFromLocalDateTime(metadataObj.getTagData().getMeta().getCreateDateTime()))
+        .updateDateTime(ElasticModelUtil.toDateFromLocalDateTime(metadataObj.getTagData().getMeta().getUpdateDateTime()))
+        .taskId(metadataObj.getTagData().getMeta().getTaskId().toString())
+        .taskType(metadataObj.getTagData().getMeta().getTaskType())
+        .build();
     switch (metadataObj.getDataType()){
       case "string":
         this.value = metadataObj.getTagData().getValue().getValueString();

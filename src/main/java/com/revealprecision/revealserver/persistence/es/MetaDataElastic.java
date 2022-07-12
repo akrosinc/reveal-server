@@ -1,9 +1,9 @@
 package com.revealprecision.revealserver.persistence.es;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import java.time.LocalDateTime;
-import java.util.UUID;
+import java.util.Date;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -13,13 +13,14 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
+@Builder
 public class MetaDataElastic {
 
-  private UUID planId;
+  private String planId;
   private String userId;
-  private LocalDateTime createDateTime;
-  private LocalDateTime updateDateTime;
-  private UUID taskId;
+  private Date createDateTime;
+  private Date updateDateTime;
+  private String taskId;
   private String taskType;
 
 }

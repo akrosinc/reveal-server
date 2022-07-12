@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.revealprecision.revealserver.persistence.domain.Geometry;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -38,7 +39,7 @@ public class LocationElastic {
   private List<PersonElastic> person = new ArrayList<>();
 
   @Field(type = FieldType.Flattened)
-  private List<Object> ancestry = new ArrayList<>();
+  private List<Map<String, List<String>>> ancestry = new ArrayList<>();
 
   @GeoShapeField
   Geometry geometry;
