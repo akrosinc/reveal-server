@@ -16,7 +16,9 @@ import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.persistence.projection.OrganizationProjection;
 import com.revealprecision.revealserver.persistence.repository.OrganizationRepository;
 import com.revealprecision.revealserver.persistence.repository.UserRepository;
+import com.tdunning.math.stats.Sort;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -28,7 +30,10 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.MapUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort.Direction;
+import org.springframework.data.domain.Sort.Order;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -55,7 +60,8 @@ public class OrganizationService {
 
   public Set<Plan> getPlanAssignmentByOrganizationId(UUID identifier) {
     Organization organization = findById(identifier, true);
-    return organization.getPlanAssignments().stream().map(PlanAssignment::getPlanLocations).map(PlanLocations::getPlan).collect(Collectors.toSet());
+    return organization.getPlanAssignments().stream().map(PlanAssignment::getPlanLocations)
+        .map(PlanLocations::getPlan).collect(Collectors.toSet());
   }
 
   public void getAssignedOrganizationsByLocationId(UUID identifier) {
@@ -82,7 +88,42 @@ public class OrganizationService {
         criteria.getSearch());
     List<OrganizationResponse> content = createTreeView(organizations);
     addChildrenToFoundOrganizations(organizations, content);
-    return new PageImpl<>(content, pageable, content.size());
+    int start = (int) pageable.getOffset();
+    int end = Math.min((start + pageable.getPageSize()), content.size());
+    if (start > content.size()) {
+      return new PageImpl<>(new ArrayList<>(), pageable, content.size());
+    }
+    if (pageable.getSort().isSorted()) {
+      for (Order order : pageable.getSort()) {
+        if (order.getProperty().equals("name")) {
+          return new PageImpl<>(content.stream().sorted(order.isAscending() ? Comparator.comparing(
+                  OrganizationResponse::getName) : Comparator.comparing(
+                  OrganizationResponse::getName).reversed()).collect(Collectors.toList())
+              .subList(start, end), pageable, content.size());
+        }
+        if (order.getProperty().equals("active")) {
+          return new PageImpl<>(content.stream().sorted(order.isAscending() ? Comparator.comparing(
+                  OrganizationResponse::isActive) : Comparator.comparing(
+                  OrganizationResponse::isActive).reversed()).collect(Collectors.toList())
+              .subList(start, end),
+              pageable, content.size());
+        }
+        if (order.getProperty().equals("type")) {
+          return new PageImpl<>(content.stream().sorted(order.isAscending() ? Comparator.comparing(
+                  OrganizationResponse::getType,
+                  (s1, s2) -> s2.getValueCodableConcept().compareTo(s1.getValueCodableConcept()))
+                  : Comparator.comparing(OrganizationResponse::getType,
+                          (s1, s2) -> s2.getValueCodableConcept().compareTo(s1.getValueCodableConcept()))
+                      .reversed()).collect(Collectors.toList())
+              .subList(start, end),
+              pageable, content.size());
+        }
+      }
+      return new PageImpl<>(content.subList(start, end), pageable, content.size());
+    }
+    return new PageImpl<>(content.stream().sorted(Comparator.comparing(
+        OrganizationResponse::getName)).collect(Collectors.toList()).subList(start, end), pageable,
+        content.size());
   }
 
   public long getCountFindAll(OrganizationCriteria criteria) {
