@@ -4,6 +4,7 @@ import static com.revealprecision.revealserver.service.dashboard.DashboardServic
 import static com.revealprecision.revealserver.service.dashboard.DashboardService.DIRECTLY_ABOVE_STRUCTURE_LEVEL;
 import static com.revealprecision.revealserver.service.dashboard.IRSDashboardService.SPRAY_COVERAGE_OF_TARGETED;
 import static com.revealprecision.revealserver.service.dashboard.MDADashboardService.DISTRIBUTION_COVERAGE;
+import static com.revealprecision.revealserver.service.dashboard.MDADashboardService.DISTRIBUTION_COVERAGE_PERCENTAGE;
 
 import java.util.List;
 import java.util.Map;
@@ -29,7 +30,7 @@ public class DashboardProperties {
           ,"OPERATIONAL_AREA_VISITED",new ColumnMeta("Operational Area Visited",false)));
 
   private final Map<String, String> mdaDefaultDisplayColumns =
-      Map.of(DIRECTLY_ABOVE_STRUCTURE_LEVEL,DISTRIBUTION_COVERAGE,
+      Map.of(DIRECTLY_ABOVE_STRUCTURE_LEVEL,DISTRIBUTION_COVERAGE_PERCENTAGE,
           ALL_OTHER_LEVELS,DISTRIBUTION_COVERAGE);
 
   private final Map<String, String> irsDefaultDisplayColumns =
