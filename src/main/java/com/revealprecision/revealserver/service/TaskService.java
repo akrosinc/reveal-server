@@ -51,6 +51,7 @@ import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.service.models.TaskSearchCriteria;
 import com.revealprecision.revealserver.util.ActionUtils;
 import com.revealprecision.revealserver.util.ConditionQueryUtil;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -308,25 +309,25 @@ public class TaskService {
         tasksToGenerate.size(), tasksToCancel.size(), tasksToReactivate.size(), existingTaskUuids.size());
 
 
-      List<TaskProcessStage> collect = tasksToProcess.stream()
-          .map(taskGen -> {
-            TaskProcessStage taskGenerationStage = new TaskProcessStage();
-            taskGenerationStage.setState(ProcessTrackerEnum.NEW);
-            taskGenerationStage.setProcessTracker(processTracker);
-            taskGenerationStage.setEntityStatus(EntityStatus.ACTIVE);
-            taskGenerationStage.setTaskProcess(taskGen.getTaskProcessEnum());
+    List<TaskProcessStage> collect = tasksToProcess.stream()
+        .map(taskGen -> {
+          TaskProcessStage taskGenerationStage = new TaskProcessStage();
+          taskGenerationStage.setState(ProcessTrackerEnum.NEW);
+          taskGenerationStage.setProcessTracker(processTracker);
+          taskGenerationStage.setEntityStatus(EntityStatus.ACTIVE);
+          taskGenerationStage.setTaskProcess(taskGen.getTaskProcessEnum());
 
-            if (taskGen.getBaseEntityIdentifier() != null) {
-              taskGenerationStage.setBaseEntityIdentifier(taskGen.getBaseEntityIdentifier());
-            }
-            if (taskGen.getIdentifier() != null) {
-              taskGenerationStage.setTaskIdentifier(taskGen.getIdentifier());
-            }
-            return taskGenerationStage;
-          }).collect(Collectors.toList());
+          if (taskGen.getBaseEntityIdentifier() != null) {
+            taskGenerationStage.setBaseEntityIdentifier(taskGen.getBaseEntityIdentifier());
+          }
+          if (taskGen.getIdentifier() != null) {
+            taskGenerationStage.setTaskIdentifier(taskGen.getIdentifier());
+          }
+          return taskGenerationStage;
+        }).collect(Collectors.toList());
 
-      List<TaskProcessStage> taskProcessStages = taskProcessStageRepository.saveAll(
-          collect);
+    List<TaskProcessStage> taskProcessStages = taskProcessStageRepository.saveAll(
+        collect);
 
       taskProcessStages.forEach(taskProcessStage -> {
         // Proceed with caution here as new updates / removals to the object will prevent rewind of the kafka listener application.
@@ -361,8 +362,8 @@ public class TaskService {
                 taskProcessEvent);
           }
 
-      );
-    }
+    );
+  }
 
 
 
@@ -389,7 +390,7 @@ public class TaskService {
             LookupTaskStatus.class));
   }
 
-  public Task generateTaskForTaskProcess(TaskProcessEvent taskProcessEvent) {
+  public Task generateTaskForTaskProcess(TaskProcessEvent taskProcessEvent) throws IOException {
     Task taskObjs = null;
     Optional<TaskProcessStage> taskGenerationStageOptional = taskProcessStageRepository.findById(
         taskProcessEvent.getIdentifier());
@@ -479,7 +480,7 @@ public class TaskService {
 
 
   private Task createTaskObjectFromActionAndEntityId(Action action,
-      UUID entityUUID, Plan plan, String ownerId) {
+      UUID entityUUID, Plan plan, String ownerId) throws IOException {
     log.debug("TASK_GENERATION  create individual task for plan: {} and action: {}",
         plan.getIdentifier(), action.getIdentifier());
 
@@ -518,7 +519,7 @@ public class TaskService {
     return savedTask;
   }
 
-  public Task reactivateTask(TaskProcessEvent taskProcessEvent) {
+  public Task reactivateTask(TaskProcessEvent taskProcessEvent) throws IOException {
 
     Task savedTask = null;
     Optional<Task> taskOptional = taskRepository.findById(taskProcessEvent.getTaskIdentifier());
@@ -535,7 +536,7 @@ public class TaskService {
     return savedTask;
   }
 
-  public Task cancelTask(TaskProcessEvent taskProcessEvent) {
+  public Task cancelTask(TaskProcessEvent taskProcessEvent) throws IOException {
 
     Task savedTask = null;
     Optional<Task> taskOptional = taskRepository.findById(taskProcessEvent.getTaskIdentifier());
@@ -552,7 +553,7 @@ public class TaskService {
     return savedTask;
   }
 
-  public Task saveTaskAndBusinessState(Task task, String ownerId) {
+  public Task saveTaskAndBusinessState(Task task, String ownerId) throws IOException {
 
     Task savedTask = taskRepository.save(task);
 

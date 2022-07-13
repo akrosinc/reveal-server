@@ -1,24 +1,61 @@
 package com.revealprecision.revealserver.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.revealprecision.revealserver.api.v1.dto.factory.LocationResponseFactory;
+import com.revealprecision.revealserver.api.v1.dto.factory.PersonMainDataResponseFactory;
+import com.revealprecision.revealserver.api.v1.dto.request.DataFilterRequest;
+import com.revealprecision.revealserver.api.v1.dto.request.EntityFilterRequest;
+import com.revealprecision.revealserver.api.v1.dto.request.SearchValue;
+import com.revealprecision.revealserver.api.v1.dto.response.FeatureSetResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.LocationPropertyResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.LocationResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.PersonMainData;
 import com.revealprecision.revealserver.constants.LocationConstants;
+import com.revealprecision.revealserver.enums.SignEntity;
+import com.revealprecision.revealserver.exceptions.ConflictException;
 import com.revealprecision.revealserver.exceptions.QueryGenerationException;
 import com.revealprecision.revealserver.persistence.domain.Action;
+import com.revealprecision.revealserver.persistence.domain.CoreField;
+import com.revealprecision.revealserver.persistence.domain.EntityTag;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
+import com.revealprecision.revealserver.persistence.domain.LookupEntityType;
 import com.revealprecision.revealserver.persistence.domain.Person;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.actioncondition.Condition;
 import com.revealprecision.revealserver.persistence.domain.actioncondition.Query;
+import com.revealprecision.revealserver.persistence.es.LocationElastic;
+import com.revealprecision.revealserver.persistence.es.PersonElastic;
 import com.revealprecision.revealserver.props.ConditionQueryProperties;
 import com.revealprecision.revealserver.util.ActionUtils;
+import java.io.IOException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import javax.ws.rs.core.NoContentException;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.lucene.search.join.ScoreMode;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.InnerHitBuilder;
+import org.elasticsearch.index.query.NestedQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.RangeQueryBuilder;
+import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.SearchHits;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.util.Pair;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -33,6 +70,10 @@ public class EntityFilterService {
   private final LocationRelationshipService locationRelationshipService;
   private final LocationHierarchyService locationHierarchyService;
   private final PersonService personService;
+  private final LookupEntityTypeService lookupEntityTypeService;
+  private final EntityTagService entityTagService;
+  private final CoreFieldService coreFieldService;
+  private final RestHighLevelClient client;
 
   private final static String WHERE = " WHERE ";
 
@@ -45,12 +86,20 @@ public class EntityFilterService {
       ConditionQueryProperties conditionQueryProperties,
       LocationRelationshipService locationRelationshipService,
       LocationHierarchyService locationHierarchyService,
-      PersonService personService) {
+      PersonService personService,
+      LookupEntityTypeService lookupEntityTypeService,
+      EntityTagService entityTagService,
+      CoreFieldService coreFieldService,
+      RestHighLevelClient client) {
     this.conditionQueryProperties = conditionQueryProperties;
     this.jdbcTemplate = jdbcTemplate;
     this.locationRelationshipService = locationRelationshipService;
     this.locationHierarchyService = locationHierarchyService;
     this.personService = personService;
+    this.lookupEntityTypeService = lookupEntityTypeService;
+    this.entityTagService = entityTagService;
+    this.coreFieldService = coreFieldService;
+    this.client = client;
   }
 
   public List<UUID> filterEntities(Query query, Plan plan,
@@ -60,8 +109,8 @@ public class EntityFilterService {
     List<Pair<UUID, String>> locations = queryDBAndRetrieveListOfLocationsLinkedToPlanJurisdiction(
         plan.getIdentifier());
 
-    log.debug("plan_locations size {} ",locations.size());
-    log.trace("plan_locations {} ",locations);
+    log.debug("plan_locations size {} ", locations.size());
+    log.trace("plan_locations {} ", locations);
 
     if (locations.isEmpty()) {
       return new ArrayList<>();
@@ -409,5 +458,264 @@ public class EntityFilterService {
     }
 
     return conditionList;
+  }
+
+  public FeatureSetResponse filterEntites(DataFilterRequest request)
+      throws IOException, ParseException {
+    FeatureSetResponse response = new FeatureSetResponse();
+    BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
+    List<EntityFilterRequest> personFilters = new ArrayList<>();
+    List<EntityFilterRequest> locationFilters = new ArrayList<>();
+
+
+
+    for(EntityFilterRequest req : request.getEntityFilters()) {
+      LookupEntityType lookupEntityType = lookupEntityTypeService.getLookUpEntityTypeById(req.getEntityIdentifier());
+      if(lookupEntityType.getTableName().equals("person")) {
+        personFilters.add(req);
+      }else {
+        locationFilters.add(req);
+      }
+    }
+
+    boolQuery.must(nestedPersonQuery(personFilters));
+
+    for(EntityFilterRequest req : locationFilters) {
+      if (req.getRange() == null && req.getValues() == null) {
+        boolQuery.must(mustStatement(req));
+      }else if(req.getSearchValue() == null && req.getValues() == null) {
+        boolQuery.must(rangeStatement(req));
+      } else if(req.getSearchValue() == null && req.getRange() == null) {
+        boolQuery.must(shouldStatement(req));
+      }else {
+        throw new ConflictException("Request object bad formatted.");
+      }
+    }
+
+    if(request.getHierarchyIdentifier() != null && request.getLocationIdentifier() != null) {
+      boolQuery.filter(QueryBuilders.matchQuery("ancestry.".concat(request.getHierarchyIdentifier().toString()), request.getLocationIdentifier().toString()));
+    }
+
+    SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+    sourceBuilder.query(boolQuery);
+    SearchRequest searchRequest = new SearchRequest("location");
+    searchRequest.source(sourceBuilder);
+    SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+
+    List<LocationResponse> locationResponses = new ArrayList<>();
+    List<String> parentLocations = new ArrayList<>();
+
+    for(SearchHit hit : searchResponse.getHits().getHits()) {
+      LocationResponse locToAdd = LocationResponseFactory.fromSearchHit(hit, parentLocations, request.getHierarchyIdentifier().toString());
+
+      if(hit.getInnerHits() != null) {
+        addPersonsToLocationProperties(hit.getInnerHits(), locToAdd.getProperties());
+      }
+      locationResponses.add(locToAdd);
+    }
+    if(!parentLocations.isEmpty()) {
+      response.setParents(retrieveParentLocations(parentLocations));
+    }
+
+    response.setType("FeatureCollection");
+    response.setFeatures(locationResponses);
+    return response;
+  }
+
+  private List<LocationResponse> retrieveParentLocations(List<String> parentIds) throws IOException {
+    List<LocationResponse> responses = new ArrayList<>();
+    SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+    sourceBuilder.query(QueryBuilders.termsQuery("_id", parentIds));
+    SearchRequest searchRequest = new SearchRequest("location");
+    searchRequest.source(sourceBuilder);
+    SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+    ObjectMapper mapper = new ObjectMapper();
+    for(SearchHit hit : searchResponse.getHits().getHits()) {
+      LocationElastic parent = mapper.readValue(hit.getSourceAsString(), LocationElastic.class);
+      responses.add(LocationResponseFactory.fromElasticModel(parent));
+    }
+    return responses;
+  }
+
+  private void addPersonsToLocationProperties(Map<String, SearchHits> innerHits, LocationPropertyResponse propertyResponse)
+      throws JsonProcessingException {
+    propertyResponse.setPersons(new ArrayList<>());
+    ObjectMapper mapper = new ObjectMapper();
+    if(innerHits.containsKey("person")) {
+      for(SearchHit hit : innerHits.get("person")) {
+        String source = hit.getSourceAsString();
+        PersonElastic personElastic = mapper.readValue(source, PersonElastic.class);
+        propertyResponse.getPersons().add(PersonMainDataResponseFactory.fromPersonElasticSummary(personElastic));
+      }
+    }
+
+  }
+
+  public NestedQueryBuilder nestedPersonQuery(List<EntityFilterRequest> requests)
+      throws ParseException {
+    BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+    for(EntityFilterRequest req : requests) {
+      if (req.getRange() == null && req.getValues() == null) {
+        boolQueryBuilder.must(mustStatement(req));
+      }else if(req.getSearchValue() == null && req.getValues() == null) {
+        boolQueryBuilder.must(rangeStatement(req));
+      } else if(req.getSearchValue() == null && req.getRange() == null) {
+        boolQueryBuilder.must(shouldStatement(req));
+    }else {
+      throw new ConflictException("Request object bad formatted.");
+    }
+    }
+    return QueryBuilders.nestedQuery("person", boolQueryBuilder, ScoreMode.None).innerHit(
+        new InnerHitBuilder());
+  }
+
+  private BoolQueryBuilder mustStatement(EntityFilterRequest request) throws ParseException {
+    LookupEntityType lookupEntityType = lookupEntityTypeService.getLookUpEntityTypeById(request.getEntityIdentifier());
+    BoolQueryBuilder andStatement = QueryBuilders.boolQuery();
+    String searchField;
+    if(request.getFieldType().equals("tag")){
+        EntityTag entityTag = entityTagService.getEntityTagByIdentifier(request.getFieldIdentifier());
+        if(entityTag.getValueType().equals("date")) {
+          prepareDate(request);
+        }
+      searchField = lookupEntityType.getTableName().concat(".metadata.");
+      andStatement.must(QueryBuilders.matchQuery(searchField.concat("type"), entityTag.getTag()));
+      if(request.getSearchValue().getSign() == SignEntity.EQ) {
+        andStatement.must(QueryBuilders.matchQuery(searchField.concat("value"), request.getSearchValue().getValue()));
+      }else {
+        andStatement.must(rangeQuery(request.getSearchValue().getSign(), searchField.concat("value"), request.getSearchValue().getValue()));
+      }
+      }else if(request.getFieldType().equals("core")){
+        CoreField coreField = coreFieldService.getCoreFieldByIdentifier(request.getFieldIdentifier());
+        if(coreField.getValueType().equals("date")) {
+          prepareDate(request);
+        }
+        searchField = lookupEntityType.getTableName().concat(".").concat(coreField.getField());
+        if(request.getSearchValue().getSign() == SignEntity.EQ) {
+          andStatement.must(QueryBuilders.matchQuery(searchField, request.getSearchValue().getValue()));
+        }else {
+          andStatement.must(rangeQuery(request.getSearchValue().getSign(), searchField, request.getSearchValue().getValue()));
+        }
+      } else {
+      throw new ConflictException("Unexpected field type: " + request.getFieldType());
+    }
+    return andStatement;
+  }
+
+  private BoolQueryBuilder shouldStatement(EntityFilterRequest request) throws ParseException {
+    LookupEntityType lookupEntityType = lookupEntityTypeService.getLookUpEntityTypeById(request.getEntityIdentifier());
+
+    BoolQueryBuilder shouldStatement = QueryBuilders.boolQuery();
+    String searchField;
+    if(request.getFieldType().equals("tag")){
+      EntityTag entityTag = entityTagService.getEntityTagByIdentifier(request.getFieldIdentifier());
+      if(entityTag.getValueType().equals("date")) {
+        prepareDate(request);
+      }
+      searchField = lookupEntityType.getTableName().concat(".metadata.");
+      shouldStatement.must(QueryBuilders.matchQuery(searchField.concat("type"), entityTag.getTag()));
+      BoolQueryBuilder orStatement = QueryBuilders.boolQuery();
+      for(SearchValue value : request.getValues()) {
+        orStatement.should(QueryBuilders.matchQuery(searchField.concat("value"), value.getValue()));
+      }
+      shouldStatement.must(orStatement);
+      return shouldStatement;
+    }else if(request.getFieldType().equals("core")){
+      CoreField coreField = coreFieldService.getCoreFieldByIdentifier(request.getFieldIdentifier());
+      if(coreField.getValueType().equals("date")) {
+        prepareDate(request);
+      }
+      searchField = lookupEntityType.getTableName().concat(".").concat(coreField.getField());
+      for(SearchValue value : request.getValues()) {
+        shouldStatement.should(QueryBuilders.matchQuery(searchField, value.getValue()));
+      }
+      return shouldStatement;
+    } else {
+      throw new ConflictException("Unexpected field type: " + request.getFieldType());
+    }
+  }
+
+  private BoolQueryBuilder rangeStatement(EntityFilterRequest request) throws ParseException {
+    BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
+    LookupEntityType lookupEntityType = lookupEntityTypeService.getLookUpEntityTypeById(request.getEntityIdentifier());
+    String searchField;
+    if(request.getRange().getMaxValue() != null && request.getRange().getMinValue() != null) {
+      if(request.getFieldType().equals("tag")){
+        EntityTag entityTag = entityTagService.getEntityTagByIdentifier(request.getFieldIdentifier());
+        if(entityTag.getValueType().equals("date")) {
+          prepareDate(request);
+        }
+        searchField = lookupEntityType.getTableName().concat(".metadata.");
+        boolQuery.must(QueryBuilders.matchQuery(searchField.concat("type"), entityTag.getTag()));
+        boolQuery.must(QueryBuilders.rangeQuery(searchField.concat("value"))
+            .lte(request.getRange().getMaxValue())
+            .gte(request.getRange().getMinValue()));
+      }else if(request.getFieldType().equals("core")){
+        CoreField coreField = coreFieldService.getCoreFieldByIdentifier(request.getFieldIdentifier());
+        if(coreField.getValueType().equals("date")) {
+          prepareDate(request);
+        }
+        searchField = lookupEntityType.getTableName().concat(".").concat(coreField.getField());
+        boolQuery.must(QueryBuilders.rangeQuery(searchField)
+            .lte(request.getRange().getMaxValue())
+            .gte(request.getRange().getMinValue()));
+      } else {
+        throw new ConflictException("Unexpected field type: " + request.getFieldType());
+      }
+    }else {
+      throw new ConflictException("Must set min and max value for range.");
+    }
+
+    return boolQuery;
+  }
+
+  private RangeQueryBuilder rangeQuery(SignEntity sign, String searchField,Object value) {
+    RangeQueryBuilder rangeQuery = new RangeQueryBuilder(searchField);
+    switch (sign){
+      case GT:
+        rangeQuery.gt(value);
+        break;
+      case GTE:
+        rangeQuery.gte(value);
+        break;
+      case LT:
+        rangeQuery.lt(value);
+        break;
+      case LTE:
+        rangeQuery.lte(value);
+        break;
+    }
+    return rangeQuery;
+  }
+
+  private void prepareDate(EntityFilterRequest req) throws ParseException {
+    SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH);
+    if (req.getRange() == null && req.getValues() == null) {
+      req.getSearchValue().setValue(formatter.parse((String) req.getSearchValue().getValue()).getTime());
+
+    }else if(req.getSearchValue() == null && req.getValues() == null) {
+
+    } else if(req.getSearchValue() == null && req.getRange() == null) {
+
+    }
+  }
+
+  public PersonMainData getPersonsDetails(UUID personIdentifier) throws IOException {
+    ObjectMapper mapper = new ObjectMapper();
+    PersonElastic personElastic = new PersonElastic();
+    SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+    sourceBuilder.query(QueryBuilders.nestedQuery("person", QueryBuilders.matchQuery("person.identifier", personIdentifier.toString()),ScoreMode.None).innerHit(new InnerHitBuilder()));
+    SearchRequest searchRequest = new SearchRequest("location");
+    searchRequest.source(sourceBuilder);
+    SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+    if(Arrays.stream(searchResponse.getHits().getHits()).findFirst().isPresent()) {
+      for(SearchHit hit : Arrays.stream(searchResponse.getHits().getHits()).findFirst().get().getInnerHits().get("person")) {
+        personElastic = mapper.readValue(hit.getSourceAsString(), PersonElastic.class);
+        break;
+      }
+    } else {
+      throw new NoContentException("Person not found");
+    }
+    return PersonMainDataResponseFactory.fromPersonElastic(personElastic);
   }
 }

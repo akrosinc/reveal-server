@@ -33,6 +33,13 @@ public class ConditionQueryProperties {
       "SELECT a.identifier FROM location a \n"
           + " LEFT JOIN location_relationship lr on lr.location_identifier = a.identifier \n";
 
+  private String filterPersonMetadata =
+      "SELECT a.identifier FROM location a \n"
+          + " LEFT JOIN location_relationship lr on lr.location_identifier = a.identifier \n"
+          + "LEFT JOIN person_location pl on pl.location_identifier = a.identifier \n"
+          + "LEFT JOIN person p on p.identifier = pl.person_identifier \n"
+          + "LEFT JOIN person_metadata pm on pm.person_identifier = p.identifier WHERE \n";
+
   private String planLocationsQuery =
       "SELECT tl.location_identifier as location_identifier, tgl.name as geographic_level_name from plan_locations tl "
           + "LEFT JOIN location t on t.identifier = tl.location_identifier "

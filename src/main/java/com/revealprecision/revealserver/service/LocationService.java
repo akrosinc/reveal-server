@@ -4,7 +4,6 @@ import com.revealprecision.revealserver.api.v1.dto.request.LocationRequest;
 import com.revealprecision.revealserver.constants.LocationConstants;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
-import com.revealprecision.revealserver.exceptions.handler.CustomExceptionHandler;
 import com.revealprecision.revealserver.persistence.domain.GeographicLevel;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
@@ -16,7 +15,7 @@ import com.revealprecision.revealserver.persistence.projection.LocationChildrenC
 import com.revealprecision.revealserver.persistence.projection.LocationCoordinatesProjection;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import com.revealprecision.revealserver.persistence.repository.LocationRepository;
-import java.util.ArrayList;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -38,7 +37,7 @@ public class LocationService {
   private final LocationRelationshipService locationRelationshipService;
   private final PlanService planService;
 
-  public Location createLocation(LocationRequest locationRequest) {
+  public Location createLocation(LocationRequest locationRequest) throws IOException {
     GeographicLevel geographicLevel = geographicLevelService.findByName(
         locationRequest.getProperties().getGeographicLevel());
     var locationToSave = Location.builder().geographicLevel(geographicLevel)

@@ -19,5 +19,6 @@ public class PersonMetadataEvent extends TMetadataEvent {
   private List<UUID> locationIdList;
   private UUID thisLocation;
 
+  private UUID personIdentifier;
 
 }

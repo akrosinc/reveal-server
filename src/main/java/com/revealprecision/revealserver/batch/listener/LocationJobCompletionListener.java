@@ -3,7 +3,6 @@ package com.revealprecision.revealserver.batch.listener;
 import com.revealprecision.revealserver.enums.BulkStatusEnum;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationBulk;
-import com.revealprecision.revealserver.persistence.es.LocationElastic;
 import com.revealprecision.revealserver.persistence.repository.LocationBulkRepository;
 import com.revealprecision.revealserver.service.LocationBulkService;
 import com.revealprecision.revealserver.service.LocationRelationshipService;
@@ -32,18 +31,6 @@ public class LocationJobCompletionListener implements JobExecutionListener {
 
   @Override
   public void beforeJob(JobExecution jobExecution) {
-    boolean withMapping;
-
-    if (elasticsearchOperations.indexOps(LocationElastic.class).exists()) {
-      elasticsearchOperations.indexOps(LocationElastic.class).delete();
-      withMapping = elasticsearchOperations.indexOps(LocationElastic.class)
-          .createWithMapping();
-    } else {
-      withMapping = elasticsearchOperations.indexOps(LocationElastic.class)
-          .createWithMapping();
-    }
-
-    log.info("mapping created? :{}", withMapping);
 
   }
 

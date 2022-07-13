@@ -2,6 +2,7 @@ package com.revealprecision.revealserver.api.v1.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.revealprecision.revealserver.api.v1.dto.models.ColumnData;
+import java.util.List;
 import com.revealprecision.revealserver.enums.LocationStatus;
 import java.util.Map;
 import java.util.UUID;
@@ -34,4 +35,5 @@ public class LocationPropertyResponse {
   private Object sprayCoverage;
   private UUID id;
   private Map<String, ColumnData> columnDataMap;
+  private List<PersonMainData> persons;
 }

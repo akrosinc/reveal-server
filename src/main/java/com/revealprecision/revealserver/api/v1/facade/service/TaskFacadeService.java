@@ -23,6 +23,7 @@ import com.revealprecision.revealserver.persistence.domain.LookupTaskStatus.Fiel
 import com.revealprecision.revealserver.persistence.domain.Person;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.Task;
+import com.revealprecision.revealserver.persistence.es.PersonElastic;
 import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.service.ActionService;
 import com.revealprecision.revealserver.service.BusinessStatusService;
@@ -31,10 +32,14 @@ import com.revealprecision.revealserver.service.PersonService;
 import com.revealprecision.revealserver.service.PlanService;
 import com.revealprecision.revealserver.service.TaskService;
 import com.revealprecision.revealserver.util.ActionUtils;
+import com.revealprecision.revealserver.util.ElasticModelUtil;
 import com.revealprecision.revealserver.util.UserUtils;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -51,6 +56,13 @@ import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StoreQueryParameters;
 import org.apache.kafka.streams.state.QueryableStoreTypes;
 import org.apache.kafka.streams.state.ReadOnlyKeyValueStore;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.reindex.UpdateByQueryRequest;
+import org.elasticsearch.script.Script;
+import org.elasticsearch.script.ScriptType;
+import org.springframework.core.env.Environment;
 import org.springframework.data.util.Pair;
 import org.springframework.kafka.config.StreamsBuilderFactoryBean;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -70,6 +82,8 @@ public class TaskFacadeService {
   private final KafkaTemplate<String, Message> kafkaTemplate;
   private final StreamsBuilderFactoryBean getKafkaStreams;
   private final KafkaProperties kafkaProperties;
+  private final RestHighLevelClient client;
+  private final Environment env;
 
   public List<TaskFacade> syncTasks(List<String> planIdentifiers,
       List<UUID> jurisdictionIdentifiers, Long serverVersion, String requester) {
@@ -233,7 +247,7 @@ public class TaskFacadeService {
     return unprocessedTaskIds;
   }
 
-  private void saveTaskDto(TaskDto taskDto) {
+  private void saveTaskDto(TaskDto taskDto) throws IOException {
 
     String taskCode = taskDto.getCode();
     Plan plan = planService.findPlanByIdentifier(UUID.fromString(taskDto.getPlanIdentifier()));
@@ -249,7 +263,7 @@ public class TaskFacadeService {
   }
 
   private Task saveTask(TaskDto taskDto, Plan plan, Action action,
-      Optional<LookupTaskStatus> taskStatus) {
+      Optional<LookupTaskStatus> taskStatus) throws IOException {
     Task task;
     try {
       task = taskService.getTaskByIdentifier(UUID.fromString(taskDto.getIdentifier()));
@@ -320,6 +334,26 @@ public class TaskFacadeService {
             person.setLocations(new HashSet<>(locationArrayList));
           } else {
             person.setLocations(Set.of(location));
+          }
+
+          if(Arrays.asList(env.getActiveProfiles()).contains("Simulation")) {
+            PersonElastic personElastic = new PersonElastic(person);
+            Map<String, Object> parameters = new HashMap<>();
+            parameters.put("person", ElasticModelUtil.toMapFromPersonElastic(personElastic));
+            parameters.put("personId", personElastic.getIdentifier());
+            UpdateByQueryRequest request = new UpdateByQueryRequest("location");
+            List<String> locationIds = person.getLocations().stream()
+                .map(loc -> loc.getIdentifier().toString()).collect(
+                    Collectors.toList());
+
+            request.setQuery(QueryBuilders.termsQuery("_id", locationIds));
+            request.setScript(new Script(
+                ScriptType.INLINE, "painless",
+                "def foundPerson = ctx._source.person.find(attr-> attr.identifier == params.personId);"
+                    + " if(foundPerson == null) {ctx._source.person.add(params.person);}",
+                parameters
+            ));
+            client.updateByQuery(request, RequestOptions.DEFAULT);
           }
         }
         task.setPerson(person);

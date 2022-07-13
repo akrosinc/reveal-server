@@ -22,6 +22,7 @@ import com.revealprecision.revealserver.persistence.repository.PersonMetadataRep
 import com.revealprecision.revealserver.persistence.repository.PersonRepository;
 import com.revealprecision.revealserver.props.KafkaProperties;
 import java.time.LocalDate;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -51,7 +52,6 @@ public class MetadataService {
   private final KafkaTemplate<String, PersonMetadataEvent> personMetadataKafkaTemplate;
   private final KafkaProperties kafkaProperties;
   private final LocationService locationService;
-  private final PersonService personService;
 
   public LocationMetadata getLocationMetadataByLocation(UUID locationIdentifier) {
     //TODO fix this
@@ -435,12 +435,6 @@ public class MetadataService {
     return metadataObj;
   }
 
-  public static void main(String[] args) {
-    String date = "2022-07-07";
-    DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-    LocalDate localDateTime = LocalDate.parse(date,DateTimeFormatter.ISO_LOCAL_DATE);
-    System.out.println(localDateTime.toEpochDay());
-  }
   public static Pair<Class, Object> getValueFromValueObject(MetadataObj metadataObj) {
     switch (metadataObj.getDataType()) {
       case "string":
