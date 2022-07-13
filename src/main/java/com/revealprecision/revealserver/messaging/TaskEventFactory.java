@@ -26,6 +26,9 @@ import java.util.stream.Collectors;
 
 public class TaskEventFactory {
 
+  // Proceed with caution here as new updates / removals to the object will prevent rewind of the streams application.
+  // In the event of new data being introduced, ensure that null pointers are catered in the streams
+  // application if the event comes through, and it does not have the new fields populated
   public static TaskEvent getTaskEventFromTask(Task taskSaved){
 
     List<String> baseLocationIds = new ArrayList<>();

@@ -129,7 +129,7 @@ public class PlanService {
     GeographicLevel geographicLevel;
 
     if (!interventionType.getCode().equals(PlanInterventionTypeEnum.IRS_LITE.name()) && !interventionType.getCode()
-        .equals(PlanInterventionTypeEnum.IRS_LITE.name())) {
+        .equals(PlanInterventionTypeEnum.MDA_LITE.name())) {
       geographicLevel = geographicLevelService.findByName(LocationConstants.STRUCTURE);
     } else {
       if (planRequest.getHierarchyLevelTarget() == null) {
@@ -153,6 +153,9 @@ public class PlanService {
     if (locationBulkService.areRelationshipsGenerated()) {
       plan.setStatus(PlanStatusEnum.ACTIVE);
       savePlan(plan);
+      // Proceed with caution here as new updates / removals to the object will prevent rewind of the kafka listener application.
+      // In the event of new data being introduced, ensure that null pointers are catered in the kafka listener
+      // application if the event comes through, and it does not have the new fields populated
       PlanUpdateMessage planUpdateMessage = new PlanUpdateMessage();
       planUpdateMessage.setPlanIdentifier(plan.getIdentifier());
       planUpdateMessage.setPlanUpdateType(PlanUpdateType.ACTIVATE);

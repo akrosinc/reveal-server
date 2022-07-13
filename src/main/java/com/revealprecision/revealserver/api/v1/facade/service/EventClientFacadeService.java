@@ -4,23 +4,27 @@ import static com.revealprecision.revealserver.constants.EventClientConstants.CL
 import static com.revealprecision.revealserver.constants.EventClientConstants.EVENTS;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
 import com.revealprecision.revealserver.api.v1.facade.factory.EventSearchCriteriaFactory;
 import com.revealprecision.revealserver.api.v1.facade.models.ClientFacade;
 import com.revealprecision.revealserver.api.v1.facade.models.ClientFacadeMetadata;
 import com.revealprecision.revealserver.api.v1.facade.models.EventFacade;
+import com.revealprecision.revealserver.api.v1.facade.models.Obs;
 import com.revealprecision.revealserver.api.v1.facade.models.SyncParamFacade;
 import com.revealprecision.revealserver.api.v1.facade.util.DateTimeFormatter;
-import com.revealprecision.revealserver.enums.EntityPropertiesEnum;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.enums.NameUseEnum;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
-import com.revealprecision.revealserver.messaging.TopicConstants;
+import com.revealprecision.revealserver.messaging.KafkaConstants;
 import com.revealprecision.revealserver.messaging.message.EventMetadata;
 import com.revealprecision.revealserver.persistence.domain.Event;
 import com.revealprecision.revealserver.persistence.domain.Group;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.Person;
+import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.service.EventService;
 import com.revealprecision.revealserver.service.GroupService;
 import com.revealprecision.revealserver.service.LocationService;
@@ -59,21 +63,13 @@ import org.springframework.stereotype.Service;
 public class EventClientFacadeService {
 
   private final PersonService personService;
-
   private final EventService eventService;
-
   private final LocationService locationService;
-
   private final OrganizationService organizationService;
-
   private final UserService userService;
-
   private final GroupService groupService;
-
   private final ObjectMapper objectMapper;
-
-  //field codes which are processed and saved as metadata
-  private static final List<String> metadataToProcess = List.of("referred", "rooms_eligible", "rooms_sprayed");
+  private final KafkaProperties kafkaProperties;
 
   private final KafkaTemplate<String, EventMetadata> eventConsumptionTemplate;
 
@@ -96,7 +92,7 @@ public class EventClientFacadeService {
           .of(mapper.readValue(rawEventsRequest, EventFacade[].class));
       failedEvents = addOrUpdateEvents(eventFacades);
     }
-  
+
     return Pair.of(failedEvents, failedClients);
   }
 
@@ -104,47 +100,40 @@ public class EventClientFacadeService {
     List<EventFacade> failedEvents = new ArrayList<>();
     eventFacadeList.forEach(eventFacade -> {
       try {
-        saveEvent(eventFacade);
-        eventFacade.getObs().forEach(obs -> {
-          if(metadataToProcess.contains(obs.getFieldCode())) {
+        Event savedEvent = saveEvent(eventFacade);
+
+        JsonNode obsList = savedEvent.getAdditionalInformation().get("obs");
+
+        if (obsList.isArray()) {
+
+          ObjectReader reader = objectMapper.readerFor(new TypeReference<List<Obs>>() {
+          });
+
+          List<Obs> obsJavaList = reader.readValue(obsList);
+
+          obsJavaList.forEach(obs -> {
+
             UUID baseEntityId = UUID.fromString(eventFacade.getBaseEntityId());
-            if(personService.findByIdentifier(baseEntityId).isPresent()) {
-              eventConsumptionTemplate.send(TopicConstants.EVENT_CONSUMPTION, EventMetadata.builder()
-                  .baseEntityId(baseEntityId)
-                  .obs(obs)
-                  .entityPropertiesEnum(EntityPropertiesEnum.PERSON)
-                  .dataType(obs.getFieldDataType())
-                  .tag(obs.getFieldCode())
-                  .planIdentifier(UUID.fromString(eventFacade.getDetails().get("planIdentifier")))
-                  .taskIdentifier(UUID.fromString(eventFacade.getDetails().get("taskIdentifier")))
-                  .user(UserUtils.getCurrentPrincipleName())
-                  .build());
-            }else {
-              Person blankPerson = Person.builder()
-                  .identifier(baseEntityId)
-                  .nameUse("")
-                  .nameText("")
-                  .nameFamily("")
-                  .nameGiven("")
-                  .namePrefix("")
-                  .nameSuffix("")
-                  .gender("")
-                  .build();
-              blankPerson.setEntityStatus(EntityStatus.ACTIVE);
-              personService.createPerson(blankPerson);
-              eventConsumptionTemplate.send(TopicConstants.EVENT_CONSUMPTION, EventMetadata.builder()
-                  .baseEntityId(baseEntityId)
-                  .obs(obs)
-                  .entityPropertiesEnum(EntityPropertiesEnum.PERSON)
-                  .dataType(obs.getFieldDataType())
-                  .tag(obs.getFieldCode())
-                  .planIdentifier(UUID.fromString(eventFacade.getDetails().get("planIdentifier")))
-                  .taskIdentifier(UUID.fromString(eventFacade.getDetails().get("taskIdentifier")))
-                  .user(UserUtils.getCurrentPrincipleName())
-                  .build());
-            }
-          }
-        });
+            eventConsumptionTemplate.send(
+                kafkaProperties.getTopicMap().get(KafkaConstants.EVENT_CONSUMPTION),
+                // Proceed with caution here as new updates / removals to the object will prevent rewind of the streams application.
+                // In the event of new data being introduced, ensure that null pointers are catered in the streams
+                // application if the event comes through, and it does not have the new fields populated
+                EventMetadata.builder()
+                    .eventId(savedEvent.getIdentifier())
+                    .baseEntityId(baseEntityId)
+                    .eventType(savedEvent.getEventType())
+                    .obs(obs)
+                    .planIdentifier(
+                        UUID.fromString(eventFacade.getDetails().get("planIdentifier")))
+                    .taskIdentifier(
+                        UUID.fromString(eventFacade.getDetails().get("taskIdentifier")))
+                    .user(UserUtils.getCurrentPrincipleName())
+                    .fullObs(obsJavaList)
+                    .build());
+
+          });
+        }
       } catch (Exception exception) {
         exception.printStackTrace();
         failedEvents.add(eventFacade);

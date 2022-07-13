@@ -2,6 +2,7 @@ package com.revealprecision.revealserver.api.v1.facade.models;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -19,7 +20,7 @@ import lombok.experimental.FieldNameConstants;
 @JsonInclude(value = Include.NON_NULL)
 @AllArgsConstructor
 @NoArgsConstructor
-public class Obs {
+public class Obs implements Serializable {
 
   private static final long serialVersionUID = 1L;
 

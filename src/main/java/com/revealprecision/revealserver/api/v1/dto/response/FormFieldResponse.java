@@ -1,7 +1,7 @@
 package com.revealprecision.revealserver.api.v1.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import java.util.List;
+import com.revealprecision.revealserver.enums.ActionTitleEnum;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -15,25 +15,17 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class EntityTagResponse {
+public class FormFieldResponse {
 
   private UUID identifier;
 
-  private String tag;
+  private String name;
 
-  private String valueType;
+  private String display;
 
-  private String definition;
+  private boolean addToMetadata;
 
-  private LookupEntityTypeResponse lookupEntityType;
+  private String dataType;
 
-  private String resultExpression;
-
-  private String generationFormula;
-
-  private List<String> referenceFields;
-
-  private boolean isResultLiteral;
-
-  private boolean isGenerated;
+  private String formTitle;
 }

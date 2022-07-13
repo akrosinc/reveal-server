@@ -2,8 +2,6 @@ package com.revealprecision.revealserver.messaging.message;
 
 import java.util.UUID;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -15,8 +13,7 @@ import lombok.ToString;
 @AllArgsConstructor
 @NoArgsConstructor
 @ToString
-@Builder
-public class PersonMetadataUnpackedEvent extends Message {
+public class PersonFormDataAggregateEvent extends Message {
 
   private UUID identifier;
 
@@ -26,8 +23,22 @@ public class PersonMetadataUnpackedEvent extends Message {
 
   private UUID hierarchyIdentifier;
 
-  private MetaDataEvent metaDataEvent;
+  private UUID thisLocation;
 
-  private UUID thisLocationId;
+  private UUID plan;
+
+  private String tag;
+
+  private String tagValue;
+
+  private String previousTagValue;
+
+  private Integer tagIntegerValue;
+
+  private Integer previousTagIntegerValue;
+
+  private Long increment;
+
+  private Long averageCounter;
 
 }

@@ -329,6 +329,9 @@ public class TaskService {
           collect);
 
       taskProcessStages.forEach(taskProcessStage -> {
+        // Proceed with caution here as new updates / removals to the object will prevent rewind of the kafka listener application.
+        // In the event of new data being introduced, ensure that null pointers are catered in the kafka listener
+        // application if the event comes through, and it does not have the new fields populated
             TaskProcessEvent taskProcessEvent = TaskProcessEvent.builder()
                 .baseEntityIdentifier(taskProcessStage.getBaseEntityIdentifier())
                 .owner(ownerId)

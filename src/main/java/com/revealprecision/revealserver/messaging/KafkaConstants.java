@@ -11,6 +11,7 @@ public class KafkaConstants {
   public static final String PERSON_METADATA_UPDATE = "PERSON_METADATA_UPDATE";
   public static final String tableOfOperationalAreaHierarchiesTOPIC = "tableOfOperationalAreaHierarchiesTOPIC";
   public static final String TASK_CANDIDATE = "TASK_CANDIDATE";
+  public static final String EVENT_CONSUMPTION = "EVENT_CONSUMPTION";
 
   ///Materialized stores
   public static final String structureCountPerParent = "structureCountPerParent";
@@ -38,5 +39,13 @@ public class KafkaConstants {
   public static final String assignedOperationalCountPerParent = "assignedOperationalCountPerParent";
   public static final String locationStructureBusinessStatus = "locationStructureBusinessStatus";
   public static final String locationStructureHierarchyBusinessStatus = "locationStructureHierarchyBusinessStatus";
+  public static final String personFormDataString = "personFormDataString";
+  public static final String personFormDataStringCount = "personFormDataStringCount";
+  public static final String locationFormDataInteger = "locationFormDataInteger";
+  public static final String locationFormDataIntegerSumOrAverage = "locationFormDataIntegerSumOrAverage";
+  public static final String locationFormDataString = "locationFormDataString";
+  public static final String locationFormDataStringCount = "locationFormDataStringCount";
+  public static final String personFormDataInteger = "personFormDataInteger";
+  public static final String personFormDataIntegerSumOrAverage = "personFormDataIntegerSumOrAverage";
 
 }

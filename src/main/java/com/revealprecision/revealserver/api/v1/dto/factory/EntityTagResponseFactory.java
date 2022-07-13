@@ -18,9 +18,19 @@ public class EntityTagResponseFactory {
 
   public static EntityTagResponse fromEntity(EntityTag entityTag) {
 
-    return EntityTagResponse.builder().identifier(entityTag.getIdentifier()).tag(entityTag.getTag())
-        .definition(entityTag.getDefinition()).valueType(entityTag.getValueType()).lookupEntityType(
-            LookupEntityTagResponseFactory.fromEntity(entityTag.getLookupEntityType())).build();
+    return EntityTagResponse.builder()
+        .identifier(entityTag.getIdentifier())
+        .tag(entityTag.getTag())
+        .definition(entityTag.getDefinition())
+        .valueType(entityTag.getValueType())
+        .generationFormula(entityTag.getGenerationFormula())
+        .isGenerated(entityTag.isGenerated())
+        .resultExpression(entityTag.getResultExpression())
+        .referenceFields(entityTag.getReferencedFields())
+        .isResultLiteral(entityTag.isResultLiteral())
+        .lookupEntityType(
+            LookupEntityTagResponseFactory.fromEntity(entityTag.getLookupEntityType()))
+        .build();
   }
 
 }
