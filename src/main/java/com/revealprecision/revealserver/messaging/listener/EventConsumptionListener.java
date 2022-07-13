@@ -4,8 +4,11 @@ import com.revealprecision.revealserver.api.v1.dto.factory.LocationMetadataEvent
 import com.revealprecision.revealserver.api.v1.dto.factory.PersonMetadataEventFactory;
 import com.revealprecision.revealserver.api.v1.facade.models.Obs;
 import com.revealprecision.revealserver.enums.EntityStatus;
+import com.revealprecision.revealserver.messaging.KafkaConstants;
 import com.revealprecision.revealserver.messaging.message.EventMetadata;
 import com.revealprecision.revealserver.messaging.message.LocationMetadataEvent;
+import com.revealprecision.revealserver.messaging.message.Message;
+import com.revealprecision.revealserver.messaging.message.MetadataObjEvent;
 import com.revealprecision.revealserver.messaging.message.PersonMetadataEvent;
 import com.revealprecision.revealserver.messaging.message.TMetadataEvent;
 import com.revealprecision.revealserver.persistence.domain.EntityTag;
@@ -16,7 +19,9 @@ import com.revealprecision.revealserver.persistence.domain.Person;
 import com.revealprecision.revealserver.persistence.domain.Task;
 import com.revealprecision.revealserver.persistence.domain.metadata.LocationMetadata;
 import com.revealprecision.revealserver.persistence.domain.metadata.PersonMetadata;
+import com.revealprecision.revealserver.persistence.domain.metadata.infra.MetadataObj;
 import com.revealprecision.revealserver.persistence.repository.EventTrackerRepository;
+import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.service.EntityTagService;
 import com.revealprecision.revealserver.service.FormFieldService;
 import com.revealprecision.revealserver.service.LocationService;
@@ -36,6 +41,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 @RequiredArgsConstructor
@@ -51,6 +57,8 @@ public class EventConsumptionListener extends Listener {
   private final LocationService locationService;
   private final MetadataExpressionEvaluationService metadataExpressionEvaluationService;
   private final EventTrackerRepository eventTrackerRepository;
+  private final KafkaTemplate<String, Message> kafkaTemplate;
+  private final KafkaProperties kafkaProperties;
 
   @KafkaListener(topics = "#{kafkaConfigProperties.topicMap.get('EVENT_CONSUMPTION')}", groupId = "reveal_server_group")
   public void eventConsumption(EventMetadata eventMetadata)  {
@@ -111,7 +119,7 @@ public class EventConsumptionListener extends Listener {
                   eventMetadata.getUser(), entityTag.getValueType(), entityTag, "FormData",
                   location, task.getAction().getTitle(), Location.class, tag,finalDateForScopeDateFields);
 
-              log.debug("###############Obs Field: {} entityTag: {} locationMetadata: {}",obs.getFieldCode(),entityTag.getTag(),locationMetadata.toString());
+              log.trace("###############Obs Field: {} entityTag: {} locationMetadata: {}",obs.getFieldCode(),entityTag.getTag(),locationMetadata.toString());
 
 
               Set<EntityTag> referencedTags = entityTagService.findEntityTagsByReferencedTags(
@@ -134,7 +142,7 @@ public class EventConsumptionListener extends Listener {
                         task.getAction().getGoal().getPlan(), location, referenceMetadata);
 
 
-                    log.debug("###############Obs Field: {} referencedentityTagItem: {} scope: {} locationMetadataEvent:{}",obs.getFieldCode(),
+                    log.trace("###############Obs Field: {} referencedentityTagItem: {} scope: {} locationMetadataEvent:{}",obs.getFieldCode(),
                         referencedTag.getTag(),referencedTag.getScope(),locationMetadataEvent);
 
                     String finalDateForReferencedScopeDateFields;
@@ -144,17 +152,17 @@ public class EventConsumptionListener extends Listener {
                       finalDateForReferencedScopeDateFields = null;
                     }
 
-                    log.debug("###############Obs Field: {} referencedentityTagItem: {} finalDateForReferencedScopeDateFields: {}",obs.getFieldCode(),
+                    log.trace("###############Obs Field: {} referencedentityTagItem: {} finalDateForReferencedScopeDateFields: {}",obs.getFieldCode(),
                         referencedTag.getTag(),finalDateForReferencedScopeDateFields);
 
-                    log.debug("###############Obs Field: {} referencedentityTagItem: {}",obs.getFieldCode(),
+                    log.trace("###############Obs Field: {} referencedentityTagItem: {}",obs.getFieldCode(),
                         referencedTag.getTag());
 
                     try {
                       if (!referencedTag.getScope().equals("Date")
                           || finalDateForReferencedScopeDateFields != null) {
 
-                        log.debug("###############Obs Field: success!!");
+                        log.trace("###############Obs Field: success!!");
 
                         Optional<EventTracker> eventTrackerRetrievedOptional;
 
@@ -165,18 +173,17 @@ public class EventConsumptionListener extends Listener {
                           eventTrackerRetrievedOptional = eventTrackerRepository.findFirstEventTrackerByEventIdentifierAndEntityTagIdentifier(eventMetadata.getEventId(),
                               referencedTag.getIdentifier());
                         }
-
+                        String referencedTagKey = getTagKey(task, referencedTag, eventMetadata,dateForScopeDateFields);
                         if (eventTrackerRetrievedOptional.isEmpty()) {
-
 
                               Object o = updateMetaDataForGeneratedTags(
                               referencedTag, locationMetadataEvent,
-                              eventMetadata, task, location, finalDateForReferencedScopeDateFields,referenceMetadata);
+                              eventMetadata, task, location, finalDateForReferencedScopeDateFields,referenceMetadata,referencedTagKey);
 
                           if (o != null) {
-
-                            log.trace("is metadata obj null ? {}", referenceMetadata == null);
                             referenceMetadata = (LocationMetadata) o;
+                            log.trace("is metadata obj null ? {}", referenceMetadata == null);
+
                             EventTracker eventTracker = EventTracker.builder()
                                 .eventIdentifier(eventMetadata.getEventId())
                                 .date(dateForScopeDateFields)
@@ -185,6 +192,26 @@ public class EventConsumptionListener extends Listener {
                                 .build();
                             eventTracker.setEntityStatus(EntityStatus.ACTIVE);
                             eventTrackerRepository.save(eventTracker);
+
+                            Optional<MetadataObj> metadataObjOptional = referenceMetadata.getEntityValue()
+                                .getMetadataObjs().stream().filter(
+                                    metadataObj -> metadataObj.getTagKey().equals(referencedTagKey))
+                                .findFirst();
+
+                            LocationMetadata finalReferenceMetadata = referenceMetadata;
+                            metadataObjOptional.ifPresent(metadataObj -> {
+                                  MetadataObjEvent metadataObjEvent = new MetadataObjEvent();
+                                  metadataObjEvent.setEntityId(finalReferenceMetadata.getLocation().getIdentifier());
+                                  metadataObjEvent.setMetadataObj(metadataObj);
+                                  metadataObjEvent.setLocationGeographicLevel(location.getGeographicLevel().getName());
+                                  metadataObjEvent.setLocationHierarchy(task.getAction().getGoal().getPlan().getLocationHierarchy().getIdentifier());
+
+                                  kafkaTemplate.send(
+                                      kafkaProperties.getTopicMap()
+                                          .get(KafkaConstants.FORM_EVENT_CONSUMPTION), metadataObjEvent);
+                                }
+                                    );
+
                           } else {
                             log.debug("No change in metadata");
                           }
@@ -203,65 +230,65 @@ public class EventConsumptionListener extends Listener {
             }
             break;
           case "Person":
-            List<Person> people = new ArrayList<>();
-            if (ActionUtils.isActionForPerson(task.getAction())) {
-              Person person = personService.getPersonByIdentifier(
-                  eventMetadata.getBaseEntityId());
-              people.add(person);
-            } else if (ActionUtils.isActionForLocation(task.getAction())) {
-              Location location = locationService.findByIdentifier(eventMetadata.getBaseEntityId());
-              List<Person> peopleByLocations = personService.getPeopleByLocations(
-                  List.of(location));
-              people.addAll(peopleByLocations);
-            }
-
-            String finalDateForScopeDateFields1 = dateForScopeDateFields;
-            people.forEach(person -> {
-              String tag = getTagKey(task, entityTag, eventMetadata, finalDateForScopeDateFields1);
-              Object tagValue = metadata.get(eventMetadata.getObs().getFieldCode());
-
-              Object tagValueCasted = getCastedValue(formField, tagValue);
-
-              PersonMetadata personMetadata = (PersonMetadata) metadataService.updateMetaData(
-                  eventMetadata.getBaseEntityId(),
-                  tagValueCasted,
-                  task.getAction().getGoal().getPlan(),
-                  eventMetadata.getTaskIdentifier(),
-                  eventMetadata.getUser(),
-                  entityTag.getValueType(),
-                  entityTag,
-                  "FormData",
-                  person,
-                  task.getAction().getTitle(), Person.class,
-                  tag, finalDateForScopeDateFields1);
-
-              Set<EntityTag> referencedTags = entityTagService.findEntityTagsByReferencedTags(
-                  entityTag.getTag());
-
-              PersonMetadata referenceMetadata = personMetadata;
-
-              for (EntityTag referencedTag : referencedTags) {
-                if (referencedTag.isGenerated()) {
-
-                  String generationFormula = referencedTag.getGenerationFormula();
-
-                  if (generationFormula != null) {
-
-                    PersonMetadataEvent personMetadataEvent = PersonMetadataEventFactory.getPersonMetadataEvent(
-                        task.getAction().getGoal().getPlan(), person.getLocations().stream().map(
-                            Location::getIdentifier).collect(
-                            Collectors.toList()), referenceMetadata);
-
-                    try {
-                      referenceMetadata = (PersonMetadata) updateMetaDataForGeneratedTags(referencedTag, personMetadataEvent,
-                          eventMetadata, task, person,finalDateForScopeDateFields1,referenceMetadata);
-                    } catch (NoSuchMethodException e) {
-                      e.printStackTrace();
-                    }
-                  }
-                }
-              }
-            });
+//            List<Person> people = new ArrayList<>();
+//            if (ActionUtils.isActionForPerson(task.getAction())) {
+//              Person person = personService.getPersonByIdentifier(
+//                  eventMetadata.getBaseEntityId());
+//              people.add(person);
+//            } else if (ActionUtils.isActionForLocation(task.getAction())) {
+//              Location location = locationService.findByIdentifier(eventMetadata.getBaseEntityId());
+//              List<Person> peopleByLocations = personService.getPeopleByLocations(
+//                  List.of(location));
+//              people.addAll(peopleByLocations);
+//            }
+//
+//            String finalDateForScopeDateFields1 = dateForScopeDateFields;
+//            people.forEach(person -> {
+//              String tag = getTagKey(task, entityTag, eventMetadata, finalDateForScopeDateFields1);
+//              Object tagValue = metadata.get(eventMetadata.getObs().getFieldCode());
+//
+//              Object tagValueCasted = getCastedValue(formField, tagValue);
+//
+//              PersonMetadata personMetadata = (PersonMetadata) metadataService.updateMetaData(
+//                  eventMetadata.getBaseEntityId(),
+//                  tagValueCasted,
+//                  task.getAction().getGoal().getPlan(),
+//                  eventMetadata.getTaskIdentifier(),
+//                  eventMetadata.getUser(),
+//                  entityTag.getValueType(),
+//                  entityTag,
+//                  "FormData",
+//                  person,
+//                  task.getAction().getTitle(), Person.class,
+//                  tag, finalDateForScopeDateFields1);
+//
+//              Set<EntityTag> referencedTags = entityTagService.findEntityTagsByReferencedTags(
+//                  entityTag.getTag());
+//
+//              PersonMetadata referenceMetadata = personMetadata;
+//
+//              for (EntityTag referencedTag : referencedTags) {
+//                if (referencedTag.isGenerated()) {
+//
+//                  String generationFormula = referencedTag.getGenerationFormula();
+//
+//                  if (generationFormula != null) {
+//
+//                    PersonMetadataEvent personMetadataEvent = PersonMetadataEventFactory.getPersonMetadataEvent(
+//                        task.getAction().getGoal().getPlan(), person.getLocations().stream().map(
+//                            Location::getIdentifier).collect(
+//                            Collectors.toList()), referenceMetadata);
+//
+//                    try {
+//                      referenceMetadata = (PersonMetadata) updateMetaDataForGeneratedTags(referencedTag, personMetadataEvent,
+//                          eventMetadata, task, person,finalDateForScopeDateFields1,referenceMetadata);
+//                    } catch (NoSuchMethodException e) {
+//                      e.printStackTrace();
+//                    }
+//                  }
+//                }
+//              }
+//            });
             break;
           case "Plan":
             //TODO: Plan Entity Type Metadata
@@ -282,25 +309,25 @@ public class EventConsumptionListener extends Listener {
   }
 
   public Object updateMetaDataForGeneratedTags(EntityTag referencedTag, TMetadataEvent metadataEvent,
-      EventMetadata eventMetadata, Task task, Object entity, String dateForScopeDateFields, Object referenceMetadata)
+      EventMetadata eventMetadata, Task task, Object entity, String dateForScopeDateFields, Object referenceMetadata, String referencedTagKey)
       throws NoSuchMethodException {
     if (referencedTag.isGenerated()) {
 
       String generationFormula = referencedTag.getGenerationFormula();
 
-      log.debug("#############referenced tag {} generation formula: {} metadata: {}",referencedTag.getTag(), generationFormula, metadataEvent);
+      log.trace("#############referenced tag {} generation formula: {} metadata: {}",referencedTag.getTag(), generationFormula, metadataEvent);
 
       if ((Boolean) metadataExpressionEvaluationService.evaluateExpression(
           generationFormula, TMetadataEvent.class, metadataEvent,
           Boolean.class, dateForScopeDateFields)) {
 
-        log.debug("###########referenced tag {} successfully evaluated with date: {} ",referencedTag.getTag(),dateForScopeDateFields);
+        log.trace("###########referenced tag {} successfully evaluated with date: {} ",referencedTag.getTag(),dateForScopeDateFields);
 
         Object generatedValue = getGeneratedValue(referencedTag, metadataEvent, dateForScopeDateFields);
 
-        log.debug("###########referenced tag {} generatedValue {} ",referencedTag.getTag(), generatedValue);
+        log.trace("###########referenced tag {} generatedValue {} ",referencedTag.getTag(), generatedValue);
 
-        String referencedTagKey = getTagKey(task, referencedTag, eventMetadata,dateForScopeDateFields);
+
 
 
         Object o = metadataService.updateMetaData(
@@ -318,7 +345,7 @@ public class EventConsumptionListener extends Listener {
             referencedTagKey,
             dateForScopeDateFields);
 
-        log.debug("################referencedTag: {} locationMetadata: {}",referencedTag.getTag(),o);
+        log.trace("################referencedTag: {} locationMetadata: {}",referencedTag.getTag(),o);
 
         return o;
       }
@@ -357,7 +384,7 @@ public class EventConsumptionListener extends Listener {
     } else if(referencedTag.getScope().equals("Date")){
       referencedTagKey =
           referencedTag.getTag() + "_" + task.getAction().getGoal().getPlan().getIdentifier() + "_"
-              + task.getIdentifier()+"_"+eventMetadata.getEventId() + "_"+ dateForScopeDateFields; // + Date;
+              + task.getIdentifier() + "_"+ dateForScopeDateFields; // + Date;
     }
     return referencedTagKey;
   }
@@ -365,6 +392,8 @@ public class EventConsumptionListener extends Listener {
   private Object getGeneratedResult(TMetadataEvent tMetadataEvent, String valueType,
 
       String resultExpression, String dateForDateScoped) throws NoSuchMethodException {
+
+    log.trace("resultExpression: {} ",resultExpression);
     Object generatedValue;
     switch (valueType) {
       case "string":

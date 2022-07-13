@@ -1,8 +1,10 @@
 package com.revealprecision.revealserver.messaging.message;
 
+import com.revealprecision.revealserver.persistence.domain.metadata.infra.MetadataObj;
 import com.revealprecision.revealserver.persistence.domain.metadata.infra.TagData;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -13,23 +15,17 @@ import lombok.ToString;
 @AllArgsConstructor
 @NoArgsConstructor
 @ToString
-public class MetaDataEvent extends Message {
+@Builder
+public class MetadataObjEvent extends Message {
 
-  private UUID entityTagId;
+  private UUID entityId;
 
-  private String tag;
+  private UUID locationHierarchy;
 
-  private TagData tagData;
+  private String locationGeographicLevel;
 
-  private String dataType;
+  private MetadataObj metadataObj;
 
-  private String type;
+  private UUID ancestor;
 
-  private boolean isActive;
-
-  private boolean dateScope;
-
-  private String dateForDateScope;
-
-  private Long captureNumber;
 }

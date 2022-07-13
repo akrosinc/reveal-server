@@ -12,6 +12,7 @@ public class KafkaConstants {
   public static final String tableOfOperationalAreaHierarchiesTOPIC = "tableOfOperationalAreaHierarchiesTOPIC";
   public static final String TASK_CANDIDATE = "TASK_CANDIDATE";
   public static final String EVENT_CONSUMPTION = "EVENT_CONSUMPTION";
+  public static final String FORM_EVENT_CONSUMPTION = "FORM_EVENT_CONSUMPTION";
 
   ///Materialized stores
   public static final String structureCountPerParent = "structureCountPerParent";
