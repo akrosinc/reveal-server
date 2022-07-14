@@ -18,6 +18,7 @@ import com.revealprecision.revealserver.persistence.domain.metadata.infra.TagVal
 import com.revealprecision.revealserver.persistence.repository.LocationMetadataRepository;
 import com.revealprecision.revealserver.persistence.repository.PersonMetadataRepository;
 import com.revealprecision.revealserver.props.KafkaProperties;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -45,7 +46,6 @@ public class MetadataService {
   private final KafkaTemplate<String, PersonMetadataEvent> personMetadataKafkaTemplate;
   private final KafkaProperties kafkaProperties;
   private final LocationService locationService;
-  private final PersonService personService;
 
   public LocationMetadata getLocationMetadataByLocation(UUID locationIdentifier) {
     //TODO fix this
@@ -61,7 +61,8 @@ public class MetadataService {
   @Transactional
   public PersonMetadata updatePersonMetadata(UUID personIdentifier, Object tagValue,
       Plan plan, UUID taskIdentifier,
-      String user, String dataType, String tag, String type, Person person, String taskType) {
+      String user, String dataType, String tag, String type, Person person, String taskType)
+      throws IOException {
 
     PersonMetadata personMetadata;
 
@@ -145,6 +146,7 @@ public class MetadataService {
           MetaDataEvent metaDataEvent = new MetaDataEvent();
           metaDataEvent.setTag(metadataObj.getTag());
           metaDataEvent.setTagData(metadataObj.getCurrent());
+          metaDataEvent.setDataType(metadataObj.getDataType());
           metaDataEvent.setActive(metadataObj.isActive());
           metaDataEvent.setType(metadataObj.getType());
           return metaDataEvent;
@@ -159,6 +161,7 @@ public class MetadataService {
     personMetadataKafkaTemplate.send(
         kafkaProperties.getTopicMap().get(KafkaConstants.PERSON_METADATA_UPDATE),
         personMetadataEvent);
+
     return savedLocationMetadata;
   }
 
@@ -250,6 +253,7 @@ public class MetadataService {
           metaDataEvent.setTagData(metadataObj.getCurrent());
           metaDataEvent.setActive(metadataObj.isActive());
           metaDataEvent.setType(metadataObj.getType());
+          metaDataEvent.setDataType(metadataObj.getDataType());
           return metaDataEvent;
         }).collect(Collectors.toList()));
     locationMetadataEvent.setEntityId(savedLocationMetadata.getLocation().getIdentifier());
@@ -309,6 +313,7 @@ public class MetadataService {
               metaDataEvent.setTagData(metadataObj.getCurrent());
               metaDataEvent.setActive(metadataObj.isActive());
               metaDataEvent.setType(metadataObj.getType());
+              metaDataEvent.setDataType(metadataObj.getDataType());
               return metaDataEvent;
             }).collect(Collectors.toList()));
         locationMetadataEvent.setEntityId(savedLocationMetadata.getLocation().getIdentifier());

@@ -1,12 +1,13 @@
 package com.revealprecision.revealserver.persistence.domain;
 
-import java.util.Set;
 import java.util.UUID;
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
-import javax.persistence.OneToMany;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -27,22 +28,20 @@ import org.hibernate.envers.Audited;
 @NoArgsConstructor
 @SQLDelete(sql = "UPDATE condition SET entity_status = 'DELETED' where identifier=?")
 @Where(clause = "entity_status='ACTIVE'")
-public class LookupEntityType extends AbstractAuditableEntity {
+public class CoreField extends AbstractAuditableEntity {
 
   @Id
   @GeneratedValue
   private UUID identifier;
 
-  private String code;
+  @Column(unique = true)
+  private String field;
 
-  private String tableName;
+  private String valueType;
 
-  @OneToMany(mappedBy = "lookupEntityType")
-  private Set<Action> actions;
+  private String definition;
 
-  @OneToMany(mappedBy = "lookupEntityType", fetch = FetchType.LAZY)
-  private Set<EntityTag> entityTags;
-
-  @OneToMany(mappedBy = "lookupEntityType")
-  private Set<CoreField> coreFields;
+  @ManyToOne(fetch = FetchType.EAGER)
+  @JoinColumn(name = "lookup_entity_type_identifier", referencedColumnName = "identifier")
+  private LookupEntityType lookupEntityType;
 }

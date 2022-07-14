@@ -3,6 +3,7 @@ package com.revealprecision.revealserver.persistence.repository;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
 import com.revealprecision.revealserver.persistence.projection.LocationChildrenCountProjection;
+import com.revealprecision.revealserver.persistence.projection.LocationMainData;
 import com.revealprecision.revealserver.persistence.projection.LocationRelationshipProjection;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import java.util.List;
@@ -71,7 +72,7 @@ public interface LocationRelationshipRepository extends JpaRepository<LocationRe
   @Query(value = "select count(*) from location_relationship lr "
       + "where lr.parent_identifier = :locationIdentifier "
       + "group by lr.parent_identifier", nativeQuery = true)
-  long getChildrenNumber(UUID locationIdentifier);
+  Optional<Long> getChildrenNumber(UUID locationIdentifier);
 
   @Query(value = "SELECT ST_Contains (ST_AsText(ST_GeomFromGeoJSON(:parent)),ST_AsText(ST_Centroid(ST_GeomFromGeoJSON(:child))))", nativeQuery = true)
   Boolean hasParentChildRelationship(@Param("parent") String parent,
@@ -138,4 +139,8 @@ public interface LocationRelationshipRepository extends JpaRepository<LocationRe
   LocationRelationship getLocationRelationshipByLocation_IdentifierAndLocationHierarchy_Identifier(
       UUID locationIdentifier, UUID hierarchyIdentifier);
 
+  @Query(value = "select new com.revealprecision.revealserver.persistence.projection.LocationMainData(l.identifier, l.name) from LocationRelationship lr "
+      + "left join Location l on l.identifier = lr.location.identifier "
+      + "where l.geographicLevel.name = :levelName and lr.locationHierarchy.identifier = :hierarchyIdentifier")
+  List<LocationMainData> getLocationsByHierarchyIdAndLevelName(@Param("hierarchyIdentifier") UUID hierarchyIdentifier, @Param("levelName") String levelName);
 }

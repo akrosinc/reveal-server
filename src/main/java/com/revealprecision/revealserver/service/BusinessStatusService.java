@@ -7,6 +7,7 @@ import com.revealprecision.revealserver.persistence.domain.metadata.PersonMetada
 import com.revealprecision.revealserver.props.BusinessStatusProperties;
 import com.revealprecision.revealserver.util.ActionUtils;
 import com.revealprecision.revealserver.util.UserUtils;
+import java.io.IOException;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +20,7 @@ public class BusinessStatusService {
   private final BusinessStatusProperties businessStatusProperties;
   private final MetadataService metadataService;
 
-  public void setBusinessStatus(Task task, String businessStatus) {
+  public void setBusinessStatus(Task task, String businessStatus) throws IOException {
 
       Plan plan = task.getAction().getGoal().getPlan();
 

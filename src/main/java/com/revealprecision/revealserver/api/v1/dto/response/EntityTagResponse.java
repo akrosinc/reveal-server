@@ -24,5 +24,7 @@ public class EntityTagResponse {
 
   private String definition;
 
+  private String fieldType;
+
   private LookupEntityTypeResponse lookupEntityType;
 }

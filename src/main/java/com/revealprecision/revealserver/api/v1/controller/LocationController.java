@@ -11,6 +11,7 @@ import com.revealprecision.revealserver.service.LocationRelationshipService;
 import com.revealprecision.revealserver.service.LocationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -44,7 +45,7 @@ public class LocationController {
   )
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<LocationResponse> createLocation(
-      @Valid @RequestBody LocationRequest locationRequest) {
+      @Valid @RequestBody LocationRequest locationRequest) throws IOException {
     return ResponseEntity.status(HttpStatus.CREATED)
         .body(LocationResponseFactory.fromEntity(locationService.createLocation(locationRequest)));
   }

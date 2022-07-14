@@ -1,8 +1,7 @@
 package com.revealprecision.revealserver.api.v1.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import java.util.List;
-import java.util.UUID;
+import java.util.Date;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -15,11 +14,12 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class FeatureSetResponse {
+public class PersonCoreFields {
 
-  private UUID identifier;
-  private String type;
-  private String defaultDisplayColumn;
-  private List<LocationResponse> features;
-  private List<LocationResponse> parents;
+  private String identifier;
+  private String firstName;
+  private String lastName;
+  private String gender;
+  private Date birthDate;
+  private Boolean birthDateApprox;
 }

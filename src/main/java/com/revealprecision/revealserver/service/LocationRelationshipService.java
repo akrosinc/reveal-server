@@ -14,6 +14,7 @@ import com.revealprecision.revealserver.persistence.domain.LocationBulk;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
 import com.revealprecision.revealserver.persistence.projection.LocationChildrenCountProjection;
+import com.revealprecision.revealserver.persistence.projection.LocationMainData;
 import com.revealprecision.revealserver.persistence.projection.LocationRelationshipProjection;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import com.revealprecision.revealserver.persistence.repository.GeographicLevelRepository;
@@ -50,6 +51,7 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.data.util.Pair;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Async;
@@ -68,13 +70,15 @@ public class LocationRelationshipService {
   private final KafkaProperties kafkaProperties;
   private final LocationBulkRepository locationBulkRepository;
   private final Logger importLog = LoggerFactory.getLogger("location-import-file");
+  private final Environment env;
 
   @Autowired
   public LocationRelationshipService(LocationRelationshipRepository locationRelationshipRepository,
       GeographicLevelRepository geographicLevelRepository, LocationRepository locationRepository,
       LocationHierarchyRepository locationHierarchyRepository, RestHighLevelClient client,
       KafkaTemplate<String, LocationRelationshipMessage> kafkaTemplate,
-      KafkaProperties kafkaProperties, LocationBulkRepository locationBulkRepository) {
+      KafkaProperties kafkaProperties, LocationBulkRepository locationBulkRepository,
+      Environment env) {
     this.locationRelationshipRepository = locationRelationshipRepository;
     this.geographicLevelRepository = geographicLevelRepository;
     this.locationRepository = locationRepository;
@@ -83,6 +87,7 @@ public class LocationRelationshipService {
     this.kafkaTemplate = kafkaTemplate;
     this.kafkaProperties = kafkaProperties;
     this.locationBulkRepository = locationBulkRepository;
+    this.env = env;
   }
 
 
@@ -110,7 +115,11 @@ public class LocationRelationshipService {
             .get(geographicLevels.get(geographicLevels.indexOf(item.getKey()) + 1));
         for (Location location : parentLocations) {
           for (Location potentialChild : potentialChildren) {
-            createParentChildRelationship(location, potentialChild, locationHierarchy);
+            try {
+              createParentChildRelationship(location, potentialChild, locationHierarchy);
+            } catch (IOException e) {
+              e.printStackTrace();
+            }
           }
         }
       }
@@ -138,7 +147,7 @@ public class LocationRelationshipService {
     locationRelationshipRepository.save(locationRelationshipToSave);
   }
 
-  public void updateLocationRelationshipsForNewLocation(Location location) {
+  public void updateLocationRelationshipsForNewLocation(Location location) throws IOException {
     var locationHierarchies = locationHierarchyRepository
         .findLocationHierarchiesByNodeOrderContaining(location.getGeographicLevel().getName());
     for (var locationHierarchy : locationHierarchies) {
@@ -155,9 +164,10 @@ public class LocationRelationshipService {
             .findByGeographicLevelIdentifier(parentGeographicLevel.get()
                 .getIdentifier());
 
-        upperGeographicLevelLocations.stream().forEach(
-            parentLocation -> createParentChildRelationship(parentLocation, location,
-                locationHierarchy));
+        for(Location parentLocation : upperGeographicLevelLocations){
+          createParentChildRelationship(parentLocation, location,
+              locationHierarchy);
+        }
       } else if (nodePosition == -1) {
         createRelationshipForRoot(location, locationHierarchy);
       }
@@ -173,16 +183,16 @@ public class LocationRelationshipService {
             .findByGeographicLevelIdentifier(lowerGeographicLevel.get()
                 .getIdentifier());
 
-        lowerGeographicLevelLocations.stream().forEach(
-            childLocation -> createParentChildRelationship(location, childLocation,
-                locationHierarchy));
-
+        for(Location childLocation : lowerGeographicLevelLocations) {
+          createParentChildRelationship(location, childLocation,
+              locationHierarchy);
+        }
       }
     }
   }
 
   private void createParentChildRelationship(Location parentLocation, Location childLocation,
-      LocationHierarchy locationHierarchy) {
+      LocationHierarchy locationHierarchy) throws IOException {
     ObjectMapper mapper = new ObjectMapper();
     String parentGeometry = null;
     String childGeometry = null;
@@ -204,7 +214,6 @@ public class LocationRelationshipService {
       locationRelationshipRepository.save(locationRelationshipToSave);
     }
   }
-
 
   private void createRelationshipForRoot(Location location, LocationHierarchy locationHierarchy) {
     LocationRelationship locationRelationship = LocationRelationship.builder()
@@ -272,7 +281,11 @@ public class LocationRelationshipService {
   }
 
   public long getNumberOfChildren(UUID locationIdentifier) {
-    return locationRelationshipRepository.getChildrenNumber(locationIdentifier);
+    Optional<Long> response = locationRelationshipRepository.getChildrenNumber(locationIdentifier);
+    if(response.isPresent()) {
+      return response.get();
+    }
+    return 0;
   }
 
   public List<Location> getLocationChildrenByLocationParentIdentifierAndHierarchyIdentifier(
@@ -469,6 +482,11 @@ public class LocationRelationshipService {
     return locationRelationshipRepository.getParentLocationByLocationIdAndHierarchyId(
         location.getIdentifier(), locationHierarchy.getIdentifier());
   }
+
+  public List<LocationMainData> getLocationsByHierarchyIdAndLevelName(UUID hierarchyIdentifier, String levelName) {
+    return locationRelationshipRepository.getLocationsByHierarchyIdAndLevelName(hierarchyIdentifier, levelName);
+  }
+
   public Location getLocationParentByLocationIdentifierAndHierarchyIdentifier(UUID locationIdentifier, UUID locationHierarchyIdentifier) {
     return locationRelationshipRepository.getParentLocationByLocationIdAndHierarchyId(
         locationIdentifier, locationHierarchyIdentifier);

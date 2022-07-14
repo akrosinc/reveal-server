@@ -1,14 +1,22 @@
 package com.revealprecision.revealserver.api.v1.dto.factory;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.revealprecision.revealserver.api.v1.dto.response.EntityMetadataResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationPropertyResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationResponse;
 import com.revealprecision.revealserver.enums.SummaryEnum;
 import com.revealprecision.revealserver.persistence.domain.Location;
+import com.revealprecision.revealserver.persistence.es.LocationElastic;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import org.elasticsearch.search.SearchHit;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -74,5 +82,32 @@ public class LocationResponseFactory {
                 .childrenNumber(planLocationDetails.getChildrenNumber())
                 .build())
         .build();
+  }
+
+  public static LocationResponse fromElasticModel(LocationElastic locationElastic) {
+    List<EntityMetadataResponse> metadata = locationElastic.getMetadata()
+        .stream()
+        .map(meta -> new EntityMetadataResponse(meta.getValue(),meta.getType()))
+        .collect(Collectors.toList());
+    return LocationResponse.builder()
+        .geometry(locationElastic.getGeometry())
+        .identifier(UUID.fromString(locationElastic.getId()))
+        .type("Feature")
+        .properties(LocationPropertyResponse.builder()
+            .name(locationElastic.getName())
+            .metadata(metadata)
+            .build())
+        .build();
+  }
+
+  public static LocationResponse fromSearchHit(SearchHit hit, List<String> parents, String hierarchyId) throws JsonProcessingException {
+    ObjectMapper mapper = new ObjectMapper();
+    String source = hit.getSourceAsString();
+    LocationElastic locationElastic = mapper.readValue(source, LocationElastic.class);
+    Optional<Map<String, List<String>>> ancestry =  locationElastic.getAncestry().stream().filter(anc -> anc.containsKey(hierarchyId)).findFirst();
+    if(ancestry.isPresent()) {
+      parents.addAll(ancestry.get().get(hierarchyId));
+    }
+    return fromElasticModel(locationElastic);
   }
 }
