@@ -1,12 +1,15 @@
 package com.revealprecision.revealserver.api.v1.controller;
 
+import com.revealprecision.revealserver.api.v1.dto.models.AdditionalReportInfo;
 import com.revealprecision.revealserver.api.v1.dto.response.FeatureSetResponse;
 import com.revealprecision.revealserver.enums.ApplicableReportsEnum;
 import com.revealprecision.revealserver.enums.ReportTypeEnum;
 import com.revealprecision.revealserver.persistence.domain.Plan;
+import com.revealprecision.revealserver.props.DashboardProperties;
 import com.revealprecision.revealserver.service.dashboard.DashboardService;
 import com.revealprecision.revealserver.service.PlanService;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -24,6 +27,7 @@ public class ReportDashboardController {
 
   private final DashboardService dashboardService;
   private final PlanService planService;
+  private final DashboardProperties dashboardProperties;
 
   @GetMapping("/reportTypes")
   public ReportTypeEnum[] getReportTypes() {
@@ -42,6 +46,18 @@ public class ReportDashboardController {
       @RequestParam(name = "parentIdentifier", required = false) UUID parentIdentifier) {
     return ResponseEntity.status(HttpStatus.OK)
         .body(dashboardService.getDataForReport(reportType, planIdentifier, parentIdentifier));
+  }
+
+  @GetMapping("/reportAdditionalInfo")
+  public ResponseEntity<AdditionalReportInfo> getDataForReports(@RequestParam(name = "reportType") String reportType) {
+    Map<String, List<String>> dashboardFilter = dashboardProperties.getDashboardFilterAssociations()
+        .get(ReportTypeEnum.valueOf(reportType));
+    return ResponseEntity.status(HttpStatus.OK)
+        .body(AdditionalReportInfo.builder()
+                .dashboardFilter(dashboardFilter)
+                .reportTypeEnum(ReportTypeEnum.valueOf(reportType))
+                .build()
+            );
   }
 
 }
