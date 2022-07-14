@@ -6,8 +6,8 @@ import com.revealprecision.revealserver.enums.ApplicableReportsEnum;
 import com.revealprecision.revealserver.enums.ReportTypeEnum;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.props.DashboardProperties;
-import com.revealprecision.revealserver.service.dashboard.DashboardService;
 import com.revealprecision.revealserver.service.PlanService;
+import com.revealprecision.revealserver.service.dashboard.DashboardService;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -41,23 +41,27 @@ public class ReportDashboardController {
   }
 
   @GetMapping("/reportData")
-  public ResponseEntity<FeatureSetResponse> getDataForReports(@RequestParam(name = "reportType") String reportType,
+  public ResponseEntity<FeatureSetResponse> getDataForReports(
+      @RequestParam(name = "reportType") String reportType,
       @RequestParam(name = "planIdentifier") UUID planIdentifier,
-      @RequestParam(name = "parentIdentifier", required = false) UUID parentIdentifier) {
+      @RequestParam(name = "parentIdentifier", required = false) UUID parentIdentifier,
+      @RequestParam(name = "filters", required = false) List<String> filters) {
     return ResponseEntity.status(HttpStatus.OK)
-        .body(dashboardService.getDataForReport(reportType, planIdentifier, parentIdentifier));
+        .body(dashboardService.getDataForReport(reportType, planIdentifier, parentIdentifier,
+            filters));
   }
 
   @GetMapping("/reportAdditionalInfo")
-  public ResponseEntity<AdditionalReportInfo> getDataForReports(@RequestParam(name = "reportType") String reportType) {
+  public ResponseEntity<AdditionalReportInfo> getDataForReports(
+      @RequestParam(name = "reportType") String reportType) {
     Map<String, List<String>> dashboardFilter = dashboardProperties.getDashboardFilterAssociations()
         .get(ReportTypeEnum.valueOf(reportType));
     return ResponseEntity.status(HttpStatus.OK)
         .body(AdditionalReportInfo.builder()
-                .dashboardFilter(dashboardFilter)
-                .reportTypeEnum(ReportTypeEnum.valueOf(reportType))
-                .build()
-            );
+            .dashboardFilter(dashboardFilter)
+            .reportTypeEnum(ReportTypeEnum.valueOf(reportType))
+            .build()
+        );
   }
 
 }
