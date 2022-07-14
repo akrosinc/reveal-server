@@ -253,6 +253,7 @@ public class MetadataService {
           metaDataEvent.setTagData(metadataObj.getCurrent());
           metaDataEvent.setActive(metadataObj.isActive());
           metaDataEvent.setType(metadataObj.getType());
+          metaDataEvent.setDataType(metadataObj.getDataType());
           return metaDataEvent;
         }).collect(Collectors.toList()));
     locationMetadataEvent.setEntityId(savedLocationMetadata.getLocation().getIdentifier());
@@ -312,6 +313,7 @@ public class MetadataService {
               metaDataEvent.setTagData(metadataObj.getCurrent());
               metaDataEvent.setActive(metadataObj.isActive());
               metaDataEvent.setType(metadataObj.getType());
+              metaDataEvent.setDataType(metadataObj.getDataType());
               return metaDataEvent;
             }).collect(Collectors.toList()));
         locationMetadataEvent.setEntityId(savedLocationMetadata.getLocation().getIdentifier());

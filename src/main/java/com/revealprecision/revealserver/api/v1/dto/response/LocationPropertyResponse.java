@@ -36,4 +36,5 @@ public class LocationPropertyResponse {
   private UUID id;
   private Map<String, ColumnData> columnDataMap;
   private List<PersonMainData> persons;
+  private List<EntityMetadataResponse> metadata;
 }

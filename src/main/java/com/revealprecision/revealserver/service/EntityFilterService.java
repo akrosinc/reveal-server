@@ -14,6 +14,7 @@ import com.revealprecision.revealserver.api.v1.dto.response.PersonMainData;
 import com.revealprecision.revealserver.constants.LocationConstants;
 import com.revealprecision.revealserver.enums.SignEntity;
 import com.revealprecision.revealserver.exceptions.ConflictException;
+import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.exceptions.QueryGenerationException;
 import com.revealprecision.revealserver.persistence.domain.Action;
 import com.revealprecision.revealserver.persistence.domain.CoreField;
@@ -41,7 +42,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import javax.ws.rs.core.NoContentException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
 import org.elasticsearch.action.search.SearchRequest;
@@ -702,20 +702,17 @@ public class EntityFilterService {
 
   public PersonMainData getPersonsDetails(UUID personIdentifier) throws IOException {
     ObjectMapper mapper = new ObjectMapper();
-    PersonElastic personElastic = new PersonElastic();
     SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
-    sourceBuilder.query(QueryBuilders.nestedQuery("person", QueryBuilders.matchQuery("person.identifier", personIdentifier.toString()),ScoreMode.None).innerHit(new InnerHitBuilder()));
+    sourceBuilder.query(QueryBuilders.nestedQuery("person", QueryBuilders.termQuery("person.identifier", personIdentifier.toString()),ScoreMode.None).innerHit(new InnerHitBuilder()));
     SearchRequest searchRequest = new SearchRequest("location");
     searchRequest.source(sourceBuilder);
     SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
     if(Arrays.stream(searchResponse.getHits().getHits()).findFirst().isPresent()) {
       for(SearchHit hit : Arrays.stream(searchResponse.getHits().getHits()).findFirst().get().getInnerHits().get("person")) {
-        personElastic = mapper.readValue(hit.getSourceAsString(), PersonElastic.class);
-        break;
+        PersonElastic personElastic  = mapper.readValue(hit.getSourceAsString(), PersonElastic.class);
+        return PersonMainDataResponseFactory.fromPersonElastic(personElastic);
       }
-    } else {
-      throw new NoContentException("Person not found");
     }
-    return PersonMainDataResponseFactory.fromPersonElastic(personElastic);
+    throw new NotFoundException("Person not found");
   }
 }

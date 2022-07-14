@@ -74,7 +74,7 @@ public class EntityTagController {
   }
 
   @PostMapping("/filter")
-  public ResponseEntity<FeatureSetResponse> filterEntities(@RequestBody DataFilterRequest request)
+  public ResponseEntity<FeatureSetResponse> filterEntities(@Valid @RequestBody DataFilterRequest request)
       throws IOException, ParseException {
     return ResponseEntity.ok().body(entityFilterService.filterEntites(request));
   }

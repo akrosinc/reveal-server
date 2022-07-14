@@ -14,7 +14,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Builder
-public class MetaDataElastic {
+public class MetadataElastic {
 
   private String planId;
   private String userId;
