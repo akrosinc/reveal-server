@@ -26,7 +26,6 @@ public class LocationImportListener extends Listener{
 
   @KafkaListener(topics = "#{kafkaConfigProperties.topicMap.get('LOCATIONS_IMPORTED')}", groupId = "reveal_server_group")
   public void locationImport(LocationRelationshipMessage message) throws IOException {
-    System.out.println("DSAD");
     Map<String, Object> parameters = new HashMap<>();
     Map<String, List<String>> object = new HashMap<>();
     object.put(message.getLocationHierarchyIdentifier().toString(),

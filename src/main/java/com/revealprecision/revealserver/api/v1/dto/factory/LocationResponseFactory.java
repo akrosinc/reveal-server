@@ -2,6 +2,7 @@ package com.revealprecision.revealserver.api.v1.dto.factory;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.revealprecision.revealserver.api.v1.dto.response.EntityMetadataResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationPropertyResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationResponse;
 import com.revealprecision.revealserver.enums.SummaryEnum;
@@ -84,13 +85,19 @@ public class LocationResponseFactory {
   }
 
   public static LocationResponse fromElasticModel(LocationElastic locationElastic) {
+    List<EntityMetadataResponse> metadata = locationElastic.getMetadata()
+        .stream()
+        .map(meta -> new EntityMetadataResponse(meta.getValue(),meta.getType()))
+        .collect(Collectors.toList());
     return LocationResponse.builder()
         .geometry(locationElastic.getGeometry())
         .identifier(UUID.fromString(locationElastic.getId()))
         .type("Feature")
         .properties(LocationPropertyResponse.builder()
-            .name(locationElastic.getName()).build())
-        .build(); //TODO: add other properties
+            .name(locationElastic.getName())
+            .metadata(metadata)
+            .build())
+        .build();
   }
 
   public static LocationResponse fromSearchHit(SearchHit hit, List<String> parents, String hierarchyId) throws JsonProcessingException {

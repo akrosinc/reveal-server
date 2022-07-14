@@ -17,7 +17,7 @@ import org.springframework.data.elasticsearch.annotations.FieldType;
 @AllArgsConstructor
 public class PersonElastic {
 
-  @Field(type = FieldType.Text)
+  @Field(type = FieldType.Keyword)
   private String identifier;
   @Field(type = FieldType.Text)
   private boolean active;
@@ -44,7 +44,7 @@ public class PersonElastic {
   @Field(type = FieldType.Boolean)
   private boolean deathDateApprox;
   @Field(type = FieldType.Flattened)
-  private List<PersonMetadataElastic> metadata;
+  private List<EntityMetadataElastic> metadata;
 
 
   public PersonElastic(Person person) {

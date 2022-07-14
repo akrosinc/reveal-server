@@ -13,17 +13,17 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class PersonMetadataElastic {
+public class EntityMetadataElastic {
 
   private String type;
   private Object value;
-  private MetaDataElastic metadata;
+  private MetadataElastic metadata;
   private boolean isActive = true;
 
-  public PersonMetadataElastic(MetaDataEvent metadataObj) {
+  public EntityMetadataElastic(MetaDataEvent metadataObj) {
     this.type = metadataObj.getType();
     this.isActive = metadataObj.isActive();
-    this.metadata = MetaDataElastic.builder()
+    this.metadata = MetadataElastic.builder()
         .planId(metadataObj.getTagData().getMeta().getPlanId().toString())
         .userId(metadataObj.getTagData().getMeta().getUserId())
         .createDateTime(ElasticModelUtil.toDateFromLocalDateTime(metadataObj.getTagData().getMeta().getCreateDateTime()))
