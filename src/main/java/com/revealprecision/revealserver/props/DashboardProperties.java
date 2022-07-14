@@ -6,6 +6,7 @@ import static com.revealprecision.revealserver.service.dashboard.IRSDashboardSer
 import static com.revealprecision.revealserver.service.dashboard.MDADashboardService.DISTRIBUTION_COVERAGE;
 import static com.revealprecision.revealserver.service.dashboard.MDADashboardService.DISTRIBUTION_COVERAGE_PERCENTAGE;
 
+import com.revealprecision.revealserver.enums.ReportTypeEnum;
 import java.util.List;
 import java.util.Map;
 import lombok.AllArgsConstructor;
@@ -40,6 +41,15 @@ public class DashboardProperties {
 
   private Long operationalAreaVisitedThreshold = 20L;
   private Long operationalAreaVisitedEffectivelyThreshold = 85L;
+
+  private final Map<String, List<String>> mdaLiteFilters = Map.of(
+      "drug", List.of("ALB","MZB","PZQ")
+  );
+
+  private final Map<ReportTypeEnum, Map<String, List<String>>> dashboardFilterAssociations = Map.of(
+      ReportTypeEnum.MDA_LITE_COVERAGE,mdaLiteFilters
+  );
+
 
   @Setter
   @Getter

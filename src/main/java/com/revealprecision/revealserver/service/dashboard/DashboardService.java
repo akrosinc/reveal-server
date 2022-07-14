@@ -38,7 +38,7 @@ public class DashboardService {
   public static final String LOWEST_LITE_TOUCH_LEVEL = "Lowest Lite Touch Level";
 
   public FeatureSetResponse getDataForReport(String reportType, UUID planIdentifier,
-      UUID parentIdentifier) {
+      UUID parentIdentifier, List<String> filters) {
 
     ReportTypeEnum reportTypeEnum = LookupUtil.lookup(ReportTypeEnum.class, reportType);
     Plan plan = planService.findPlanByIdentifier(planIdentifier);
@@ -62,7 +62,7 @@ public class DashboardService {
     String reportLevel = getReportLevel(plan, parentLocation);
 
     Map<UUID, RowData> rowDataMap = locationDetails.stream().flatMap(loc -> Objects.requireNonNull(
-                getRowData(loc.getParentLocation(), reportTypeEnum, plan, loc, reportLevel))
+                getRowData(loc.getParentLocation(), reportTypeEnum, plan, loc, reportLevel, filters))
             .stream()).filter(Objects::nonNull)
         .collect(Collectors.toMap(RowData::getLocationIdentifier, row -> row));
 
@@ -72,7 +72,7 @@ public class DashboardService {
 
   private List<RowData> getRowData(Location parentLocation, ReportTypeEnum reportTypeEnum,
       Plan plan,
-      PlanLocationDetails loc, String reportLevel) {
+      PlanLocationDetails loc, String reportLevel, List<String> filters) {
 
     switch (reportTypeEnum) {
       case MDA_FULL_COVERAGE:
