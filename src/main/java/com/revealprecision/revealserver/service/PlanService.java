@@ -129,7 +129,7 @@ public class PlanService {
     GeographicLevel geographicLevel;
 
     if (!interventionType.getCode().equals(PlanInterventionTypeEnum.IRS_LITE.name()) && !interventionType.getCode()
-        .equals(PlanInterventionTypeEnum.IRS_LITE.name())) {
+        .equals(PlanInterventionTypeEnum.MDA_LITE.name())) {
       geographicLevel = geographicLevelService.findByName(LocationConstants.STRUCTURE);
     } else {
       if (planRequest.getHierarchyLevelTarget() == null) {
