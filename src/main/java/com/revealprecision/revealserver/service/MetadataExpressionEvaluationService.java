@@ -33,15 +33,15 @@ public class MetadataExpressionEvaluationService {
     standardEvaluationContext.registerFunction("eq_", SpElMetadataUtil.class.getDeclaredMethod("eq_",
         inputClass, String.class, Object.class, String.class));
     standardEvaluationContext.registerFunction("le_", SpElMetadataUtil.class.getDeclaredMethod("le_",
-        inputClass, String.class, Object.class));
+        inputClass, String.class, Object.class, String.class));
     standardEvaluationContext.registerFunction("lt_", SpElMetadataUtil.class.getDeclaredMethod("lt_",
-        inputClass, String.class, Object.class));
+        inputClass, String.class, Object.class, String.class));
     standardEvaluationContext.registerFunction("gt_", SpElMetadataUtil.class.getDeclaredMethod("gt_",
         inputClass, String.class, Object.class, String.class));
     standardEvaluationContext.registerFunction("ge_", SpElMetadataUtil.class.getDeclaredMethod("ge_",
-        inputClass, String.class, Object.class));
+        inputClass, String.class, Object.class, String.class));
     standardEvaluationContext.registerFunction("like_", SpElMetadataUtil.class.getDeclaredMethod("like_",
-        inputClass, String.class, Object.class));
+        inputClass, String.class, Object.class, String.class));
     standardEvaluationContext.registerFunction("get_",SpElMetadataUtil.class.getDeclaredMethod("get_"
         , inputClass, String.class, String.class));
 

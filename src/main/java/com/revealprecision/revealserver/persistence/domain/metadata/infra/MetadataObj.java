@@ -1,8 +1,10 @@
 package com.revealprecision.revealserver.persistence.domain.metadata.infra;
 
+import com.revealprecision.revealserver.messaging.message.Message;
 import java.io.Serializable;
 import java.util.List;
 import java.util.UUID;
+import lombok.Builder;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
@@ -10,7 +12,7 @@ import lombok.Setter;
 @Setter
 @Getter
 @Data
-public class MetadataObj implements Serializable {
+public class MetadataObj  implements Serializable  {
 
   private String tag;
 

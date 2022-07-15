@@ -8,6 +8,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
+import com.revealprecision.revealserver.api.v1.dto.factory.EntityTagEventFactory;
 import com.revealprecision.revealserver.api.v1.facade.factory.EventSearchCriteriaFactory;
 import com.revealprecision.revealserver.api.v1.facade.models.ClientFacade;
 import com.revealprecision.revealserver.api.v1.facade.models.ClientFacadeMetadata;
@@ -17,23 +18,32 @@ import com.revealprecision.revealserver.api.v1.facade.models.SyncParamFacade;
 import com.revealprecision.revealserver.api.v1.facade.util.DateTimeFormatter;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.enums.NameUseEnum;
+import com.revealprecision.revealserver.enums.PlanInterventionTypeEnum;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.messaging.KafkaConstants;
-import com.revealprecision.revealserver.messaging.message.EventMetadata;
+import com.revealprecision.revealserver.messaging.listener.EventConsumptionListener;
+import com.revealprecision.revealserver.messaging.message.FormDataEntityTagEvent;
+import com.revealprecision.revealserver.messaging.message.FormDataEntityTagValueEvent;
+import com.revealprecision.revealserver.messaging.message.mdalite.MDALiteLocationSupervisorCddEvent;
+import com.revealprecision.revealserver.persistence.domain.EntityTag;
 import com.revealprecision.revealserver.persistence.domain.Event;
+import com.revealprecision.revealserver.persistence.domain.FormField;
 import com.revealprecision.revealserver.persistence.domain.Group;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.Person;
+import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.persistence.es.PersonElastic;
+import com.revealprecision.revealserver.service.EntityTagService;
 import com.revealprecision.revealserver.service.EventService;
+import com.revealprecision.revealserver.service.FormFieldService;
 import com.revealprecision.revealserver.service.GroupService;
 import com.revealprecision.revealserver.service.LocationService;
 import com.revealprecision.revealserver.service.OrganizationService;
 import com.revealprecision.revealserver.service.PersonService;
+import com.revealprecision.revealserver.service.PlanService;
 import com.revealprecision.revealserver.service.UserService;
 import com.revealprecision.revealserver.service.models.EventSearchCriteria;
-import com.revealprecision.revealserver.util.UserUtils;
 import com.revealprecision.revealserver.util.ElasticModelUtil;
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -47,6 +57,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -81,8 +92,13 @@ public class EventClientFacadeService {
   private final GroupService groupService;
   private final ObjectMapper objectMapper;
   private final KafkaProperties kafkaProperties;
+  private final PlanService planService;
+  private final KafkaTemplate<String, FormDataEntityTagEvent> eventConsumptionTemplate;
+  private final FormFieldService formFieldService;
+  private final EntityTagService entityTagService;
 
-  private final KafkaTemplate<String, EventMetadata> eventConsumptionTemplate;
+  private final KafkaTemplate<String, MDALiteLocationSupervisorCddEvent> mdaliteSupervisorTemplate;
+
 
   private final RestHighLevelClient client;
 
@@ -121,33 +137,111 @@ public class EventClientFacadeService {
 
         if (obsList.isArray()) {
 
+          Plan plan = planService.getPlanByIdentifier(savedEvent.getPlanIdentifier());
+
           ObjectReader reader = objectMapper.readerFor(new TypeReference<List<Obs>>() {
           });
 
           List<Obs> obsJavaList = reader.readValue(obsList);
 
-          obsJavaList.forEach(obs -> {
+          String dateString = null;
 
-            UUID baseEntityId = UUID.fromString(eventFacade.getBaseEntityId());
-            eventConsumptionTemplate.send(
-                kafkaProperties.getTopicMap().get(KafkaConstants.EVENT_CONSUMPTION),
-                // Proceed with caution here as new updates / removals to the object will prevent rewind of the streams application.
-                // In the event of new data being introduced, ensure that null pointers are catered in the streams
-                // application if the event comes through, and it does not have the new fields populated
-                EventMetadata.builder()
-                    .eventId(savedEvent.getIdentifier())
-                    .baseEntityId(baseEntityId)
-                    .eventType(savedEvent.getEventType())
-                    .obs(obs)
-                    .planIdentifier(
-                        UUID.fromString(eventFacade.getDetails().get("planIdentifier")))
-                    .taskIdentifier(
-                        UUID.fromString(eventFacade.getDetails().get("taskIdentifier")))
-                    .user(UserUtils.getCurrentPrincipleName())
-                    .fullObs(obsJavaList)
-                    .build());
+          String supervisorName = null;
+          String cdd = null;
 
-          });
+          if (plan != null){
+            if(plan.getInterventionType()
+                .getCode()
+                .equals(PlanInterventionTypeEnum.MDA_LITE.name())){
+              if (savedEvent.getEventType().equals("cdd_supervisor_daily_summary")){
+
+                Optional<Obs> healthWorkerSupervisor = obsJavaList.stream()
+                    .filter(obs -> obs.getFieldCode().equals("health_worker_supervisor"))
+                    .findFirst();
+
+                Optional<Obs> cddName = obsJavaList.stream()
+                    .filter(obs -> obs.getFieldCode().equals("cdd_name"))
+                    .findFirst();
+
+                Optional<Obs> date = obsJavaList.stream()
+                    .filter(obs -> obs.getFieldCode().equals("date"))
+                    .findFirst();
+
+                if (healthWorkerSupervisor.isPresent() && cddName.isPresent()){
+                  mdaliteSupervisorTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.LOCATION_SUPERVISOR_CDD),MDALiteLocationSupervisorCddEvent.builder()
+                      .cddName(String.valueOf(EventConsumptionListener.extractData(cddName.get()).get(cddName.get().getFieldCode())))
+                      .supervisorName(String.valueOf(EventConsumptionListener.extractData(healthWorkerSupervisor.get()).get(healthWorkerSupervisor.get().getFieldCode())))
+                      .locationIdentifier(UUID.fromString(eventFacade.getBaseEntityId()))
+                      .locationHierarchyIdentifier(plan.getLocationHierarchy().getIdentifier())
+                      .planIdentifier(plan.getIdentifier())
+                      .build());
+
+                  cdd = (String) EventConsumptionListener.extractData(cddName.get()).get(cddName.get().getFieldCode());
+                  supervisorName = (String) EventConsumptionListener.extractData(healthWorkerSupervisor.get()).get(healthWorkerSupervisor.get().getFieldCode());
+                }
+                if (date.isPresent()){
+                  dateString = String.valueOf(EventConsumptionListener.extractData(date.get()).get(date.get().getFieldCode()));
+                }
+              }
+            }
+          }
+
+          List<FormDataEntityTagValueEvent> formDataEntityTagValueEvents = obsJavaList.stream().flatMap(obs -> {
+            FormField formField = formFieldService.findByNameAndFormTitle(
+                obs.getFieldCode(), eventFacade.getEventType());
+            if (formField!=null) {
+              List<EntityTag> entityTagsByFieldName = entityTagService.findEntityTagsByFormField(
+                  formField);
+              return entityTagsByFieldName.stream()
+                  .map(EntityTagEventFactory::getEntityTagEvent)
+                  .map(entityTagEvent -> FormDataEntityTagValueEvent.builder()
+                      .value(EventConsumptionListener.extractData(obs).get(obs.getFieldCode()))
+                      .entityTagEvent(entityTagEvent)
+                      .formField(formField.getName())
+                      .build()
+                  );
+            } else {
+              return null;
+            }
+          }).filter(Objects::nonNull).collect(Collectors.toList());
+
+
+          FormDataEntityTagEvent entityTagEvent = FormDataEntityTagEvent.builder()
+              .formDataEntityTagValueEvents(formDataEntityTagValueEvents)
+              .eventId(savedEvent.getIdentifier().toString())
+              .eventType(savedEvent.getEventType())
+              .entityId(savedEvent.getBaseEntityIdentifier())
+              .planIdentifier(savedEvent.getPlanIdentifier())
+              .taskIdentifier(savedEvent.getTaskIdentifier())
+              .locationHierarchyIdentifier(plan.getLocationHierarchy().getIdentifier())
+              .date(dateString)
+              .cddName(cdd)
+              .supervisor(supervisorName)
+              .build();
+          eventConsumptionTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.EVENT_CONSUMPTION),entityTagEvent);
+
+
+//          obsJavaList.forEach(obs -> {
+//            UUID baseEntityId = UUID.fromString(eventFacade.getBaseEntityId());
+//            eventConsumptionTemplate.send(
+//                kafkaProperties.getTopicMap().get(KafkaConstants.EVENT_CONSUMPTION),
+//                // Proceed with caution here as new updates / removals to the object will prevent rewind of the streams application.
+//                // In the event of new data being introduced, ensure that null pointers are catered in the streams
+//                // application if the event comes through, and it does not have the new fields populated
+//                EventMetadata.builder()
+//                    .eventId(savedEvent.getIdentifier())
+//                    .baseEntityId(baseEntityId)
+//                    .eventType(savedEvent.getEventType())
+//                    .obs(obs)
+//                    .planIdentifier(
+//                        UUID.fromString(eventFacade.getDetails().get("planIdentifier")))
+//                    .taskIdentifier(
+//                        UUID.fromString(eventFacade.getDetails().get("taskIdentifier")))
+//                    .user(UserUtils.getCurrentPrincipleName())
+//                    .fullObs(obsJavaList)
+//                    .build());
+//
+//          });
         }
       } catch (Exception exception) {
         exception.printStackTrace();
@@ -156,6 +250,10 @@ public class EventClientFacadeService {
     });
     return failedEvents;
   }
+
+
+
+
 
   private List<ClientFacade> addOrUpdateClients(List<ClientFacade> clientFacadeList) {
     List<ClientFacade> failedClients = new ArrayList<>();

@@ -39,4 +39,8 @@ public class LocationFormDataAggregateEvent extends Message {
 
   private Long averageCounter;
 
+  private String supervisor;
+
+  private String cddName;
+
 }

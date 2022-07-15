@@ -1,9 +1,10 @@
-package com.revealprecision.revealserver.persistence.domain;
+package com.revealprecision.revealserver.messaging.message;
 
+import com.revealprecision.revealserver.persistence.domain.AbstractAuditableEntity;
+import com.revealprecision.revealserver.persistence.domain.EntityTag;
 import java.util.Set;
 import java.util.UUID;
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.ManyToMany;
@@ -20,22 +21,13 @@ import org.hibernate.annotations.Where;
 import org.hibernate.envers.Audited;
 
 @FieldNameConstants
-@Entity
-@Audited
 @Getter
 @Setter
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@SQLDelete(sql = "UPDATE condition SET entity_status = 'DELETED' where identifier=?")
-@Where(clause = "entity_status='ACTIVE'")
-@Table(uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"name","formTitle"})
-})
-public class FormField extends AbstractAuditableEntity {
+public class FormFieldEvent extends Message {
 
-  @Id
-  @GeneratedValue
   private UUID identifier;
 
   private String name;
@@ -45,9 +37,6 @@ public class FormField extends AbstractAuditableEntity {
   private boolean addToMetadata;
 
   private String dataType;
-
-  @ManyToMany(fetch = FetchType.LAZY)
-  private Set<EntityTag> entityTags;
 
   private String formTitle;
 }

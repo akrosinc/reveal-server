@@ -40,6 +40,7 @@ public class ReportDashboardController {
     return ApplicableReportsEnum.valueOf(plan.getInterventionType().getCode()).getReportName();
   }
 
+
   @GetMapping("/reportData")
   public ResponseEntity<FeatureSetResponse> getDataForReports(
       @RequestParam(name = "reportType") String reportType,

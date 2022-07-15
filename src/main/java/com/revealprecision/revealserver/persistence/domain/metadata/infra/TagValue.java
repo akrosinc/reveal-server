@@ -8,6 +8,8 @@ import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -25,4 +27,5 @@ public class TagValue implements Serializable {
   @JsonDeserialize(using = LocalDateTimeDeserializer.class)
   private LocalDateTime valueDate;
   private Boolean valueBoolean;
+  private List<Object> valueObjects = new ArrayList<>();
 }

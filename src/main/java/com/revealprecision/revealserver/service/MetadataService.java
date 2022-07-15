@@ -476,6 +476,9 @@ public class MetadataService {
       case "boolean":
         value.setValueBoolean((Boolean) tagValue);
         break;
+      case "object":
+        value.getValueObjects().add(tagValue);
+        break;
       default:
         value.setValueString((String) tagValue);
         break;

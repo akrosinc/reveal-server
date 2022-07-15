@@ -30,6 +30,7 @@ public class DashboardService {
   private final MDADashboardService mdaDashboardService;
   private final IRSDashboardService irsDashboardService;
   private final IRSLiteDashboardService irsLiteDashboardService;
+  private final MDALiteDashboardService mdaLiteDashboardService;
 
   public static final String WITHIN_STRUCTURE_LEVEL = "Within Structure";
   public static final String STRUCTURE_LEVEL = "Structure";
@@ -66,8 +67,10 @@ public class DashboardService {
             .stream()).filter(Objects::nonNull)
         .collect(Collectors.toMap(RowData::getLocationIdentifier, row -> row));
 
-    return getFeatureSetResponse(parentIdentifier, locationDetails, rowDataMap, reportLevel,
+    FeatureSetResponse featureSetResponse = getFeatureSetResponse(parentIdentifier, locationDetails,
+        rowDataMap, reportLevel,
         reportTypeEnum);
+    return featureSetResponse;
   }
 
   private List<RowData> getRowData(Location parentLocation, ReportTypeEnum reportTypeEnum,
@@ -120,6 +123,16 @@ public class DashboardService {
           case ALL_OTHER_LEVELS:
             return irsLiteDashboardService.getIRSFullData(plan, loc.getLocation());
         }
+      case MDA_LITE_COVERAGE:
+        switch (reportLevel) {
+          case DIRECTLY_ABOVE_STRUCTURE_LEVEL:
+          case LOWEST_LITE_TOUCH_LEVEL:
+          case ALL_OTHER_LEVELS:
+            return mdaLiteDashboardService.getMDALiteCoverageData(
+                plan,
+                loc.getLocation(), filters);
+
+        }
 
     }
     return null;
@@ -141,10 +154,12 @@ public class DashboardService {
       case IRS_LITE_COVERAGE:
         return irsLiteDashboardService.getFeatureSetResponse(parentIdentifier, locationDetails,
             rowDataMap, reportLevel);
+      case MDA_LITE_COVERAGE:
+        return mdaLiteDashboardService.getFeatureSetResponse(parentIdentifier, locationDetails,
+            rowDataMap, reportLevel);
     }
     return null;
   }
-
 
   private void initialDataStores(ReportTypeEnum reportTypeEnum) {
     switch (reportTypeEnum) {
@@ -156,6 +171,10 @@ public class DashboardService {
         break;
       case IRS_LITE_COVERAGE:
         irsLiteDashboardService.initDataStoresIfNecessary();
+        break;
+      case MDA_LITE_COVERAGE:
+        mdaLiteDashboardService.initDataStoresIfNecessary();
+        break;
     }
   }
 
