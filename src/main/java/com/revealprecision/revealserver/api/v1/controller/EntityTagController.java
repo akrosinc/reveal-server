@@ -84,4 +84,9 @@ public class EntityTagController {
       throws IOException {
     return ResponseEntity.ok().body(entityFilterService.getPersonsDetails(personIdentifier));
   }
+
+  @GetMapping("download/{entityTypeIdentifier}")
+  public ResponseEntity<?> downloadEntityTags(@PathVariable UUID entityTypeIdentifier) {
+
+  }
 }

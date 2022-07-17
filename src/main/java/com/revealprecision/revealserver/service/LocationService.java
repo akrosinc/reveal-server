@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.revealprecision.revealserver.api.v1.dto.request.LocationRequest;
 import com.revealprecision.revealserver.constants.LocationConstants;
 import com.revealprecision.revealserver.enums.EntityStatus;
@@ -11,11 +12,17 @@ import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.PlanAssignment;
 import com.revealprecision.revealserver.persistence.domain.PlanLocations;
+import com.revealprecision.revealserver.persistence.es.LocationElastic;
 import com.revealprecision.revealserver.persistence.projection.LocationChildrenCountProjection;
 import com.revealprecision.revealserver.persistence.projection.LocationCoordinatesProjection;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import com.revealprecision.revealserver.persistence.repository.LocationRepository;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -23,6 +30,23 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.FillPatternType;
+import org.apache.poi.ss.usermodel.IndexedColors;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFFont;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
@@ -36,6 +60,8 @@ public class LocationService {
   private final GeographicLevelService geographicLevelService;
   private final LocationRelationshipService locationRelationshipService;
   private final PlanService planService;
+  private final RestHighLevelClient client;
+  private final StorageService storageService;
 
   public Location createLocation(LocationRequest locationRequest) throws IOException {
     GeographicLevel geographicLevel = geographicLevelService.findByName(
@@ -226,5 +252,97 @@ public class LocationService {
 
   public List<Location> getLocationsByPeople(UUID personIdentifier) {
     return locationRepository.getLocationsByPeople_Identifier(personIdentifier);
+  }
+
+  public ByteArrayResource downloadLocations(UUID hierarchyIdentifier, UUID locationIdentifier)
+      throws IOException {
+    ObjectMapper mapper = new ObjectMapper();
+    Location location = findByIdentifier(locationIdentifier);
+    SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+    sourceBuilder.query(QueryBuilders.termsQuery("ancestry." + hierarchyIdentifier.toString(), locationIdentifier.toString())).size(1000);
+    SearchRequest searchRequest = new SearchRequest("location");
+    searchRequest.source(sourceBuilder);
+    SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+
+    Workbook workbook = new XSSFWorkbook();
+
+    Sheet sheet = workbook.createSheet("Persons");
+    sheet.setColumnWidth(0, 9600);
+    sheet.setColumnWidth(1, 6000);
+    sheet.setColumnWidth(2, 6400);
+
+    Row header = sheet.createRow(0);
+
+    CellStyle headerStyle = workbook.createCellStyle();
+    headerStyle.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
+    headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+    XSSFFont font = ((XSSFWorkbook) workbook).createFont();
+    font.setFontName("Arial");
+    font.setFontHeightInPoints((short) 16);
+    font.setBold(true);
+    headerStyle.setFont(font);
+
+    Cell headerCell = header.createCell(0);
+    headerCell.setCellValue("Identifier");
+    headerCell.setCellStyle(headerStyle);
+
+    headerCell = header.createCell(1);
+    headerCell.setCellValue("Name");
+    headerCell.setCellStyle(headerStyle);
+
+    headerCell = header.createCell(2);
+    headerCell.setCellValue("Geographic level");
+    headerCell.setCellStyle(headerStyle);
+
+    CellStyle style = workbook.createCellStyle();
+    style.setWrapText(true);
+
+    Row row = sheet.createRow(1);
+    Cell cell = row.createCell(0);
+    cell.setCellValue(location.getIdentifier().toString());
+    cell.setCellStyle(style);
+
+    cell = row.createCell(1);
+    cell.setCellValue(location.getName());
+    cell.setCellStyle(style);
+
+    cell = row.createCell(2);
+    cell.setCellValue(location.getGeographicLevel().getName());
+    cell.setCellStyle(style);
+
+    int index = 2;
+    for(SearchHit hit : searchResponse.getHits().getHits()) {
+      LocationElastic locationElastic = mapper.readValue(hit.getSourceAsString(), LocationElastic.class);
+      row = sheet.createRow(index);
+      cell = row.createCell(0);
+      cell.setCellValue(locationElastic.getId());
+      cell.setCellStyle(style);
+
+      cell = row.createCell(1);
+      cell.setCellValue(locationElastic.getName());
+      cell.setCellStyle(style);
+
+      cell = row.createCell(2);
+      cell.setCellValue(locationElastic.getLevel());
+      cell.setCellStyle(style);
+      index++;
+    }
+
+    File currDir = new File(".");
+    String path = currDir.getAbsolutePath();
+    //TODO: refactor this line because of multiuser problems.. filename could be temp.concat(userId).xlsx
+    String fileLocation = path.substring(0, path.length() - 1) + "temp.xlsx";
+
+    FileOutputStream outputStream = new FileOutputStream(fileLocation);
+    workbook.write(outputStream);
+    workbook.close();
+
+    Path filePath = Paths.get(fileLocation);
+
+
+    ByteArrayResource resource = new ByteArrayResource(Files.readAllBytes(filePath));
+    storageService.deleteFile(fileLocation);
+    return resource;
   }
 }

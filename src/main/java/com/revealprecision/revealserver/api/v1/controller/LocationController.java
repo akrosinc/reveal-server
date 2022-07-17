@@ -117,4 +117,13 @@ public class LocationController {
     return ResponseEntity.status(HttpStatus.OK)
         .body(LocationResponseFactory.fromPlanLocationDetails(planLocationDetails, null));
   }
+
+  @GetMapping("/download/{hierarchyIdentifier}/{locationIdentifier}")
+  public ResponseEntity<?>downloadLocations(@PathVariable UUID hierarchyIdentifier, @PathVariable UUID locationIdentifier)
+      throws IOException {
+    return ResponseEntity.status(HttpStatus.OK)
+        .contentType(MediaType.APPLICATION_OCTET_STREAM)
+        .header("Content-disposition", "attachment;filename=Location.xlsx")
+        .body(locationService.downloadLocations(hierarchyIdentifier, locationIdentifier));
+  }
 }
