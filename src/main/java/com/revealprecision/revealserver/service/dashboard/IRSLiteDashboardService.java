@@ -661,7 +661,7 @@ public class IRSLiteDashboardService {
       List<LocationResponse> locationResponses) {
     return locationResponses.stream().peek(loc -> {
       loc.getProperties().setColumnDataMap(rowDataMap.get(loc.getIdentifier()).getColumnDataMap());
-      loc.getProperties().setId(loc.getIdentifier());
+      loc.getProperties().setId(loc.getIdentifier().toString());
       if (rowDataMap.get(loc.getIdentifier()).getColumnDataMap().get(SPRAY_COVERAGE_OF_TARGETED)
           != null) {
         loc.getProperties().setSprayCoverage(

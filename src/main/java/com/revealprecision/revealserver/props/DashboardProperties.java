@@ -1,10 +1,20 @@
 package com.revealprecision.revealserver.props;
 
 import static com.revealprecision.revealserver.service.dashboard.DashboardService.ALL_OTHER_LEVELS;
+import static com.revealprecision.revealserver.service.dashboard.DashboardService.CDD_LEVEL;
 import static com.revealprecision.revealserver.service.dashboard.DashboardService.DIRECTLY_ABOVE_STRUCTURE_LEVEL;
+import static com.revealprecision.revealserver.service.dashboard.DashboardService.IS_ON_PLAN_TARGET;
+import static com.revealprecision.revealserver.service.dashboard.DashboardService.STRUCTURE_LEVEL;
+import static com.revealprecision.revealserver.service.dashboard.DashboardService.SUPERVISOR_LEVEL;
 import static com.revealprecision.revealserver.service.dashboard.IRSDashboardService.SPRAY_COVERAGE_OF_TARGETED;
 import static com.revealprecision.revealserver.service.dashboard.MDADashboardService.DISTRIBUTION_COVERAGE;
 import static com.revealprecision.revealserver.service.dashboard.MDADashboardService.DISTRIBUTION_COVERAGE_PERCENTAGE;
+import static com.revealprecision.revealserver.service.dashboard.MDALiteDashboardService.ADVERSE;
+import static com.revealprecision.revealserver.service.dashboard.MDALiteDashboardService.ALB;
+import static com.revealprecision.revealserver.service.dashboard.MDALiteDashboardService.DRUG;
+import static com.revealprecision.revealserver.service.dashboard.MDALiteDashboardService.MALES_1_4;
+import static com.revealprecision.revealserver.service.dashboard.MDALiteDashboardService.MBZ;
+import static com.revealprecision.revealserver.service.dashboard.MDALiteDashboardService.PZQ;
 
 import com.revealprecision.revealserver.enums.ReportTypeEnum;
 import java.util.List;
@@ -39,11 +49,20 @@ public class DashboardProperties {
           ALL_OTHER_LEVELS,SPRAY_COVERAGE_OF_TARGETED);
 
 
+  private final Map<String, String> mdaLiteDefaultDisplayColumns =
+      Map.of(DIRECTLY_ABOVE_STRUCTURE_LEVEL,MALES_1_4,
+          CDD_LEVEL,MALES_1_4,
+          SUPERVISOR_LEVEL,ADVERSE,
+          IS_ON_PLAN_TARGET,MALES_1_4,
+          STRUCTURE_LEVEL,MALES_1_4,
+          ALL_OTHER_LEVELS,MALES_1_4);
+
+
   private Long operationalAreaVisitedThreshold = 20L;
   private Long operationalAreaVisitedEffectivelyThreshold = 85L;
 
   private final Map<String, List<String>> mdaLiteFilters = Map.of(
-      "drug", List.of("ALB","MZB","PZQ")
+      DRUG, List.of(ALB,MBZ,PZQ)
   );
 
   private final Map<ReportTypeEnum, Map<String, List<String>>> dashboardFilterAssociations = Map.of(
