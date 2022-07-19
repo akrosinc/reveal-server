@@ -10,10 +10,10 @@ import com.revealprecision.revealserver.api.v1.dto.factory.LocationResponseFacto
 import com.revealprecision.revealserver.api.v1.dto.models.ColumnData;
 import com.revealprecision.revealserver.api.v1.dto.models.RowData;
 import com.revealprecision.revealserver.api.v1.dto.models.RowDataForSupervisor;
-import com.revealprecision.revealserver.api.v1.dto.models.RowDataWithSupervisorOrCdd;
 import com.revealprecision.revealserver.api.v1.dto.response.FeatureSetResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationPropertyResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationResponse;
+import com.revealprecision.revealserver.messaging.message.RowDataWithSupervisorOrCdd;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;

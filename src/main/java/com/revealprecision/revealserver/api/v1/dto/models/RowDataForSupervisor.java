@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.api.v1.dto.models;
 
+import com.revealprecision.revealserver.messaging.message.RowDataWithSupervisorOrCdd;
 import java.io.Serializable;
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -13,6 +14,6 @@ import lombok.Setter;
 @AllArgsConstructor
 public class RowDataForSupervisor extends  RowData implements Serializable {
 
-  private List<com.revealprecision.revealserver.api.v1.dto.models.RowDataWithSupervisorOrCdd> rowDataWithSupervisorOrCdds;
+  private List<RowDataWithSupervisorOrCdd> rowDataWithSupervisorOrCdds;
 
 }
