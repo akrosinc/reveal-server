@@ -158,7 +158,7 @@ public class EventClientFacadeService {
     person.setAdditionalInfo(objectMapper.valueToTree(personAdditionalInfo));
     person = personService.savePerson(person);
 
-    if(Arrays.asList(env.getActiveProfiles()).contains("Simulation")) { //TODO: remove when needed
+    if (Arrays.asList(env.getActiveProfiles()).contains("Simulation")) { //TODO: remove when needed
       PersonElastic personElastic = new PersonElastic(person);
       Map<String, Object> parameters = new HashMap<>();
 
@@ -342,8 +342,7 @@ public class EventClientFacadeService {
     if (StringUtils.isNotBlank(baseEntityId)) {
       event.setBaseEntityIdentifier(UUID.fromString(baseEntityId));
     }
-    String locationIdentifier = eventFacade.getLocationId() == null ? details.get("location_id")
-        : eventFacade.getLocationId();
+    String locationIdentifier = details.getOrDefault("location_id", "");
     if (StringUtils.isNotBlank(locationIdentifier)) {
       event.setLocationIdentifier(UUID.fromString(locationIdentifier));
     }
