@@ -741,7 +741,7 @@ public class MDADashboardService {
       List<LocationResponse> locationResponses) {
     return locationResponses.stream().peek(loc -> {
       loc.getProperties().setColumnDataMap(rowDataMap.get(loc.getIdentifier()).getColumnDataMap());
-      loc.getProperties().setId(loc.getIdentifier());
+      loc.getProperties().setId(loc.getIdentifier().toString());
 
       if (rowDataMap.get(loc.getIdentifier()).getColumnDataMap().get(DISTRIBUTION_COVERAGE)
           != null) {

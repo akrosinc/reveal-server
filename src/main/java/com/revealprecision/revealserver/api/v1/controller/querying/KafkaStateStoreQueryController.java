@@ -43,6 +43,50 @@ public class KafkaStateStoreQueryController<T> {
   private final KafkaTemplate<String, Message> kafkaTemplate;
 
 
+  @GetMapping("/cddSupervisorLocationFormDataIntegerSumOrAverage")
+  public void cddSupervisorLocationFormDataIntegerSumOrAverage() {
+    KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
+    ReadOnlyKeyValueStore<String, LocationFormDataCountAggregateEvent> counts = kafkaStreams.store(
+        StoreQueryParameters.fromNameAndType(
+            kafkaProperties.getStoreMap().get(KafkaConstants.cddSupervisorLocationFormDataIntegerSumOrAverage),
+            QueryableStoreTypes.keyValueStore())
+    );
+    iterateThroughStore(counts);
+  }
+
+  @GetMapping("/supervisorLocationFormDataIntegerSumOrAverage")
+  public void supervisorLocationFormDataIntegerSumOrAverage() {
+    KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
+    ReadOnlyKeyValueStore<String, LocationFormDataCountAggregateEvent> counts = kafkaStreams.store(
+        StoreQueryParameters.fromNameAndType(
+            kafkaProperties.getStoreMap().get(KafkaConstants.supervisorLocationFormDataIntegerSumOrAverage),
+            QueryableStoreTypes.keyValueStore())
+    );
+    iterateThroughStore(counts);
+  }
+
+  @GetMapping("/cddNames")
+  public void cddNames() {
+    KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
+    ReadOnlyKeyValueStore<String, LocationFormDataCountAggregateEvent> counts = kafkaStreams.store(
+        StoreQueryParameters.fromNameAndType(
+            kafkaProperties.getStoreMap().get(KafkaConstants.cddNames),
+            QueryableStoreTypes.keyValueStore())
+    );
+    iterateThroughStore(counts);
+  }
+
+  @GetMapping("/mdaLiteSupervisors")
+  public void mdaLiteSupervisors() {
+    KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
+    ReadOnlyKeyValueStore<String, LocationFormDataCountAggregateEvent> counts = kafkaStreams.store(
+        StoreQueryParameters.fromNameAndType(
+            kafkaProperties.getStoreMap().get(KafkaConstants.mdaLiteSupervisors),
+            QueryableStoreTypes.keyValueStore())
+    );
+    iterateThroughStore(counts);
+  }
+
   @GetMapping("/locationFormDataStringCount")
   public void locationFormDataStringCount() {
     KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();

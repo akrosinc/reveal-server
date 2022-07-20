@@ -14,7 +14,6 @@ public class FormFieldResponseFactory {
 
     return FormFieldResponse.builder()
         .identifier(formField.getIdentifier())
-        .addToMetadata(formField.isAddToMetadata())
         .display(formField.getDisplay())
         .name(formField.getName())
         .dataType(formField.getDataType())

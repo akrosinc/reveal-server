@@ -28,6 +28,7 @@ public class EntityTagFactory {
         .valueType(entityTagRequest.getValueType())
         .resultExpression(entityTagRequest.getResultExpression())
         .isResultLiteral(entityTagRequest.isResultLiteral())
+        .addToMetadata(entityTagRequest.isAddToMetadata())
         .build();
 
     if (formFields != null) {

@@ -8,7 +8,7 @@ import com.revealprecision.revealserver.api.v1.dto.response.EntityTagResponse;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.EntityTag;
 import com.revealprecision.revealserver.persistence.domain.FormField;
-import com.revealprecision.revealserver.persistence.domain.EntityTag.Fields;
+
 import com.revealprecision.revealserver.persistence.domain.LookupEntityType;
 import com.revealprecision.revealserver.persistence.repository.EntityTagRepository;
 import java.util.ArrayList;
@@ -55,7 +55,7 @@ public class EntityTagService {
 
   public EntityTag getEntityTagByIdentifier(UUID identifier) {
     return entityTagRepository.findById(identifier).orElseThrow(() -> new NotFoundException(
-        Pair.of(Fields.identifier, identifier), EntityTag.class));
+        Pair.of(EntityTag.Fields.identifier, identifier), EntityTag.class));
   }
 
   public EntityTag createEntityTag(EntityTagRequest entityTagRequest) {
@@ -80,6 +80,12 @@ public class EntityTagService {
   public Optional<EntityTag> findEntityTagById(UUID entityTagIdentifier) {
 
     return entityTagRepository.findById(entityTagIdentifier);
+  }
+
+
+  public List<EntityTag> findEntityTagsByIdList(Set<UUID> entityTagIdentifiers) {
+
+    return entityTagRepository.findEntityTagsByIdentifierIn(entityTagIdentifiers);
   }
 
   public Set<EntityTag> findEntityTagsByReferencedTags(String name) {

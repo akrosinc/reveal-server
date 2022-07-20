@@ -3,6 +3,7 @@ package com.revealprecision.revealserver.service;
 import com.revealprecision.revealserver.api.v1.dto.request.LocationRequest;
 import com.revealprecision.revealserver.constants.LocationConstants;
 import com.revealprecision.revealserver.enums.EntityStatus;
+import com.revealprecision.revealserver.enums.PlanInterventionTypeEnum;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.GeographicLevel;
 import com.revealprecision.revealserver.persistence.domain.Location;
@@ -23,6 +24,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.hl7.fhir.r4.model.codesystems.InterventionEnumFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
@@ -112,10 +114,18 @@ public class LocationService {
     Location location = findByIdentifier(parentIdentifier);
 
     // if location is at plan target level do not load child location
-    if(Objects.equals(plan.getPlanTargetType().getGeographicLevel().getName(),
-        location.getGeographicLevel().getName())) {
-      throw new NotFoundException("Child location is not in plan target level");
+    if (plan.getInterventionType().getCode().equals(PlanInterventionTypeEnum.MDA_LITE.name())){
+      PlanLocationDetails planLocationDetails = new PlanLocationDetails();
+      planLocationDetails.setLocation(location);
+
+      return List.of(planLocationDetails);
+    } else {
+      if(Objects.equals(plan.getPlanTargetType().getGeographicLevel().getName(),
+          location.getGeographicLevel().getName())) {
+        throw new NotFoundException("Child location is not in plan target level");
+      }
     }
+
 
     Map<UUID, Long> childrenCount = locationRelationshipService.getLocationChildrenCount(
             plan.getLocationHierarchy().getIdentifier())

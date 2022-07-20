@@ -38,4 +38,6 @@ public class EntityTagResponse {
   private boolean isResultLiteral;
 
   private boolean isGenerated;
+
+  private boolean addToMetadata;
 }

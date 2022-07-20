@@ -13,7 +13,6 @@ public class FormFieldFactory {
   public static FormField toEntity(FormFieldRequest formFieldRequest) {
 
     FormField formField = FormField.builder()
-        .addToMetadata(formFieldRequest.isAddToMetadata())
         .display(formFieldRequest.getDisplay())
         .name(formFieldRequest.getName())
         .dataType(formFieldRequest.getDataType())

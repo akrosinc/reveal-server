@@ -13,6 +13,9 @@
   <springProperty scope="context" name="loggingLocationImportRollingFileName" source="reveal.logging.location-import-rolling-file-name"/>
   <springProperty scope="context" name="loggingMonitorFileName" source="reveal.logging.monitor-file-name"/>
   <springProperty scope="context" name="loggingMonitorRollingFileName" source="reveal.logging.monitor-rolling-file-name"/>
+  <springProperty scope="context" name="loggingFormDataFileName" source="reveal.logging.form-data-file-name"/>
+  <springProperty scope="context" name="loggingFormDataRollingFileName" source="reveal.logging.form-data-rolling-file-name"/>
+
 
   <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
     <encoder>
@@ -70,6 +73,17 @@
     </encoder>
   </appender>
 
+  <appender name="FORM-DATA-FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${loggingPath}${loggingFormDataFileName}</file>
+    <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+      <fileNamePattern>${loggingPath}${loggingFormDataRollingFileName}</fileNamePattern>
+      <maxFileSize>${maxFileSize}</maxFileSize>
+    </rollingPolicy>
+    <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+      <pattern>${loggingPattern}</pattern>
+    </encoder>
+  </appender>
+
   <logger name="stream-file" level="DEBUG" additivity="false" >
     <appender-ref ref="STREAM-FILE" />
   </logger>
@@ -80,6 +94,10 @@
 
   <logger name="location-import-file" level="DEBUG" additivity="false" >
     <appender-ref ref="LOCATION-IMPORT-FILE" />
+  </logger>
+
+  <logger name="form-data-file" level="DEBUG" additivity="false" >
+    <appender-ref ref="FORM-DATA-FILE" />
   </logger>
 
   <root level="INFO">

@@ -1,9 +1,11 @@
 package com.revealprecision.revealserver.service;
 
+import com.revealprecision.revealserver.api.v1.dto.factory.EntityTagEventFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.LocationMetadataEventFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.PersonMetadataEventFactory;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.messaging.KafkaConstants;
+import com.revealprecision.revealserver.messaging.message.EntityTagEvent;
 import com.revealprecision.revealserver.messaging.message.LocationMetadataEvent;
 import com.revealprecision.revealserver.messaging.message.PersonMetadataEvent;
 import com.revealprecision.revealserver.persistence.domain.EntityTag;
@@ -66,7 +68,7 @@ public class MetadataService {
 
   public Object updateMetaData(UUID identifier, Object tagValue,
       Plan plan, UUID taskIdentifier,
-      String user, String dataType, EntityTag tag, String type, Object entity, String taskType,
+      String user, String dataType, EntityTagEvent tag, String type, Object entity, String taskType,
       Class<?> aClass, String tagKey, String finalDateForScopeDateFields1) {
     if (aClass == Person.class) {
       return updatePersonMetadata(identifier, tagValue, plan, taskIdentifier, user, dataType, tag,
@@ -81,7 +83,7 @@ public class MetadataService {
   @Transactional
   public PersonMetadata updatePersonMetadata(UUID personIdentifier, Object tagValue,
       Plan plan, UUID taskIdentifier,
-      String user, String dataType, EntityTag tag, String type, Person person, String taskType,
+      String user, String dataType, EntityTagEvent tag, String type, Person person, String taskType,
       String tagKey, String dateForScopeDateFields) {
 
     PersonMetadata personMetadata;
@@ -174,7 +176,7 @@ public class MetadataService {
 
   public LocationMetadata updateLocationMetadata(UUID locationIdentifier, Object tagValue,
       Plan plan, UUID taskIdentifier,
-      String user, String dataType, EntityTag locationEntityTag, String type, Location location,
+      String user, String dataType, EntityTagEvent locationEntityTag, String type, Location location,
       String taskType, String tagKey,  String dateForScopeDateFields) {
 
     LocationMetadata locationMetadata;
@@ -400,7 +402,7 @@ public class MetadataService {
 
   private MetadataObj getMetadataObj(Object tagValue, UUID planIdentifier, UUID taskIdentifier,
       String user,
-      String dataType, EntityTag tag, String type, String taskType, String tagKey,String dateForScopeDateFields) {
+      String dataType, EntityTagEvent tag, String type, String taskType, String tagKey,String dateForScopeDateFields) {
     Metadata metadata = new Metadata();
     metadata.setPlanId(planIdentifier);
     metadata.setTaskId(taskIdentifier);
@@ -475,6 +477,9 @@ public class MetadataService {
         break;
       case "boolean":
         value.setValueBoolean((Boolean) tagValue);
+        break;
+      case "object":
+        value.getValueObjects().add(tagValue);
         break;
       default:
         value.setValueString((String) tagValue);

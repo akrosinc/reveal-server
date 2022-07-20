@@ -2,7 +2,6 @@ package com.revealprecision.revealserver.api.v1.dto.models;
 
 import java.io.Serializable;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -15,12 +14,9 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class RowData implements Serializable {
+public class ColumnDataWithSupervisor implements Serializable {
 
-  private UUID locationIdentifier;
-  private UUID otherIdentifier;
-  private String locationName;
-  private Long childrenNumber;
-  private Map<String, ColumnData> columnDataMap;
-
+  private UUID supervisorKey;
+  private String supervisor;
+  private ColumnData columnData;
 }

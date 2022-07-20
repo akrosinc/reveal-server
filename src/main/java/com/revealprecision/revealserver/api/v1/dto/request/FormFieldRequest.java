@@ -18,8 +18,6 @@ public class FormFieldRequest {
 
   private String display;
 
-  private boolean addToMetadata;
-
   private String dataType;
 
   private String formTitle;

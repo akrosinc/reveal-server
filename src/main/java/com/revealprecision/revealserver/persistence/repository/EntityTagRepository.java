@@ -26,4 +26,6 @@ public interface EntityTagRepository extends JpaRepository<EntityTag, UUID> {
 
   Optional<EntityTag> findEntityTagsByTagAndLookupEntityType_Code(String tagName,
       String actionCode);
+
+  List<EntityTag> findEntityTagsByIdentifierIn(Set<UUID> identifiers);
 }

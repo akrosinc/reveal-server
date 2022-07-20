@@ -2,7 +2,7 @@ package com.revealprecision.revealserver.service;
 
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.LookupEntityType;
-import com.revealprecision.revealserver.persistence.domain.LookupEntityType.Fields;
+
 import com.revealprecision.revealserver.persistence.repository.LookupEntityTypeRepository;
 import java.util.List;
 import java.util.UUID;
@@ -22,18 +22,18 @@ public class LookupEntityTypeService {
 
   public LookupEntityType getLookUpEntityTypeById(UUID lookupEntityTypeIdentifier) {
     return lookupEntityTypeRepository.findById(lookupEntityTypeIdentifier).orElseThrow(
-        () -> new NotFoundException(Pair.of(Fields.identifier, lookupEntityTypeIdentifier),
+        () -> new NotFoundException(Pair.of(LookupEntityType.Fields.identifier, lookupEntityTypeIdentifier),
             LookupEntityType.class));
   }
 
   public LookupEntityType getLookupEntityTypeByTableName(String name) {
     return lookupEntityTypeRepository.findLookupEntityTypeByTableName(name).orElseThrow(
-        () -> new NotFoundException(Pair.of(Fields.tableName, name), LookupEntityType.class));
+        () -> new NotFoundException(Pair.of(LookupEntityType.Fields.tableName, name), LookupEntityType.class));
   }
 
   public LookupEntityType getLookupEntityTypeByCode(String code) {
     return lookupEntityTypeRepository.findLookupEntityTypeByCode(code).orElseThrow(
-        () -> new NotFoundException(Pair.of(Fields.code, code), LookupEntityType.class));
+        () -> new NotFoundException(Pair.of(LookupEntityType.Fields.code, code), LookupEntityType.class));
   }
 
 }

@@ -1,5 +1,8 @@
-package com.revealprecision.revealserver.persistence.domain;
+package com.revealprecision.revealserver.messaging.message;
 
+import com.revealprecision.revealserver.persistence.domain.AbstractAuditableEntity;
+import com.revealprecision.revealserver.persistence.domain.FormField;
+import com.revealprecision.revealserver.persistence.domain.LookupEntityType;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -15,6 +18,7 @@ import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -25,41 +29,31 @@ import org.hibernate.annotations.Where;
 import org.hibernate.envers.Audited;
 
 @FieldNameConstants
-@Entity
-@Audited
 @Getter
 @Setter
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@SQLDelete(sql = "UPDATE condition SET entity_status = 'DELETED' where identifier=?")
-@Where(clause = "entity_status='ACTIVE'")
-public class EntityTag extends AbstractAuditableEntity {
+@Data
+public class EntityTagEvent extends Message {
 
-  @Id
-  @GeneratedValue
+
   private UUID identifier;
 
-  @Column(unique = true)
   private String tag;
 
   private String valueType;
 
   private String definition;
 
-  @ManyToOne(fetch = FetchType.EAGER)
-  @JoinColumn(name = "lookup_entity_type_identifier", referencedColumnName = "identifier")
-  private LookupEntityType lookupEntityType;
+  private LookupEntityTypeEvent lookupEntityType;
 
-  @ManyToMany(cascade = CascadeType.ALL,fetch = FetchType.EAGER)
-  @JoinTable(name = "form_field_entity_tag", joinColumns = @JoinColumn(name = "entity_tag_identifier"), inverseJoinColumns = @JoinColumn(name = "form_field_identifier"))
-  private Set<FormField> formFields;
+  private Set<FormFieldEvent> formFields;
 
   private boolean generated;
 
-  @Type(type = "list-array")
   private List<String> referencedFields;
-  @Type(type = "list-array")
+
   private List<String> aggregationMethod;
 
   private String generationFormula;
