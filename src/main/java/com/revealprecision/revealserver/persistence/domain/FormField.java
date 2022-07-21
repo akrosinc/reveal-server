@@ -3,6 +3,7 @@ package com.revealprecision.revealserver.persistence.domain;
 import java.util.Set;
 import java.util.UUID;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.ManyToMany;
@@ -29,7 +30,7 @@ import org.hibernate.envers.Audited;
 @SQLDelete(sql = "UPDATE condition SET entity_status = 'DELETED' where identifier=?")
 @Where(clause = "entity_status='ACTIVE'")
 @Table(uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"name","formTitle"})
+    @UniqueConstraint(columnNames = {"name", "formTitle"})
 })
 public class FormField extends AbstractAuditableEntity {
 
@@ -41,11 +42,9 @@ public class FormField extends AbstractAuditableEntity {
 
   private String display;
 
-  private boolean addToMetadata;
-
   private String dataType;
 
-  @ManyToMany
+  @ManyToMany(fetch = FetchType.LAZY)
   private Set<EntityTag> entityTags;
 
   private String formTitle;

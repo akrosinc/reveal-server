@@ -3,7 +3,6 @@ CREATE TABLE form_field
     identifier uuid NOT NULL,
     name character varying NOT NULL,
     display character varying,
-    add_to_metadata boolean NOT NULL,
     form_title character varying not null,
     data_type character varying NOT NULL DEFAULT 'integer',
     entity_status               VARCHAR(36)              NOT NULL,
@@ -22,7 +21,6 @@ CREATE TABLE form_field_aud
     REVTYPE                    INTEGER                  NULL,
     name character varying NOT NULL,
     display character varying,
-    add_to_metadata boolean NOT NULL,
     form_title character varying not null,
     data_type character varying NOT NULL DEFAULT 'integer',
     entity_status               VARCHAR(36)              NOT NULL,
@@ -92,3 +90,9 @@ ALTER TABLE IF EXISTS entity_tag
 
 ALTER TABLE IF EXISTS entity_tag_aud
     ADD COLUMN is_result_literal boolean NOT NULL DEFAULT false;
+
+ALTER TABLE IF EXISTS entity_tag
+    ADD COLUMN add_to_metadata boolean NOT NULL DEFAULT false;
+
+ALTER TABLE IF EXISTS entity_tag_aud
+    ADD COLUMN add_to_metadata boolean NOT NULL DEFAULT false;

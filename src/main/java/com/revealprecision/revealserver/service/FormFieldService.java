@@ -2,6 +2,7 @@ package com.revealprecision.revealserver.service;
 
 import com.revealprecision.revealserver.api.v1.dto.factory.FormFieldFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.FormFieldRequest;
+import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.persistence.domain.FormField;
 import com.revealprecision.revealserver.persistence.repository.FormFieldRepository;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,8 @@ public class FormFieldService {
 
   public FormField createFormField(FormFieldRequest formFieldRequest) {
 
-    return formFieldRepository.save(FormFieldFactory.toEntity(formFieldRequest));
+    FormField formField = FormFieldFactory.toEntity(formFieldRequest);
+    formField.setEntityStatus(EntityStatus.ACTIVE);
+    return formFieldRepository.save(formField);
   }
 }

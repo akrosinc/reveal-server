@@ -3,12 +3,11 @@ package com.revealprecision.revealserver.service;
 import com.revealprecision.revealserver.api.v1.dto.factory.EntityTagFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.EntityTagResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.EntityTagRequest;
-import com.revealprecision.revealserver.enums.LookupEntityTypeCodeEnum;
 import com.revealprecision.revealserver.api.v1.dto.response.EntityTagResponse;
+import com.revealprecision.revealserver.enums.LookupEntityTypeCodeEnum;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.EntityTag;
 import com.revealprecision.revealserver.persistence.domain.FormField;
-import com.revealprecision.revealserver.persistence.domain.EntityTag.Fields;
 import com.revealprecision.revealserver.persistence.domain.LookupEntityType;
 import com.revealprecision.revealserver.persistence.repository.EntityTagRepository;
 import java.util.ArrayList;
@@ -55,7 +54,7 @@ public class EntityTagService {
 
   public EntityTag getEntityTagByIdentifier(UUID identifier) {
     return entityTagRepository.findById(identifier).orElseThrow(() -> new NotFoundException(
-        Pair.of(Fields.identifier, identifier), EntityTag.class));
+        Pair.of(EntityTag.Fields.identifier, identifier), EntityTag.class));
   }
 
   public EntityTag createEntityTag(EntityTagRequest entityTagRequest) {
@@ -64,7 +63,8 @@ public class EntityTagService {
         entityTagRequest.getEntityType().getLookupEntityType());
     Set<FormField> formFields = null;
     if (entityTagRequest.getFormFieldNames() != null) {
-      formFields = entityTagRequest.getFormFieldNames().entrySet().stream().map(entry->formFieldService.findByNameAndFormTitle(
+      formFields = entityTagRequest.getFormFieldNames().entrySet().stream()
+          .map(entry -> formFieldService.findByNameAndFormTitle(
               entry.getValue(), entry.getKey()))
           .filter(Objects::nonNull).collect(Collectors.toSet());
     }
@@ -72,7 +72,7 @@ public class EntityTagService {
         EntityTagFactory.toEntity(entityTagRequest, lookupEntityType, formFields));
   }
 
-  public List<EntityTag> findEntityTagsByFormField(FormField formField) {
+  public Set<EntityTag> findEntityTagsByFormField(FormField formField) {
 
     return entityTagRepository.findEntityTagsByFormFields(formField);
   }
@@ -82,21 +82,23 @@ public class EntityTagService {
     return entityTagRepository.findById(entityTagIdentifier);
   }
 
+
+  public List<EntityTag> findEntityTagsByIdList(Set<UUID> entityTagIdentifiers) {
+    return entityTagRepository.findEntityTagsByIdentifierIn(entityTagIdentifiers);
+  }
+
   public Set<EntityTag> findEntityTagsByReferencedTags(String name) {
     return entityTagRepository.findEntityTagByReferencedFields(name);
   }
 
   public List<EntityTagResponse> getTagsAndCoreFields(UUID lookupEntityTypeIdentifier) {
-    LookupEntityType lookupEntityType = lookupEntityTypeService.getLookUpEntityTypeById(lookupEntityTypeIdentifier);
+    LookupEntityType lookupEntityType = lookupEntityTypeService.getLookUpEntityTypeById(
+        lookupEntityTypeIdentifier);
     List<EntityTagResponse> response = new ArrayList<>();
 
-    lookupEntityType.getEntityTags().forEach(entityTag -> {
-      response.add(EntityTagResponseFactory.fromEntity(entityTag));
-    });
+    lookupEntityType.getEntityTags().forEach(entityTag -> response.add(EntityTagResponseFactory.fromEntity(entityTag)));
 
-    lookupEntityType.getCoreFields().forEach(coreField -> {
-      response.add(EntityTagResponseFactory.fromCoreField(coreField));
-    });
+    lookupEntityType.getCoreFields().forEach(coreField -> response.add(EntityTagResponseFactory.fromCoreField(coreField)));
     return response;
   }
 

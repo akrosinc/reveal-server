@@ -31,6 +31,7 @@ public class EntityTagResponseFactory {
         .isResultLiteral(entityTag.isResultLiteral())
         .lookupEntityType(
             LookupEntityTagResponseFactory.fromEntity(entityTag.getLookupEntityType()))
+        .addToMetadata(entityTag.isAddToMetadata())
         .build();
   }
 

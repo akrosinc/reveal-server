@@ -6,8 +6,8 @@ import com.revealprecision.revealserver.api.v1.dto.models.ColumnData;
 import com.revealprecision.revealserver.api.v1.dto.models.RowData;
 import com.revealprecision.revealserver.api.v1.dto.response.FeatureSetResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationResponse;
+import com.revealprecision.revealserver.constants.KafkaConstants;
 import com.revealprecision.revealserver.constants.LocationConstants;
-import com.revealprecision.revealserver.messaging.KafkaConstants;
 import com.revealprecision.revealserver.messaging.message.LocationBusinessStatusAggregate;
 import com.revealprecision.revealserver.messaging.message.LocationPersonBusinessStateAggregate;
 import com.revealprecision.revealserver.messaging.message.LocationPersonBusinessStateCountAggregate;
@@ -77,7 +77,6 @@ public class MDADashboardService {
   private static final String PERSON_FULLNAME = "Person full name";
   private static final String PERSON_AGE = "Person age";
   private static final String PERSON_STATE = "Person state";
-
 
 
   ReadOnlyKeyValueStore<String, Long> countOfAssignedStructures;
@@ -741,7 +740,7 @@ public class MDADashboardService {
       List<LocationResponse> locationResponses) {
     return locationResponses.stream().peek(loc -> {
       loc.getProperties().setColumnDataMap(rowDataMap.get(loc.getIdentifier()).getColumnDataMap());
-      loc.getProperties().setId(loc.getIdentifier());
+      loc.getProperties().setId(loc.getIdentifier().toString());
 
       if (rowDataMap.get(loc.getIdentifier()).getColumnDataMap().get(DISTRIBUTION_COVERAGE)
           != null) {
@@ -784,7 +783,8 @@ public class MDADashboardService {
     if (!rowDataMap.isEmpty()) {
       locationResponses = setGeoJsonProperties(rowDataMap, locationResponses);
     }
-    response.setDefaultDisplayColumn(dashboardProperties.getMdaDefaultDisplayColumns().get(reportLevel));
+    response.setDefaultDisplayColumn(
+        dashboardProperties.getMdaDefaultDisplayColumns().get(reportLevel));
     response.setFeatures(locationResponses);
     response.setIdentifier(parentIdentifier);
     return response;

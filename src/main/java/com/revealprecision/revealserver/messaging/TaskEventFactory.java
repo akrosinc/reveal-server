@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.messaging;
 
+import com.revealprecision.revealserver.api.v1.dto.factory.LookupEntityTypeEventFactory;
 import com.revealprecision.revealserver.messaging.message.ActionEvent;
 import com.revealprecision.revealserver.messaging.message.GoalEvent;
 import com.revealprecision.revealserver.messaging.message.LocationHierarchyEvent;
@@ -94,20 +95,12 @@ public class TaskEventFactory {
     return ActionEvent.builder()
         .goal(getGoalEventFromGoal(goal, plan, locationHierarchy, interventionType))
         .description(action.getDescription())
-        .lookupEntityType(getLookupEntityTypeEventFromLookupEntityType(lookupEntityType))
+        .lookupEntityType(LookupEntityTypeEventFactory.getLookupEntityTypeEvent(lookupEntityType))
         .timingPeriodEnd(action.getTimingPeriodEnd())
         .timingPeriodStart(action.getTimingPeriodStart())
         .type(action.getType())
         .identifier(action.getIdentifier())
         .title(action.getTitle())
-        .build();
-  }
-
-  private static LookupEntityTypeEvent getLookupEntityTypeEventFromLookupEntityType(LookupEntityType lookupEntityType) {
-    return LookupEntityTypeEvent.builder()
-        .tableName(lookupEntityType.getTableName())
-        .code(lookupEntityType.getCode())
-        .identifier(lookupEntityType.getIdentifier())
         .build();
   }
 
@@ -203,11 +196,7 @@ public class TaskEventFactory {
     return ActionEvent.builder()
         .goal(getGoalEvent(actionEvent.getGoal()))
         .description(actionEvent.getDescription())
-        .lookupEntityType(LookupEntityTypeEvent.builder()
-            .tableName(actionEvent.getLookupEntityType().getTableName())
-            .code(actionEvent.getLookupEntityType().getCode())
-            .identifier(actionEvent.getLookupEntityType().getIdentifier())
-            .build())
+        .lookupEntityType(actionEvent.getLookupEntityType())
         .timingPeriodEnd(actionEvent.getTimingPeriodEnd())
         .timingPeriodStart(actionEvent.getTimingPeriodStart())
         .type(actionEvent.getType())

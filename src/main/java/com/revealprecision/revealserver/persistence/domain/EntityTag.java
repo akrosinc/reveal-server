@@ -32,7 +32,7 @@ import org.hibernate.envers.Audited;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@SQLDelete(sql = "UPDATE condition SET entity_status = 'DELETED' where identifier=?")
+@SQLDelete(sql = "UPDATE entity_tag SET entity_status = 'DELETED' where identifier=?")
 @Where(clause = "entity_status='ACTIVE'")
 public class EntityTag extends AbstractAuditableEntity {
 
@@ -51,7 +51,7 @@ public class EntityTag extends AbstractAuditableEntity {
   @JoinColumn(name = "lookup_entity_type_identifier", referencedColumnName = "identifier")
   private LookupEntityType lookupEntityType;
 
-  @ManyToMany(cascade = CascadeType.ALL)
+  @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
   @JoinTable(name = "form_field_entity_tag", joinColumns = @JoinColumn(name = "entity_tag_identifier"), inverseJoinColumns = @JoinColumn(name = "form_field_identifier"))
   private Set<FormField> formFields;
 
@@ -69,5 +69,7 @@ public class EntityTag extends AbstractAuditableEntity {
   private String resultExpression;
 
   private boolean isResultLiteral;
+
+  private boolean addToMetadata;
 
 }

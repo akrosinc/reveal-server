@@ -19,6 +19,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.UserResource;
@@ -32,6 +33,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class KeycloakService {
 
   public static final Map<String, Boolean> access = Map.of(
@@ -106,7 +108,7 @@ public class KeycloakService {
       userRepository.setApiResponse(identifier, "User not found on Keycloak");
       throw new KeycloakException("User not found on Keycloak");
     } else if (response.getStatus() == 204) {
-      return;
+      log.info("keycloak response: {}",response.getStatus());
     } else {
       userRepository.setApiResponse(identifier, "Unknown error on Keycloak");
       throw new KeycloakException("Unknown error on Keycloak");

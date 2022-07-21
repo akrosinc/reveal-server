@@ -6,7 +6,6 @@ import static org.apache.kafka.streams.StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CON
 import static org.apache.kafka.streams.StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG;
 import static org.springframework.kafka.annotation.KafkaStreamsDefaultConfiguration.DEFAULT_STREAMS_CONFIG_BEAN_NAME;
 
-import com.revealprecision.revealserver.messaging.TopicConstants;
 import com.revealprecision.revealserver.props.KafkaProperties;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -107,10 +106,5 @@ public class KafkaConfig {
   public DeadLetterPublishingRecoverer recoverer(@Autowired KafkaTemplate kafkaTemplate) {
     return new DeadLetterPublishingRecoverer(kafkaTemplate,
         (record, ex) -> new TopicPartition("recovererDLQ", -1));
-  }
-
-  @Bean
-  public NewTopic eventConsumptionTopic() {
-    return new NewTopic(TopicConstants.EVENT_CONSUMPTION, 1, (short) 1);
   }
 }

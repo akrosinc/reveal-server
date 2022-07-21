@@ -12,7 +12,7 @@ import com.revealprecision.revealserver.enums.PlanStatusEnum;
 import com.revealprecision.revealserver.enums.ReportTypeEnum;
 import com.revealprecision.revealserver.exceptions.ConflictException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
-import com.revealprecision.revealserver.messaging.KafkaConstants;
+import com.revealprecision.revealserver.constants.KafkaConstants;
 import com.revealprecision.revealserver.messaging.message.Message;
 import com.revealprecision.revealserver.messaging.message.PlanUpdateMessage;
 import com.revealprecision.revealserver.messaging.message.PlanUpdateType;
@@ -92,7 +92,6 @@ public class PlanService {
       return planRepository.findPlansByInterventionType(reportType, pageable);
     } else {
       ApplicableReportsEnum applicableReportsEnum = null;
-      ReportTypeEnum reportTypeEnum = LookupUtil.lookup(ReportTypeEnum.class, reportType);
       for (ApplicableReportsEnum applicableReport : ApplicableReportsEnum.values()) {
         if (applicableReport.getReportName().contains(reportType)) {
           applicableReportsEnum = applicableReport;

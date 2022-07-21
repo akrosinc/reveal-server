@@ -39,4 +39,5 @@ public class EntityTagRequest {
   private String scope;
   private String resultExpression;
   private boolean isResultLiteral;
+  private boolean addToMetadata;
 }

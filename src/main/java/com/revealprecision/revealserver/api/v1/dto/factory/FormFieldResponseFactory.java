@@ -1,7 +1,6 @@
 package com.revealprecision.revealserver.api.v1.dto.factory;
 
 import com.revealprecision.revealserver.api.v1.dto.response.FormFieldResponse;
-import com.revealprecision.revealserver.enums.ActionTitleEnum;
 import com.revealprecision.revealserver.persistence.domain.FormField;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -14,7 +13,6 @@ public class FormFieldResponseFactory {
 
     return FormFieldResponse.builder()
         .identifier(formField.getIdentifier())
-        .addToMetadata(formField.isAddToMetadata())
         .display(formField.getDisplay())
         .name(formField.getName())
         .dataType(formField.getDataType())

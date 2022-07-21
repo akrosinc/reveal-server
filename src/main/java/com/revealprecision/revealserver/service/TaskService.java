@@ -14,7 +14,7 @@ import com.revealprecision.revealserver.enums.TaskProcessEnum;
 import com.revealprecision.revealserver.exceptions.DuplicateTaskCreationException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.exceptions.QueryGenerationException;
-import com.revealprecision.revealserver.messaging.KafkaConstants;
+import com.revealprecision.revealserver.constants.KafkaConstants;
 import com.revealprecision.revealserver.messaging.TaskEventFactory;
 import com.revealprecision.revealserver.messaging.dto.TaskGen;
 import com.revealprecision.revealserver.messaging.message.ActionEvent;

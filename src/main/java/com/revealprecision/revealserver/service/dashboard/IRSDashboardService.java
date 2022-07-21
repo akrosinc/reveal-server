@@ -6,8 +6,8 @@ import com.revealprecision.revealserver.api.v1.dto.models.ColumnData;
 import com.revealprecision.revealserver.api.v1.dto.models.RowData;
 import com.revealprecision.revealserver.api.v1.dto.response.FeatureSetResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationResponse;
+import com.revealprecision.revealserver.constants.KafkaConstants;
 import com.revealprecision.revealserver.constants.LocationConstants;
-import com.revealprecision.revealserver.messaging.KafkaConstants;
 import com.revealprecision.revealserver.messaging.message.LocationBusinessStatusAggregate;
 import com.revealprecision.revealserver.messaging.message.LocationPersonBusinessStateAggregate;
 import com.revealprecision.revealserver.messaging.message.LocationPersonBusinessStateCountAggregate;
@@ -61,7 +61,6 @@ public class IRSDashboardService {
   private static final String NO_OF_MALES = "No of Males";
   private static final String NO_OF_FEMALES = "No of Females";
   private static final String NO_OF_PREGNANT_WOMEN = "No of Pregnant Women";
-
 
 
   ReadOnlyKeyValueStore<String, Long> countOfAssignedStructures;
@@ -377,7 +376,8 @@ public class IRSDashboardService {
       Location childLocation, String columnName, String geoNameDirectlyAboveStructure) {
 
     Long totalOperationAreaCounts = locationRelationshipService.getNumberOfChildrenByGeoLevelNameWithinLocationAndHierarchy(
-        geoNameDirectlyAboveStructure, childLocation.getIdentifier(), plan.getLocationHierarchy().getIdentifier());
+        geoNameDirectlyAboveStructure, childLocation.getIdentifier(),
+        plan.getLocationHierarchy().getIdentifier());
 
     Long totalOperationAreaCountsValue = 0L;
 
@@ -647,7 +647,7 @@ public class IRSDashboardService {
       List<LocationResponse> locationResponses) {
     return locationResponses.stream().peek(loc -> {
       loc.getProperties().setColumnDataMap(rowDataMap.get(loc.getIdentifier()).getColumnDataMap());
-      loc.getProperties().setId(loc.getIdentifier());
+      loc.getProperties().setId(loc.getIdentifier().toString());
       if (rowDataMap.get(loc.getIdentifier()).getColumnDataMap().get(SPRAY_COVERAGE_OF_TARGETED)
           != null) {
         loc.getProperties().setSprayCoverage(
@@ -656,7 +656,9 @@ public class IRSDashboardService {
       }
     }).collect(Collectors.toList());
   }
-  public FeatureSetResponse getFeatureSetResponse(UUID parentIdentifier, List<PlanLocationDetails> locationDetails,
+
+  public FeatureSetResponse getFeatureSetResponse(UUID parentIdentifier,
+      List<PlanLocationDetails> locationDetails,
       Map<UUID, RowData> rowDataMap, String reportLevel) {
     FeatureSetResponse response = new FeatureSetResponse();
     response.setType("FeatureCollection");
@@ -665,7 +667,8 @@ public class IRSDashboardService {
         .collect(Collectors.toList());
 
     locationResponses = setGeoJsonProperties(rowDataMap, locationResponses);
-    response.setDefaultDisplayColumn(dashboardProperties.getIrsDefaultDisplayColumns().getOrDefault(reportLevel, null));
+    response.setDefaultDisplayColumn(
+        dashboardProperties.getIrsDefaultDisplayColumns().getOrDefault(reportLevel, null));
     response.setFeatures(locationResponses);
     response.setIdentifier(parentIdentifier);
     return response;

@@ -1,4 +1,4 @@
-package com.revealprecision.revealserver.messaging;
+package com.revealprecision.revealserver.constants;
 
 public class KafkaConstants {
 
@@ -12,6 +12,8 @@ public class KafkaConstants {
   public static final String tableOfOperationalAreaHierarchiesTOPIC = "tableOfOperationalAreaHierarchiesTOPIC";
   public static final String TASK_CANDIDATE = "TASK_CANDIDATE";
   public static final String EVENT_CONSUMPTION = "EVENT_CONSUMPTION";
+  public static final String FORM_EVENT_CONSUMPTION = "FORM_EVENT_CONSUMPTION";
+  public static final String LOCATION_SUPERVISOR_CDD = "LOCATION_SUPERVISOR_CDD";
 
   ///Materialized stores
   public static final String structureCountPerParent = "structureCountPerParent";
@@ -47,5 +49,8 @@ public class KafkaConstants {
   public static final String locationFormDataStringCount = "locationFormDataStringCount";
   public static final String personFormDataInteger = "personFormDataInteger";
   public static final String personFormDataIntegerSumOrAverage = "personFormDataIntegerSumOrAverage";
-
+  public static final String mdaLiteSupervisors = "mdaLiteSupervisors";
+  public static final String cddNames = "cddNames";
+  public static final String supervisorLocationFormDataIntegerSumOrAverage = "supervisorLocationFormDataIntegerSumOrAverage";
+  public static final String cddSupervisorLocationFormDataIntegerSumOrAverage = "cddSupervisorLocationFormDataIntegerSumOrAverage";
 }

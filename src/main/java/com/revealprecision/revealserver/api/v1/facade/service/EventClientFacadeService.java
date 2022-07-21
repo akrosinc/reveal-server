@@ -4,36 +4,29 @@ import static com.revealprecision.revealserver.constants.EventClientConstants.CL
 import static com.revealprecision.revealserver.constants.EventClientConstants.EVENTS;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
 import com.revealprecision.revealserver.api.v1.facade.factory.EventSearchCriteriaFactory;
 import com.revealprecision.revealserver.api.v1.facade.models.ClientFacade;
 import com.revealprecision.revealserver.api.v1.facade.models.ClientFacadeMetadata;
 import com.revealprecision.revealserver.api.v1.facade.models.EventFacade;
-import com.revealprecision.revealserver.api.v1.facade.models.Obs;
 import com.revealprecision.revealserver.api.v1.facade.models.SyncParamFacade;
 import com.revealprecision.revealserver.api.v1.facade.util.DateTimeFormatter;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.enums.NameUseEnum;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
-import com.revealprecision.revealserver.messaging.KafkaConstants;
-import com.revealprecision.revealserver.messaging.message.EventMetadata;
 import com.revealprecision.revealserver.persistence.domain.Event;
 import com.revealprecision.revealserver.persistence.domain.Group;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.Person;
-import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.persistence.es.PersonElastic;
 import com.revealprecision.revealserver.service.EventService;
+import com.revealprecision.revealserver.service.FormDataProcessorService;
 import com.revealprecision.revealserver.service.GroupService;
 import com.revealprecision.revealserver.service.LocationService;
 import com.revealprecision.revealserver.service.OrganizationService;
 import com.revealprecision.revealserver.service.PersonService;
 import com.revealprecision.revealserver.service.UserService;
 import com.revealprecision.revealserver.service.models.EventSearchCriteria;
-import com.revealprecision.revealserver.util.UserUtils;
 import com.revealprecision.revealserver.util.ElasticModelUtil;
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -65,13 +58,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class EventClientFacadeService {
+
 
   private final PersonService personService;
   private final EventService eventService;
@@ -80,12 +73,8 @@ public class EventClientFacadeService {
   private final UserService userService;
   private final GroupService groupService;
   private final ObjectMapper objectMapper;
-  private final KafkaProperties kafkaProperties;
-
-  private final KafkaTemplate<String, EventMetadata> eventConsumptionTemplate;
-
+  private final FormDataProcessorService formDataProcessorService;
   private final RestHighLevelClient client;
-
   private final Environment env;
 
 
@@ -116,39 +105,7 @@ public class EventClientFacadeService {
     eventFacadeList.forEach(eventFacade -> {
       try {
         Event savedEvent = saveEvent(eventFacade);
-
-        JsonNode obsList = savedEvent.getAdditionalInformation().get("obs");
-
-        if (obsList.isArray()) {
-
-          ObjectReader reader = objectMapper.readerFor(new TypeReference<List<Obs>>() {
-          });
-
-          List<Obs> obsJavaList = reader.readValue(obsList);
-
-          obsJavaList.forEach(obs -> {
-
-            UUID baseEntityId = UUID.fromString(eventFacade.getBaseEntityId());
-            eventConsumptionTemplate.send(
-                kafkaProperties.getTopicMap().get(KafkaConstants.EVENT_CONSUMPTION),
-                // Proceed with caution here as new updates / removals to the object will prevent rewind of the streams application.
-                // In the event of new data being introduced, ensure that null pointers are catered in the streams
-                // application if the event comes through, and it does not have the new fields populated
-                EventMetadata.builder()
-                    .eventId(savedEvent.getIdentifier())
-                    .baseEntityId(baseEntityId)
-                    .eventType(savedEvent.getEventType())
-                    .obs(obs)
-                    .planIdentifier(
-                        UUID.fromString(eventFacade.getDetails().get("planIdentifier")))
-                    .taskIdentifier(
-                        UUID.fromString(eventFacade.getDetails().get("taskIdentifier")))
-                    .user(UserUtils.getCurrentPrincipleName())
-                    .fullObs(obsJavaList)
-                    .build());
-
-          });
-        }
+        formDataProcessorService.processFormDataAndSubmitToMessaging(savedEvent);
       } catch (Exception exception) {
         exception.printStackTrace();
         failedEvents.add(eventFacade);
@@ -471,8 +428,8 @@ public class EventClientFacadeService {
   }
 
   public List<Person> searchPeople(List<Event> searchEvents) {
-    return searchEvents.stream().filter(event -> event.getBaseEntityIdentifier() != null)
-        .map(Event::getBaseEntityIdentifier).map(personIdentifier -> {
+    return searchEvents.stream().map(Event::getBaseEntityIdentifier)
+        .filter(Objects::nonNull).map(personIdentifier -> {
           try {
             return personService.getPersonByIdentifier(personIdentifier);
           } catch (NotFoundException notFoundException) {
@@ -483,7 +440,7 @@ public class EventClientFacadeService {
 
   public List<EventFacade> getEventFacades(List<Event> searchEvents) {
 
-    return searchEvents.stream().map(this::getEventFacade).filter(Objects::nonNull)
+    return searchEvents.stream().map(this::getEventFacade)
         .collect(Collectors.toList());
   }
 

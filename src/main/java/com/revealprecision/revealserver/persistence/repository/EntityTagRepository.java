@@ -18,7 +18,7 @@ public interface EntityTagRepository extends JpaRepository<EntityTag, UUID> {
 
   Optional<EntityTag> getFirstByTag(String tag);
 
-  List<EntityTag> findEntityTagsByFormFields(FormField formField);
+  Set<EntityTag> findEntityTagsByFormFields(FormField formField);
 
 
   @Query(value = "select * from entity_tag et WHERE CAST(STRING_TO_ARRAY(:tagName,',') as character varying[]) &&  et.referenced_fields ORDER BY et.created_datetime", nativeQuery = true)
@@ -26,4 +26,6 @@ public interface EntityTagRepository extends JpaRepository<EntityTag, UUID> {
 
   Optional<EntityTag> findEntityTagsByTagAndLookupEntityType_Code(String tagName,
       String actionCode);
+
+  List<EntityTag> findEntityTagsByIdentifierIn(Set<UUID> identifiers);
 }
