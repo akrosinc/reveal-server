@@ -9,32 +9,12 @@ import lombok.Setter;
 @Getter
 @Setter
 public class SettingRequest {
-
-  //   values: [{
-  //            "emuhaya": [
-  //                {
-  //                    "code": "ZM-SOP-2019-09005",
-  //                    "name": "Derrick Banda"
-  //                },
-  //                {
-  //                    "code": "ZM-SOP-2019-09006",
-  //                    "name": "Abudullah Nkhoma"
-  //                },
-  //                {
-  //                    "code": "ZM-SOP-2019-09007",
-  //                    "name": "Esau Mushanga"
-  //                },
-  //
-  //     }]
-  //
-
-
   @NotBlank
-  private String key; // health_worker_supervisors
+  private String key;
   @NotNull
-  private String value; //only for one value eg passwaord
+  private String value;
   @NotNull
-  private List<Object> values; // {name: mmmm,code:cccccc}
+  private List<Object> values;
   @NotBlank
   private String label;
   @NotBlank
