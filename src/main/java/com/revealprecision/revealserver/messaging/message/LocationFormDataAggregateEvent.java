@@ -45,4 +45,7 @@ public class LocationFormDataAggregateEvent extends Message {
 
   private String cddName;
 
+  private UUID eventId;
+  private UUID previousEventId;
+
 }

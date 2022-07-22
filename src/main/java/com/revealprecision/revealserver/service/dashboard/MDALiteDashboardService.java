@@ -23,8 +23,6 @@ import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import com.revealprecision.revealserver.props.DashboardProperties;
 import com.revealprecision.revealserver.props.KafkaProperties;
-import com.revealprecision.revealserver.service.LocationRelationshipService;
-import com.revealprecision.revealserver.service.PlanLocationsService;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -47,8 +45,6 @@ public class MDALiteDashboardService {
 
   private final StreamsBuilderFactoryBean getKafkaStreams;
   private final KafkaProperties kafkaProperties;
-  private final PlanLocationsService planLocationsService;
-  private final LocationRelationshipService locationRelationshipService;
   private final DashboardProperties dashboardProperties;
 
   public static final String MALES_1_4 = "Male 1-4 years";
@@ -173,47 +169,34 @@ public class MDALiteDashboardService {
     MDALiteLocationSupervisorListAggregation locationFormDataSumAggregateEvent = supervisors.get(
         supervisorKey);
 
-    Map<String, String> supervisorNames = locationFormDataSumAggregateEvent.getSupervisorNames();
-    for (Entry<String, String> supervisor : supervisorNames.entrySet()) {
-      Map<String, ColumnData> columns = new HashMap<>();
-      if (filters == null || (filters.contains(ALB) || filters.isEmpty())) {
-        List<Entry<String, ColumnData>> ALBEntries = supervisorColumnMap.keySet().stream().map(
-            s -> getSupervisorFormData(plan, childLocation,
-                ALB, supervisorColumnMap.get(s), name(s, ALB), supervisor)
+    if (locationFormDataSumAggregateEvent!=null) {
+      Map<String, String> supervisorNames = locationFormDataSumAggregateEvent.getSupervisorNames();
+      for (Entry<String, String> supervisor : supervisorNames.entrySet()) {
+        Map<String, ColumnData> columns = new HashMap<>();
+        if (filters == null || (filters.contains(ALB) || filters.isEmpty())) {
+          columns.putAll(
+              getSupervisorColumnDataMap(plan, childLocation, ALB, supervisor, new ArrayList<>()));
+        }
 
-        ).collect(Collectors.toList());
-        Map<String, ColumnData> ALBdata = ALBEntries.stream()
-            .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
-        columns.putAll(ALBdata);
+        if (filters == null || (filters.contains(PZQ) || filters.isEmpty())) {
+          columns.putAll(
+              getSupervisorColumnDataMap(plan, childLocation, PZQ, supervisor,
+                  List.of(MALES_1_4, FEMALES_1_4)));
+        }
+
+        if (filters == null || (filters.contains(MEB) || filters.isEmpty())) {
+          columns.putAll(
+              getSupervisorColumnDataMap(plan, childLocation, MEB, supervisor, new ArrayList<>()));
+        }
+
+        RowDataWithSupervisorOrCdd rowData = new RowDataWithSupervisorOrCdd();
+        rowData.setName(supervisor.getKey());
+        rowData.setKey("CDD" + "_" + supervisor.getKey().concat("_")
+            .concat(childLocation.getIdentifier().toString()));
+        rowData.setMaps(columns);
+
+        rowDataWithSupervisorOrCdds.add(rowData);
       }
-
-      if (filters == null || (filters.contains(PZQ) || filters.isEmpty())) {
-        List<Entry<String, ColumnData>> PZQEntries = supervisorColumnMap.keySet().stream().map(
-            s -> getSupervisorFormData(plan, childLocation,
-                PZQ, supervisorColumnMap.get(s), name(s, PZQ), supervisor)
-
-        ).collect(Collectors.toList());
-        Map<String, ColumnData> PZQdata = PZQEntries.stream()
-            .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
-        columns.putAll(PZQdata);
-      }
-
-      if (filters == null || (filters.contains(MEB) || filters.isEmpty())) {
-        List<Entry<String, ColumnData>> MBZEntries = supervisorColumnMap.keySet().stream().map(
-            s -> getSupervisorFormData(plan, childLocation,
-                MEB, supervisorColumnMap.get(s), name(s, MEB), supervisor)
-        ).collect(Collectors.toList());
-        Map<String, ColumnData> MBZData = MBZEntries.stream()
-            .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
-        columns.putAll(MBZData);
-      }
-
-      RowDataWithSupervisorOrCdd rowData = new RowDataWithSupervisorOrCdd();
-      rowData.setSupervisor(supervisor.getKey());
-      rowData.setSupervisorKey("CDD" + "_" + supervisor.getKey().concat("_")
-          .concat(childLocation.getIdentifier().toString()));
-      rowData.setMaps(columns);
-      rowDataWithSupervisorOrCdds.add(rowData);
     }
 
     RowDataForSupervisor rowDataForSupervisor = new RowDataForSupervisor();
@@ -223,10 +206,20 @@ public class MDALiteDashboardService {
     return List.of(rowDataForSupervisor);
   }
 
+  private Map<String, ColumnData> getSupervisorColumnDataMap(Plan plan, Location childLocation,
+      String drug,
+      Entry<String, String> supervisor, List<String> exclusions) {
+    return supervisorColumnMap.keySet().stream()
+        .filter(s -> !exclusions.contains(s))
+        .map(
+            s -> getSupervisorFormData(plan, childLocation,
+                drug, columnMap.get(s), name(s, drug), supervisor)
+        ).collect(Collectors.toList()).stream()
+        .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+  }
+
   public List<RowData> getMDALiteCDDCoverageData(Plan plan, Location childLocation,
       List<String> filters, String parentIdentifierString) {
-    List<RowData> rowDatas = new ArrayList<>();
-
     List<RowDataWithSupervisorOrCdd> rowDataWithSupervisorOrCdds = new ArrayList<>();
 
     String supervisor = parentIdentifierString.split("_")[1];
@@ -243,89 +236,68 @@ public class MDALiteDashboardService {
 
       Set<String> cddNames = locationFormDataSumAggregateEvent.getCddNames();
       for (String cddName : cddNames) {
-        Map<String, ColumnData> columns = new HashMap<>();
-        SimpleEntry<String, String> stringStringSimpleEntry = new SimpleEntry<>(supervisor,
+        Map<String, ColumnData> columnsToAdd = new HashMap<>();
+
+        SimpleEntry<String, String> supervisorCddEntry = new SimpleEntry<>(supervisor,
             cddName);
+
         if (filters == null || (filters.contains(ALB) || filters.isEmpty())) {
-
-          List<Entry<String, ColumnData>> ALBEntries = cddColumnMap.keySet().stream().map(
-              s -> getCddFormData(plan, childLocation,
-                  ALB, cddColumnMap.get(s), name(s, ALB), stringStringSimpleEntry)
-
-          ).collect(Collectors.toList());
-          Map<String, ColumnData> ALBdata = ALBEntries.stream()
-              .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
-          columns.putAll(ALBdata);
-
-          Entry<String, ColumnData> daysWorked = getDaysWorked(plan, childLocation,
-              ALB, name(DAYS_WORKED, ALB), stringStringSimpleEntry);
-
-          columns.put(daysWorked.getKey(), daysWorked.getValue());
-
-          Entry<String, ColumnData> daysWorkedAverage = getDaysWorkedAverage(plan, childLocation,
-              ALB, name(AVERAGE, ALB), stringStringSimpleEntry);
-
-          columns.put(daysWorkedAverage.getKey(), daysWorkedAverage.getValue());
-
+          columnsToAdd.putAll(getCddColumnDashboardData(
+              plan, childLocation, supervisorCddEntry, ALB, new ArrayList<>()));
         }
 
         if (filters == null || (filters.contains(PZQ) || filters.isEmpty())) {
-          List<Entry<String, ColumnData>> PZQEntries = cddColumnMap.keySet().stream().map(
-              s -> getCddFormData(plan, childLocation,
-                  PZQ, cddColumnMap.get(s), name(s, PZQ), stringStringSimpleEntry)
-
-          ).collect(Collectors.toList());
-          Map<String, ColumnData> PZQdata = PZQEntries.stream()
-              .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
-          columns.putAll(PZQdata);
-
-          Entry<String, ColumnData> daysWorked = getDaysWorked(plan, childLocation,
-              PZQ,  name(DAYS_WORKED, PZQ), stringStringSimpleEntry);
-
-          columns.put(daysWorked.getKey(), daysWorked.getValue());
-
-          Entry<String, ColumnData> daysWorkedAverage = getDaysWorkedAverage(plan, childLocation,
-              PZQ,  name(AVERAGE, PZQ), stringStringSimpleEntry);
-
-          columns.put(daysWorkedAverage.getKey(), daysWorkedAverage.getValue());
-
+          columnsToAdd.putAll(getCddColumnDashboardData(
+              plan, childLocation, supervisorCddEntry, PZQ, List.of(MALES_1_4, FEMALES_1_4)));
         }
 
         if (filters == null || (filters.contains(MEB) || filters.isEmpty())) {
-          List<Entry<String, ColumnData>> MBZEntries = cddColumnMap.keySet().stream().map(
-              s -> getCddFormData(plan, childLocation,
-                  MEB, cddColumnMap.get(s), name(s, MEB), stringStringSimpleEntry)
-          ).collect(Collectors.toList());
-          Map<String, ColumnData> MBZData = MBZEntries.stream()
-              .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
-          columns.putAll(MBZData);
-
-          Entry<String, ColumnData> daysWorked = getDaysWorked(plan, childLocation,
-              MEB, name(DAYS_WORKED, MEB), stringStringSimpleEntry);
-
-          columns.put(daysWorked.getKey(), daysWorked.getValue());
-
-          Entry<String, ColumnData> daysWorkedAverage = getDaysWorkedAverage(plan, childLocation,
-              MEB, name(AVERAGE, MEB), stringStringSimpleEntry);
-
-          columns.put(daysWorkedAverage.getKey(), daysWorkedAverage.getValue());
+          columnsToAdd.putAll(getCddColumnDashboardData(
+              plan, childLocation, supervisorCddEntry, MEB, new ArrayList<>()));
         }
 
         RowDataWithSupervisorOrCdd rowData = new RowDataWithSupervisorOrCdd();
-        rowData.setCdd(cddName);
-        rowData.setCddKey(supervisor + "_" + cddName.concat("_")
+        rowData.setName(cddName);
+        rowData.setKey(supervisor + "_" + cddName.concat("_")
             .concat(childLocation.getIdentifier().toString()));
-        rowData.setMaps(columns);
+        rowData.setMaps(columnsToAdd);
         rowDataWithSupervisorOrCdds.add(rowData);
       }
 
-      RowDataForSupervisor rowDataForSupervisor = new RowDataForSupervisor();
-      rowDataForSupervisor.setRowDataWithSupervisorOrCdds(rowDataWithSupervisorOrCdds);
-      rowDataForSupervisor.setLocationIdentifier(childLocation.getIdentifier());
-      rowDataForSupervisor.setLocationName(childLocation.getName());
-      return List.of(rowDataForSupervisor);
     }
-    return null;
+    RowDataForSupervisor rowDataForSupervisor = new RowDataForSupervisor();
+    rowDataForSupervisor.setRowDataWithSupervisorOrCdds(rowDataWithSupervisorOrCdds);
+    rowDataForSupervisor.setLocationIdentifier(childLocation.getIdentifier());
+    rowDataForSupervisor.setLocationName(childLocation.getName());
+    return List.of(rowDataForSupervisor);
+  }
+
+  private Map<String, ColumnData> getCddColumnDashboardData(Plan plan, Location childLocation,
+      SimpleEntry<String, String> supervisorCddEntry, String drug, List<String> exclusions) {
+    Map<String, ColumnData> columns = new HashMap<>(
+        getCddColumnData(plan, childLocation, supervisorCddEntry, drug, exclusions));
+
+    Entry<String, ColumnData> daysWorked = getDaysWorked(plan, childLocation,
+        drug, name(DAYS_WORKED, drug), supervisorCddEntry);
+    columns.put(daysWorked.getKey(), daysWorked.getValue());
+
+    Entry<String, ColumnData> daysWorkedAverage = getDaysWorkedAverage(plan, childLocation,
+        drug, name(AVERAGE, drug), supervisorCddEntry);
+
+    columns.put(daysWorkedAverage.getKey(), daysWorkedAverage.getValue());
+    return columns;
+  }
+
+  private Map<String, ColumnData> getCddColumnData(Plan plan, Location childLocation,
+      SimpleEntry<String, String> supervisorCddEntry, String drug, List<String> exclusions) {
+    return cddColumnMap.keySet().stream()
+        .filter(s -> !exclusions.contains(s))
+        .map(
+            columnName -> getCddFormData(plan, childLocation,
+                drug, cddColumnMap.get(columnName), name(columnName, drug), supervisorCddEntry)
+        ).collect(Collectors.toList())
+        .stream()
+        .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
   }
 
   public List<RowData> getMDALiteCoverageData(Plan plan, Location childLocation,
@@ -333,50 +305,30 @@ public class MDALiteDashboardService {
     Map<String, ColumnData> columns = new HashMap<>();
 
     if (filters == null || (filters.contains(ALB) || filters.isEmpty())) {
-      List<Entry<String, ColumnData>> ALBEntries = columnMap.keySet().stream().map(
-          s -> getFormData(plan, childLocation,
-              ALB, columnMap.get(s), name(s, ALB))
-
-      ).collect(Collectors.toList());
-      Map<String, ColumnData> ALBdata = ALBEntries.stream()
-          .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
-      columns.putAll(ALBdata);
-
+      columns.putAll(getDashboardData(plan, childLocation, ALB, new ArrayList<>()));
     }
 
     if (filters == null || (filters.contains(PZQ) || filters.isEmpty())) {
-      List<Entry<String, ColumnData>> PZQEntries = columnMap.keySet().stream().map(
-          s -> getFormData(plan, childLocation,
-              PZQ, columnMap.get(s), name(s, PZQ))
-
-      ).collect(Collectors.toList());
-      Map<String, ColumnData> PZQdata = PZQEntries.stream()
-          .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
-      columns.putAll(PZQdata);
+      columns.putAll(getDashboardData(plan, childLocation, PZQ, List.of(MALES_1_4, FEMALES_1_4)));
     }
 
     if (filters == null || (filters.contains(MEB) || filters.isEmpty())) {
-      List<Entry<String, ColumnData>> MBZEntries = columnMap.keySet().stream().map(
-          s -> getFormData(plan, childLocation,
-              MEB, columnMap.get(s), name(s, MEB))
-      ).collect(Collectors.toList());
-      Map<String, ColumnData> MBZData = MBZEntries.stream()
-          .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
-      columns.putAll(MBZData);
+      columns.putAll(getDashboardData(plan, childLocation, MEB, new ArrayList<>()));
     }
 
     if (filters == null || filters.contains(MEB) || filters.contains(ALB)) {
-      Entry<String, ColumnData> sthCensusPopulationTarget = getCensusPopulationTarget(plan,
+      Entry<String, ColumnData> sthCensusPopulationTarget = getCensusPopulationTargetColumnMap(plan,
           childLocation,
           sthTargetPop, STH_CENSUS_POP_TARGET);
       columns.put(sthCensusPopulationTarget.getKey(), sthCensusPopulationTarget.getValue());
+
       Entry<String, ColumnData> treatmentCoverage = getTreatmentCoverageTarget(plan,
           childLocation,
           STH, STH_TREATMENT_COVERAGE);
       columns.put(treatmentCoverage.getKey(), treatmentCoverage.getValue());
     }
     if (filters == null || filters.contains(PZQ)) {
-      Entry<String, ColumnData> schCensusPopulationTarget = getCensusPopulationTarget(plan,
+      Entry<String, ColumnData> schCensusPopulationTarget = getCensusPopulationTargetColumnMap(plan,
           childLocation,
           schTargetPop, SCH_CENSUS_POP_TARGET);
       columns.put(schCensusPopulationTarget.getKey(), schCensusPopulationTarget.getValue());
@@ -394,6 +346,18 @@ public class MDALiteDashboardService {
     rowData.setLocationName(childLocation.getName());
 
     return List.of(rowData);
+  }
+
+  private Map<String, ColumnData> getDashboardData(Plan plan, Location childLocation, String drug,
+      List<String> exclusions) {
+    return columnMap.keySet().stream()
+        .filter(s -> !exclusions.contains(s))
+        .map(
+            s -> getFormData(plan, childLocation,
+                drug, columnMap.get(s), name(s, drug))
+
+        ).collect(Collectors.toList()).stream()
+        .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
   }
 
   private Entry<String, ColumnData> getSupervisorFormData(Plan plan, Location childLocation,
@@ -450,7 +414,8 @@ public class MDALiteDashboardService {
         columnData);
   }
 
-  private Entry<String, ColumnData> getDaysWorked(Plan plan, Location childLocation, String drug, String columnName, Entry<String, String> cdd) {
+  private Entry<String, ColumnData> getDaysWorked(Plan plan, Location childLocation, String drug,
+      String columnName, Entry<String, String> cdd) {
 
     String key = plan.getIdentifier() + "_" + plan.getLocationHierarchy().getIdentifier() + "_"
         + childLocation.getIdentifier()
@@ -477,19 +442,11 @@ public class MDALiteDashboardService {
   }
 
 
-  private Entry<String, ColumnData> getCensusPopulationTarget(Plan plan, Location childLocation,
+  private Entry<String, ColumnData> getCensusPopulationTargetColumnMap(Plan plan,
+      Location childLocation,
       String searchKey, String columnName) {
 
-    String key = plan.getIdentifier() + "_" + plan.getLocationHierarchy().getIdentifier() + "_"
-        + childLocation.getIdentifier() + "_" + searchKey;
-
-    LocationFormDataSumAggregateEvent locationFormDataSumAggregateEvent = locationFormDataIntegerSumOrAverage.get(
-        key);
-
-    Long censusTargetPopulation = 0L;
-    if (locationFormDataSumAggregateEvent != null) {
-      censusTargetPopulation = locationFormDataSumAggregateEvent.getSum();
-    }
+    Long censusTargetPopulation = getCensusTargetPopulation(plan, childLocation, searchKey);
 
     ColumnData columnData = new ColumnData();
     columnData.setDataType("integer");
@@ -506,34 +463,12 @@ public class MDALiteDashboardService {
     double treatmentCoverage = 0;
     String meta = "";
     if (infection.equals(STH)) {
-      String key = plan.getIdentifier() + "_" + plan.getLocationHierarchy().getIdentifier() + "_"
-          + childLocation.getIdentifier() + "_" + sthTargetPop;
 
-      LocationFormDataSumAggregateEvent sthCensusTargetPopulationEvent = locationFormDataIntegerSumOrAverage.get(
-          key);
-      Long sthCensusTargetPopulation = 0L;
-      if (sthCensusTargetPopulationEvent != null) {
-        sthCensusTargetPopulation = sthCensusTargetPopulationEvent.getSum();
-      }
-      String totalPeopleALBKey =
-          plan.getIdentifier() + "_" + plan.getLocationHierarchy().getIdentifier() + "_"
-              + childLocation.getIdentifier() + "_" + totalPeople + "-" + ALB;
-      LocationFormDataSumAggregateEvent albTotalPeopleTreatedEvent = locationFormDataIntegerSumOrAverage.get(
-          totalPeopleALBKey);
-      Long totalPeopleALB = 0L;
-      if (albTotalPeopleTreatedEvent != null) {
-        totalPeopleALB = albTotalPeopleTreatedEvent.getSum();
-      }
+      Long sthCensusTargetPopulation = getCensusTargetPopulation(plan, childLocation, sthTargetPop);
 
-      String totalPeopleMEBKey =
-          plan.getIdentifier() + "_" + plan.getLocationHierarchy().getIdentifier() + "_"
-              + childLocation.getIdentifier() + "_" + totalPeople + "-" + MEB;
-      LocationFormDataSumAggregateEvent mebTotalPeopleTreatedEvent = locationFormDataIntegerSumOrAverage.get(
-          totalPeopleMEBKey);
-      Long totalPeopleMEB = 0L;
-      if (mebTotalPeopleTreatedEvent != null) {
-        totalPeopleMEB = mebTotalPeopleTreatedEvent.getSum();
-      }
+      Long totalPeopleALB = getTotalPeople(plan, childLocation, ALB);
+
+      Long totalPeopleMEB = getTotalPeople(plan, childLocation, MEB);
 
       Long totalSTHPeople = totalPeopleALB + totalPeopleMEB;
 
@@ -541,33 +476,21 @@ public class MDALiteDashboardService {
         treatmentCoverage = (double) totalSTHPeople / (double) sthCensusTargetPopulation * 100;
       }
       meta =
-          "(Total People Treated with ALB: " + totalPeopleALBKey + "Total People Treated with MEB: "
-              + totalPeopleMEB + ") / STH Census Target: " + sthCensusTargetPopulation;
+          "Total People Treated for STH: " + totalSTHPeople +
+              " / STH Census Target Population: " + sthCensusTargetPopulation;
     }
     if (infection.equals(SCH)) {
-      String key = plan.getIdentifier() + "_" + plan.getLocationHierarchy().getIdentifier() + "_"
-          + childLocation.getIdentifier() + "_" + schTargetPop;
 
-      LocationFormDataSumAggregateEvent schCensusTargetPopulationEvent = locationFormDataIntegerSumOrAverage.get(
-          key);
-      Long schCensusTargetPopulation = 0L;
-      if (schCensusTargetPopulationEvent != null) {
-        schCensusTargetPopulation = schCensusTargetPopulationEvent.getSum();
-      }
-      String totalPeoplePZQKey =
-          plan.getIdentifier() + "_" + plan.getLocationHierarchy().getIdentifier() + "_"
-              + childLocation.getIdentifier() + "_" + totalPeople + "-" + PZQ;
-      LocationFormDataSumAggregateEvent pzqTotalPeopleTreatedEvent = locationFormDataIntegerSumOrAverage.get(
-          totalPeoplePZQKey);
-      Long totalPeoplePZQ = 0L;
-      if (pzqTotalPeopleTreatedEvent != null) {
-        totalPeoplePZQ = pzqTotalPeopleTreatedEvent.getSum();
-      }
+      Long schCensusTargetPopulation = getCensusTargetPopulation(plan, childLocation, schTargetPop);
+
+      Long totalPeoplePZQ = getTotalPeople(plan, childLocation, PZQ);
+
       if (schCensusTargetPopulation > 0) {
         treatmentCoverage = (double) totalPeoplePZQ / (double) schCensusTargetPopulation * 100;
       }
       meta =
-          "Total People Treated with PZQ: " + schCensusTargetPopulation + " / SCH Census Target: "
+          "Total People Treated for SCH: " + schCensusTargetPopulation
+              + " / SCH Census Target Population: "
               + schCensusTargetPopulation;
 
     }
@@ -580,6 +503,37 @@ public class MDALiteDashboardService {
 
     return new SimpleEntry<>(columnName,
         columnData);
+  }
+
+  private Long getCensusTargetPopulation(Plan plan, Location childLocation,
+      String searchKey) {
+
+    String key = plan.getIdentifier() + "_" + plan.getLocationHierarchy().getIdentifier() + "_"
+        + childLocation.getIdentifier() + "_" + searchKey;
+
+    LocationFormDataSumAggregateEvent censusTargetPopulationEvent = locationFormDataIntegerSumOrAverage.get(
+        key);
+
+    Long censusTargetPopulation = 0L;
+    if (censusTargetPopulationEvent != null) {
+      censusTargetPopulation = censusTargetPopulationEvent.getSum();
+    }
+    return censusTargetPopulation;
+  }
+
+  private Long getTotalPeople(Plan plan, Location childLocation, String drug) {
+
+    String totalPeopleKey =
+        plan.getIdentifier() + "_" + plan.getLocationHierarchy().getIdentifier() + "_"
+            + childLocation.getIdentifier() + "_" + totalPeople + "-" + drug;
+
+    LocationFormDataSumAggregateEvent totalPeopleTreatedEvent = locationFormDataIntegerSumOrAverage.get(
+        totalPeopleKey);
+    Long totalPeopleALB = 0L;
+    if (totalPeopleTreatedEvent != null) {
+      totalPeopleALB = totalPeopleTreatedEvent.getSum();
+    }
+    return totalPeopleALB;
   }
 
   private Entry<String, ColumnData> getDaysWorkedAverage(Plan plan, Location childLocation,
@@ -650,8 +604,8 @@ public class MDALiteDashboardService {
         columnData);
   }
 
-  private List<LocationResponse> setGeoJsonProperties(Map<UUID, RowData> rowDataMap,
-      List<LocationResponse> locationResponses, String reportLevel) {
+  private List<LocationResponse> setDefaultGeoJsonProperties(Map<UUID, RowData> rowDataMap,
+      List<LocationResponse> locationResponses) {
     return locationResponses.stream().peek(loc -> {
 
       loc.getProperties().setColumnDataMap(rowDataMap.get(loc.getIdentifier()).getColumnDataMap());
@@ -660,31 +614,8 @@ public class MDALiteDashboardService {
   }
 
 
-  private List<LocationResponse> setGeoJsonPropertiesWithSupervisor(Map<UUID, RowData> rowDataMap,
-      List<LocationResponse> locationResponses, String reportLevel) {
-
-    return locationResponses.stream().flatMap(loc ->
-        ((RowDataForSupervisor) rowDataMap.get(
-            loc.getIdentifier())).getRowDataWithSupervisorOrCdds().stream().map(
-            rowDataWithSupervisorOrCdd -> {
-              LocationResponse response = new LocationResponse();
-              response.setGeometry(loc.getGeometry());
-              response.setIdentifier(loc.getIdentifier());
-              response.setType(loc.getType());
-              response.setIsActive(loc.getIsActive());
-              if (response.getProperties() == null) {
-                response.setProperties(new LocationPropertyResponse());
-              }
-
-              response.getProperties().setName(rowDataWithSupervisorOrCdd.getSupervisor());
-              response.getProperties().setId(rowDataWithSupervisorOrCdd.getSupervisorKey());
-              response.getProperties().setColumnDataMap(rowDataWithSupervisorOrCdd.getMaps());
-              return response;
-            })).collect(Collectors.toList());
-  }
-
-
-  private List<LocationResponse> setGeoJsonPropertiesWithCDD(Map<UUID, RowData> rowDataMap,
+  private List<LocationResponse> setGeoJsonPropertiesWithSupervisorOrCdd(
+      Map<UUID, RowData> rowDataMap,
       List<LocationResponse> locationResponses) {
 
     return locationResponses.stream().flatMap(loc ->
@@ -700,35 +631,84 @@ public class MDALiteDashboardService {
                 response.setProperties(new LocationPropertyResponse());
               }
 
-              response.getProperties().setName(rowDataWithSupervisorOrCdd.getCdd());
-              response.getProperties().setId(rowDataWithSupervisorOrCdd.getCddKey());
-
+              response.getProperties().setName(rowDataWithSupervisorOrCdd.getName());
+              response.getProperties().setId(rowDataWithSupervisorOrCdd.getKey());
               response.getProperties().setColumnDataMap(rowDataWithSupervisorOrCdd.getMaps());
               return response;
             })).collect(Collectors.toList());
   }
 
+
   private List<LocationResponse> setGeoJsonPropertiesOnPlanTarget(Map<UUID, RowData> rowDataMap,
-      List<LocationResponse> locationResponses, String reportLevel) {
+      List<LocationResponse> locationResponses) {
 
     return locationResponses.stream().peek(loc -> {
       loc.getProperties().setColumnDataMap(rowDataMap.get(loc.getIdentifier()).getColumnDataMap());
       loc.getProperties().setId("SUPERVISOR_" + "placeholder_" + loc.getIdentifier().toString());
-
     }).collect(Collectors.toList());
   }
+
 
   public FeatureSetResponse getFeatureSetResponse(UUID parentIdentifier,
       List<PlanLocationDetails> locationDetails,
       Map<UUID, RowData> rowDataMap, String reportLevel, List<String> filters) {
     FeatureSetResponse response = new FeatureSetResponse();
     response.setType("FeatureCollection");
+    List<LocationResponse> locationResponses;
+    if (reportLevel.equals(IS_ON_PLAN_TARGET) ||
+        reportLevel.equals(CDD_LEVEL) ||
+        reportLevel.equals(SUPERVISOR_LEVEL)) {
 
-    List<LocationResponse> locationResponses = locationDetails.stream()
-        .map(loc -> LocationResponseFactory.fromPlanLocationDetails(loc, parentIdentifier))
-        .collect(Collectors.toList());
+      locationDetails = locationDetails.stream()
+          .map(locationDetail -> getDummyPlanLocationDetails(rowDataMap, locationDetail))
+          .collect(Collectors.toList());
+      locationResponses = locationDetails.stream()
+          .map(loc -> LocationResponseFactory.fromPlanLocationDetails(loc, parentIdentifier))
+          .collect(Collectors.toList());
 
-    locationResponses = setGeoJsonProperties(rowDataMap, locationResponses, reportLevel);
+    } else {
+      locationResponses = locationDetails.stream()
+          .map(loc -> LocationResponseFactory.fromPlanLocationDetails(loc, parentIdentifier))
+          .collect(Collectors.toList());
+    }
+    locationResponses = setGeojsonResponseProperties(rowDataMap, reportLevel, locationResponses);
+    response.setDefaultDisplayColumn(
+        getDefaultColumn(filters, reportLevel)
+    );
+    response.setFeatures(locationResponses);
+    response.setIdentifier(parentIdentifier);
+    return response;
+  }
+
+  private PlanLocationDetails getDummyPlanLocationDetails(Map<UUID, RowData> rowDataMap,
+      PlanLocationDetails locationDetail) {
+    PlanLocationDetails planLocationDetails = new PlanLocationDetails();
+    planLocationDetails.setLocation(locationDetail.getLocation());
+    planLocationDetails.setChildrenNumber((long) rowDataMap.size());
+    planLocationDetails.setHasChildren(true);
+    planLocationDetails.setAssignedLocations(0L);
+    planLocationDetails.setAssignedTeams(0L);
+    return planLocationDetails;
+  }
+
+
+  private List<LocationResponse> setGeojsonResponseProperties(Map<UUID, RowData> rowDataMap,
+      String reportLevel, List<LocationResponse> locationResponses) {
+    switch (reportLevel) {
+      case IS_ON_PLAN_TARGET:
+        locationResponses = setGeoJsonPropertiesOnPlanTarget(rowDataMap, locationResponses);
+        break;
+      case CDD_LEVEL:
+      case SUPERVISOR_LEVEL:
+        locationResponses = setGeoJsonPropertiesWithSupervisorOrCdd(rowDataMap, locationResponses);
+        break;
+      default:
+        locationResponses = setDefaultGeoJsonProperties(rowDataMap, locationResponses);
+    }
+    return locationResponses;
+  }
+
+  private String getDefaultColumn(List<String> filters, String reportLevel) {
     String defaultFilter = (filters == null ? ALB
         : (filters.contains(ALB) ? ALB : filters.contains(MEB) ? MEB : PZQ));
     String defaultColumn = dashboardProperties.getMdaLiteDefaultDisplayColumns().getOrDefault(
@@ -739,139 +719,8 @@ public class MDALiteDashboardService {
         SCH_TREATMENT_COVERAGE)) {
       name = name(defaultColumn, defaultFilter);
     }
-    response.setDefaultDisplayColumn(
-        name
-    );
-    response.setFeatures(locationResponses);
-    response.setIdentifier(parentIdentifier);
-    return response;
+    return name;
   }
-
-  public FeatureSetResponse getFeatureSetResponseWithSupervisor(UUID parentIdentifier,
-      List<PlanLocationDetails> locationDetails,
-      Map<UUID, RowData> rowDataMap, String reportLevel, List<String> filters) {
-    FeatureSetResponse response = new FeatureSetResponse();
-    response.setType("FeatureCollection");
-
-    if (reportLevel.equals(SUPERVISOR_LEVEL)) {
-      locationDetails = locationDetails.stream().map(locationDetail -> {
-        PlanLocationDetails planLocationDetails = new PlanLocationDetails();
-        planLocationDetails.setLocation(locationDetail.getLocation());
-        planLocationDetails.setChildrenNumber((long) rowDataMap.size());
-        planLocationDetails.setHasChildren(true);
-        planLocationDetails.setAssignedLocations(0L);
-        planLocationDetails.setAssignedTeams(0L);
-        return planLocationDetails;
-      }).collect(Collectors.toList());
-    }
-
-    List<LocationResponse> locationResponses = locationDetails.stream()
-        .map(loc -> LocationResponseFactory.fromPlanLocationDetails(loc, parentIdentifier))
-        .collect(Collectors.toList());
-
-    locationResponses = setGeoJsonPropertiesWithSupervisor(rowDataMap, locationResponses,
-        reportLevel);
-    String defaultFilter = (filters == null ? ALB
-        : (filters.contains(ALB) ? ALB : filters.contains(MEB) ? MEB : PZQ));
-    String defaultColumn = dashboardProperties.getMdaLiteDefaultDisplayColumns().getOrDefault(
-        defaultFilter +
-            reportLevel, null);
-    String name = defaultColumn;
-    if (!defaultColumn.equals(STH_TREATMENT_COVERAGE) && !defaultColumn.equals(
-        SCH_TREATMENT_COVERAGE)) {
-      name = name(defaultColumn, defaultFilter);
-    }
-    response.setDefaultDisplayColumn(
-        name
-    );
-    response.setFeatures(locationResponses);
-    response.setIdentifier(parentIdentifier);
-    return response;
-  }
-
-  public FeatureSetResponse getFeatureSetResponseWithCDD(UUID parentIdentifier,
-      List<PlanLocationDetails> locationDetails,
-      Map<UUID, RowData> rowDataMap, String reportLevel, List<String> filters) {
-    FeatureSetResponse response = new FeatureSetResponse();
-    response.setType("FeatureCollection");
-
-    if (reportLevel.equals(CDD_LEVEL)) {
-      locationDetails = locationDetails.stream().map(locationDetail -> {
-        PlanLocationDetails planLocationDetails = new PlanLocationDetails();
-        planLocationDetails.setLocation(locationDetail.getLocation());
-        planLocationDetails.setChildrenNumber((long) rowDataMap.size());
-        planLocationDetails.setHasChildren(true);
-        planLocationDetails.setAssignedLocations(0L);
-        planLocationDetails.setAssignedTeams(0L);
-        return planLocationDetails;
-      }).collect(Collectors.toList());
-    }
-
-    List<LocationResponse> locationResponses = locationDetails.stream()
-        .map(loc -> LocationResponseFactory.fromPlanLocationDetails(loc, parentIdentifier))
-        .collect(Collectors.toList());
-
-    locationResponses = setGeoJsonPropertiesWithCDD(rowDataMap, locationResponses);
-    String defaultFilter = (filters == null ? ALB
-        : (filters.contains(ALB) ? ALB : filters.contains(MEB) ? MEB : PZQ));
-    String defaultColumn = dashboardProperties.getMdaLiteDefaultDisplayColumns().getOrDefault(
-        defaultFilter +
-            reportLevel, null);
-    String name = defaultColumn;
-    if (!defaultColumn.equals(STH_TREATMENT_COVERAGE) && !defaultColumn.equals(
-        SCH_TREATMENT_COVERAGE)) {
-      name = name(defaultColumn, defaultFilter);
-    }
-    response.setDefaultDisplayColumn(
-        name
-    );
-    response.setFeatures(locationResponses);
-    response.setIdentifier(parentIdentifier);
-    return response;
-  }
-
-  public FeatureSetResponse getFeatureSetResponseOnPlanTarget(UUID parentIdentifier,
-      List<PlanLocationDetails> locationDetails,
-      Map<UUID, RowData> rowDataMap, String reportLevel, List<String> filters) {
-    FeatureSetResponse response = new FeatureSetResponse();
-    response.setType("FeatureCollection");
-
-    if (reportLevel.equals(IS_ON_PLAN_TARGET)) {
-      locationDetails = locationDetails.stream().map(locationDetail -> {
-        PlanLocationDetails planLocationDetails = new PlanLocationDetails();
-        planLocationDetails.setLocation(locationDetail.getLocation());
-        planLocationDetails.setChildrenNumber((long) rowDataMap.size());
-        planLocationDetails.setHasChildren(true);
-        planLocationDetails.setAssignedLocations(0L);
-        planLocationDetails.setAssignedTeams(0L);
-        return planLocationDetails;
-      }).collect(Collectors.toList());
-    }
-
-    List<LocationResponse> locationResponses = locationDetails.stream()
-        .map(loc -> LocationResponseFactory.fromPlanLocationDetails(loc, parentIdentifier))
-        .collect(Collectors.toList());
-
-    locationResponses = setGeoJsonPropertiesOnPlanTarget(rowDataMap, locationResponses,
-        reportLevel);
-    String defaultFilter = (filters == null ? ALB
-        : (filters.contains(ALB) ? ALB : filters.contains(MEB) ? MEB : PZQ));
-    String defaultColumn = dashboardProperties.getMdaLiteDefaultDisplayColumns().getOrDefault(
-        defaultFilter +
-            reportLevel, null);
-    String name = defaultColumn;
-    if (!defaultColumn.equals(STH_TREATMENT_COVERAGE) && !defaultColumn.equals(
-        SCH_TREATMENT_COVERAGE)) {
-      name = name(defaultColumn, defaultFilter);
-    }
-    response.setDefaultDisplayColumn(
-        name
-    );
-    response.setFeatures(locationResponses);
-    response.setIdentifier(parentIdentifier);
-    return response;
-  }
-
 
   public void initDataStoresIfNecessary() {
     if (!datastoresInitialized) {

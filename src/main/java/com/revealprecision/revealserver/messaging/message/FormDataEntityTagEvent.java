@@ -31,4 +31,5 @@ public class FormDataEntityTagEvent extends Message {
 
   private String supervisor;
   private String cddName;
+  private UUID formSubmissionId;
 }

@@ -7,6 +7,7 @@ import com.revealprecision.revealserver.messaging.message.FormFieldEvent;
 import com.revealprecision.revealserver.persistence.domain.FormField;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.util.EntityTagEventUtil;
+import java.util.UUID;
 
 public class FormDataEntityTagValueEventFactory {
 
@@ -31,9 +32,10 @@ public class FormDataEntityTagValueEventFactory {
 
   public static FormDataEntityTagValueEvent getEntity(FormDataEntityTagEvent eventMetadata,
       String dateForScopeDateFields, Location location, EntityTagEvent referencedTagEvent,
-      Object value) {
+      Object value, UUID eventId) {
     return FormDataEntityTagValueEvent
         .builder()
+        .eventId(eventId)
         .entityTagEvent(referencedTagEvent)
         .planIdentifier(eventMetadata.getPlanIdentifier())
         .locationHierarchyIdentifier(

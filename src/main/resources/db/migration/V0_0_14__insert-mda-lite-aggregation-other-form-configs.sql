@@ -15,7 +15,7 @@ VALUES (uuid_generate_v4(), 'cdd-received-PZQ_', 'integer', 'PZQ Received by CDD
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00', false, null, null,
         null, 'Date', '', false, false);
 INSERT INTO form_field_entity_tag(form_field_identifier, entity_tag_identifier)
-VALUES ((SELECT identifier FROM form_field WHERE name = 'pzq_received'),
+VALUES ((SELECT identifier FROM form_field WHERE name = 'pzq_received' and form_title = 'cdd_drug_allocation'),
         (SELECT identifier from entity_tag where tag = 'cdd-received-PZQ_'));
 INSERT INTO entity_tag(identifier, tag, value_type, definition, lookup_entity_type_identifier,
                        entity_status, created_by, created_datetime, modified_by, modified_datetime,
@@ -45,7 +45,7 @@ VALUES (uuid_generate_v4(), 'cdd-received-ALB_', 'integer', 'ALB Received by CDD
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00', false, null, null,
         null, 'Date', '', false, false);
 INSERT INTO form_field_entity_tag(form_field_identifier, entity_tag_identifier)
-VALUES ((SELECT identifier FROM form_field WHERE name = 'albendazole_received'),
+VALUES ((SELECT identifier FROM form_field WHERE name = 'albendazole_received' and form_title = 'cdd_drug_allocation'),
         (SELECT identifier from entity_tag where tag = 'cdd-received-ALB_'));
 INSERT INTO entity_tag(identifier, tag, value_type, definition, lookup_entity_type_identifier,
                        entity_status, created_by, created_datetime, modified_by, modified_datetime,
@@ -73,9 +73,9 @@ VALUES (uuid_generate_v4(), 'tab-account-mda-lite-drug', 'string', 'MEB Returned
         (SELECT identifier from lookup_entity_type where code = 'Location'), 'ACTIVE',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00', false, null, null,
-        null, 'Plan', '', false, true);
+        null, 'Plan', '', false, false);
 INSERT INTO form_field_entity_tag(form_field_identifier, entity_tag_identifier)
-VALUES ((SELECT identifier FROM form_field WHERE name = 'drug_distributed'),
+VALUES ((SELECT identifier FROM form_field WHERE name = 'drug_distributed' and form_title = 'tablet_accountability'),
         (SELECT identifier from entity_tag where tag = 'tab-account-mda-lite-drug'));
 --tablet account
 INSERT INTO form_field(identifier, name, display, form_title, data_type, entity_status, created_by,
@@ -92,9 +92,9 @@ VALUES (uuid_generate_v4(), 'supervisor-distributed-PZQ_', 'integer', 'ALB Super
         (SELECT identifier from lookup_entity_type where code = 'Location'), 'ACTIVE',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00', false, null, null,
-        null, 'Plan', '', false, true);
+        null, 'Plan', '', false, false);
 INSERT INTO form_field_entity_tag(form_field_identifier, entity_tag_identifier)
-VALUES ((SELECT identifier FROM form_field WHERE name = 'sum_pzq_received_and_top_up'),
+VALUES ((SELECT identifier FROM form_field WHERE name = 'sum_pzq_received_and_top_up' and form_title = 'tablet_accountability'),
         (SELECT identifier from entity_tag where tag = 'supervisor-distributed-PZQ_'));
 INSERT INTO entity_tag(identifier, tag, value_type, definition, lookup_entity_type_identifier,
                        entity_status, created_by, created_datetime, modified_by, modified_datetime,
@@ -106,7 +106,7 @@ VALUES (uuid_generate_v4(), 'supervisor-distributed-PZQ', 'integer', 'PZQ Superv
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00', true,
         '#gt_(#metadata,"supervisor-distributed-PZQ_",0) and #eq_(#metadata,"tab-account-mda-lite-drug","Praziquantel (PZQ)")',
         ARRAY['supervisor-distributed-PZQ_', 'tab-account-mda-lite-drug'],
-        ARRAY['sum'], 'Plan', '#get_(#metadata,"supervisor-distributed-PZQ_")', false, false);
+        ARRAY['sum'], 'Plan', '#get_(#metadata,"supervisor-distributed-PZQ_")', false, true);
 
 INSERT INTO form_field(identifier, name, display, form_title, data_type, entity_status, created_by,
                        created_datetime, modified_by, modified_datetime)
@@ -122,9 +122,9 @@ VALUES (uuid_generate_v4(), 'supervisor-distributed-MEB_', 'integer', 'MEB Super
         (SELECT identifier from lookup_entity_type where code = 'Location'), 'ACTIVE',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00', false, null, null,
-        null, 'Plan', '', false, true);
+        null, 'Plan', '', false, false);
 INSERT INTO form_field_entity_tag(form_field_identifier, entity_tag_identifier)
-VALUES ((SELECT identifier FROM form_field WHERE name = 'sum_mbz_received_and_top_up'),
+VALUES ((SELECT identifier FROM form_field WHERE name = 'sum_mbz_received_and_top_up' and form_title = 'tablet_accountability'),
         (SELECT identifier from entity_tag where tag = 'supervisor-distributed-MEB_'));
 INSERT INTO entity_tag(identifier, tag, value_type, definition, lookup_entity_type_identifier,
                        entity_status, created_by, created_datetime, modified_by, modified_datetime,
@@ -136,7 +136,7 @@ VALUES (uuid_generate_v4(), 'supervisor-distributed-MEB', 'integer', 'MEB Superv
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00', true,
         '#gt_(#metadata,"supervisor-distributed-MEB_",0) and #eq_(#metadata,"tab-account-mda-lite-drug","Mebendazole (MEB)")',
         ARRAY['supervisor-distributed-MEB_', 'tab-account-mda-lite-drug'],
-        ARRAY['sum'], 'Plan', '#get_(#metadata,"supervisor-distributed-MEB_")', false, false);
+        ARRAY['sum'], 'Plan', '#get_(#metadata,"supervisor-distributed-MEB_")', false, true);
 
 
 INSERT INTO form_field(identifier, name, display, form_title, data_type, entity_status, created_by,
@@ -153,9 +153,9 @@ VALUES (uuid_generate_v4(), 'supervisor-distributed-ALB_', 'integer', 'ALB Super
         (SELECT identifier from lookup_entity_type where code = 'Location'), 'ACTIVE',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00', false, null, null,
-        null, 'Plan', '', false, true);
+        null, 'Plan', '', false, false);
 INSERT INTO form_field_entity_tag(form_field_identifier, entity_tag_identifier)
-VALUES ((SELECT identifier FROM form_field WHERE name = 'sum_alb_received_and_top_up'),
+VALUES ((SELECT identifier FROM form_field WHERE name = 'sum_alb_received_and_top_up' and form_title = 'tablet_accountability'),
         (SELECT identifier from entity_tag where tag = 'supervisor-distributed-ALB_'));
 INSERT INTO entity_tag(identifier, tag, value_type, definition, lookup_entity_type_identifier,
                        entity_status, created_by, created_datetime, modified_by, modified_datetime,
@@ -167,7 +167,7 @@ VALUES (uuid_generate_v4(), 'supervisor-distributed-ALB', 'integer', 'ALB Superv
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00', true,
         '#gt_(#metadata,"supervisor-distributed-ALB_",0) and #eq_(#metadata,"tab-account-mda-lite-drug","Albendazole (ALB)")',
         ARRAY['supervisor-distributed-ALB_'],
-        ARRAY['sum'], 'Plan', '#get_(#metadata,"supervisor-distributed-ALB_")', false, false);
+        ARRAY['sum'], 'Plan', '#get_(#metadata,"supervisor-distributed-ALB_")', false, true);
 
 
 
@@ -185,9 +185,9 @@ VALUES (uuid_generate_v4(), 'supervisor-returned-ALB_', 'integer', 'ALB Returned
         (SELECT identifier from lookup_entity_type where code = 'Location'), 'ACTIVE',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00', false, null, null,
-        null, 'Plan', '', false, true);
+        null, 'Plan', '', false, false);
 INSERT INTO form_field_entity_tag(form_field_identifier, entity_tag_identifier)
-VALUES ((SELECT identifier FROM form_field WHERE name = 'albendazole_returned'),
+VALUES ((SELECT identifier FROM form_field WHERE name = 'albendazole_returned'  and form_title = 'tablet_accountability'),
         (SELECT identifier from entity_tag where tag = 'supervisor-returned-ALB_'));
 INSERT INTO entity_tag(identifier, tag, value_type, definition, lookup_entity_type_identifier,
                        entity_status, created_by, created_datetime, modified_by, modified_datetime,
@@ -199,7 +199,7 @@ VALUES (uuid_generate_v4(), 'supervisor-returned-ALB', 'integer', 'ALB Returned 
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00', true,
         '#gt_(#metadata,"supervisor-returned-ALB_",0) and #eq_(#metadata,"tab-account-mda-lite-drug","Albendazole (ALB)")',
         ARRAY['supervisor-returned-ALB_', 'tab-account-mda-lite-drug'],
-        ARRAY['sum'], 'Plan', '#get_(#metadata,"supervisor-returned-ALB_")', false, false);
+        ARRAY['sum'], 'Plan', '#get_(#metadata,"supervisor-returned-ALB_")', false, true);
 
 
 
@@ -217,9 +217,9 @@ VALUES (uuid_generate_v4(), 'supervisor-returned-PZQ_', 'integer', 'PZQ Returned
         (SELECT identifier from lookup_entity_type where code = 'Location'), 'ACTIVE',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00', false, null, null,
-        null, 'Plan', '', false, true);
+        null, 'Plan', '', false, false);
 INSERT INTO form_field_entity_tag(form_field_identifier, entity_tag_identifier)
-VALUES ((SELECT identifier FROM form_field WHERE name = 'pzq_returned'),
+VALUES ((SELECT identifier FROM form_field WHERE name = 'pzq_returned' and form_title = 'tablet_accountability'),
         (SELECT identifier from entity_tag where tag = 'supervisor-returned-PZQ_'));
 INSERT INTO entity_tag(identifier, tag, value_type, definition, lookup_entity_type_identifier,
                        entity_status, created_by, created_datetime, modified_by, modified_datetime,
@@ -231,7 +231,7 @@ VALUES (uuid_generate_v4(), 'supervisor-returned-PZQ', 'integer', 'PZQ Returned 
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00', true,
         '#gt_(#metadata,"supervisor-returned-PZQ_",0) and #eq_(#metadata,"tab-account-mda-lite-drug","Praziquantel (PZQ)")',
         ARRAY['supervisor-returned-PZQ_', 'tab-account-mda-lite-drug'],
-        ARRAY['sum'], 'Plan', '#get_(#metadata,"supervisor-returned-PZQ_")', false, false);
+        ARRAY['sum'], 'Plan', '#get_(#metadata,"supervisor-returned-PZQ_")', false, true);
 
 
 
@@ -249,9 +249,9 @@ VALUES (uuid_generate_v4(), 'supervisor-returned-MEB_', 'integer', 'MEB Returned
         (SELECT identifier from lookup_entity_type where code = 'Location'), 'ACTIVE',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00', false, null, null,
-        null, 'Plan', '', false, true);
+        null, 'Plan', '', false, false);
 INSERT INTO form_field_entity_tag(form_field_identifier, entity_tag_identifier)
-VALUES ((SELECT identifier FROM form_field WHERE name = 'mebendazole_returned'),
+VALUES ((SELECT identifier FROM form_field WHERE name = 'mebendazole_returned'  and form_title = 'tablet_accountability'),
         (SELECT identifier from entity_tag where tag = 'supervisor-returned-MEB_'));
 INSERT INTO entity_tag(identifier, tag, value_type, definition, lookup_entity_type_identifier,
                        entity_status, created_by, created_datetime, modified_by, modified_datetime,
@@ -263,7 +263,7 @@ VALUES (uuid_generate_v4(), 'supervisor-returned-MEB', 'integer', 'MEB Returned 
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00', true,
         '#gt_(#metadata,"supervisor-returned-MEB_",0) and #eq_(#metadata,"tab-account-mda-lite-drug","Mebendazole (MEB)")',
         ARRAY['supervisor-returned-MEB_', 'tab-account-mda-lite-drug'],
-        ARRAY['sum'], 'Plan', '#get_(#metadata,"supervisor-returned-MEB_")', false, false);
+        ARRAY['sum'], 'Plan', '#get_(#metadata,"supervisor-returned-MEB_")', false, true);
 
 INSERT INTO entity_tag(identifier, tag, value_type, definition, lookup_entity_type_identifier,
                        entity_status, created_by, created_datetime, modified_by, modified_datetime,
@@ -277,7 +277,7 @@ VALUES (uuid_generate_v4(), 'cdd-remaining-MEB', 'integer', 'MEB Remaining with 
         ARRAY['supervisor-returned-MEB_', 'supervisor-distributed-MEB_'],
         ARRAY['sum'], 'Plan',
         '((#get_(#metadata,"supervisor-distributed-MEB_")==null?0:#get_(#metadata,"supervisor-distributed-MEB_")) - (#get_(#metadata,"supervisor-returned-MEB_")==null?0:#get_(#metadata,"supervisor-returned-MEB_")))',
-        false, false);
+        false, true);
 
 INSERT INTO entity_tag(identifier, tag, value_type, definition, lookup_entity_type_identifier,
                        entity_status, created_by, created_datetime, modified_by, modified_datetime,
@@ -291,7 +291,7 @@ VALUES (uuid_generate_v4(), 'cdd-remaining-PZQ', 'integer', 'PZQ Remaining with 
         ARRAY['supervisor-returned-PZQ_', 'supervisor-distributed-PZQ_'],
         ARRAY['sum'], 'Plan',
         '((#get_(#metadata,"supervisor-distributed-PZQ_")==null?0:#get_(#metadata,"supervisor-distributed-PZQ_")) - (#get_(#metadata,"supervisor-returned-PZQ_")==null?0:#get_(#metadata,"supervisor-returned-PZQ_")))',
-        false, false);
+        false, true);
 
 
 INSERT INTO entity_tag(identifier, tag, value_type, definition, lookup_entity_type_identifier,
@@ -306,7 +306,7 @@ VALUES (uuid_generate_v4(), 'cdd-remaining-ALB', 'integer', 'ALB Remaining with 
         ARRAY['supervisor-returned-ALB_', 'supervisor-distributed-ALB_'],
         ARRAY['sum'], 'Plan',
         '((#get_(#metadata,"supervisor-distributed-ALB_")==null?0:#get_(#metadata,"supervisor-distributed-ALB_")) - (#get_(#metadata,"supervisor-returned-ALB_")==null?0:#get_(#metadata,"supervisor-returned-ALB_")))',
-        false, false);
+        false, true);
 
 
 INSERT INTO entity_tag(identifier, tag, value_type, definition, lookup_entity_type_identifier,
@@ -317,7 +317,7 @@ VALUES (uuid_generate_v4(), 'sth-target-pop', 'integer', 'STH Target Population'
         (SELECT identifier from lookup_entity_type where code = 'Location'), 'ACTIVE',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00', false, null, null,
-        null, 'Plan', null, false, false);
+        null, 'Plan', null, false, true);
 
 INSERT INTO entity_tag(identifier, tag, value_type, definition, lookup_entity_type_identifier,
                        entity_status, created_by, created_datetime, modified_by, modified_datetime,
@@ -327,5 +327,5 @@ VALUES (uuid_generate_v4(), 'sch-target-pop', 'integer', 'SCH Target Population'
         (SELECT identifier from lookup_entity_type where code = 'Location'), 'ACTIVE',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00', false, null, null,
-        null, 'Plan', null, false, false);
+        null, 'Plan', null, false, true);
 

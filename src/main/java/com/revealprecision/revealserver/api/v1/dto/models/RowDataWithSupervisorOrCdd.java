@@ -13,10 +13,8 @@ import lombok.Setter;
 @AllArgsConstructor
 public class RowDataWithSupervisorOrCdd implements Serializable {
 
-  private String supervisor;
-  private String supervisorKey;
-  private String cdd;
-  private String cddKey;
+  private String name;
+  private String key;
   private String type;
   private Map<String, ColumnData> maps;
 

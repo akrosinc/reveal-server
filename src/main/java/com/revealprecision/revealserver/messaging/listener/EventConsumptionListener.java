@@ -61,6 +61,7 @@ public class EventConsumptionListener extends Listener {
     Plan plan;
     String metadataTitle;
     Task task;
+    UUID eventId = UUID.fromString(eventMetadata.getEventId());
     if (eventMetadata.getTaskIdentifier()==null) {
        plan = planService.findPlanByIdentifier(eventMetadata.getPlanIdentifier());
        metadataTitle = eventMetadata.getEventType();
@@ -106,13 +107,13 @@ public class EventConsumptionListener extends Listener {
 
               if (referencedTagEvent.isGenerated()) {
                 processReferencedEntityTagEvent(eventMetadata, plan, metadataTitle, task, dateForScopeDateFields,
-                    formDataEntityTagValueEvents1, location, referencedTagEvent);
+                    formDataEntityTagValueEvents1, location, referencedTagEvent, eventId, formDataEntityTagValueEvent.getSelectedformField());
               }
             }
           }
           break;
         case "Person":
-          //TODO: Plan Entity Type Metadata
+          //TODO: Person Entity Type Metadata
           break;
         case "Plan":
           //TODO: Plan Entity Type Metadata
@@ -124,7 +125,7 @@ public class EventConsumptionListener extends Listener {
   private void processReferencedEntityTagEvent(FormDataEntityTagEvent eventMetadata, Plan plan, String metadataTitle,
       Task task, String dateForScopeDateFields,
       List<FormDataEntityTagValueEvent> formDataEntityTagValueEvents1, Location location,
-      EntityTagEvent referencedTagEvent) {
+      EntityTagEvent referencedTagEvent, UUID eventId, FormFieldEvent formFieldEvent) {
     String generationFormula = referencedTagEvent.getGenerationFormula();
     if (generationFormula != null) {
 
@@ -153,8 +154,8 @@ public class EventConsumptionListener extends Listener {
 
             FormDataEntityTagValueEvent formDataEntityTagValueEvent1 = FormDataEntityTagValueEventFactory.getEntity(
                 eventMetadata, dateForScopeDateFields, location, referencedTagEvent,
-                value);
-
+                value, eventId);
+            formDataEntityTagValueEvent1.setSelectedformField(formFieldEvent);
             formDataEntityTagValueEvents1.add(formDataEntityTagValueEvent1);
 
             kafkaTemplate.send(

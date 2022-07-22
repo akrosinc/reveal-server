@@ -30,7 +30,7 @@ public class DashboardService {
   private final MDADashboardService mdaDashboardService;
   private final IRSDashboardService irsDashboardService;
   private final IRSLiteDashboardService irsLiteDashboardService;
-  private final MDALiteDashboardService2 mdaLiteDashboardService;
+  private final MDALiteDashboardService mdaLiteDashboardService;
 
   public static final String WITHIN_STRUCTURE_LEVEL = "Within Structure";
   public static final String STRUCTURE_LEVEL = "Structure";

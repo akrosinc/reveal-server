@@ -5,10 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.ToString;
 
 @EqualsAndHashCode(callSuper = true)
 @AllArgsConstructor
@@ -30,5 +27,7 @@ public class FormDataEntityTagValueEvent extends Message {
 
   private String supervisor;
   private String cddName;
+
+  private UUID eventId;
 
 }
