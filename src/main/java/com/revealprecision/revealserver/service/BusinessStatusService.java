@@ -1,5 +1,8 @@
 package com.revealprecision.revealserver.service;
 
+import com.revealprecision.revealserver.api.v1.dto.factory.EntityTagEventFactory;
+import com.revealprecision.revealserver.enums.LookupEntityTypeCodeEnum;
+import com.revealprecision.revealserver.persistence.domain.EntityTag;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.Task;
 import com.revealprecision.revealserver.persistence.domain.metadata.LocationMetadata;
@@ -10,6 +13,7 @@ import com.revealprecision.revealserver.util.UserUtils;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.UUID;
+import javax.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -19,30 +23,37 @@ public class BusinessStatusService {
 
   private final BusinessStatusProperties businessStatusProperties;
   private final MetadataService metadataService;
+  private final EntityTagService entityTagService;
 
-  public void setBusinessStatus(Task task, String businessStatus) throws IOException {
+  private EntityTag personEntityTag;
+  private EntityTag locationEntityTag;
 
-      Plan plan = task.getAction().getGoal().getPlan();
+  public void setBusinessStatus(Task task, String businessStatus)  {
 
-      String baseBusinessStatusTagName = businessStatusProperties.getBusinessStatusTagName();
+    Plan plan = task.getAction().getGoal().getPlan();
 
-      String businessStatusTagName = baseBusinessStatusTagName;
-      if (plan != null && task.getIdentifier() != null) {
-        businessStatusTagName = businessStatusTagName.concat("_")
-            .concat(plan.getIdentifier().toString()).concat("_").concat(task.getIdentifier().toString());
-      }
+    String baseBusinessStatusTagName = businessStatusProperties.getBusinessStatusTagName();
 
-      if (ActionUtils.isActionForLocation(task.getAction())) {
-        metadataService.updateLocationMetadata(task.getBaseEntityIdentifier(), businessStatus,
-            plan, task.getIdentifier(), UserUtils.getCurrentPrincipleName(), "string",
-            businessStatusTagName, baseBusinessStatusTagName, task.getLocation(), task.getAction().getTitle());
-      }
+    String businessStatusTagKey = baseBusinessStatusTagName;
+    if (plan != null && task.getIdentifier() != null) {
+      businessStatusTagKey = businessStatusTagKey.concat("_")
+          .concat(plan.getIdentifier().toString()).concat("_")
+          .concat(task.getIdentifier().toString());
+    }
 
-      if (ActionUtils.isActionForPerson(task.getAction())) {
-        metadataService.updatePersonMetadata(task.getBaseEntityIdentifier(), businessStatus,
-            plan, task.getIdentifier(), UserUtils.getCurrentPrincipleName(), "string",
-            businessStatusTagName, baseBusinessStatusTagName, task.getPerson(), task.getAction().getTitle());
-      }
+    if (ActionUtils.isActionForLocation(task.getAction())) {
+      metadataService.updateLocationMetadata(task.getBaseEntityIdentifier(), businessStatus,
+          plan, task.getIdentifier(), UserUtils.getCurrentPrincipleName(), "string",
+          EntityTagEventFactory.getEntityTagEvent(locationEntityTag), baseBusinessStatusTagName, task.getLocation(),
+          task.getAction().getTitle(), businessStatusTagKey, null);
+    }
+
+    if (ActionUtils.isActionForPerson(task.getAction())) {
+      metadataService.updatePersonMetadata(task.getBaseEntityIdentifier(), businessStatus,
+          plan, task.getIdentifier(), UserUtils.getCurrentPrincipleName(), "string",
+          EntityTagEventFactory.getEntityTagEvent(personEntityTag), baseBusinessStatusTagName, task.getPerson(), task.getAction().getTitle(),
+          businessStatusTagKey, null);
+    }
   }
 
   public void deactivateBusinessStatus(Task task) {
@@ -50,22 +61,30 @@ public class BusinessStatusService {
     Plan plan = task.getAction().getGoal().getPlan();
     UUID planIdentifier = plan.getIdentifier();
 
-    String businessStatusTagName = businessStatusProperties.getBusinessStatusTagName();
-    if (planIdentifier != null && task.getIdentifier() != null) {
-      businessStatusTagName = businessStatusTagName.concat("_")
-          .concat(planIdentifier.toString()).concat("_").concat(task.getIdentifier().toString());
-    }
-
     if (ActionUtils.isActionForLocation(task.getAction())) {
       metadataService.deactivateLocationMetadata(task.getBaseEntityIdentifier(),
-          businessStatusTagName, plan);
+          locationEntityTag, plan);
     }
 
     if (ActionUtils.isActionForPerson(task.getAction())) {
       metadataService.deactivatePersonMetadata(task.getBaseEntityIdentifier(),
-          businessStatusTagName, plan);
+          personEntityTag, plan);
     }
   }
+
+  @PostConstruct
+  private void loadBusinessStatusEntitiesTag() {
+    Optional<EntityTag> locationBusinessStatusEntityTagOptional = entityTagService.getEntityTagByTagNameAndLookupEntityType(
+        businessStatusProperties.getBusinessStatusTagName(),
+        LookupEntityTypeCodeEnum.LOCATION_CODE);
+    locationBusinessStatusEntityTagOptional.ifPresent(entityTag -> locationEntityTag = entityTag);
+
+    Optional<EntityTag> personBusinessStatusEntityTagOptional = entityTagService.getEntityTagByTagNameAndLookupEntityType(
+        businessStatusProperties.getBusinessStatusTagName(),
+        LookupEntityTypeCodeEnum.PERSON_CODE);
+    personBusinessStatusEntityTagOptional.ifPresent(entityTag -> personEntityTag = entityTag);
+  }
+
 
   public String getBusinessStatus(Task task) {
 

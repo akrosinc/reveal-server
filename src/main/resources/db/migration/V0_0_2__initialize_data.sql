@@ -143,7 +143,7 @@ VALUES (uuid_generate_v4(), 'Location', 'location', 'ACTIVE',
 INSERT INTO entity_tag(identifier, tag, value_type, lookup_entity_type_identifier, entity_status,
                        created_by, created_datetime, modified_by, modified_datetime)
 select uuid_generate_v4(),
-       'business_status',
+       'business-status',
        'string',
        identifier,
        'ACTIVE',
@@ -157,7 +157,7 @@ where code = 'Location';
 INSERT INTO entity_tag(identifier, tag, value_type, lookup_entity_type_identifier, entity_status,
                        created_by, created_datetime, modified_by, modified_datetime)
 select uuid_generate_v4(),
-       'business_status',
+       'business-status',
        'string',
        identifier,
        'ACTIVE',

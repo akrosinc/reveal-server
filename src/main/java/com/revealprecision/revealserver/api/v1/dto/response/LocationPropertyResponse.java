@@ -33,7 +33,7 @@ public class LocationPropertyResponse {
   private Object numberOfChildrenTreated;
   private Object numberOfChildrenEligible;
   private Object sprayCoverage;
-  private UUID id;
+  private String id;
   private Map<String, ColumnData> columnDataMap;
   private List<PersonMainData> persons;
   private List<EntityMetadataResponse> metadata;

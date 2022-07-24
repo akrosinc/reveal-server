@@ -40,11 +40,12 @@ public class ReportDashboardController {
     return ApplicableReportsEnum.valueOf(plan.getInterventionType().getCode()).getReportName();
   }
 
+
   @GetMapping("/reportData")
   public ResponseEntity<FeatureSetResponse> getDataForReports(
       @RequestParam(name = "reportType") String reportType,
       @RequestParam(name = "planIdentifier") UUID planIdentifier,
-      @RequestParam(name = "parentIdentifier", required = false) UUID parentIdentifier,
+      @RequestParam(name = "parentIdentifier", required = false) String parentIdentifier,
       @RequestParam(name = "filters", required = false) List<String> filters) {
     return ResponseEntity.status(HttpStatus.OK)
         .body(dashboardService.getDataForReport(reportType, planIdentifier, parentIdentifier,

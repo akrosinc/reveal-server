@@ -12,7 +12,7 @@ import com.revealprecision.revealserver.enums.PlanStatusEnum;
 import com.revealprecision.revealserver.enums.ReportTypeEnum;
 import com.revealprecision.revealserver.exceptions.ConflictException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
-import com.revealprecision.revealserver.messaging.KafkaConstants;
+import com.revealprecision.revealserver.constants.KafkaConstants;
 import com.revealprecision.revealserver.messaging.message.Message;
 import com.revealprecision.revealserver.messaging.message.PlanUpdateMessage;
 import com.revealprecision.revealserver.messaging.message.PlanUpdateType;
@@ -92,7 +92,6 @@ public class PlanService {
       return planRepository.findPlansByInterventionType(reportType, pageable);
     } else {
       ApplicableReportsEnum applicableReportsEnum = null;
-      ReportTypeEnum reportTypeEnum = LookupUtil.lookup(ReportTypeEnum.class, reportType);
       for (ApplicableReportsEnum applicableReport : ApplicableReportsEnum.values()) {
         if (applicableReport.getReportName().contains(reportType)) {
           applicableReportsEnum = applicableReport;
@@ -153,6 +152,9 @@ public class PlanService {
     if (locationBulkService.areRelationshipsGenerated()) {
       plan.setStatus(PlanStatusEnum.ACTIVE);
       savePlan(plan);
+      // Proceed with caution here as new updates / removals to the object will prevent rewind of the kafka listener application.
+      // In the event of new data being introduced, ensure that null pointers are catered in the kafka listener
+      // application if the event comes through, and it does not have the new fields populated
       PlanUpdateMessage planUpdateMessage = new PlanUpdateMessage();
       planUpdateMessage.setPlanIdentifier(plan.getIdentifier());
       planUpdateMessage.setPlanUpdateType(PlanUpdateType.ACTIVATE);

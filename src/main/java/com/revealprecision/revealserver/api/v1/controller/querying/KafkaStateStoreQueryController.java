@@ -1,14 +1,18 @@
 package com.revealprecision.revealserver.api.v1.controller.querying;
 
-import com.revealprecision.revealserver.messaging.KafkaConstants;
+import com.revealprecision.revealserver.constants.KafkaConstants;
 import com.revealprecision.revealserver.messaging.Message;
 import com.revealprecision.revealserver.messaging.message.LocationBusinessStatusAggregate;
+import com.revealprecision.revealserver.messaging.message.LocationFormDataAggregateEvent;
+import com.revealprecision.revealserver.messaging.message.LocationFormDataCountAggregateEvent;
+import com.revealprecision.revealserver.messaging.message.LocationFormDataSumAggregateEvent;
 import com.revealprecision.revealserver.messaging.message.LocationPersonBusinessStateAggregate;
 import com.revealprecision.revealserver.messaging.message.LocationPersonBusinessStateCountAggregate;
 import com.revealprecision.revealserver.messaging.message.LocationStructureBusinessStatusAggregate;
 import com.revealprecision.revealserver.messaging.message.OperationalAreaAggregate;
 import com.revealprecision.revealserver.messaging.message.OperationalAreaVisitedCount;
 import com.revealprecision.revealserver.messaging.message.PersonBusinessStatusAggregate;
+import com.revealprecision.revealserver.messaging.message.PersonFormDataCountAggregateEvent;
 import com.revealprecision.revealserver.messaging.message.TaskAggregate;
 import com.revealprecision.revealserver.messaging.message.TaskEvent;
 import com.revealprecision.revealserver.messaging.message.TreatedOperationalAreaAggregate;
@@ -38,6 +42,97 @@ public class KafkaStateStoreQueryController<T> {
   private final KafkaProperties kafkaProperties;
   private final KafkaTemplate<String, Message> kafkaTemplate;
 
+
+  @GetMapping("/cddSupervisorLocationFormDataIntegerSumOrAverage")
+  public void cddSupervisorLocationFormDataIntegerSumOrAverage() {
+    KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
+    ReadOnlyKeyValueStore<String, LocationFormDataCountAggregateEvent> counts = kafkaStreams.store(
+        StoreQueryParameters.fromNameAndType(
+            kafkaProperties.getStoreMap()
+                .get(KafkaConstants.cddSupervisorLocationFormDataIntegerSumOrAverage),
+            QueryableStoreTypes.keyValueStore())
+    );
+    iterateThroughStore(counts);
+  }
+
+  @GetMapping("/supervisorLocationFormDataIntegerSumOrAverage")
+  public void supervisorLocationFormDataIntegerSumOrAverage() {
+    KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
+    ReadOnlyKeyValueStore<String, LocationFormDataCountAggregateEvent> counts = kafkaStreams.store(
+        StoreQueryParameters.fromNameAndType(
+            kafkaProperties.getStoreMap()
+                .get(KafkaConstants.supervisorLocationFormDataIntegerSumOrAverage),
+            QueryableStoreTypes.keyValueStore())
+    );
+    iterateThroughStore(counts);
+  }
+
+  @GetMapping("/cddNames")
+  public void cddNames() {
+    KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
+    ReadOnlyKeyValueStore<String, LocationFormDataCountAggregateEvent> counts = kafkaStreams.store(
+        StoreQueryParameters.fromNameAndType(
+            kafkaProperties.getStoreMap().get(KafkaConstants.cddNames),
+            QueryableStoreTypes.keyValueStore())
+    );
+    iterateThroughStore(counts);
+  }
+
+  @GetMapping("/mdaLiteSupervisors")
+  public void mdaLiteSupervisors() {
+    KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
+    ReadOnlyKeyValueStore<String, LocationFormDataCountAggregateEvent> counts = kafkaStreams.store(
+        StoreQueryParameters.fromNameAndType(
+            kafkaProperties.getStoreMap().get(KafkaConstants.mdaLiteSupervisors),
+            QueryableStoreTypes.keyValueStore())
+    );
+    iterateThroughStore(counts);
+  }
+
+  @GetMapping("/locationFormDataStringCount")
+  public void locationFormDataStringCount() {
+    KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
+    ReadOnlyKeyValueStore<String, LocationFormDataCountAggregateEvent> counts = kafkaStreams.store(
+        StoreQueryParameters.fromNameAndType(
+            kafkaProperties.getStoreMap().get(KafkaConstants.locationFormDataStringCount),
+            QueryableStoreTypes.keyValueStore())
+    );
+    iterateThroughStore(counts);
+  }
+
+  @GetMapping("/locationFormDataIntegerSumOrAverage")
+  public void locationFormDataIntegerSumOrAverage() {
+    KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
+    ReadOnlyKeyValueStore<String, LocationFormDataSumAggregateEvent> counts = kafkaStreams.store(
+        StoreQueryParameters.fromNameAndType(
+            kafkaProperties.getStoreMap().get(KafkaConstants.locationFormDataIntegerSumOrAverage),
+            QueryableStoreTypes.keyValueStore())
+    );
+    iterateThroughStore(counts);
+  }
+
+  @GetMapping("/personFormDataStringCount")
+  public void personFormDataStringCount() {
+    KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
+    ReadOnlyKeyValueStore<String, PersonFormDataCountAggregateEvent> counts = kafkaStreams.store(
+        StoreQueryParameters.fromNameAndType(
+            kafkaProperties.getStoreMap().get(KafkaConstants.personFormDataStringCount),
+            QueryableStoreTypes.keyValueStore())
+    );
+    iterateThroughStore(counts);
+  }
+
+  @GetMapping("/locationFormDataInteger")
+  public void locationFormDataInteger() {
+    KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
+    ReadOnlyKeyValueStore<String, LocationFormDataAggregateEvent> counts = kafkaStreams.store(
+        StoreQueryParameters.fromNameAndType(
+            kafkaProperties.getStoreMap().get(KafkaConstants.locationFormDataInteger),
+            QueryableStoreTypes.keyValueStore())
+    );
+    iterateThroughStore(counts);
+  }
+
   @GetMapping("/structurePeople")
   public void structurePeople() {
     KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
@@ -66,7 +161,8 @@ public class KafkaStateStoreQueryController<T> {
     KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
     ReadOnlyKeyValueStore<String, LocationStructureBusinessStatusAggregate> counts = kafkaStreams.store(
         StoreQueryParameters.fromNameAndType(
-            kafkaProperties.getStoreMap().get(KafkaConstants.locationStructureHierarchyBusinessStatus),
+            kafkaProperties.getStoreMap()
+                .get(KafkaConstants.locationStructureHierarchyBusinessStatus),
             QueryableStoreTypes.keyValueStore())
     );
     iterateThroughStore(counts);

@@ -2,14 +2,21 @@ package com.revealprecision.revealserver.persistence.domain.metadata.infra;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.UUID;
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
 @Setter
 @Getter
+@Data
 public class MetadataObj implements Serializable {
 
   private String tag;
+
+  private String tagKey;
+
+  private UUID entityTagId;
 
   private String type;
 
@@ -20,4 +27,10 @@ public class MetadataObj implements Serializable {
   private List<TagData> history;
 
   private boolean isActive = true;
+
+  private boolean dateScope;
+
+  private String dateForDateScope;
+
+  private Long captureNumber;
 }

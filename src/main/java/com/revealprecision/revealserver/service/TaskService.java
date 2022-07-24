@@ -14,7 +14,7 @@ import com.revealprecision.revealserver.enums.TaskProcessEnum;
 import com.revealprecision.revealserver.exceptions.DuplicateTaskCreationException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.exceptions.QueryGenerationException;
-import com.revealprecision.revealserver.messaging.KafkaConstants;
+import com.revealprecision.revealserver.constants.KafkaConstants;
 import com.revealprecision.revealserver.messaging.TaskEventFactory;
 import com.revealprecision.revealserver.messaging.dto.TaskGen;
 import com.revealprecision.revealserver.messaging.message.ActionEvent;
@@ -329,35 +329,38 @@ public class TaskService {
     List<TaskProcessStage> taskProcessStages = taskProcessStageRepository.saveAll(
         collect);
 
-    taskProcessStages.forEach(taskProcessStage -> {
-          TaskProcessEvent taskProcessEvent = TaskProcessEvent.builder()
-              .baseEntityIdentifier(taskProcessStage.getBaseEntityIdentifier())
-              .owner(ownerId)
-              .taskProcessEnum(taskProcessStage.getTaskProcess())
-              .actionEvent(ActionEvent.builder()
-                  .identifier(action.getIdentifier())
-                  .lookupEntityType(LookupEntityTypeEvent.builder()
-                      .code(action.getLookupEntityType().getCode())
-                      .build())
-                  .build())
-              .planEvent(PlanEvent.builder()
-                  .identifier(plan.getIdentifier())
-                  .build())
-              .state(taskProcessStage.getState())
-              .processTracker(ProcessTrackerEvent.builder()
-                  .processTriggerIdentifier(
-                      taskProcessStage.getProcessTracker().getProcessTriggerIdentifier())
-                  .processType(taskProcessStage.getProcessTracker().getProcessType())
-                  .planIdentifier(taskProcessStage.getProcessTracker().getPlanIdentifier())
-                  .identifier(taskProcessStage.getProcessTracker().getIdentifier())
-                  .build()
-              )
-              .taskIdentifier(taskProcessStage.getTaskIdentifier())
-              .identifier(taskProcessStage.getIdentifier())
-              .build();
-          kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.TASK_CANDIDATE),
-              taskProcessEvent);
-        }
+      taskProcessStages.forEach(taskProcessStage -> {
+        // Proceed with caution here as new updates / removals to the object will prevent rewind of the kafka listener application.
+        // In the event of new data being introduced, ensure that null pointers are catered in the kafka listener
+        // application if the event comes through, and it does not have the new fields populated
+            TaskProcessEvent taskProcessEvent = TaskProcessEvent.builder()
+                .baseEntityIdentifier(taskProcessStage.getBaseEntityIdentifier())
+                .owner(ownerId)
+                .taskProcessEnum(taskProcessStage.getTaskProcess())
+                .actionEvent(ActionEvent.builder()
+                    .identifier(action.getIdentifier())
+                    .lookupEntityType(LookupEntityTypeEvent.builder()
+                        .code(action.getLookupEntityType().getCode())
+                        .build())
+                    .build())
+                .planEvent(PlanEvent.builder()
+                    .identifier(plan.getIdentifier())
+                    .build())
+                .state(taskProcessStage.getState())
+                .processTracker(ProcessTrackerEvent.builder()
+                    .processTriggerIdentifier(
+                        taskProcessStage.getProcessTracker().getProcessTriggerIdentifier())
+                    .processType(taskProcessStage.getProcessTracker().getProcessType())
+                    .planIdentifier(taskProcessStage.getProcessTracker().getPlanIdentifier())
+                    .identifier(taskProcessStage.getProcessTracker().getIdentifier())
+                    .build()
+                )
+                .taskIdentifier(taskProcessStage.getTaskIdentifier())
+                .identifier(taskProcessStage.getIdentifier())
+                .build();
+            kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.TASK_CANDIDATE),
+                taskProcessEvent);
+          }
 
     );
   }

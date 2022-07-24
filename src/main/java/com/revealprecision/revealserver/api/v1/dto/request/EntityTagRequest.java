@@ -1,6 +1,9 @@
 package com.revealprecision.revealserver.api.v1.dto.request;
 
 import com.revealprecision.revealserver.enums.LookupEntityTypeCodeEnum;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -26,4 +29,15 @@ public class EntityTagRequest {
 
   @NotNull
   private LookupEntityTypeCodeEnum entityType;
+
+  private Map<String,String> formFieldNames;
+
+  private boolean generated;
+  private List<String> referencedFields;
+  private List<String> aggregationMethod;
+  private String generationFormula;
+  private String scope;
+  private String resultExpression;
+  private boolean isResultLiteral;
+  private boolean addToMetadata;
 }

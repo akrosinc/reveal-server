@@ -1,6 +1,6 @@
 package com.revealprecision.revealserver.messaging.streams;
 
-import com.revealprecision.revealserver.messaging.KafkaConstants;
+import com.revealprecision.revealserver.constants.KafkaConstants;
 import com.revealprecision.revealserver.messaging.message.LocationPersonBusinessStateAggregate;
 import com.revealprecision.revealserver.messaging.message.LocationPersonBusinessStateAggregate.PersonBusinessStatus;
 import com.revealprecision.revealserver.messaging.message.LocationPersonBusinessStateCountAggregate;
@@ -341,7 +341,7 @@ public class PersonBusinessStatusStream {
               return agg;
             },
             (k, v, agg) -> {
-              agg.setStructureBusinessStateCountMap(new HashMap<String, Long>());
+              agg.setStructureBusinessStateCountMap(new HashMap<>());
               return agg;
             },
             Materialized.<String, LocationPersonBusinessStateCountAggregate, KeyValueStore<Bytes, byte[]>>as(
@@ -575,14 +575,10 @@ public class PersonBusinessStatusStream {
 
     agg.setStructureBusinessStateCountMap(counts);
 
-    if (agg.getStructureBusinessStateCountMap().containsKey("SMC Complete")
+    agg.setTreated(agg.getStructureBusinessStateCountMap().containsKey("SMC Complete")
         && agg.getStructureBusinessStateCountMap().get("SMC Complete") > 0 ||
         agg.getStructureBusinessStateCountMap().containsKey("SPAQ Complete") &&
-            agg.getStructureBusinessStateCountMap().get("SPAQ Complete") > 0) {
-      agg.setTreated(true);
-    } else {
-      agg.setTreated(false);
-    }
+            agg.getStructureBusinessStateCountMap().get("SPAQ Complete") > 0);
 
     return agg;
   }

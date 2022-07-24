@@ -14,20 +14,9 @@ import lombok.ToString;
 @AllArgsConstructor
 @NoArgsConstructor
 @ToString
-public class PersonMetadataEvent extends Message {
-
-  private UUID identifier;
-
-  private List<MetaDataEvent> metaDataEvents;
-
-  private UUID entityId;
-
-  private UUID ancestorNode;
-
-  private UUID hierarchyIdentifier;
+public class PersonMetadataEvent extends TMetadataEvent {
 
   private List<UUID> locationIdList;
-
   private UUID thisLocation;
 
   private UUID personIdentifier;

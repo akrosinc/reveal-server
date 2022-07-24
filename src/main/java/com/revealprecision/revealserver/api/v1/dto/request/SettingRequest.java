@@ -9,7 +9,6 @@ import lombok.Setter;
 @Getter
 @Setter
 public class SettingRequest {
-
   @NotBlank
   private String key;
   @NotNull

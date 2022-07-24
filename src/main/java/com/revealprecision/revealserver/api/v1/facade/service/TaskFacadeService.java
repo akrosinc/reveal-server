@@ -10,7 +10,7 @@ import com.revealprecision.revealserver.constants.LocationConstants;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.enums.TaskPriorityEnum;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
-import com.revealprecision.revealserver.messaging.KafkaConstants;
+import com.revealprecision.revealserver.constants.KafkaConstants;
 import com.revealprecision.revealserver.messaging.TaskEventFactory;
 import com.revealprecision.revealserver.messaging.message.Message;
 import com.revealprecision.revealserver.messaging.message.TaskAggregate;
@@ -111,7 +111,7 @@ public class TaskFacadeService {
 
     log.debug("Before task sync");
 
-    List<TaskFacade> collect = plans.stream().flatMap(plan -> {
+    return plans.stream().flatMap(plan -> {
       if (plan.getPlanTargetType().getGeographicLevel().getName()
           .equals(LocationConstants.STRUCTURE)) {
         return getTaskFacadeStream(serverVersion, requester, planTargetsMap, taskPlanParent,
@@ -121,8 +121,6 @@ public class TaskFacadeService {
         return getTaskFacadeStream(serverVersion, requester, planTargetsMap, taskStore, plan);
       }
     }).distinct().collect(Collectors.toList());
-
-    return collect;
   }
 
   private Stream<TaskFacade> getTaskFacadeStream(Long serverVersion, String requester,
@@ -133,12 +131,9 @@ public class TaskFacadeService {
         .map(taskStore::get)
         .filter(Objects::nonNull)
         .filter(taskEvent -> taskEvent.getServerVersion() > serverVersion)
-        .map(taskEvent -> {
-          TaskFacade taskFacadeObj = TaskFacadeFactory.getTaskFacadeObj(requester,
-              taskEvent.getParentLocation().toString()
-              , taskEvent);
-          return taskFacadeObj;
-        })
+        .map(taskEvent -> TaskFacadeFactory.getTaskFacadeObj(requester,
+            taskEvent.getParentLocation().toString()
+            , taskEvent))
         .collect(Collectors.toList()).stream();
   }
 
@@ -188,7 +183,7 @@ public class TaskFacadeService {
                 .equals(plan.getPlanTargetType().getGeographicLevel().getName());
           }
         }).collect(Collectors.toList());
-    return new SimpleEntry<UUID, List<Location>>(plan.getIdentifier(),
+    return new SimpleEntry<>(plan.getIdentifier(),
         collect);
   }
 
