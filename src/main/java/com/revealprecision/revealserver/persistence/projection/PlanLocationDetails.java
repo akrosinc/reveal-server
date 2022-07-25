@@ -15,6 +15,7 @@ public class PlanLocationDetails {
   private Location parentLocation;
   private Long childrenNumber;
   private boolean hasChildren = true;
+  private boolean hasSupervisor;
 
   public PlanLocationDetails(Location location, Long assignedLocations, Long assignedTeams) {
     this.location = location;

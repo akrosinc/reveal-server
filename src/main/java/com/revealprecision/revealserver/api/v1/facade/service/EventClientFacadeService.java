@@ -20,6 +20,7 @@ import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.Person;
 import com.revealprecision.revealserver.persistence.es.PersonElastic;
 import com.revealprecision.revealserver.service.EventService;
+import com.revealprecision.revealserver.service.FormDataProcessorService;
 import com.revealprecision.revealserver.service.GroupService;
 import com.revealprecision.revealserver.service.LocationService;
 import com.revealprecision.revealserver.service.OrganizationService;
@@ -64,22 +65,16 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class EventClientFacadeService {
 
+
   private final PersonService personService;
-
   private final EventService eventService;
-
   private final LocationService locationService;
-
   private final OrganizationService organizationService;
-
   private final UserService userService;
-
   private final GroupService groupService;
-
   private final ObjectMapper objectMapper;
-
+  private final FormDataProcessorService formDataProcessorService;
   private final RestHighLevelClient client;
-
   private final Environment env;
 
 
@@ -87,19 +82,19 @@ public class EventClientFacadeService {
       JSONObject eventClientRequestJSON)
       throws JsonProcessingException {
     ObjectMapper mapper = new ObjectMapper();
-    List<EventFacade> failedEvents = new ArrayList<>();
-    if (eventClientRequestJSON.has(EVENTS)) {
-      String rawEventsRequest = eventClientRequestJSON.getString(EVENTS);
-      List<EventFacade> eventFacades = List
-          .of(mapper.readValue(rawEventsRequest, EventFacade[].class));
-      failedEvents = addOrUpdateEvents(eventFacades);
-    }
     List<ClientFacade> failedClients = new ArrayList<>();
     if (eventClientRequestJSON.has(CLIENTS)) {
       String rawClientsRequest = eventClientRequestJSON.getString(CLIENTS);
       List<ClientFacade> clientFacades = List
           .of(mapper.readValue(rawClientsRequest, ClientFacade[].class));
       failedClients = addOrUpdateClients(clientFacades);
+    }
+    List<EventFacade> failedEvents = new ArrayList<>();
+    if (eventClientRequestJSON.has(EVENTS)) {
+      String rawEventsRequest = eventClientRequestJSON.getString(EVENTS);
+      List<EventFacade> eventFacades = List
+          .of(mapper.readValue(rawEventsRequest, EventFacade[].class));
+      failedEvents = addOrUpdateEvents(eventFacades);
     }
 
     return Pair.of(failedEvents, failedClients);
@@ -109,7 +104,8 @@ public class EventClientFacadeService {
     List<EventFacade> failedEvents = new ArrayList<>();
     eventFacadeList.forEach(eventFacade -> {
       try {
-        saveEvent(eventFacade);
+        Event savedEvent = saveEvent(eventFacade);
+        formDataProcessorService.processFormDataAndSubmitToMessaging(savedEvent);
       } catch (Exception exception) {
         exception.printStackTrace();
         failedEvents.add(eventFacade);
@@ -158,7 +154,7 @@ public class EventClientFacadeService {
     person.setAdditionalInfo(objectMapper.valueToTree(personAdditionalInfo));
     person = personService.savePerson(person);
 
-    if(Arrays.asList(env.getActiveProfiles()).contains("Simulation")) { //TODO: remove when needed
+    if (Arrays.asList(env.getActiveProfiles()).contains("Simulation")) { //TODO: remove when needed
       PersonElastic personElastic = new PersonElastic(person);
       Map<String, Object> parameters = new HashMap<>();
 
@@ -342,8 +338,7 @@ public class EventClientFacadeService {
     if (StringUtils.isNotBlank(baseEntityId)) {
       event.setBaseEntityIdentifier(UUID.fromString(baseEntityId));
     }
-    String locationIdentifier = eventFacade.getLocationId() == null ? details.get("location_id")
-        : eventFacade.getLocationId();
+    String locationIdentifier = details.getOrDefault("location_id", "");
     if (StringUtils.isNotBlank(locationIdentifier)) {
       event.setLocationIdentifier(UUID.fromString(locationIdentifier));
     }
@@ -433,8 +428,8 @@ public class EventClientFacadeService {
   }
 
   public List<Person> searchPeople(List<Event> searchEvents) {
-    return searchEvents.stream().filter(event -> event.getBaseEntityIdentifier() != null)
-        .map(Event::getBaseEntityIdentifier).map(personIdentifier -> {
+    return searchEvents.stream().map(Event::getBaseEntityIdentifier)
+        .filter(Objects::nonNull).map(personIdentifier -> {
           try {
             return personService.getPersonByIdentifier(personIdentifier);
           } catch (NotFoundException notFoundException) {
@@ -445,7 +440,7 @@ public class EventClientFacadeService {
 
   public List<EventFacade> getEventFacades(List<Event> searchEvents) {
 
-    return searchEvents.stream().map(this::getEventFacade).filter(Objects::nonNull)
+    return searchEvents.stream().map(this::getEventFacade)
         .collect(Collectors.toList());
   }
 

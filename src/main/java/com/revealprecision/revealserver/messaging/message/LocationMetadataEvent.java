@@ -13,15 +13,10 @@ import lombok.ToString;
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor
-@ToString
-public class LocationMetadataEvent extends Message {
-
-  private UUID identifier;
-  private List<MetaDataEvent> metaDataEvents;
-  private UUID entityId;
-  private UUID ancestorNode;
-  private UUID hierarchyIdentifier;
-  private UUID planIdentifier;
+@ToString(callSuper = true)
+public class LocationMetadataEvent extends TMetadataEvent {
   private String planTargetType;
   private String entityGeographicLevel;
+
+
 }

@@ -1,10 +1,13 @@
 package com.revealprecision.revealserver.service;
 
+import com.revealprecision.revealserver.api.v1.dto.factory.LocationMetadataEventFactory;
+import com.revealprecision.revealserver.api.v1.dto.factory.PersonMetadataEventFactory;
 import com.revealprecision.revealserver.enums.EntityStatus;
-import com.revealprecision.revealserver.messaging.KafkaConstants;
+import com.revealprecision.revealserver.constants.KafkaConstants;
+import com.revealprecision.revealserver.messaging.message.EntityTagEvent;
 import com.revealprecision.revealserver.messaging.message.LocationMetadataEvent;
-import com.revealprecision.revealserver.messaging.message.MetaDataEvent;
 import com.revealprecision.revealserver.messaging.message.PersonMetadataEvent;
+import com.revealprecision.revealserver.persistence.domain.EntityTag;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.Person;
 import com.revealprecision.revealserver.persistence.domain.Plan;
@@ -17,9 +20,11 @@ import com.revealprecision.revealserver.persistence.domain.metadata.infra.TagDat
 import com.revealprecision.revealserver.persistence.domain.metadata.infra.TagValue;
 import com.revealprecision.revealserver.persistence.repository.LocationMetadataRepository;
 import com.revealprecision.revealserver.persistence.repository.PersonMetadataRepository;
+import com.revealprecision.revealserver.persistence.repository.PersonRepository;
 import com.revealprecision.revealserver.props.KafkaProperties;
-import java.io.IOException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -42,6 +47,7 @@ public class MetadataService {
 
   private final LocationMetadataRepository locationMetadataRepository;
   private final PersonMetadataRepository personMetadataRepository;
+  private final PersonRepository personRepository;
   private final KafkaTemplate<String, LocationMetadataEvent> locationMetadataKafkaTemplate;
   private final KafkaTemplate<String, PersonMetadataEvent> personMetadataKafkaTemplate;
   private final KafkaProperties kafkaProperties;
@@ -58,11 +64,25 @@ public class MetadataService {
         .orElse(null);
   }
 
+  public Object updateMetaData(UUID identifier, Object tagValue,
+      Plan plan, UUID taskIdentifier,
+      String user, String dataType, EntityTagEvent tag, String type, Object entity, String taskType,
+      Class<?> aClass, String tagKey, String finalDateForScopeDateFields1) {
+    if (aClass == Person.class) {
+      return updatePersonMetadata(identifier, tagValue, plan, taskIdentifier, user, dataType, tag,
+          type, (Person) entity, taskType, tagKey, finalDateForScopeDateFields1);
+    } else if (aClass == Location.class) {
+      return updateLocationMetadata(identifier, tagValue, plan, taskIdentifier, user, dataType, tag,
+          type, (Location) entity, taskType, tagKey, finalDateForScopeDateFields1);
+    }
+    return null;
+  }
+
   @Transactional
   public PersonMetadata updatePersonMetadata(UUID personIdentifier, Object tagValue,
       Plan plan, UUID taskIdentifier,
-      String user, String dataType, String tag, String type, Person person, String taskType)
-      throws IOException {
+      String user, String dataType, EntityTagEvent tag, String type, Person person, String taskType,
+      String tagKey, String dateForScopeDateFields) {
 
     PersonMetadata personMetadata;
 
@@ -73,16 +93,14 @@ public class MetadataService {
       OptionalInt optionalArrIndex = IntStream.range(0,
           optionalPersonMetadata.get().getEntityValue().getMetadataObjs().size()).filter(i ->
           optionalPersonMetadata.get().getEntityValue().getMetadataObjs().get(i).getTag()
-              .equals(tag)
+              .equals(tag.getTag())
       ).findFirst();
 
       if (optionalArrIndex.isPresent()) {
         personMetadata = optionalPersonMetadata.get();
 
         int arrIndex = optionalArrIndex.getAsInt();
-        TagData oldObj = SerializationUtils.clone(
-            optionalPersonMetadata.get().getEntityValue().getMetadataObjs().get(arrIndex)
-                .getCurrent());
+        //TODO: Add history
 
         personMetadata.getEntityValue().getMetadataObjs().get(arrIndex).getCurrent().setValue(
             getTagValue(tagValue, dataType,
@@ -95,22 +113,13 @@ public class MetadataService {
         personMetadata.getEntityValue().getMetadataObjs().get(arrIndex).getCurrent().getMeta()
             .setTaskType(taskType);
 
-        if (personMetadata.getEntityValue().getMetadataObjs().get(arrIndex).getHistory() != null) {
-          List<TagData> history = new ArrayList<>(
-              personMetadata.getEntityValue().getMetadataObjs().get(arrIndex)
-                  .getHistory());
-          history.add(oldObj);
-          personMetadata.getEntityValue().getMetadataObjs().get(arrIndex).setHistory(history);
-
-        } else {
-          personMetadata.getEntityValue().getMetadataObjs().get(arrIndex)
-              .setHistory(List.of(oldObj));
-        }
+        //TODO: Add history
 
       } else {
         // tag does not exist in list
-        MetadataObj metadataObj = getMetadataObj(tagValue, plan.getIdentifier(), taskIdentifier, user,
-            dataType, tag, type,taskType);
+        MetadataObj metadataObj = getMetadataObj(tagValue, plan.getIdentifier(), taskIdentifier,
+            user,
+            dataType, tag, type, taskType, tagKey, dateForScopeDateFields);
 
         personMetadata = optionalPersonMetadata.get();
         List<MetadataObj> metadataObjs = new ArrayList<>(
@@ -122,53 +131,39 @@ public class MetadataService {
     } else {
       //person metadata does not exist
       personMetadata = new PersonMetadata();
-
-      person.setIdentifier(personIdentifier);
+      //TODO: check this
       personMetadata.setPerson(person);
 
       MetadataObj metadataObj = getMetadataObj(tagValue, plan.getIdentifier(), taskIdentifier, user,
-          dataType, tag, type,taskType);
+          dataType, tag, type, taskType, tagKey, dateForScopeDateFields);
 
       MetadataList metadataList = new MetadataList();
       metadataList.setMetadataObjs(List.of(metadataObj));
       personMetadata.setEntityValue(metadataList);
-
       personMetadata.setEntityStatus(EntityStatus.ACTIVE);
     }
 
-    PersonMetadata savedLocationMetadata = personMetadataRepository.save(personMetadata);
+    PersonMetadata savedPersonMetadata = personMetadataRepository.save(personMetadata);
 
-    PersonMetadataEvent personMetadataEvent = new PersonMetadataEvent();
+    List<UUID> locationList = locationService.getLocationsByPeople(person.getIdentifier())
+        .stream()
+        .map(Location::getIdentifier).collect(Collectors.toList());
 
-    personMetadataEvent.setIdentifier(savedLocationMetadata.getIdentifier());
-    personMetadataEvent.setMetaDataEvents(
-        savedLocationMetadata.getEntityValue().getMetadataObjs().stream().map(metadataObj -> {
-          MetaDataEvent metaDataEvent = new MetaDataEvent();
-          metaDataEvent.setTag(metadataObj.getTag());
-          metaDataEvent.setTagData(metadataObj.getCurrent());
-          metaDataEvent.setDataType(metadataObj.getDataType());
-          metaDataEvent.setActive(metadataObj.isActive());
-          metaDataEvent.setType(metadataObj.getType());
-          return metaDataEvent;
-        }).collect(Collectors.toList()));
-    personMetadataEvent.setEntityId(savedLocationMetadata.getPerson().getIdentifier());
-
-    personMetadataEvent.setLocationIdList(
-        locationService.getLocationsByPeople(person.getIdentifier())
-            .stream()
-            .map(Location::getIdentifier).collect(Collectors.toList()));
+    PersonMetadataEvent personMetadataEvent = PersonMetadataEventFactory.getPersonMetadataEvent(
+        plan, locationList, savedPersonMetadata);
 
     personMetadataKafkaTemplate.send(
         kafkaProperties.getTopicMap().get(KafkaConstants.PERSON_METADATA_UPDATE),
         personMetadataEvent);
 
-    return savedLocationMetadata;
+    return savedPersonMetadata;
   }
 
 
   public LocationMetadata updateLocationMetadata(UUID locationIdentifier, Object tagValue,
       Plan plan, UUID taskIdentifier,
-      String user, String dataType, String tag, String type, Location location, String taskType) {
+      String user, String dataType, EntityTagEvent locationEntityTag, String type, Location location,
+      String taskType, String tagKey,  String dateForScopeDateFields) {
 
     LocationMetadata locationMetadata;
 
@@ -176,21 +171,32 @@ public class MetadataService {
         locationIdentifier);
     if (locationMetadataOptional.isPresent()) {
 
-      OptionalInt optionalArrIndex = IntStream.range(0,
-              locationMetadataOptional.get().getEntityValue().getMetadataObjs().size())
-          .filter(
-              i -> locationMetadataOptional.get().getEntityValue().getMetadataObjs().get(i).getTag()
-                  .equals(tag))
-          .findFirst();
 
+      OptionalInt optionalArrIndex = OptionalInt.empty();
+      if (locationEntityTag.getScope()==null ||  (locationEntityTag.getScope() != null && !locationEntityTag.getScope().equals("Date"))){
+        optionalArrIndex = IntStream.range(0,
+                locationMetadataOptional.get().getEntityValue().getMetadataObjs().size())
+            .filter(
+                i -> locationMetadataOptional.get().getEntityValue().getMetadataObjs().get(i)
+                    .getTag()
+                    .equals(locationEntityTag.getTag()))
+            .findFirst();
+      } else {
+        optionalArrIndex = IntStream.range(0,
+                locationMetadataOptional.get().getEntityValue().getMetadataObjs().size())
+            .filter(
+                i -> locationMetadataOptional.get().getEntityValue().getMetadataObjs().get(i).getTag()
+                    .equals(locationEntityTag.getTag())
+                    && (!locationMetadataOptional.get().getEntityValue().getMetadataObjs().get(i).isDateScope() ||
+                    locationMetadataOptional.get().getEntityValue().getMetadataObjs().get(i).getDateForDateScope().equals(dateForScopeDateFields)))
+            .findFirst();
+      }
       if (optionalArrIndex.isPresent()) {
         //tag exists
         locationMetadata = locationMetadataOptional.get();
 
         int arrIndex = optionalArrIndex.getAsInt();
-        TagData oldObj = SerializationUtils.clone(
-            locationMetadataOptional.get().getEntityValue().getMetadataObjs().get(arrIndex)
-                .getCurrent());
+        //TODO: Add history
 
         locationMetadata.getEntityValue().getMetadataObjs().get(arrIndex).getCurrent().setValue(
             getTagValue(tagValue, dataType,
@@ -204,19 +210,22 @@ public class MetadataService {
             .setTaskType(taskType);
 
         locationMetadata.getEntityValue().getMetadataObjs().get(arrIndex).setActive(true);
-        if (locationMetadata.getEntityValue().getMetadataObjs().get(arrIndex).getHistory()
-            != null) {
-          locationMetadata.getEntityValue().getMetadataObjs().get(arrIndex).getHistory()
-              .add(oldObj);
-        } else {
-          locationMetadata.getEntityValue().getMetadataObjs().get(arrIndex)
-              .setHistory(List.of(oldObj));
+
+        if (locationEntityTag.getScope().equals("Date")){
+          if (dateForScopeDateFields != null) {
+            locationMetadata.getEntityValue().getMetadataObjs().get(arrIndex).setDateForDateScope(dateForScopeDateFields);
+            locationMetadata.getEntityValue().getMetadataObjs().get(arrIndex).setDateScope(true);
+            locationMetadata.getEntityValue().getMetadataObjs().get(arrIndex).setCaptureNumber(LocalDate.parse(dateForScopeDateFields,DateTimeFormatter.ISO_LOCAL_DATE).toEpochDay());
+          }
         }
+
+        //TODO: Add history
 
       } else {
         // tag does not exist in list
-        MetadataObj metadataObj = getMetadataObj(tagValue, plan.getIdentifier(), taskIdentifier, user,
-            dataType, tag, type, taskType);
+        MetadataObj metadataObj = getMetadataObj(tagValue, plan.getIdentifier(), taskIdentifier,
+            user,
+            dataType, locationEntityTag, type, taskType, tagKey, dateForScopeDateFields);
 
         locationMetadata = locationMetadataOptional.get();
         locationMetadata.getEntityValue().getMetadataObjs().add(metadataObj);
@@ -231,7 +240,7 @@ public class MetadataService {
       locationMetadata.setLocation(location);
 
       MetadataObj metadataObj = getMetadataObj(tagValue, plan.getIdentifier(), taskIdentifier, user,
-          dataType, tag, type, taskType);
+          dataType, locationEntityTag, type, taskType, tagKey, dateForScopeDateFields);
 
       MetadataList metadataList = new MetadataList();
       metadataList.setMetadataObjs(List.of(metadataObj));
@@ -241,22 +250,9 @@ public class MetadataService {
     }
     LocationMetadata savedLocationMetadata = locationMetadataRepository.save(locationMetadata);
 
-    LocationMetadataEvent locationMetadataEvent = new LocationMetadataEvent();
-    locationMetadataEvent.setPlanTargetType(plan.getPlanTargetType().getGeographicLevel().getName());
-    locationMetadataEvent.setIdentifier(savedLocationMetadata.getIdentifier());
-    locationMetadataEvent.setEntityGeographicLevel(location.getGeographicLevel().getName());
-    locationMetadataEvent.setHierarchyIdentifier(plan.getLocationHierarchy().getIdentifier());
-    locationMetadataEvent.setMetaDataEvents(
-        savedLocationMetadata.getEntityValue().getMetadataObjs().stream().map(metadataObj -> {
-          MetaDataEvent metaDataEvent = new MetaDataEvent();
-          metaDataEvent.setTag(metadataObj.getTag());
-          metaDataEvent.setTagData(metadataObj.getCurrent());
-          metaDataEvent.setActive(metadataObj.isActive());
-          metaDataEvent.setType(metadataObj.getType());
-          metaDataEvent.setDataType(metadataObj.getDataType());
-          return metaDataEvent;
-        }).collect(Collectors.toList()));
-    locationMetadataEvent.setEntityId(savedLocationMetadata.getLocation().getIdentifier());
+    LocationMetadataEvent locationMetadataEvent = LocationMetadataEventFactory.
+        getLocationMetadataEvent(
+            plan, location, savedLocationMetadata);
 
     locationMetadataKafkaTemplate.send(
         kafkaProperties.getTopicMap().get(KafkaConstants.LOCATION_METADATA_UPDATE),
@@ -264,7 +260,9 @@ public class MetadataService {
     return savedLocationMetadata;
   }
 
-  public LocationMetadata deactivateLocationMetadata(UUID locationIdentifier, String tag, Plan plan) {
+
+  public LocationMetadata deactivateLocationMetadata(UUID locationIdentifier, EntityTag tag,
+      Plan plan) {
 
     LocationMetadata locationMetadata;
 
@@ -276,7 +274,7 @@ public class MetadataService {
               locationMetadataOptional.get().getEntityValue().getMetadataObjs().size())
           .filter(
               i -> locationMetadataOptional.get().getEntityValue().getMetadataObjs().get(i).getTag()
-                  .equals(tag))
+                  .equals(tag.getTag()))
           .findFirst();
 
       if (optionalArrIndex.isPresent()) {
@@ -301,22 +299,9 @@ public class MetadataService {
 
         LocationMetadata savedLocationMetadata = locationMetadataRepository.save(locationMetadata);
 
-        LocationMetadataEvent locationMetadataEvent = new LocationMetadataEvent();
-        locationMetadataEvent.setIdentifier(savedLocationMetadata.getIdentifier());
-        locationMetadataEvent.setPlanIdentifier(plan.getIdentifier());
-        locationMetadataEvent.setPlanTargetType(plan.getPlanTargetType().getGeographicLevel().getName());
-        locationMetadataEvent.setHierarchyIdentifier(plan.getLocationHierarchy().getIdentifier());
-        locationMetadataEvent.setMetaDataEvents(
-            savedLocationMetadata.getEntityValue().getMetadataObjs().stream().map(metadataObj -> {
-              MetaDataEvent metaDataEvent = new MetaDataEvent();
-              metaDataEvent.setTag(metadataObj.getTag());
-              metaDataEvent.setTagData(metadataObj.getCurrent());
-              metaDataEvent.setActive(metadataObj.isActive());
-              metaDataEvent.setType(metadataObj.getType());
-              metaDataEvent.setDataType(metadataObj.getDataType());
-              return metaDataEvent;
-            }).collect(Collectors.toList()));
-        locationMetadataEvent.setEntityId(savedLocationMetadata.getLocation().getIdentifier());
+        LocationMetadataEvent locationMetadataEvent = LocationMetadataEventFactory.
+            getLocationMetadataEvent(
+                plan, null, savedLocationMetadata);
 
         locationMetadataKafkaTemplate.send(
             kafkaProperties.getTopicMap().get(KafkaConstants.LOCATION_METADATA_UPDATE),
@@ -334,7 +319,9 @@ public class MetadataService {
     return null;
   }
 
-  public PersonMetadata deactivatePersonMetadata(UUID locationIdentifier, String tag, Plan plan) {
+
+  public PersonMetadata deactivatePersonMetadata(UUID locationIdentifier, EntityTag tag,
+      Plan plan) {
 
     PersonMetadata personMetadata;
 
@@ -346,7 +333,7 @@ public class MetadataService {
               personMetadataOptional.get().getEntityValue().getMetadataObjs().size())
           .filter(
               i -> personMetadataOptional.get().getEntityValue().getMetadataObjs().get(i).getTag()
-                  .equals(tag))
+                  .equals(tag.getTag()))
           .findFirst();
 
       if (optionalArrIndex.isPresent()) {
@@ -371,19 +358,8 @@ public class MetadataService {
 
         PersonMetadata savedPersonMetadata = personMetadataRepository.save(personMetadata);
 
-        PersonMetadataEvent personMetadataEvent = new PersonMetadataEvent();
-        personMetadataEvent.setIdentifier(savedPersonMetadata.getIdentifier());
-        personMetadataEvent.setHierarchyIdentifier(plan.getLocationHierarchy().getIdentifier());
-        personMetadataEvent.setMetaDataEvents(
-            savedPersonMetadata.getEntityValue().getMetadataObjs().stream().map(metadataObj -> {
-              MetaDataEvent metaDataEvent = new MetaDataEvent();
-              metaDataEvent.setTag(metadataObj.getTag());
-              metaDataEvent.setTagData(metadataObj.getCurrent());
-              metaDataEvent.setActive(metadataObj.isActive());
-              metaDataEvent.setType(metadataObj.getType());
-              return metaDataEvent;
-            }).collect(Collectors.toList()));
-        personMetadataEvent.setEntityId(savedPersonMetadata.getPerson().getIdentifier());
+        PersonMetadataEvent personMetadataEvent = PersonMetadataEventFactory.getPersonMetadataEvent(
+            plan, null, savedPersonMetadata);
 
         personMetadataKafkaTemplate.send(
             kafkaProperties.getTopicMap().get(KafkaConstants.PERSON_METADATA_UPDATE),
@@ -403,7 +379,7 @@ public class MetadataService {
 
   private MetadataObj getMetadataObj(Object tagValue, UUID planIdentifier, UUID taskIdentifier,
       String user,
-      String dataType, String tag, String type, String taskType) {
+      String dataType, EntityTagEvent tag, String type, String taskType, String tagKey,String dateForScopeDateFields) {
     Metadata metadata = new Metadata();
     metadata.setPlanId(planIdentifier);
     metadata.setTaskId(taskIdentifier);
@@ -420,10 +396,21 @@ public class MetadataService {
 
     MetadataObj metadataObj = new MetadataObj();
     metadataObj.setDataType(dataType);
-    metadataObj.setTag(tag);
+    metadataObj.setTag(tag.getTag());
     metadataObj.setType(type);
+    metadataObj.setEntityTagId(tag.getIdentifier());
     metadataObj.setCurrent(tagData);
     metadataObj.setActive(true);
+    metadataObj.setTagKey(tagKey);
+
+    if (tag.getScope().equals("Date")){
+      if (dateForScopeDateFields != null) {
+        metadataObj.setDateForDateScope(dateForScopeDateFields);
+        metadataObj.setDateScope(true);
+        metadataObj.setCaptureNumber(LocalDate.parse(dateForScopeDateFields,DateTimeFormatter.ISO_LOCAL_DATE).toEpochDay());
+      }
+    }
+
     return metadataObj;
   }
 
@@ -448,7 +435,6 @@ public class MetadataService {
         return Pair.of(String.class, metadataObj.getCurrent().getValue().getValueString());
 
     }
-
   }
 
 
@@ -468,6 +454,9 @@ public class MetadataService {
         break;
       case "boolean":
         value.setValueBoolean((Boolean) tagValue);
+        break;
+      case "object":
+        value.getValueObjects().add(tagValue);
         break;
       default:
         value.setValueString((String) tagValue);

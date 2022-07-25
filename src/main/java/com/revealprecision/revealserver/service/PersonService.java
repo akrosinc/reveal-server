@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -78,6 +79,9 @@ public class PersonService {
         () -> new NotFoundException(Pair.of(Fields.identifier, personIdentifier), Person.class));
   }
 
+  public Optional<Person> findByIdentifier(UUID personIdentifier) {
+    return personRepository.findByIdentifier(personIdentifier);
+  }
 
   public List<Person> getPeopleByLocations(List<Location> locations){
     return personRepository.findPersonByLocationsIn(locations);

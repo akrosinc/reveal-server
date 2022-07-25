@@ -28,7 +28,7 @@ public class EntityMetadataElastic {
         .userId(metadataObj.getTagData().getMeta().getUserId())
         .createDateTime(ElasticModelUtil.toDateFromLocalDateTime(metadataObj.getTagData().getMeta().getCreateDateTime()))
         .updateDateTime(ElasticModelUtil.toDateFromLocalDateTime(metadataObj.getTagData().getMeta().getUpdateDateTime()))
-        .taskId(metadataObj.getTagData().getMeta().getTaskId().toString())
+        .taskId(metadataObj.getTagData().getMeta().getTaskId()==null?null:metadataObj.getTagData().getMeta().getTaskId().toString())
         .taskType(metadataObj.getTagData().getMeta().getTaskType())
         .build();
     switch (metadataObj.getDataType()){

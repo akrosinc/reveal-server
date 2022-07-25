@@ -2,7 +2,7 @@ package com.revealprecision.revealserver.messaging.streams;
 
 import com.revealprecision.revealserver.constants.LocationConstants;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
-import com.revealprecision.revealserver.messaging.KafkaConstants;
+import com.revealprecision.revealserver.constants.KafkaConstants;
 import com.revealprecision.revealserver.messaging.TaskEventFactory;
 import com.revealprecision.revealserver.messaging.message.TaskAggregate;
 import com.revealprecision.revealserver.messaging.message.TaskEvent;
@@ -91,10 +91,6 @@ public class TaskGenerationStream {
             .merge(splitStreamMap.get("splitOtherStream"));
 
     KStream<String, TaskEvent> stringTaskEventKStream1 = mergedStream.mapValues((k, taskEvent) -> {
-
-//      LocationRelationship locationRelationshipsForLocation = locationRelationshipService.getLocationRelationshipsForLocation(
-//          taskEvent.getAction().getGoal().getPlan().getLocationHierarchy().getIdentifier(),
-//          taskEvent.getPersonLocationId()!= null ? taskEvent.getPersonLocationId() : taskEvent.getBaseEntityIdentifier());
 
       Location locationParent = locationService.getLocationParentByLocationIdentifierAndHierarchyIdentifier(
           taskEvent.getPersonLocationId() != null ? taskEvent.getPersonLocationId()

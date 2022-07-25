@@ -24,9 +24,15 @@ public class EntityTagResponseFactory {
         .tag(entityTag.getTag())
         .definition(entityTag.getDefinition())
         .valueType(entityTag.getValueType())
-        .fieldType("tag")
+        .generationFormula(entityTag.getGenerationFormula())
+        .isGenerated(entityTag.isGenerated())
+        .resultExpression(entityTag.getResultExpression())
+        .referenceFields(entityTag.getReferencedFields())
+        .isResultLiteral(entityTag.isResultLiteral())
         .lookupEntityType(
-            LookupEntityTagResponseFactory.fromEntity(entityTag.getLookupEntityType())).build();
+            LookupEntityTagResponseFactory.fromEntity(entityTag.getLookupEntityType()))
+        .addToMetadata(entityTag.isAddToMetadata())
+        .build();
   }
 
   public static EntityTagResponse fromCoreField(CoreField coreField) {

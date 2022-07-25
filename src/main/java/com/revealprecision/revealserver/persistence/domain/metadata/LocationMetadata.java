@@ -40,4 +40,11 @@ public class LocationMetadata extends AbstractAuditableEntity {
   @JoinColumn(name = "location_identifier")
   private Location location;
 
+  @Override
+  public String toString(){
+    return "identifier: ["+identifier+"], "+
+        "MetadataList["+entityValue.toString()+"],"+
+        "Location["+location.getName()+"]";
+  }
+
 }
