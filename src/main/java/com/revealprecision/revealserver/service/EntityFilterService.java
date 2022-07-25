@@ -121,29 +121,31 @@ public class EntityFilterService {
 
       List<Pair<UUID, String>> locationsForTaskGeneration = new ArrayList<>();
 
-
-      if (plan.getPlanTargetType().getGeographicLevel().getName().equals(LocationConstants.STRUCTURE)){
+      if (plan.getPlanTargetType().getGeographicLevel().getName()
+          .equals(LocationConstants.STRUCTURE)) {
         String nodeAboveStructure = locationHierarchy.getNodeOrder().get(
             locationHierarchy.getNodeOrder().indexOf(LocationConstants.STRUCTURE) - 1);
         locationsForTaskGeneration.addAll(locations.stream()
             .filter(location -> location.getSecond().equals(nodeAboveStructure))
             .collect(Collectors.toList()));
-      } else{
+      } else {
         locationsForTaskGeneration.addAll(locations.stream()
-            .filter(location -> location.getSecond().equals(plan.getPlanTargetType().getGeographicLevel().getName()))
+            .filter(location -> location.getSecond()
+                .equals(plan.getPlanTargetType().getGeographicLevel().getName()))
             .collect(Collectors.toList()));
       }
 
       List<String> taskLocationUuids = new ArrayList<>();
       if (query == null) {
 
-        if (plan.getPlanTargetType().getGeographicLevel().getName().equals(LocationConstants.STRUCTURE)) {
+        if (plan.getPlanTargetType().getGeographicLevel().getName()
+            .equals(LocationConstants.STRUCTURE)) {
           Set<Location> structures = locationRelationshipService.getStructuresForPlanIfHierarchyHasStructure(
               locationHierarchy,
               locationsForTaskGeneration);
 
-          log.debug("structures size: {}",structures.size());
-          log.trace("structures: {}",structures);
+          log.debug("structures size: {}", structures.size());
+          log.trace("structures: {}", structures);
 
           taskLocationUuids.addAll(
               structures.stream().map(Location::getIdentifier).map(UUID::toString)
@@ -467,33 +469,33 @@ public class EntityFilterService {
     List<EntityFilterRequest> personFilters = new ArrayList<>();
     List<EntityFilterRequest> locationFilters = new ArrayList<>();
 
-
-
-    for(EntityFilterRequest req : request.getEntityFilters()) {
-      LookupEntityType lookupEntityType = lookupEntityTypeService.getLookUpEntityTypeById(req.getEntityIdentifier());
-      if(lookupEntityType.getTableName().equals("person")) {
+    for (EntityFilterRequest req : request.getEntityFilters()) {
+      LookupEntityType lookupEntityType = lookupEntityTypeService.getLookUpEntityTypeById(
+          req.getEntityIdentifier());
+      if (lookupEntityType.getTableName().equals("person")) {
         personFilters.add(req);
-      }else {
+        boolQuery.must(nestedPersonQuery(personFilters));
+      } else {
         locationFilters.add(req);
       }
     }
 
-    boolQuery.must(nestedPersonQuery(personFilters));
-
-    for(EntityFilterRequest req : locationFilters) {
+    for (EntityFilterRequest req : locationFilters) {
       if (req.getRange() == null && req.getValues() == null) {
         boolQuery.must(mustStatement(req));
-      }else if(req.getSearchValue() == null && req.getValues() == null) {
+      } else if (req.getSearchValue() == null && req.getValues() == null) {
         boolQuery.must(rangeStatement(req));
-      } else if(req.getSearchValue() == null && req.getRange() == null) {
+      } else if (req.getSearchValue() == null && req.getRange() == null) {
         boolQuery.must(shouldStatement(req));
-      }else {
+      } else {
         throw new ConflictException("Request object bad formatted.");
       }
     }
 
-    if(request.getHierarchyIdentifier() != null && request.getLocationIdentifier() != null) {
-      boolQuery.filter(QueryBuilders.matchQuery("ancestry.".concat(request.getHierarchyIdentifier().toString()), request.getLocationIdentifier().toString()));
+    if (request.getHierarchyIdentifier() != null && request.getLocationIdentifier() != null) {
+      boolQuery.filter(
+          QueryBuilders.matchQuery("ancestry.".concat(request.getHierarchyIdentifier().toString()),
+              request.getLocationIdentifier().toString()));
     }
 
     SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
@@ -505,15 +507,15 @@ public class EntityFilterService {
     List<LocationResponse> locationResponses = new ArrayList<>();
     List<String> parentLocations = new ArrayList<>();
 
-    for(SearchHit hit : searchResponse.getHits().getHits()) {
-      LocationResponse locToAdd = LocationResponseFactory.fromSearchHit(hit, parentLocations, request.getHierarchyIdentifier().toString());
+    for (SearchHit hit : searchResponse.getHits().getHits()) {
+      LocationResponse locToAdd = LocationResponseFactory.fromSearchHit(hit, parentLocations,
+          request.getHierarchyIdentifier().toString());
 
-      if(hit.getInnerHits() != null) {
-        addPersonsToLocationProperties(hit.getInnerHits(), locToAdd.getProperties());
-      }
+      addPersonsToLocationProperties(hit.getInnerHits(), locToAdd.getProperties());
+
       locationResponses.add(locToAdd);
     }
-    if(!parentLocations.isEmpty()) {
+    if (!parentLocations.isEmpty()) {
       response.setParents(retrieveParentLocations(parentLocations));
     }
 
@@ -522,7 +524,8 @@ public class EntityFilterService {
     return response;
   }
 
-  private List<LocationResponse> retrieveParentLocations(List<String> parentIds) throws IOException {
+  private List<LocationResponse> retrieveParentLocations(List<String> parentIds)
+      throws IOException {
     List<LocationResponse> responses = new ArrayList<>();
     SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
     sourceBuilder.query(QueryBuilders.termsQuery("_id", parentIds));
@@ -530,22 +533,26 @@ public class EntityFilterService {
     searchRequest.source(sourceBuilder);
     SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
     ObjectMapper mapper = new ObjectMapper();
-    for(SearchHit hit : searchResponse.getHits().getHits()) {
+    for (SearchHit hit : searchResponse.getHits().getHits()) {
       LocationElastic parent = mapper.readValue(hit.getSourceAsString(), LocationElastic.class);
       responses.add(LocationResponseFactory.fromElasticModel(parent));
     }
     return responses;
   }
 
-  private void addPersonsToLocationProperties(Map<String, SearchHits> innerHits, LocationPropertyResponse propertyResponse)
+  private void addPersonsToLocationProperties(Map<String, SearchHits> innerHits,
+      LocationPropertyResponse propertyResponse)
       throws JsonProcessingException {
     propertyResponse.setPersons(new ArrayList<>());
     ObjectMapper mapper = new ObjectMapper();
-    if(innerHits.containsKey("person")) {
-      for(SearchHit hit : innerHits.get("person")) {
-        String source = hit.getSourceAsString();
-        PersonElastic personElastic = mapper.readValue(source, PersonElastic.class);
-        propertyResponse.getPersons().add(PersonMainDataResponseFactory.fromPersonElasticSummary(personElastic));
+    if (innerHits != null) {
+      if (innerHits.containsKey("person")) {
+        for (SearchHit hit : innerHits.get("person")) {
+          String source = hit.getSourceAsString();
+          PersonElastic personElastic = mapper.readValue(source, PersonElastic.class);
+          propertyResponse.getPersons()
+              .add(PersonMainDataResponseFactory.fromPersonElasticSummary(personElastic));
+        }
       }
     }
 
@@ -554,79 +561,91 @@ public class EntityFilterService {
   public NestedQueryBuilder nestedPersonQuery(List<EntityFilterRequest> requests)
       throws ParseException {
     BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
-    for(EntityFilterRequest req : requests) {
+    for (EntityFilterRequest req : requests) {
       if (req.getRange() == null && req.getValues() == null) {
         boolQueryBuilder.must(mustStatement(req));
-      }else if(req.getSearchValue() == null && req.getValues() == null) {
+      } else if (req.getSearchValue() == null && req.getValues() == null) {
         boolQueryBuilder.must(rangeStatement(req));
-      } else if(req.getSearchValue() == null && req.getRange() == null) {
+      } else if (req.getSearchValue() == null && req.getRange() == null) {
         boolQueryBuilder.must(shouldStatement(req));
-    }else {
-      throw new ConflictException("Request object bad formatted.");
-    }
+      } else {
+        throw new ConflictException("Request object bad formatted.");
+      }
     }
     return QueryBuilders.nestedQuery("person", boolQueryBuilder, ScoreMode.None).innerHit(
         new InnerHitBuilder());
   }
 
   private BoolQueryBuilder mustStatement(EntityFilterRequest request) throws ParseException {
-    LookupEntityType lookupEntityType = lookupEntityTypeService.getLookUpEntityTypeById(request.getEntityIdentifier());
+    LookupEntityType lookupEntityType = lookupEntityTypeService.getLookUpEntityTypeById(
+        request.getEntityIdentifier());
     BoolQueryBuilder andStatement = QueryBuilders.boolQuery();
     String searchField;
-    if(request.getFieldType().equals("tag")){
-        EntityTag entityTag = entityTagService.getEntityTagByIdentifier(request.getFieldIdentifier());
-        if(entityTag.getValueType().equals("date")) {
-          prepareDate(request);
-        }
-      searchField = lookupEntityType.getTableName().concat(".metadata.");
-      andStatement.must(QueryBuilders.matchQuery(searchField.concat("type"), entityTag.getTag()));
-      if(request.getSearchValue().getSign() == SignEntity.EQ) {
-        andStatement.must(QueryBuilders.matchQuery(searchField.concat("value"), request.getSearchValue().getValue()));
-      }else {
-        andStatement.must(rangeQuery(request.getSearchValue().getSign(), searchField.concat("value"), request.getSearchValue().getValue()));
+    if (request.getFieldType().equals("tag")) {
+      EntityTag entityTag = entityTagService.getEntityTagByIdentifier(request.getFieldIdentifier());
+      if (entityTag.getValueType().equals("date")) {
+        prepareDate(request);
       }
-      }else if(request.getFieldType().equals("core")){
-        CoreField coreField = coreFieldService.getCoreFieldByIdentifier(request.getFieldIdentifier());
-        if(coreField.getValueType().equals("date")) {
-          prepareDate(request);
-        }
-        searchField = lookupEntityType.getTableName().concat(".").concat(coreField.getField());
-        if(request.getSearchValue().getSign() == SignEntity.EQ) {
-          andStatement.must(QueryBuilders.matchQuery(searchField, request.getSearchValue().getValue()));
-        }else {
-          andStatement.must(rangeQuery(request.getSearchValue().getSign(), searchField, request.getSearchValue().getValue()));
-        }
+      if (lookupEntityType.getTableName().equals("location")) {
+        searchField = "metadata.";
       } else {
+        searchField = lookupEntityType.getTableName().concat(".metadata.");
+      }
+      andStatement.must(QueryBuilders.matchQuery(searchField.concat("tag"), entityTag.getTag()));
+      if (request.getSearchValue().getSign() == SignEntity.EQ) {
+        andStatement.must(QueryBuilders.matchQuery(searchField.concat("value"),
+            request.getSearchValue().getValue()));
+      } else {
+        andStatement.must(
+            rangeQuery(request.getSearchValue().getSign(), searchField.concat("value"),
+                request.getSearchValue().getValue()));
+      }
+    } else if (request.getFieldType().equals("core")) {
+      CoreField coreField = coreFieldService.getCoreFieldByIdentifier(request.getFieldIdentifier());
+      if (coreField.getValueType().equals("date")) {
+        prepareDate(request);
+      }
+      searchField = lookupEntityType.getTableName().concat(".").concat(coreField.getField());
+      if (request.getSearchValue().getSign() == SignEntity.EQ) {
+        andStatement.must(
+            QueryBuilders.matchQuery(searchField, request.getSearchValue().getValue()));
+      } else {
+        andStatement.must(rangeQuery(request.getSearchValue().getSign(), searchField,
+            request.getSearchValue().getValue()));
+      }
+    } else {
       throw new ConflictException("Unexpected field type: " + request.getFieldType());
     }
     return andStatement;
   }
 
   private BoolQueryBuilder shouldStatement(EntityFilterRequest request) throws ParseException {
-    LookupEntityType lookupEntityType = lookupEntityTypeService.getLookUpEntityTypeById(request.getEntityIdentifier());
+    LookupEntityType lookupEntityType = lookupEntityTypeService.getLookUpEntityTypeById(
+        request.getEntityIdentifier());
 
     BoolQueryBuilder shouldStatement = QueryBuilders.boolQuery();
     String searchField;
-    if(request.getFieldType().equals("tag")){
+    if (request.getFieldType().equals("tag")) {
       EntityTag entityTag = entityTagService.getEntityTagByIdentifier(request.getFieldIdentifier());
-      if(entityTag.getValueType().equals("date")) {
+      if (entityTag.getValueType().equals("date")) {
         prepareDate(request);
       }
       searchField = lookupEntityType.getTableName().concat(".metadata.");
-      shouldStatement.must(QueryBuilders.matchQuery(searchField.concat("type"), entityTag.getTag()));
+      shouldStatement.must(
+          QueryBuilders.matchQuery(searchField.concat("type"), entityTag.getTag()));
       BoolQueryBuilder orStatement = QueryBuilders.boolQuery();
-      for(SearchValue value : request.getValues()) {
+      for (SearchValue value : request.getValues()) {
         orStatement.should(QueryBuilders.matchQuery(searchField.concat("value"), value.getValue()));
       }
       shouldStatement.must(orStatement);
       return shouldStatement;
-    }else if(request.getFieldType().equals("core")){
+    } else if (request.getFieldType().equals("core")) {
       CoreField coreField = coreFieldService.getCoreFieldByIdentifier(request.getFieldIdentifier());
-      if(coreField.getValueType().equals("date")) {
+      if (coreField.getValueType().equals("date")) {
         prepareDate(request);
       }
       searchField = lookupEntityType.getTableName().concat(".").concat(coreField.getField());
-      for(SearchValue value : request.getValues()) {
+      for (SearchValue value : request.getValues()) {
         shouldStatement.should(QueryBuilders.matchQuery(searchField, value.getValue()));
       }
       return shouldStatement;
@@ -637,12 +656,14 @@ public class EntityFilterService {
 
   private BoolQueryBuilder rangeStatement(EntityFilterRequest request) throws ParseException {
     BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
-    LookupEntityType lookupEntityType = lookupEntityTypeService.getLookUpEntityTypeById(request.getEntityIdentifier());
+    LookupEntityType lookupEntityType = lookupEntityTypeService.getLookUpEntityTypeById(
+        request.getEntityIdentifier());
     String searchField;
-    if(request.getRange().getMaxValue() != null && request.getRange().getMinValue() != null) {
-      if(request.getFieldType().equals("tag")){
-        EntityTag entityTag = entityTagService.getEntityTagByIdentifier(request.getFieldIdentifier());
-        if(entityTag.getValueType().equals("date")) {
+    if (request.getRange().getMaxValue() != null && request.getRange().getMinValue() != null) {
+      if (request.getFieldType().equals("tag")) {
+        EntityTag entityTag = entityTagService.getEntityTagByIdentifier(
+            request.getFieldIdentifier());
+        if (entityTag.getValueType().equals("date")) {
           prepareDate(request);
         }
         searchField = lookupEntityType.getTableName().concat(".metadata.");
@@ -650,9 +671,10 @@ public class EntityFilterService {
         boolQuery.must(QueryBuilders.rangeQuery(searchField.concat("value"))
             .lte(request.getRange().getMaxValue())
             .gte(request.getRange().getMinValue()));
-      }else if(request.getFieldType().equals("core")){
-        CoreField coreField = coreFieldService.getCoreFieldByIdentifier(request.getFieldIdentifier());
-        if(coreField.getValueType().equals("date")) {
+      } else if (request.getFieldType().equals("core")) {
+        CoreField coreField = coreFieldService.getCoreFieldByIdentifier(
+            request.getFieldIdentifier());
+        if (coreField.getValueType().equals("date")) {
           prepareDate(request);
         }
         searchField = lookupEntityType.getTableName().concat(".").concat(coreField.getField());
@@ -662,16 +684,16 @@ public class EntityFilterService {
       } else {
         throw new ConflictException("Unexpected field type: " + request.getFieldType());
       }
-    }else {
+    } else {
       throw new ConflictException("Must set min and max value for range.");
     }
 
     return boolQuery;
   }
 
-  private RangeQueryBuilder rangeQuery(SignEntity sign, String searchField,Object value) {
+  private RangeQueryBuilder rangeQuery(SignEntity sign, String searchField, Object value) {
     RangeQueryBuilder rangeQuery = new RangeQueryBuilder(searchField);
-    switch (sign){
+    switch (sign) {
       case GT:
         rangeQuery.gt(value);
         break;
@@ -691,11 +713,12 @@ public class EntityFilterService {
   private void prepareDate(EntityFilterRequest req) throws ParseException {
     SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH);
     if (req.getRange() == null && req.getValues() == null) {
-      req.getSearchValue().setValue(formatter.parse((String) req.getSearchValue().getValue()).getTime());
+      req.getSearchValue()
+          .setValue(formatter.parse((String) req.getSearchValue().getValue()).getTime());
 
-    }else if(req.getSearchValue() == null && req.getValues() == null) {
+    } else if (req.getSearchValue() == null && req.getValues() == null) {
 
-    } else if(req.getSearchValue() == null && req.getRange() == null) {
+    } else if (req.getSearchValue() == null && req.getRange() == null) {
 
     }
   }
@@ -703,13 +726,17 @@ public class EntityFilterService {
   public PersonMainData getPersonsDetails(UUID personIdentifier) throws IOException {
     ObjectMapper mapper = new ObjectMapper();
     SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
-    sourceBuilder.query(QueryBuilders.nestedQuery("person", QueryBuilders.termQuery("person.identifier", personIdentifier.toString()),ScoreMode.None).innerHit(new InnerHitBuilder()));
+    sourceBuilder.query(QueryBuilders.nestedQuery("person",
+            QueryBuilders.termQuery("person.identifier", personIdentifier.toString()), ScoreMode.None)
+        .innerHit(new InnerHitBuilder()));
     SearchRequest searchRequest = new SearchRequest("location");
     searchRequest.source(sourceBuilder);
     SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
-    if(Arrays.stream(searchResponse.getHits().getHits()).findFirst().isPresent()) {
-      for(SearchHit hit : Arrays.stream(searchResponse.getHits().getHits()).findFirst().get().getInnerHits().get("person")) {
-        PersonElastic personElastic  = mapper.readValue(hit.getSourceAsString(), PersonElastic.class);
+    if (Arrays.stream(searchResponse.getHits().getHits()).findFirst().isPresent()) {
+      for (SearchHit hit : Arrays.stream(searchResponse.getHits().getHits()).findFirst().get()
+          .getInnerHits().get("person")) {
+        PersonElastic personElastic = mapper.readValue(hit.getSourceAsString(),
+            PersonElastic.class);
         return PersonMainDataResponseFactory.fromPersonElastic(personElastic);
       }
     }

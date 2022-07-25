@@ -16,14 +16,16 @@ import lombok.Setter;
 public class EntityMetadataElastic {
 
   private String type;
+  private String tag;
   private Object value;
-  private MetadataElastic metadata;
+  private MetadataElastic meta;
   private boolean isActive = true;
 
   public EntityMetadataElastic(MetaDataEvent metadataObj) {
     this.type = metadataObj.getType();
+    this.tag = metadataObj.getTag();
     this.isActive = metadataObj.isActive();
-    this.metadata = MetadataElastic.builder()
+    this.meta = MetadataElastic.builder()
         .planId(metadataObj.getTagData().getMeta().getPlanId().toString())
         .userId(metadataObj.getTagData().getMeta().getUserId())
         .createDateTime(ElasticModelUtil.toDateFromLocalDateTime(metadataObj.getTagData().getMeta().getCreateDateTime()))
