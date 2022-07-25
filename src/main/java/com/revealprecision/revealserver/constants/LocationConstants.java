@@ -1,7 +1,7 @@
 package com.revealprecision.revealserver.constants;
 
-public class LocationConstants {
+public interface LocationConstants {
 
-  public static final String STRUCTURE = "structure";
-  public static final String OPERATIONAL = "operational";
+  String STRUCTURE = "structure";
+  String OPERATIONAL = "operational";
 }

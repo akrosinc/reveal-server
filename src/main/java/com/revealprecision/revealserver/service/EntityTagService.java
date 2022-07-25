@@ -96,7 +96,7 @@ public class EntityTagService {
         lookupEntityTypeIdentifier);
     List<EntityTagResponse> response = new ArrayList<>();
 
-    lookupEntityType.getEntityTags().forEach(entityTag -> response.add(EntityTagResponseFactory.fromEntity(entityTag)));
+    lookupEntityType.getEntityTags().stream().filter(EntityTag::isAddToMetadata).forEach(entityTag -> response.add(EntityTagResponseFactory.fromEntity(entityTag)));
 
     lookupEntityType.getCoreFields().forEach(coreField -> response.add(EntityTagResponseFactory.fromCoreField(coreField)));
     return response;
