@@ -7,6 +7,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.data.elasticsearch.annotations.Field;
+import org.springframework.data.elasticsearch.annotations.FieldType;
 
 @Getter
 @Setter
@@ -15,9 +17,14 @@ import lombok.Setter;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class EntityMetadataElastic {
 
+  @Field(type = FieldType.Text)
   private String type;
+  @Field(type = FieldType.Text)
   private String tag;
   private Object value;
+  @Field(type = FieldType.Double)
+  private Object valueNumber;
+  @Field(type = FieldType.Flattened)
   private MetadataElastic meta;
   private boolean isActive = true;
 
@@ -38,10 +45,10 @@ public class EntityMetadataElastic {
         this.value = metadataObj.getTagData().getValue().getValueString();
         break;
       case "integer":
-        this.value = metadataObj.getTagData().getValue().getValueInteger();
+        this.valueNumber = metadataObj.getTagData().getValue().getValueInteger();
         break;
       case "double":
-        this.value = metadataObj.getTagData().getValue().getValueDouble();
+        this.valueNumber = metadataObj.getTagData().getValue().getValueDouble();
         break;
       case "date":
         this.value = metadataObj.getTagData().getValue().getValueDate();
