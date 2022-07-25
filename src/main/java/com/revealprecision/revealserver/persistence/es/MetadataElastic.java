@@ -22,5 +22,4 @@ public class MetadataElastic {
   private Date updateDateTime;
   private String taskId;
   private String taskType;
-
 }
