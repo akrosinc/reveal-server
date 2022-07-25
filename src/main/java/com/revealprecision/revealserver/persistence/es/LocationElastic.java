@@ -41,7 +41,7 @@ public class LocationElastic {
   @Field(type = FieldType.Flattened)
   private List<Map<String, List<String>>> ancestry = new ArrayList<>();
 
-  @Field(type = FieldType.Flattened)
+  @Field(type = FieldType.Nested)
   private List<EntityMetadataElastic> metadata = new ArrayList<>();
 
   @GeoShapeField
