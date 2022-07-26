@@ -48,6 +48,7 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.index.query.AbstractQueryBuilder;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.InnerHitBuilder;
 import org.elasticsearch.index.query.NestedQueryBuilder;
@@ -576,10 +577,11 @@ public class EntityFilterService {
         new InnerHitBuilder());
   }
 
-  private BoolQueryBuilder mustStatement(EntityFilterRequest request) throws ParseException {
+  private AbstractQueryBuilder<?> mustStatement(EntityFilterRequest request) throws ParseException {
     LookupEntityType lookupEntityType = lookupEntityTypeService.getLookUpEntityTypeById(
         request.getEntityIdentifier());
     BoolQueryBuilder andStatement = QueryBuilders.boolQuery();
+
     String searchField;
     if (request.getFieldType().equals("tag")) {
       EntityTag entityTag = entityTagService.getEntityTagByIdentifier(request.getFieldIdentifier());
@@ -591,15 +593,27 @@ public class EntityFilterService {
       } else {
         searchField = lookupEntityType.getTableName().concat(".metadata.");
       }
-      andStatement.must(QueryBuilders.matchQuery(searchField.concat("tag"), entityTag.getTag()));
-      if (request.getSearchValue().getSign() == SignEntity.EQ) {
+      andStatement.must(
+          QueryBuilders.matchPhraseQuery(searchField.concat("tag"), entityTag.getTag()));
+
+      if (entityTag.getValueType().equals("string")) {
+        andStatement.must(QueryBuilders.matchPhraseQuery(searchField.concat("value"),
+            request.getSearchValue().getValue()));
+      } else if (entityTag.getValueType().equals("integer")) {
+        if (request.getSearchValue().getSign().equals(SignEntity.EQ)) {
+          andStatement.must(QueryBuilders.matchQuery(searchField.concat("valueNumber"),
+              request.getSearchValue().getValue()));
+        } else {
+          andStatement.must(
+              rangeQuery(request.getSearchValue().getSign(), searchField.concat("valueNumber"),
+                  request.getSearchValue().getValue()));
+        }
+      } else {
         andStatement.must(QueryBuilders.matchQuery(searchField.concat("value"),
             request.getSearchValue().getValue()));
-      } else {
-        andStatement.must(
-            rangeQuery(request.getSearchValue().getSign(), searchField.concat("value"),
-                request.getSearchValue().getValue()));
       }
+      return QueryBuilders.nestedQuery("metadata", andStatement,
+          ScoreMode.None);
     } else if (request.getFieldType().equals("core")) {
       CoreField coreField = coreFieldService.getCoreFieldByIdentifier(request.getFieldIdentifier());
       if (coreField.getValueType().equals("date")) {
@@ -619,7 +633,8 @@ public class EntityFilterService {
     return andStatement;
   }
 
-  private BoolQueryBuilder shouldStatement(EntityFilterRequest request) throws ParseException {
+  private AbstractQueryBuilder<?> shouldStatement(EntityFilterRequest request)
+      throws ParseException {
     LookupEntityType lookupEntityType = lookupEntityTypeService.getLookUpEntityTypeById(
         request.getEntityIdentifier());
 
@@ -630,15 +645,34 @@ public class EntityFilterService {
       if (entityTag.getValueType().equals("date")) {
         prepareDate(request);
       }
-      searchField = lookupEntityType.getTableName().concat(".metadata.");
+      if (lookupEntityType.getTableName().equals("location")) {
+        searchField = "metadata.";
+      } else {
+        searchField = lookupEntityType.getTableName().concat(".metadata.");
+      }
       shouldStatement.must(
-          QueryBuilders.matchQuery(searchField.concat("type"), entityTag.getTag()));
+          QueryBuilders.matchPhraseQuery(searchField.concat("tag"), entityTag.getTag()));
       BoolQueryBuilder orStatement = QueryBuilders.boolQuery();
       for (SearchValue value : request.getValues()) {
-        orStatement.should(QueryBuilders.matchQuery(searchField.concat("value"), value.getValue()));
+        if (entityTag.getValueType().equals("string")) {
+          orStatement.should(
+              QueryBuilders.matchPhraseQuery(searchField.concat("value"), value.getValue()));
+        } else if (entityTag.getValueType().equals("integer")) {
+          if (value.getSign().equals(SignEntity.EQ)) {
+            orStatement.should(QueryBuilders.matchQuery(searchField.concat("valueNumber"),
+                value.getValue()));
+          } else {
+            orStatement.should(
+                rangeQuery(value.getSign(), searchField.concat("valueNumber"), value.getValue()));
+          }
+        } else {
+          orStatement.should(QueryBuilders.matchQuery(searchField.concat("value"),
+              value.getValue()));
+        }
       }
       shouldStatement.must(orStatement);
-      return shouldStatement;
+      return QueryBuilders.nestedQuery("metadata", shouldStatement,
+          ScoreMode.None);
     } else if (request.getFieldType().equals("core")) {
       CoreField coreField = coreFieldService.getCoreFieldByIdentifier(request.getFieldIdentifier());
       if (coreField.getValueType().equals("date")) {
@@ -654,7 +688,7 @@ public class EntityFilterService {
     }
   }
 
-  private BoolQueryBuilder rangeStatement(EntityFilterRequest request) throws ParseException {
+  private AbstractQueryBuilder<?> rangeStatement(EntityFilterRequest request) throws ParseException {
     BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
     LookupEntityType lookupEntityType = lookupEntityTypeService.getLookUpEntityTypeById(
         request.getEntityIdentifier());
@@ -666,11 +700,22 @@ public class EntityFilterService {
         if (entityTag.getValueType().equals("date")) {
           prepareDate(request);
         }
-        searchField = lookupEntityType.getTableName().concat(".metadata.");
-        boolQuery.must(QueryBuilders.matchQuery(searchField.concat("type"), entityTag.getTag()));
-        boolQuery.must(QueryBuilders.rangeQuery(searchField.concat("value"))
+
+        if (lookupEntityType.getTableName().equals("location")) {
+          searchField = "metadata.";
+        } else {
+          searchField = lookupEntityType.getTableName().concat(".metadata.");
+        }
+        boolQuery.must(QueryBuilders.matchPhraseQuery(searchField.concat("tag"), entityTag.getTag()));
+        String searchFieldName = "value";
+        if (entityTag.getValueType().equals("integer")){
+          searchFieldName = "valueNumber";
+        }
+        boolQuery.must(QueryBuilders.rangeQuery(searchField.concat(searchFieldName))
             .lte(request.getRange().getMaxValue())
             .gte(request.getRange().getMinValue()));
+        return QueryBuilders.nestedQuery("metadata", boolQuery,
+            ScoreMode.None);
       } else if (request.getFieldType().equals("core")) {
         CoreField coreField = coreFieldService.getCoreFieldByIdentifier(
             request.getFieldIdentifier());
