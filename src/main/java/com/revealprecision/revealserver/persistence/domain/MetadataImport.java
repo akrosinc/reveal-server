@@ -1,15 +1,18 @@
 package com.revealprecision.revealserver.persistence.domain;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.revealprecision.revealserver.enums.BulkEntryStatus;
 import com.revealprecision.revealserver.persistence.domain.metadata.LocationMetadata;
 import java.time.LocalDateTime;
 import java.util.Set;
 import java.util.UUID;
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.OneToMany;
@@ -52,5 +55,6 @@ public class MetadataImport extends AbstractAuditableEntity {
   private BulkEntryStatus status;
 
   @OneToMany(mappedBy = "metadataImport")
+  @JsonIgnore
   private Set<LocationMetadata> locationMetadataSet;
 }

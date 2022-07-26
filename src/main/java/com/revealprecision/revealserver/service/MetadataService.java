@@ -2,7 +2,10 @@ package com.revealprecision.revealserver.service;
 
 import com.revealprecision.revealserver.api.v1.dto.factory.EntityTagEventFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.LocationMetadataEventFactory;
+import com.revealprecision.revealserver.api.v1.dto.factory.MetadataImportResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.PersonMetadataEventFactory;
+import com.revealprecision.revealserver.api.v1.dto.response.LocationMetadataImport;
+import com.revealprecision.revealserver.api.v1.dto.response.MetadataFileImportResponse;
 import com.revealprecision.revealserver.enums.BulkEntryStatus;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.constants.KafkaConstants;
@@ -96,13 +99,14 @@ public class MetadataService {
   public Object updateMetaData(UUID identifier, Object tagValue,
       Plan plan, UUID taskIdentifier,
       String user, String dataType, EntityTagEvent tag, String type, Object entity, String taskType,
-      Class<?> aClass, String tagKey, String finalDateForScopeDateFields1) {
+      Class<?> aClass, String tagKey, String finalDateForScopeDateFields1,
+      MetadataImport metadataImport) {
     if (aClass == Person.class) {
       return updatePersonMetadata(identifier, tagValue, plan, taskIdentifier, user, dataType, tag,
           type, (Person) entity, taskType, tagKey, finalDateForScopeDateFields1);
     } else if (aClass == Location.class) {
       return updateLocationMetadata(identifier, tagValue, plan, taskIdentifier, user, dataType, tag,
-          type, (Location) entity, taskType, tagKey, finalDateForScopeDateFields1);
+          type, (Location) entity, taskType, tagKey, finalDateForScopeDateFields1, metadataImport);
     }
     return null;
   }
@@ -162,7 +166,8 @@ public class MetadataService {
       //TODO: check this
       personMetadata.setPerson(person);
 
-      MetadataObj metadataObj = getMetadataObj(tagValue,  plan == null ? null : plan.getIdentifier(), taskIdentifier, user,
+      MetadataObj metadataObj = getMetadataObj(tagValue, plan == null ? null : plan.getIdentifier(),
+          taskIdentifier, user,
           dataType, tag, type, taskType, tagKey, dateForScopeDateFields);
 
       MetadataList metadataList = new MetadataList();
@@ -192,7 +197,8 @@ public class MetadataService {
       Plan plan, UUID taskIdentifier,
       String user, String dataType, EntityTagEvent locationEntityTag, String type,
       Location location,
-      String taskType, String tagKey, String dateForScopeDateFields) {
+      String taskType, String tagKey, String dateForScopeDateFields,
+      MetadataImport metadataImport) {
 
     LocationMetadata locationMetadata;
 
@@ -273,8 +279,10 @@ public class MetadataService {
 
       location.setIdentifier(locationIdentifier);
       locationMetadata.setLocation(location);
+      locationMetadata.setMetadataImport(metadataImport);
 
-      MetadataObj metadataObj = getMetadataObj(tagValue, plan == null ? null : plan.getIdentifier(), taskIdentifier, user,
+      MetadataObj metadataObj = getMetadataObj(tagValue, plan == null ? null : plan.getIdentifier(),
+          taskIdentifier, user,
           dataType, locationEntityTag, type, taskType, tagKey, dateForScopeDateFields);
 
       MetadataList metadataList = new MetadataList();
@@ -516,6 +524,7 @@ public class MetadataService {
     }
     user = userService.getByKeycloakId(keycloakId);
     metadataImport.setUploadedBy(user.getUsername());
+    MetadataImport currentMetaImport = metadataImportRepository.save(metadataImport);
 
     try (XSSFWorkbook workbook = new XSSFWorkbook(file)) {
       XSSFSheet sheet = workbook.getSheetAt(0);
@@ -555,30 +564,41 @@ public class MetadataService {
                     EntityTagEventFactory.getEntityTagEvent(et), "ImportData",
                     loc,
                     "File import", Location.class,
-                    et.getTag(), null);
+                    et.getTag(), null, currentMetaImport);
               }
             });
           }
         });
       }
       storageService.deleteFile(file);
-      metadataImport.setStatus(BulkEntryStatus.SUCCESSFUL);
-      metadataImportRepository.save(metadataImport);
-      return metadataImport.getIdentifier();
+      currentMetaImport.setStatus(BulkEntryStatus.SUCCESSFUL);
+      return metadataImportRepository.save(currentMetaImport).getIdentifier();
     } catch (Exception e) {
       log.error(e.getMessage(), e);
       storageService.deleteFile(file);
-      metadataImport.setStatus(BulkEntryStatus.FAILED);
-      metadataImportRepository.save(metadataImport);
+      currentMetaImport.setStatus(BulkEntryStatus.FAILED);
+      metadataImportRepository.save(currentMetaImport);
       throw new FileFormatException(e.getMessage());
     }
   }
 
-  public Page<?> getMetadataImportList(Pageable pageable) {
-    return metadataImportRepository.findAll(pageable);
+  public Page<MetadataFileImportResponse> getMetadataImportList(Pageable pageable) {
+    return MetadataImportResponseFactory.fromEntityPage(metadataImportRepository.findAll(pageable), pageable);
   }
 
-  public List<LocationMetadata> getMetadataImportDetails(UUID metaImportIdentifier) {
-    return locationMetadataRepository.findByMetaimport_identifier(metaImportIdentifier);
+  public List<LocationMetadataImport> getMetadataImportDetails(UUID metaImportIdentifier) {
+    Optional<MetadataImport> metadataImport = metadataImportRepository.findById(
+        metaImportIdentifier);
+    if (metadataImport.isPresent()) {
+      List<LocationMetadataImport> locationMetadataImports = new ArrayList<>();
+      metadataImport.get().getLocationMetadataSet().forEach(el -> {
+        locationMetadataImports.add(LocationMetadataImport.builder().identifier(el.getIdentifier())
+            .locationIdentifier(el.getLocation().getIdentifier()).entityValue(el.getEntityValue())
+            .build());
+      });
+      return locationMetadataImports;
+    } else {
+      throw new NotFoundException("MetaImport not found.");
+    }
   }
 }

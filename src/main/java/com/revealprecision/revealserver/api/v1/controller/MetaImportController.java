@@ -3,6 +3,7 @@ package com.revealprecision.revealserver.api.v1.controller;
 import com.revealprecision.revealserver.api.v1.dto.factory.LocationBulkResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.response.IdentifierResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationBulkResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.MetadataFileImportResponse;
 import com.revealprecision.revealserver.exceptions.FileFormatException;
 import com.revealprecision.revealserver.service.MetadataService;
 import com.revealprecision.revealserver.service.StorageService;
@@ -52,7 +53,7 @@ public class MetaImportController {
       description = "Get List of Metadata Import files",
       tags = {"Metadata import"})
   @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<Page<?>> getMetadataImportList(Pageable pageable) {
+  public ResponseEntity<Page<MetadataFileImportResponse>> getMetadataImportList(Pageable pageable) {
     return ResponseEntity.status(HttpStatus.OK)
         .body(metadataService.getMetadataImportList(pageable));
   }

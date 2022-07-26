@@ -27,7 +27,4 @@ public interface LocationMetadataRepository extends JpaRepository<LocationMetada
       @Param("value") String value,
       @Param("parentLocationIdentifier") UUID parentLocationIdentifier);
 
-  @Query(value = "SELECT * FROM location_metadata l WHERE l.metaimport_identifier = :metadataIdentifier", nativeQuery = true)
-  List<LocationMetadata> findByMetaimport_identifier(UUID metadataIdentifier);
-
 }
