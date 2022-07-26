@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.persistence.repository;
 
 import com.revealprecision.revealserver.persistence.domain.metadata.LocationMetadata;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -25,5 +26,8 @@ public interface LocationMetadataRepository extends JpaRepository<LocationMetada
   int countLocationMetadataByTagAndStringValueForParentLocation(@Param("tagType") String tagType,
       @Param("value") String value,
       @Param("parentLocationIdentifier") UUID parentLocationIdentifier);
+
+  @Query(value = "SELECT * FROM location_metadata l WHERE l.metaimport_identifier = :metadataIdentifier", nativeQuery = true)
+  List<LocationMetadata> findByMetaimport_identifier(UUID metadataIdentifier);
 
 }

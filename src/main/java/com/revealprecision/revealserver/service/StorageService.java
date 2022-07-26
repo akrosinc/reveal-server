@@ -20,6 +20,7 @@ public class StorageService {
 
   public static final String BATCH_LOCATION_PATH = "batch.location";
   public static final String BATCH_TEMPLATE_PATH = "batch.template";
+  public static final String MATADATA_IMPORT_PATH = "batch.metaImport";
   private final Environment environment;
 
 
@@ -29,6 +30,23 @@ public class StorageService {
       throw new FileFormatException("Wrong file format. You can upload only .csv file!");
     }
     String path = environment.getProperty(BATCH_LOCATION_PATH) + file.getOriginalFilename();
+    Path filePath = Paths.get(path);
+    try {
+      file.transferTo(filePath);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    return path;
+  }
+
+  public String saveXlsx(MultipartFile file) {
+    if (!file.getContentType()
+        .equals("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        && !(file.getContentType()
+        .equals("application/vnd.ms-excel"))) {
+      throw new FileFormatException("Wrong file format. You can upload only .xlsx file!");
+    }
+    String path = environment.getProperty(MATADATA_IMPORT_PATH) + file.getOriginalFilename();
     Path filePath = Paths.get(path);
     try {
       file.transferTo(filePath);
