@@ -32,3 +32,6 @@ CREATE TABLE IF NOT EXISTS metadata_import_aud
 
 ALTER TABLE location_metadata
 ADD COLUMN metaImport_identifier UUID;
+
+ALTER TABLE location_metadata_aud
+ADD COLUMN metaImport_identifier UUID;

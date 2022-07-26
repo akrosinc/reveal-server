@@ -16,12 +16,12 @@ public class LocationMetadataEventFactory {
       LocationMetadata savedLocationMetadata) {
     LocationMetadataEvent locationMetadataEvent = new LocationMetadataEvent();
     locationMetadataEvent.setPlanTargetType(
-        plan.getPlanTargetType().getGeographicLevel().getName());
+        plan == null ? null : plan.getPlanTargetType().getGeographicLevel().getName());
     locationMetadataEvent.setIdentifier(savedLocationMetadata.getIdentifier());
     if (location != null) {
       locationMetadataEvent.setEntityGeographicLevel(location.getGeographicLevel().getName());
     }
-    locationMetadataEvent.setHierarchyIdentifier(plan.getLocationHierarchy().getIdentifier());
+    locationMetadataEvent.setHierarchyIdentifier(plan == null ? null : plan.getLocationHierarchy().getIdentifier());
     locationMetadataEvent.setMetaDataEvents(
         savedLocationMetadata.getEntityValue().getMetadataObjs().stream()
             .map(MetadataEventFactory::getMetaDataEvent).collect(
