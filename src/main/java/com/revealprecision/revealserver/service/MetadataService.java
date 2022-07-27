@@ -556,13 +556,18 @@ public class MetadataService {
                   .collect(Collectors.toList());
               if (!collect.isEmpty()) {
                 EntityTag et = collect.get(0);
-                updateMetaData(metaImportDTO.getLocationIdentifier(), importEntityTagValue,
-                    null,
-                    null, user.getIdentifier().toString(), et.getValueType(),
-                    EntityTagEventFactory.getEntityTagEvent(et), "ImportData",
-                    loc,
-                    "File import", Location.class,
-                    et.getTag(), null, currentMetaImport);
+                try {
+                  updateMetaData(metaImportDTO.getLocationIdentifier(), importEntityTagValue,
+                      null,
+                      null, user.getIdentifier().toString(), et.getValueType(),
+                      EntityTagEventFactory.getEntityTagEvent(et), "ImportData",
+                      loc,
+                      "File import", Location.class,
+                      et.getTag(), null, currentMetaImport);
+                } catch (Exception e) {
+                  // we need to handle import exceptions here and save them to the table
+                  e.getSuppressed();
+                }
               }
             });
           }
