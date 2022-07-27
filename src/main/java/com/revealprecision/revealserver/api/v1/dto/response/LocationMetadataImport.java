@@ -19,5 +19,7 @@ public class LocationMetadataImport {
 
   private UUID locationIdentifier;
 
+  private String locationName;
+
   private MetadataList entityValue;
 }

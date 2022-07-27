@@ -12,6 +12,7 @@ public class LocationMetadataImportFactory {
   public static LocationMetadataImport fromEntity(LocationMetadata locationMetadata) {
     return LocationMetadataImport.builder().identifier(locationMetadata.getIdentifier())
         .locationIdentifier(locationMetadata.getLocation().getIdentifier())
+        .locationName(locationMetadata.getLocation().getName())
         .entityValue(locationMetadata.getEntityValue())
         .build();
   }

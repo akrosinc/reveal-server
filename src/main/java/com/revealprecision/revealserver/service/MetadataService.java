@@ -547,6 +547,7 @@ public class MetadataService {
 
         metaImportDTOS.forEach(metaImportDTO -> {
           Map<String, String> currentLocEntityTags = metaImportDTO.getEntityTags();
+          //TODO: call location without GeoJson for performance improvements
           Location loc = locationService.findByIdentifier(metaImportDTO.getLocationIdentifier());
           if (!currentLocEntityTags.isEmpty()) {
             // map trough entity tags and set the values
@@ -565,7 +566,7 @@ public class MetadataService {
                       "File import", Location.class,
                       et.getTag(), null, currentMetaImport);
                 } catch (Exception e) {
-                  // we need to handle import exceptions here and save them to the table
+                  //TODO: Need to handle import exceptions here and save them to the table
                   e.getSuppressed();
                 }
               }
