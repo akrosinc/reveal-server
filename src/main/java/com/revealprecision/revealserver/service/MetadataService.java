@@ -2,6 +2,7 @@ package com.revealprecision.revealserver.service;
 
 import com.revealprecision.revealserver.api.v1.dto.factory.EntityTagEventFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.LocationMetadataEventFactory;
+import com.revealprecision.revealserver.api.v1.dto.factory.LocationMetadataImportFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.MetadataImportResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.PersonMetadataEventFactory;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationMetadataImport;
@@ -11,7 +12,6 @@ import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.constants.KafkaConstants;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.messaging.message.EntityTagEvent;
-import com.revealprecision.revealserver.enums.BulkStatusEnum;
 import com.revealprecision.revealserver.exceptions.FileFormatException;
 import com.revealprecision.revealserver.messaging.message.LocationMetadataEvent;
 import com.revealprecision.revealserver.messaging.message.Message;
@@ -43,7 +43,6 @@ import java.security.Principal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -57,7 +56,6 @@ import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.SerializationUtils;
-import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.keycloak.KeycloakPrincipal;
@@ -551,7 +549,7 @@ public class MetadataService {
           Map<String, String> currentLocEntityTags = metaImportDTO.getEntityTags();
           Location loc = locationService.findByIdentifier(metaImportDTO.getLocationIdentifier());
           if (!currentLocEntityTags.isEmpty()) {
-            // we need to map trough entity tags and set the values most efficient way?
+            // map trough entity tags and set the values
             currentLocEntityTags.forEach((entityTagName, importEntityTagValue) -> {
               List<EntityTag> collect = entityTagList.stream()
                   .filter(entityTag -> entityTag.getTag().equals(entityTagName))
@@ -592,9 +590,7 @@ public class MetadataService {
     if (metadataImport.isPresent()) {
       List<LocationMetadataImport> locationMetadataImports = new ArrayList<>();
       metadataImport.get().getLocationMetadataSet().forEach(el -> {
-        locationMetadataImports.add(LocationMetadataImport.builder().identifier(el.getIdentifier())
-            .locationIdentifier(el.getLocation().getIdentifier()).entityValue(el.getEntityValue())
-            .build());
+        locationMetadataImports.add(LocationMetadataImportFactory.fromEntity(el));
       });
       return locationMetadataImports;
     } else {
