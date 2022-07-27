@@ -59,7 +59,7 @@ public class EntityTagController {
   @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<Page<EntityTagResponse>> getAll(Pageable pageable) {
     return ResponseEntity.status(HttpStatus.OK)
-        .body(EntityTagResponseFactory.fromEntityPage(entityTagService.getAllEntityTags(pageable)));
+        .body(EntityTagResponseFactory.fromEntityPage(entityTagService.getAllEntityTags(pageable), pageable));
   }
 
   @GetMapping("/{entityTypeIdentifier}")

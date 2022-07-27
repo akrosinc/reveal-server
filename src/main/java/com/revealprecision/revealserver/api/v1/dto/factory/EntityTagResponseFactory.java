@@ -8,13 +8,14 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class EntityTagResponseFactory {
 
-  public static Page<EntityTagResponse> fromEntityPage(Page<EntityTag> entityTagPages) {
+  public static Page<EntityTagResponse> fromEntityPage(Page<EntityTag> entityTagPages, Pageable pageable) {
     return new PageImpl<>(entityTagPages.stream().map(EntityTagResponseFactory::fromEntity)
-        .collect(Collectors.toList()));
+        .collect(Collectors.toList()), pageable, entityTagPages.getTotalElements());
   }
 
   public static EntityTagResponse fromEntity(EntityTag entityTag) {
