@@ -6,6 +6,7 @@ import com.revealprecision.revealserver.persistence.domain.metadata.metadataImpo
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 
@@ -36,8 +37,10 @@ public class MetaFieldSetMapper {
               metaImportDTO.setGeographicLevel(row.getCell(j).toString());
               break;
             default:
+              //set all dynamic cells to string type to avoid conversion issues
+              row.getCell(j).setCellType(CellType.STRING);
               metaImportDTO.getEntityTags()
-                  .put(sheet.getRow(0).getCell(j).toString(), row.getCell(j).toString());
+                  .put(sheet.getRow(0).getCell(j).toString(), row.getCell(j).getStringCellValue());
               break;
           }
         }

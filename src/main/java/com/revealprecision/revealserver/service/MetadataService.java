@@ -43,9 +43,11 @@ import java.security.Principal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
@@ -262,7 +264,8 @@ public class MetadataService {
 
       } else {
         // tag does not exist in list
-        MetadataObj metadataObj = getMetadataObj(tagValue, plan.getIdentifier(), taskIdentifier,
+        MetadataObj metadataObj = getMetadataObj(tagValue,
+            plan == null ? null : plan.getIdentifier(), taskIdentifier,
             user,
             dataType, locationEntityTag, type, taskType, tagKey, dateForScopeDateFields);
 
@@ -567,7 +570,7 @@ public class MetadataService {
                       et.getTag(), null, currentMetaImport);
                 } catch (Exception e) {
                   //TODO: Need to handle import exceptions here and save them to the table
-                  e.getSuppressed();
+                  log.error(e.getMessage(), e);
                 }
               }
             });
@@ -587,7 +590,8 @@ public class MetadataService {
   }
 
   public Page<MetadataFileImportResponse> getMetadataImportList(Pageable pageable) {
-    return MetadataImportResponseFactory.fromEntityPage(metadataImportRepository.findAll(pageable), pageable);
+    return MetadataImportResponseFactory.fromEntityPage(metadataImportRepository.findAll(pageable),
+        pageable);
   }
 
   public List<LocationMetadataImport> getMetadataImportDetails(UUID metaImportIdentifier) {
