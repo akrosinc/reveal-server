@@ -74,6 +74,8 @@ dependencies {
     implementation 'ca.uhn.hapi.fhir:hapi-fhir-server:5.6.2'
     implementation 'ca.uhn.hapi.fhir:hapi-fhir-structures-r4:5.6.2'
     implementation 'org.springframework.cloud:spring-cloud-starter-sleuth'
+    implementation 'org.apache.poi:poi:5.2.2'
+    implementation 'org.apache.poi:poi-ooxml:5.2.2'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test:2.5.6'
     testImplementation 'org.springframework.batch:spring-batch-test:4.3.3'

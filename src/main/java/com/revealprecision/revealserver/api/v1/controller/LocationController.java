@@ -9,9 +9,11 @@ import com.revealprecision.revealserver.enums.SummaryEnum;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import com.revealprecision.revealserver.service.LocationRelationshipService;
 import com.revealprecision.revealserver.service.LocationService;
+import com.revealprecision.revealserver.util.UserUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -58,7 +60,9 @@ public class LocationController {
   public ResponseEntity<LocationResponse> findLocationById(
       @Parameter(description = "Location Identifier") @PathVariable UUID identifier) {
     return ResponseEntity.status(HttpStatus.OK)
-        .body(LocationResponseFactory.fromEntityWithChildCount(locationService.findByIdentifier(identifier), locationRelationshipService.getNumberOfChildren(identifier)));
+        .body(LocationResponseFactory.fromEntityWithChildCount(
+            locationService.findByIdentifier(identifier),
+            locationRelationshipService.getNumberOfChildren(identifier)));
   }
 
   @Operation(summary = "Search for Locations",
@@ -105,16 +109,32 @@ public class LocationController {
   public ResponseEntity<List<LocationResponse>> getLocationByParentIdentifier(
       @PathVariable UUID parentLocationIdentifier, @PathVariable UUID planIdentifier) {
     return ResponseEntity.ok(locationService.getLocationsByParentIdentifierAndPlanIdentifier(
-        parentLocationIdentifier, planIdentifier).stream().map(planLocationDetails -> LocationResponseFactory.fromPlanLocationDetails(planLocationDetails, parentLocationIdentifier)
+        parentLocationIdentifier, planIdentifier).stream().map(
+        planLocationDetails -> LocationResponseFactory.fromPlanLocationDetails(planLocationDetails,
+            parentLocationIdentifier)
     ).collect(Collectors.toList()));
   }
 
   @GetMapping("/{locationIdentifier}/{planIdentifier}")
   public ResponseEntity<LocationResponse> getLocationDetailsByIdentifierAndPlanIdentifier(
       @PathVariable UUID locationIdentifier, @PathVariable UUID planIdentifier) {
-    PlanLocationDetails planLocationDetails = locationService.getLocationDetailsByIdentifierAndPlanIdentifier(locationIdentifier, planIdentifier);
-    planLocationDetails.setChildrenNumber(locationRelationshipService.getNumberOfChildren(locationIdentifier));
+    PlanLocationDetails planLocationDetails = locationService.getLocationDetailsByIdentifierAndPlanIdentifier(
+        locationIdentifier, planIdentifier);
+    planLocationDetails.setChildrenNumber(
+        locationRelationshipService.getNumberOfChildren(locationIdentifier));
     return ResponseEntity.status(HttpStatus.OK)
         .body(LocationResponseFactory.fromPlanLocationDetails(planLocationDetails, null));
+  }
+
+  @GetMapping("/download/{hierarchyIdentifier}/{geographicLevelName}")
+  public ResponseEntity<?> downloadLocations(@PathVariable UUID hierarchyIdentifier,
+      @PathVariable String geographicLevelName, @RequestParam ArrayList<UUID> entityTags)
+      throws IOException {
+    UUID userId = UUID.fromString(UserUtils.getCurrentPrinciple().getName());
+    return ResponseEntity.status(HttpStatus.OK)
+        .contentType(MediaType.APPLICATION_OCTET_STREAM)
+        .header("Content-disposition", "attachment;filename=Location.xlsx")
+        .body(locationService.downloadLocations(hierarchyIdentifier, geographicLevelName, userId,
+            entityTags));
   }
 }
