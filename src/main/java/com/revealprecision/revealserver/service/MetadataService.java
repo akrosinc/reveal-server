@@ -560,17 +560,12 @@ public class MetadataService {
                   .collect(Collectors.toList());
               if (!collect.isEmpty()) {
                 EntityTag et = collect.get(0);
-                try {
-                  updateMetaData(metaImportDTO.getLocationIdentifier(), importEntityTagValue,
-                      null,
-                      null, user.getIdentifier().toString(), et.getValueType(),
-                      EntityTagEventFactory.getEntityTagEvent(et), "ImportData",
-                      loc,
-                      "File import", Location.class,
-                      et.getTag(), null, currentMetaImport);
-                } catch (Exception e) {
-                  //TODO: Need to handle import exceptions here and save them to the table
-                  log.error(e.getMessage(), e);
+                int numValue;
+                if (Objects.equals(et.getValueType(), "integer")) {
+                  numValue = Integer.parseInt(importEntityTagValue);
+                  update(user, currentMetaImport, metaImportDTO, loc, numValue, et);
+                } else {
+                  update(user, currentMetaImport, metaImportDTO, loc, importEntityTagValue, et);
                 }
               }
             });
@@ -586,6 +581,23 @@ public class MetadataService {
       currentMetaImport.setStatus(BulkEntryStatus.FAILED);
       metadataImportRepository.save(currentMetaImport);
       throw new FileFormatException(e.getMessage());
+    }
+  }
+
+  private void update(User user, MetadataImport currentMetaImport, MetaImportDTO metaImportDTO,
+      Location loc, Object importEntityTagValue, EntityTag et) {
+    try {
+      updateMetaData(
+          metaImportDTO.getLocationIdentifier(), importEntityTagValue,
+          null,
+          null, user.getIdentifier().toString(), et.getValueType(),
+          EntityTagEventFactory.getEntityTagEvent(et), "ImportData",
+          loc,
+          "File import", Location.class,
+          et.getTag(), null, currentMetaImport);
+    } catch (Exception e) {
+      //TODO: Need to handle import exceptions here and save them to the table
+      log.error(e.getMessage(), e);
     }
   }
 
