@@ -545,9 +545,7 @@ public class MetadataService {
 
         metaImportDTOS.forEach(metaImportDTO -> {
           Map<String, String> currentLocEntityTags = metaImportDTO.getEntityTags();
-          //TODO: call location without GeoJson for performance improvements
-          //TODO: create a custom projection to return everything without GeoJson
-          Location loc = locationService.findByIdentifier(metaImportDTO.getLocationIdentifier());
+          Location loc = locationService.findByIdentifierWithoutGeoJson(metaImportDTO.getLocationIdentifier());
           if (!currentLocEntityTags.isEmpty()) {
             // map trough entity tags and set the values
             currentLocEntityTags.forEach((entityTagName, importEntityTagValue) -> {

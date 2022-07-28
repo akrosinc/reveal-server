@@ -4,6 +4,7 @@ import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.projection.LocationCoordinatesProjection;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -36,17 +37,19 @@ public interface LocationRepository extends JpaRepository<Location, UUID> {
   LocationCoordinatesProjection getLocationCentroidCoordinatesByIdentifier(UUID locationIdentifier);
 
   @Query(value = "select ST_AsText(ST_Centroid(st_geomfromgeojson(l.geometry))) from location l where l.identifier = :identifier", nativeQuery = true)
-  String getCentroid(@Param("identifier")UUID identifier);
+  String getCentroid(@Param("identifier") UUID identifier);
 
-  @Query(value = "select new com.revealprecision.revealserver.persistence.projection.PlanLocationDetails(l, count(pl), count(pa)) from Location l "
-      + "left join PlanLocations pl on l.identifier = pl.location.identifier and pl.plan.identifier = :planIdentifier "
-      + "left join PlanAssignment pa on pa.planLocations.identifier = pl.identifier "
-      + "left join Plan pn on pn.identifier = :planIdentifier "
-      + "left join LocationRelationship lr on lr.locationHierarchy = pn.locationHierarchy.identifier and lr.location.identifier = :locationIdentifier "
-      + "where l.identifier = :locationIdentifier group by l.identifier")
-  PlanLocationDetails getLocationDetailsByIdentifierAndPlanIdentifier(@Param("locationIdentifier")UUID locationIdentifier,
+  @Query(value =
+      "select new com.revealprecision.revealserver.persistence.projection.PlanLocationDetails(l, count(pl), count(pa)) from Location l "
+          + "left join PlanLocations pl on l.identifier = pl.location.identifier and pl.plan.identifier = :planIdentifier "
+          + "left join PlanAssignment pa on pa.planLocations.identifier = pl.identifier "
+          + "left join Plan pn on pn.identifier = :planIdentifier "
+          + "left join LocationRelationship lr on lr.locationHierarchy = pn.locationHierarchy.identifier and lr.location.identifier = :locationIdentifier "
+          + "where l.identifier = :locationIdentifier group by l.identifier")
+  PlanLocationDetails getLocationDetailsByIdentifierAndPlanIdentifier(
+      @Param("locationIdentifier") UUID locationIdentifier,
       @Param("planIdentifier") UUID planIdentifier);
-  
+
   @Query(value = "WITH RECURSIVE ancestors(id, parent_id, lvl) AS ( "
       + "      SELECT lr.location_identifier, lr.parent_identifier,1 AS lvl "
       + "      FROM location_relationship lr "
@@ -75,7 +78,14 @@ public interface LocationRepository extends JpaRepository<Location, UUID> {
       + "    where gl.name NOT IN :nodeList and parent.location_hierarchy_identifier = :hierarchyIdentifier"
       + "     ) "
       + "      select cast(a.id as varchar) from ancestors a", nativeQuery = true)
-  List<UUID> getAllLocationChildrenNotLike(UUID locationIdentifier, UUID hierarchyIdentifier, List<String> nodeList);
+  List<UUID> getAllLocationChildrenNotLike(UUID locationIdentifier, UUID hierarchyIdentifier,
+      List<String> nodeList);
 
   List<Location> getLocationsByPeople_Identifier(UUID personIdentifier);
+
+  @Query(value =
+      "select new com.revealprecision.revealserver.persistence.domain.Location"
+          + "(l.identifier, l.type, l.name, l.status, l.externalId, l.geographicLevel, l.locationBulk)"
+          + " from Location l where l.identifier = :identifier")
+  Optional<Location> findByIdentifierWithoutGeoJson(UUID identifier);
 }
