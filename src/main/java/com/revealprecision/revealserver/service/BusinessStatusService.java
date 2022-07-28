@@ -45,7 +45,7 @@ public class BusinessStatusService {
       metadataService.updateLocationMetadata(task.getBaseEntityIdentifier(), businessStatus,
           plan, task.getIdentifier(), UserUtils.getCurrentPrincipleName(), "string",
           EntityTagEventFactory.getEntityTagEvent(locationEntityTag), baseBusinessStatusTagName, task.getLocation(),
-          task.getAction().getTitle(), businessStatusTagKey, null, null);
+          task.getAction().getTitle(), businessStatusTagKey, null);
     }
 
     if (ActionUtils.isActionForPerson(task.getAction())) {

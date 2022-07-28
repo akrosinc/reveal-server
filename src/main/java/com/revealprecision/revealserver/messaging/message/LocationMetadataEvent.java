@@ -17,6 +17,7 @@ import lombok.ToString;
 public class LocationMetadataEvent extends TMetadataEvent {
   private String planTargetType;
   private String entityGeographicLevel;
+  private String locationName;
 
 
 }

@@ -99,14 +99,13 @@ public class MetadataService {
   public Object updateMetaData(UUID identifier, Object tagValue,
       Plan plan, UUID taskIdentifier,
       String user, String dataType, EntityTagEvent tag, String type, Object entity, String taskType,
-      Class<?> aClass, String tagKey, String finalDateForScopeDateFields1,
-      MetadataImport metadataImport) {
+      Class<?> aClass, String tagKey, String finalDateForScopeDateFields1) {
     if (aClass == Person.class) {
       return updatePersonMetadata(identifier, tagValue, plan, taskIdentifier, user, dataType, tag,
           type, (Person) entity, taskType, tagKey, finalDateForScopeDateFields1);
     } else if (aClass == Location.class) {
       return updateLocationMetadata(identifier, tagValue, plan, taskIdentifier, user, dataType, tag,
-          type, (Location) entity, taskType, tagKey, finalDateForScopeDateFields1, metadataImport);
+          type, (Location) entity, taskType, tagKey, finalDateForScopeDateFields1);
     }
     return null;
   }
@@ -197,8 +196,7 @@ public class MetadataService {
       Plan plan, UUID taskIdentifier,
       String user, String dataType, EntityTagEvent locationEntityTag, String type,
       Location location,
-      String taskType, String tagKey, String dateForScopeDateFields,
-      MetadataImport metadataImport) {
+      String taskType, String tagKey, String dateForScopeDateFields) {
 
     LocationMetadata locationMetadata;
 
@@ -280,7 +278,6 @@ public class MetadataService {
 
       location.setIdentifier(locationIdentifier);
       locationMetadata.setLocation(location);
-      locationMetadata.setMetadataImport(metadataImport);
 
       MetadataObj metadataObj = getMetadataObj(tagValue, plan == null ? null : plan.getIdentifier(),
           taskIdentifier, user,
@@ -551,6 +548,7 @@ public class MetadataService {
         metaImportDTOS.forEach(metaImportDTO -> {
           Map<String, String> currentLocEntityTags = metaImportDTO.getEntityTags();
           //TODO: call location without GeoJson for performance improvements
+          //TODO: create a custom projection to return everything without GeoJson
           Location loc = locationService.findByIdentifier(metaImportDTO.getLocationIdentifier());
           if (!currentLocEntityTags.isEmpty()) {
             // map trough entity tags and set the values
@@ -587,14 +585,21 @@ public class MetadataService {
   private void update(User user, MetadataImport currentMetaImport, MetaImportDTO metaImportDTO,
       Location loc, Object importEntityTagValue, EntityTag et) {
     try {
-      updateMetaData(
+      LocationMetadata locationMetadata = (LocationMetadata) updateMetaData(
           metaImportDTO.getLocationIdentifier(), importEntityTagValue,
           null,
           null, user.getIdentifier().toString(), et.getValueType(),
           EntityTagEventFactory.getEntityTagEvent(et), "ImportData",
           loc,
           "File import", Location.class,
-          et.getTag(), null, currentMetaImport);
+          et.getTag(), null);
+
+      currentMetaImport.getLocationMetadataEvents().add(
+          LocationMetadataEventFactory.getLocationMetadataEvent(null,
+              locationMetadata.getLocation(),
+              locationMetadata));
+
+      metadataImportRepository.save(currentMetaImport);
     } catch (Exception e) {
       //TODO: Need to handle import exceptions here and save them to the table
       log.error(e.getMessage(), e);
@@ -611,7 +616,8 @@ public class MetadataService {
         metaImportIdentifier);
     if (metadataImport.isPresent()) {
       List<LocationMetadataImport> locationMetadataImports = new ArrayList<>();
-      metadataImport.get().getLocationMetadataSet().forEach(el -> {
+      metadataImport.get().getLocationMetadataEvents().forEach(el -> {
+        //TODO: create a custom DTO for MetaDataEvent
         locationMetadataImports.add(LocationMetadataImportFactory.fromEntity(el));
       });
       return locationMetadataImports;

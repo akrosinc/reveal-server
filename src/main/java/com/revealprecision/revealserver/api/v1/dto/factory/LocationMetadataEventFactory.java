@@ -19,6 +19,7 @@ public class LocationMetadataEventFactory {
         plan == null ? null : plan.getPlanTargetType().getGeographicLevel().getName());
     locationMetadataEvent.setIdentifier(savedLocationMetadata.getIdentifier());
     if (location != null) {
+      locationMetadataEvent.setLocationName(location.getName());
       locationMetadataEvent.setEntityGeographicLevel(location.getGeographicLevel().getName());
     }
     locationMetadataEvent.setHierarchyIdentifier(plan == null ? null : plan.getLocationHierarchy().getIdentifier());

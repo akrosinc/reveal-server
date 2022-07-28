@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS metadata_import
     created_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,
     modified_by       VARCHAR(36)              NOT NULL,
     modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    location_metadata_events jsonb,
     PRIMARY KEY (identifier)
 );
 
@@ -27,11 +28,6 @@ CREATE TABLE IF NOT EXISTS metadata_import_aud
     created_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,
     modified_by       VARCHAR(36)              NOT NULL,
     modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    location_metadata_events jsonb,
     PRIMARY KEY (identifier, REV)
 );
-
-ALTER TABLE location_metadata
-ADD COLUMN metaImport_identifier UUID;
-
-ALTER TABLE location_metadata_aud
-ADD COLUMN metaImport_identifier UUID;

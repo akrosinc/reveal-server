@@ -7,6 +7,7 @@ import com.revealprecision.revealserver.persistence.domain.MetadataImport;
 import com.revealprecision.revealserver.persistence.domain.UserBulk;
 import com.revealprecision.revealserver.persistence.domain.metadata.infra.MetadataList;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
+import java.io.Serializable;
 import java.util.UUID;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -52,9 +53,5 @@ public class LocationMetadata extends AbstractAuditableEntity {
         "MetadataList["+entityValue.toString()+"],"+
         "Location["+location.getName()+"]";
   }
-
-  @ManyToOne
-  @JoinColumn(name = "metaimport_identifier")
-  private MetadataImport metadataImport;
 
 }

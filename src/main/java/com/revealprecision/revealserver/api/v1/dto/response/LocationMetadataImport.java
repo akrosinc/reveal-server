@@ -1,6 +1,8 @@
 package com.revealprecision.revealserver.api.v1.dto.response;
 
+import com.revealprecision.revealserver.messaging.message.MetaDataEvent;
 import com.revealprecision.revealserver.persistence.domain.metadata.infra.MetadataList;
+import java.util.List;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -21,5 +23,5 @@ public class LocationMetadataImport {
 
   private String locationName;
 
-  private MetadataList entityValue;
+  private List<MetaDataEvent> entityValue;
 }

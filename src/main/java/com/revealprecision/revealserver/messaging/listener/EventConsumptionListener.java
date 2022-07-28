@@ -205,8 +205,7 @@ public class EventConsumptionListener extends Listener {
         metadataTitle,
         Location.class,
         tag,
-        dateForScopeDateFields,
-        null);
+        dateForScopeDateFields);
   }
 
   private String getTagKey(Task task, FormDataEntityTagEvent eventMetadata,
