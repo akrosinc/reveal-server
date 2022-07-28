@@ -43,7 +43,6 @@ import java.security.Principal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -82,7 +81,6 @@ public class MetadataService {
   private final MetadataImportRepository metadataImportRepository;
   private final UserService userService;
   private final StorageService storageService;
-  private final KafkaTemplate<String, Message> kafkaTemplate;
   private final EntityTagService entityTagService;
 
   public LocationMetadata getLocationMetadataByLocation(UUID locationIdentifier) {
