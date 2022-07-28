@@ -500,6 +500,7 @@ public class EntityFilterService {
     }
 
     SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+    sourceBuilder.size(10000);
     sourceBuilder.query(boolQuery);
     SearchRequest searchRequest = new SearchRequest("location");
     searchRequest.source(sourceBuilder);
