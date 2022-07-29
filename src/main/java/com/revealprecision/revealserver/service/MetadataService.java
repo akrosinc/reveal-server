@@ -597,12 +597,6 @@ public class MetadataService {
 
       metadataImportRepository.save(currentMetaImport);
     } catch (Exception e) {
-      currentMetaImport.getLocationMetadataEvents().add(
-              LocationMetadataEventFactory.getLocationMetadataEvent(null,
-                      loc,
-                      new LocationMetadata()));
-
-      metadataImportRepository.save(currentMetaImport);
       //TODO: Need to handle import exceptions here and save them to the table
       log.error(e.getMessage(), e);
     }
