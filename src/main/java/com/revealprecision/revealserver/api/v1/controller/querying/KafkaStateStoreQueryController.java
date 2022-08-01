@@ -16,6 +16,7 @@ import com.revealprecision.revealserver.messaging.message.PersonFormDataCountAgg
 import com.revealprecision.revealserver.messaging.message.TaskAggregate;
 import com.revealprecision.revealserver.messaging.message.TaskEvent;
 import com.revealprecision.revealserver.messaging.message.TreatedOperationalAreaAggregate;
+import com.revealprecision.revealserver.messaging.message.UserAggregate;
 import com.revealprecision.revealserver.props.KafkaProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,6 +43,31 @@ public class KafkaStateStoreQueryController<T> {
   private final KafkaProperties kafkaProperties;
   private final KafkaTemplate<String, Message> kafkaTemplate;
 
+
+  @GetMapping("/userPerformance")
+  public void userPerformance() {
+    KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
+    ReadOnlyKeyValueStore<String, UserAggregate> counts = kafkaStreams.store(
+        StoreQueryParameters.fromNameAndType(
+            kafkaProperties.getStoreMap()
+                .get(KafkaConstants.userPerformance),
+            QueryableStoreTypes.keyValueStore())
+    );
+    iterateThroughStore(counts);
+  }
+
+
+  @GetMapping("/userPerformanceSums")
+  public void userPerformanceSums() {
+    KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
+    ReadOnlyKeyValueStore<String, UserAggregate> counts = kafkaStreams.store(
+        StoreQueryParameters.fromNameAndType(
+            kafkaProperties.getStoreMap()
+                .get(KafkaConstants.userPerformanceSums),
+            QueryableStoreTypes.keyValueStore())
+    );
+    iterateThroughStore(counts);
+  }
 
   @GetMapping("/cddSupervisorLocationFormDataIntegerSumOrAverage")
   public void cddSupervisorLocationFormDataIntegerSumOrAverage() {

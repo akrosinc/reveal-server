@@ -2,8 +2,8 @@ package com.revealprecision.revealserver.service;
 
 import com.revealprecision.revealserver.api.v1.dto.factory.LocationMetadataEventFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.PersonMetadataEventFactory;
-import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.constants.KafkaConstants;
+import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.messaging.message.EntityTagEvent;
 import com.revealprecision.revealserver.messaging.message.LocationMetadataEvent;
 import com.revealprecision.revealserver.messaging.message.PersonMetadataEvent;
@@ -162,8 +162,9 @@ public class MetadataService {
 
   public LocationMetadata updateLocationMetadata(UUID locationIdentifier, Object tagValue,
       Plan plan, UUID taskIdentifier,
-      String user, String dataType, EntityTagEvent locationEntityTag, String type, Location location,
-      String taskType, String tagKey,  String dateForScopeDateFields) {
+      String user, String dataType, EntityTagEvent locationEntityTag, String type,
+      Location location,
+      String taskType, String tagKey, String dateForScopeDateFields) {
 
     LocationMetadata locationMetadata;
 
@@ -171,9 +172,9 @@ public class MetadataService {
         locationIdentifier);
     if (locationMetadataOptional.isPresent()) {
 
-
       OptionalInt optionalArrIndex = OptionalInt.empty();
-      if (locationEntityTag.getScope()==null ||  (locationEntityTag.getScope() != null && !locationEntityTag.getScope().equals("Date"))){
+      if (locationEntityTag.getScope() == null || (locationEntityTag.getScope() != null
+          && !locationEntityTag.getScope().equals("Date"))) {
         optionalArrIndex = IntStream.range(0,
                 locationMetadataOptional.get().getEntityValue().getMetadataObjs().size())
             .filter(
@@ -185,10 +186,13 @@ public class MetadataService {
         optionalArrIndex = IntStream.range(0,
                 locationMetadataOptional.get().getEntityValue().getMetadataObjs().size())
             .filter(
-                i -> locationMetadataOptional.get().getEntityValue().getMetadataObjs().get(i).getTag()
+                i -> locationMetadataOptional.get().getEntityValue().getMetadataObjs().get(i)
+                    .getTag()
                     .equals(locationEntityTag.getTag())
-                    && (!locationMetadataOptional.get().getEntityValue().getMetadataObjs().get(i).isDateScope() ||
-                    locationMetadataOptional.get().getEntityValue().getMetadataObjs().get(i).getDateForDateScope().equals(dateForScopeDateFields)))
+                    && (!locationMetadataOptional.get().getEntityValue().getMetadataObjs().get(i)
+                    .isDateScope() ||
+                    locationMetadataOptional.get().getEntityValue().getMetadataObjs().get(i)
+                        .getDateForDateScope().equals(dateForScopeDateFields)))
             .findFirst();
       }
       if (optionalArrIndex.isPresent()) {
@@ -211,11 +215,14 @@ public class MetadataService {
 
         locationMetadata.getEntityValue().getMetadataObjs().get(arrIndex).setActive(true);
 
-        if (locationEntityTag.getScope().equals("Date")){
+        if (locationEntityTag.getScope().equals("Date")) {
           if (dateForScopeDateFields != null) {
-            locationMetadata.getEntityValue().getMetadataObjs().get(arrIndex).setDateForDateScope(dateForScopeDateFields);
+            locationMetadata.getEntityValue().getMetadataObjs().get(arrIndex)
+                .setDateForDateScope(dateForScopeDateFields);
             locationMetadata.getEntityValue().getMetadataObjs().get(arrIndex).setDateScope(true);
-            locationMetadata.getEntityValue().getMetadataObjs().get(arrIndex).setCaptureNumber(LocalDate.parse(dateForScopeDateFields,DateTimeFormatter.ISO_LOCAL_DATE).toEpochDay());
+            locationMetadata.getEntityValue().getMetadataObjs().get(arrIndex).setCaptureNumber(
+                LocalDate.parse(dateForScopeDateFields, DateTimeFormatter.ISO_LOCAL_DATE)
+                    .toEpochDay());
           }
         }
 
@@ -358,8 +365,13 @@ public class MetadataService {
 
         PersonMetadata savedPersonMetadata = personMetadataRepository.save(personMetadata);
 
+        List<Location> locationsByPeople = locationService.getLocationsByPeople(
+            personMetadata.getPerson().getIdentifier());
+
         PersonMetadataEvent personMetadataEvent = PersonMetadataEventFactory.getPersonMetadataEvent(
-            plan, null, savedPersonMetadata);
+            plan,
+            locationsByPeople.stream().map(Location::getIdentifier).collect(Collectors.toList()),
+            savedPersonMetadata);
 
         personMetadataKafkaTemplate.send(
             kafkaProperties.getTopicMap().get(KafkaConstants.PERSON_METADATA_UPDATE),
@@ -379,7 +391,8 @@ public class MetadataService {
 
   private MetadataObj getMetadataObj(Object tagValue, UUID planIdentifier, UUID taskIdentifier,
       String user,
-      String dataType, EntityTagEvent tag, String type, String taskType, String tagKey,String dateForScopeDateFields) {
+      String dataType, EntityTagEvent tag, String type, String taskType, String tagKey,
+      String dateForScopeDateFields) {
     Metadata metadata = new Metadata();
     metadata.setPlanId(planIdentifier);
     metadata.setTaskId(taskIdentifier);
@@ -403,11 +416,12 @@ public class MetadataService {
     metadataObj.setActive(true);
     metadataObj.setTagKey(tagKey);
 
-    if (tag.getScope().equals("Date")){
+    if (tag.getScope().equals("Date")) {
       if (dateForScopeDateFields != null) {
         metadataObj.setDateForDateScope(dateForScopeDateFields);
         metadataObj.setDateScope(true);
-        metadataObj.setCaptureNumber(LocalDate.parse(dateForScopeDateFields,DateTimeFormatter.ISO_LOCAL_DATE).toEpochDay());
+        metadataObj.setCaptureNumber(
+            LocalDate.parse(dateForScopeDateFields, DateTimeFormatter.ISO_LOCAL_DATE).toEpochDay());
       }
     }
 

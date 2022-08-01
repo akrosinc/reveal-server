@@ -2,20 +2,36 @@
 <configuration>
   <springProperty scope="context" name="loggingPath" source="reveal.logging.path"/>
   <springProperty scope="context" name="loggingFileName" source="reveal.logging.file-name"/>
-  <springProperty scope="context" name="loggingStreamFileName" source="reveal.logging.stream-file-name"/>
-  <springProperty scope="context" name="loggingRollingFileName" source="reveal.logging.rolling-file-name"/>
-  <springProperty scope="context" name="loggingStreamRollingFileName" source="reveal.logging.stream-rolling-file-name"/>
+  <springProperty scope="context" name="loggingStreamFileName"
+    source="reveal.logging.stream-file-name"/>
+  <springProperty scope="context" name="loggingRollingFileName"
+    source="reveal.logging.rolling-file-name"/>
+  <springProperty scope="context" name="loggingStreamRollingFileName"
+    source="reveal.logging.stream-rolling-file-name"/>
   <springProperty scope="context" name="loggingPattern" source="reveal.logging.pattern"/>
   <springProperty scope="context" name="maxHistory" source="reveal.logging.max-history"/>
   <springProperty scope="context" name="maxFileSize" source="reveal.logging.max-file-size"/>
   <springProperty scope="context" name="totalSizeCap" source="reveal.logging.total-size-cap"/>
-  <springProperty scope="context" name="loggingLocationImportFileName" source="reveal.logging.location-import-file-name"/>
-  <springProperty scope="context" name="loggingLocationImportRollingFileName" source="reveal.logging.location-import-rolling-file-name"/>
-  <springProperty scope="context" name="loggingMonitorFileName" source="reveal.logging.monitor-file-name"/>
-  <springProperty scope="context" name="loggingMonitorRollingFileName" source="reveal.logging.monitor-rolling-file-name"/>
-  <springProperty scope="context" name="loggingFormDataFileName" source="reveal.logging.form-data-file-name"/>
-  <springProperty scope="context" name="loggingFormDataRollingFileName" source="reveal.logging.form-data-rolling-file-name"/>
-
+  <springProperty scope="context" name="loggingLocationImportFileName"
+    source="reveal.logging.location-import-file-name"/>
+  <springProperty scope="context" name="loggingLocationImportRollingFileName"
+    source="reveal.logging.location-import-rolling-file-name"/>
+  <springProperty scope="context" name="loggingMonitorFileName"
+    source="reveal.logging.monitor-file-name"/>
+  <springProperty scope="context" name="loggingMonitorRollingFileName"
+    source="reveal.logging.monitor-rolling-file-name"/>
+  <springProperty scope="context" name="loggingFormDataFileName"
+    source="reveal.logging.form-data-file-name"/>
+  <springProperty scope="context" name="loggingFormDataRollingFileName"
+    source="reveal.logging.form-data-rolling-file-name"/>
+  <springProperty scope="context" name="loggingTaskDataFileName"
+    source="reveal.logging.task-data-file-name"/>
+  <springProperty scope="context" name="loggingTaskDataRollingFileName"
+    source="reveal.logging.task-data-rolling-file-name"/>
+  <springProperty scope="context" name="loggingUserPerformanceFileName"
+    source="reveal.logging.user-performance-data-file-name"/>
+  <springProperty scope="context" name="loggingUserPerformanceRollingFileName"
+    source="reveal.logging.user-performance-rolling-file-name"/>
 
   <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
     <encoder>
@@ -84,24 +100,50 @@
     </encoder>
   </appender>
 
-  <logger name="stream-file" level="DEBUG" additivity="false" >
-    <appender-ref ref="STREAM-FILE" />
+  <appender name="USER-PERFORMANCE-FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${loggingPath}${loggingUserPerformanceFileName}</file>
+    <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+      <fileNamePattern>${loggingPath}${loggingUserPerformanceRollingFileName}</fileNamePattern>
+      <maxFileSize>${maxFileSize}</maxFileSize>
+    </rollingPolicy>
+    <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+      <pattern>${loggingPattern}</pattern>
+    </encoder>
+  </appender>
+
+  <appender name="TASK-DATA-FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${loggingPath}${loggingTaskDataFileName}</file>
+    <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+      <fileNamePattern>${loggingPath}${loggingTaskDataRollingFileName}</fileNamePattern>
+      <maxFileSize>${maxFileSize}</maxFileSize>
+    </rollingPolicy>
+    <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+      <pattern>${loggingPattern}</pattern>
+    </encoder>
+  </appender>
+
+  <logger name="stream-file" level="DEBUG" additivity="false">
+    <appender-ref ref="STREAM-FILE"/>
   </logger>
 
-  <logger name="monitor-file" level="DEBUG" additivity="false" >
-    <appender-ref ref="MONITOR-FILE" />
+  <logger name="monitor-file" level="DEBUG" additivity="false">
+    <appender-ref ref="MONITOR-FILE"/>
   </logger>
 
-  <logger name="location-import-file" level="DEBUG" additivity="false" >
-    <appender-ref ref="LOCATION-IMPORT-FILE" />
+  <logger name="location-import-file" level="DEBUG" additivity="false">
+    <appender-ref ref="LOCATION-IMPORT-FILE"/>
   </logger>
 
-  <logger name="form-data-file" level="DEBUG" additivity="false" >
-    <appender-ref ref="FORM-DATA-FILE" />
+  <logger name="user-performance-file" level="DEBUG" additivity="false">
+    <appender-ref ref="USER-PERFORMANCE-FILE"/>
+  </logger>
+
+  <logger name="task-data-file" level="DEBUG" additivity="false">
+    <appender-ref ref="TASK-DATA-FILE"/>
   </logger>
 
   <root level="INFO">
-    <appender-ref ref="FILE" />
+    <appender-ref ref="FILE"/>
     <appender-ref ref="STDOUT"/>
   </root>
 </configuration>

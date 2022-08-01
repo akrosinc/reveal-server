@@ -94,7 +94,7 @@ public class KafkaConfig {
     props.put(DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass().getName());
 
     props.put(JsonDeserializer.TRUSTED_PACKAGES,
-        "com.revealprecision.revealserver.messaging.message");
+        "com.revealprecision.revealserver.messaging.*");
     props.put(StreamsConfig.DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG,
         RecoveringDeserializationExceptionHandler.class);
     props.put(RecoveringDeserializationExceptionHandler.KSTREAM_DESERIALIZATION_RECOVERER,

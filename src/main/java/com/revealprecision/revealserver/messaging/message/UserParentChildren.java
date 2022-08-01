@@ -1,23 +1,20 @@
 package com.revealprecision.revealserver.messaging.message;
 
+import java.util.Set;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.ToString;
 
 
-@Setter
-@Getter
 @AllArgsConstructor
+@Getter
+@Setter
 @NoArgsConstructor
-@ToString
-public class LocationFormDataSumAggregateEvent extends Message {
+public class UserParentChildren extends Message {
 
-  private Long sum;
-  private Long counter;
-  private Double average;
-  private UUID entityTagIdentifier;
-
+  private UUID planIdentifier;
+  private UserLevel parent;
+  private Set<UserLevel> children;
 }

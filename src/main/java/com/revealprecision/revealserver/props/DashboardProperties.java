@@ -7,6 +7,13 @@ import static com.revealprecision.revealserver.service.dashboard.DashboardServic
 import static com.revealprecision.revealserver.service.dashboard.DashboardService.STRUCTURE_LEVEL;
 import static com.revealprecision.revealserver.service.dashboard.DashboardService.SUPERVISOR_LEVEL;
 import static com.revealprecision.revealserver.service.dashboard.IRSDashboardService.SPRAY_COVERAGE_OF_TARGETED;
+import static com.revealprecision.revealserver.service.dashboard.IrsPerformanceDashboardService.BOTTLES_USED;
+import static com.revealprecision.revealserver.service.dashboard.IrsPerformanceDashboardService.END_TIME;
+import static com.revealprecision.revealserver.service.dashboard.IrsPerformanceDashboardService.FOUND;
+import static com.revealprecision.revealserver.service.dashboard.IrsPerformanceDashboardService.HOURS_WORKED;
+import static com.revealprecision.revealserver.service.dashboard.IrsPerformanceDashboardService.NOT_SPRAYED;
+import static com.revealprecision.revealserver.service.dashboard.IrsPerformanceDashboardService.SPRAYED;
+import static com.revealprecision.revealserver.service.dashboard.IrsPerformanceDashboardService.START_TIME;
 import static com.revealprecision.revealserver.service.dashboard.MDADashboardService.DISTRIBUTION_COVERAGE;
 import static com.revealprecision.revealserver.service.dashboard.MDADashboardService.DISTRIBUTION_COVERAGE_PERCENTAGE;
 import static com.revealprecision.revealserver.service.dashboard.MDALiteDashboardService.ADVERSE;
@@ -19,6 +26,7 @@ import static com.revealprecision.revealserver.service.dashboard.MDALiteDashboar
 import static com.revealprecision.revealserver.service.dashboard.MDALiteDashboardService.STH_TREATMENT_COVERAGE;
 import static java.util.Map.entry;
 
+import com.revealprecision.revealserver.enums.PlanInterventionTypeEnum;
 import com.revealprecision.revealserver.enums.ReportTypeEnum;
 import java.util.List;
 import java.util.Map;
@@ -36,21 +44,21 @@ import org.springframework.stereotype.Component;
 public class DashboardProperties {
 
 
-  private List<String> dashboards = List.of("IRS_COVERAGE","MDA_COVERAGE");
+  private List<String> dashboards = List.of("IRS_COVERAGE", "MDA_COVERAGE");
 
-  private Map<String,Map<String,ColumnMeta>> dashboardColumns = Map.of("MDA_COVERAGE",
-      Map.of("TOTAL_STRUCTURES",new ColumnMeta("Total Structures",false)
-          ,"TOTAL_STRUCTURES_FOUND",new ColumnMeta("Total Structures Found",false)
-          ,"FOUND_COVERAGE",new ColumnMeta("Found Coverage",true)
-          ,"OPERATIONAL_AREA_VISITED",new ColumnMeta("Operational Area Visited",false)));
+  private Map<String, Map<String, ColumnMeta>> dashboardColumns = Map.of("MDA_COVERAGE",
+      Map.of("TOTAL_STRUCTURES", new ColumnMeta("Total Structures", false)
+          , "TOTAL_STRUCTURES_FOUND", new ColumnMeta("Total Structures Found", false)
+          , "FOUND_COVERAGE", new ColumnMeta("Found Coverage", true)
+          , "OPERATIONAL_AREA_VISITED", new ColumnMeta("Operational Area Visited", false)));
 
   private final Map<String, String> mdaDefaultDisplayColumns =
-      Map.of(DIRECTLY_ABOVE_STRUCTURE_LEVEL,DISTRIBUTION_COVERAGE_PERCENTAGE,
-          ALL_OTHER_LEVELS,DISTRIBUTION_COVERAGE);
+      Map.of(DIRECTLY_ABOVE_STRUCTURE_LEVEL, DISTRIBUTION_COVERAGE_PERCENTAGE,
+          ALL_OTHER_LEVELS, DISTRIBUTION_COVERAGE);
 
   private final Map<String, String> irsDefaultDisplayColumns =
-      Map.of(DIRECTLY_ABOVE_STRUCTURE_LEVEL,SPRAY_COVERAGE_OF_TARGETED,
-          ALL_OTHER_LEVELS,SPRAY_COVERAGE_OF_TARGETED);
+      Map.of(DIRECTLY_ABOVE_STRUCTURE_LEVEL, SPRAY_COVERAGE_OF_TARGETED,
+          ALL_OTHER_LEVELS, SPRAY_COVERAGE_OF_TARGETED);
 
   private final Map<String, String> mdaLiteDefaultDisplayColumns =
       Map.ofEntries(
@@ -78,19 +86,23 @@ public class DashboardProperties {
   private Long operationalAreaVisitedEffectivelyThreshold = 85L;
 
   private final Map<String, List<String>> mdaLiteFilters = Map.of(
-      DRUG, List.of(ALB, MEB,PZQ)
+      DRUG, List.of(ALB, MEB, PZQ)
   );
 
   private final Map<ReportTypeEnum, Map<String, List<String>>> dashboardFilterAssociations = Map.of(
-      ReportTypeEnum.MDA_LITE_COVERAGE,mdaLiteFilters
+      ReportTypeEnum.MDA_LITE_COVERAGE, mdaLiteFilters
   );
 
+  private final Map<PlanInterventionTypeEnum, List<String>> detailedPerformanceLevelColumns = Map.of(
+      PlanInterventionTypeEnum.IRS,
+      List.of(FOUND, SPRAYED, NOT_SPRAYED, BOTTLES_USED, START_TIME, END_TIME, HOURS_WORKED));
 
   @Setter
   @Getter
   @AllArgsConstructor
   @NoArgsConstructor
-  public static class ColumnMeta{
+  public static class ColumnMeta {
+
     private String name;
     private Boolean isPercentage;
   }
