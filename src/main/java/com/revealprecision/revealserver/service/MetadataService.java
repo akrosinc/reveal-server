@@ -1,16 +1,28 @@
 package com.revealprecision.revealserver.service;
 
+import com.revealprecision.revealserver.api.v1.dto.factory.EntityTagEventFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.LocationMetadataEventFactory;
+import com.revealprecision.revealserver.api.v1.dto.factory.LocationMetadataImportFactory;
+import com.revealprecision.revealserver.api.v1.dto.factory.MetadataImportResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.PersonMetadataEventFactory;
+import com.revealprecision.revealserver.api.v1.dto.response.LocationMetadataImport;
+import com.revealprecision.revealserver.api.v1.dto.response.MetadataFileImportResponse;
+import com.revealprecision.revealserver.enums.BulkEntryStatus;
+import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.constants.KafkaConstants;
+import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.messaging.message.EntityTagEvent;
+import com.revealprecision.revealserver.exceptions.FileFormatException;
 import com.revealprecision.revealserver.messaging.message.LocationMetadataEvent;
+import com.revealprecision.revealserver.messaging.message.Message;
 import com.revealprecision.revealserver.messaging.message.PersonMetadataEvent;
 import com.revealprecision.revealserver.persistence.domain.EntityTag;
 import com.revealprecision.revealserver.persistence.domain.Location;
+import com.revealprecision.revealserver.persistence.domain.MetadataImport;
 import com.revealprecision.revealserver.persistence.domain.Person;
 import com.revealprecision.revealserver.persistence.domain.Plan;
+import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.persistence.domain.metadata.LocationMetadata;
 import com.revealprecision.revealserver.persistence.domain.metadata.PersonMetadata;
 import com.revealprecision.revealserver.persistence.domain.metadata.infra.Metadata;
@@ -18,17 +30,27 @@ import com.revealprecision.revealserver.persistence.domain.metadata.infra.Metada
 import com.revealprecision.revealserver.persistence.domain.metadata.infra.MetadataObj;
 import com.revealprecision.revealserver.persistence.domain.metadata.infra.TagData;
 import com.revealprecision.revealserver.persistence.domain.metadata.infra.TagValue;
+import com.revealprecision.revealserver.persistence.domain.metadata.metadataImport.MetaImportDTO;
+import com.revealprecision.revealserver.persistence.domain.metadata.metadataImport.fieldMapper.MetaFieldSetMapper;
 import com.revealprecision.revealserver.persistence.repository.LocationMetadataRepository;
+import com.revealprecision.revealserver.persistence.repository.MetadataImportRepository;
 import com.revealprecision.revealserver.persistence.repository.PersonMetadataRepository;
 import com.revealprecision.revealserver.persistence.repository.PersonRepository;
 import com.revealprecision.revealserver.props.KafkaProperties;
 import java.time.LocalDate;
+import com.revealprecision.revealserver.util.UserUtils;
+import java.io.IOException;
+import java.security.Principal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -36,6 +58,11 @@ import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.SerializationUtils;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.keycloak.KeycloakPrincipal;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
@@ -52,6 +79,10 @@ public class MetadataService {
   private final KafkaTemplate<String, PersonMetadataEvent> personMetadataKafkaTemplate;
   private final KafkaProperties kafkaProperties;
   private final LocationService locationService;
+  private final MetadataImportRepository metadataImportRepository;
+  private final UserService userService;
+  private final StorageService storageService;
+  private final EntityTagService entityTagService;
 
   public LocationMetadata getLocationMetadataByLocation(UUID locationIdentifier) {
     //TODO fix this
@@ -118,8 +149,7 @@ public class MetadataService {
       } else {
         // tag does not exist in list
         MetadataObj metadataObj = getMetadataObj(tagValue, plan.getIdentifier(), taskIdentifier,
-            user,
-            dataType, tag, type, taskType, tagKey, dateForScopeDateFields);
+            user, dataType, tag, type, taskType, tagKey, dateForScopeDateFields);
 
         personMetadata = optionalPersonMetadata.get();
         List<MetadataObj> metadataObjs = new ArrayList<>(
@@ -134,7 +164,8 @@ public class MetadataService {
       //TODO: check this
       personMetadata.setPerson(person);
 
-      MetadataObj metadataObj = getMetadataObj(tagValue, plan.getIdentifier(), taskIdentifier, user,
+      MetadataObj metadataObj = getMetadataObj(tagValue, plan == null ? null : plan.getIdentifier(),
+          taskIdentifier, user,
           dataType, tag, type, taskType, tagKey, dateForScopeDateFields);
 
       MetadataList metadataList = new MetadataList();
@@ -230,7 +261,8 @@ public class MetadataService {
 
       } else {
         // tag does not exist in list
-        MetadataObj metadataObj = getMetadataObj(tagValue, plan.getIdentifier(), taskIdentifier,
+        MetadataObj metadataObj = getMetadataObj(tagValue,
+            plan == null ? null : plan.getIdentifier(), taskIdentifier,
             user,
             dataType, locationEntityTag, type, taskType, tagKey, dateForScopeDateFields);
 
@@ -246,7 +278,8 @@ public class MetadataService {
       location.setIdentifier(locationIdentifier);
       locationMetadata.setLocation(location);
 
-      MetadataObj metadataObj = getMetadataObj(tagValue, plan.getIdentifier(), taskIdentifier, user,
+      MetadataObj metadataObj = getMetadataObj(tagValue, plan == null ? null : plan.getIdentifier(),
+          taskIdentifier, user,
           dataType, locationEntityTag, type, taskType, tagKey, dateForScopeDateFields);
 
       MetadataList metadataList = new MetadataList();
@@ -266,7 +299,6 @@ public class MetadataService {
         locationMetadataEvent);
     return savedLocationMetadata;
   }
-
 
   public LocationMetadata deactivateLocationMetadata(UUID locationIdentifier, EntityTag tag,
       Plan plan) {
@@ -479,4 +511,122 @@ public class MetadataService {
     return value;
   }
 
+  public UUID saveImportFile(String file, String fileName) throws FileFormatException, IOException {
+
+    MetadataImport metadataImport = new MetadataImport();
+    metadataImport.setFilename(fileName);
+    metadataImport.setEntityStatus(EntityStatus.ACTIVE);
+    metadataImport.setUploadedDatetime(LocalDateTime.now());
+
+    Principal principal = UserUtils.getCurrentPrinciple();
+    User user;
+    UUID keycloakId = null;
+    if (principal instanceof KeycloakPrincipal) {
+      keycloakId = UUID.fromString(principal.getName());
+    }
+    user = userService.getByKeycloakId(keycloakId);
+    metadataImport.setUploadedBy(user.getUsername());
+    MetadataImport currentMetaImport = metadataImportRepository.save(metadataImport);
+
+    try (XSSFWorkbook workbook = new XSSFWorkbook(file)) {
+      XSSFSheet sheet = workbook.getSheetAt(0);
+      List<MetaImportDTO> metaImportDTOS = MetaFieldSetMapper.mapMetaFields(sheet);
+      //send data to kafka listener
+      if (!metaImportDTOS.isEmpty()) {
+
+        Set<String> tags = new HashSet<>();
+        List<EntityTag> entityTagList = new ArrayList<>();
+        metaImportDTOS.forEach(metaImportDTO -> {
+          metaImportDTO.getEntityTags().forEach((entityTagName, value) -> {
+            tags.add(entityTagName);
+          });
+        });
+
+        tags.forEach(tag -> {
+          entityTagService.getEntityTagByTagName(tag).ifPresentOrElse(entityTagList::add, () -> {
+            throw new FileFormatException(
+                tag + "does not exist in system");
+          });
+        });
+
+        metaImportDTOS.forEach(metaImportDTO -> {
+          Map<String, String> currentLocEntityTags = metaImportDTO.getEntityTags();
+          //TODO: call location without GeoJson for performance improvements
+          //TODO: create a custom projection to return everything without GeoJson
+          Location loc = locationService.findByIdentifier(metaImportDTO.getLocationIdentifier());
+          if (!currentLocEntityTags.isEmpty()) {
+            // map trough entity tags and set the values
+            currentLocEntityTags.forEach((entityTagName, importEntityTagValue) -> {
+              List<EntityTag> collect = entityTagList.stream()
+                  .filter(entityTag -> entityTag.getTag().equals(entityTagName))
+                  .collect(Collectors.toList());
+              if (!collect.isEmpty()) {
+                EntityTag et = collect.get(0);
+                int numValue;
+                if (Objects.equals(et.getValueType(), "integer")) {
+                  numValue = Integer.parseInt(importEntityTagValue);
+                  update(user, currentMetaImport, metaImportDTO, loc, numValue, et);
+                } else {
+                  update(user, currentMetaImport, metaImportDTO, loc, importEntityTagValue, et);
+                }
+              }
+            });
+          }
+        });
+      }
+      storageService.deleteFile(file);
+      currentMetaImport.setStatus(BulkEntryStatus.SUCCESSFUL);
+      return metadataImportRepository.save(currentMetaImport).getIdentifier();
+    } catch (Exception e) {
+      log.error(e.getMessage(), e);
+      storageService.deleteFile(file);
+      currentMetaImport.setStatus(BulkEntryStatus.FAILED);
+      metadataImportRepository.save(currentMetaImport);
+      throw new FileFormatException(e.getMessage());
+    }
+  }
+
+  private void update(User user, MetadataImport currentMetaImport, MetaImportDTO metaImportDTO,
+      Location loc, Object importEntityTagValue, EntityTag et) {
+    try {
+      LocationMetadata locationMetadata = (LocationMetadata) updateMetaData(
+          metaImportDTO.getLocationIdentifier(), importEntityTagValue,
+          null,
+          null, user.getIdentifier().toString(), et.getValueType(),
+          EntityTagEventFactory.getEntityTagEvent(et), "ImportData",
+          loc,
+          "File import", Location.class,
+          et.getTag(), null);
+
+      currentMetaImport.getLocationMetadataEvents().add(
+          LocationMetadataEventFactory.getLocationMetadataEvent(null,
+              locationMetadata.getLocation(),
+              locationMetadata));
+
+      metadataImportRepository.save(currentMetaImport);
+    } catch (Exception e) {
+      //TODO: Need to handle import exceptions here and save them to the table
+      log.error(e.getMessage(), e);
+    }
+  }
+
+  public Page<MetadataFileImportResponse> getMetadataImportList(Pageable pageable) {
+    return MetadataImportResponseFactory.fromEntityPage(metadataImportRepository.findAll(pageable),
+        pageable);
+  }
+
+  public List<LocationMetadataImport> getMetadataImportDetails(UUID metaImportIdentifier) {
+    Optional<MetadataImport> metadataImport = metadataImportRepository.findById(
+        metaImportIdentifier);
+    if (metadataImport.isPresent()) {
+      List<LocationMetadataImport> locationMetadataImports = new ArrayList<>();
+      metadataImport.get().getLocationMetadataEvents().forEach(el -> {
+        //TODO: create a custom DTO for MetaDataEvent
+        locationMetadataImports.add(LocationMetadataImportFactory.fromEntity(el));
+      });
+      return locationMetadataImports;
+    } else {
+      throw new NotFoundException("MetaImport not found.");
+    }
+  }
 }

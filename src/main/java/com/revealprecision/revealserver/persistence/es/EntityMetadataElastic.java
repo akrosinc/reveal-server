@@ -33,7 +33,7 @@ public class EntityMetadataElastic {
     this.tag = metadataObj.getTag();
     this.isActive = metadataObj.isActive();
     this.meta = MetadataElastic.builder()
-        .planId(metadataObj.getTagData().getMeta().getPlanId().toString())
+        .planId(metadataObj.getTagData().getMeta().getPlanId() == null ? null : metadataObj.getTagData().getMeta().getPlanId().toString())
         .userId(metadataObj.getTagData().getMeta().getUserId())
         .createDateTime(ElasticModelUtil.toDateFromLocalDateTime(metadataObj.getTagData().getMeta().getCreateDateTime()))
         .updateDateTime(ElasticModelUtil.toDateFromLocalDateTime(metadataObj.getTagData().getMeta().getUpdateDateTime()))
