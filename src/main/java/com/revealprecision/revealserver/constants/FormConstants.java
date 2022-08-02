@@ -20,10 +20,9 @@ public interface FormConstants {
   String SPRAY_FORM_PROVIDER = "providerId";
   String SPRAY_FORM_BUSINESS_STATUS_FIELD = "business_status";
   String SPRAY_FORM_SACHET_COUNT_FIELD = "serial_numbers_count";
-
-  public static final String IRS_LITE_FOUND = "FOUND";
-  public static final String IRS_LITE_SPRAYED = "SPRAYED";
-  public static final String IRS_LITE_NOT_SPRAYED = "NOT SPRAYED";
-  public static final String IRS_LITE_ELIGIBLE = "ELIGIBLE";
-  public static final String IRS_LITE_SACHET_COUNT = "SACHET_COUNT";
+  String IRS_LITE_FOUND = "FOUND";
+  String IRS_LITE_SPRAYED = "SPRAYED";
+  String IRS_LITE_NOT_SPRAYED = "NOT SPRAYED";
+  String IRS_LITE_ELIGIBLE = "ELIGIBLE";
+  String IRS_LITE_SACHET_COUNT = "SACHET_COUNT";
 }

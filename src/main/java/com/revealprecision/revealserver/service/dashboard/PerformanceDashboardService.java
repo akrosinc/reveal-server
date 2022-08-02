@@ -45,6 +45,15 @@ public class PerformanceDashboardService {
   private final KafkaProperties kafkaProperties;
   boolean datastoresInitialized = false;
 
+  public static final String DAYS_WORKED = "Days Worked";
+  public static final String AVERAGE_DAYS_WORKED = "Average Days Worked";
+  public static final String START_TIME = "Start Time";
+  public static final String END_TIME = "End Time";
+  public static final String AVERAGE_START_TIME = "Average Start Time";
+  public static final String AVERAGE_END_TIME = "Average End Time";
+  public static final String HOURS_WORKED = "Hours Worked";
+  public static final String AVERAGE_HOURS_WORKED = "Average Hours Worked";
+
 
   public List<RowData> getDataForReport(UUID planIdentifier, String id) {
 
@@ -52,23 +61,24 @@ public class PerformanceDashboardService {
 
     List<PlanAssignment> planAssignmentsByPlanIdentifier = planAssignmentService.getPlanAssignmentsByPlanIdentifier(
         planIdentifier);
-    Map<String,UserLevel> userLevels = null;
+    Map<String, UserLevel> userLevels = null;
     if (id == null) {
       userLevels = planAssignmentsByPlanIdentifier.stream()
           .map(this::getOrganization)
           .filter(Objects::nonNull)
           .map(highestLevelOrg -> new UserLevel(highestLevelOrg.getIdentifier().toString(),
               highestLevelOrg.getName(), 0, "organization", highestLevelOrg.getType().name()))
-          .collect(Collectors.toMap(UserLevel::getUserId,userLevel -> userLevel,(a,b)->b));
+          .collect(Collectors.toMap(UserLevel::getUserId, userLevel -> userLevel, (a, b) -> b));
     } else {
       UserParentChildren userParentChildren = this.userParentChildren.get(
           planIdentifier + "_" + id);
       if (userParentChildren != null) {
-        userLevels = userParentChildren.getChildren().stream().collect(Collectors.toMap(UserLevel::getUserId,userLevel -> userLevel));
+        userLevels = userParentChildren.getChildren().stream()
+            .collect(Collectors.toMap(UserLevel::getUserId, userLevel -> userLevel));
       }
     }
     initialDataStores(plan);
-    return getRowDatas(plan, new HashSet<>(userLevels.values()), id);
+    return getRowDatas(plan, userLevels==null?null:new HashSet<>(userLevels.values()), id);
   }
 
   private Organization getOrganization(PlanAssignment planAssignment) {

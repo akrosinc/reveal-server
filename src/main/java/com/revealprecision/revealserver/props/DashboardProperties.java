@@ -8,12 +8,9 @@ import static com.revealprecision.revealserver.service.dashboard.DashboardServic
 import static com.revealprecision.revealserver.service.dashboard.DashboardService.SUPERVISOR_LEVEL;
 import static com.revealprecision.revealserver.service.dashboard.IRSDashboardService.SPRAY_COVERAGE_OF_TARGETED;
 import static com.revealprecision.revealserver.service.dashboard.IrsPerformanceDashboardService.BOTTLES_USED;
-import static com.revealprecision.revealserver.service.dashboard.IrsPerformanceDashboardService.END_TIME;
 import static com.revealprecision.revealserver.service.dashboard.IrsPerformanceDashboardService.FOUND;
-import static com.revealprecision.revealserver.service.dashboard.IrsPerformanceDashboardService.HOURS_WORKED;
 import static com.revealprecision.revealserver.service.dashboard.IrsPerformanceDashboardService.NOT_SPRAYED;
 import static com.revealprecision.revealserver.service.dashboard.IrsPerformanceDashboardService.SPRAYED;
-import static com.revealprecision.revealserver.service.dashboard.IrsPerformanceDashboardService.START_TIME;
 import static com.revealprecision.revealserver.service.dashboard.MDADashboardService.DISTRIBUTION_COVERAGE;
 import static com.revealprecision.revealserver.service.dashboard.MDADashboardService.DISTRIBUTION_COVERAGE_PERCENTAGE;
 import static com.revealprecision.revealserver.service.dashboard.MDALiteDashboardService.ADVERSE;
@@ -24,6 +21,9 @@ import static com.revealprecision.revealserver.service.dashboard.MDALiteDashboar
 import static com.revealprecision.revealserver.service.dashboard.MDALiteDashboardService.PZQ;
 import static com.revealprecision.revealserver.service.dashboard.MDALiteDashboardService.SCH_TREATMENT_COVERAGE;
 import static com.revealprecision.revealserver.service.dashboard.MDALiteDashboardService.STH_TREATMENT_COVERAGE;
+import static com.revealprecision.revealserver.service.dashboard.PerformanceDashboardService.END_TIME;
+import static com.revealprecision.revealserver.service.dashboard.PerformanceDashboardService.HOURS_WORKED;
+import static com.revealprecision.revealserver.service.dashboard.PerformanceDashboardService.START_TIME;
 import static java.util.Map.entry;
 
 import com.revealprecision.revealserver.enums.PlanInterventionTypeEnum;

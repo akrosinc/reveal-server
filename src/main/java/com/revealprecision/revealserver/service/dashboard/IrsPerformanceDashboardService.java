@@ -4,9 +4,16 @@ import static com.revealprecision.revealserver.constants.FormConstants.IRS_LITE_
 import static com.revealprecision.revealserver.constants.FormConstants.IRS_LITE_NOT_SPRAYED;
 import static com.revealprecision.revealserver.constants.FormConstants.IRS_LITE_SACHET_COUNT;
 import static com.revealprecision.revealserver.constants.FormConstants.IRS_LITE_SPRAYED;
+import static com.revealprecision.revealserver.service.dashboard.PerformanceDashboardService.AVERAGE_END_TIME;
+import static com.revealprecision.revealserver.service.dashboard.PerformanceDashboardService.AVERAGE_HOURS_WORKED;
+import static com.revealprecision.revealserver.service.dashboard.PerformanceDashboardService.AVERAGE_START_TIME;
+import static com.revealprecision.revealserver.service.dashboard.PerformanceDashboardService.DAYS_WORKED;
+import static com.revealprecision.revealserver.service.dashboard.PerformanceDashboardService.END_TIME;
+import static com.revealprecision.revealserver.service.dashboard.PerformanceDashboardService.HOURS_WORKED;
+import static com.revealprecision.revealserver.service.dashboard.PerformanceDashboardService.START_TIME;
 
-import com.revealprecision.revealserver.api.v1.dto.models.ColumnData;
 import com.revealprecision.revealserver.api.v1.dto.models.RowData;
+import com.revealprecision.revealserver.api.v1.dto.models.ColumnData;
 import com.revealprecision.revealserver.constants.KafkaConstants;
 import com.revealprecision.revealserver.enums.PlanInterventionTypeEnum;
 import com.revealprecision.revealserver.messaging.message.UserLevel;
@@ -39,14 +46,7 @@ public class IrsPerformanceDashboardService {
   private final DashboardProperties dashboardProperties;
   private final StreamsBuilderFactoryBean getKafkaStreams;
   private final KafkaProperties kafkaProperties;
-  public static final String DAYS_WORKED = "Days Worked";
-  public static final String AVERAGE_DAYS_WORKED = "Average Days Worked";
-  public static final String START_TIME = "Start Time";
-  public static final String END_TIME = "End Time";
-  public static final String AVERAGE_START_TIME = "Average Start Time";
-  public static final String AVERAGE_END_TIME = "Average End Time";
-  public static final String HOURS_WORKED = "Hours Worked";
-  public static final String AVERAGE_HOURS_WORKED = "Average Hours Worked";
+
 
   public static final String FOUND = "Found";
   public static final String SPRAYED = "Sprayed";
