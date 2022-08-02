@@ -14,7 +14,6 @@ import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.messaging.message.EntityTagEvent;
 import com.revealprecision.revealserver.exceptions.FileFormatException;
 import com.revealprecision.revealserver.messaging.message.LocationMetadataEvent;
-import com.revealprecision.revealserver.messaging.message.Message;
 import com.revealprecision.revealserver.messaging.message.PersonMetadataEvent;
 import com.revealprecision.revealserver.persistence.domain.EntityTag;
 import com.revealprecision.revealserver.persistence.domain.Location;
@@ -51,6 +50,7 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.transaction.Transactional;
@@ -266,7 +266,10 @@ public class MetadataService {
             dataType, locationEntityTag, type, taskType, tagKey, dateForScopeDateFields);
 
         locationMetadata = locationMetadataOptional.get();
-        locationMetadata.getEntityValue().getMetadataObjs().add(metadataObj);
+        List<MetadataObj> temp = new ArrayList<>(
+            locationMetadata.getEntityValue().getMetadataObjs());
+        temp.add(metadataObj);
+        locationMetadata.getEntityValue().setMetadataObjs(temp);
 
       }
     } else {
@@ -545,7 +548,8 @@ public class MetadataService {
 
         metaImportDTOS.forEach(metaImportDTO -> {
           Map<String, String> currentLocEntityTags = metaImportDTO.getEntityTags();
-          Location loc = locationService.findByIdentifierWithoutGeoJson(metaImportDTO.getLocationIdentifier());
+          Location loc = locationService.findByIdentifierWithoutGeoJson(
+              metaImportDTO.getLocationIdentifier());
           if (!currentLocEntityTags.isEmpty()) {
             // map trough entity tags and set the values
             currentLocEntityTags.forEach((entityTagName, importEntityTagValue) -> {
@@ -590,10 +594,24 @@ public class MetadataService {
           "File import", Location.class,
           et.getTag(), null);
 
-      currentMetaImport.getLocationMetadataEvents().add(
+      LocationMetadataEvent locationMetadataEvent =
           LocationMetadataEventFactory.getLocationMetadataEvent(null,
               locationMetadata.getLocation(),
-              locationMetadata));
+              locationMetadata);
+
+      // check if there is an existing metadata event already created
+      // than just update the metaDataEvent list instead of creating a duplicate
+      boolean shouldAdd = true;
+      for (LocationMetadataEvent l : currentMetaImport.getLocationMetadataEvents()) {
+        if (l.getIdentifier().equals(locationMetadataEvent.getIdentifier())) {
+          shouldAdd = false;
+          l.setMetaDataEvents(locationMetadataEvent.getMetaDataEvents());
+        }
+      }
+
+      if (shouldAdd) {
+        currentMetaImport.getLocationMetadataEvents().add(locationMetadataEvent);
+      }
 
       metadataImportRepository.save(currentMetaImport);
     } catch (Exception e) {
