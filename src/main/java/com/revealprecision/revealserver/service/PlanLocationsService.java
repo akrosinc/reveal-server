@@ -3,9 +3,9 @@ package com.revealprecision.revealserver.service;
 import com.revealprecision.revealserver.api.v1.dto.factory.OrganizationResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.response.GeoTreeResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.OrganizationResponse;
+import com.revealprecision.revealserver.constants.KafkaConstants;
 import com.revealprecision.revealserver.constants.LocationConstants;
 import com.revealprecision.revealserver.enums.PlanInterventionTypeEnum;
-import com.revealprecision.revealserver.constants.KafkaConstants;
 import com.revealprecision.revealserver.messaging.message.PlanLocationAssignMessage;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
@@ -63,9 +63,10 @@ public class PlanLocationsService {
     return planLocationsRepository.findByPlan_Identifier(planIdentifier);
   }
 
-  public Long getNumberOfAssignedChildrenByGeoLevelNameWithinLocationAndHierarchyAndPlan(UUID planIdentifier,
-      String geoLevelName, UUID locationIdentifier,UUID locationHierarchyIdentifier
-      ) {
+  public Long getNumberOfAssignedChildrenByGeoLevelNameWithinLocationAndHierarchyAndPlan(
+      UUID planIdentifier,
+      String geoLevelName, UUID locationIdentifier, UUID locationHierarchyIdentifier
+  ) {
     return planLocationsRepository.getNumberOfAssignedChildrenByGeoLevelNameWithinLocationAndHierarchyAndPlan(
         geoLevelName,
         locationIdentifier.toString(),
@@ -102,7 +103,8 @@ public class PlanLocationsService {
 
     List<UUID> locationsToAdd;
 
-    if (!plan.getInterventionType().getCode().equals(PlanInterventionTypeEnum.IRS_LITE.name()) && !plan.getInterventionType()
+    if (!plan.getInterventionType().getCode().equals(PlanInterventionTypeEnum.IRS_LITE.name())
+        && !plan.getInterventionType()
         .getCode()
         .equals(PlanInterventionTypeEnum.MDA_LITE.name())) {
       locationsToAdd = locationService.getAllLocationChildren(locationIdentifier,
@@ -217,15 +219,21 @@ public class PlanLocationsService {
         plan.getLocationHierarchy().getIdentifier());
 
     List<GeoTreeResponse> geoTreeResponses;
-    if ((plan.getInterventionType().getCode().equals(PlanInterventionTypeEnum.IRS_LITE.name()) || plan.getInterventionType()
+    if ((plan.getInterventionType().getCode().equals(PlanInterventionTypeEnum.IRS_LITE.name())
+        || plan.getInterventionType()
         .getCode()
         .equals(PlanInterventionTypeEnum.MDA_LITE.name()))) {
       int i = locationHierarchy.getNodeOrder()
           .indexOf(plan.getPlanTargetType().getGeographicLevel().getName());
       List<String> elList = locationHierarchy.getNodeOrder()
           .subList(i + 1, locationHierarchy.getNodeOrder().size());
-      geoTreeResponses = locationHierarchyService.getGeoTreeFromLocationHierarchyWithoutStructure(
-          locationHierarchy, elList);
+      if (elList.isEmpty()) {
+        geoTreeResponses = locationHierarchyService.getGeoTreeFromLocationHierarchyWithoutStructure(
+            locationHierarchy, null);
+      } else {
+        geoTreeResponses = locationHierarchyService.getGeoTreeFromLocationHierarchyWithoutStructure(
+            locationHierarchy, elList);
+      }
     } else {
       geoTreeResponses = locationHierarchyService.getGeoTreeFromLocationHierarchyWithoutStructure(
           locationHierarchy, null);

@@ -1,7 +1,6 @@
 package com.revealprecision.revealserver.api.v1.dto.models;
 
 import java.io.Serializable;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -21,4 +20,9 @@ public class RowData implements Serializable {
   private String locationName;
   private Long childrenNumber;
   private Map<String, ColumnData> columnDataMap;
+  private String userId;
+  private String userName;
+  private String userType;
+  private String userLabel;
+  private String userParent;
 }

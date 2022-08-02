@@ -27,33 +27,39 @@ import org.springframework.stereotype.Service;
 @Service
 @Profile("Simulation")
 @Slf4j
-public class PersonMetadataUpdateListener extends Listener{
+public class PersonMetadataUpdateListener extends Listener {
 
   private final RestHighLevelClient client;
 
   @KafkaListener(topics = "#{kafkaConfigProperties.topicMap.get('PERSON_METADATA_UPDATE')}", groupId = "reveal_server_group")
   public void updatePersonMetadata(PersonMetadataEvent event) throws IOException {
-    log.info("Received Message in group foo: {}" , event.toString());
+    log.info("Received Message in group foo: {}", event.toString());
     init();
-    Map<String, Object> parameters = new HashMap<>();
-    List<Map<String, Object>> metadata = new ArrayList<>();
-    for(MetaDataEvent metadataObj : event.getMetaDataEvents()) {
-      metadata.add(ElasticModelUtil.toMapFromPersonMetadata(new EntityMetadataElastic(metadataObj)));
-    }
-    parameters.put("new_metadata", metadata);
-    parameters.put("personId", event.getEntityId().toString());
+    if (event.getLocationIdList() != null && !event.getLocationIdList().isEmpty()) {
+      Map<String, Object> parameters = new HashMap<>();
+      List<Map<String, Object>> metadata = new ArrayList<>();
+      for (MetaDataEvent metadataObj : event.getMetaDataEvents()) {
+        metadata.add(
+            ElasticModelUtil.toMapFromPersonMetadata(new EntityMetadataElastic(metadataObj)));
+      }
+      parameters.put("new_metadata", metadata);
+      parameters.put("personId", event.getEntityId().toString());
 
-    Script inline = new Script(ScriptType.INLINE, "painless",
-        "def persons = ctx._source.person.findAll( "
-            + "pers -> pers.identifier == params.personId); "
-            + "for(per in persons) { "
-            + " per.metadata = params.new_metadata "
-            + "} ",parameters);
-    List<String> locationIds = event.getLocationIdList().stream().map(UUID::toString).collect(
-        Collectors.toList());
-    UpdateByQueryRequest request = new UpdateByQueryRequest("location");
-    request.setQuery(QueryBuilders.termsQuery("_id", locationIds));
-    request.setScript(inline);
-    client.updateByQuery(request, RequestOptions.DEFAULT);
+      Script inline = new Script(ScriptType.INLINE, "painless",
+          "def persons = ctx._source.person.findAll( "
+              + "pers -> pers.identifier == params.personId); "
+              + "for(per in persons) { "
+              + " per.metadata = params.new_metadata "
+              + "} ", parameters);
+
+      List<String> locationIds = event.getLocationIdList().stream().map(UUID::toString).collect(
+          Collectors.toList());
+      UpdateByQueryRequest request = new UpdateByQueryRequest("location");
+      request.setQuery(QueryBuilders.termsQuery("_id", locationIds));
+      request.setScript(inline);
+      client.updateByQuery(request, RequestOptions.DEFAULT);
+    } else {
+      log.warn("There is no location associated with this person metadata!!! {}", event);
+    }
   }
 }

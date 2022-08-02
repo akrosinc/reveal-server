@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.api.v1.controller;
 
 import com.revealprecision.revealserver.api.v1.dto.models.AdditionalReportInfo;
+import com.revealprecision.revealserver.api.v1.dto.models.RowData;
 import com.revealprecision.revealserver.api.v1.dto.response.FeatureSetResponse;
 import com.revealprecision.revealserver.enums.ApplicableReportsEnum;
 import com.revealprecision.revealserver.enums.ReportTypeEnum;
@@ -8,6 +9,7 @@ import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.props.DashboardProperties;
 import com.revealprecision.revealserver.service.PlanService;
 import com.revealprecision.revealserver.service.dashboard.DashboardService;
+import com.revealprecision.revealserver.service.dashboard.PerformanceDashboardService;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -28,6 +30,7 @@ public class ReportDashboardController {
   private final DashboardService dashboardService;
   private final PlanService planService;
   private final DashboardProperties dashboardProperties;
+  private final PerformanceDashboardService performanceDashboardService;
 
   @GetMapping("/reportTypes")
   public ReportTypeEnum[] getReportTypes() {
@@ -65,4 +68,19 @@ public class ReportDashboardController {
         );
   }
 
+  @GetMapping("/performance-data")
+  public ResponseEntity<List<RowData>> getDataForPerformance(
+      @RequestParam(name = "planIdentifier") UUID planIdentifier,
+      @RequestParam(name = "key", required = false) String key) {
+    return ResponseEntity.status(HttpStatus.OK)
+        .body(performanceDashboardService.getDataForReport(planIdentifier, key));
+  }
+
+  @GetMapping("/detailed-performance-data")
+  public ResponseEntity<List<RowData>> getDetailedDataForPerformance(
+      @RequestParam(name = "planIdentifier") UUID planIdentifier,
+      @RequestParam(name = "key") String key) {
+    return ResponseEntity.status(HttpStatus.OK)
+        .body(performanceDashboardService.getDatedRowDatas(planIdentifier, key));
+  }
 }

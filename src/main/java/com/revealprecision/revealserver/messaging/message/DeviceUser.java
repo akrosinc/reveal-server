@@ -5,19 +5,13 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.ToString;
 
-
-@Setter
-@Getter
 @AllArgsConstructor
+@Getter
+@Setter
 @NoArgsConstructor
-@ToString
-public class LocationFormDataSumAggregateEvent extends Message {
+public class DeviceUser extends Message {
 
-  private Long sum;
-  private Long counter;
-  private Double average;
-  private UUID entityTagIdentifier;
-
+  private UUID deviceUserIdentifier;
+  private String deviceUserName;
 }

@@ -27,6 +27,8 @@ public class LocationFormDataAggregateEvent extends Message {
 
   private UUID plan;
 
+  private UUID tagId;
+
   private String tag;
 
   private String tagValue;
