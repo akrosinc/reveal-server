@@ -19,7 +19,7 @@ public class PersonMetadataEventFactory {
     personMetadataEvent.setIdentifier(savedLocationMetadata.getIdentifier());
     personMetadataEvent.setHierarchyIdentifier(plan.getLocationHierarchy().getIdentifier());
     personMetadataEvent.setPlanIdentifier(plan.getIdentifier());
-    personMetadataEvent.setIdentifier(savedLocationMetadata.getIdentifier());
+    personMetadataEvent.setPersonIdentifier(savedLocationMetadata.getPerson().getIdentifier());
     personMetadataEvent.setMetaDataEvents(
         savedLocationMetadata.getEntityValue().getMetadataObjs().stream()
             .map(MetadataEventFactory::getMetaDataEvent).collect(Collectors.toList()));

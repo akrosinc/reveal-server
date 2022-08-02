@@ -74,8 +74,9 @@ public class PersonBusinessStatusStream {
         Consumed.with(Serdes.UUID(), new JsonSerde<>(PersonMetadataEvent.class)));
 
     KStream<String, PersonMetadataUnpackedEvent> unpackedPersonMetadataStream = personMetadataStream
+        .filter((k, personMetadata)->personMetadata.getLocationIdList()!=null)
         .flatMapValues(
-            (k, personMetadata) -> getPersonMetadataUnpackedForAllHierarchy(personMetadata))
+        (k, personMetadata) -> getPersonMetadataUnpackedForAllHierarchy(personMetadata))
         .flatMapValues(
             (k, personMetadata) -> getUnpackedPersonMetadataPerAncestorList(personMetadata))
         .flatMapValues(
