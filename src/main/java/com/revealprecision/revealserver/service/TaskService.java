@@ -82,7 +82,6 @@ public class TaskService {
   public static final String TASK_STATUS_READY = "READY";
   public static final String TASK_STATUS_CANCELLED = "CANCELLED";
   private final TaskRepository taskRepository;
-  private final PlanLocationsService planLocationsService;
 
   private final PlanService planService;
   private final ActionService actionService;
@@ -93,7 +92,6 @@ public class TaskService {
   private final LocationService locationService;
   private final LookupTaskStatusRepository lookupTaskStatusRepository;
   private final EntityFilterService entityFilterService;
-  private final LocationRelationshipService locationRelationshipService;
   private final BusinessStatusProperties businessStatusProperties;
   private final BusinessStatusService businessStatusService;
   private final KafkaTemplate<String, Message> kafkaTemplate;
@@ -111,8 +109,7 @@ public class TaskService {
       ActionService actionService, LocationService locationService,
       LookupTaskStatusRepository lookupTaskStatusRepository, PersonService personService,
       EntityFilterService entityFilterService, GoalService goalService,
-      ConditionService conditionService, PlanLocationsService planLocationsService,
-      LocationRelationshipService locationRelationshipService,
+      ConditionService conditionService,
       BusinessStatusProperties businessStatusProperties,
       BusinessStatusService businessStatusService,
       KafkaTemplate<String, Message> kafkaTemplate,
@@ -128,8 +125,6 @@ public class TaskService {
     this.entityFilterService = entityFilterService;
     this.goalService = goalService;
     this.conditionService = conditionService;
-    this.planLocationsService = planLocationsService;
-    this.locationRelationshipService = locationRelationshipService;
     this.businessStatusProperties = businessStatusProperties;
     this.businessStatusService = businessStatusService;
     this.kafkaTemplate = kafkaTemplate;
@@ -229,13 +224,15 @@ public class TaskService {
         ProcessTracker processTracker = processTrackerList.get(0);
         goals.stream().map(goal -> actionService.getActionsByGoalIdentifier(goal.getIdentifier()))
             .flatMap(Collection::stream)
-            .forEach((action) -> processPlanUpdatePerActionForTasks(action, plan, ownerId, processTracker));
+            .forEach((action) -> processPlanUpdatePerActionForTasks(action, plan, ownerId,
+                processTracker));
 
         processTrackerService.updateProcessTracker(processTracker.getIdentifier(),
             ProcessTrackerEnum.BUSY);
 
         if (processTrackerList.size() > 1) {
-          log.debug("cancelling remaining process trackers for this plan as there should only ever be one");
+          log.debug(
+              "cancelling remaining process trackers for this plan as there should only ever be one");
           IntStream.range(1, processTrackerList.size() - 1)
               .mapToObj(i -> processTrackerList.get(i).getIdentifier())
               .forEach(processTrackerIdentifier -> processTrackerService.updateProcessTracker(
@@ -250,7 +247,8 @@ public class TaskService {
 
   }
 
-  public void processPlanUpdatePerActionForTasks(Action action, Plan plan, String ownerId, ProcessTracker processTracker) {
+  public void processPlanUpdatePerActionForTasks(Action action, Plan plan, String ownerId,
+      ProcessTracker processTracker) {
 
     List<Condition> conditions = conditionService.getConditionsByActionIdentifier(
         action.getIdentifier());
@@ -306,8 +304,8 @@ public class TaskService {
     tasksToProcess.addAll(tasksToReactivate);
 
     log.debug("tasksToGenerate: {} tasksToCancel: {} tasksToReactivate: {} existingTasks: {}",
-        tasksToGenerate.size(), tasksToCancel.size(), tasksToReactivate.size(), existingTaskUuids.size());
-
+        tasksToGenerate.size(), tasksToCancel.size(), tasksToReactivate.size(),
+        existingTaskUuids.size());
 
     List<TaskProcessStage> collect = tasksToProcess.stream()
         .map(taskGen -> {
@@ -329,42 +327,41 @@ public class TaskService {
     List<TaskProcessStage> taskProcessStages = taskProcessStageRepository.saveAll(
         collect);
 
-      taskProcessStages.forEach(taskProcessStage -> {
-        // Proceed with caution here as new updates / removals to the object will prevent rewind of the kafka listener application.
-        // In the event of new data being introduced, ensure that null pointers are catered in the kafka listener
-        // application if the event comes through, and it does not have the new fields populated
-            TaskProcessEvent taskProcessEvent = TaskProcessEvent.builder()
-                .baseEntityIdentifier(taskProcessStage.getBaseEntityIdentifier())
-                .owner(ownerId)
-                .taskProcessEnum(taskProcessStage.getTaskProcess())
-                .actionEvent(ActionEvent.builder()
-                    .identifier(action.getIdentifier())
-                    .lookupEntityType(LookupEntityTypeEvent.builder()
-                        .code(action.getLookupEntityType().getCode())
-                        .build())
-                    .build())
-                .planEvent(PlanEvent.builder()
-                    .identifier(plan.getIdentifier())
-                    .build())
-                .state(taskProcessStage.getState())
-                .processTracker(ProcessTrackerEvent.builder()
-                    .processTriggerIdentifier(
-                        taskProcessStage.getProcessTracker().getProcessTriggerIdentifier())
-                    .processType(taskProcessStage.getProcessTracker().getProcessType())
-                    .planIdentifier(taskProcessStage.getProcessTracker().getPlanIdentifier())
-                    .identifier(taskProcessStage.getProcessTracker().getIdentifier())
-                    .build()
-                )
-                .taskIdentifier(taskProcessStage.getTaskIdentifier())
-                .identifier(taskProcessStage.getIdentifier())
-                .build();
-            kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.TASK_CANDIDATE),
-                taskProcessEvent);
-          }
+    taskProcessStages.forEach(taskProcessStage -> {
+          // Proceed with caution here as new updates / removals to the object will prevent rewind of the kafka listener application.
+          // In the event of new data being introduced, ensure that null pointers are catered in the kafka listener
+          // application if the event comes through, and it does not have the new fields populated
+          TaskProcessEvent taskProcessEvent = TaskProcessEvent.builder()
+              .baseEntityIdentifier(taskProcessStage.getBaseEntityIdentifier())
+              .owner(ownerId)
+              .taskProcessEnum(taskProcessStage.getTaskProcess())
+              .actionEvent(ActionEvent.builder()
+                  .identifier(action.getIdentifier())
+                  .lookupEntityType(LookupEntityTypeEvent.builder()
+                      .code(action.getLookupEntityType().getCode())
+                      .build())
+                  .build())
+              .planEvent(PlanEvent.builder()
+                  .identifier(plan.getIdentifier())
+                  .build())
+              .state(taskProcessStage.getState())
+              .processTracker(ProcessTrackerEvent.builder()
+                  .processTriggerIdentifier(
+                      taskProcessStage.getProcessTracker().getProcessTriggerIdentifier())
+                  .processType(taskProcessStage.getProcessTracker().getProcessType())
+                  .planIdentifier(taskProcessStage.getProcessTracker().getPlanIdentifier())
+                  .identifier(taskProcessStage.getProcessTracker().getIdentifier())
+                  .build()
+              )
+              .taskIdentifier(taskProcessStage.getTaskIdentifier())
+              .identifier(taskProcessStage.getIdentifier())
+              .build();
+          kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.TASK_CANDIDATE),
+              taskProcessEvent);
+        }
 
     );
   }
-
 
 
   @Transactional
@@ -519,7 +516,7 @@ public class TaskService {
     return savedTask;
   }
 
-  public Task reactivateTask(TaskProcessEvent taskProcessEvent) throws IOException {
+  public Task reactivateTask(TaskProcessEvent taskProcessEvent) {
 
     Task savedTask = null;
     Optional<Task> taskOptional = taskRepository.findById(taskProcessEvent.getTaskIdentifier());
@@ -536,7 +533,7 @@ public class TaskService {
     return savedTask;
   }
 
-  public Task cancelTask(TaskProcessEvent taskProcessEvent) throws IOException {
+  public Task cancelTask(TaskProcessEvent taskProcessEvent) {
 
     Task savedTask = null;
     Optional<Task> taskOptional = taskRepository.findById(taskProcessEvent.getTaskIdentifier());
@@ -553,7 +550,7 @@ public class TaskService {
     return savedTask;
   }
 
-  public Task saveTaskAndBusinessState(Task task, String ownerId) throws IOException {
+  public Task saveTaskAndBusinessState(Task task, String ownerId) {
 
     Task savedTask = taskRepository.save(task);
 
@@ -573,204 +570,4 @@ public class TaskService {
     return savedTask;
   }
 
-
-  public void updateOrganizationsAndLocationsForTasksByPlanIdentifier(UUID planIdentifier) {
-    log.info("TASK_ASSIGN Start update tasks for Plan Id: {}", planIdentifier);
-
-    List<Task> tasksByPlan = taskRepository.findTasksByPlan_Identifier(planIdentifier);
-//TODO - resolve the dependency injection issue so that @Lazy is not used in this class
-    Plan plan = planService.findPlanByIdentifier(planIdentifier);
-
-    LookupTaskStatus lookupTaskStatus = lookupTaskStatusRepository.findByCode(TASK_STATUS_CANCELLED)
-        .orElseThrow(() -> new NotFoundException(
-            Pair.of(LookupTaskStatus.Fields.code, TASK_STATUS_CANCELLED), LookupTaskStatus.class));
-
-    int taskListSize = tasksByPlan.size();
-    int taskCount = 1;
-
-    for (Task task : tasksByPlan) {
-      log.debug("processing task {} - id: {} of total {}", taskCount, task.getIdentifier(),
-          taskListSize);
-      updateOrganisationsAndLocationsForTask(plan, lookupTaskStatus, task);
-      taskCount++;
-    }
-    log.info("TASK_ASSIGN Completed updating tasks for Plan Id: {}", planIdentifier);
-
-  }
-
-
-  private Task markUnassignedTaskAsCancelled(Plan plan, LookupTaskStatus cancelledLookupTaskStatus,
-      Task task) {
-    log.debug("TASK_CANCEL Start cancellation for task: {}",
-        task.getIdentifier());
-    Action action = task.getAction();
-
-    log.debug("TASK_CANCEL getting plan locations: {}", task.getIdentifier());
-
-    List<PlanLocations> planLocationsForLocation = getPlanLocationsForLocation(plan, task, action);
-
-    List<PlanLocations> planLocationsForPerson = getPlanLocationsForPerson(plan, task, action);
-    log.debug("TASK_CANCEL got plan locations: {}", task.getIdentifier());
-
-    if (!task.getLookupTaskStatus().getCode().equals(cancelledLookupTaskStatus.getCode())) {
-      if (planLocationsForLocation.isEmpty() && planLocationsForPerson.isEmpty()) {
-        task.setLookupTaskStatus(cancelledLookupTaskStatus);
-        log.debug("TASK_CANCEL task cancelled: {}", task.getIdentifier());
-      }
-    } else {
-      log.debug("TASK_CANCEL task not cancelled: {}", task.getIdentifier());
-      return null;
-    }
-    return task;
-  }
-
-  public void updateOrganisationsAndLocationsForTask(Plan plan, LookupTaskStatus lookupTaskStatus,
-      Task task) {
-    taskRepository.save(
-        getUpdatedTaskAfterLocationAndOrganizationAssignment(plan, lookupTaskStatus, task));
-  }
-
-  private Task getUpdatedTaskAfterLocationAndOrganizationAssignment(Plan plan,
-      LookupTaskStatus lookupTaskStatus, Task task) {
-    log.debug("TASK_ASSIGN Start updating location and organization assignments for task: {}",
-        task.getIdentifier());
-    Action action = task.getAction();
-
-    log.debug("TASK_ASSIGN getting plan locations: {}", task.getIdentifier());
-
-    List<PlanLocations> planLocationsForLocation = getPlanLocationsForLocation(plan, task, action);
-
-    List<PlanLocations> planLocationsForPerson = getPlanLocationsForPerson(plan, task, action);
-    log.debug("TASK_ASSIGN got plan locations: {}", task.getIdentifier());
-
-    return updateTaskWithOrganizations(plan, lookupTaskStatus, task, planLocationsForLocation,
-        planLocationsForPerson, action);
-  }
-
-  private Task updateTaskWithOrganizations(Plan plan, LookupTaskStatus lookupTaskStatus, Task task,
-      List<PlanLocations> planLocationsForLocation, List<PlanLocations> planLocationsForPerson,
-      Action action) {
-    log.debug("TASK_ASSIGN getting organizations locations: {}", task.getIdentifier());
-
-    boolean isActionForPerson = ActionUtils.isActionForPerson(action);
-
-    boolean isActionForLocation = ActionUtils.isActionForLocation(action);
-
-    if (planLocationsForLocation.isEmpty() && planLocationsForPerson.isEmpty()) {
-      task.setLookupTaskStatus(lookupTaskStatus);
-    } else {
-      List<Organization> organizations = new ArrayList<>();
-      if (isActionForLocation) {
-        if (planLocationsForLocation.size() > 0) {
-          organizations = getOrganizationsFromAssignedLocations(plan.getIdentifier(),
-              planLocationsForLocation);
-        }
-      }
-      if (isActionForPerson) {
-        if (planLocationsForPerson.size() > 0) {
-          organizations = getOrganizationsFromAssignedLocations(plan.getIdentifier(),
-              planLocationsForPerson);
-        }
-      }
-      log.debug("TASK_ASSIGN got organizations locations: {}", task.getIdentifier());
-      task.setOrganizations(organizations);
-    }
-    log.debug("TASK_ASSIGN Completed updating location and organization assignments for task: {}",
-        task.getIdentifier());
-    return task;
-  }
-
-  private List<PlanLocations> getPlanLocationsForPerson(Plan plan, Task task, Action action) {
-
-    List<PlanLocations> planLocationsForPerson = new ArrayList<>();
-
-    boolean isActionForPerson = ActionUtils.isActionForPerson(action);
-
-    if (isActionForPerson && task.getPerson() != null && task.getPerson().getLocations() != null) {
-
-      return locationService.getLocationsByPeople(task.getPerson().getIdentifier()).stream()
-          .flatMap(location -> {
-            if (location.getGeographicLevel().getName().equals(STRUCTURE)) {
-              Location parentLocation = locationService.getLocationParent(location,
-                  plan.getLocationHierarchy());
-              return planLocationsService.getPlanLocationsByPlanAndLocationIdentifier(
-                  parentLocation.getIdentifier(), plan.getIdentifier()).stream();
-            } else {
-
-              return planLocationsService.getPlanLocationsByLocationIdentifierList(
-                  List.of(location.getIdentifier())).stream();
-            }
-          }).collect(Collectors.toList());
-
-    }
-    return planLocationsForPerson;
-  }
-
-
-  private List<PlanLocations> getPlanLocationsForLocation(Plan plan, Task task, Action action) {
-
-    List<PlanLocations> planLocationsForLocation = new ArrayList<>();
-
-    boolean isActionForLocation = ActionUtils.isActionForLocation(action);
-
-    if (isActionForLocation) {
-      if (task.getLocation() != null) {
-        if (task.getLocation().getGeographicLevel().getName().equals(STRUCTURE)) {
-
-          Location parentLocation = locationService.getLocationParent(task.getLocation(),
-              plan.getLocationHierarchy());
-          planLocationsForLocation = planLocationsService.getPlanLocationsByPlanAndLocationIdentifier(
-              parentLocation.getIdentifier(), plan.getIdentifier());
-
-        } else {
-          planLocationsForLocation = planLocationsService.getPlanLocationsByPlanAndLocationIdentifier(
-              task.getLocation().getIdentifier(), plan.getIdentifier());
-        }
-      }
-    }
-    return planLocationsForLocation;
-  }
-
-
-  private List<Organization> getOrganizationsFromAssignedLocations(UUID planIdentifier,
-      List<PlanLocations> planLocationsForPerson) {
-    return planLocationsForPerson.stream()
-        .filter(planLocations1 -> planLocations1.getPlan().getIdentifier().equals(planIdentifier))
-        .flatMap(planLocation -> planLocation.getPlanAssignments().stream())
-        .map(PlanAssignment::getOrganization).collect(Collectors.toList());
-  }
-
-  public Map<UUID, List<Task>> getTasksPerJurisdictionIdentifier(UUID planIdentifier,
-      List<UUID> jurisdictionIdentifiers, Long serverVersion) {
-    Map<UUID, List<Task>> tasksToJurisdictions = new HashMap<>();
-    try {
-      Plan plan = planService.findPlanByIdentifier(planIdentifier);
-      LocationHierarchy locationHierarchy = plan.getLocationHierarchy();
-
-      jurisdictionIdentifiers.forEach(jurisdictionIdentifier -> {
-        List<Location> childLocations = locationRelationshipService.getLocationChildrenByLocationParentIdentifierAndHierarchyIdentifier(
-            List.of(jurisdictionIdentifier), locationHierarchy.getIdentifier());
-
-        List<UUID> baseEntityIdentifiers = new ArrayList<>();
-
-        //TODO: can this be done in a single query from below findByPlanAndBaseEntityIdentifiers method
-        List<UUID> personIdentifiers = personService.getPeopleByLocations(childLocations).stream()
-            .map(Person::getIdentifier).collect(Collectors.toList());
-        baseEntityIdentifiers.addAll(personIdentifiers);
-
-        baseEntityIdentifiers.addAll(
-            childLocations.stream().map(Location::getIdentifier).collect(Collectors.toList()));
-
-        List<Task> tasks = taskRepository.findByPlanAndBaseEntityIdentifiersAndMinimumServerVersion(
-            plan, baseEntityIdentifiers, serverVersion);
-        if (!tasks.isEmpty()) {
-          tasksToJurisdictions.put(jurisdictionIdentifier, tasks);
-        }
-
-      });
-    } catch (NotFoundException e) {
-      e.printStackTrace();
-    }
-    return tasksToJurisdictions;
-  }
 }
