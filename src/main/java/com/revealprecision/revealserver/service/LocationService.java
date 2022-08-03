@@ -81,6 +81,12 @@ public class LocationService {
             Location.class));
   }
 
+  public Location findByIdentifierWithoutGeoJson(UUID identifier) {
+    return locationRepository.findByIdentifierWithoutGeoJson(identifier).orElseThrow(
+        () -> new NotFoundException(Pair.of(Location.Fields.identifier, identifier),
+            Location.class));
+  }
+
   public Page<Location> getLocations(String search, Pageable pageable) {
     return locationRepository.findAlLByCriteria(search, pageable);
   }
