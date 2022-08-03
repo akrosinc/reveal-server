@@ -26,17 +26,19 @@ public class KafkaTopicQueryController {
 
   @GetMapping("/application-reset-topics")
   public String topics() {
-   return kafkaProperties.getTopicMap().entrySet().stream()
-       .filter(entry ->
-         kafkaProperties.getResetTopicMap().get(entry.getKey()))
-       .map(Entry::getValue)
-       .collect(Collectors.joining(","));
+    return kafkaProperties.getTopicMap().entrySet().stream()
+        .filter(entry ->
+            kafkaProperties.getResetTopicMap().get(entry.getKey()))
+        .map(Entry::getValue)
+        .collect(Collectors.joining(","));
   }
+
 
   @GetMapping("/all-topics")
   public String allTopics() {
     return String.join(",", kafkaProperties.getTopicMap().values());
   }
+
   @GetMapping("/group-id")
   public String kafkaGroupId() {
     return kafkaGroupId;

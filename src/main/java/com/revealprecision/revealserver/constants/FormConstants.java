@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.constants;
 
 public interface FormConstants {
+
   String CDD_SUPERVISOR_DAILY_SUMMARY_HEALTH_WORKER_SUPERVISOR_FIELD = "health_worker_supervisor";
   String CDD_SUPERVISOR_DAILY_SUMMARY_CDD_NAME_FIELD = "cdd_name";
   String CDD_SUPERVISOR_DAILY_SUMMARY_FORM = "cdd_supervisor_daily_summary";
@@ -14,4 +15,14 @@ public interface FormConstants {
   String CDD_DRUG_ALLOCATION_LOCATION_FIELD = "location";
   String CDD_DRUG_ALLOCATION_HEALTH_WORKER_SUPERVISOR_FIELD = "health_worker_supervisor";
   String CDD_DRUG_ALLOCATION_CDD_NAME_FIELD = "cdd_name";
+  String SPRAY_FORM = "Spray";
+  String SPRAY_FORM_SPRAY_OPERATOR_FIELD = "sprayop_code";
+  String SPRAY_FORM_PROVIDER = "providerId";
+  String SPRAY_FORM_BUSINESS_STATUS_FIELD = "business_status";
+  String SPRAY_FORM_SACHET_COUNT_FIELD = "serial_numbers_count";
+  String IRS_LITE_FOUND = "FOUND";
+  String IRS_LITE_SPRAYED = "SPRAYED";
+  String IRS_LITE_NOT_SPRAYED = "NOT SPRAYED";
+  String IRS_LITE_ELIGIBLE = "ELIGIBLE";
+  String IRS_LITE_SACHET_COUNT = "SACHET_COUNT";
 }

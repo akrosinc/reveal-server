@@ -14,6 +14,10 @@ public interface KafkaConstants {
   String EVENT_CONSUMPTION = "EVENT_CONSUMPTION";
   String FORM_EVENT_CONSUMPTION = "FORM_EVENT_CONSUMPTION";
   String LOCATION_SUPERVISOR_CDD = "LOCATION_SUPERVISOR_CDD";
+  String METADATA_AGGREGATE = "METADATA_AGGREGATE";
+  String USER_DATA = "USER_DATA";
+  String USER_PERFORMANCE_DATA = "USER_PERFORMANCE_DATA";
+  String USER_PARENT_CHILD = "USER_PARENT_CHILD";
 
 
   String structureCountPerParent = "structureCountPerParent";
@@ -53,4 +57,7 @@ public interface KafkaConstants {
   String cddNames = "cddNames";
   String supervisorLocationFormDataIntegerSumOrAverage = "supervisorLocationFormDataIntegerSumOrAverage";
   String cddSupervisorLocationFormDataIntegerSumOrAverage = "cddSupervisorLocationFormDataIntegerSumOrAverage";
+  String userPerformance = "userPerformance";
+  String userPerformanceSums = "userPerformanceSums";
+  String userParentChildren = "userParentChildren";
 }

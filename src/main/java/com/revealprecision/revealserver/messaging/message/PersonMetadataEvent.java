@@ -13,7 +13,7 @@ import lombok.ToString;
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor
-@ToString
+@ToString(callSuper = true)
 public class PersonMetadataEvent extends TMetadataEvent {
 
   private List<UUID> locationIdList;

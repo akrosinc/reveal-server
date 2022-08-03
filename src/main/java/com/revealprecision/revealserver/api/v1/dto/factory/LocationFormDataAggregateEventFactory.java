@@ -3,7 +3,10 @@ package com.revealprecision.revealserver.api.v1.dto.factory;
 import com.revealprecision.revealserver.messaging.message.LocationFormDataAggregateEvent;
 
 public class LocationFormDataAggregateEventFactory {
-  public static LocationFormDataAggregateEvent getEntity(LocationFormDataAggregateEvent v, Long increment, Long averageCounter, String tagValue) {
+
+  public static LocationFormDataAggregateEvent getEntity(LocationFormDataAggregateEvent v,
+      Long increment, Long averageCounter, String tagValue) {
+
     return LocationFormDataAggregateEvent.builder()
         .plan(v.getPlan())
         .entityId(v.getEntityId())
@@ -15,6 +18,7 @@ public class LocationFormDataAggregateEventFactory {
         .increment(increment)
         .supervisor(v.getSupervisor())
         .cddName(v.getCddName())
+        .tagId(v.getTagId())
         .build();
   }
 }

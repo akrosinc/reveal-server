@@ -16,7 +16,6 @@ import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.persistence.projection.OrganizationProjection;
 import com.revealprecision.revealserver.persistence.repository.OrganizationRepository;
 import com.revealprecision.revealserver.persistence.repository.UserRepository;
-import com.tdunning.math.stats.Sort;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -30,9 +29,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.MapUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.domain.Sort.Order;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
@@ -42,8 +39,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class OrganizationService {
 
-  public final OrganizationRepository organizationRepository;
-  public final UserRepository userRepository;
+  private final OrganizationRepository organizationRepository;
+  private final UserRepository userRepository;
 
   public Organization createOrganization(OrganizationRequest organizationRequest) {
     Organization organization = Organization.builder()

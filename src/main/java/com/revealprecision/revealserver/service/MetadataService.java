@@ -7,12 +7,12 @@ import com.revealprecision.revealserver.api.v1.dto.factory.MetadataImportRespons
 import com.revealprecision.revealserver.api.v1.dto.factory.PersonMetadataEventFactory;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationMetadataImport;
 import com.revealprecision.revealserver.api.v1.dto.response.MetadataFileImportResponse;
+import com.revealprecision.revealserver.constants.KafkaConstants;
 import com.revealprecision.revealserver.enums.BulkEntryStatus;
 import com.revealprecision.revealserver.enums.EntityStatus;
-import com.revealprecision.revealserver.constants.KafkaConstants;
+import com.revealprecision.revealserver.exceptions.FileFormatException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.messaging.message.EntityTagEvent;
-import com.revealprecision.revealserver.exceptions.FileFormatException;
 import com.revealprecision.revealserver.messaging.message.LocationMetadataEvent;
 import com.revealprecision.revealserver.messaging.message.PersonMetadataEvent;
 import com.revealprecision.revealserver.persistence.domain.EntityTag;
@@ -35,10 +35,10 @@ import com.revealprecision.revealserver.persistence.repository.MetadataImportRep
 import com.revealprecision.revealserver.persistence.repository.PersonMetadataRepository;
 import com.revealprecision.revealserver.persistence.repository.PersonRepository;
 import com.revealprecision.revealserver.props.KafkaProperties;
-import java.time.LocalDate;
 import com.revealprecision.revealserver.util.UserUtils;
 import java.io.IOException;
 import java.security.Principal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -399,8 +399,13 @@ public class MetadataService {
 
         PersonMetadata savedPersonMetadata = personMetadataRepository.save(personMetadata);
 
+        List<Location> locationsByPeople = locationService.getLocationsByPeople(
+            personMetadata.getPerson().getIdentifier());
+
         PersonMetadataEvent personMetadataEvent = PersonMetadataEventFactory.getPersonMetadataEvent(
-            plan, null, savedPersonMetadata);
+            plan,
+            locationsByPeople.stream().map(Location::getIdentifier).collect(Collectors.toList()),
+            savedPersonMetadata);
 
         personMetadataKafkaTemplate.send(
             kafkaProperties.getTopicMap().get(KafkaConstants.PERSON_METADATA_UPDATE),

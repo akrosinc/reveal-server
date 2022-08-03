@@ -24,6 +24,7 @@ import org.apache.kafka.streams.kstream.KGroupedStream;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KTable;
 import org.apache.kafka.streams.kstream.Materialized;
+import org.apache.kafka.streams.kstream.Produced;
 import org.apache.kafka.streams.state.KeyValueStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -110,7 +111,7 @@ public class FormDataStream {
               agg.setTagIntegerValue(
                   (Integer) v.getValue());
             }
-
+            agg.setTagId(v.getEntityTagEvent().getIdentifier());
             agg.setTag(v.getEntityTagEvent().getTag());
             agg.setAncestorNode(v.getAncestor());
             agg.setPlan(v.getPlanIdentifier());
@@ -155,8 +156,14 @@ public class FormDataStream {
             .withKeySerde(Serdes.String())
             .withValueSerde(new JsonSerde<>(LocationFormDataSumAggregateEvent.class)));
 
-    locationIntegerSumAggregate.toStream()
-        .peek((k, v) -> formDataLog.debug("locationIntegerSumAggregate k: {} v: {}", k, v));
+    KStream<String, LocationFormDataSumAggregateEvent> stringLocationFormDataSumAggregateEventKStream = locationIntegerSumAggregate.toStream();
+
+    stringLocationFormDataSumAggregateEventKStream
+        .peek((k, v) -> formDataLog.debug(
+            "stringLocationFormDataSumAggregateEventKStream k: {} v: {}", k, v));
+    stringLocationFormDataSumAggregateEventKStream.to(
+        kafkaProperties.getTopicMap().get(KafkaConstants.METADATA_AGGREGATE),
+        Produced.with(Serdes.String(), new JsonSerde<>(LocationFormDataSumAggregateEvent.class)));
 
     KGroupedStream<String, LocationFormDataAggregateEvent> supervisorLocationFormDataAggregateEventKGroupedStream = integerLocationFormDataAggregateEventKStream1
         .filter((k, v) -> v.getSupervisor() != null)
@@ -222,7 +229,7 @@ public class FormDataStream {
     }
 
     agg.setAverage((double) agg.getSum() / (double) agg.getCounter());
-
+    agg.setEntityTagIdentifier(v.getTagId());
     return agg;
   }
 
