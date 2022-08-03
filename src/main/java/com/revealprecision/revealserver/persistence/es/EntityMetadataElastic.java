@@ -17,10 +17,11 @@ import org.springframework.data.elasticsearch.annotations.FieldType;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class EntityMetadataElastic {
 
-  @Field(type = FieldType.Text)
+  @Field(type = FieldType.Keyword)
   private String type;
-  @Field(type = FieldType.Text)
+  @Field(type = FieldType.Keyword)
   private String tag;
+  @Field(type = FieldType.Keyword)
   private Object value;
   @Field(type = FieldType.Double)
   private Object valueNumber;
