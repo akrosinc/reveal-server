@@ -77,7 +77,7 @@ public class LocationResponseFactory {
                 .externalId(planLocationDetails.getLocation().getExternalId())
                 .geographicLevel(planLocationDetails.getLocation().getGeographicLevel().getName())
                 .numberOfTeams(planLocationDetails.getAssignedTeams())
-                .assigned(planLocationDetails.getAssignedLocations() > 0 ? true : false)
+                .assigned(planLocationDetails.getAssignedLocations() > 0)
                 .parentIdentifier(planLocationDetails.getParentLocation() == null ? parentIdentifier : planLocationDetails.getParentLocation().getIdentifier())
                 .childrenNumber(planLocationDetails.getChildrenNumber())
                 .build())
@@ -96,6 +96,7 @@ public class LocationResponseFactory {
         .properties(LocationPropertyResponse.builder()
             .name(locationElastic.getName())
             .metadata(metadata)
+            .geographicLevel(locationElastic.getLevel())
             .build())
         .build();
   }
