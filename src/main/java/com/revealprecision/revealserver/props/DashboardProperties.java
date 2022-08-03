@@ -7,10 +7,6 @@ import static com.revealprecision.revealserver.service.dashboard.DashboardServic
 import static com.revealprecision.revealserver.service.dashboard.DashboardService.STRUCTURE_LEVEL;
 import static com.revealprecision.revealserver.service.dashboard.DashboardService.SUPERVISOR_LEVEL;
 import static com.revealprecision.revealserver.service.dashboard.IRSDashboardService.SPRAY_COVERAGE_OF_TARGETED;
-import static com.revealprecision.revealserver.service.dashboard.IrsPerformanceDashboardService.BOTTLES_USED;
-import static com.revealprecision.revealserver.service.dashboard.IrsPerformanceDashboardService.FOUND;
-import static com.revealprecision.revealserver.service.dashboard.IrsPerformanceDashboardService.NOT_SPRAYED;
-import static com.revealprecision.revealserver.service.dashboard.IrsPerformanceDashboardService.SPRAYED;
 import static com.revealprecision.revealserver.service.dashboard.MDADashboardService.DISTRIBUTION_COVERAGE;
 import static com.revealprecision.revealserver.service.dashboard.MDADashboardService.DISTRIBUTION_COVERAGE_PERCENTAGE;
 import static com.revealprecision.revealserver.service.dashboard.MDALiteDashboardService.ADVERSE;
@@ -21,13 +17,13 @@ import static com.revealprecision.revealserver.service.dashboard.MDALiteDashboar
 import static com.revealprecision.revealserver.service.dashboard.MDALiteDashboardService.PZQ;
 import static com.revealprecision.revealserver.service.dashboard.MDALiteDashboardService.SCH_TREATMENT_COVERAGE;
 import static com.revealprecision.revealserver.service.dashboard.MDALiteDashboardService.STH_TREATMENT_COVERAGE;
-import static com.revealprecision.revealserver.service.dashboard.PerformanceDashboardService.END_TIME;
-import static com.revealprecision.revealserver.service.dashboard.PerformanceDashboardService.HOURS_WORKED;
-import static com.revealprecision.revealserver.service.dashboard.PerformanceDashboardService.START_TIME;
 import static java.util.Map.entry;
 
 import com.revealprecision.revealserver.enums.PlanInterventionTypeEnum;
 import com.revealprecision.revealserver.enums.ReportTypeEnum;
+import com.revealprecision.revealserver.service.dashboard.IrsLitePerformanceDashboardService;
+import com.revealprecision.revealserver.service.dashboard.IrsPerformanceDashboardService;
+import com.revealprecision.revealserver.service.dashboard.PerformanceDashboardService;
 import java.util.List;
 import java.util.Map;
 import lombok.AllArgsConstructor;
@@ -95,7 +91,15 @@ public class DashboardProperties {
 
   private final Map<PlanInterventionTypeEnum, List<String>> detailedPerformanceLevelColumns = Map.of(
       PlanInterventionTypeEnum.IRS,
-      List.of(FOUND, SPRAYED, NOT_SPRAYED, BOTTLES_USED, START_TIME, END_TIME, HOURS_WORKED));
+      List.of(IrsPerformanceDashboardService.FOUND, IrsPerformanceDashboardService.SPRAYED,
+          IrsPerformanceDashboardService.NOT_SPRAYED, IrsPerformanceDashboardService.BOTTLES_USED,
+          PerformanceDashboardService.START_TIME,
+          PerformanceDashboardService.END_TIME, PerformanceDashboardService.HOURS_WORKED),
+      PlanInterventionTypeEnum.IRS_LITE,
+      List.of(IrsLitePerformanceDashboardService.FOUND, IrsLitePerformanceDashboardService.SPRAYED,
+          IrsLitePerformanceDashboardService.NOT_SPRAYED, PerformanceDashboardService.START_TIME,
+          PerformanceDashboardService.END_TIME, PerformanceDashboardService.HOURS_WORKED));
+
 
   @Setter
   @Getter

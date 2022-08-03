@@ -9,11 +9,18 @@ import static com.revealprecision.revealserver.constants.FormConstants.CDD_SUPER
 import static com.revealprecision.revealserver.constants.FormConstants.CDD_SUPERVISOR_DAILY_SUMMARY_DATE_FIELD;
 import static com.revealprecision.revealserver.constants.FormConstants.CDD_SUPERVISOR_DAILY_SUMMARY_FORM;
 import static com.revealprecision.revealserver.constants.FormConstants.CDD_SUPERVISOR_DAILY_SUMMARY_HEALTH_WORKER_SUPERVISOR_FIELD;
+import static com.revealprecision.revealserver.constants.FormConstants.IRS_ELIGIBLE;
+import static com.revealprecision.revealserver.constants.FormConstants.IRS_FOUND;
 import static com.revealprecision.revealserver.constants.FormConstants.IRS_LITE_ELIGIBLE;
 import static com.revealprecision.revealserver.constants.FormConstants.IRS_LITE_FOUND;
 import static com.revealprecision.revealserver.constants.FormConstants.IRS_LITE_NOT_SPRAYED;
-import static com.revealprecision.revealserver.constants.FormConstants.IRS_LITE_SACHET_COUNT;
 import static com.revealprecision.revealserver.constants.FormConstants.IRS_LITE_SPRAYED;
+import static com.revealprecision.revealserver.constants.FormConstants.IRS_LITE_VERIFICATION_FORM;
+import static com.revealprecision.revealserver.constants.FormConstants.IRS_LITE_VERIFICATION_FORM_BUSINESS_STATUS_FIELD;
+import static com.revealprecision.revealserver.constants.FormConstants.IRS_LITE_VERIFICATION_FORM_SUPERVISOR;
+import static com.revealprecision.revealserver.constants.FormConstants.IRS_NOT_SPRAYED;
+import static com.revealprecision.revealserver.constants.FormConstants.IRS_SACHET_COUNT;
+import static com.revealprecision.revealserver.constants.FormConstants.IRS_SPRAYED;
 import static com.revealprecision.revealserver.constants.FormConstants.SPRAY_FORM;
 import static com.revealprecision.revealserver.constants.FormConstants.SPRAY_FORM_BUSINESS_STATUS_FIELD;
 import static com.revealprecision.revealserver.constants.FormConstants.SPRAY_FORM_SACHET_COUNT_FIELD;
@@ -200,17 +207,43 @@ public class FormDataProcessorService {
                 sachetCount);
           }
 
-          fields.put(IRS_LITE_FOUND, found);
-          fields.put(IRS_LITE_SPRAYED, sprayed);
-          fields.put(IRS_LITE_NOT_SPRAYED, notSprayed);
-          fields.put(IRS_LITE_ELIGIBLE, isEligible);
-          fields.put(IRS_LITE_SACHET_COUNT, sachetCountInt);
+          fields.put(IRS_FOUND, found);
+          fields.put(IRS_SPRAYED, sprayed);
+          fields.put(IRS_NOT_SPRAYED, notSprayed);
+          fields.put(IRS_ELIGIBLE, isEligible);
+          fields.put(IRS_SACHET_COUNT, sachetCountInt);
 
           collect = deviceUser.getOrganizations().stream()
               .map(this::getFlattenedOrganizationalHierarchy).collect(Collectors.toList());
 
           fieldWorkerLabel = "Spray Operator";
           userLabel = "Supervisor";
+          orgLabel = "Team";
+        }
+        if (savedEvent.getEventType().equals(IRS_LITE_VERIFICATION_FORM)) {
+          fieldWorker = getFormValue(obsJavaList, IRS_LITE_VERIFICATION_FORM_SUPERVISOR);
+
+          String businessStatus = getFormValue(obsJavaList, IRS_LITE_VERIFICATION_FORM_BUSINESS_STATUS_FIELD);
+
+          if (businessStatus.equals("Sprayed")) {
+            sprayed = true;
+          }
+          if (businessStatus.equals("Not Sprayed")) {
+            notSprayed = true;
+          }
+          boolean found = true;
+
+          fields.put(IRS_LITE_FOUND, found);
+          fields.put(IRS_LITE_SPRAYED, sprayed);
+          fields.put(IRS_LITE_NOT_SPRAYED, notSprayed);
+          fields.put(IRS_LITE_ELIGIBLE, isEligible);
+
+          collect = deviceUser.getOrganizations().stream()
+              .map(this::getFlattenedOrganizationalHierarchy).collect(Collectors.toList());
+
+
+          fieldWorkerLabel = "Supervisor";
+          userLabel = "Field Officer";
           orgLabel = "Team";
         }
 
