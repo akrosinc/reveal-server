@@ -46,13 +46,7 @@ public class DashboardService {
 
     ReportTypeEnum reportTypeEnum = LookupUtil.lookup(ReportTypeEnum.class, reportType);
     Plan plan = planService.findPlanByIdentifier(planIdentifier);
-    List<String> applicableReportTypes = ApplicableReportsEnum.valueOf(
-        plan.getInterventionType().getCode()).getReportName();
-    if (!applicableReportTypes.contains(reportTypeEnum.name())) {
-      throw new WrongEnumException(
-          "Report type: '" + reportType + "' is not applicable to plan with identifier: '"
-              + planIdentifier + "'");
-    }
+    checkSupportedReports(reportType, planIdentifier, reportTypeEnum, plan);
     Location parentLocation = null;
     UUID parentIdentifier = null;
 
@@ -84,6 +78,18 @@ public class DashboardService {
     return getFeatureSetResponse(parentIdentifier, locationDetails,
         rowDataMap, reportLevel,
         reportTypeEnum, filters);
+  }
+
+  private void checkSupportedReports(String reportType, UUID planIdentifier,
+      ReportTypeEnum reportTypeEnum,
+      Plan plan) {
+    List<String> applicableReportTypes = ApplicableReportsEnum.valueOf(
+        plan.getInterventionType().getCode()).getReportName();
+    if (!applicableReportTypes.contains(reportTypeEnum.name())) {
+      throw new WrongEnumException(
+          "Report type: '" + reportType + "' is not applicable to plan with identifier: '"
+              + planIdentifier + "'");
+    }
   }
 
   private List<RowData> getRowData(Location parentLocation, ReportTypeEnum reportTypeEnum,
@@ -238,7 +244,6 @@ public class DashboardService {
     }
     return locationDetails;
   }
-
 
 
   private String getReportLevel(Plan plan, Location parentLocation, String parentIdentifierString) {

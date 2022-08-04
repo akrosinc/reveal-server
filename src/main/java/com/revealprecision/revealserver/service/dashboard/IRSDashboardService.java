@@ -23,6 +23,7 @@ import com.revealprecision.revealserver.service.LocationRelationshipService;
 import com.revealprecision.revealserver.service.PlanLocationsService;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -47,14 +48,13 @@ public class IRSDashboardService {
 
   private static final String TOTAL_SPRAY_AREAS = "Total spray areas";
   private static final String TARGET_SPRAY_AREAS = "Targeted spray areas";
-  private static final String VISITED_AREAS = "Total spray areas visited";
-  public static final String SPRAY_COVERAGE_OF_TARGETED = "Spray coverage of targeted (Progress)";
+  private static final String VISITED_AREAS = "Total  Spray Areas Visited";
+  public static final String SPRAY_COVERAGE_OF_TARGETED = "Spray Progress (Sprayed / Targeted)";
   private static final String TOTAL_STRUCTURES = "Total structures";
   private static final String TOTAL_STRUCTURES_TARGETED = "Total Structures Targeted";
   private static final String TOTAL_STRUCTURES_FOUND = "Total Structures Found";
   private static final String STRUCTURES_SPRAYED = "Total Structures Sprayed";
   private static final String SPRAY_COVERAGE = "Spray Coverage (Effectiveness)";
-  private static final String SPRAY_SUCCESS = "Spray Success Rate (PMI SC)";
   private static final String PERCENTAGE_VISITED_EFFECTIVELY = "Spray Areas Effectively sprayed";
   private static final String STRUCTURE_STATUS = "Structure Status";
   private static final String NO_OF_ROOMS = "No of Rooms";
@@ -83,7 +83,23 @@ public class IRSDashboardService {
           plan.getLocationHierarchy().getNodeOrder().indexOf(LocationConstants.STRUCTURE) - 1);
     }
 
-    Map<String, ColumnData> columns = new HashMap<>();
+    Map<String, ColumnData> columns = new LinkedHashMap<>();
+
+    Entry<String, ColumnData> totalAreas = getTotalAreas(plan,
+        childLocation, TOTAL_SPRAY_AREAS, geoNameDirectlyAboveStructure);
+    columns.put(totalAreas.getKey(), totalAreas.getValue());
+
+    Entry<String, ColumnData> targetAreas = getTargetedAreas(plan,
+        childLocation, TARGET_SPRAY_AREAS);
+    columns.put(targetAreas.getKey(), targetAreas.getValue());
+
+    Entry<String, ColumnData> operationalAreaVisited = operationalAreaVisitedCounts(plan,
+        childLocation, VISITED_AREAS);
+    columns.put(operationalAreaVisited.getKey(), operationalAreaVisited.getValue());
+
+    Entry<String, ColumnData> sprayCoverageEffectively = getSprayedEffectively(plan,
+        childLocation, PERCENTAGE_VISITED_EFFECTIVELY);
+    columns.put(sprayCoverageEffectively.getKey(), sprayCoverageEffectively.getValue());
 
     Entry<String, ColumnData> totalStructuresCounts = getTotalStructuresCounts(plan, childLocation,
         TOTAL_STRUCTURES);
@@ -93,22 +109,6 @@ public class IRSDashboardService {
         plan, childLocation, TOTAL_STRUCTURES_TARGETED);
     columns.put(totalStructuresTargetedCount.getKey(), totalStructuresTargetedCount.getValue());
 
-    Entry<String, ColumnData> totalStructuresFoundCount = getTotalStructuresFoundCount(
-        plan, childLocation, TOTAL_STRUCTURES_FOUND);
-    columns.put(totalStructuresFoundCount.getKey(), totalStructuresFoundCount.getValue());
-
-    Entry<String, ColumnData> operationalAreaVisited = operationalAreaVisitedCounts(plan,
-        childLocation, VISITED_AREAS);
-    columns.put(operationalAreaVisited.getKey(), operationalAreaVisited.getValue());
-
-    Entry<String, ColumnData> targetAreas = getTargetedAreas(plan,
-        childLocation, TARGET_SPRAY_AREAS);
-    columns.put(targetAreas.getKey(), targetAreas.getValue());
-
-    Entry<String, ColumnData> totalAreas = getTotalAreas(plan,
-        childLocation, TOTAL_SPRAY_AREAS, geoNameDirectlyAboveStructure);
-    columns.put(totalAreas.getKey(), totalAreas.getValue());
-
     Entry<String, ColumnData> totalStructuresSprayed = getTotalStructuresSprayed(plan,
         childLocation, STRUCTURES_SPRAYED);
     columns.put(totalStructuresSprayed.getKey(), totalStructuresSprayed.getValue());
@@ -117,13 +117,9 @@ public class IRSDashboardService {
         childLocation, SPRAY_COVERAGE_OF_TARGETED);
     columns.put(sprayCoverageOfTargeted.getKey(), sprayCoverageOfTargeted.getValue());
 
-    Entry<String, ColumnData> spraySuccess = getSprayedSuccess(plan,
-        childLocation, SPRAY_SUCCESS);
-    columns.put(spraySuccess.getKey(), spraySuccess.getValue());
-
-    Entry<String, ColumnData> sprayCoverageEffectively = getSprayedEffectively(plan,
-        childLocation, PERCENTAGE_VISITED_EFFECTIVELY);
-    columns.put(sprayCoverageEffectively.getKey(), sprayCoverageEffectively.getValue());
+    Entry<String, ColumnData> totalStructuresFoundCount = getTotalStructuresFoundCount(
+        plan, childLocation, TOTAL_STRUCTURES_FOUND);
+    columns.put(totalStructuresFoundCount.getKey(), totalStructuresFoundCount.getValue());
 
     RowData rowData = new RowData();
     rowData.setLocationIdentifier(childLocation.getIdentifier());
@@ -133,8 +129,7 @@ public class IRSDashboardService {
   }
 
   public List<RowData> getIRSFullDataOperational(Plan plan, Location childLocation) {
-    Map<String, ColumnData> columns = new HashMap<>();
-
+    Map<String, ColumnData> columns = new LinkedHashMap<>();
     Entry<String, ColumnData> totalStructuresCounts = getTotalStructuresCounts(plan, childLocation,
         TOTAL_STRUCTURES);
     columns.put(totalStructuresCounts.getKey(), totalStructuresCounts.getValue());
@@ -154,10 +149,6 @@ public class IRSDashboardService {
     Entry<String, ColumnData> sprayCoverageOfTargeted = getSprayCoverageOfTargeted(plan,
         childLocation, SPRAY_COVERAGE_OF_TARGETED);
     columns.put(sprayCoverageOfTargeted.getKey(), sprayCoverageOfTargeted.getValue());
-
-    Entry<String, ColumnData> spraySuccess = getSprayedSuccess(plan,
-        childLocation, SPRAY_SUCCESS);
-    columns.put(spraySuccess.getKey(), spraySuccess.getValue());
 
     Entry<String, ColumnData> sprayCoverage = getSprayCoverage(plan,
         childLocation, SPRAY_COVERAGE);
