@@ -148,9 +148,6 @@ public class DashboardService {
                 plan,
                 loc.getLocation(), filters);
           case IS_ON_PLAN_TARGET:
-            return mdaLiteDashboardService.getMDALiteCoverageData(
-                plan,
-                loc.getLocation(), filters);
           case LOWEST_LITE_TOUCH_LEVEL:
           case ALL_OTHER_LEVELS:
             return mdaLiteDashboardService.getMDALiteCoverageData(
