@@ -65,7 +65,8 @@ public class LocationResponseFactory {
     return new PageImpl<>(locationsResponseContent, pageable, locations.getTotalElements());
   }
 
-  public static LocationResponse fromPlanLocationDetails(PlanLocationDetails planLocationDetails, UUID parentIdentifier) {
+  public static LocationResponse fromPlanLocationDetails(PlanLocationDetails planLocationDetails,
+      UUID parentIdentifier) {
     return LocationResponse.builder()
         .identifier(planLocationDetails.getLocation().getIdentifier())
         .type(planLocationDetails.getLocation().getType())
@@ -78,7 +79,8 @@ public class LocationResponseFactory {
                 .geographicLevel(planLocationDetails.getLocation().getGeographicLevel().getName())
                 .numberOfTeams(planLocationDetails.getAssignedTeams())
                 .assigned(planLocationDetails.getAssignedLocations() > 0)
-                .parentIdentifier(planLocationDetails.getParentLocation() == null ? parentIdentifier : planLocationDetails.getParentLocation().getIdentifier())
+                .parentIdentifier(planLocationDetails.getParentLocation() == null ? parentIdentifier
+                    : planLocationDetails.getParentLocation().getIdentifier())
                 .childrenNumber(planLocationDetails.getChildrenNumber())
                 .build())
         .build();
@@ -87,7 +89,8 @@ public class LocationResponseFactory {
   public static LocationResponse fromElasticModel(LocationElastic locationElastic) {
     List<EntityMetadataResponse> metadata = locationElastic.getMetadata()
         .stream()
-        .map(meta -> new EntityMetadataResponse(meta.getValue(),meta.getType()))
+        .map(meta -> new EntityMetadataResponse(
+            meta.getValue() != null ? meta.getValue() : meta.getValueNumber(), meta.getTag()))
         .collect(Collectors.toList());
     return LocationResponse.builder()
         .geometry(locationElastic.getGeometry())
@@ -101,12 +104,14 @@ public class LocationResponseFactory {
         .build();
   }
 
-  public static LocationResponse fromSearchHit(SearchHit hit, List<String> parents, String hierarchyId) throws JsonProcessingException {
+  public static LocationResponse fromSearchHit(SearchHit hit, List<String> parents,
+      String hierarchyId) throws JsonProcessingException {
     ObjectMapper mapper = new ObjectMapper();
     String source = hit.getSourceAsString();
     LocationElastic locationElastic = mapper.readValue(source, LocationElastic.class);
-    Optional<Map<String, List<String>>> ancestry =  locationElastic.getAncestry().stream().filter(anc -> anc.containsKey(hierarchyId)).findFirst();
-    if(ancestry.isPresent()) {
+    Optional<Map<String, List<String>>> ancestry = locationElastic.getAncestry().stream()
+        .filter(anc -> anc.containsKey(hierarchyId)).findFirst();
+    if (ancestry.isPresent()) {
       parents.addAll(ancestry.get().get(hierarchyId));
     }
     return fromElasticModel(locationElastic);

@@ -38,6 +38,7 @@ public class PerformanceDashboardService {
   private final OrganizationService organizationService;
 
   private final IrsPerformanceDashboardService irsPerformanceDashboardService;
+  private final IrsLitePerformanceDashboardService irsLitePerformanceDashboardService;
 
   private ReadOnlyKeyValueStore<String, UserParentChildren> userParentChildren;
 
@@ -62,7 +63,7 @@ public class PerformanceDashboardService {
     List<PlanAssignment> planAssignmentsByPlanIdentifier = planAssignmentService.getPlanAssignmentsByPlanIdentifier(
         planIdentifier);
     Map<String, UserLevel> userLevels = null;
-    if (id == null) {
+    if (id == null || id.equals("null") || id.equals("")) {
       userLevels = planAssignmentsByPlanIdentifier.stream()
           .map(this::getOrganization)
           .filter(Objects::nonNull)
@@ -74,11 +75,11 @@ public class PerformanceDashboardService {
           planIdentifier + "_" + id);
       if (userParentChildren != null) {
         userLevels = userParentChildren.getChildren().stream()
-            .collect(Collectors.toMap(UserLevel::getUserId, userLevel -> userLevel));
+            .collect(Collectors.toMap(UserLevel::getUserId, userLevel -> userLevel, (a, b) -> b));
       }
     }
     initialDataStores(plan);
-    return getRowDatas(plan, userLevels==null?null:new HashSet<>(userLevels.values()), id);
+    return getRowDatas(plan, userLevels == null ? null : new HashSet<>(userLevels.values()), id);
   }
 
   private Organization getOrganization(PlanAssignment planAssignment) {
@@ -106,6 +107,7 @@ public class PerformanceDashboardService {
         return irsPerformanceDashboardService.getDetailedPerformanceColumnData(
             plan, id);
       case IRS_LITE:
+        return irsLitePerformanceDashboardService.getDetailedPerformanceColumnData(plan, id);
       case MDA:
       case MDA_LITE:
       default:
@@ -122,6 +124,8 @@ public class PerformanceDashboardService {
         return irsPerformanceDashboardService.getRowData(
             plan, userLevel, parentUserLevelId);
       case IRS_LITE:
+        return irsLitePerformanceDashboardService.getRowData(
+            plan, userLevel, parentUserLevelId);
       case MDA:
       case MDA_LITE:
       default:
@@ -158,6 +162,8 @@ public class PerformanceDashboardService {
         irsPerformanceDashboardService.initialDataStores();
         break;
       case IRS_LITE:
+        irsLitePerformanceDashboardService.initialDataStores();
+        break;
       case MDA:
       case MDA_LITE:
       default:
