@@ -1,9 +1,8 @@
 package com.revealprecision.revealserver.service.dashboard;
 
-import static com.revealprecision.revealserver.constants.FormConstants.IRS_FOUND;
-import static com.revealprecision.revealserver.constants.FormConstants.IRS_NOT_SPRAYED;
-import static com.revealprecision.revealserver.constants.FormConstants.IRS_SACHET_COUNT;
-import static com.revealprecision.revealserver.constants.FormConstants.IRS_SPRAYED;
+import static com.revealprecision.revealserver.constants.FormConstants.IRS_LITE_FOUND;
+import static com.revealprecision.revealserver.constants.FormConstants.IRS_LITE_NOT_SPRAYED;
+import static com.revealprecision.revealserver.constants.FormConstants.IRS_LITE_SPRAYED;
 import static com.revealprecision.revealserver.service.dashboard.PerformanceDashboardService.AVERAGE_END_TIME;
 import static com.revealprecision.revealserver.service.dashboard.PerformanceDashboardService.AVERAGE_HOURS_WORKED;
 import static com.revealprecision.revealserver.service.dashboard.PerformanceDashboardService.AVERAGE_START_TIME;
@@ -41,18 +40,16 @@ import org.springframework.stereotype.Service;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class IrsPerformanceDashboardService {
+public class IrsLitePerformanceDashboardService {
 
   private final DashboardProperties dashboardProperties;
   private final StreamsBuilderFactoryBean getKafkaStreams;
   private final KafkaProperties kafkaProperties;
 
-
   public static final String FOUND = "Found";
   public static final String SPRAYED = "Sprayed";
   public static final String NOT_SPRAYED = "Not Sprayed";
-  public static final String BOTTLES_USED = "Bottles/Sachets Used";
-  public static final String BOTTLES_USAGE_RATE = "Insecticide Usage Rate";
+
 
   boolean datastoresInitialized = false;
 
@@ -66,21 +63,20 @@ public class IrsPerformanceDashboardService {
     UserPerformanceAggregate userSumAggregate = userPerformanceSums.get(key);
     if (userSumAggregate != null) {
 
-      return userSumAggregate.getDatedUserRecords().entrySet().stream()
-          .map(userPerformancePerDate -> {
-            RowData rowData = new RowData();
-            rowData.setUserName(userPerformancePerDate.getKey().toString());
-            rowData.setUserId(userSumAggregate.getUser().getUserId());
-            rowData.setUserType("date");
-            rowData.setUserLabel("date");
-            rowData.setUserParent(id);
-            rowData.setColumnDataMap(
-                Objects.requireNonNull(getDetailedPerformanceColumnData(
-                        PlanInterventionTypeEnum.valueOf(
-                            plan.getInterventionType().getCode()), userPerformancePerDate)).stream()
-                    .collect(Collectors.toMap(SimpleEntry::getKey, SimpleEntry::getValue)));
-            return rowData;
-          }).collect(Collectors.toList());
+      return userSumAggregate.getDatedUserRecords().entrySet().stream().map(userPerformancePerDate -> {
+        RowData rowData = new RowData();
+        rowData.setUserName(userPerformancePerDate.getKey().toString());
+        rowData.setUserId(userSumAggregate.getUser().getUserId());
+        rowData.setUserType("date");
+        rowData.setUserLabel("date");
+        rowData.setUserParent(id);
+        rowData.setColumnDataMap(
+            Objects.requireNonNull(getDetailedPerformanceColumnData(
+                    PlanInterventionTypeEnum.valueOf(
+                        plan.getInterventionType().getCode()), userPerformancePerDate)).stream()
+                .collect(Collectors.toMap(SimpleEntry::getKey, SimpleEntry::getValue)));
+        return rowData;
+      }).collect(Collectors.toList());
     } else {
       return null;
     }
@@ -97,11 +93,11 @@ public class IrsPerformanceDashboardService {
                 case SPRAYED:
                   ColumnData sprayedColumnData = new ColumnData();
                   sprayedColumnData.setValue(
-                      userPerformancePerDate.getValue().getFieldAggregate().get(IRS_SPRAYED) == null
+                      userPerformancePerDate.getValue().getFieldAggregate().get(IRS_LITE_SPRAYED) == null
                           ? 0 :
-                          userPerformancePerDate.getValue().getFieldAggregate().get(IRS_SPRAYED)
+                          userPerformancePerDate.getValue().getFieldAggregate().get(IRS_LITE_SPRAYED)
                               .get(Boolean.TRUE.toString()) == null ? 0 :
-                              userPerformancePerDate.getValue().getFieldAggregate().get(IRS_SPRAYED)
+                              userPerformancePerDate.getValue().getFieldAggregate().get(IRS_LITE_SPRAYED)
                                   .get(Boolean.TRUE.toString())
                                   .getCount());
 
@@ -110,14 +106,14 @@ public class IrsPerformanceDashboardService {
                 case NOT_SPRAYED:
                   ColumnData notSprayedColumnData = new ColumnData();
                   notSprayedColumnData.setValue(
-                      userPerformancePerDate.getValue().getFieldAggregate().get(IRS_NOT_SPRAYED)
+                      userPerformancePerDate.getValue().getFieldAggregate().get(IRS_LITE_NOT_SPRAYED)
                           == null
                           ? 0
                           : userPerformancePerDate.getValue().getFieldAggregate().get(
-                                  IRS_NOT_SPRAYED)
+                                  IRS_LITE_NOT_SPRAYED)
                               .get(Boolean.TRUE.toString()) == null ? 0 :
                               userPerformancePerDate.getValue().getFieldAggregate()
-                                  .get(IRS_NOT_SPRAYED)
+                                  .get(IRS_LITE_NOT_SPRAYED)
                                   .get(Boolean.TRUE.toString())
                                   .getCount());
                   return new SimpleEntry<>(NOT_SPRAYED, notSprayedColumnData);
@@ -125,12 +121,12 @@ public class IrsPerformanceDashboardService {
                 case FOUND:
                   ColumnData foundColumnData = new ColumnData();
                   foundColumnData.setValue(
-                      userPerformancePerDate.getValue().getFieldAggregate().get(IRS_FOUND) == null ? 0
+                      userPerformancePerDate.getValue().getFieldAggregate().get(IRS_LITE_FOUND) == null ? 0
                           :
-                              userPerformancePerDate.getValue().getFieldAggregate().get(IRS_FOUND)
+                              userPerformancePerDate.getValue().getFieldAggregate().get(IRS_LITE_FOUND)
                                   .get(Boolean.TRUE.toString()) == null ? 0 :
                                   userPerformancePerDate.getValue().getFieldAggregate().get(
-                                          IRS_FOUND)
+                                          IRS_LITE_FOUND)
                                       .get(Boolean.TRUE.toString()).getCount());
                   return new SimpleEntry<>(FOUND, foundColumnData);
 
@@ -138,18 +134,6 @@ public class IrsPerformanceDashboardService {
                   ColumnData hoursWorkedColumnData = new ColumnData();
                   hoursWorkedColumnData.setValue(userPerformancePerDate.getValue().getMinutesWorked());
                   return new SimpleEntry<>(HOURS_WORKED, hoursWorkedColumnData);
-
-                case BOTTLES_USED:
-                  ColumnData bottlesUsedColumnData = new ColumnData();
-                  bottlesUsedColumnData.setValue(
-                      userPerformancePerDate.getValue().getFieldAggregate().get(IRS_SACHET_COUNT)
-                          == null
-                          ? 0 :
-                          userPerformancePerDate.getValue().getFieldAggregate().get(
-                                  IRS_SACHET_COUNT)
-                              .get("integer")
-                              .getSum());
-                  return new SimpleEntry<>(BOTTLES_USED, bottlesUsedColumnData);
 
                 case START_TIME:
                   ColumnData startTimeColumnData = new ColumnData();
@@ -206,7 +190,7 @@ public class IrsPerformanceDashboardService {
     ColumnData averageHoursWorkedColumnData = new ColumnData();
 
     averageHoursWorkedColumnData.setValue(
-        userPerformanceAggregate.getCountOfFieldForValue(IRS_FOUND, Boolean.TRUE));
+        userPerformanceAggregate.getCountOfFieldForValue(IRS_LITE_FOUND, Boolean.TRUE));
     return averageHoursWorkedColumnData;
   }
 
@@ -215,7 +199,7 @@ public class IrsPerformanceDashboardService {
     ColumnData averageHoursWorkedColumnData = new ColumnData();
 
     averageHoursWorkedColumnData.setValue(
-        userPerformanceAggregate.getCountOfFieldForValue(IRS_SPRAYED, Boolean.TRUE));
+        userPerformanceAggregate.getCountOfFieldForValue(IRS_LITE_SPRAYED, Boolean.TRUE));
     return averageHoursWorkedColumnData;
   }
 
@@ -224,40 +208,10 @@ public class IrsPerformanceDashboardService {
     ColumnData averageHoursWorkedColumnData = new ColumnData();
 
     averageHoursWorkedColumnData.setValue(
-        userPerformanceAggregate.getCountOfFieldForValue(IRS_NOT_SPRAYED, Boolean.TRUE));
+        userPerformanceAggregate.getCountOfFieldForValue(IRS_LITE_NOT_SPRAYED, Boolean.TRUE));
     return averageHoursWorkedColumnData;
   }
 
-
-  private ColumnData getNumberOfBottlesOpened(UserPerformanceAggregate userPerformanceAggregate) {
-
-    ColumnData averageHoursWorkedColumnData = new ColumnData();
-
-    averageHoursWorkedColumnData.setValue(
-        userPerformanceAggregate.getSumOfField(IRS_SACHET_COUNT, "integer"));
-    return averageHoursWorkedColumnData;
-  }
-
-  private ColumnData getNumberOfBottlesUsageRate(
-      UserPerformanceAggregate userPerformanceAggregate) {
-
-    ColumnData bottlesUsageRateColumnData = new ColumnData();
-
-    Long sachetCount = userPerformanceAggregate.getSumOfField(IRS_SACHET_COUNT, "integer");
-
-    Long sprayed = userPerformanceAggregate.getCountOfFieldForValue(IRS_SPRAYED, Boolean.TRUE);
-
-    double usageRate = 0;
-    if (sprayed > 0) {
-      usageRate = (double) sachetCount / (double) sprayed;
-    }
-
-    bottlesUsageRateColumnData.setValue(usageRate);
-    bottlesUsageRateColumnData.setMeta(
-        "Sachet/Bottle Count: " + sachetCount + " / " + "Sprayed Structures: " + sprayed);
-    bottlesUsageRateColumnData.setIsPercentage(true);
-    return bottlesUsageRateColumnData;
-  }
 
   public RowData getRowData(Plan plan, UserLevel userLevel, String parentUserLevelId) {
 
@@ -297,13 +251,6 @@ public class IrsPerformanceDashboardService {
         userSumAggregate);
     columnData.put(NOT_SPRAYED, notSprayed);
 
-    ColumnData bottlesOpened = getNumberOfBottlesOpened(
-        userSumAggregate);
-    columnData.put(BOTTLES_USED, bottlesOpened);
-
-    ColumnData bottlesUsageRate = getNumberOfBottlesUsageRate(
-        userSumAggregate);
-    columnData.put(BOTTLES_USAGE_RATE, bottlesUsageRate);
 
     rowData.setColumnDataMap(columnData);
     rowData.setUserName(userLevel.getName());
