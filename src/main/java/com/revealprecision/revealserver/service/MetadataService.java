@@ -563,10 +563,11 @@ public class MetadataService {
                   .collect(Collectors.toList());
               if (!collect.isEmpty()) {
                 EntityTag et = collect.get(0);
-                int numValue;
+                double numValue;
                 if (Objects.equals(et.getValueType(), "integer")) {
-                  numValue = Integer.parseInt(importEntityTagValue);
-                  update(user, currentMetaImport, metaImportDTO, loc, numValue, et);
+                  numValue = Double.parseDouble(importEntityTagValue);
+                  int numValInt = (int) numValue; //TODO we need to solve for decimal types
+                  update(user, currentMetaImport, metaImportDTO, loc, numValInt, et);
                 } else {
                   update(user, currentMetaImport, metaImportDTO, loc, importEntityTagValue, et);
                 }
