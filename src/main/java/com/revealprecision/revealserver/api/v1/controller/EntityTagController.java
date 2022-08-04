@@ -48,7 +48,7 @@ public class EntityTagController {
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<EntityTagResponse> createTag(
       @Valid @RequestBody EntityTagRequest entityTagRequest) {
-
+    entityTagRequest.setAddToMetadata(true); //TODO set this value on the frontend and remove this
     return ResponseEntity.status(HttpStatus.CREATED).body(
         EntityTagResponseFactory.fromEntity(entityTagService.createEntityTag(entityTagRequest)));
   }

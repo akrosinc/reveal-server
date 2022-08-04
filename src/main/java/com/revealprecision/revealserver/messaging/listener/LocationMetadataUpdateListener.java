@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -49,6 +50,10 @@ public class LocationMetadataUpdateListener extends Listener{
     log.debug("requesting elastic update location id {} with request {}",message.getEntityId(),request);
     BulkByScrollResponse bulkByScrollResponse = client.updateByQuery(request,
         RequestOptions.DEFAULT);
+    if(bulkByScrollResponse.getVersionConflicts() > 0) {
+      log.error("elastic update failed");
+      throw new ElasticsearchException("Version conflict exception");
+    }
     log.debug("Updated location id {} with response {}",message.getEntityId(),bulkByScrollResponse.toString());
   }
 }
