@@ -76,7 +76,9 @@ public class IRSDashboardService {
   ReadOnlyKeyValueStore<String, LocationPersonBusinessStateCountAggregate> structurePeopleCounts;
   ReadOnlyKeyValueStore<String, TreatedOperationalAreaAggregate> treatedOperationalCounts;
   ReadOnlyKeyValueStore<String, LocationPersonBusinessStateAggregate> structurePeople;
-  boolean datastoresInitialized = false;
+
+  ReadOnlyKeyValueStore<String, Long> discoveredStructuresPerPlan;
+  boolean isDatastoresInitialized = false;
 
 
   public List<RowData> getIRSFullData(Plan plan, Location childLocation) {
@@ -388,7 +390,12 @@ public class IRSDashboardService {
       notEligibleStructuresCount = notEligibleStructuresCountObj;
     }
 
-    double totalStructuresExcludingNotEligible = totalStructuresCount - notEligibleStructuresCount;
+    double discoveredStructuresCount = discoveredStructuresPerPlan.get(
+        plan.getIdentifier().toString()) != null ? discoveredStructuresPerPlan.get(
+        plan.getIdentifier().toString()) : 0d;
+
+    double totalStructuresExcludingNotEligible =
+        totalStructuresCount + discoveredStructuresCount - notEligibleStructuresCount;
 
     ColumnData totalStructuresColumnData = new ColumnData();
     totalStructuresColumnData.setValue(totalStructuresExcludingNotEligible);
@@ -554,7 +561,7 @@ public class IRSDashboardService {
 
 
   public void initDataStoresIfNecessary() {
-    if (!datastoresInitialized) {
+    if (!isDatastoresInitialized) {
       countOfAssignedStructures = getKafkaStreams.getKafkaStreams().store(
           StoreQueryParameters.fromNameAndType(
               kafkaProperties.getStoreMap().get(KafkaConstants.assignedStructureCountPerParent),
@@ -600,7 +607,12 @@ public class IRSDashboardService {
               kafkaProperties.getStoreMap().get(KafkaConstants.structurePeople),
               QueryableStoreTypes.keyValueStore()));
 
-      datastoresInitialized = true;
+      discoveredStructuresPerPlan = getKafkaStreams.getKafkaStreams().store(
+          StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap()
+                  .get(KafkaConstants.discoveredStructuresCountPerPlan),
+              QueryableStoreTypes.keyValueStore()));
+
+      isDatastoresInitialized = true;
     }
   }
 

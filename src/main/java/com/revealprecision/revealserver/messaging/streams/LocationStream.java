@@ -2,6 +2,7 @@ package com.revealprecision.revealserver.messaging.streams;
 
 import com.revealprecision.revealserver.constants.LocationConstants;
 import com.revealprecision.revealserver.constants.KafkaConstants;
+import com.revealprecision.revealserver.messaging.message.DiscoveredStructureEvent;
 import com.revealprecision.revealserver.messaging.message.LocationAssigned;
 import com.revealprecision.revealserver.messaging.message.LocationRelationshipMessage;
 import com.revealprecision.revealserver.messaging.message.PlanLocationAssignMessage;
@@ -62,7 +63,8 @@ public class LocationStream {
                   LocationRelationshipMessage locationRelationshipMessageWithAncestor = new LocationRelationshipMessage();
                   locationRelationshipMessageWithAncestor.setLocationName(
                       locationRelationshipMessage.getLocationName());
-                  locationRelationshipMessageWithAncestor.setGeoName(locationRelationshipMessage.getGeoName());
+                  locationRelationshipMessageWithAncestor.setGeoName(
+                      locationRelationshipMessage.getGeoName());
                   locationRelationshipMessageWithAncestor.setAncestor(ancestor);
                   locationRelationshipMessageWithAncestor.setLocationIdentifier(
                       locationRelationshipMessage.getLocationIdentifier());
@@ -89,7 +91,8 @@ public class LocationStream {
         Consumed.with(Serdes.String(), new JsonSerde<>(PlanLocationAssignMessage.class)));
 
     //Doing this so that we can rewind this topic without rewinding to cause task generation from running again....
-    locationsAssignedStream.to(kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_LOCATION_ASSIGNED_STREAM));
+    locationsAssignedStream.to(
+        kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_LOCATION_ASSIGNED_STREAM));
     return locationsAssignedStream;
   }
 
@@ -102,7 +105,8 @@ public class LocationStream {
         kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_LOCATION_ASSIGNED_STREAM),
         Consumed.with(Serdes.String(), new JsonSerde<>(PlanLocationAssignMessage.class)));
 
-    locationsAssignedStream.peek((k,v)->streamLog.debug("locationsAssignedStream - k: {} v: {}", k,v));
+    locationsAssignedStream.peek(
+        (k, v) -> streamLog.debug("locationsAssignedStream - k: {} v: {}", k, v));
 
     //Get structures from the locations assigned to plan
     KStream<String, PlanLocationAssignMessage> stringPlanLocationAssignMessageKStream = locationsAssignedStream
@@ -122,27 +126,32 @@ public class LocationStream {
           return planLocationAssignMessage;
         });
 
-    stringPlanLocationAssignMessageKStream.peek((k,v)->streamLog.debug("stringPlanLocationAssignMessageKStream - k: {} v: {}", k,v));
+    stringPlanLocationAssignMessageKStream.peek(
+        (k, v) -> streamLog.debug("stringPlanLocationAssignMessageKStream - k: {} v: {}", k, v));
 
     KStream<String, LocationAssigned> stringLocationAssignedKStream = stringPlanLocationAssignMessageKStream
         .flatMapValues(
             (k, planLocationAssignMessage) -> getStructuresAssignedAndUnAssigned(
                 planLocationAssignMessage))
-        .flatMapValues((k, locationAssigned) -> getLocationAssignedUnpackedByAncestry(locationAssigned))
+        .flatMapValues(
+            (k, locationAssigned) -> getLocationAssignedUnpackedByAncestry(locationAssigned))
         .selectKey((key, locationAssigned) -> getLocationPlanAncestorKey(locationAssigned))
-        .mapValues((key, locationAssigned) -> locationAssigned.isAssigned() ? locationAssigned : null);
+        .mapValues(
+            (key, locationAssigned) -> locationAssigned.isAssigned() ? locationAssigned : null);
 
-    stringLocationAssignedKStream.peek((k,v)->streamLog.debug("stringLocationAssignedKStream - k: {} v: {}", k,v));
-
+    stringLocationAssignedKStream.peek(
+        (k, v) -> streamLog.debug("stringLocationAssignedKStream - k: {} v: {}", k, v));
 
     KTable<String, LocationAssigned> tableOfAssignedStructures = stringLocationAssignedKStream
         .repartition()
-        .toTable(Materialized.<String, LocationAssigned, KeyValueStore<Bytes, byte[]>>as(kafkaProperties.getStoreMap()
-            .get(KafkaConstants.tableOfAssignedStructuresWithParentKeyed))
+        .toTable(Materialized.<String, LocationAssigned, KeyValueStore<Bytes, byte[]>>as(
+                kafkaProperties.getStoreMap()
+                    .get(KafkaConstants.tableOfAssignedStructuresWithParentKeyed))
             .withKeySerde(Serdes.String())
             .withValueSerde(new JsonSerde<>(LocationAssigned.class)));
 
-    tableOfAssignedStructures.toStream().peek((k,v)->streamLog.debug("tableOfAssignedStructures.toStream() - k: {} v: {}", k,v));
+    tableOfAssignedStructures.toStream().peek(
+        (k, v) -> streamLog.debug("tableOfAssignedStructures.toStream() - k: {} v: {}", k, v));
 
     KTable<String, Long> count = tableOfAssignedStructures
         .groupBy((key, locationAssigned) -> KeyValue.pair(
@@ -152,17 +161,30 @@ public class LocationStream {
         .count(Materialized.as(
             kafkaProperties.getStoreMap().get(KafkaConstants.assignedStructureCountPerParent)));
 
-    count.toStream().peek((k,v)->streamLog.debug("count.toStream() - k: {} v: {}", k,v));
+    count.toStream().peek((k, v) -> streamLog.debug("count.toStream() - k: {} v: {}", k, v));
     return locationsAssignedStream;
   }
 
+  @Bean
+  KStream<String, DiscoveredStructureEvent> discoveredStructuresStreamProcess(
+      StreamsBuilder builder) {
+    KStream<String, DiscoveredStructureEvent> discoveredStructureEventKStream = builder.stream(
+        kafkaProperties.getTopicMap().get(KafkaConstants.DISCOVERED_STRUCTURES),
+        Consumed.with(Serdes.String(), new JsonSerde<>(DiscoveredStructureEvent.class)));
+    KTable<String, Long> count = discoveredStructureEventKStream.groupByKey().count(Materialized.as(
+        kafkaProperties.getStoreMap().get(KafkaConstants.discoveredStructuresCountPerPlan)));
+    count.toStream().peek(
+        (k, v) -> streamLog.debug("Saved discovered structures count per plan -(planId,count):", k, v));
+    return discoveredStructureEventKStream;
+  }
 
   private String getLocationPlanAncestorKey(LocationAssigned locationAssigned) {
     return locationAssigned.getIdentifier() + "_"
         + locationAssigned.getPlanIdentifier() + "_" + locationAssigned.getAncestor();
   }
 
-  private List<LocationAssigned> getLocationAssignedUnpackedByAncestry(LocationAssigned locationAssigned) {
+  private List<LocationAssigned> getLocationAssignedUnpackedByAncestry(
+      LocationAssigned locationAssigned) {
     return locationAssigned.getAncestry().stream().map(ancestor -> {
       LocationAssigned locationAssigned1 = new LocationAssigned();
       locationAssigned1.setAssigned(locationAssigned.isAssigned());
