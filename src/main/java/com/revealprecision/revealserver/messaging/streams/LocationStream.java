@@ -1,7 +1,7 @@
 package com.revealprecision.revealserver.messaging.streams;
 
-import com.revealprecision.revealserver.constants.LocationConstants;
 import com.revealprecision.revealserver.constants.KafkaConstants;
+import com.revealprecision.revealserver.constants.LocationConstants;
 import com.revealprecision.revealserver.messaging.message.DiscoveredStructureEvent;
 import com.revealprecision.revealserver.messaging.message.LocationAssigned;
 import com.revealprecision.revealserver.messaging.message.LocationRelationshipMessage;

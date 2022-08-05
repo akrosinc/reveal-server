@@ -27,6 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class LocationFacadeController {
 
+  public static final String CURRENT_PLAN_ID = "current_plan_id";
   private final LocationFacadeService locationFacadeService;
   private final LocationHierarchyFacadeService locationHierarchyFacadeService;
   public static final String IS_JURISDICTION = "is_jurisdiction";
@@ -54,9 +55,9 @@ public class LocationFacadeController {
   @PostMapping(value = "/add", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<String> addSyncedStructures(
       @RequestBody List<CreateLocationRequest> locations,
-      @RequestParam(value = IS_JURISDICTION, defaultValue = FALSE, required = false) boolean isJurisdiction) {
+      @RequestParam(value = IS_JURISDICTION, defaultValue = FALSE, required = false) boolean isJurisdiction, @RequestParam(value = CURRENT_PLAN_ID) String planId) {
     Set<String> locationRequestsWithErrors = locationFacadeService
-        .saveSyncedLocations(locations);
+        .saveSyncedLocations(locations,planId);
     String message = locationRequestsWithErrors.isEmpty() ? "All Locations  processed"
         : ("Locations with Ids not processed: " + String.join(",", locationRequestsWithErrors));
     return ResponseEntity.status(HttpStatus.CREATED).body(message);

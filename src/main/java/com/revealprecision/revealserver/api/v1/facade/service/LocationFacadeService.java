@@ -4,8 +4,11 @@ import com.revealprecision.revealserver.api.v1.dto.request.LocationRequest;
 import com.revealprecision.revealserver.api.v1.facade.factory.LocationRequestFactory;
 import com.revealprecision.revealserver.api.v1.facade.models.CreateLocationRequest;
 import com.revealprecision.revealserver.api.v1.facade.request.LocationSyncRequest;
+import com.revealprecision.revealserver.constants.KafkaConstants;
+import com.revealprecision.revealserver.messaging.message.DiscoveredStructureEvent;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
+import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.service.LocationService;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -16,6 +19,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -26,6 +30,9 @@ public class LocationFacadeService {
   public static final String TOTAL_RECORDS = "total_records";
 
   private final LocationService locationService;
+  private final KafkaTemplate<String, DiscoveredStructureEvent> kafkaTemplate;
+
+  private final KafkaProperties kafkaProperties;
 
   public List<Location> syncLocations(LocationSyncRequest locationSyncRequest,
       LocationHierarchy hierarchy) {
@@ -45,18 +52,27 @@ public class LocationFacadeService {
     return headers;
   }
 
-  public Set<String> saveSyncedLocations(List<CreateLocationRequest> createLocationRequests) {
+  public Set<String> saveSyncedLocations(List<CreateLocationRequest> createLocationRequests,
+      String currentPlanId) {
     Set<String> locationRequestsWithErrors = new HashSet<>();
     List<LocationRequest> locationRequests = LocationRequestFactory
         .fromPhysicalLocationRequests(createLocationRequests);
+    List<Location> savedLocations = new ArrayList<>();
     for (LocationRequest locationRequest : locationRequests) {
       try {
-        locationService.createLocation(locationRequest);
+        Location location = locationService.createLocation(locationRequest);
+        savedLocations.add(location);
       } catch (Exception e) {
         log.error(e.getMessage(), e);
         locationRequestsWithErrors.add(locationRequest.getProperties().getExternalId().toString());
       }
     }
+    savedLocations.stream().forEach(location -> {
+      DiscoveredStructureEvent event = DiscoveredStructureEvent.builder()
+          .locationIdentifier(location.getIdentifier()).build();
+      kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.DISCOVERED_STRUCTURES),
+          currentPlanId, event);
+    });
     return locationRequestsWithErrors;
   }
 
