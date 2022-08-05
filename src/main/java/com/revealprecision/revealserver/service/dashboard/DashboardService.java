@@ -65,7 +65,11 @@ public class DashboardService {
     List<PlanLocationDetails> locationDetails = getPlanLocationDetails(
         planIdentifier, parentIdentifier, plan, parentLocation);
 
-    initialDataStores(reportTypeEnum);
+    try {
+      initialDataStores(reportTypeEnum);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
 
     String reportLevel = getReportLevel(plan, parentLocation, parentIdentifierString);
 
@@ -192,7 +196,7 @@ public class DashboardService {
     return null;
   }
 
-  private void initialDataStores(ReportTypeEnum reportTypeEnum) {
+  private void initialDataStores(ReportTypeEnum reportTypeEnum) throws InterruptedException {
     switch (reportTypeEnum) {
       case MDA_FULL_COVERAGE:
         mdaDashboardService.initDataStoresIfNecessary();
