@@ -1,6 +1,8 @@
 package com.revealprecision.revealserver.service.dashboard;
 
 
+import static com.revealprecision.revealserver.messaging.utils.DataStoreUtils.getQueryableStoreByWaiting;
+
 import com.revealprecision.revealserver.api.v1.dto.factory.LocationResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.models.ColumnData;
 import com.revealprecision.revealserver.api.v1.dto.models.RowData;
@@ -30,7 +32,9 @@ import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StoreQueryParameters;
+import org.apache.kafka.streams.errors.InvalidStateStoreException;
 import org.apache.kafka.streams.state.QueryableStoreTypes;
 import org.apache.kafka.streams.state.ReadOnlyKeyValueStore;
 import org.springframework.kafka.config.StreamsBuilderFactoryBean;
@@ -560,54 +564,56 @@ public class IRSDashboardService {
   }
 
 
-  public void initDataStoresIfNecessary() {
+  public void initDataStoresIfNecessary() throws InterruptedException {
     if (!isDatastoresInitialized) {
-      countOfAssignedStructures = getKafkaStreams.getKafkaStreams().store(
+
+      countOfAssignedStructures = getQueryableStoreByWaiting(getKafkaStreams.getKafkaStreams(),
           StoreQueryParameters.fromNameAndType(
               kafkaProperties.getStoreMap().get(KafkaConstants.assignedStructureCountPerParent),
               QueryableStoreTypes.keyValueStore()));
 
-      structureCounts = getKafkaStreams.getKafkaStreams().store(
+      structureCounts = getQueryableStoreByWaiting(getKafkaStreams.getKafkaStreams(),
           StoreQueryParameters.fromNameAndType(
               kafkaProperties.getStoreMap().get(KafkaConstants.structureCountPerParent),
               QueryableStoreTypes.keyValueStore()));
 
-      countOfStructuresByBusinessStatus = getKafkaStreams.getKafkaStreams().store(
+      countOfStructuresByBusinessStatus = getQueryableStoreByWaiting(
+          getKafkaStreams.getKafkaStreams(),
           StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap()
                   .get(KafkaConstants.locationBusinessStatusByPlanParentHierarchy),
               QueryableStoreTypes.keyValueStore()));
 
-      countOfOperationalArea = getKafkaStreams.getKafkaStreams().store(
+      countOfOperationalArea = getQueryableStoreByWaiting(getKafkaStreams.getKafkaStreams(),
           StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap()
                   .get(KafkaConstants.operationalAreaByPlanParentHierarchy),
               QueryableStoreTypes.keyValueStore()));
 
-      personBusinessStatus = getKafkaStreams.getKafkaStreams().store(
+      personBusinessStatus = getQueryableStoreByWaiting(getKafkaStreams.getKafkaStreams(),
           StoreQueryParameters.fromNameAndType(
               kafkaProperties.getStoreMap().get(KafkaConstants.personBusinessStatus),
               QueryableStoreTypes.keyValueStore()));
 
-      locationBusinessState = getKafkaStreams.getKafkaStreams().store(
+      locationBusinessState = getQueryableStoreByWaiting(getKafkaStreams.getKafkaStreams(),
           StoreQueryParameters.fromNameAndType(
               kafkaProperties.getStoreMap().get(KafkaConstants.locationBusinessStatus),
               QueryableStoreTypes.keyValueStore()));
 
-      structurePeopleCounts = getKafkaStreams.getKafkaStreams().store(
+      structurePeopleCounts = getQueryableStoreByWaiting(getKafkaStreams.getKafkaStreams(),
           StoreQueryParameters.fromNameAndType(
               kafkaProperties.getStoreMap().get(KafkaConstants.structurePeopleCounts),
               QueryableStoreTypes.keyValueStore()));
 
-      treatedOperationalCounts = getKafkaStreams.getKafkaStreams().store(
+      treatedOperationalCounts = getQueryableStoreByWaiting(getKafkaStreams.getKafkaStreams(),
           StoreQueryParameters.fromNameAndType(
               kafkaProperties.getStoreMap().get(KafkaConstants.operationalTreatedCounts),
               QueryableStoreTypes.keyValueStore()));
 
-      structurePeople = getKafkaStreams.getKafkaStreams().store(
+      structurePeople = getQueryableStoreByWaiting(getKafkaStreams.getKafkaStreams(),
           StoreQueryParameters.fromNameAndType(
               kafkaProperties.getStoreMap().get(KafkaConstants.structurePeople),
               QueryableStoreTypes.keyValueStore()));
 
-      discoveredStructuresPerPlan = getKafkaStreams.getKafkaStreams().store(
+      discoveredStructuresPerPlan = getQueryableStoreByWaiting(getKafkaStreams.getKafkaStreams(),
           StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap()
                   .get(KafkaConstants.discoveredStructuresCountPerPlan),
               QueryableStoreTypes.keyValueStore()));
@@ -615,6 +621,7 @@ public class IRSDashboardService {
       isDatastoresInitialized = true;
     }
   }
+
 
   private List<LocationResponse> setGeoJsonProperties(Map<UUID, RowData> rowDataMap,
       List<LocationResponse> locationResponses) {
@@ -647,3 +654,5 @@ public class IRSDashboardService {
     return response;
   }
 }
+
+
