@@ -164,7 +164,7 @@ public class LocationRelationshipService {
             .findByGeographicLevelIdentifier(parentGeographicLevel.get()
                 .getIdentifier());
 
-        for(Location parentLocation : upperGeographicLevelLocations){
+        for (Location parentLocation : upperGeographicLevelLocations) {
           createParentChildRelationship(parentLocation, location,
               locationHierarchy);
         }
@@ -183,7 +183,7 @@ public class LocationRelationshipService {
             .findByGeographicLevelIdentifier(lowerGeographicLevel.get()
                 .getIdentifier());
 
-        for(Location childLocation : lowerGeographicLevelLocations) {
+        for (Location childLocation : lowerGeographicLevelLocations) {
           createParentChildRelationship(location, childLocation,
               locationHierarchy);
         }
@@ -259,7 +259,8 @@ public class LocationRelationshipService {
         Collectors.toList());
   }
 
-  public List<LocationRelationshipProjection> getLocationRelationshipsNotLike(LocationHierarchy locationHierarchy, List<String> notLike) {
+  public List<LocationRelationshipProjection> getLocationRelationshipsNotLike(
+      LocationHierarchy locationHierarchy, List<String> notLike) {
     return locationRelationshipRepository.findByLocationHierarchyWithoutStructuresNotLike(notLike);
   }
 
@@ -282,7 +283,7 @@ public class LocationRelationshipService {
 
   public long getNumberOfChildren(UUID locationIdentifier) {
     Optional<Long> response = locationRelationshipRepository.getChildrenNumber(locationIdentifier);
-    if(response.isPresent()) {
+    if (response.isPresent()) {
       return response.get();
     }
     return 0;
@@ -376,7 +377,7 @@ public class LocationRelationshipService {
             Collections.reverse(parentIds);
           } catch (NullPointerException e) {
             e.printStackTrace();
-            log.error("Error building ancestry - {}", e.getMessage(),e);
+            log.error("Error building ancestry - {}", e.getMessage(), e);
             importLog.debug("Current Ancestry: {}", parents.entrySet().stream()
                 .map(entry -> entry.getValue() + " - > " + entry.getKey())
                 .collect(Collectors.joining(","))
@@ -486,13 +487,22 @@ public class LocationRelationshipService {
         location.getIdentifier(), locationHierarchy.getIdentifier());
   }
 
-  public List<LocationMainData> getLocationsByHierarchyIdAndLevelName(UUID hierarchyIdentifier, String levelName) {
-    return locationRelationshipRepository.getLocationsByHierarchyIdAndLevelName(hierarchyIdentifier, levelName);
+  public List<LocationMainData> getLocationsByHierarchyIdAndLevelName(UUID hierarchyIdentifier,
+      String levelName) {
+    return locationRelationshipRepository.getLocationsByHierarchyIdAndLevelName(hierarchyIdentifier,
+        levelName);
   }
 
-  public Location getLocationParentByLocationIdentifierAndHierarchyIdentifier(UUID locationIdentifier, UUID locationHierarchyIdentifier) {
+  public Location getLocationParentByLocationIdentifierAndHierarchyIdentifier(
+      UUID locationIdentifier, UUID locationHierarchyIdentifier) {
     return locationRelationshipRepository.getParentLocationByLocationIdAndHierarchyId(
         locationIdentifier, locationHierarchyIdentifier);
   }
 
+  public List<UUID> getAncestryForLocation(UUID locationId, UUID locationHierarchyId) {
+    return locationRelationshipRepository.getLocationRelationshipByLocation_IdentifierAndLocationHierarchy_Identifier(
+        locationId, locationHierarchyId).getAncestry();
+  }
+
 }
+

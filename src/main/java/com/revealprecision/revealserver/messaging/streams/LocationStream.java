@@ -174,7 +174,7 @@ public class LocationStream {
     KTable<String, Long> count = discoveredStructureEventKStream.groupByKey().count(Materialized.as(
         kafkaProperties.getStoreMap().get(KafkaConstants.discoveredStructuresCountPerPlan)));
     count.toStream().peek(
-        (k, v) -> streamLog.debug("Saved discovered structures count per plan -(planId,count):", k, v));
+        (k, v) -> streamLog.debug("Saved discovered structures count per plan -(planId_location,count):", k, v));
     return discoveredStructureEventKStream;
   }
 

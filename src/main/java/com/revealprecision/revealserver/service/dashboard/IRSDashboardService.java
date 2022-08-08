@@ -394,9 +394,9 @@ public class IRSDashboardService {
       notEligibleStructuresCount = notEligibleStructuresCountObj;
     }
 
+    String discoveredStructuresPerParentKey = String.format("%s_%s",plan.getIdentifier().toString(),childLocation.getIdentifier().toString());
     double discoveredStructuresCount = discoveredStructuresPerPlan.get(
-        plan.getIdentifier().toString()) != null ? discoveredStructuresPerPlan.get(
-        plan.getIdentifier().toString()) : 0d;
+        discoveredStructuresPerParentKey) != null ? discoveredStructuresPerPlan.get(discoveredStructuresPerParentKey) : 0d;
 
     double totalStructuresExcludingNotEligible =
         totalStructuresCount + discoveredStructuresCount - notEligibleStructuresCount;

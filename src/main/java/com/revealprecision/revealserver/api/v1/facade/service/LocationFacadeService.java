@@ -9,7 +9,9 @@ import com.revealprecision.revealserver.messaging.message.DiscoveredStructureEve
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.props.KafkaProperties;
+import com.revealprecision.revealserver.service.LocationRelationshipService;
 import com.revealprecision.revealserver.service.LocationService;
+import com.revealprecision.revealserver.service.PlanService;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -33,6 +35,10 @@ public class LocationFacadeService {
   private final KafkaTemplate<String, DiscoveredStructureEvent> kafkaTemplate;
 
   private final KafkaProperties kafkaProperties;
+
+  private final PlanService planService;
+
+  private final LocationRelationshipService locationRelationshipService;
 
   public List<Location> syncLocations(LocationSyncRequest locationSyncRequest,
       LocationHierarchy hierarchy) {
@@ -70,8 +76,14 @@ public class LocationFacadeService {
     savedLocations.stream().forEach(location -> {
       DiscoveredStructureEvent event = DiscoveredStructureEvent.builder()
           .locationIdentifier(location.getIdentifier()).build();
-      kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.DISCOVERED_STRUCTURES),
-          currentPlanId, event);
+      UUID hierarchyId = planService.getPlanByIdentifier(UUID.fromString(currentPlanId))
+          .getLocationHierarchy().getIdentifier();
+      List<UUID> ancestry = locationRelationshipService.getAncestryForLocation(location.getIdentifier(),hierarchyId);
+      ancestry.stream().forEach( locationId -> {
+        String key = String.format("%s_%s", currentPlanId, locationId);
+        kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.DISCOVERED_STRUCTURES),
+            key, event);
+      });
     });
     return locationRequestsWithErrors;
   }
