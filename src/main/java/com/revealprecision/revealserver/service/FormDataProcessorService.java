@@ -43,6 +43,7 @@ import com.revealprecision.revealserver.enums.PlanInterventionTypeEnum;
 import com.revealprecision.revealserver.messaging.message.DeviceUser;
 import com.revealprecision.revealserver.messaging.message.FormDataEntityTagEvent;
 import com.revealprecision.revealserver.messaging.message.FormDataEntityTagValueEvent;
+import com.revealprecision.revealserver.messaging.message.FormObservationsEvent;
 import com.revealprecision.revealserver.messaging.message.OrgLevel;
 import com.revealprecision.revealserver.messaging.message.UserData;
 import com.revealprecision.revealserver.messaging.message.mdalite.MDALiteLocationSupervisorCddEvent;
@@ -81,6 +82,7 @@ public class FormDataProcessorService {
   private final PlanService planService;
   private final KafkaTemplate<String, FormDataEntityTagEvent> eventConsumptionTemplate;
 
+
   private final FormFieldService formFieldService;
   private final EntityTagService entityTagService;
   private final LocationService locationService;
@@ -88,6 +90,8 @@ public class FormDataProcessorService {
 
   private final KafkaTemplate<String, UserData> userDataTemplate;
   private final KafkaTemplate<String, MDALiteLocationSupervisorCddEvent> mdaliteSupervisorTemplate;
+
+  private final KafkaTemplate<String, FormObservationsEvent> formObservationsEventKafkaTemplate;
 
   public void processFormDataAndSubmitToMessaging(Event savedEvent) throws IOException {
 
@@ -101,6 +105,8 @@ public class FormDataProcessorService {
       });
 
       List<Obs> obsJavaList = reader.readValue(obsList);
+
+      publishFormObservations(savedEvent, obsJavaList);
 
       String dateString = null;
       String supervisorName = null;
@@ -223,7 +229,8 @@ public class FormDataProcessorService {
         if (savedEvent.getEventType().equals(IRS_LITE_VERIFICATION_FORM)) {
           fieldWorker = getFormValue(obsJavaList, IRS_LITE_VERIFICATION_FORM_SUPERVISOR);
 
-          String businessStatus = getFormValue(obsJavaList, IRS_LITE_VERIFICATION_FORM_BUSINESS_STATUS_FIELD);
+          String businessStatus = getFormValue(obsJavaList,
+              IRS_LITE_VERIFICATION_FORM_BUSINESS_STATUS_FIELD);
 
           if (businessStatus.equals("Sprayed")) {
             sprayed = true;
@@ -241,7 +248,6 @@ public class FormDataProcessorService {
           collect = deviceUser.getOrganizations().stream()
               .map(this::getFlattenedOrganizationalHierarchy).collect(Collectors.toList());
 
-
           fieldWorkerLabel = "Supervisor";
           userLabel = "Field Officer";
           orgLabel = "Team";
@@ -254,6 +260,24 @@ public class FormDataProcessorService {
                 fields));
 
       }
+    }
+  }
+
+  private void publishFormObservations(Event savedEvent, List<Obs> obsJavaList) {
+    if (savedEvent.getPlanIdentifier() != null && savedEvent.getLocationIdentifier() != null) {
+      //can filter fields we are interested in to reduce traffic.
+      obsJavaList.stream().forEach(obs -> {
+        FormObservationsEvent formObservationsEvent = FormObservationsEvent.builder()
+            .fieldCode(obs.getFieldCode()).fieldDataType(obs.getFieldDataType())
+            .fieldType(obs.getFieldType()).values(obs.getValues()).parentCode(obs.getParentCode())
+            .build();
+
+        String messageKey = String.format("%s_%s_%s", savedEvent.getPlanIdentifier(),
+            savedEvent.getLocationIdentifier(), obs.getFieldCode());
+        formObservationsEventKafkaTemplate.send(
+            kafkaProperties.getTopicMap().get(KafkaConstants.FORM_OBSERVATIONS), messageKey,
+            formObservationsEvent);
+      });
     }
   }
 

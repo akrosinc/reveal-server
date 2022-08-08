@@ -10,6 +10,7 @@ import com.revealprecision.revealserver.api.v1.dto.response.FeatureSetResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationResponse;
 import com.revealprecision.revealserver.constants.KafkaConstants;
 import com.revealprecision.revealserver.constants.LocationConstants;
+import com.revealprecision.revealserver.messaging.message.FormObservationsEvent;
 import com.revealprecision.revealserver.messaging.message.LocationBusinessStatusAggregate;
 import com.revealprecision.revealserver.messaging.message.LocationPersonBusinessStateAggregate;
 import com.revealprecision.revealserver.messaging.message.LocationPersonBusinessStateCountAggregate;
@@ -32,9 +33,7 @@ import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StoreQueryParameters;
-import org.apache.kafka.streams.errors.InvalidStateStoreException;
 import org.apache.kafka.streams.state.QueryableStoreTypes;
 import org.apache.kafka.streams.state.ReadOnlyKeyValueStore;
 import org.springframework.kafka.config.StreamsBuilderFactoryBean;
@@ -80,7 +79,7 @@ public class IRSDashboardService {
   ReadOnlyKeyValueStore<String, LocationPersonBusinessStateCountAggregate> structurePeopleCounts;
   ReadOnlyKeyValueStore<String, TreatedOperationalAreaAggregate> treatedOperationalCounts;
   ReadOnlyKeyValueStore<String, LocationPersonBusinessStateAggregate> structurePeople;
-
+  ReadOnlyKeyValueStore<String, FormObservationsEvent> formObservations;
   ReadOnlyKeyValueStore<String, Long> discoveredStructuresPerPlan;
   boolean isDatastoresInitialized = false;
 
@@ -191,15 +190,34 @@ public class IRSDashboardService {
         getLocationBusinessState(plan, childLocation, parentLocationIdentifier));
     ColumnData blankColumnData = new ColumnData();
     blankColumnData.setValue(0L);
-    columns.put(NO_OF_MALES, blankColumnData); //TODO to be calculated
-    columns.put(NO_OF_FEMALES, blankColumnData); //TODO to be calculated
-    columns.put(NO_OF_ROOMS, blankColumnData); //TODO to be calculated
-    columns.put(NO_OF_PREGNANT_WOMEN, blankColumnData); //TODO to be calculated
+    columns.put(NO_OF_MALES,
+        getFormValue(plan, childLocation, "sprayed_males"));
+    columns.put(NO_OF_FEMALES,
+        getFormValue(plan, childLocation, "sprayed_females"));
+    columns.put(NO_OF_ROOMS,
+        getFormValue(plan, childLocation, "rooms_sprayed"));
+    columns.put(NO_OF_PREGNANT_WOMEN,
+        getFormValue(plan, childLocation, "sprayed_pregwomen"));
     RowData rowData = new RowData();
     rowData.setLocationIdentifier(childLocation.getIdentifier());
     rowData.setColumnDataMap(columns);
     rowData.setLocationName(childLocation.getName());
     return List.of(rowData);
+  }
+
+  private ColumnData getFormValue(Plan plan, Location childLocation, String fieldCode) {
+    ColumnData columnData = new ColumnData();
+    columnData.setIsPercentage(false);
+    FormObservationsEvent event = formObservations.get(
+        String.format("%s_%s_%s", plan.getIdentifier().toString(),
+            childLocation.getIdentifier().toString(), fieldCode));
+    if (event != null) {
+      double value = Double.valueOf((String) event.getValues().get(0));
+      columnData.setValue(value);
+    } else {
+      columnData.setValue(0d);
+    }
+    return columnData;
   }
 
   private ColumnData getLocationBusinessState(Plan plan, Location childLocation,
@@ -394,9 +412,11 @@ public class IRSDashboardService {
       notEligibleStructuresCount = notEligibleStructuresCountObj;
     }
 
-    String discoveredStructuresPerParentKey = String.format("%s_%s",plan.getIdentifier().toString(),childLocation.getIdentifier().toString());
+    String discoveredStructuresPerParentKey = String.format("%s_%s",
+        plan.getIdentifier().toString(), childLocation.getIdentifier().toString());
     double discoveredStructuresCount = discoveredStructuresPerPlan.get(
-        discoveredStructuresPerParentKey) != null ? discoveredStructuresPerPlan.get(discoveredStructuresPerParentKey) : 0d;
+        discoveredStructuresPerParentKey) != null ? discoveredStructuresPerPlan.get(
+        discoveredStructuresPerParentKey) : 0d;
 
     double totalStructuresExcludingNotEligible =
         totalStructuresCount + discoveredStructuresCount - notEligibleStructuresCount;
@@ -618,6 +638,10 @@ public class IRSDashboardService {
                   .get(KafkaConstants.discoveredStructuresCountPerPlan),
               QueryableStoreTypes.keyValueStore()));
 
+      formObservations = getQueryableStoreByWaiting(getKafkaStreams.getKafkaStreams(),
+          StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap()
+                  .get(KafkaConstants.formObservations),
+              QueryableStoreTypes.keyValueStore()));
       isDatastoresInitialized = true;
     }
   }

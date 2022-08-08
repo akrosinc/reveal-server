@@ -21,6 +21,7 @@ public interface KafkaConstants {
 
   String DISCOVERED_STRUCTURES = "DISCOVERED_STRUCTURES";
 
+  String FORM_OBSERVATIONS = "FORM_OBSERVATIONS";
   String structureCountPerParent = "structureCountPerParent";
   String assignedStructureCountPerParent = "assignedStructureCountPerParent";
   String tableOfAssignedStructuresWithParentKeyed = "tableOfAssignedStructuresWithParentKeyed";
@@ -62,4 +63,5 @@ public interface KafkaConstants {
   String userPerformanceSums = "userPerformanceSums";
   String userParentChildren = "userParentChildren";
   String discoveredStructuresCountPerPlan = "discoveredStructuresCountPerPlan";
+  String formObservations = "formObservations" ;
 }
