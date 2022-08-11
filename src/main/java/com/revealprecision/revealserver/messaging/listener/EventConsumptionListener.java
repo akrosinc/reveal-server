@@ -1,5 +1,12 @@
 package com.revealprecision.revealserver.messaging.listener;
 
+import static com.revealprecision.revealserver.constants.EntityTagDataTypes.INTEGER;
+import static com.revealprecision.revealserver.constants.EntityTagScopes.EVENT;
+import static com.revealprecision.revealserver.constants.EntityTagScopes.GLOBAL;
+import static com.revealprecision.revealserver.constants.EntityTagScopes.PLAN;
+import static com.revealprecision.revealserver.constants.EntityTagScopes.DATE;
+
+
 import com.revealprecision.revealserver.api.v1.dto.factory.EntityTagEventFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.FormDataEntityTagValueEventFactory;
 import com.revealprecision.revealserver.constants.KafkaConstants;
@@ -42,6 +49,7 @@ import org.springframework.stereotype.Service;
 @Service
 @Slf4j
 public class EventConsumptionListener extends Listener {
+
 
   private final MetadataService metadataService;
   private final PlanService planService;
@@ -268,7 +276,7 @@ public class EventConsumptionListener extends Listener {
 
   private Object getCastedValue(FormFieldEvent formField, Object tagValue) {
     Object tagValueCasted;
-    if (formField.getDataType().equals("integer")) {
+    if (formField.getDataType().equals(INTEGER)) {
       tagValueCasted = ( tagValue instanceof Integer ) ? tagValue : Integer.valueOf((String) tagValue);
     } else {
       tagValueCasted = tagValue;
@@ -281,20 +289,20 @@ public class EventConsumptionListener extends Listener {
       UUID taskIdentifier, String scope, String tag) {
     String referencedTagKey = null;
     switch (scope) {
-      case "Global":
+      case GLOBAL:
         referencedTagKey = tag;
         break;
-      case "Plan":
+      case PLAN:
         referencedTagKey =
             tag + "_" + planIdentifier + "_"
                 + taskIdentifier;
         break;
-      case "Event":
+      case EVENT:
         referencedTagKey =
             tag + "_" + planIdentifier + "_"
                 + taskIdentifier + "_" + eventMetadata.getEventId();
         break;
-      case "Date":
+      case DATE:
         referencedTagKey =
             tag + "_" + planIdentifier + "_"
                 + taskIdentifier + "_" + dateForScopeDateFields; // + Date;
@@ -308,18 +316,18 @@ public class EventConsumptionListener extends Listener {
       String dateForScopeDateFields, UUID planIdentifier, String scope, String tag) {
     String referencedTagKey = null;
     switch (scope) {
-      case "Global":
+      case GLOBAL:
         referencedTagKey = tag;
         break;
-      case "Plan":
+      case PLAN:
         referencedTagKey =
             tag + "_" + planIdentifier;
         break;
-      case "Event":
+      case EVENT:
         referencedTagKey =
             tag + "_" + planIdentifier + "_" + eventMetadata.getEventId();
         break;
-      case "Date":
+      case DATE:
         referencedTagKey =
             tag + "_" + planIdentifier + "_" + dateForScopeDateFields; // + Date;
 

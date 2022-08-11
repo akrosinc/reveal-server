@@ -2,14 +2,14 @@
 
 INSERT INTO form_field(identifier, name, display, form_title, data_type, entity_status, created_by,
                        created_datetime, modified_by, modified_datetime)
-VALUES (uuid_generate_v4(), 'pzq_received', 'PZQ CDD Received', 'cdd_drug_allocation', 'integer',
+VALUES (uuid_generate_v4(), 'pzq_received', 'PZQ CDD Received', 'cdd_drug_allocation', 'double',
         'ACTIVE', '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00');
 INSERT INTO entity_tag(identifier, tag, value_type, definition, lookup_entity_type_identifier,
                        entity_status, created_by, created_datetime, modified_by, modified_datetime,
                        generated, generation_formula, referenced_fields, aggregation_method, scope,
                        result_expression, is_result_literal, add_to_metadata)
-VALUES (uuid_generate_v4(), 'cdd-received-PZQ_', 'integer', 'PZQ Received by CDD',
+VALUES (uuid_generate_v4(), 'cdd-received-PZQ_', 'double', 'PZQ Received by CDD',
         (SELECT identifier from lookup_entity_type where code = 'Location'), 'ACTIVE',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00', false, null, null,
@@ -21,7 +21,7 @@ INSERT INTO entity_tag(identifier, tag, value_type, definition, lookup_entity_ty
                        entity_status, created_by, created_datetime, modified_by, modified_datetime,
                        generated, generation_formula, referenced_fields, aggregation_method, scope,
                        result_expression, is_result_literal, add_to_metadata)
-VALUES (uuid_generate_v4(), 'cdd-received-PZQ', 'integer', 'PZQ Received by CDD',
+VALUES (uuid_generate_v4(), 'cdd-received-PZQ', 'double', 'PZQ Received by CDD',
         (SELECT identifier from lookup_entity_type where code = 'Location'), 'ACTIVE',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00', true,
@@ -32,14 +32,14 @@ VALUES (uuid_generate_v4(), 'cdd-received-PZQ', 'integer', 'PZQ Received by CDD'
 INSERT INTO form_field(identifier, name, display, form_title, data_type, entity_status, created_by,
                        created_datetime, modified_by, modified_datetime)
 VALUES (uuid_generate_v4(), 'albendazole_received', 'ALB Supervisor Distributed',
-        'cdd_drug_allocation', 'integer',
+        'cdd_drug_allocation', 'double',
         'ACTIVE', '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00');
 INSERT INTO entity_tag(identifier, tag, value_type, definition, lookup_entity_type_identifier,
                        entity_status, created_by, created_datetime, modified_by, modified_datetime,
                        generated, generation_formula, referenced_fields, aggregation_method, scope,
                        result_expression, is_result_literal, add_to_metadata)
-VALUES (uuid_generate_v4(), 'cdd-received-ALB_', 'integer', 'ALB Received by CDD',
+VALUES (uuid_generate_v4(), 'cdd-received-ALB_', 'double', 'ALB Received by CDD',
         (SELECT identifier from lookup_entity_type where code = 'Location'), 'ACTIVE',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00', false, null, null,
@@ -51,7 +51,7 @@ INSERT INTO entity_tag(identifier, tag, value_type, definition, lookup_entity_ty
                        entity_status, created_by, created_datetime, modified_by, modified_datetime,
                        generated, generation_formula, referenced_fields, aggregation_method, scope,
                        result_expression, is_result_literal, add_to_metadata)
-VALUES (uuid_generate_v4(), 'cdd-received-ALB', 'integer', 'ALB Received by CDD',
+VALUES (uuid_generate_v4(), 'cdd-received-ALB', 'double', 'ALB Received by CDD',
         (SELECT identifier from lookup_entity_type where code = 'Location'), 'ACTIVE',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00', true,
@@ -81,14 +81,14 @@ VALUES ((SELECT identifier FROM form_field WHERE name = 'drug_distributed' and f
 INSERT INTO form_field(identifier, name, display, form_title, data_type, entity_status, created_by,
                        created_datetime, modified_by, modified_datetime)
 VALUES (uuid_generate_v4(), 'sum_pzq_received_and_top_up', 'PZQ Supervisor Distributed',
-        'tablet_accountability', 'integer',
+        'tablet_accountability', 'double',
         'ACTIVE', '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00');
 INSERT INTO entity_tag(identifier, tag, value_type, definition, lookup_entity_type_identifier,
                        entity_status, created_by, created_datetime, modified_by, modified_datetime,
                        generated, generation_formula, referenced_fields, aggregation_method, scope,
                        result_expression, is_result_literal, add_to_metadata)
-VALUES (uuid_generate_v4(), 'supervisor-distributed-PZQ_', 'integer', 'ALB Supervisor Distributed',
+VALUES (uuid_generate_v4(), 'supervisor-distributed-PZQ_', 'double', 'ALB Supervisor Distributed',
         (SELECT identifier from lookup_entity_type where code = 'Location'), 'ACTIVE',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00', false, null, null,
@@ -100,7 +100,7 @@ INSERT INTO entity_tag(identifier, tag, value_type, definition, lookup_entity_ty
                        entity_status, created_by, created_datetime, modified_by, modified_datetime,
                        generated, generation_formula, referenced_fields, aggregation_method, scope,
                        result_expression, is_result_literal, add_to_metadata)
-VALUES (uuid_generate_v4(), 'supervisor-distributed-PZQ', 'integer', 'PZQ Supervisor Distributed',
+VALUES (uuid_generate_v4(), 'supervisor-distributed-PZQ', 'double', 'PZQ Supervisor Distributed',
         (SELECT identifier from lookup_entity_type where code = 'Location'), 'ACTIVE',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00', true,
@@ -111,14 +111,14 @@ VALUES (uuid_generate_v4(), 'supervisor-distributed-PZQ', 'integer', 'PZQ Superv
 INSERT INTO form_field(identifier, name, display, form_title, data_type, entity_status, created_by,
                        created_datetime, modified_by, modified_datetime)
 VALUES (uuid_generate_v4(), 'sum_mbz_received_and_top_up', 'MEB Supervisor Distributed',
-        'tablet_accountability', 'integer',
+        'tablet_accountability', 'double',
         'ACTIVE', '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00');
 INSERT INTO entity_tag(identifier, tag, value_type, definition, lookup_entity_type_identifier,
                        entity_status, created_by, created_datetime, modified_by, modified_datetime,
                        generated, generation_formula, referenced_fields, aggregation_method, scope,
                        result_expression, is_result_literal, add_to_metadata)
-VALUES (uuid_generate_v4(), 'supervisor-distributed-MEB_', 'integer', 'MEB Supervisor Distributed',
+VALUES (uuid_generate_v4(), 'supervisor-distributed-MEB_', 'double', 'MEB Supervisor Distributed',
         (SELECT identifier from lookup_entity_type where code = 'Location'), 'ACTIVE',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00', false, null, null,
@@ -130,7 +130,7 @@ INSERT INTO entity_tag(identifier, tag, value_type, definition, lookup_entity_ty
                        entity_status, created_by, created_datetime, modified_by, modified_datetime,
                        generated, generation_formula, referenced_fields, aggregation_method, scope,
                        result_expression, is_result_literal, add_to_metadata)
-VALUES (uuid_generate_v4(), 'supervisor-distributed-MEB', 'integer', 'MEB Supervisor Distributed',
+VALUES (uuid_generate_v4(), 'supervisor-distributed-MEB', 'double', 'MEB Supervisor Distributed',
         (SELECT identifier from lookup_entity_type where code = 'Location'), 'ACTIVE',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00', true,
@@ -142,14 +142,14 @@ VALUES (uuid_generate_v4(), 'supervisor-distributed-MEB', 'integer', 'MEB Superv
 INSERT INTO form_field(identifier, name, display, form_title, data_type, entity_status, created_by,
                        created_datetime, modified_by, modified_datetime)
 VALUES (uuid_generate_v4(), 'sum_alb_received_and_top_up', 'ALB Supervisor Distributed',
-        'tablet_accountability', 'integer',
+        'tablet_accountability', 'double',
         'ACTIVE', '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00');
 INSERT INTO entity_tag(identifier, tag, value_type, definition, lookup_entity_type_identifier,
                        entity_status, created_by, created_datetime, modified_by, modified_datetime,
                        generated, generation_formula, referenced_fields, aggregation_method, scope,
                        result_expression, is_result_literal, add_to_metadata)
-VALUES (uuid_generate_v4(), 'supervisor-distributed-ALB_', 'integer', 'ALB Supervisor Distributed',
+VALUES (uuid_generate_v4(), 'supervisor-distributed-ALB_', 'double', 'ALB Supervisor Distributed',
         (SELECT identifier from lookup_entity_type where code = 'Location'), 'ACTIVE',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00', false, null, null,
@@ -161,7 +161,7 @@ INSERT INTO entity_tag(identifier, tag, value_type, definition, lookup_entity_ty
                        entity_status, created_by, created_datetime, modified_by, modified_datetime,
                        generated, generation_formula, referenced_fields, aggregation_method, scope,
                        result_expression, is_result_literal, add_to_metadata)
-VALUES (uuid_generate_v4(), 'supervisor-distributed-ALB', 'integer', 'ALB Supervisor Distributed',
+VALUES (uuid_generate_v4(), 'supervisor-distributed-ALB', 'double', 'ALB Supervisor Distributed',
         (SELECT identifier from lookup_entity_type where code = 'Location'), 'ACTIVE',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00', true,
@@ -174,14 +174,14 @@ VALUES (uuid_generate_v4(), 'supervisor-distributed-ALB', 'integer', 'ALB Superv
 INSERT INTO form_field(identifier, name, display, form_title, data_type, entity_status, created_by,
                        created_datetime, modified_by, modified_datetime)
 VALUES (uuid_generate_v4(), 'albendazole_returned', 'ALB Returned to Supervisor',
-        'tablet_accountability', 'integer',
+        'tablet_accountability', 'double',
         'ACTIVE', '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00');
 INSERT INTO entity_tag(identifier, tag, value_type, definition, lookup_entity_type_identifier,
                        entity_status, created_by, created_datetime, modified_by, modified_datetime,
                        generated, generation_formula, referenced_fields, aggregation_method, scope,
                        result_expression, is_result_literal, add_to_metadata)
-VALUES (uuid_generate_v4(), 'supervisor-returned-ALB_', 'integer', 'ALB Returned to Supervisor',
+VALUES (uuid_generate_v4(), 'supervisor-returned-ALB_', 'double', 'ALB Returned to Supervisor',
         (SELECT identifier from lookup_entity_type where code = 'Location'), 'ACTIVE',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00', false, null, null,
@@ -193,7 +193,7 @@ INSERT INTO entity_tag(identifier, tag, value_type, definition, lookup_entity_ty
                        entity_status, created_by, created_datetime, modified_by, modified_datetime,
                        generated, generation_formula, referenced_fields, aggregation_method, scope,
                        result_expression, is_result_literal, add_to_metadata)
-VALUES (uuid_generate_v4(), 'supervisor-returned-ALB', 'integer', 'ALB Returned to Supervisor',
+VALUES (uuid_generate_v4(), 'supervisor-returned-ALB', 'double', 'ALB Returned to Supervisor',
         (SELECT identifier from lookup_entity_type where code = 'Location'), 'ACTIVE',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00', true,
@@ -206,14 +206,14 @@ VALUES (uuid_generate_v4(), 'supervisor-returned-ALB', 'integer', 'ALB Returned 
 INSERT INTO form_field(identifier, name, display, form_title, data_type, entity_status, created_by,
                        created_datetime, modified_by, modified_datetime)
 VALUES (uuid_generate_v4(), 'pzq_returned', 'PZQ Returned to Supervisor', 'tablet_accountability',
-        'integer',
+        'double',
         'ACTIVE', '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00');
 INSERT INTO entity_tag(identifier, tag, value_type, definition, lookup_entity_type_identifier,
                        entity_status, created_by, created_datetime, modified_by, modified_datetime,
                        generated, generation_formula, referenced_fields, aggregation_method, scope,
                        result_expression, is_result_literal, add_to_metadata)
-VALUES (uuid_generate_v4(), 'supervisor-returned-PZQ_', 'integer', 'PZQ Returned to Supervisor',
+VALUES (uuid_generate_v4(), 'supervisor-returned-PZQ_', 'double', 'PZQ Returned to Supervisor',
         (SELECT identifier from lookup_entity_type where code = 'Location'), 'ACTIVE',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00', false, null, null,
@@ -225,7 +225,7 @@ INSERT INTO entity_tag(identifier, tag, value_type, definition, lookup_entity_ty
                        entity_status, created_by, created_datetime, modified_by, modified_datetime,
                        generated, generation_formula, referenced_fields, aggregation_method, scope,
                        result_expression, is_result_literal, add_to_metadata)
-VALUES (uuid_generate_v4(), 'supervisor-returned-PZQ', 'integer', 'PZQ Returned to Supervisor',
+VALUES (uuid_generate_v4(), 'supervisor-returned-PZQ', 'double', 'PZQ Returned to Supervisor',
         (SELECT identifier from lookup_entity_type where code = 'Location'), 'ACTIVE',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00', true,
@@ -238,14 +238,14 @@ VALUES (uuid_generate_v4(), 'supervisor-returned-PZQ', 'integer', 'PZQ Returned 
 INSERT INTO form_field(identifier, name, display, form_title, data_type, entity_status, created_by,
                        created_datetime, modified_by, modified_datetime)
 VALUES (uuid_generate_v4(), 'mebendazole_returned', 'MEB Returned to Supervisor',
-        'tablet_accountability', 'integer',
+        'tablet_accountability', 'double',
         'ACTIVE', '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00');
 INSERT INTO entity_tag(identifier, tag, value_type, definition, lookup_entity_type_identifier,
                        entity_status, created_by, created_datetime, modified_by, modified_datetime,
                        generated, generation_formula, referenced_fields, aggregation_method, scope,
                        result_expression, is_result_literal, add_to_metadata)
-VALUES (uuid_generate_v4(), 'supervisor-returned-MEB_', 'integer', 'MEB Returned to Supervisor',
+VALUES (uuid_generate_v4(), 'supervisor-returned-MEB_', 'double', 'MEB Returned to Supervisor',
         (SELECT identifier from lookup_entity_type where code = 'Location'), 'ACTIVE',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00', false, null, null,
@@ -257,7 +257,7 @@ INSERT INTO entity_tag(identifier, tag, value_type, definition, lookup_entity_ty
                        entity_status, created_by, created_datetime, modified_by, modified_datetime,
                        generated, generation_formula, referenced_fields, aggregation_method, scope,
                        result_expression, is_result_literal, add_to_metadata)
-VALUES (uuid_generate_v4(), 'supervisor-returned-MEB', 'integer', 'MEB Returned to Supervisor',
+VALUES (uuid_generate_v4(), 'supervisor-returned-MEB', 'double', 'MEB Returned to Supervisor',
         (SELECT identifier from lookup_entity_type where code = 'Location'), 'ACTIVE',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00', true,
@@ -269,7 +269,7 @@ INSERT INTO entity_tag(identifier, tag, value_type, definition, lookup_entity_ty
                        entity_status, created_by, created_datetime, modified_by, modified_datetime,
                        generated, generation_formula, referenced_fields, aggregation_method, scope,
                        result_expression, is_result_literal, add_to_metadata)
-VALUES (uuid_generate_v4(), 'cdd-remaining-MEB', 'integer', 'MEB Remaining with CDD',
+VALUES (uuid_generate_v4(), 'cdd-remaining-MEB', 'double', 'MEB Remaining with CDD',
         (SELECT identifier from lookup_entity_type where code = 'Location'), 'ACTIVE',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00', true,
@@ -283,7 +283,7 @@ INSERT INTO entity_tag(identifier, tag, value_type, definition, lookup_entity_ty
                        entity_status, created_by, created_datetime, modified_by, modified_datetime,
                        generated, generation_formula, referenced_fields, aggregation_method, scope,
                        result_expression, is_result_literal, add_to_metadata)
-VALUES (uuid_generate_v4(), 'cdd-remaining-PZQ', 'integer', 'PZQ Remaining with CDD',
+VALUES (uuid_generate_v4(), 'cdd-remaining-PZQ', 'double', 'PZQ Remaining with CDD',
         (SELECT identifier from lookup_entity_type where code = 'Location'), 'ACTIVE',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00', true,
@@ -298,7 +298,7 @@ INSERT INTO entity_tag(identifier, tag, value_type, definition, lookup_entity_ty
                        entity_status, created_by, created_datetime, modified_by, modified_datetime,
                        generated, generation_formula, referenced_fields, aggregation_method, scope,
                        result_expression, is_result_literal, add_to_metadata)
-VALUES (uuid_generate_v4(), 'cdd-remaining-ALB', 'integer', 'ALB Remaining with CDD',
+VALUES (uuid_generate_v4(), 'cdd-remaining-ALB', 'double', 'ALB Remaining with CDD',
         (SELECT identifier from lookup_entity_type where code = 'Location'), 'ACTIVE',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00', true,
@@ -313,7 +313,7 @@ INSERT INTO entity_tag(identifier, tag, value_type, definition, lookup_entity_ty
                        entity_status, created_by, created_datetime, modified_by, modified_datetime,
                        generated, generation_formula, referenced_fields, aggregation_method, scope,
                        result_expression, is_result_literal, add_to_metadata)
-VALUES (uuid_generate_v4(), 'sth-target-pop', 'integer', 'STH Target Population',
+VALUES (uuid_generate_v4(), 'sth-target-pop', 'double', 'STH Target Population',
         (SELECT identifier from lookup_entity_type where code = 'Location'), 'ACTIVE',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00', false, null, null,
@@ -323,7 +323,7 @@ INSERT INTO entity_tag(identifier, tag, value_type, definition, lookup_entity_ty
                        entity_status, created_by, created_datetime, modified_by, modified_datetime,
                        generated, generation_formula, referenced_fields, aggregation_method, scope,
                        result_expression, is_result_literal, add_to_metadata)
-VALUES (uuid_generate_v4(), 'sch-target-pop', 'integer', 'SCH Target Population',
+VALUES (uuid_generate_v4(), 'sch-target-pop', 'double', 'SCH Target Population',
         (SELECT identifier from lookup_entity_type where code = 'Location'), 'ACTIVE',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00', false, null, null,

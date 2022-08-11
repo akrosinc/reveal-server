@@ -17,6 +17,7 @@ import com.revealprecision.revealserver.persistence.repository.LocationHierarchy
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -64,6 +65,9 @@ public class LocationHierarchyService {
     return locationHierarchyRepository.findAll(pageable);
   }
 
+  public Set<LocationHierarchy> getLocationHierarchiesIn(Set<UUID> locationHierarchyIdentifiers) {
+    return locationHierarchyRepository.findLocationHierarchiesByIdentifierIn(locationHierarchyIdentifiers);
+  }
 
   public List<LocationHierarchy> findByNodeOrder(List<String> nodeOrder) {
     return locationHierarchyRepository

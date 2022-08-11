@@ -69,6 +69,10 @@ public class PlanService {
         () -> new NotFoundException(Pair.of(Fields.identifier, planIdentifier), Plan.class));
   }
 
+  public Plan findNullablePlanByIdentifier(UUID planIdentifier) {
+    return planRepository.findPlanByIdentifier(planIdentifier);
+  }
+
   public Plan getPlanByIdentifier(UUID planIdentifier) {
     return planRepository.getById(planIdentifier);
   }

@@ -5,7 +5,7 @@ import com.revealprecision.revealserver.messaging.message.LocationFormDataAggreg
 public class LocationFormDataAggregateEventFactory {
 
   public static LocationFormDataAggregateEvent getEntity(LocationFormDataAggregateEvent v,
-      Long increment, Long averageCounter, String tagValue) {
+      Double increment, Long averageCounter, String tagValue) {
 
     return LocationFormDataAggregateEvent.builder()
         .plan(v.getPlan())

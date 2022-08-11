@@ -12,9 +12,10 @@ public class EntityTagEventFactory {
         .aggregationMethod(entityTag.getAggregationMethod())
         .definition(entityTag.getDefinition())
         .formFields(
-            entityTag.getFormFields().stream().map(FormFieldEventFactory::getFormFieldEvent)
-                .collect(
-                    Collectors.toSet()))
+            entityTag.getFormFields() == null ? null
+                : entityTag.getFormFields().stream().map(FormFieldEventFactory::getFormFieldEvent)
+                    .collect(
+                        Collectors.toSet()))
         .generated(entityTag.isGenerated())
         .generationFormula(entityTag.getGenerationFormula())
         .isResultLiteral(entityTag.isResultLiteral())
@@ -27,6 +28,7 @@ public class EntityTagEventFactory {
         .valueType(entityTag.getValueType())
         .identifier(entityTag.getIdentifier())
         .addToMetadata(entityTag.isAddToMetadata())
+        .isAggregate(entityTag.isAggregate())
         .build();
   }
 

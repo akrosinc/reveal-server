@@ -1,19 +1,29 @@
 package com.revealprecision.revealserver.service;
 
-import com.revealprecision.revealserver.api.v1.dto.factory.EntityTagEventFactory;
+import static com.revealprecision.revealserver.constants.EntityTagDataTypes.BOOLEAN;
+import static com.revealprecision.revealserver.constants.EntityTagDataTypes.DATE;
+import static com.revealprecision.revealserver.constants.EntityTagDataTypes.DOUBLE;
+import static com.revealprecision.revealserver.constants.EntityTagDataTypes.INTEGER;
+import static com.revealprecision.revealserver.constants.EntityTagDataTypes.OBJECT;
+import static com.revealprecision.revealserver.constants.EntityTagDataTypes.STRING;
+
+import com.revealprecision.revealserver.api.v1.dto.factory.FormDataEntityTagValueEventFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.LocationMetadataEventFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.LocationMetadataImportFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.MetadataImportResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.PersonMetadataEventFactory;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationMetadataImport;
 import com.revealprecision.revealserver.api.v1.dto.response.MetadataFileImportResponse;
+import com.revealprecision.revealserver.constants.EntityTagScopes;
 import com.revealprecision.revealserver.constants.KafkaConstants;
 import com.revealprecision.revealserver.enums.BulkEntryStatus;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.exceptions.FileFormatException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.messaging.message.EntityTagEvent;
+import com.revealprecision.revealserver.messaging.message.FormDataEntityTagValueEvent;
 import com.revealprecision.revealserver.messaging.message.LocationMetadataEvent;
+import com.revealprecision.revealserver.messaging.message.Message;
 import com.revealprecision.revealserver.messaging.message.PersonMetadataEvent;
 import com.revealprecision.revealserver.persistence.domain.EntityTag;
 import com.revealprecision.revealserver.persistence.domain.Location;
@@ -42,15 +52,12 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
-import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.transaction.Transactional;
@@ -82,6 +89,8 @@ public class MetadataService {
   private final UserService userService;
   private final StorageService storageService;
   private final EntityTagService entityTagService;
+  private final KafkaTemplate<String, Message> kafkaTemplate;
+  private final MetaFieldSetMapper metaFieldSetMapper;
 
   public LocationMetadata getLocationMetadataByLocation(UUID locationIdentifier) {
     //TODO fix this
@@ -147,7 +156,8 @@ public class MetadataService {
 
       } else {
         // tag does not exist in list
-        MetadataObj metadataObj = getMetadataObj(tagValue, plan.getIdentifier(), taskIdentifier,
+        MetadataObj metadataObj = getMetadataObj(tagValue,
+            plan == null ? null : plan.getIdentifier(), taskIdentifier,
             user, dataType, tag, type, taskType, tagKey, dateForScopeDateFields);
 
         personMetadata = optionalPersonMetadata.get();
@@ -450,7 +460,7 @@ public class MetadataService {
     metadataObj.setActive(true);
     metadataObj.setTagKey(tagKey);
 
-    if (tag.getScope().equals("Date")) {
+    if (tag.getScope().equals(EntityTagScopes.DATE)) {
       if (dateForScopeDateFields != null) {
         metadataObj.setDateForDateScope(dateForScopeDateFields);
         metadataObj.setDateScope(true);
@@ -464,19 +474,19 @@ public class MetadataService {
 
   public static Pair<Class, Object> getValueFromValueObject(MetadataObj metadataObj) {
     switch (metadataObj.getDataType()) {
-      case "string":
+      case STRING:
         return Pair.of(String.class, metadataObj.getCurrent().getValue().getValueString());
 
-      case "integer":
+      case INTEGER:
         return Pair.of(Integer.class, metadataObj.getCurrent().getValue().getValueInteger());
 
-      case "date":
+      case DATE:
         return Pair.of(LocalDateTime.class, metadataObj.getCurrent().getValue().getValueDate());
 
-      case "double":
+      case DOUBLE:
         return Pair.of(Double.class, metadataObj.getCurrent().getValue().getValueDouble());
 
-      case "boolean":
+      case BOOLEAN:
         return Pair.of(Boolean.class, metadataObj.getCurrent().getValue().getValueBoolean());
 
       default:
@@ -488,22 +498,22 @@ public class MetadataService {
 
   private TagValue getTagValue(Object tagValue, String dataType, TagValue value) {
     switch (dataType) {
-      case "string":
+      case STRING:
         value.setValueString((String) tagValue);
         break;
-      case "integer":
+      case INTEGER:
         value.setValueInteger((Integer) tagValue);
         break;
-      case "date":
+      case DATE:
         value.setValueDate((LocalDateTime) tagValue);
         break;
-      case "double":
+      case DOUBLE:
         value.setValueDouble((Double) tagValue);
         break;
-      case "boolean":
+      case BOOLEAN:
         value.setValueBoolean((Boolean) tagValue);
         break;
-      case "object":
+      case OBJECT:
         value.getValueObjects().add(tagValue);
         break;
       default:
@@ -532,49 +542,25 @@ public class MetadataService {
 
     try (XSSFWorkbook workbook = new XSSFWorkbook(file)) {
       XSSFSheet sheet = workbook.getSheetAt(0);
-      List<MetaImportDTO> metaImportDTOS = MetaFieldSetMapper.mapMetaFields(sheet);
+      List<MetaImportDTO> metaImportDTOS = metaFieldSetMapper.mapMetaFields(sheet);
+
+      if (metaImportDTOS.stream().map(MetaImportDTO::getErrors).map(Map::size).reduce(0,
+          Integer::sum) >1){
+        throw new FileFormatException("Invalid file errors with: "+
+            metaImportDTOS.stream().map(MetaImportDTO::getErrors).flatMap(error->error.entrySet().stream()).map(entry->
+                "tag: "+entry.getKey().getTag() + "value: "+entry.getValue()
+            ).collect(Collectors.joining("\r\n"))
+            );
+      }
+
       //send data to kafka listener
       if (!metaImportDTOS.isEmpty()) {
 
-        Set<String> tags = new HashSet<>();
-        List<EntityTag> entityTagList = new ArrayList<>();
-        metaImportDTOS.forEach(metaImportDTO -> {
-          metaImportDTO.getEntityTags().forEach((entityTagName, value) -> {
-            tags.add(entityTagName);
-          });
-        });
-
-        tags.forEach(tag -> {
-          entityTagService.getEntityTagByTagName(tag).ifPresentOrElse(entityTagList::add, () -> {
-            throw new FileFormatException(
-                tag + "does not exist in system");
-          });
-        });
-
-        metaImportDTOS.forEach(metaImportDTO -> {
-          Map<String, String> currentLocEntityTags = metaImportDTO.getEntityTags();
-          Location loc = locationService.findByIdentifierWithoutGeoJson(
-              metaImportDTO.getLocationIdentifier());
-          if (!currentLocEntityTags.isEmpty()) {
-            // map trough entity tags and set the values
-            currentLocEntityTags.forEach((entityTagName, importEntityTagValue) -> {
-              List<EntityTag> collect = entityTagList.stream()
-                  .filter(entityTag -> entityTag.getTag().equals(entityTagName))
-                  .collect(Collectors.toList());
-              if (!collect.isEmpty()) {
-                EntityTag et = collect.get(0);
-                double numValue;
-                if (Objects.equals(et.getValueType(), "integer")) {
-                  numValue = Double.parseDouble(importEntityTagValue);
-                  int numValInt = (int) numValue; //TODO we need to solve for decimal types
-                  update(user, currentMetaImport, metaImportDTO, loc, numValInt, et);
-                } else {
-                  update(user, currentMetaImport, metaImportDTO, loc, importEntityTagValue, et);
-                }
-              }
-            });
-          }
-        });
+        metaImportDTOS.forEach(metaImportDTO ->
+            metaImportDTO.getConvertedEntityData().forEach(
+                (key, value) -> update(user, currentMetaImport, metaImportDTO,
+                    metaImportDTO.getLocation(),
+                    value, key)));
       }
       storageService.deleteFile(file);
       currentMetaImport.setStatus(BulkEntryStatus.SUCCESSFUL);
@@ -586,24 +572,36 @@ public class MetadataService {
       metadataImportRepository.save(currentMetaImport);
       throw new FileFormatException(e.getMessage());
     }
+
   }
 
   private void update(User user, MetadataImport currentMetaImport, MetaImportDTO metaImportDTO,
-      Location loc, Object importEntityTagValue, EntityTag et) {
+      Location loc, Object importEntityTagValue, EntityTagEvent entityTagEvent) {
     try {
+
       LocationMetadata locationMetadata = (LocationMetadata) updateMetaData(
-          metaImportDTO.getLocationIdentifier(), importEntityTagValue,
+          metaImportDTO.getLocation().getIdentifier(), importEntityTagValue,
           null,
-          null, user.getIdentifier().toString(), et.getValueType(),
-          EntityTagEventFactory.getEntityTagEvent(et), "ImportData",
+          null, user.getIdentifier().toString(), entityTagEvent.getValueType(),
+          entityTagEvent, "ImportData",
           loc,
           "File import", Location.class,
-          et.getTag(), null);
+          entityTagEvent.getTag(), null);
 
       LocationMetadataEvent locationMetadataEvent =
           LocationMetadataEventFactory.getLocationMetadataEvent(null,
               locationMetadata.getLocation(),
               locationMetadata);
+
+      FormDataEntityTagValueEvent entity = FormDataEntityTagValueEventFactory.getEntity(null,
+          metaImportDTO.getLocationHierarchy().getIdentifier(),
+          loc.getGeographicLevel().getName(),
+          null, null, null, loc, entityTagEvent, importEntityTagValue, null);
+
+      kafkaTemplate.send(
+          kafkaProperties.getTopicMap()
+              .get(KafkaConstants.FORM_EVENT_CONSUMPTION),
+          entity);
 
       // check if there is an existing metadata event already created
       // than just update the metaDataEvent list instead of creating a duplicate

@@ -1,6 +1,12 @@
 package com.revealprecision.revealserver.messaging.streams;
 
+import static com.revealprecision.revealserver.constants.EntityTagDataAggregationMethods.AVERAGE;
+import static com.revealprecision.revealserver.constants.EntityTagDataAggregationMethods.SUM;
+import static com.revealprecision.revealserver.constants.EntityTagDataTypes.DOUBLE;
+import static com.revealprecision.revealserver.constants.EntityTagDataTypes.INTEGER;
+
 import com.revealprecision.revealserver.api.v1.dto.factory.LocationFormDataAggregateEventFactory;
+import com.revealprecision.revealserver.constants.EntityTagScopes;
 import com.revealprecision.revealserver.constants.KafkaConstants;
 import com.revealprecision.revealserver.messaging.message.FormDataEntityTagValueEvent;
 import com.revealprecision.revealserver.messaging.message.LocationFormDataAggregateEvent;
@@ -8,6 +14,7 @@ import com.revealprecision.revealserver.messaging.message.LocationFormDataSumAgg
 import com.revealprecision.revealserver.messaging.message.PersonMetadataEvent;
 import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
 import com.revealprecision.revealserver.props.KafkaProperties;
+import com.revealprecision.revealserver.service.LocationHierarchyService;
 import com.revealprecision.revealserver.service.LocationRelationshipService;
 import java.util.ArrayList;
 import java.util.List;
@@ -41,6 +48,8 @@ public class FormDataStream {
   private final LocationRelationshipService locationRelationshipService;
   private final Logger formDataLog = LoggerFactory.getLogger("form-data-file");
 
+  private final LocationHierarchyService locationHierarchyService;
+
   @Bean
   KStream<UUID, PersonMetadataEvent> personFormDataProcessor(StreamsBuilder streamsBuilder) {
 //TODO: Bring this back after mdalite dashboard is confirmed
@@ -70,31 +79,42 @@ public class FormDataStream {
 
     //////////////////summing and averaging
 
-    KGroupedStream<String, FormDataEntityTagValueEvent> locationSumStreamInteger = unpackedLocationFormDataStream
+    KStream<String, FormDataEntityTagValueEvent> peek = unpackedLocationFormDataStream
         .filter(
             (k, formDataEntityTagValueEvent) ->
                 (formDataEntityTagValueEvent.getEntityTagEvent().getAggregationMethod() != null && (
                     formDataEntityTagValueEvent.getEntityTagEvent().getAggregationMethod()
-                        .contains("sum")
+                        .contains(SUM)
                         || formDataEntityTagValueEvent.getEntityTagEvent().getAggregationMethod()
-                        .contains("average"))
-                    && formDataEntityTagValueEvent.getEntityTagEvent().getValueType()
-                    .equals("integer"))
-        )
-        .groupBy((k, v) -> v.getPlanIdentifier() + "_"
-            + v.getEntityIdentifier() + "_" + v.getAncestor() + "_" + v.getEntityTagEvent().getTag()
-            +
-            (v.getSupervisor() != null ? "_" + v.getSupervisor() : "") + (v.getCddName() != null ?
-            "_" + v.getCddName() : "") +
-            (v.getEntityTagEvent().getScope().equals("Date") ? "_" + v.getDateForScopeDate() : ""));
+                        .contains(AVERAGE))
+                    && (formDataEntityTagValueEvent.getEntityTagEvent().getValueType()
+                    .equals(INTEGER)||formDataEntityTagValueEvent.getEntityTagEvent().getValueType()
+                    .equals(DOUBLE)))
+        );
 
-    KTable<String, LocationFormDataAggregateEvent> integerLocationFormDataAggregate = locationSumStreamInteger.aggregate(
+    peek.peek((k,v)->formDataLog.debug("peek k: {} v: {}",k,v));
+
+    KStream<String, FormDataEntityTagValueEvent> date = peek.selectKey(
+        (k, v) -> (v.getPlanIdentifier() == null ? "plan" : v.getPlanIdentifier()) + "_"
+            + (v.getLocationHierarchyIdentifier() == null ? "locationHierarchy"
+            : v.getLocationHierarchyIdentifier()) + "_"
+            + v.getEntityIdentifier() + "_"
+            + v.getAncestor() + "_"
+            + v.getEntityTagEvent().getTag()
+            + (v.getSupervisor() != null ? "_" + v.getSupervisor() : "")
+            + (v.getCddName() != null ? "_" + v.getCddName() : "")
+            + (v.getEntityTagEvent().getScope().equals(EntityTagScopes.DATE) ? "_" + v.getDateForScopeDate()
+            : ""));
+
+    date.peek((k,v)->formDataLog.debug("date k: {} v: {}",k,v));
+
+    KTable<String, LocationFormDataAggregateEvent> integerLocationFormDataAggregate = date.groupByKey().aggregate(
         LocationFormDataAggregateEvent::new,
         (k, v, agg) -> {
 
           formDataLog.trace("incoming eventId {} current eventId {}", v.getEventId(),
               agg.getEventId());
-          Integer previousIntegerValue = null;
+          Double previousIntegerValue = null;
           if (v.getValue() != null) {
 
             if (agg.getTagIntegerValue() != null && (!Objects.equals(agg.getTagIntegerValue(),
@@ -109,7 +129,7 @@ public class FormDataStream {
 
             if (v.getValue() != null) {
               agg.setTagIntegerValue(
-                  (Integer) v.getValue());
+                  (Double) v.getValue());
             }
             agg.setTagId(v.getEntityTagEvent().getIdentifier());
             agg.setTag(v.getEntityTagEvent().getTag());
@@ -142,10 +162,10 @@ public class FormDataStream {
 
     KGroupedStream<String, LocationFormDataAggregateEvent> stringLocationFormDataAggregateEventKGroupedStream = integerLocationFormDataAggregateEventKStream1
         .groupBy((k, locationFormDataAggregateEvent) ->
-            locationFormDataAggregateEvent.getPlan() + "_"
-                + locationFormDataAggregateEvent.getHierarchyIdentifier() + "_"
-                + locationFormDataAggregateEvent.getAncestorNode() + "_"
-                + locationFormDataAggregateEvent.getTag());
+            (locationFormDataAggregateEvent.getPlan()==null?"plan":locationFormDataAggregateEvent.getPlan())+"_"
+            + (locationFormDataAggregateEvent.getHierarchyIdentifier()==null?"locationHierarchy":locationFormDataAggregateEvent.getHierarchyIdentifier())+ "_"
+            + locationFormDataAggregateEvent.getAncestorNode() + "_"
+            + locationFormDataAggregateEvent.getTag());
 
     KTable<String, LocationFormDataSumAggregateEvent> locationIntegerSumAggregate = stringLocationFormDataAggregateEventKGroupedStream.aggregate(
         LocationFormDataSumAggregateEvent::new,
@@ -156,12 +176,12 @@ public class FormDataStream {
             .withKeySerde(Serdes.String())
             .withValueSerde(new JsonSerde<>(LocationFormDataSumAggregateEvent.class)));
 
-    KStream<String, LocationFormDataSumAggregateEvent> stringLocationFormDataSumAggregateEventKStream = locationIntegerSumAggregate.toStream();
+    KStream<String, LocationFormDataSumAggregateEvent> aggStream = locationIntegerSumAggregate.toStream();
 
-    stringLocationFormDataSumAggregateEventKStream
+    aggStream
         .peek((k, v) -> formDataLog.debug(
-            "stringLocationFormDataSumAggregateEventKStream k: {} v: {}", k, v));
-    stringLocationFormDataSumAggregateEventKStream.to(
+            "aggStream k: {} v: {}", k, v));
+    aggStream.to(
         kafkaProperties.getTopicMap().get(KafkaConstants.METADATA_AGGREGATE),
         Produced.with(Serdes.String(), new JsonSerde<>(LocationFormDataSumAggregateEvent.class)));
 
@@ -243,7 +263,7 @@ public class FormDataStream {
               -1L, null));
     }
     locationFormDataAggregateEvents.add(
-        LocationFormDataAggregateEventFactory.getEntity(v, (long) v.getTagIntegerValue(), 1L,
+        LocationFormDataAggregateEventFactory.getEntity(v,  v.getTagIntegerValue(), 1L,
             v.getTagValue()));
 
     return locationFormDataAggregateEvents;
@@ -251,35 +271,54 @@ public class FormDataStream {
 
 
   private String getPlanAncestorHierarchyEntityKey(FormDataEntityTagValueEvent v) {
-    return v.getPlanIdentifier() + "_" +
+    return (v.getPlanIdentifier() == null ? "plan" : v.getPlanIdentifier()) + "_" +
         v.getAncestor() + "_" +
-        v.getLocationHierarchyIdentifier() + "_" +
+        (v.getLocationHierarchyIdentifier() == null ? "hierarchy"
+            : v.getLocationHierarchyIdentifier()) + "_" +
         v.getEntityIdentifier();
   }
 
   private List<FormDataEntityTagValueEvent> getMetadataObjEventUnpackedByAncestry(
       FormDataEntityTagValueEvent formDataEntityTagValueEvent) {
-    LocationRelationship locationRelationShip = locationRelationshipService.getLocationRelationshipsForLocation(
-        formDataEntityTagValueEvent.getLocationHierarchyIdentifier(),
-        formDataEntityTagValueEvent.getEntityIdentifier());
-    if (locationRelationShip != null) {
-      List<UUID> ancestry = locationRelationShip.getAncestry();
-      ancestry.add(formDataEntityTagValueEvent.getEntityIdentifier());
-      return ancestry
-          .stream()
-          .map(ancestorNode -> getMetadataObjEventPerAncestor(formDataEntityTagValueEvent,
-              ancestorNode))
-          .collect(Collectors.toList());
+    LocationRelationship locationRelationShip;
+    List<LocationRelationship> locationRelationships = new ArrayList<>();
+    if (formDataEntityTagValueEvent.getLocationHierarchyIdentifier() == null) {
+      List<LocationRelationship> collect = locationHierarchyService.getAll().stream()
+          .map(locationHierarchy ->
+              locationRelationshipService.getLocationRelationshipsForLocation(
+                  locationHierarchy.getIdentifier(),
+                  formDataEntityTagValueEvent.getEntityIdentifier())
+          ).collect(Collectors.toList());
+      locationRelationships.addAll(collect);
+    } else {
+      locationRelationShip = locationRelationshipService.getLocationRelationshipsForLocation(
+          formDataEntityTagValueEvent.getLocationHierarchyIdentifier(),
+          formDataEntityTagValueEvent.getEntityIdentifier());
+      locationRelationships.add(locationRelationShip);
+    }
+    if (!locationRelationships.isEmpty()) {
+      List<FormDataEntityTagValueEvent> collect = locationRelationships.stream()
+          .flatMap(locationRelationshipItem ->
+              {
+                List<UUID> ancestry = locationRelationshipItem.getAncestry();
+                ancestry.add(formDataEntityTagValueEvent.getEntityIdentifier());
+                return ancestry.stream()
+                    .map(ancestorNode -> getMetadataObjEventPerAncestor(formDataEntityTagValueEvent,
+                        locationRelationshipItem.getLocationHierarchy().getIdentifier(),
+                        ancestorNode));
+              }
+          ).collect(Collectors.toList());
+      return collect;
     }
     return null;
   }
 
   private FormDataEntityTagValueEvent getMetadataObjEventPerAncestor(
-      FormDataEntityTagValueEvent formDataEntityTagValueEvent,
+      FormDataEntityTagValueEvent formDataEntityTagValueEvent, UUID locationHierarchyIdentifier,
       UUID ancestorNode) {
 
     return FormDataEntityTagValueEvent.builder()
-        .locationHierarchyIdentifier(formDataEntityTagValueEvent.getLocationHierarchyIdentifier())
+        .locationHierarchyIdentifier(locationHierarchyIdentifier)
         .entityTagEvent(formDataEntityTagValueEvent.getEntityTagEvent())
         .entityIdentifier(formDataEntityTagValueEvent.getEntityIdentifier())
         .planIdentifier(formDataEntityTagValueEvent.getPlanIdentifier())

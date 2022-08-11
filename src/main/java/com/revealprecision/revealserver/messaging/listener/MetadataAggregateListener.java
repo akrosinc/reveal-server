@@ -38,6 +38,7 @@ public class MetadataAggregateListener extends Listener {
   private final StreamsBuilderFactoryBean getKafkaStreams;
   private final KafkaProperties kafkaProperties;
 
+
   @KafkaListener(topics = "#{kafkaConfigProperties.topicMap.get('METADATA_AGGREGATE')}", groupId = "reveal_server_group")
   public void listenGroupFoo(ConsumerRecord<String, LocationFormDataSumAggregateEvent> message) {
     init();
@@ -52,40 +53,43 @@ public class MetadataAggregateListener extends Listener {
     String[] keySplit = k.split("_");
 
     String planId = keySplit[0];
+    Plan plan = null;
+    if (planId!=null && !planId.equals("plan") ){
+      plan = planService.findNullablePlanByIdentifier(UUID.fromString(planId));
+    }
 
-    Plan planByIdentifier = planService.findPlanByIdentifier(UUID.fromString(planId));
-
-    String hierarchyIdentifier = keySplit[1];
     String entityParentIdentifier = keySplit[2];
 
-    Location byIdentifier = locationService.findByIdentifier(
+    Location location = locationService.findByIdentifier(
         UUID.fromString(entityParentIdentifier));
 
-    String tag = keySplit[3];
-    UUID entityTagIdentifer = aggMessage.getEntityTagIdentifier();
+    UUID entityTagIdentifier = aggMessage.getEntityTagIdentifier();
     LocationFormDataSumAggregateEvent locationFormDataSumAggregateEvent = locationFormDataIntegerSumOrAverage.get(
         k);
 
     if (locationFormDataSumAggregateEvent != null) {
 
-      Optional<EntityTag> entityTagById = entityTagService.findEntityTagById(entityTagIdentifer);
+      Optional<EntityTag> entityTagById = entityTagService.findEntityTagById(entityTagIdentifier);
 
       if (entityTagById.isPresent()) {
         EntityTag entityTag = entityTagById.get();
 
         if (locationFormDataSumAggregateEvent.getSum() != null) {
 
-          Integer sum = Math.toIntExact(locationFormDataSumAggregateEvent.getSum());
+          Optional<EntityTag> entityTagByTagName = entityTagService.getEntityTagByTagName(
+              entityTag.getTag() + "-sum");
 
-          EntityTagEvent entityTagEvent = EntityTagEventFactory.getEntityTagEvent(entityTag);
-          entityTagEvent.setTag(entityTag.getTag() + "-sum");
-          metadataService.updateMetaData(UUID.fromString(entityParentIdentifier), sum,
-              planByIdentifier, null,
-              UserUtils.getCurrentPrincipleName(), entityTag.getValueType(), entityTagEvent,
-              "aggregate", byIdentifier, "aggregate",
-              Location.class, k + "-sum", null);
+          if (entityTagByTagName.isPresent()) {
+            EntityTagEvent entityTagEvent = EntityTagEventFactory.getEntityTagEvent(entityTagByTagName.get());
+            if (entityTagEvent.isAggregate()) {
+              metadataService.updateMetaData(UUID.fromString(entityParentIdentifier), locationFormDataSumAggregateEvent.getSum(),
+                  plan, null,
+                  UserUtils.getCurrentPrincipleName(), entityTag.getValueType(), entityTagEvent,
+                  "aggregate", location, "aggregate",
+                  Location.class, k + "-sum", null);
+            }
+          }
         }
-
       }
     }
 

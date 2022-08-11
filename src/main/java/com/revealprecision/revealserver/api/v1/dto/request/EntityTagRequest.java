@@ -40,4 +40,7 @@ public class EntityTagRequest {
   private String resultExpression;
   private boolean isResultLiteral;
   private boolean addToMetadata;
+
+  private boolean isAggregate;
+
 }

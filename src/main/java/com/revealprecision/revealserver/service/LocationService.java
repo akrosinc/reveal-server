@@ -57,6 +57,7 @@ public class LocationService {
   private final RestHighLevelClient client;
   private final StorageService storageService;
   private final EntityTagService entityTagService;
+  private final LocationHierarchyService locationHierarchyService;
 
   public Location createLocation(LocationRequest locationRequest) throws IOException {
     GeographicLevel geographicLevel = geographicLevelService.findByName(
@@ -85,6 +86,10 @@ public class LocationService {
     return locationRepository.findByIdentifierWithoutGeoJson(identifier).orElseThrow(
         () -> new NotFoundException(Pair.of(Location.Fields.identifier, identifier),
             Location.class));
+  }
+
+  public Set<Location> findLocationsWithoutGeoJsonByIdentifierIn(Set<UUID> identifiers) {
+    return locationRepository.findLocationsWithoutGeoJsonByIdentifierIn(identifiers);
   }
 
   public Page<Location> getLocations(String search, Pageable pageable) {
@@ -269,6 +274,7 @@ public class LocationService {
   public ByteArrayResource downloadLocations(UUID hierarchyIdentifier, String geographicLevelName,
       UUID userId, ArrayList<UUID> entityTags)
       throws IOException {
+    LocationHierarchy locationHierarchy = locationHierarchyService.findByIdentifier(hierarchyIdentifier);
     GeographicLevel geographicLevel = geographicLevelService.findByName(geographicLevelName);
     List<Location> locationList = locationRepository.findByGeographicLevelIdentifier(
         geographicLevel.getIdentifier());
@@ -278,9 +284,10 @@ public class LocationService {
     String fileLocation =
         path.substring(0, path.length() - 1) + "temp" + userId.toString() + ".xlsx";
 
-    try (XSSFWorkbook workbook = new XSSFWorkbook(); FileOutputStream outputStream = new FileOutputStream(
-        fileLocation)) {
-      Sheet sheet = workbook.createSheet("Persons");
+    try (XSSFWorkbook workbook = new XSSFWorkbook();
+
+        FileOutputStream outputStream = new FileOutputStream(fileLocation)) {
+      Sheet sheet = workbook.createSheet("Locations");
       sheet.setColumnWidth(0, 9600);
       sheet.setColumnWidth(1, 6000);
       sheet.setColumnWidth(2, 6400);
@@ -298,14 +305,18 @@ public class LocationService {
       headerStyle.setFont(font);
 
       Cell headerCell = header.createCell(0);
-      headerCell.setCellValue("Identifier");
+      headerCell.setCellValue("Location Hierarchy Identifier");
       headerCell.setCellStyle(headerStyle);
 
       headerCell = header.createCell(1);
-      headerCell.setCellValue("Name");
+      headerCell.setCellValue("Identifier");
       headerCell.setCellStyle(headerStyle);
 
       headerCell = header.createCell(2);
+      headerCell.setCellValue("Name");
+      headerCell.setCellStyle(headerStyle);
+
+      headerCell = header.createCell(3);
       headerCell.setCellValue("Geographic level");
       headerCell.setCellStyle(headerStyle);
 
@@ -316,20 +327,23 @@ public class LocationService {
       for (Location location : locationList) {
         Row row = sheet.createRow(index);
         Cell cell = row.createCell(0);
-
-        cell.setCellValue(location.getIdentifier().toString());
+        cell.setCellValue(locationHierarchy.getIdentifier().toString());
         cell.setCellStyle(style);
 
         cell = row.createCell(1);
-        cell.setCellValue(location.getName());
+        cell.setCellValue(location.getIdentifier().toString());
         cell.setCellStyle(style);
 
         cell = row.createCell(2);
+        cell.setCellValue(location.getName());
+        cell.setCellStyle(style);
+
+        cell = row.createCell(3);
         cell.setCellValue(location.getGeographicLevel().getName());
         cell.setCellStyle(style);
         index++;
 
-        int entityTagIndex = 3;
+        int entityTagIndex = 4;
         for(UUID el : entityTags) {
           EntityTag entityTag = entityTagService.getEntityTagByIdentifier(el);
           sheet.setColumnWidth(entityTagIndex, 9600);
