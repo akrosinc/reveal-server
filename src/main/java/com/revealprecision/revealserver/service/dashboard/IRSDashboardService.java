@@ -134,11 +134,23 @@ public class IRSDashboardService {
   }
 
   private ColumnData getMobilized(Plan plan, Location childLocation) {
-    return new ColumnData();
+    ColumnData columnData = new ColumnData();
+    columnData.setDataType("string");
+    String fieldKey = "mobilized";
+    String searchKey = String.format("%s_%s_%s", plan.getIdentifier().toString(),
+        childLocation.getIdentifier().toString(), fieldKey);
+    FormObservationsEvent observation = formObservations.get(searchKey);
+    if (observation != null) {
+      columnData.setValue(observation.getValues().get(0));
+    } else {
+      columnData.setValue("No");
+    }
+    return columnData;
   }
 
   private ColumnData getReviewedWithDecision(Plan plan, Location childLocation) {
-    return new ColumnData();
+    ColumnData columnData = new ColumnData();
+    return columnData;
   }
 
   private ColumnData getStructuresRemainingToReach90(Plan plan, Location childLocation) {
