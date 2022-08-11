@@ -157,10 +157,6 @@ public class MetaFieldSetMapper {
                   log.warn("location not  not found or not uuid coord: {},{}", i, j);
                 }
                 break;
-              case 2:
-
-              case 3:
-                break;
               default:
 
                 EntityTagEvent entityTag = entityTagMap.get(
