@@ -1,6 +1,8 @@
 package com.revealprecision.revealserver.service.dashboard;
 
 
+import static com.revealprecision.revealserver.messaging.utils.DataStoreUtils.getQueryableStoreByWaiting;
+
 import com.revealprecision.revealserver.api.v1.dto.factory.LocationResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.models.ColumnData;
 import com.revealprecision.revealserver.api.v1.dto.models.RowData;
@@ -8,6 +10,7 @@ import com.revealprecision.revealserver.api.v1.dto.response.FeatureSetResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationResponse;
 import com.revealprecision.revealserver.constants.KafkaConstants;
 import com.revealprecision.revealserver.constants.LocationConstants;
+import com.revealprecision.revealserver.messaging.message.FormObservationsEvent;
 import com.revealprecision.revealserver.messaging.message.LocationBusinessStatusAggregate;
 import com.revealprecision.revealserver.messaging.message.LocationPersonBusinessStateAggregate;
 import com.revealprecision.revealserver.messaging.message.LocationPersonBusinessStateCountAggregate;
@@ -28,6 +31,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StoreQueryParameters;
 import org.apache.kafka.streams.state.QueryableStoreTypes;
 import org.apache.kafka.streams.state.ReadOnlyKeyValueStore;
@@ -57,13 +61,13 @@ public class IRSLiteDashboardService {
   private static final String VISITED_AREAS = "Total spray areas visited";
   private static final String SPRAYED_AREAS = "Total spray areas sprayed";
   public static final String SPRAY_COVERAGE_OF_TARGETED = "Spray coverage of targeted (Progress)";
-  public static final String SPRAY_COVERAGE_OF_FOUND = "Spray coverage of Found Structures";
+  public static final String SPRAY_COVERAGE_OF_FOUND = "Spray coverage of Found(Sprayed/Found)";
   public static final String FOUND_COVERAGE_OF_TARGETED = "Found coverage of targeted (Progress)";
-  private static final String TOTAL_STRUCTURES = "Structures on the ground";
+  private static final String STRUCTURES_ON_THE_GROUND = "Structures on the ground";
   private static final String TOTAL_STRUCTURES_TARGETED = "Total Structures Targeted";
-  private static final String TOTAL_STRUCTURES_FOUND = "Total Structures Found";
-  private static final String STRUCTURES_SPRAYED = "Total Structures Sprayed";
-  private static final String AREA_VISITED = "Area Visited";
+  private static final String STRUCTURES_FOUND = "Structures Found";
+  private static final String STRUCTURES_SPRAYED = "Structures Sprayed";
+  private static final String SPRAY_AREA_VISITED = "Spray Area Visited";
 
   ReadOnlyKeyValueStore<String, Long> countOfAssignedStructures;
   ReadOnlyKeyValueStore<String, Long> structureCounts;
@@ -76,6 +80,8 @@ public class IRSLiteDashboardService {
   ReadOnlyKeyValueStore<String, LocationPersonBusinessStateCountAggregate> structurePeopleCounts;
   ReadOnlyKeyValueStore<String, TreatedOperationalAreaAggregate> treatedOperationalCounts;
   ReadOnlyKeyValueStore<String, LocationPersonBusinessStateAggregate> structurePeople;
+
+  ReadOnlyKeyValueStore<String, FormObservationsEvent> formObservations;
 
 
   boolean datastoresInitialized = false;
@@ -94,12 +100,12 @@ public class IRSLiteDashboardService {
         getTotalAreas(plan, childLocation, geoNameDirectlyAboveStructure));
     columns.put(TARGET_SPRAY_AREAS, getTargetedAreas(plan, childLocation));
     columns.put(VISITED_AREAS, operationalAreaVisitedCounts(plan, childLocation));
-    columns.put(TOTAL_STRUCTURES, getTotalStructuresCounts(plan, childLocation));
+    columns.put(STRUCTURES_ON_THE_GROUND, getTotalStructuresCounts(plan, childLocation));
     columns.put(TOTAL_STRUCTURES_TARGETED, getTotalStructuresTargetedCount(plan, childLocation));
     columns.put(STRUCTURES_SPRAYED, getTotalStructuresSprayed(plan,
         childLocation));
     columns.put(SPRAY_PROGRESS_SPRAYED_TARGETED, new ColumnData()); //TODO: add calculations
-    columns.put(TOTAL_STRUCTURES_FOUND, getTotalStructuresFoundCount(plan, childLocation));
+    columns.put(STRUCTURES_FOUND, getTotalStructuresFoundCount(plan, childLocation));
     columns.put(SPRAY_COVERAGE_OF_FOUND, getSprayCoverageOfFound(plan, childLocation));
     columns.put(NUMBER_OF_SPRAY_DAYS, new ColumnData());//TODO add calculations
     columns.put(TOTAL_SUPERVISOR_FORMS_SUBMITTED, new ColumnData()); //TODO add calculations
@@ -117,19 +123,61 @@ public class IRSLiteDashboardService {
     Map<String, ColumnData> columns = new LinkedHashMap<>();
 
     columns.put(TOTAL_STRUCTURES_TARGETED, getTotalStructuresTargetedCount(plan, childLocation));
-    columns.put(TOTAL_STRUCTURES_FOUND,
+    columns.put(STRUCTURES_FOUND,
         getTotalStructuresFoundCountInSprayArea(plan, childLocation));
     columns.put(STRUCTURES_SPRAYED, getTotalStructuresSprayedCountInSprayArea(plan, childLocation));
-    columns.put(AREA_VISITED, getAreaVisitedInSprayArea(plan, childLocation));
-    columns.put(DATE_VISITED_FOR_IRS, new ColumnData());
-    columns.put(TOTAL_STRUCTURES, getTotalStructuresCounts(plan, childLocation));
-    columns.put(MOBILIZED, new ColumnData()); //TODO add calculations
-    columns.put(DATE_MOBILIZED, new ColumnData());//TODO add calculations
+    columns.put(SPRAY_AREA_VISITED, getAreaVisitedInSprayArea(plan, childLocation));
+    columns.put(DATE_VISITED_FOR_IRS, getSprayDate(plan, childLocation));
+    columns.put(STRUCTURES_ON_THE_GROUND, getTotalStructuresCounts(plan, childLocation));
+    columns.put(MOBILIZED, getMobilized(plan, childLocation));
+    columns.put(DATE_MOBILIZED, getMobilizedDate(plan, childLocation));
     RowData rowData = new RowData();
     rowData.setLocationIdentifier(childLocation.getIdentifier());
     rowData.setColumnDataMap(columns);
     rowData.setLocationName(childLocation.getName());
     return List.of(rowData);
+  }
+
+  private ColumnData getSprayDate(Plan plan, Location childLocation) {
+    ColumnData columnData = new ColumnData();
+    columnData.setDataType("string");
+    String fieldKey = "sprayDate";
+    String searchKey = String.format("%s_%s_%s", plan.getIdentifier(),
+        childLocation.getIdentifier(), fieldKey);
+    FormObservationsEvent observationsEvent = formObservations.get(searchKey);
+    if (observationsEvent != null) {
+      columnData.setValue(observationsEvent.getValues().get(0));
+    }
+    return columnData;
+  }
+
+  private ColumnData getMobilizedDate(Plan plan, Location childLocation) {
+    ColumnData columnData = new ColumnData();
+    columnData.setDataType("string");
+    String fieldKey = "mobilization_date";
+    String searchKey = String.format("%s_%s_%s", plan.getIdentifier().toString(),
+        childLocation.getIdentifier().toString(), fieldKey);
+    FormObservationsEvent observationsEvent = formObservations.get(searchKey);
+    if (observationsEvent != null) {
+      columnData.setValue(observationsEvent.getValues().get(0));
+    }
+    return columnData;
+  }
+
+
+  private ColumnData getMobilized(Plan plan, Location childLocation) {
+    ColumnData columnData = new ColumnData();
+    columnData.setDataType("string");
+    String fieldKey = "mobilized";
+    String searchKey = String.format("%s_%s_%s", plan.getIdentifier().toString(),
+        childLocation.getIdentifier().toString(), fieldKey);
+    FormObservationsEvent observation = formObservations.get(searchKey);
+    if (observation != null) {
+      columnData.setValue(observation.getValues().get(0));
+    } else {
+      columnData.setValue("No");
+    }
+    return columnData;
   }
 
   private ColumnData getTotalStructuresSprayed(Plan plan, Location childLocation) {
@@ -527,61 +575,69 @@ public class IRSLiteDashboardService {
     return sprayCoverageColumnData;
   }
 
-  public void initDataStoresIfNecessary() {
+  public void initDataStoresIfNecessary() throws InterruptedException {
     if (!datastoresInitialized) {
-      countOfAssignedStructures = getKafkaStreams.getKafkaStreams().store(
+      KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
+      countOfAssignedStructures = getQueryableStoreByWaiting(kafkaStreams,
           StoreQueryParameters.fromNameAndType(
               kafkaProperties.getStoreMap().get(KafkaConstants.assignedStructureCountPerParent),
               QueryableStoreTypes.keyValueStore()));
 
-      structureCounts = getKafkaStreams.getKafkaStreams().store(
+      structureCounts = getQueryableStoreByWaiting(kafkaStreams,
           StoreQueryParameters.fromNameAndType(
               kafkaProperties.getStoreMap().get(KafkaConstants.structureCountPerParent),
               QueryableStoreTypes.keyValueStore()));
 
-      countOfLocationsByBusinessStatus = getKafkaStreams.getKafkaStreams().store(
+      countOfLocationsByBusinessStatus = getQueryableStoreByWaiting(kafkaStreams,
           StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap()
                   .get(KafkaConstants.locationBusinessStatusByPlanParentHierarchy),
               QueryableStoreTypes.keyValueStore()));
 
-      countOfOperationalArea = getKafkaStreams.getKafkaStreams().store(
+      countOfOperationalArea = getQueryableStoreByWaiting(kafkaStreams,
           StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap()
                   .get(KafkaConstants.operationalAreaByPlanParentHierarchy),
               QueryableStoreTypes.keyValueStore()));
 
-      personBusinessStatus = getKafkaStreams.getKafkaStreams().store(
+      personBusinessStatus = getQueryableStoreByWaiting(kafkaStreams,
           StoreQueryParameters.fromNameAndType(
               kafkaProperties.getStoreMap().get(KafkaConstants.personBusinessStatus),
               QueryableStoreTypes.keyValueStore()));
 
-      locationBusinessState = getKafkaStreams.getKafkaStreams().store(
+      locationBusinessState = getQueryableStoreByWaiting(kafkaStreams,
           StoreQueryParameters.fromNameAndType(
               kafkaProperties.getStoreMap().get(KafkaConstants.locationBusinessStatus),
               QueryableStoreTypes.keyValueStore()));
 
-      structurePeopleCounts = getKafkaStreams.getKafkaStreams().store(
+      structurePeopleCounts = getQueryableStoreByWaiting(kafkaStreams,
           StoreQueryParameters.fromNameAndType(
               kafkaProperties.getStoreMap().get(KafkaConstants.structurePeopleCounts),
               QueryableStoreTypes.keyValueStore()));
 
-      treatedOperationalCounts = getKafkaStreams.getKafkaStreams().store(
+      treatedOperationalCounts = getQueryableStoreByWaiting(kafkaStreams,
           StoreQueryParameters.fromNameAndType(
               kafkaProperties.getStoreMap().get(KafkaConstants.operationalTreatedCounts),
               QueryableStoreTypes.keyValueStore()));
 
-      structurePeople = getKafkaStreams.getKafkaStreams().store(
+      structurePeople = getQueryableStoreByWaiting(kafkaStreams,
           StoreQueryParameters.fromNameAndType(
               kafkaProperties.getStoreMap().get(KafkaConstants.structurePeople),
               QueryableStoreTypes.keyValueStore()));
 
-      countOfLocationStructuresByBusinessStatus = getKafkaStreams.getKafkaStreams().store(
+      countOfLocationStructuresByBusinessStatus = getQueryableStoreByWaiting(
+          kafkaStreams,
           StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap()
                   .get(KafkaConstants.locationStructureHierarchyBusinessStatus),
               QueryableStoreTypes.keyValueStore()));
 
-      countOfLocationStructuresByBusinessStatusInSprayArea = getKafkaStreams.getKafkaStreams()
-          .store(StoreQueryParameters.fromNameAndType(
+      countOfLocationStructuresByBusinessStatusInSprayArea = getQueryableStoreByWaiting(
+          kafkaStreams,
+          StoreQueryParameters.fromNameAndType(
               kafkaProperties.getStoreMap().get(KafkaConstants.locationStructureBusinessStatus),
+              QueryableStoreTypes.keyValueStore()));
+
+      formObservations = getQueryableStoreByWaiting(getKafkaStreams.getKafkaStreams(),
+          StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap()
+                  .get(KafkaConstants.formObservations),
               QueryableStoreTypes.keyValueStore()));
 
       datastoresInitialized = true;

@@ -141,6 +141,7 @@ public class DashboardService {
         switch (reportLevel) {
           case DIRECTLY_ABOVE_STRUCTURE_LEVEL:
           case LOWEST_LITE_TOUCH_LEVEL:
+          case IS_ON_PLAN_TARGET:
             return irsLiteDashboardService.getIRSFullDataOperational(plan,
                 loc.getLocation());
 
