@@ -52,7 +52,7 @@ public class EntityTagController {
       @Valid @RequestBody EntityTagRequest entityTagRequest) {
     entityTagRequest.setAddToMetadata(true); //TODO set this value on the frontend and remove this
     return ResponseEntity.status(HttpStatus.CREATED).body(
-        EntityTagResponseFactory.fromEntity(entityTagService.createEntityTag(entityTagRequest)));
+        EntityTagResponseFactory.fromEntity(entityTagService.createEntityTag(entityTagRequest,true)));
   }
 
 

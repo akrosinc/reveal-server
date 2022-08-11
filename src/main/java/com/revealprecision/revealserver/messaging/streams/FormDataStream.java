@@ -1,15 +1,23 @@
 package com.revealprecision.revealserver.messaging.streams;
 
 import static com.revealprecision.revealserver.constants.EntityTagDataAggregationMethods.AVERAGE;
+import static com.revealprecision.revealserver.constants.EntityTagDataAggregationMethods.COUNT;
+import static com.revealprecision.revealserver.constants.EntityTagDataAggregationMethods.MAX;
+import static com.revealprecision.revealserver.constants.EntityTagDataAggregationMethods.MIN;
 import static com.revealprecision.revealserver.constants.EntityTagDataAggregationMethods.SUM;
+import static com.revealprecision.revealserver.constants.EntityTagDataTypes.BOOLEAN;
 import static com.revealprecision.revealserver.constants.EntityTagDataTypes.DOUBLE;
 import static com.revealprecision.revealserver.constants.EntityTagDataTypes.INTEGER;
+import static com.revealprecision.revealserver.constants.EntityTagDataTypes.DATE;
+import static com.revealprecision.revealserver.constants.EntityTagDataTypes.STRING;
 
 import com.revealprecision.revealserver.api.v1.dto.factory.LocationFormDataAggregateEventFactory;
 import com.revealprecision.revealserver.constants.EntityTagScopes;
 import com.revealprecision.revealserver.constants.KafkaConstants;
 import com.revealprecision.revealserver.messaging.message.FormDataEntityTagValueEvent;
 import com.revealprecision.revealserver.messaging.message.LocationFormDataAggregateEvent;
+import com.revealprecision.revealserver.messaging.message.LocationFormDataCountAggregateEvent;
+import com.revealprecision.revealserver.messaging.message.LocationFormDataMinMaxAggregateEvent;
 import com.revealprecision.revealserver.messaging.message.LocationFormDataSumAggregateEvent;
 import com.revealprecision.revealserver.messaging.message.PersonMetadataEvent;
 import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
@@ -230,6 +238,110 @@ public class FormDataStream {
 
     cddLocationIntegerSumAggregate.toStream()
         .peek((k, v) -> formDataLog.debug("cddLocationIntegerSumAggregate k: {} v: {}", k, v));
+
+
+    KStream<String, FormDataEntityTagValueEvent> maxStream = unpackedLocationFormDataStream
+        .filter(
+            (k, formDataEntityTagValueEvent) ->
+                (formDataEntityTagValueEvent.getEntityTagEvent().getAggregationMethod() != null && (
+                    formDataEntityTagValueEvent.getEntityTagEvent().getAggregationMethod()
+                        .contains(MAX)||formDataEntityTagValueEvent.getEntityTagEvent().getAggregationMethod()
+                        .contains(MIN))
+                    && (formDataEntityTagValueEvent.getEntityTagEvent().getValueType()
+                    .equals(INTEGER)||formDataEntityTagValueEvent.getEntityTagEvent().getValueType()
+                    .equals(DOUBLE)||formDataEntityTagValueEvent.getEntityTagEvent().getValueType()
+                    .equals(DATE)))
+        );
+
+
+    KStream<String, FormDataEntityTagValueEvent> maxKeyedStream = maxStream.selectKey(
+        (k, v) -> (v.getPlanIdentifier() == null ? "plan" : v.getPlanIdentifier()) + "_"
+            + (v.getLocationHierarchyIdentifier() == null ? "locationHierarchy" : v.getLocationHierarchyIdentifier()) + "_"
+            + v.getAncestor() + "_"
+            + v.getEntityTagEvent().getTag()
+            + (v.getSupervisor() != null ? "_" + v.getSupervisor() : "")
+            + (v.getCddName() != null ? "_" + v.getCddName() : "")
+            + (v.getEntityTagEvent().getScope().equals(EntityTagScopes.DATE) ? "_" + v.getDateForScopeDate()
+            : ""));
+
+    KTable<String, LocationFormDataMinMaxAggregateEvent> minMaxTable = maxKeyedStream.groupByKey()
+        .aggregate(LocationFormDataMinMaxAggregateEvent::new,
+            (k, v, agg) -> {
+              double value;
+              if (v.getValue() instanceof Integer) {
+                value = Integer.valueOf((int) v.getValue()).doubleValue();
+              } else if (v.getValue() instanceof Double) {
+                value = (double) v.getValue();
+              } else {
+                value = Integer.valueOf((int) v.getValue()).doubleValue();
+              }
+
+              if (value > agg.getMax()) {
+                agg.setMax(value);
+              }
+
+              if (value < agg.getMin()) {
+                agg.setMin(value);
+              }
+              agg.setEntityTagIdentifier(v.getEntityTagEvent().getIdentifier());
+              return agg;
+            },
+            Materialized.<String, LocationFormDataMinMaxAggregateEvent, KeyValueStore<Bytes, byte[]>>as(
+                    kafkaProperties.getStoreMap().get(KafkaConstants.locationFormDataMinMax))
+                .withKeySerde(Serdes.String())
+                .withValueSerde(new JsonSerde<>(LocationFormDataMinMaxAggregateEvent.class)));
+
+    KStream<String, LocationFormDataMinMaxAggregateEvent> minMaxTableStream = minMaxTable.toStream();
+    minMaxTableStream
+        .peek((k, v) -> formDataLog.debug(
+            "minMaxTableStream k: {} v: {}", k, v));
+    minMaxTableStream.to(
+        kafkaProperties.getTopicMap().get(KafkaConstants.METADATA_MINMAX_AGGREGATE),
+        Produced.with(Serdes.String(), new JsonSerde<>(LocationFormDataMinMaxAggregateEvent.class)));
+
+    KStream<String, FormDataEntityTagValueEvent> countStream = unpackedLocationFormDataStream
+        .filter(
+            (k, formDataEntityTagValueEvent) ->
+                (formDataEntityTagValueEvent.getEntityTagEvent().getAggregationMethod() != null && (
+                    formDataEntityTagValueEvent.getEntityTagEvent().getAggregationMethod()
+                        .contains(COUNT))
+                    && (formDataEntityTagValueEvent.getEntityTagEvent().getValueType()
+                    .equals(BOOLEAN)||(formDataEntityTagValueEvent.getEntityTagEvent().getValueType()
+                    .equals(STRING))))
+        );
+
+
+    KStream<String, FormDataEntityTagValueEvent> countKeyedStream = countStream.selectKey(
+        (k, v) -> (v.getPlanIdentifier() == null ? "plan" : v.getPlanIdentifier()) + "_"
+            + (v.getLocationHierarchyIdentifier() == null ? "locationHierarchy" : v.getLocationHierarchyIdentifier()) + "_"
+            + v.getAncestor() + "_"
+            + v.getEntityTagEvent().getTag()
+            + (v.getSupervisor() != null ? "_" + v.getSupervisor() : "")
+            + (v.getCddName() != null ? "_" + v.getCddName() : "")
+            + (v.getEntityTagEvent().getScope().equals(EntityTagScopes.DATE) ? "_" + v.getDateForScopeDate()
+            : "")+"_"+v.getValue());
+
+    KTable<String, LocationFormDataCountAggregateEvent> countTable = countKeyedStream.groupByKey()
+        .aggregate(LocationFormDataCountAggregateEvent::new,
+            (k, v, agg) -> {
+              agg.setCount(agg.getCount() + 1);
+              agg.setEntityTagIdentifier(v.getEntityTagEvent().getIdentifier());
+              agg.setCountKey(v.getValue());
+              return agg;
+            },
+            Materialized.<String, LocationFormDataCountAggregateEvent, KeyValueStore<Bytes, byte[]>>as(
+                    kafkaProperties.getStoreMap().get(KafkaConstants.locationFormDataStringCount))
+                .withKeySerde(Serdes.String())
+                .withValueSerde(new JsonSerde<>(LocationFormDataCountAggregateEvent.class)));
+
+
+    KStream<String, LocationFormDataCountAggregateEvent> countTableStream = countTable.toStream();
+    countTableStream
+        .peek((k, v) -> formDataLog.debug(
+            "countTableStream k: {} v: {}", k, v));
+    countTableStream.to(
+        kafkaProperties.getTopicMap().get(KafkaConstants.METADATA_COUNT_AGGREGATE),
+        Produced.with(Serdes.String(), new JsonSerde<>(LocationFormDataCountAggregateEvent.class)));
 
     return locationFormDataStream;
   }

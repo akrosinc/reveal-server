@@ -1,14 +1,11 @@
 package com.revealprecision.revealserver.service;
 
 import static com.revealprecision.revealserver.constants.EntityTagDataAggregationMethods.AVERAGE_;
-import static com.revealprecision.revealserver.constants.EntityTagDataAggregationMethods.COUNT_;
 import static com.revealprecision.revealserver.constants.EntityTagDataAggregationMethods.MAX_;
 import static com.revealprecision.revealserver.constants.EntityTagDataAggregationMethods.MIN_;
 import static com.revealprecision.revealserver.constants.EntityTagDataAggregationMethods.SUM_;
-import static com.revealprecision.revealserver.constants.EntityTagDataTypes.BOOLEAN;
 import static com.revealprecision.revealserver.constants.EntityTagDataTypes.DOUBLE;
 import static com.revealprecision.revealserver.constants.EntityTagDataTypes.INTEGER;
-import static com.revealprecision.revealserver.constants.EntityTagDataTypes.STRING;
 
 import com.revealprecision.revealserver.api.v1.dto.factory.EntityTagEventFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.EntityTagFactory;
@@ -51,9 +48,7 @@ public class EntityTagService {
 
   private static final Map<String, List<String>> aggregationMethods = Map.of(
       INTEGER, List.of(SUM_, MAX_, MIN_, AVERAGE_),
-      DOUBLE, List.of(SUM_, MAX_, MIN_, AVERAGE_),
-      STRING, List.of(COUNT_),
-      BOOLEAN, List.of(COUNT_));
+      DOUBLE, List.of(SUM_, MAX_, MIN_, AVERAGE_));
 
   public Page<EntityTag> getAllPagedEntityTags(Pageable pageable) {
     return entityTagRepository.findAll(pageable);
@@ -76,7 +71,7 @@ public class EntityTagService {
   }
 
   public List<EntityTag> getAllGlobalNonAggregateEntityTagsByLookupEntityTypeIdentifier(
-       UUID identifier) {
+      UUID identifier) {
     return entityTagRepository.findEntityTagsByScopeAndIsAggregateAndLookupEntityType_Identifier(
         EntityTagScopes.GLOBAL, false, identifier);
   }
@@ -86,7 +81,6 @@ public class EntityTagService {
     return new ArrayList<>(
         entityTagRepository.findByLookupEntityType_Identifier(lookupEntityTypeIdentifierUuid));
   }
-
 
 
   public Optional<EntityTag> getEntityTagByTagName(String name) {
@@ -109,7 +103,7 @@ public class EntityTagService {
         Pair.of(EntityTag.Fields.identifier, identifier), EntityTag.class));
   }
 
-  public EntityTag createEntityTag(EntityTagRequest entityTagRequest) {
+  public EntityTag createEntityTag(EntityTagRequest entityTagRequest, boolean createAggregateTags) {
 
     LookupEntityType lookupEntityType = lookupEntityTypeService.getLookupEntityTypeByCode(
         entityTagRequest.getEntityType().getLookupEntityType());
@@ -131,14 +125,19 @@ public class EntityTagService {
         EntityTagFactory.toEntity(entityTagRequest, lookupEntityType, formFields));
 
     Set<FormField> finalFormFields = formFields;
-    List<EntityTagEvent> entityTagEvents = aggregationMethods.get(save.getValueType()).stream()
-        .map(aggregationMethod ->
-            createAggregateEntityTag(entityTagRequest, aggregationMethod, lookupEntityType,
-                finalFormFields, true)).map(EntityTagEventFactory::getEntityTagEvent)
-        .collect(Collectors.toList());
+    if (createAggregateTags) {
+      List<EntityTagEvent> entityTagEvents =
+          aggregationMethods.get(save.getValueType()) == null ? null
+              : aggregationMethods.get(save.getValueType()).stream()
+                  .map(aggregationMethod ->
+                      createAggregateEntityTag(entityTagRequest, aggregationMethod,
+                          lookupEntityType,
+                          finalFormFields, true)).map(EntityTagEventFactory::getEntityTagEvent)
+                  .collect(Collectors.toList());
 
-    log.debug("Automatically Created {} for requested tag creation: {}", entityTagEvents,
-        entityTagRequest);
+      log.debug("Automatically Created {} for requested tag creation: {}", entityTagEvents,
+          entityTagRequest);
+    }
     return save;
   }
 

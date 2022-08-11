@@ -254,7 +254,6 @@ public class MetadataService {
             .setTaskType(taskType);
 
         locationMetadata.getEntityValue().getMetadataObjs().get(arrIndex).setActive(true);
-
         if (locationEntityTag.getScope().equals("Date")) {
           if (dateForScopeDateFields != null) {
             locationMetadata.getEntityValue().getMetadataObjs().get(arrIndex)
