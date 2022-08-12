@@ -115,7 +115,8 @@ public class IRSLiteDashboardService {
         getNumberOfSprayDays(plan, childLocation));
     columns.put(TOTAL_SUPERVISOR_FORMS_SUBMITTED,
         getSupervisorFormSubmissions(plan, childLocation));
-    columns.put(AVERAGE_STRUCTURES_PER_DAY, new ColumnData());//TODO add calculations
+    columns.put(AVERAGE_STRUCTURES_PER_DAY,
+        getAverageStructuresSprayedPerDay(plan, childLocation));
     columns.put(AVERAGE_INSECTICIDE_USAGE_RATE, new ColumnData());//TODO add calculations
 
     RowData rowData = new RowData();
@@ -123,6 +124,20 @@ public class IRSLiteDashboardService {
     rowData.setColumnDataMap(columns);
     rowData.setLocationName(childLocation.getName());
     return List.of(rowData);
+  }
+
+  private ColumnData getAverageStructuresSprayedPerDay(Plan plan, Location childLocation) {
+    ColumnData columnData = new ColumnData();
+    Double numberOfSprayDays = (Double) getNumberOfSprayDays(plan, childLocation).getValue();
+    Double sprayedStructures = (Double) getTotalStructuresSprayed(plan, childLocation).getValue();
+
+    if (numberOfSprayDays == 0) {
+      columnData.setValue(0);
+    } else {
+      columnData.setValue(sprayedStructures / numberOfSprayDays);
+    }
+
+    return columnData;
   }
 
   private ColumnData getSPrayedProgressTargeted(Plan plan, Location childLocation) {
