@@ -278,8 +278,8 @@ public class FormDataProcessorService {
             .fieldType(obs.getFieldType()).values(obs.getValues()).parentCode(obs.getParentCode())
             .build();
 
-        String messageKey = String.format("%s_%s_%s", savedEvent.getPlanIdentifier(),
-            savedEvent.getLocationIdentifier(), obs.getFieldCode());
+        String messageKey = String.format("%s_%s_%s_%s", savedEvent.getPlanIdentifier(),
+            savedEvent.getLocationIdentifier(),savedEvent.getEventType(), obs.getFieldCode());
         formObservationsEventKafkaTemplate.send(
             kafkaProperties.getTopicMap().get(KafkaConstants.FORM_OBSERVATIONS), messageKey,
             formObservationsEvent);

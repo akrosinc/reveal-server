@@ -15,6 +15,7 @@ import com.revealprecision.revealserver.messaging.message.PersonMetadataEvent;
 import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
 import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.service.LocationRelationshipService;
+import java.security.KeyPair;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -26,6 +27,7 @@ import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.common.utils.Bytes;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.Consumed;
+import org.apache.kafka.streams.kstream.Grouped;
 import org.apache.kafka.streams.kstream.KGroupedStream;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KTable;
@@ -235,6 +237,9 @@ public class FormDataStream {
             .withValueSerde(new JsonSerde<>(FormObservationsEvent.class)));
     formDataObservationPerPlanStructure.toStream()
         .peek((k, v) -> formDataLog.debug("Form observations: (k,v) -> %s,%s", k, v));
+
+
+    formObservationsEventKStream.groupByKey().count(Materialized.as(kafkaProperties.getStoreMap().get(KafkaConstants.formObservationsCount)));
     return formObservationsEventKStream;
   }
 

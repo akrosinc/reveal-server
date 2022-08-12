@@ -68,4 +68,5 @@ public interface KafkaConstants {
   String formObservations = "formObservations";
 
   String formSubmissions = "formSubmissions";
+  String formObservationsCount = "formObservationsCount";
 }

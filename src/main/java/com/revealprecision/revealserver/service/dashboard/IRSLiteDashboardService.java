@@ -85,6 +85,7 @@ public class IRSLiteDashboardService {
 
   ReadOnlyKeyValueStore<String, Long> formSubmissions;
 
+  ReadOnlyKeyValueStore<String, Long> formObservationsCount;
 
   boolean datastoresInitialized = false;
 
@@ -109,7 +110,8 @@ public class IRSLiteDashboardService {
     columns.put(SPRAY_PROGRESS_SPRAYED_TARGETED, new ColumnData()); //TODO: add calculations
     columns.put(STRUCTURES_FOUND, getTotalStructuresFoundCount(plan, childLocation));
     columns.put(SPRAY_COVERAGE_OF_FOUND, getSprayCoverageOfFound(plan, childLocation));
-    columns.put(NUMBER_OF_SPRAY_DAYS, new ColumnData());//TODO add calculations
+    columns.put(NUMBER_OF_SPRAY_DAYS,
+        getNumberOfSprayDays(plan, childLocation));
     columns.put(TOTAL_SUPERVISOR_FORMS_SUBMITTED,
         getSupervisorFormSubmissions(plan, childLocation));
     columns.put(AVERAGE_STRUCTURES_PER_DAY, new ColumnData());//TODO add calculations
@@ -122,9 +124,23 @@ public class IRSLiteDashboardService {
     return List.of(rowData);
   }
 
+  private ColumnData getNumberOfSprayDays(Plan plan, Location childLocation) {
+    ColumnData columnData = new ColumnData();
+    String formName = "daily_summary";
+    String fieldName = "collection_date";
+    String searchKey = String.format("%s_%s_%s_%s", plan.getIdentifier(),
+        childLocation.getIdentifier(), formName, fieldName);
+    Long uniqueSupervisionDatesCount = formObservationsCount.get(searchKey);
+    if (uniqueSupervisionDatesCount != null) {
+      columnData.setValue(uniqueSupervisionDatesCount);
+    } else {
+      columnData.setValue(0d);
+    }
+    return columnData;
+  }
+
   private ColumnData getSupervisorFormSubmissions(Plan plan, Location childLocation) {
     ColumnData columnData = new ColumnData();
-    columnData.setDataType("double");
     String key = String.format("%s_%s_%s", plan.getIdentifier(), childLocation.getIdentifier(),
         "daily_summary");
     Long submissionCounts = formSubmissions.get(key);
@@ -158,9 +174,10 @@ public class IRSLiteDashboardService {
   private ColumnData getSprayDate(Plan plan, Location childLocation) {
     ColumnData columnData = new ColumnData();
     columnData.setDataType("string");
+    String formName = "irs_lite_verification";
     String fieldKey = "sprayDate";
-    String searchKey = String.format("%s_%s_%s", plan.getIdentifier(),
-        childLocation.getIdentifier(), fieldKey);
+    String searchKey = String.format("%s_%s_%s_%s", plan.getIdentifier(),
+        childLocation.getIdentifier(), formName, fieldKey);
     FormObservationsEvent observationsEvent = formObservations.get(searchKey);
     if (observationsEvent != null) {
       columnData.setValue(observationsEvent.getValues().get(0));
@@ -171,9 +188,10 @@ public class IRSLiteDashboardService {
   private ColumnData getMobilizedDate(Plan plan, Location childLocation) {
     ColumnData columnData = new ColumnData();
     columnData.setDataType("string");
+    String formName = "irs_lite_verification";
     String fieldKey = "mobilization_date";
-    String searchKey = String.format("%s_%s_%s", plan.getIdentifier().toString(),
-        childLocation.getIdentifier().toString(), fieldKey);
+    String searchKey = String.format("%s_%s_%s_%s", plan.getIdentifier(),
+        childLocation.getIdentifier(), formName, fieldKey);
     FormObservationsEvent observationsEvent = formObservations.get(searchKey);
     if (observationsEvent != null) {
       columnData.setValue(observationsEvent.getValues().get(0));
@@ -186,8 +204,9 @@ public class IRSLiteDashboardService {
     ColumnData columnData = new ColumnData();
     columnData.setDataType("string");
     String fieldKey = "mobilized";
-    String searchKey = String.format("%s_%s_%s", plan.getIdentifier().toString(),
-        childLocation.getIdentifier().toString(), fieldKey);
+    String formName = "irs_lite_verification";
+    String searchKey = String.format("%s_%s_%s_%s", plan.getIdentifier().toString(),
+        childLocation.getIdentifier(), formName, fieldKey);
     FormObservationsEvent observation = formObservations.get(searchKey);
     if (observation != null) {
       columnData.setValue(observation.getValues().get(0));
@@ -661,6 +680,11 @@ public class IRSLiteDashboardService {
           getKafkaStreams.getKafkaStreams(),
           StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap()
                   .get(KafkaConstants.formSubmissions),
+              QueryableStoreTypes.keyValueStore()));
+      formObservationsCount = getQueryableStoreByWaiting(
+          getKafkaStreams.getKafkaStreams(),
+          StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap()
+                  .get(KafkaConstants.formObservationsCount),
               QueryableStoreTypes.keyValueStore()));
 
       datastoresInitialized = true;
