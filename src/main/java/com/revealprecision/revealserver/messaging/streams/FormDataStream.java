@@ -2,9 +2,11 @@ package com.revealprecision.revealserver.messaging.streams;
 
 import static com.revealprecision.revealserver.constants.KafkaConstants.FORM_EVENT_CONSUMPTION;
 import static com.revealprecision.revealserver.constants.KafkaConstants.FORM_OBSERVATIONS;
+import static com.revealprecision.revealserver.constants.KafkaConstants.FORM_SUBMISSIONS;
 
 import com.revealprecision.revealserver.api.v1.dto.factory.LocationFormDataAggregateEventFactory;
 import com.revealprecision.revealserver.constants.KafkaConstants;
+import com.revealprecision.revealserver.messaging.Submissions;
 import com.revealprecision.revealserver.messaging.message.FormDataEntityTagValueEvent;
 import com.revealprecision.revealserver.messaging.message.FormObservationsEvent;
 import com.revealprecision.revealserver.messaging.message.LocationFormDataAggregateEvent;
@@ -28,7 +30,6 @@ import org.apache.kafka.streams.kstream.KGroupedStream;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KTable;
 import org.apache.kafka.streams.kstream.Materialized;
-import org.apache.kafka.streams.kstream.Named;
 import org.apache.kafka.streams.kstream.Produced;
 import org.apache.kafka.streams.state.KeyValueStore;
 import org.slf4j.Logger;
@@ -235,6 +236,14 @@ public class FormDataStream {
     formDataObservationPerPlanStructure.toStream()
         .peek((k, v) -> formDataLog.debug("Form observations: (k,v) -> %s,%s", k, v));
     return formObservationsEventKStream;
+  }
+
+  @Bean
+  public KStream<String, Submissions> formSubmissionStream(StreamsBuilder builder){
+    KStream<String,Submissions> formSubmissionStream = builder.stream(kafkaProperties.getTopicMap().get(FORM_SUBMISSIONS),Consumed.with(
+        Serdes.String(), new JsonSerde<>(Submissions.class)));
+    formSubmissionStream.groupByKey().count(Materialized.as(kafkaProperties.getStoreMap().get(KafkaConstants.formSubmissions)));
+    return formSubmissionStream;
   }
 
   private LocationFormDataSumAggregateEvent getLocationFormDataSumAggregateEvent(

@@ -83,6 +83,8 @@ public class IRSLiteDashboardService {
 
   ReadOnlyKeyValueStore<String, FormObservationsEvent> formObservations;
 
+  ReadOnlyKeyValueStore<String, Long> formSubmissions;
+
 
   boolean datastoresInitialized = false;
 
@@ -108,7 +110,8 @@ public class IRSLiteDashboardService {
     columns.put(STRUCTURES_FOUND, getTotalStructuresFoundCount(plan, childLocation));
     columns.put(SPRAY_COVERAGE_OF_FOUND, getSprayCoverageOfFound(plan, childLocation));
     columns.put(NUMBER_OF_SPRAY_DAYS, new ColumnData());//TODO add calculations
-    columns.put(TOTAL_SUPERVISOR_FORMS_SUBMITTED, new ColumnData()); //TODO add calculations
+    columns.put(TOTAL_SUPERVISOR_FORMS_SUBMITTED,
+        getSupervisorFormSubmissions(plan, childLocation));
     columns.put(AVERAGE_STRUCTURES_PER_DAY, new ColumnData());//TODO add calculations
     columns.put(AVERAGE_INSECTICIDE_USAGE_RATE, new ColumnData());//TODO add calculations
 
@@ -117,6 +120,20 @@ public class IRSLiteDashboardService {
     rowData.setColumnDataMap(columns);
     rowData.setLocationName(childLocation.getName());
     return List.of(rowData);
+  }
+
+  private ColumnData getSupervisorFormSubmissions(Plan plan, Location childLocation) {
+    ColumnData columnData = new ColumnData();
+    columnData.setDataType("double");
+    String key = String.format("%s_%s_%s", plan.getIdentifier(), childLocation.getIdentifier(),
+        "daily_summary");
+    Long submissionCounts = formSubmissions.get(key);
+    if (submissionCounts != null) {
+      columnData.setValue(submissionCounts);
+    } else {
+      columnData.setValue(0d);
+    }
+    return columnData;
   }
 
   public List<RowData> getIRSFullDataOperational(Plan plan, Location childLocation) {
@@ -638,6 +655,12 @@ public class IRSLiteDashboardService {
       formObservations = getQueryableStoreByWaiting(getKafkaStreams.getKafkaStreams(),
           StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap()
                   .get(KafkaConstants.formObservations),
+              QueryableStoreTypes.keyValueStore()));
+
+      formSubmissions = getQueryableStoreByWaiting(
+          getKafkaStreams.getKafkaStreams(),
+          StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap()
+                  .get(KafkaConstants.formSubmissions),
               QueryableStoreTypes.keyValueStore()));
 
       datastoresInitialized = true;
