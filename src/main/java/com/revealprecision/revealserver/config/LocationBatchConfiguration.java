@@ -73,7 +73,7 @@ public class LocationBatchConfiguration {
   @Bean
   public Step step1() {
     return stepBuilderFactory.get("step1")
-        .<LocationRequest, Location>chunk(100)
+        .<LocationRequest, Location>chunk(40)
         .reader(locationReader(null))
         .processor(locationItemProcessor)
         .writer(locationWriterTest())
