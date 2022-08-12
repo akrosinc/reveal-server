@@ -40,4 +40,6 @@ public class EntityTagResponse {
   private boolean isGenerated;
 
   private boolean addToMetadata;
+
+  private boolean isAggregate;
 }

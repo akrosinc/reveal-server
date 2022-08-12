@@ -8,6 +8,7 @@ import com.revealprecision.revealserver.api.v1.dto.response.EntityTagResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.FeatureSetResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LookupEntityTypeResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.PersonMainData;
+import com.revealprecision.revealserver.persistence.domain.LookupEntityType;
 import com.revealprecision.revealserver.persistence.repository.LocationElasticRepository;
 import com.revealprecision.revealserver.service.EntityFilterService;
 import com.revealprecision.revealserver.service.EntityTagService;
@@ -31,6 +32,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RequiredArgsConstructor
@@ -50,31 +52,87 @@ public class EntityTagController {
       @Valid @RequestBody EntityTagRequest entityTagRequest) {
     entityTagRequest.setAddToMetadata(true); //TODO set this value on the frontend and remove this
     return ResponseEntity.status(HttpStatus.CREATED).body(
-        EntityTagResponseFactory.fromEntity(entityTagService.createEntityTag(entityTagRequest)));
+        EntityTagResponseFactory.fromEntity(entityTagService.createEntityTag(entityTagRequest,true)));
   }
 
 
   @Operation(summary = "Get All Entity Tags", description = "Get All Entity Tags", tags = {
       "Entity Tags"})
   @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<Page<EntityTagResponse>> getAll(Pageable pageable) {
-    return ResponseEntity.status(HttpStatus.OK)
-        .body(EntityTagResponseFactory.fromEntityPage(entityTagService.getAllEntityTags(pageable), pageable));
+  public ResponseEntity<Page<EntityTagResponse>> getAll(Pageable pageable,
+      @RequestParam(name = "filter", defaultValue = "all") String filter) {
+    switch (filter) {
+      case "global":
+        return ResponseEntity.status(HttpStatus.OK)
+            .body(EntityTagResponseFactory.fromEntityPage(
+                entityTagService.getAllPagedGlobalEntityTags(pageable), pageable));
+      case "importable":
+        return ResponseEntity.status(HttpStatus.OK)
+            .body(EntityTagResponseFactory.fromEntityPage(
+                entityTagService.getAllPagedGlobalNonAggregateEntityTags(pageable), pageable));
+      case "all":
+      default:
+        return ResponseEntity.status(HttpStatus.OK)
+            .body(
+                EntityTagResponseFactory.fromEntityPage(
+                    entityTagService.getAllPagedEntityTags(pageable),
+                    pageable));
+    }
   }
 
+
   @GetMapping("/{entityTypeIdentifier}")
-  public ResponseEntity<List<EntityTagResponse>> getTagsByEntityType(@PathVariable UUID entityTypeIdentifier) {
-    return ResponseEntity.status(HttpStatus.OK).body(entityTagService.getTagsAndCoreFields(entityTypeIdentifier));
+  public ResponseEntity<List<EntityTagResponse>> getTagsByEntityType(
+      @PathVariable UUID entityTypeIdentifier,
+      @RequestParam(name = "filter", defaultValue = "all") String filter) {
+
+    LookupEntityType lookupEntityType = lookupEntityTypeService.getLookUpEntityTypeById(
+        entityTypeIdentifier);
+
+    List<EntityTagResponse> coreFields = lookupEntityType.getCoreFields().stream()
+        .map(EntityTagResponseFactory::fromCoreField)
+        .collect(Collectors.toList());
+
+    switch (filter) {
+      case "global":
+        coreFields.addAll(entityTagService.getAllGlobalEntityTagsByLookupEntityTypeIdentifier(
+                entityTypeIdentifier).stream().map(EntityTagResponseFactory::fromEntity)
+            .collect(
+                Collectors.toList()));
+        break;
+
+      case "importable":
+        coreFields.addAll(
+            entityTagService.getAllGlobalNonAggregateEntityTagsByLookupEntityTypeIdentifier(
+                    entityTypeIdentifier).stream().map(EntityTagResponseFactory::fromEntity)
+                .collect(
+                    Collectors.toList()));
+        break;
+      case "all":
+      default:
+        coreFields.addAll(
+            entityTagService.getEntityTagsByLookupEntityTypeIdentifier(
+                    entityTypeIdentifier).stream().map(EntityTagResponseFactory::fromEntity)
+                .collect(
+                    Collectors.toList()));
+        break;
+    }
+
+    return ResponseEntity.status(HttpStatus.OK)
+        .body(
+            coreFields);
   }
 
   @GetMapping("/entityType")
-  public ResponseEntity<List<LookupEntityTypeResponse>> getEntityTypes(){
-    return ResponseEntity.status(HttpStatus.OK).body(lookupEntityTypeService.getAllLookUpEntityTypes().stream().map(
-        LookupEntityTagResponseFactory::fromEntity).collect(Collectors.toList()));
+  public ResponseEntity<List<LookupEntityTypeResponse>> getEntityTypes() {
+    return ResponseEntity.status(HttpStatus.OK)
+        .body(lookupEntityTypeService.getAllLookUpEntityTypes().stream().map(
+            LookupEntityTagResponseFactory::fromEntity).collect(Collectors.toList()));
   }
 
   @PostMapping("/filter")
-  public ResponseEntity<FeatureSetResponse> filterEntities(@Valid @RequestBody DataFilterRequest request)
+  public ResponseEntity<FeatureSetResponse> filterEntities(
+      @Valid @RequestBody DataFilterRequest request)
       throws IOException, ParseException {
     return ResponseEntity.ok().body(entityFilterService.filterEntites(request));
   }

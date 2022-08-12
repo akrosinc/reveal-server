@@ -5,6 +5,7 @@ import com.revealprecision.revealserver.persistence.projection.LocationCoordinat
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -88,4 +89,10 @@ public interface LocationRepository extends JpaRepository<Location, UUID> {
           + "(l.identifier, l.type, l.name, l.status, l.externalId, l.geographicLevel, l.locationBulk)"
           + " from Location l where l.identifier = :identifier")
   Optional<Location> findByIdentifierWithoutGeoJson(UUID identifier);
+
+  @Query(value =
+      "select new com.revealprecision.revealserver.persistence.domain.Location"
+          + "(l.identifier, l.type, l.name, l.status, l.externalId, l.geographicLevel, l.locationBulk)"
+          + " from Location l where l.identifier in :identifiers")
+  Set<Location> findLocationsWithoutGeoJsonByIdentifierIn(Set<UUID> identifiers);
 }

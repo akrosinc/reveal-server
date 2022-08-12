@@ -13,10 +13,10 @@ import lombok.ToString;
 @AllArgsConstructor
 @NoArgsConstructor
 @ToString
-public class LocationFormDataCountAggregateEvent extends Message {
+public class LocationFormDataMinMaxAggregateEvent extends Message {
 
-  private Long count = 0L;
+  private Double min = Double.MAX_VALUE;
+  private Double max = Double.MIN_VALUE;
   private UUID entityTagIdentifier;
-  private Object countKey;
 
 }

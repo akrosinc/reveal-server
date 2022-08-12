@@ -35,11 +35,11 @@ public class LocationFormDataAggregateEvent extends Message {
 
   private String previousTagValue;
 
-  private Integer tagIntegerValue;
+  private Double tagIntegerValue;
 
-  private Integer previousTagIntegerValue;
+  private Double previousTagIntegerValue;
 
-  private Long increment;
+  private Double increment;
 
   private Long averageCounter;
 
