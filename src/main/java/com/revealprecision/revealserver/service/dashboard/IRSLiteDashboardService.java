@@ -107,7 +107,8 @@ public class IRSLiteDashboardService {
     columns.put(TOTAL_STRUCTURES_TARGETED, getTotalStructuresTargetedCount(plan, childLocation));
     columns.put(STRUCTURES_SPRAYED, getTotalStructuresSprayed(plan,
         childLocation));
-    columns.put(SPRAY_PROGRESS_SPRAYED_TARGETED, new ColumnData()); //TODO: add calculations
+    columns.put(SPRAY_PROGRESS_SPRAYED_TARGETED,
+        getSPrayedProgressTargeted(plan, childLocation));
     columns.put(STRUCTURES_FOUND, getTotalStructuresFoundCount(plan, childLocation));
     columns.put(SPRAY_COVERAGE_OF_FOUND, getSprayCoverageOfFound(plan, childLocation));
     columns.put(NUMBER_OF_SPRAY_DAYS,
@@ -122,6 +123,21 @@ public class IRSLiteDashboardService {
     rowData.setColumnDataMap(columns);
     rowData.setLocationName(childLocation.getName());
     return List.of(rowData);
+  }
+
+  private ColumnData getSPrayedProgressTargeted(Plan plan, Location childLocation) {
+    ColumnData columnData = new ColumnData();
+    Double totalSprayedStructures = (Double) getTotalStructuresSprayed(plan,
+        childLocation).getValue();
+    Double totalTargetedStructures = (Double) getTotalStructuresTargetedCount(plan,
+        childLocation).getValue();
+
+    if (totalTargetedStructures != 0) {
+      columnData.setValue(totalSprayedStructures / totalTargetedStructures);
+    } else {
+      columnData.setValue(0);
+    }
+    return columnData;
   }
 
   private ColumnData getNumberOfSprayDays(Plan plan, Location childLocation) {
