@@ -117,13 +117,32 @@ public class IRSLiteDashboardService {
         getSupervisorFormSubmissions(plan, childLocation));
     columns.put(AVERAGE_STRUCTURES_PER_DAY,
         getAverageStructuresSprayedPerDay(plan, childLocation));
-    columns.put(AVERAGE_INSECTICIDE_USAGE_RATE, new ColumnData());//TODO add calculations
+    columns.put(AVERAGE_INSECTICIDE_USAGE_RATE, getAverageInsecticideUsage(plan,childLocation));//TODO add calculations
 
     RowData rowData = new RowData();
     rowData.setLocationIdentifier(childLocation.getIdentifier());
     rowData.setColumnDataMap(columns);
     rowData.setLocationName(childLocation.getName());
     return List.of(rowData);
+  }
+
+  private ColumnData getAverageInsecticideUsage(Plan plan, Location childLocation) {
+    ColumnData columnData = new ColumnData();
+    Double sprayedStructures = (Double) getTotalStructuresSprayed(plan, childLocation).getValue();
+    Double insecticidesUsed = (Double) getInsecticidesUsed(plan, childLocation).getValue();
+
+    if(insecticidesUsed == 0){
+      columnData.setValue(0d);
+    } else {
+      columnData.setValue(sprayedStructures/insecticidesUsed);
+    }
+    return columnData;
+  }
+
+  private ColumnData getInsecticidesUsed(Plan plan, Location childLocation) {
+    ColumnData columnData  = new ColumnData();
+
+    return columnData;
   }
 
   private ColumnData getAverageStructuresSprayedPerDay(Plan plan, Location childLocation) {
