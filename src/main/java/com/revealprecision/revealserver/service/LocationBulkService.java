@@ -4,11 +4,10 @@ package com.revealprecision.revealserver.service;
 import com.revealprecision.revealserver.enums.BulkStatusEnum;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
-import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationBulk;
-import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.UserBulk;
 import com.revealprecision.revealserver.persistence.projection.LocationBulkProjection;
+import com.revealprecision.revealserver.persistence.repository.LocationBulkExceptionRepository;
 import com.revealprecision.revealserver.persistence.repository.LocationBulkRepository;
 import com.revealprecision.revealserver.util.UserUtils;
 import java.time.LocalDateTime;
@@ -26,6 +25,7 @@ public class LocationBulkService {
 
   private final LocationBulkRepository locationBulkRepository;
   private final UserService userService;
+  private final LocationBulkExceptionRepository locationBulkExceptionRepository;
 
   public UUID saveBulk(String file) {
     var locationBulk = LocationBulk.builder()
@@ -49,8 +49,15 @@ public class LocationBulkService {
                 UserBulk.class));
   }
 
-  public Page<LocationBulkProjection> getLocationBulkDetails(UUID identifier, Pageable pageable) {
-    return locationBulkRepository.findBulkById(identifier, pageable);
+  public Page<LocationBulkProjection> getLocationBulkDetails(UUID identifier, Pageable pageable, String status) {
+    switch (status){
+      case "failed":
+        return locationBulkExceptionRepository.getFailedLocationsFromBulk(identifier, pageable);
+      case "successful":
+        return locationBulkRepository.getSuccessfulLocationsFromBulk(identifier, pageable);
+      default:
+        return locationBulkRepository.findBulkById(identifier, pageable);
+    }
   }
 
   public Page<LocationBulk> getLocationBulks(Pageable pageable) {

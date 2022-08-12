@@ -10,7 +10,9 @@ import com.revealprecision.revealserver.persistence.repository.LocationBulkRepos
 import com.revealprecision.revealserver.persistence.repository.LocationElasticRepository;
 import com.revealprecision.revealserver.persistence.repository.LocationRepository;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -46,9 +48,11 @@ public class LocationWriter implements ItemWriter<Location> {
 
   @Override
   public void write(List<? extends Location> items) throws Exception {
-    items = locationRepository.saveAll(items);
+    List<Location> itemsToSave = new ArrayList<>(items);
     List<LocationElastic> locations = new ArrayList<>();
-    items.forEach(location -> {
+    Set<UUID> failedLocationIds = new HashSet<>();
+    itemsToSave.forEach(location -> {
+      location.setIdentifier(UUID.randomUUID());
       LocationElastic loc = new LocationElastic();
       loc.setId(location.getIdentifier().toString());
       loc.setLevel(location.getGeographicLevel().getName());
@@ -57,31 +61,26 @@ public class LocationWriter implements ItemWriter<Location> {
       loc.setGeometry(location.getGeometry());
       locations.add(loc);
     });
-
     try {
       locationElasticRepository.saveAll(locations);
     } catch (BulkFailureException e) {
-      System.out.println(e.getMessage());
-
-      e.getFailedDocuments().values().forEach(err -> log.error("Elasticsearch import location({}) error: {}", err));
-      Set<UUID> failedLocations = e.getFailedDocuments().keySet().stream().map(UUID::fromString)
-          .collect(
-              Collectors.toSet());
-      Set<String> failedLocationNames = items.stream()
-          .filter(el -> failedLocations.contains(el.getIdentifier()))
-          .map(Location::getName)
-          .collect(Collectors.toSet());
-      locationRepository.deleteFailedLocations(failedLocations);
+      Map<UUID, String> locNames = itemsToSave.stream().collect(Collectors.toMap(Location::getIdentifier, Location::getName));
 
       List<LocationBulkException> exceptions = new ArrayList<>();
-      for (String name : failedLocationNames) {
-        LocationBulkException locationBulkException = LocationBulkException.builder().message("GeoJSON is formatted incorrectly")
-            .locationBulk(locationBulk).name(name).build();
+      for(Map.Entry<String, String> entry : e.getFailedDocuments().entrySet()) {
+        failedLocationIds.add(UUID.fromString(entry.getKey()));
+        LocationBulkException locationBulkException = LocationBulkException.builder()
+            .message(entry.getValue().split("reason")[2].replace("=",""))
+            .locationBulk(locationBulk)
+            .name(locNames.get(UUID.fromString(entry.getKey())))
+            .build();
         locationBulkException.setEntityStatus(EntityStatus.ACTIVE);
         exceptions.add(locationBulkException);
       }
+
       locationBulkExceptionRepository.saveAll(exceptions);
     }
-
+    itemsToSave.removeIf(el -> failedLocationIds.contains(el.getIdentifier()));
+    locationRepository.saveAll(itemsToSave);
   }
 }
