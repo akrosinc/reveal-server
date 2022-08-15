@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.persistence.repository;
 
 import com.revealprecision.revealserver.persistence.domain.Location;
+import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
 import com.revealprecision.revealserver.persistence.projection.LocationChildrenCountProjection;
 import com.revealprecision.revealserver.persistence.projection.LocationMainData;
@@ -18,8 +19,8 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface LocationRelationshipRepository extends JpaRepository<LocationRelationship, UUID> {
 
-  Optional<LocationRelationship> findByLocationHierarchyIdentifierAndLocationIdentifier(
-      UUID locationHierarchyIdentifier, UUID locationIdentifier);
+  Optional<LocationRelationship> findByLocationHierarchyAndLocation(
+      LocationHierarchy locationHierarchy, Location location);
 
   @Query(value =
       "SELECT cast(lr.identifier as varchar) identifier, l.name locationName, cast(l.identifier as varchar) locationIdentifier, cast(lr.parent_identifier as varchar) parentIdentifier, gl.name geographicLevelName FROM location_relationship lr "
@@ -53,7 +54,8 @@ public interface LocationRelationshipRepository extends JpaRepository<LocationRe
           + "LEFT JOIN location l ON lr.location_identifier = l.identifier "
           + "LEFT JOIN geographic_level gl ON l.geographic_level_identifier = gl.identifier "
           + "WHERE gl.name NOT IN :nodeList", nativeQuery = true)
-  List<LocationRelationshipProjection> findByLocationHierarchyWithoutStructuresNotLike(@Param("nodeList") List<String> nodeList);
+  List<LocationRelationshipProjection> findByLocationHierarchyWithoutStructuresNotLike(
+      @Param("nodeList") List<String> nodeList);
 
   @Query(value =
       "select cast(lr.parent_identifier as varchar) as parentIdentifier, count(lr.parent_identifier) as childrenCount from location_relationship lr "
@@ -139,8 +141,10 @@ public interface LocationRelationshipRepository extends JpaRepository<LocationRe
   LocationRelationship getLocationRelationshipByLocation_IdentifierAndLocationHierarchy_Identifier(
       UUID locationIdentifier, UUID hierarchyIdentifier);
 
-  @Query(value = "select new com.revealprecision.revealserver.persistence.projection.LocationMainData(l.identifier, l.name) from LocationRelationship lr "
-      + "left join Location l on l.identifier = lr.location.identifier "
-      + "where l.geographicLevel.name = :levelName and lr.locationHierarchy.identifier = :hierarchyIdentifier")
-  List<LocationMainData> getLocationsByHierarchyIdAndLevelName(@Param("hierarchyIdentifier") UUID hierarchyIdentifier, @Param("levelName") String levelName);
+  @Query(value =
+      "select new com.revealprecision.revealserver.persistence.projection.LocationMainData(l.identifier, l.name) from LocationRelationship lr "
+          + "left join Location l on l.identifier = lr.location.identifier "
+          + "where l.geographicLevel.name = :levelName and lr.locationHierarchy.identifier = :hierarchyIdentifier")
+  List<LocationMainData> getLocationsByHierarchyIdAndLevelName(
+      @Param("hierarchyIdentifier") UUID hierarchyIdentifier, @Param("levelName") String levelName);
 }
