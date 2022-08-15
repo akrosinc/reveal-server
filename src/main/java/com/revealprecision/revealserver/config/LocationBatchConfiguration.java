@@ -3,11 +3,10 @@ package com.revealprecision.revealserver.config;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.revealprecision.revealserver.api.v1.dto.request.LocationRequest;
-import com.revealprecision.revealserver.batch.writer.LocationWriter;
 import com.revealprecision.revealserver.batch.listener.LocationJobCompletionListener;
 import com.revealprecision.revealserver.batch.processor.LocationItemProcessor;
+import com.revealprecision.revealserver.batch.writer.LocationWriter;
 import com.revealprecision.revealserver.persistence.domain.Location;
-import javax.persistence.EntityManagerFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
@@ -15,7 +14,6 @@ import org.springframework.batch.core.configuration.annotation.EnableBatchProces
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepScope;
-import org.springframework.batch.item.database.JpaItemWriter;
 import org.springframework.batch.item.json.JacksonJsonObjectReader;
 import org.springframework.batch.item.json.JsonItemReader;
 import org.springframework.batch.item.json.builder.JsonItemReaderBuilder;
@@ -31,7 +29,6 @@ public class LocationBatchConfiguration {
 
   private final JobBuilderFactory jobBuilderFactory;
   private final StepBuilderFactory stepBuilderFactory;
-  private final EntityManagerFactory entityManagerFactory;
   private final LocationItemProcessor locationItemProcessor;
 
   @Bean
@@ -50,14 +47,8 @@ public class LocationBatchConfiguration {
   }
 
   @Bean
-  public JpaItemWriter<Location> locationWriter() {
-    JpaItemWriter<Location> locationWriter = new JpaItemWriter<>();
-    locationWriter.setEntityManagerFactory(entityManagerFactory);
-    return locationWriter;
-  }
-
-  @Bean
-  public LocationWriter locationWriterTest() {
+  @StepScope
+  public LocationWriter locationWriter() {
     LocationWriter locationWriter = new LocationWriter();
     return locationWriter;
   }
@@ -76,7 +67,7 @@ public class LocationBatchConfiguration {
         .<LocationRequest, Location>chunk(40)
         .reader(locationReader(null))
         .processor(locationItemProcessor)
-        .writer(locationWriterTest())
+        .writer(locationWriter())
         .build();
   }
 

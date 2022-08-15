@@ -34,6 +34,12 @@ public interface LocationBulkRepository extends JpaRepository<LocationBulk, UUID
   Page<LocationBulkProjection> findBulkById(@Param("identifier") UUID identifier,
       Pageable pageable);
 
+  @Query(value =
+          "SELECT l.name as name, null as message, l.entity_status as entityStatus " +
+          "FROM location l WHERE l.location_bulk_identifier = :identifier", nativeQuery = true)
+  Page<LocationBulkProjection> getSuccessfulLocationsFromBulk(@Param("identifier") UUID identifier,
+      Pageable pageable);
+
   @Query(value = "select l from Location l where l.locationBulk.identifier = :identifier")
   List<Location> getAllCreatedInBulk(@Param("identifier") UUID identifier);
 

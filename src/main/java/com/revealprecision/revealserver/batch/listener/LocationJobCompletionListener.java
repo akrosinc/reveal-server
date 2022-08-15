@@ -3,7 +3,6 @@ package com.revealprecision.revealserver.batch.listener;
 import com.revealprecision.revealserver.enums.BulkStatusEnum;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationBulk;
-import com.revealprecision.revealserver.persistence.es.LocationElastic;
 import com.revealprecision.revealserver.persistence.repository.LocationBulkRepository;
 import com.revealprecision.revealserver.service.LocationBulkService;
 import com.revealprecision.revealserver.service.LocationRelationshipService;
@@ -56,6 +55,10 @@ public class LocationJobCompletionListener implements JobExecutionListener {
         e.printStackTrace();
       }
       index++;
+    }
+    if(addedLocations.isEmpty()) {
+      locationBulk.setStatus(BulkStatusEnum.COMPLETE);
+      locationBulkRepository.save(locationBulk);
     }
 
     try {

@@ -88,9 +88,10 @@ public class LocationBulkController {
   @GetMapping("/{identifier}")
   public ResponseEntity<Page<LocationBulkDetailResponse>> getBulkDetails(
       @Parameter(description = "Location Bulk identifier") @PathVariable("identifier") UUID identifier,
+      @RequestParam(value = "status" ,defaultValue = "all", required = false) String status,
       Pageable pageable) {
     return ResponseEntity.status(HttpStatus.OK).body(LocationBulkDetailResponseFactory
-        .fromProjectionPage(locationBulkService.getLocationBulkDetails(identifier, pageable),
+        .fromProjectionPage(locationBulkService.getLocationBulkDetails(identifier, pageable, status),
             pageable));
   }
 }
