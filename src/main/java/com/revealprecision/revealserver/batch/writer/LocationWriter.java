@@ -21,9 +21,9 @@ public class LocationWriter implements ItemWriter<Location> {
 
   @Override
   public void write(List<? extends Location> items) throws Exception {
-    log.info("items imported: {}",items.stream().map(Location::getName).collect(Collectors.joining(",")));
+    log.debug("items imported: {}",items.stream().map(Location::getName).collect(Collectors.joining(",")));
     items = locationRepository.saveAll(items);
-    log.info("items saved: {}",items.stream().map(Location::getName).collect(Collectors.joining(",")));
+    log.debug("items saved: {}",items.stream().map(Location::getName).collect(Collectors.joining(",")));
 
     List<LocationElastic> locations = new ArrayList<>();
     items.forEach(location -> {
