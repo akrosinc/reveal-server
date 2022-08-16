@@ -19,8 +19,8 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface LocationRelationshipRepository extends JpaRepository<LocationRelationship, UUID> {
 
-  Optional<LocationRelationship> findByLocationHierarchyAndLocation(
-      LocationHierarchy locationHierarchy, Location location);
+  Optional<LocationRelationship> findByLocationHierarchyIdentifierAndLocationIdentifier(
+      UUID locationHierarchyIdentifier, UUID locationIdentifier);
 
   @Query(value =
       "SELECT cast(lr.identifier as varchar) identifier, l.name locationName, cast(l.identifier as varchar) locationIdentifier, cast(lr.parent_identifier as varchar) parentIdentifier, gl.name geographicLevelName FROM location_relationship lr "
