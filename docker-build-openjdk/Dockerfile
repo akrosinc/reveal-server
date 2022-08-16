@@ -4,6 +4,8 @@ RUN mkdir /work
 
 COPY revealserver*-SNAPSHOT.jar /work
 
+RUN ls /work
+
 EXPOSE 8080
 
 
