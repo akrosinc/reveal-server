@@ -145,7 +145,7 @@ jobs:
           name: reveal-server.jar
 
       - name: print working dir contents
-        run: ls ${{ github.GITHUB_WORKSPACE }}
+        run: ls ${{ github.workspace }}
 
       - name: Build and push
         uses: docker/build-push-action@v2
