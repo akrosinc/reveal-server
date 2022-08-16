@@ -19,10 +19,12 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 @RequiredArgsConstructor
 @Service
+@Profile("Reveal-Streams")
 public class DashboardService {
 
   private final LocationService locationService;

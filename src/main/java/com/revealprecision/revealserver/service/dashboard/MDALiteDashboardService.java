@@ -36,11 +36,13 @@ import lombok.RequiredArgsConstructor;
 import org.apache.kafka.streams.StoreQueryParameters;
 import org.apache.kafka.streams.state.QueryableStoreTypes;
 import org.apache.kafka.streams.state.ReadOnlyKeyValueStore;
+import org.springframework.context.annotation.Profile;
 import org.springframework.kafka.config.StreamsBuilderFactoryBean;
 import org.springframework.stereotype.Service;
 
 @RequiredArgsConstructor
 @Service
+@Profile("Reveal-Streams")
 public class MDALiteDashboardService {
 
   private final StreamsBuilderFactoryBean getKafkaStreams;

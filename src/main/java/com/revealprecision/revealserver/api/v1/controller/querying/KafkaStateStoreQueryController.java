@@ -27,6 +27,7 @@ import org.apache.kafka.streams.StoreQueryParameters;
 import org.apache.kafka.streams.state.KeyValueIterator;
 import org.apache.kafka.streams.state.QueryableStoreTypes;
 import org.apache.kafka.streams.state.ReadOnlyKeyValueStore;
+import org.springframework.context.annotation.Profile;
 import org.springframework.kafka.config.StreamsBuilderFactoryBean;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -38,6 +39,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/state-store")
 @Slf4j
 @RequiredArgsConstructor
+@Profile("Reveal-Streams")
 public class KafkaStateStoreQueryController<T> {
 
   private final StreamsBuilderFactoryBean getKafkaStreams;
