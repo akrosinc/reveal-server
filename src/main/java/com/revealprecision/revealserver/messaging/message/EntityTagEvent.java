@@ -49,4 +49,6 @@ public class EntityTagEvent extends Message {
 
   private boolean addToMetadata;
 
+  private boolean isAggregate;
+
 }

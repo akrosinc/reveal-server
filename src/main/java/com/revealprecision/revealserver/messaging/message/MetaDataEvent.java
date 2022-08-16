@@ -32,4 +32,6 @@ public class MetaDataEvent extends Message {
   private String dateForDateScope;
 
   private Long captureNumber;
+
+  private String countKey;
 }

@@ -90,8 +90,10 @@ public interface LocationRepository extends JpaRepository<Location, UUID> {
           + "(l.identifier, l.type, l.name, l.status, l.externalId, l.geographicLevel, l.locationBulk)"
           + " from Location l where l.identifier = :identifier")
   Optional<Location> findByIdentifierWithoutGeoJson(UUID identifier);
-
-  @Modifying
-  @Query(value = "delete from Location l where l.identifier in :identifiers")
-  void deleteFailedLocations(@Param("identifiers") Set<UUID> identifiers);
+  
+  @Query(value =
+      "select new com.revealprecision.revealserver.persistence.domain.Location"
+          + "(l.identifier, l.type, l.name, l.status, l.externalId, l.geographicLevel, l.locationBulk)"
+          + " from Location l where l.identifier in :identifiers")
+  Set<Location> findLocationsWithoutGeoJsonByIdentifierIn(Set<UUID> identifiers);
 }

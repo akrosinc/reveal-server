@@ -1,5 +1,10 @@
 package com.revealprecision.revealserver.service;
 
+import static com.revealprecision.revealserver.constants.EntityTagDataTypes.DATE;
+import static com.revealprecision.revealserver.constants.EntityTagDataTypes.DOUBLE;
+import static com.revealprecision.revealserver.constants.EntityTagDataTypes.INTEGER;
+import static com.revealprecision.revealserver.constants.EntityTagDataTypes.STRING;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.revealprecision.revealserver.api.v1.dto.factory.LocationResponseFactory;
@@ -11,6 +16,7 @@ import com.revealprecision.revealserver.api.v1.dto.response.FeatureSetResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationPropertyResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.PersonMainData;
+import com.revealprecision.revealserver.constants.EntityTagDataTypes;
 import com.revealprecision.revealserver.constants.LocationConstants;
 import com.revealprecision.revealserver.enums.SignEntity;
 import com.revealprecision.revealserver.exceptions.ConflictException;
@@ -597,10 +603,10 @@ public class EntityFilterService {
       andStatement.must(
           QueryBuilders.matchPhraseQuery(searchField.concat("tag"), entityTag.getTag()));
 
-      if (entityTag.getValueType().equals("string")) {
+      if (entityTag.getValueType().equals(STRING)) {
         andStatement.must(QueryBuilders.matchPhraseQuery(searchField.concat("value"),
             request.getSearchValue().getValue()));
-      } else if (entityTag.getValueType().equals("integer")) {
+      } else if (entityTag.getValueType().equals(INTEGER) || entityTag.getValueType().equals(DOUBLE)) {
         if (request.getSearchValue().getSign().equals(SignEntity.EQ)) {
           andStatement.must(QueryBuilders.matchQuery(searchField.concat("valueNumber"),
               request.getSearchValue().getValue()));
@@ -617,7 +623,7 @@ public class EntityFilterService {
           ScoreMode.None);
     } else if (request.getFieldType().equals("core")) {
       CoreField coreField = coreFieldService.getCoreFieldByIdentifier(request.getFieldIdentifier());
-      if (coreField.getValueType().equals("date")) {
+      if (coreField.getValueType().equals(EntityTagDataTypes.DATE)) {
         prepareDate(request);
       }
       searchField = lookupEntityType.getTableName().concat(".").concat(coreField.getField());
@@ -643,7 +649,7 @@ public class EntityFilterService {
     String searchField;
     if (request.getFieldType().equals("tag")) {
       EntityTag entityTag = entityTagService.getEntityTagByIdentifier(request.getFieldIdentifier());
-      if (entityTag.getValueType().equals("date")) {
+      if (entityTag.getValueType().equals(EntityTagDataTypes.DATE)) {
         prepareDate(request);
       }
       if (lookupEntityType.getTableName().equals("location")) {
@@ -655,10 +661,10 @@ public class EntityFilterService {
           QueryBuilders.matchPhraseQuery(searchField.concat("tag"), entityTag.getTag()));
       BoolQueryBuilder orStatement = QueryBuilders.boolQuery();
       for (SearchValue value : request.getValues()) {
-        if (entityTag.getValueType().equals("string")) {
+        if (entityTag.getValueType().equals(STRING)) {
           orStatement.should(
               QueryBuilders.matchPhraseQuery(searchField.concat("value"), value.getValue()));
-        } else if (entityTag.getValueType().equals("integer")) {
+        } else if (entityTag.getValueType().equals(INTEGER) || entityTag.getValueType().equals(DOUBLE)) {
           if (value.getSign().equals(SignEntity.EQ)) {
             orStatement.should(QueryBuilders.matchQuery(searchField.concat("valueNumber"),
                 value.getValue()));
@@ -676,7 +682,7 @@ public class EntityFilterService {
           ScoreMode.None);
     } else if (request.getFieldType().equals("core")) {
       CoreField coreField = coreFieldService.getCoreFieldByIdentifier(request.getFieldIdentifier());
-      if (coreField.getValueType().equals("date")) {
+      if (coreField.getValueType().equals(DATE)) {
         prepareDate(request);
       }
       searchField = lookupEntityType.getTableName().concat(".").concat(coreField.getField());
@@ -698,7 +704,7 @@ public class EntityFilterService {
       if (request.getFieldType().equals("tag")) {
         EntityTag entityTag = entityTagService.getEntityTagByIdentifier(
             request.getFieldIdentifier());
-        if (entityTag.getValueType().equals("date")) {
+        if (entityTag.getValueType().equals(DATE)) {
           prepareDate(request);
         }
 
@@ -709,7 +715,7 @@ public class EntityFilterService {
         }
         boolQuery.must(QueryBuilders.matchPhraseQuery(searchField.concat("tag"), entityTag.getTag()));
         String searchFieldName = "value";
-        if (entityTag.getValueType().equals("integer")){
+        if (entityTag.getValueType().equals(INTEGER)||entityTag.getValueType().equals(DOUBLE)){
           searchFieldName = "valueNumber";
         }
         boolQuery.must(QueryBuilders.rangeQuery(searchField.concat(searchFieldName))
@@ -720,7 +726,7 @@ public class EntityFilterService {
       } else if (request.getFieldType().equals("core")) {
         CoreField coreField = coreFieldService.getCoreFieldByIdentifier(
             request.getFieldIdentifier());
-        if (coreField.getValueType().equals("date")) {
+        if (coreField.getValueType().equals(DATE)) {
           prepareDate(request);
         }
         searchField = lookupEntityType.getTableName().concat(".").concat(coreField.getField());

@@ -370,9 +370,9 @@ public class MDALiteDashboardService {
     LocationFormDataSumAggregateEvent locationFormDataSumAggregateEvent = supervisorLocationFormDataIntegerSumOrAverage.get(
         key);
 
-    Long treatedMaleOneToFour = 0L;
+    Double treatedMaleOneToFour = 0D;
     if (locationFormDataSumAggregateEvent != null) {
-      Long sum = locationFormDataSumAggregateEvent.getSum();
+      Double sum = locationFormDataSumAggregateEvent.getSum();
       if (sum != null) {
         treatedMaleOneToFour = sum;
       }
@@ -397,9 +397,9 @@ public class MDALiteDashboardService {
     LocationFormDataSumAggregateEvent locationFormDataSumAggregateEvent = cddSupervisorLocationFormDataIntegerSumOrAverage.get(
         key);
 
-    Long treatedMaleOneToFour = 0L;
+    Double treatedMaleOneToFour = 0D;
     if (locationFormDataSumAggregateEvent != null) {
-      Long sum = locationFormDataSumAggregateEvent.getSum();
+      Double sum = locationFormDataSumAggregateEvent.getSum();
       if (sum != null) {
         treatedMaleOneToFour = sum;
       }
@@ -446,7 +446,7 @@ public class MDALiteDashboardService {
       Location childLocation,
       String searchKey, String columnName) {
 
-    Long censusTargetPopulation = getCensusTargetPopulation(plan, childLocation, searchKey);
+    Double censusTargetPopulation = getCensusTargetPopulation(plan, childLocation, searchKey);
 
     ColumnData columnData = new ColumnData();
     columnData.setDataType("integer");
@@ -464,13 +464,13 @@ public class MDALiteDashboardService {
     String meta = "";
     if (infection.equals(STH)) {
 
-      Long sthCensusTargetPopulation = getCensusTargetPopulation(plan, childLocation, sthTargetPop);
+      Double sthCensusTargetPopulation = getCensusTargetPopulation(plan, childLocation, sthTargetPop);
 
-      Long totalPeopleALB = getTotalPeople(plan, childLocation, ALB);
+      Double totalPeopleALB = getTotalPeople(plan, childLocation, ALB);
 
-      Long totalPeopleMEB = getTotalPeople(plan, childLocation, MEB);
+      Double totalPeopleMEB = getTotalPeople(plan, childLocation, MEB);
 
-      Long totalSTHPeople = totalPeopleALB + totalPeopleMEB;
+      Double totalSTHPeople = totalPeopleALB + totalPeopleMEB;
 
       if (sthCensusTargetPopulation > 0) {
         treatmentCoverage = (double) totalSTHPeople / (double) sthCensusTargetPopulation * 100;
@@ -481,9 +481,9 @@ public class MDALiteDashboardService {
     }
     if (infection.equals(SCH)) {
 
-      Long schCensusTargetPopulation = getCensusTargetPopulation(plan, childLocation, schTargetPop);
+      Double schCensusTargetPopulation = getCensusTargetPopulation(plan, childLocation, schTargetPop);
 
-      Long totalPeoplePZQ = getTotalPeople(plan, childLocation, PZQ);
+      Double totalPeoplePZQ = getTotalPeople(plan, childLocation, PZQ);
 
       if (schCensusTargetPopulation > 0) {
         treatmentCoverage = (double) totalPeoplePZQ / (double) schCensusTargetPopulation * 100;
@@ -505,7 +505,7 @@ public class MDALiteDashboardService {
         columnData);
   }
 
-  private Long getCensusTargetPopulation(Plan plan, Location childLocation,
+  private Double getCensusTargetPopulation(Plan plan, Location childLocation,
       String searchKey) {
 
     String key = plan.getIdentifier() + "_" + plan.getLocationHierarchy().getIdentifier() + "_"
@@ -514,14 +514,14 @@ public class MDALiteDashboardService {
     LocationFormDataSumAggregateEvent censusTargetPopulationEvent = locationFormDataIntegerSumOrAverage.get(
         key);
 
-    Long censusTargetPopulation = 0L;
+    Double censusTargetPopulation = 0D;
     if (censusTargetPopulationEvent != null) {
       censusTargetPopulation = censusTargetPopulationEvent.getSum();
     }
     return censusTargetPopulation;
   }
 
-  private Long getTotalPeople(Plan plan, Location childLocation, String drug) {
+  private Double getTotalPeople(Plan plan, Location childLocation, String drug) {
 
     String totalPeopleKey =
         plan.getIdentifier() + "_" + plan.getLocationHierarchy().getIdentifier() + "_"
@@ -529,7 +529,7 @@ public class MDALiteDashboardService {
 
     LocationFormDataSumAggregateEvent totalPeopleTreatedEvent = locationFormDataIntegerSumOrAverage.get(
         totalPeopleKey);
-    Long totalPeopleALB = 0L;
+    Double totalPeopleALB = 0D;
     if (totalPeopleTreatedEvent != null) {
       totalPeopleALB = totalPeopleTreatedEvent.getSum();
     }
@@ -546,9 +546,9 @@ public class MDALiteDashboardService {
     LocationFormDataSumAggregateEvent locationFormDataSumAggregateEvent = cddSupervisorLocationFormDataIntegerSumOrAverage.get(
         key);
 
-    Long treated = 0L;
+    Double treated = 0D;
     if (locationFormDataSumAggregateEvent != null) {
-      Long sum = locationFormDataSumAggregateEvent.getSum();
+      Double sum = locationFormDataSumAggregateEvent.getSum();
       if (sum != null) {
         treated = sum;
       }
@@ -587,9 +587,9 @@ public class MDALiteDashboardService {
     LocationFormDataSumAggregateEvent locationFormDataSumAggregateEvent = locationFormDataIntegerSumOrAverage.get(
         key);
 
-    Long treatedMaleOneToFour = 0L;
+    Double treatedMaleOneToFour = 0D;
     if (locationFormDataSumAggregateEvent != null) {
-      Long sum = locationFormDataSumAggregateEvent.getSum();
+      Double sum = locationFormDataSumAggregateEvent.getSum();
       if (sum != null) {
         treatedMaleOneToFour = sum;
       }
