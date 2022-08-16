@@ -145,7 +145,10 @@ jobs:
           name: reveal-server.jar
 
       - name: print working dir contents
-        run: ls ${{ github.workspace }}
+        run: ls -lah ${{ github.workspace }}
+
+      - name: copy artefact to context
+        run: mv reveal*.jar docker-build-openjdk/reveal-server.jar
 
       - name: Build and push
         uses: docker/build-push-action@v2
