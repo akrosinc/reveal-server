@@ -37,14 +37,14 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.revealprecision.revealserver.api.v1.dto.factory.EntityTagEventFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.FormDataEntityTagEventFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.FormDataEntityTagValueEventFactory;
+import com.revealprecision.revealserver.api.v1.facade.models.EventFacade;
 import com.revealprecision.revealserver.api.v1.facade.models.Obs;
 import com.revealprecision.revealserver.constants.KafkaConstants;
 import com.revealprecision.revealserver.enums.PlanInterventionTypeEnum;
-import com.revealprecision.revealserver.messaging.Submissions;
 import com.revealprecision.revealserver.messaging.message.DeviceUser;
+import com.revealprecision.revealserver.messaging.message.FormCaptureEvent;
 import com.revealprecision.revealserver.messaging.message.FormDataEntityTagEvent;
 import com.revealprecision.revealserver.messaging.message.FormDataEntityTagValueEvent;
-import com.revealprecision.revealserver.messaging.message.FormObservationsEvent;
 import com.revealprecision.revealserver.messaging.message.OrgLevel;
 import com.revealprecision.revealserver.messaging.message.UserData;
 import com.revealprecision.revealserver.messaging.message.mdalite.MDALiteLocationSupervisorCddEvent;
@@ -93,13 +93,15 @@ public class FormDataProcessorService {
   private final KafkaTemplate<String, UserData> userDataTemplate;
   private final KafkaTemplate<String, MDALiteLocationSupervisorCddEvent> mdaliteSupervisorTemplate;
 
-  private final KafkaTemplate<String, FormObservationsEvent> formObservationsEventKafkaTemplate;
+  private final KafkaTemplate<String, FormCaptureEvent> formObservationsEventKafkaTemplate;
 
-  private final KafkaTemplate<String, Submissions> formSubmissionsTemplate;
 
-  public void processFormDataAndSubmitToMessaging(Event savedEvent) throws IOException {
+  public void processFormDataAndSubmitToMessaging(Event savedEvent,EventFacade eventFacade) throws IOException {
 
     JsonNode obsList = savedEvent.getAdditionalInformation().get("obs");
+    FormCaptureEvent formCaptureEvent = FormCaptureEvent.builder()
+        .locationId(savedEvent.getLocationIdentifier()).savedEventId(savedEvent.getIdentifier()).planId(savedEvent.getPlanIdentifier()).rawFormEvent(eventFacade).build();
+    publishFormObservations(formCaptureEvent);
 
     if (obsList.isArray()) {
 
@@ -109,8 +111,6 @@ public class FormDataProcessorService {
       });
 
       List<Obs> obsJavaList = reader.readValue(obsList);
-
-      publishFormObservations(savedEvent, obsJavaList,plan);
 
       String dateString = null;
       String supervisorName = null;
@@ -267,41 +267,12 @@ public class FormDataProcessorService {
     }
   }
 
-  private void publishFormObservations(Event savedEvent, List<Obs> obsJavaList, Plan plan) {
-
-    if (savedEvent.getPlanIdentifier() != null && savedEvent.getLocationIdentifier() != null) {
-      publishFormSubmissions(savedEvent, plan);
-      //can filter fields we are interested in to reduce traffic.
-      obsJavaList.stream().forEach(obs -> {
-        FormObservationsEvent formObservationsEvent = FormObservationsEvent.builder()
-            .fieldCode(obs.getFieldCode()).fieldDataType(obs.getFieldDataType())
-            .fieldType(obs.getFieldType()).values(obs.getValues()).parentCode(obs.getParentCode())
-            .build();
-
-        String messageKey = String.format("%s_%s_%s_%s", savedEvent.getPlanIdentifier(),
-            savedEvent.getLocationIdentifier(),savedEvent.getEventType(), obs.getFieldCode());
-        formObservationsEventKafkaTemplate.send(
-            kafkaProperties.getTopicMap().get(KafkaConstants.FORM_OBSERVATIONS), messageKey,
-            formObservationsEvent);
-      });
-    }
+  private void publishFormObservations(FormCaptureEvent event) {
+    formObservationsEventKafkaTemplate.send(
+        kafkaProperties.getTopicMap().get(KafkaConstants.FORM_SUBMISSIONS), event.getPlanId().toString(),
+        event);
   }
 
-  private void publishFormSubmissions(Event savedEvent, Plan plan) {
-
-    List<UUID> ancestry = locationRelationshipService.getAncestryForLocation(
-        savedEvent.getLocationIdentifier(), plan.getLocationHierarchy().getIdentifier());
-    ancestry.add(savedEvent.getIdentifier());
-    ancestry.stream().forEach(location -> {
-      String formSubmissionKey = String.format("%s_%s_%s", plan.getIdentifier(),
-          location,
-          savedEvent.getEventType());
-      formSubmissionsTemplate.send(
-          kafkaProperties.getTopicMap().get(KafkaConstants.FORM_SUBMISSIONS),
-          formSubmissionKey,
-          Submissions.builder().rawEventId(savedEvent.getIdentifier()).build());
-    });
-  }
 
   private List<OrgLevel> getFlattenedOrganizationalHierarchy(Organization organization) {
 

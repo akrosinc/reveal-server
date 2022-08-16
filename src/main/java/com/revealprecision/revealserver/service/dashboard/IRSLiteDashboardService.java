@@ -10,7 +10,6 @@ import com.revealprecision.revealserver.api.v1.dto.response.FeatureSetResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationResponse;
 import com.revealprecision.revealserver.constants.KafkaConstants;
 import com.revealprecision.revealserver.constants.LocationConstants;
-import com.revealprecision.revealserver.messaging.message.FormObservationsEvent;
 import com.revealprecision.revealserver.messaging.message.LocationBusinessStatusAggregate;
 import com.revealprecision.revealserver.messaging.message.LocationPersonBusinessStateAggregate;
 import com.revealprecision.revealserver.messaging.message.LocationPersonBusinessStateCountAggregate;
@@ -20,7 +19,9 @@ import com.revealprecision.revealserver.messaging.message.PersonBusinessStatusAg
 import com.revealprecision.revealserver.messaging.message.TreatedOperationalAreaAggregate;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.Plan;
+import com.revealprecision.revealserver.persistence.domain.Report;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
+import com.revealprecision.revealserver.persistence.repository.ReportRepository;
 import com.revealprecision.revealserver.props.DashboardProperties;
 import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.service.LocationRelationshipService;
@@ -81,11 +82,7 @@ public class IRSLiteDashboardService {
   ReadOnlyKeyValueStore<String, TreatedOperationalAreaAggregate> treatedOperationalCounts;
   ReadOnlyKeyValueStore<String, LocationPersonBusinessStateAggregate> structurePeople;
 
-  ReadOnlyKeyValueStore<String, FormObservationsEvent> formObservations;
-
-  ReadOnlyKeyValueStore<String, Long> formSubmissions;
-
-  ReadOnlyKeyValueStore<String, Long> formObservationsCount;
+  private final ReportRepository planReportRepository;
 
   boolean datastoresInitialized = false;
 
@@ -98,6 +95,7 @@ public class IRSLiteDashboardService {
           .get(plan.getLocationHierarchy().getNodeOrder().indexOf(LocationConstants.STRUCTURE) - 1);
     }
 
+    Report report = planReportRepository.findByPlanAndLocation(plan,childLocation).orElse(null);
     Map<String, ColumnData> columns = new LinkedHashMap<>();
     columns.put(TOTAL_SPRAY_AREAS,
         getTotalAreas(plan, childLocation, geoNameDirectlyAboveStructure));
@@ -112,12 +110,13 @@ public class IRSLiteDashboardService {
     columns.put(STRUCTURES_FOUND, getTotalStructuresFoundCount(plan, childLocation));
     columns.put(SPRAY_COVERAGE_OF_FOUND, getSprayCoverageOfFound(plan, childLocation));
     columns.put(NUMBER_OF_SPRAY_DAYS,
-        getNumberOfSprayDays(plan, childLocation));
+        getNumberOfSprayDays(report));
     columns.put(TOTAL_SUPERVISOR_FORMS_SUBMITTED,
-        getSupervisorFormSubmissions(plan, childLocation));
+        getSupervisorFormSubmissions(report));
     columns.put(AVERAGE_STRUCTURES_PER_DAY,
-        getAverageStructuresSprayedPerDay(plan, childLocation));
-    columns.put(AVERAGE_INSECTICIDE_USAGE_RATE, getAverageInsecticideUsage(plan,childLocation));//TODO add calculations
+        getAverageStructuresSprayedPerDay(plan, childLocation,report));
+    columns.put(AVERAGE_INSECTICIDE_USAGE_RATE,
+        getAverageInsecticideUsage(plan, childLocation));//TODO add calculations
 
     RowData rowData = new RowData();
     rowData.setLocationIdentifier(childLocation.getIdentifier());
@@ -131,23 +130,23 @@ public class IRSLiteDashboardService {
     Double sprayedStructures = (Double) getTotalStructuresSprayed(plan, childLocation).getValue();
     Double insecticidesUsed = (Double) getInsecticidesUsed(plan, childLocation).getValue();
 
-    if(insecticidesUsed == 0){
+    if (insecticidesUsed == 0) {
       columnData.setValue(0d);
     } else {
-      columnData.setValue(sprayedStructures/insecticidesUsed);
+      columnData.setValue(sprayedStructures / insecticidesUsed);
     }
     return columnData;
   }
 
   private ColumnData getInsecticidesUsed(Plan plan, Location childLocation) {
-    ColumnData columnData  = new ColumnData();
+    ColumnData columnData = new ColumnData();
 
     return columnData;
   }
 
-  private ColumnData getAverageStructuresSprayedPerDay(Plan plan, Location childLocation) {
+  private ColumnData getAverageStructuresSprayedPerDay(Plan plan, Location childLocation,Report report) {
     ColumnData columnData = new ColumnData();
-    Double numberOfSprayDays = (Double) getNumberOfSprayDays(plan, childLocation).getValue();
+    Double numberOfSprayDays = (Double) getNumberOfSprayDays(report).getValue();
     Double sprayedStructures = (Double) getTotalStructuresSprayed(plan, childLocation).getValue();
 
     if (numberOfSprayDays == 0) {
@@ -174,28 +173,21 @@ public class IRSLiteDashboardService {
     return columnData;
   }
 
-  private ColumnData getNumberOfSprayDays(Plan plan, Location childLocation) {
+  private ColumnData getNumberOfSprayDays(Report report) {
     ColumnData columnData = new ColumnData();
-    String formName = "daily_summary";
-    String fieldName = "collection_date";
-    String searchKey = String.format("%s_%s_%s_%s", plan.getIdentifier(),
-        childLocation.getIdentifier(), formName, fieldName);
-    Long uniqueSupervisionDatesCount = formObservationsCount.get(searchKey);
-    if (uniqueSupervisionDatesCount != null) {
-      columnData.setValue(uniqueSupervisionDatesCount);
+
+    if (report != null && report.getReportIndicators().getUniqueSupervisionDates()!= null) {
+      columnData.setValue(report.getReportIndicators().getUniqueSupervisionDates().stream().count());
     } else {
       columnData.setValue(0d);
     }
     return columnData;
   }
 
-  private ColumnData getSupervisorFormSubmissions(Plan plan, Location childLocation) {
+  private ColumnData getSupervisorFormSubmissions(Report report) {
     ColumnData columnData = new ColumnData();
-    String key = String.format("%s_%s_%s", plan.getIdentifier(), childLocation.getIdentifier(),
-        "daily_summary");
-    Long submissionCounts = formSubmissions.get(key);
-    if (submissionCounts != null) {
-      columnData.setValue(submissionCounts);
+    if (report != null && report.getReportIndicators().getSupervisorFormSubmissionCount()!= null) {
+      columnData.setValue(report.getReportIndicators().getSupervisorFormSubmissionCount());
     } else {
       columnData.setValue(0d);
     }
@@ -204,16 +196,16 @@ public class IRSLiteDashboardService {
 
   public List<RowData> getIRSFullDataOperational(Plan plan, Location childLocation) {
     Map<String, ColumnData> columns = new LinkedHashMap<>();
-
+    Report report = planReportRepository.findByPlanAndLocation(plan,childLocation).orElse(null);
     columns.put(TOTAL_STRUCTURES_TARGETED, getTotalStructuresTargetedCount(plan, childLocation));
     columns.put(STRUCTURES_FOUND,
         getTotalStructuresFoundCountInSprayArea(plan, childLocation));
     columns.put(STRUCTURES_SPRAYED, getTotalStructuresSprayedCountInSprayArea(plan, childLocation));
     columns.put(SPRAY_AREA_VISITED, getAreaVisitedInSprayArea(plan, childLocation));
-    columns.put(DATE_VISITED_FOR_IRS, getSprayDate(plan, childLocation));
+    columns.put(DATE_VISITED_FOR_IRS, getSprayDate(report));
     columns.put(STRUCTURES_ON_THE_GROUND, getTotalStructuresCounts(plan, childLocation));
-    columns.put(MOBILIZED, getMobilized(plan, childLocation));
-    columns.put(DATE_MOBILIZED, getMobilizedDate(plan, childLocation));
+    columns.put(MOBILIZED, getMobilized(report));
+    columns.put(DATE_MOBILIZED, getMobilizedDate(report));
     RowData rowData = new RowData();
     rowData.setLocationIdentifier(childLocation.getIdentifier());
     rowData.setColumnDataMap(columns);
@@ -221,45 +213,30 @@ public class IRSLiteDashboardService {
     return List.of(rowData);
   }
 
-  private ColumnData getSprayDate(Plan plan, Location childLocation) {
+  private ColumnData getSprayDate(Report report) {
     ColumnData columnData = new ColumnData();
     columnData.setDataType("string");
-    String formName = "irs_lite_verification";
-    String fieldKey = "sprayDate";
-    String searchKey = String.format("%s_%s_%s_%s", plan.getIdentifier(),
-        childLocation.getIdentifier(), formName, fieldKey);
-    FormObservationsEvent observationsEvent = formObservations.get(searchKey);
-    if (observationsEvent != null) {
-      columnData.setValue(observationsEvent.getValues().get(0));
+    if (report != null && report.getReportIndicators().getDateSprayed() != null) {
+      columnData.setValue(report.getReportIndicators().getDateSprayed());
     }
     return columnData;
   }
 
-  private ColumnData getMobilizedDate(Plan plan, Location childLocation) {
+  private ColumnData getMobilizedDate(Report report) {
     ColumnData columnData = new ColumnData();
     columnData.setDataType("string");
-    String formName = "irs_lite_verification";
-    String fieldKey = "mobilization_date";
-    String searchKey = String.format("%s_%s_%s_%s", plan.getIdentifier(),
-        childLocation.getIdentifier(), formName, fieldKey);
-    FormObservationsEvent observationsEvent = formObservations.get(searchKey);
-    if (observationsEvent != null) {
-      columnData.setValue(observationsEvent.getValues().get(0));
+    if (report != null && report.getReportIndicators().getMobilizationDate()!= null) {
+      columnData.setValue(report.getReportIndicators().getMobilizationDate());
     }
     return columnData;
   }
 
 
-  private ColumnData getMobilized(Plan plan, Location childLocation) {
+  private ColumnData getMobilized(Report report) {
     ColumnData columnData = new ColumnData();
     columnData.setDataType("string");
-    String fieldKey = "mobilized";
-    String formName = "irs_lite_verification";
-    String searchKey = String.format("%s_%s_%s_%s", plan.getIdentifier().toString(),
-        childLocation.getIdentifier(), formName, fieldKey);
-    FormObservationsEvent observation = formObservations.get(searchKey);
-    if (observation != null) {
-      columnData.setValue(observation.getValues().get(0));
+    if (report != null && report.getReportIndicators().getMobilized() != null) {
+      columnData.setValue(report.getReportIndicators().getMobilized());
     } else {
       columnData.setValue("No");
     }
@@ -720,23 +697,6 @@ public class IRSLiteDashboardService {
           StoreQueryParameters.fromNameAndType(
               kafkaProperties.getStoreMap().get(KafkaConstants.locationStructureBusinessStatus),
               QueryableStoreTypes.keyValueStore()));
-
-      formObservations = getQueryableStoreByWaiting(getKafkaStreams.getKafkaStreams(),
-          StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap()
-                  .get(KafkaConstants.formObservations),
-              QueryableStoreTypes.keyValueStore()));
-
-      formSubmissions = getQueryableStoreByWaiting(
-          getKafkaStreams.getKafkaStreams(),
-          StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap()
-                  .get(KafkaConstants.formSubmissions),
-              QueryableStoreTypes.keyValueStore()));
-      formObservationsCount = getQueryableStoreByWaiting(
-          getKafkaStreams.getKafkaStreams(),
-          StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap()
-                  .get(KafkaConstants.formObservationsCount),
-              QueryableStoreTypes.keyValueStore()));
-
       datastoresInitialized = true;
     }
   }

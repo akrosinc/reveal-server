@@ -105,7 +105,7 @@ public class EventClientFacadeService {
     eventFacadeList.forEach(eventFacade -> {
       try {
         Event savedEvent = saveEvent(eventFacade);
-        formDataProcessorService.processFormDataAndSubmitToMessaging(savedEvent);
+        formDataProcessorService.processFormDataAndSubmitToMessaging(savedEvent,eventFacade);
       } catch (Exception exception) {
         exception.printStackTrace();
         failedEvents.add(eventFacade);

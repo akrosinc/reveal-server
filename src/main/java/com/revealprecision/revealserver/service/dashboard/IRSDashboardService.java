@@ -10,7 +10,6 @@ import com.revealprecision.revealserver.api.v1.dto.response.FeatureSetResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationResponse;
 import com.revealprecision.revealserver.constants.KafkaConstants;
 import com.revealprecision.revealserver.constants.LocationConstants;
-import com.revealprecision.revealserver.messaging.message.FormObservationsEvent;
 import com.revealprecision.revealserver.messaging.message.LocationBusinessStatusAggregate;
 import com.revealprecision.revealserver.messaging.message.LocationPersonBusinessStateAggregate;
 import com.revealprecision.revealserver.messaging.message.LocationPersonBusinessStateCountAggregate;
@@ -19,7 +18,10 @@ import com.revealprecision.revealserver.messaging.message.PersonBusinessStatusAg
 import com.revealprecision.revealserver.messaging.message.TreatedOperationalAreaAggregate;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.Plan;
+import com.revealprecision.revealserver.persistence.domain.Report;
+import com.revealprecision.revealserver.persistence.domain.ReportIndicators;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
+import com.revealprecision.revealserver.persistence.repository.ReportRepository;
 import com.revealprecision.revealserver.props.DashboardProperties;
 import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.service.LocationRelationshipService;
@@ -43,6 +45,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class IRSDashboardService {
 
+  public static final String NOT_SPRAYED_REASON = "Not Sprayed Reason";
+  public static final String PHONE_NUMBER = "Phone Number";
   private final StreamsBuilderFactoryBean getKafkaStreams;
   private final KafkaProperties kafkaProperties;
   private final PlanLocationsService planLocationsService;
@@ -79,13 +83,12 @@ public class IRSDashboardService {
   ReadOnlyKeyValueStore<String, LocationPersonBusinessStateCountAggregate> structurePeopleCounts;
   ReadOnlyKeyValueStore<String, TreatedOperationalAreaAggregate> treatedOperationalCounts;
   ReadOnlyKeyValueStore<String, LocationPersonBusinessStateAggregate> structurePeople;
-  ReadOnlyKeyValueStore<String, FormObservationsEvent> formObservations;
   ReadOnlyKeyValueStore<String, Long> discoveredStructuresPerPlan;
   boolean isDatastoresInitialized = false;
 
+  private final ReportRepository planReportRepository;
 
   public List<RowData> getIRSFullData(Plan plan, Location childLocation) {
-
     String geoNameDirectlyAboveStructure = null;
     if (plan.getLocationHierarchy().getNodeOrder().contains(LocationConstants.STRUCTURE)) {
       geoNameDirectlyAboveStructure = plan.getLocationHierarchy().getNodeOrder()
@@ -114,6 +117,8 @@ public class IRSDashboardService {
   }
 
   public List<RowData> getIRSFullDataOperational(Plan plan, Location childLocation) {
+    Report report = planReportRepository.findByPlanAndLocation(plan, childLocation).orElse(null);
+
     Map<String, ColumnData> columns = new LinkedHashMap<>();
     columns.put(TOTAL_STRUCTURES, getTotalStructuresCounts(plan, childLocation));
     columns.put(TOTAL_STRUCTURES_FOUND, getTotalStructuresFoundCount(plan, childLocation));
@@ -125,7 +130,7 @@ public class IRSDashboardService {
     columns.put(STRUCTURES_REMAINING_TO_SPRAY_TO_REACH_90,
         getStructuresRemainingToReach90(plan, childLocation));
     columns.put(REVIEWED_WITH_DECISION, getReviewedWithDecision(plan, childLocation));
-    columns.put(MOBILIZED, getMobilized(plan, childLocation));
+    columns.put(MOBILIZED, getMobilized(report));
     RowData rowData = new RowData();
     rowData.setLocationIdentifier(childLocation.getIdentifier());
     rowData.setColumnDataMap(columns);
@@ -133,15 +138,11 @@ public class IRSDashboardService {
     return List.of(rowData);
   }
 
-  private ColumnData getMobilized(Plan plan, Location childLocation) {
+  private ColumnData getMobilized(Report report) {
     ColumnData columnData = new ColumnData();
     columnData.setDataType("string");
-    String fieldKey = "mobilized";
-    String searchKey = String.format("%s_%s_%s", plan.getIdentifier().toString(),
-        childLocation.getIdentifier().toString(), fieldKey);
-    FormObservationsEvent observation = formObservations.get(searchKey);
-    if (observation != null) {
-      columnData.setValue(observation.getValues().get(0));
+    if (report != null && report.getReportIndicators().getMobilized() != null) {
+      columnData.setValue(report.getReportIndicators().getMobilized());
     } else {
       columnData.setValue("No");
     }
@@ -197,19 +198,16 @@ public class IRSDashboardService {
   public List<RowData> getIRSFullCoverageStructureLevelData(Plan plan, Location childLocation,
       UUID parentLocationIdentifier) {
     Map<String, ColumnData> columns = new HashMap<>();
+    Report report = planReportRepository.findByPlanAndLocation(plan, childLocation).orElse(null);
 
     columns.put(STRUCTURE_STATUS,
         getLocationBusinessState(plan, childLocation, parentLocationIdentifier));
-    ColumnData blankColumnData = new ColumnData();
-    blankColumnData.setValue(0L);
-    columns.put(NO_OF_MALES,
-        getFormValue(plan, childLocation, "sprayed_males"));
-    columns.put(NO_OF_FEMALES,
-        getFormValue(plan, childLocation, "sprayed_females"));
-    columns.put(NO_OF_ROOMS,
-        getFormValue(plan, childLocation, "rooms_sprayed"));
-    columns.put(NO_OF_PREGNANT_WOMEN,
-        getFormValue(plan, childLocation, "sprayed_pregwomen"));
+    columns.put(NO_OF_MALES, getMales(report));
+    columns.put(NO_OF_FEMALES, getFemales(report));
+    columns.put(NO_OF_ROOMS, getRoomsSprayed(report));
+    columns.put(NO_OF_PREGNANT_WOMEN, getPregnantWomen(report));
+    columns.put(NOT_SPRAYED_REASON,getNotSprayedReason(report));
+    columns.put(PHONE_NUMBER,getHeadPhoneNumber(report));
     RowData rowData = new RowData();
     rowData.setLocationIdentifier(childLocation.getIdentifier());
     rowData.setColumnDataMap(columns);
@@ -217,20 +215,74 @@ public class IRSDashboardService {
     return List.of(rowData);
   }
 
-  private ColumnData getFormValue(Plan plan, Location childLocation, String fieldCode) {
+  private ColumnData getHeadPhoneNumber(Report report) {
     ColumnData columnData = new ColumnData();
-    columnData.setIsPercentage(false);
-    FormObservationsEvent event = formObservations.get(
-        String.format("%s_%s_%s", plan.getIdentifier().toString(),
-            childLocation.getIdentifier().toString(), fieldCode));
-    if (event != null) {
-      double value = Double.valueOf((String) event.getValues().get(0));
-      columnData.setValue(value);
+    columnData.setDataType("string");
+    if (report != null && report.getReportIndicators().getPhoneNumber()!= null) {
+      ReportIndicators reportIndicators = report.getReportIndicators();
+      columnData.setValue(reportIndicators.getPhoneNumber());
+    } else {
+    }
+    return columnData;
+  }
+
+  private ColumnData getNotSprayedReason(Report report) {
+    ColumnData columnData = new ColumnData();
+    columnData.setDataType("string");
+    if (report != null && report.getReportIndicators().getNotSprayedReason()!= null) {
+      ReportIndicators reportIndicators = report.getReportIndicators();
+      columnData.setValue(reportIndicators.getNotSprayedReason());
+    } else {
+      columnData.setValue("n/a");
+    }
+    return columnData;
+  }
+
+  private ColumnData getPregnantWomen(Report report) {
+    ColumnData columnData = new ColumnData();
+    if (report != null) {
+      ReportIndicators reportIndicators = report.getReportIndicators();
+      columnData.setValue(reportIndicators.getPregnantWomen());
     } else {
       columnData.setValue(0d);
     }
     return columnData;
   }
+
+  private ColumnData getRoomsSprayed(Report report) {
+    ColumnData columnData = new ColumnData();
+    if (report != null) {
+      ReportIndicators reportIndicators = report.getReportIndicators();
+      columnData.setValue(reportIndicators.getSprayedRooms());
+    } else {
+      columnData.setValue(0d);
+    }
+    return columnData;
+  }
+
+  private ColumnData getFemales(Report report) {
+    ColumnData columnData = new ColumnData();
+    if (report != null) {
+      ReportIndicators reportIndicators = report.getReportIndicators();
+      columnData.setValue(reportIndicators.getFemales());
+    } else {
+      columnData.setValue(0d);
+    }
+    return columnData;
+  }
+
+  private ColumnData getMales(Report report) {
+    ColumnData columnData = new ColumnData();
+    if (report != null) {
+      ReportIndicators reportIndicators = report.getReportIndicators();
+      columnData.setValue(reportIndicators.getMales());
+    } else {
+      columnData.setValue(0d);
+    }
+    return columnData;
+  }
+
+
 
   private ColumnData getLocationBusinessState(Plan plan, Location childLocation,
       UUID parentLocationIdentifier) {
@@ -650,10 +702,6 @@ public class IRSDashboardService {
                   .get(KafkaConstants.discoveredStructuresCountPerPlan),
               QueryableStoreTypes.keyValueStore()));
 
-      formObservations = getQueryableStoreByWaiting(getKafkaStreams.getKafkaStreams(),
-          StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap()
-                  .get(KafkaConstants.formObservations),
-              QueryableStoreTypes.keyValueStore()));
       isDatastoresInitialized = true;
     }
   }

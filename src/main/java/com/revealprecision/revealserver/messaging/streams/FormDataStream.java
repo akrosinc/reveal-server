@@ -1,21 +1,16 @@
 package com.revealprecision.revealserver.messaging.streams;
 
 import static com.revealprecision.revealserver.constants.KafkaConstants.FORM_EVENT_CONSUMPTION;
-import static com.revealprecision.revealserver.constants.KafkaConstants.FORM_OBSERVATIONS;
-import static com.revealprecision.revealserver.constants.KafkaConstants.FORM_SUBMISSIONS;
 
 import com.revealprecision.revealserver.api.v1.dto.factory.LocationFormDataAggregateEventFactory;
 import com.revealprecision.revealserver.constants.KafkaConstants;
-import com.revealprecision.revealserver.messaging.Submissions;
 import com.revealprecision.revealserver.messaging.message.FormDataEntityTagValueEvent;
-import com.revealprecision.revealserver.messaging.message.FormObservationsEvent;
 import com.revealprecision.revealserver.messaging.message.LocationFormDataAggregateEvent;
 import com.revealprecision.revealserver.messaging.message.LocationFormDataSumAggregateEvent;
 import com.revealprecision.revealserver.messaging.message.PersonMetadataEvent;
 import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
 import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.service.LocationRelationshipService;
-import java.security.KeyPair;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -27,7 +22,6 @@ import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.common.utils.Bytes;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.Consumed;
-import org.apache.kafka.streams.kstream.Grouped;
 import org.apache.kafka.streams.kstream.KGroupedStream;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KTable;
@@ -221,36 +215,6 @@ public class FormDataStream {
 
     return locationFormDataStream;
   }
-
-  @Bean
-  public KStream<String, FormObservationsEvent> processFormObservations(
-      StreamsBuilder streamsBuilder) {
-    //Depending on final topic strategy, this can be published and consumed to a different. but for now it works here
-    KStream<String, FormObservationsEvent> formObservationsEventKStream = streamsBuilder.stream(
-        kafkaProperties.getTopicMap().get(FORM_OBSERVATIONS),
-        Consumed.with(Serdes.String(), new JsonSerde<>(FormObservationsEvent.class)));
-
-    KTable<String, FormObservationsEvent> formDataObservationPerPlanStructure = formObservationsEventKStream.toTable(
-        Materialized.<String, FormObservationsEvent, KeyValueStore<Bytes, byte[]>>as(
-                kafkaProperties.getStoreMap().get(KafkaConstants.formObservations))
-            .withKeySerde(Serdes.String())
-            .withValueSerde(new JsonSerde<>(FormObservationsEvent.class)));
-    formDataObservationPerPlanStructure.toStream()
-        .peek((k, v) -> formDataLog.debug("Form observations: (k,v) -> %s,%s", k, v));
-
-
-    formObservationsEventKStream.groupByKey().count(Materialized.as(kafkaProperties.getStoreMap().get(KafkaConstants.formObservationsCount)));
-    return formObservationsEventKStream;
-  }
-
-  @Bean
-  public KStream<String, Submissions> formSubmissionStream(StreamsBuilder builder){
-    KStream<String,Submissions> formSubmissionStream = builder.stream(kafkaProperties.getTopicMap().get(FORM_SUBMISSIONS),Consumed.with(
-        Serdes.String(), new JsonSerde<>(Submissions.class)));
-    formSubmissionStream.groupByKey().count(Materialized.as(kafkaProperties.getStoreMap().get(KafkaConstants.formSubmissions)));
-    return formSubmissionStream;
-  }
-
   private LocationFormDataSumAggregateEvent getLocationFormDataSumAggregateEvent(
       LocationFormDataAggregateEvent v, LocationFormDataSumAggregateEvent agg) {
     if (agg.getSum() != null) {

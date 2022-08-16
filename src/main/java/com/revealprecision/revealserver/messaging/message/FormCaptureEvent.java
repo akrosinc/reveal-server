@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.messaging.message;
 
-import java.util.List;
+import com.revealprecision.revealserver.api.v1.facade.models.EventFacade;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -14,14 +15,9 @@ import lombok.ToString;
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString
-public class FormObservationsEvent extends Message {
-  private String fieldType;
-
-  private String fieldDataType;
-
-  private String fieldCode;
-
-  private String parentCode;
-
-  private List<Object> values;
+public class FormCaptureEvent extends Message {
+  EventFacade rawFormEvent;
+  UUID savedEventId;
+  UUID planId;
+  UUID locationId;
 }
