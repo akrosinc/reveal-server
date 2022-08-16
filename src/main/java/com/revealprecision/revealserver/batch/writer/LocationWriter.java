@@ -9,6 +9,9 @@ import com.revealprecision.revealserver.persistence.repository.LocationBulkExcep
 import com.revealprecision.revealserver.persistence.repository.LocationBulkRepository;
 import com.revealprecision.revealserver.persistence.repository.LocationElasticRepository;
 import com.revealprecision.revealserver.persistence.repository.LocationRepository;
+import com.revealprecision.revealserver.util.ElasticModelUtil;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -51,9 +54,14 @@ public class LocationWriter implements ItemWriter<Location> {
     List<Location> itemsToSave = new ArrayList<>(items);
     List<LocationElastic> locations = new ArrayList<>();
     Set<UUID> failedLocationIds = new HashSet<>();
+    MessageDigest digest = MessageDigest.getInstance("SHA-256");
     itemsToSave.forEach(location -> {
       location.setIdentifier(UUID.randomUUID());
       LocationElastic loc = new LocationElastic();
+      loc.setHashValue(ElasticModelUtil.bytesToHex(digest.digest(location
+          .getGeometry()
+          .toString()
+          .getBytes(StandardCharsets.UTF_8))));
       loc.setId(location.getIdentifier().toString());
       loc.setLevel(location.getGeographicLevel().getName());
       loc.setName(location.getName());
