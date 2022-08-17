@@ -56,6 +56,7 @@ public class LocationValidationWriter extends AbstractFileItemWriter<LocationVal
         Collectors.toSet());
     boolQuery.must(QueryBuilders.termsQuery("hashValue", hashes));
     sourceBuilder.query(boolQuery);
+    sourceBuilder.size(100);
     SearchRequest searchRequest = new SearchRequest("location");
     searchRequest.source(sourceBuilder);
     try {

@@ -20,7 +20,6 @@ import org.elasticsearch.common.xcontent.NamedXContentRegistry;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.common.xcontent.json.JsonXContent;
 import org.elasticsearch.geometry.Geometry;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.stereotype.Component;
@@ -54,8 +53,6 @@ public class LocationValidationItemProcessor implements ItemProcessor<LocationRe
 
   private LocationValidationDTO setHash(LocationRequest item) throws NoSuchAlgorithmException, IOException {
     MessageDigest digest = MessageDigest.getInstance("SHA-256");
-    SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
-    sourceBuilder.size(10000);
     String val = ElasticModelUtil.bytesToHex(digest.digest(item
         .getGeometry()
         .toString()

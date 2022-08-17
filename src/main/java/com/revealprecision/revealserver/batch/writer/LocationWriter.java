@@ -51,17 +51,21 @@ public class LocationWriter implements ItemWriter<Location> {
 
   @Override
   public void write(List<? extends Location> items) throws Exception {
+    Set<String> hashes = new HashSet<>();
     List<Location> itemsToSave = new ArrayList<>(items);
     List<LocationElastic> locations = new ArrayList<>();
     Set<UUID> failedLocationIds = new HashSet<>();
     MessageDigest digest = MessageDigest.getInstance("SHA-256");
     itemsToSave.forEach(location -> {
-      location.setIdentifier(UUID.randomUUID());
-      LocationElastic loc = new LocationElastic();
-      loc.setHashValue(ElasticModelUtil.bytesToHex(digest.digest(location
+      String hash = ElasticModelUtil.bytesToHex(digest.digest(location
           .getGeometry()
           .toString()
-          .getBytes(StandardCharsets.UTF_8))));
+          .getBytes(StandardCharsets.UTF_8)));
+      hashes.add(hash);
+      location.setIdentifier(UUID.randomUUID());
+      location.setHashValue(hash);
+      LocationElastic loc = new LocationElastic();
+      loc.setHashValue(hash);
       loc.setId(location.getIdentifier().toString());
       loc.setLevel(location.getGeographicLevel().getName());
       loc.setName(location.getName());
@@ -69,6 +73,22 @@ public class LocationWriter implements ItemWriter<Location> {
       loc.setGeometry(location.getGeometry());
       locations.add(loc);
     });
+
+    List<String> existingNames = locationRepository.findAllByHashes(hashes);
+    if(!existingNames.isEmpty()){
+      List<LocationBulkException> duplicates = new ArrayList<>();
+      existingNames.forEach(el -> {
+        LocationBulkException duplicate = LocationBulkException.builder()
+            .message("Already exist")
+            .locationBulk(locationBulk)
+            .name(el)
+            .build();
+        duplicate.setEntityStatus(EntityStatus.ACTIVE);
+        duplicates.add(duplicate);
+      });
+      locationBulkExceptionRepository.saveAll(duplicates);
+    }
+    locations.removeIf(el-> existingNames.contains(el.getName()));
     try {
       locationElasticRepository.saveAll(locations);
     } catch (BulkFailureException e) {
@@ -88,7 +108,7 @@ public class LocationWriter implements ItemWriter<Location> {
 
       locationBulkExceptionRepository.saveAll(exceptions);
     }
-    itemsToSave.removeIf(el -> failedLocationIds.contains(el.getIdentifier()));
+    itemsToSave.removeIf(el -> failedLocationIds.contains(el.getIdentifier()) || existingNames.contains(el.getName()));
     locationRepository.saveAll(itemsToSave);
   }
 }

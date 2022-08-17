@@ -95,4 +95,7 @@ public interface LocationRepository extends JpaRepository<Location, UUID> {
           + "(l.identifier, l.type, l.name, l.status, l.externalId, l.geographicLevel, l.locationBulk)"
           + " from Location l where l.identifier in :identifiers")
   Set<Location> findLocationsWithoutGeoJsonByIdentifierIn(Set<UUID> identifiers);
+
+  @Query(value = "select l.name from Location l where l.hashValue in :hashes")
+  List<String> findAllByHashes(Set<String> hashes);
 }

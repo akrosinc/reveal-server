@@ -16,4 +16,9 @@ public class LocationValidationDTO {
   private BulkEntryStatus status;
   private String hashValue;
   private String error;
+
+  public LocationValidationDTO(String name, String hashValue) {
+    this.name = name;
+    this.hashValue = hashValue;
+  }
 }
