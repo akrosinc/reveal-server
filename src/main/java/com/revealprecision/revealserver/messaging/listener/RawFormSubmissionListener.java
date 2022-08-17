@@ -9,6 +9,7 @@ import com.revealprecision.revealserver.persistence.domain.Report;
 import com.revealprecision.revealserver.persistence.domain.ReportIndicators;
 import com.revealprecision.revealserver.persistence.domain.Task;
 import com.revealprecision.revealserver.persistence.repository.ReportRepository;
+import com.revealprecision.revealserver.service.LocationRelationshipService;
 import com.revealprecision.revealserver.service.LocationService;
 import com.revealprecision.revealserver.service.PlanService;
 import com.revealprecision.revealserver.service.TaskService;
@@ -44,7 +45,7 @@ public class RawFormSubmissionListener extends Listener {
 
     EventFacade rawFormEvent = formCaptureEvent.getRawFormEvent();
     if (rawFormEvent.getEventType().equals("Spray")) {
-      extractIRSFullSprayedLocationObservations(observations, eventTask, reportIndicators);
+      extractIRSFullSprayedLocationObservations(observations, reportIndicators);
     } else if (rawFormEvent.getEventType().equals("mobilization")) {
       reportIndicators.setMobilized(
           getObservation(observations, "mobilized"));
@@ -62,11 +63,13 @@ public class RawFormSubmissionListener extends Listener {
     } else if (rawFormEvent.getEventType().equals("irs_sa_decision")) {
       reportIndicators.setIrsDecisionFormFilled(true);
     }
-
+    if (eventTask != null) {
+      reportIndicators.setBusinessStatus(eventTask.getBusinessStatus());
+    }
     reportRepository.save(reportEntry);
   }
 
-  private void extractIRSFullSprayedLocationObservations(List<Obs> observations, Task eventTask,
+  private void extractIRSFullSprayedLocationObservations(List<Obs> observations,
       ReportIndicators reportIndicators) {
     reportIndicators.setPregnantWomen(
         NumberValue(getObservation(observations, "sprayed_pregwomen"), 0));
@@ -79,9 +82,6 @@ public class RawFormSubmissionListener extends Listener {
         getObservation(observations, "hoh_phone"));
     reportIndicators.setNotSprayedReason(
         getObservation(observations, "notsprayed_reason"));
-    if (eventTask != null) {
-      reportIndicators.setBusinessStatus(eventTask.getBusinessStatus());
-    }
   }
 
   private Report getOrInstantiateReportEntry(Plan plan, Location location) {

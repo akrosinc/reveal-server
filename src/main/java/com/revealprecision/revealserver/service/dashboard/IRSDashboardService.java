@@ -79,7 +79,6 @@ public class IRSDashboardService {
   ReadOnlyKeyValueStore<String, Long> countOfStructuresByBusinessStatus;
   ReadOnlyKeyValueStore<String, OperationalAreaVisitedCount> countOfOperationalArea;
   ReadOnlyKeyValueStore<String, PersonBusinessStatusAggregate> personBusinessStatus;
-  ReadOnlyKeyValueStore<String, LocationBusinessStatusAggregate> locationBusinessState;
   ReadOnlyKeyValueStore<String, LocationPersonBusinessStateCountAggregate> structurePeopleCounts;
   ReadOnlyKeyValueStore<String, TreatedOperationalAreaAggregate> treatedOperationalCounts;
   ReadOnlyKeyValueStore<String, LocationPersonBusinessStateAggregate> structurePeople;
@@ -223,7 +222,6 @@ public class IRSDashboardService {
     if (report != null && report.getReportIndicators().getPhoneNumber() != null) {
       ReportIndicators reportIndicators = report.getReportIndicators();
       columnData.setValue(reportIndicators.getPhoneNumber());
-    } else {
     }
     return columnData;
   }
@@ -663,11 +661,6 @@ public class IRSDashboardService {
       personBusinessStatus = getQueryableStoreByWaiting(getKafkaStreams.getKafkaStreams(),
           StoreQueryParameters.fromNameAndType(
               kafkaProperties.getStoreMap().get(KafkaConstants.personBusinessStatus),
-              QueryableStoreTypes.keyValueStore()));
-
-      locationBusinessState = getQueryableStoreByWaiting(getKafkaStreams.getKafkaStreams(),
-          StoreQueryParameters.fromNameAndType(
-              kafkaProperties.getStoreMap().get(KafkaConstants.locationBusinessStatus),
               QueryableStoreTypes.keyValueStore()));
 
       structurePeopleCounts = getQueryableStoreByWaiting(getKafkaStreams.getKafkaStreams(),

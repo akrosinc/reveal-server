@@ -186,7 +186,7 @@ public class DashboardService {
 
       case IRS_LITE_COVERAGE:
         return irsLiteDashboardService.getFeatureSetResponse(parentIdentifier, locationDetails,
-            rowDataMap, reportLevel);
+            rowDataMap);
       case MDA_LITE_COVERAGE:
         return mdaLiteDashboardService.getFeatureSetResponse(parentIdentifier, locationDetails,
             rowDataMap, reportLevel, filters);

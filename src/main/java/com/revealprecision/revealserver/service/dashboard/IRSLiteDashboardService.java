@@ -716,8 +716,7 @@ public class IRSLiteDashboardService {
   }
 
   public FeatureSetResponse getFeatureSetResponse(UUID parentIdentifier,
-      List<PlanLocationDetails> locationDetails, Map<UUID, RowData> rowDataMap,
-      String reportLevel) {
+      List<PlanLocationDetails> locationDetails, Map<UUID, RowData> rowDataMap) {
     FeatureSetResponse response = new FeatureSetResponse();
     response.setType("FeatureCollection");
     List<LocationResponse> locationResponses = locationDetails.stream()
