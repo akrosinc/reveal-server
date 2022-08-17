@@ -32,13 +32,6 @@ public class LocationFacadeService {
   public static final String TOTAL_RECORDS = "total_records";
 
   private final LocationService locationService;
-  private final KafkaTemplate<String, DiscoveredStructureEvent> kafkaTemplate;
-
-  private final KafkaProperties kafkaProperties;
-
-  private final PlanService planService;
-
-  private final LocationRelationshipService locationRelationshipService;
 
   public List<Location> syncLocations(LocationSyncRequest locationSyncRequest,
       LocationHierarchy hierarchy) {

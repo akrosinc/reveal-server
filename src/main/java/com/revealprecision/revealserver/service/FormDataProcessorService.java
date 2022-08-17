@@ -88,12 +88,10 @@ public class FormDataProcessorService {
   private final EntityTagService entityTagService;
   private final LocationService locationService;
 
-  private final LocationRelationshipService locationRelationshipService;
-
   private final KafkaTemplate<String, UserData> userDataTemplate;
   private final KafkaTemplate<String, MDALiteLocationSupervisorCddEvent> mdaliteSupervisorTemplate;
 
-  private final KafkaTemplate<String, FormCaptureEvent> formObservationsEventKafkaTemplate;
+  private final KafkaTemplate<String, FormCaptureEvent> formSubmissionKafkaTemplate;
 
 
   public void processFormDataAndSubmitToMessaging(Event savedEvent,EventFacade eventFacade) throws IOException {
@@ -268,7 +266,7 @@ public class FormDataProcessorService {
   }
 
   private void publishFormObservations(FormCaptureEvent event) {
-    formObservationsEventKafkaTemplate.send(
+    formSubmissionKafkaTemplate.send(
         kafkaProperties.getTopicMap().get(KafkaConstants.FORM_SUBMISSIONS), event.getPlanId().toString(),
         event);
   }

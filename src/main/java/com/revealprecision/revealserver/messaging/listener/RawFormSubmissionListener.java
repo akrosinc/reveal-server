@@ -3,9 +3,7 @@ package com.revealprecision.revealserver.messaging.listener;
 import com.revealprecision.revealserver.api.v1.facade.models.EventFacade;
 import com.revealprecision.revealserver.api.v1.facade.models.Obs;
 import com.revealprecision.revealserver.constants.KafkaConstants;
-import com.revealprecision.revealserver.messaging.message.DiscoveredStructureEvent;
 import com.revealprecision.revealserver.messaging.message.FormCaptureEvent;
-import com.revealprecision.revealserver.messaging.message.Message;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.Report;
@@ -36,11 +34,13 @@ public class RawFormSubmissionListener extends Listener {
   private final LocationService locationService;
   private final TaskService taskService;
 
-  private final KafkaTemplate<String, Message> kafkaTemplate;
 
   private final KafkaProperties kafkaProperties;
 
   private final LocationRelationshipService locationRelationshipService;
+
+  private final KafkaTemplate<String, FormCaptureEvent> formCaptureEventKafkaTemplate;
+
   @KafkaListener(topics = "#{kafkaConfigProperties.topicMap.get('FORM_SUBMISSIONS')}", groupId = "reveal_server_group")
   public void etl(FormCaptureEvent formCaptureEvent) {
     Plan plan = planService.findPlanByIdentifier(formCaptureEvent.getPlanId());
@@ -48,7 +48,14 @@ public class RawFormSubmissionListener extends Listener {
     if (formCaptureEvent.getTaskId() != null) {
       eventTask = taskService.getTaskByIdentifier(formCaptureEvent.getTaskId());
     }
-    Location location = locationService.findByIdentifier(formCaptureEvent.getLocationId());
+    Location location;
+    if (formCaptureEvent.getLocationId() != null) {
+      location = locationService.findByIdentifier(formCaptureEvent.getLocationId());
+    } else {
+      location = locationService.findByIdentifier(
+          UUID.fromString(formCaptureEvent.getRawFormEvent().getDetails().get("locationParent")));
+
+    }
     Report reportEntry = getOrInstantiateReportEntry(plan, location);
 
     List<Obs> observations = formCaptureEvent.getRawFormEvent().getObs();
@@ -73,8 +80,8 @@ public class RawFormSubmissionListener extends Listener {
           reportIndicators.getSupervisorFormSubmissionCount() + 1);
     } else if (rawFormEvent.getEventType().equals("irs_sa_decision")) {
       reportIndicators.setIrsDecisionFormFilled(true);
-    } else if(rawFormEvent.getEventType().equals("Register_Structure")){
-      publishDiscoveredStructureEvent(location,plan);
+    } else if (rawFormEvent.getEventType().equals("Register_Structure")) {
+      reportIndicators.setDiscoveredStructures((reportIndicators.getDiscoveredStructures() == null ? 0 : reportIndicators.getDiscoveredStructures() ) + 1);
     }
     if (eventTask != null) {
       reportIndicators.setBusinessStatus(eventTask.getBusinessStatus());
@@ -115,14 +122,5 @@ public class RawFormSubmissionListener extends Listener {
 
   private Integer NumberValue(String value, Integer defaultValue) {
     return value != null ? Integer.valueOf(value) : defaultValue;
-  }
-  private void publishDiscoveredStructureEvent(Location location, Plan plan) {
-    List<UUID> ancestry = locationRelationshipService.getAncestryForLocation(location.getIdentifier(),plan.getLocationHierarchy().getIdentifier());
-      ancestry.stream().forEach( locationId -> {
-        String eventKey = String.format("%s_%s", plan.getIdentifier(), locationId);
-        DiscoveredStructureEvent discoveredStructureEvent = DiscoveredStructureEvent.builder().locationIdentifier(location.getIdentifier()).build();
-        kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.DISCOVERED_STRUCTURES),
-            eventKey, discoveredStructureEvent);
-      });
   }
 }
