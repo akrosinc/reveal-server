@@ -58,33 +58,18 @@ public class LocationFacadeService {
     return headers;
   }
 
-  public Set<String> saveSyncedLocations(List<CreateLocationRequest> createLocationRequests,
-      String currentPlanId) {
+  public Set<String> saveSyncedLocations(List<CreateLocationRequest> createLocationRequests) {
     Set<String> locationRequestsWithErrors = new HashSet<>();
     List<LocationRequest> locationRequests = LocationRequestFactory
         .fromPhysicalLocationRequests(createLocationRequests);
-    List<Location> savedLocations = new ArrayList<>();
     for (LocationRequest locationRequest : locationRequests) {
       try {
-        Location location = locationService.createLocation(locationRequest);
-        savedLocations.add(location);
+        locationService.createLocation(locationRequest);
       } catch (Exception e) {
         log.error(e.getMessage(), e);
         locationRequestsWithErrors.add(locationRequest.getProperties().getExternalId().toString());
       }
     }
-    savedLocations.stream().forEach(location -> {
-      DiscoveredStructureEvent event = DiscoveredStructureEvent.builder()
-          .locationIdentifier(location.getIdentifier()).build();
-      UUID hierarchyId = planService.getPlanByIdentifier(UUID.fromString(currentPlanId))
-          .getLocationHierarchy().getIdentifier();
-      List<UUID> ancestry = locationRelationshipService.getAncestryForLocation(location.getIdentifier(),hierarchyId);
-      ancestry.stream().forEach( locationId -> {
-        String key = String.format("%s_%s", currentPlanId, locationId);
-        kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.DISCOVERED_STRUCTURES),
-            key, event);
-      });
-    });
     return locationRequestsWithErrors;
   }
 

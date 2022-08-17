@@ -309,7 +309,6 @@ public class TaskFacadeService {
         location = locationService.createLocation(locationRequest);
         if (ActionUtils.isActionForLocation(action)) {
           task.setLocation(location);
-          publishDiscoveredStructureEvent(location, task.getPlan());
         }
       }
 
@@ -366,14 +365,5 @@ public class TaskFacadeService {
       throw new NotFoundException(Pair.of(Fields.code, taskDto.getStatus().name()),
           LookupTaskStatus.class);
     }
-  }
-
-  private void publishDiscoveredStructureEvent(Location location, Plan plan) {
-    DiscoveredStructureEvent discoveredStructureEvent = DiscoveredStructureEvent.builder()
-        .locationIdentifier(
-            location.getIdentifier()).build();
-    String eventKey = plan.getIdentifier().toString();
-    kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.DISCOVERED_STRUCTURES),
-        eventKey, discoveredStructureEvent);
   }
 }

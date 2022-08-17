@@ -2,22 +2,28 @@ package com.revealprecision.revealserver.messaging.listener;
 
 import com.revealprecision.revealserver.api.v1.facade.models.EventFacade;
 import com.revealprecision.revealserver.api.v1.facade.models.Obs;
+import com.revealprecision.revealserver.constants.KafkaConstants;
+import com.revealprecision.revealserver.messaging.message.DiscoveredStructureEvent;
 import com.revealprecision.revealserver.messaging.message.FormCaptureEvent;
+import com.revealprecision.revealserver.messaging.message.Message;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.Report;
 import com.revealprecision.revealserver.persistence.domain.ReportIndicators;
 import com.revealprecision.revealserver.persistence.domain.Task;
 import com.revealprecision.revealserver.persistence.repository.ReportRepository;
+import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.service.LocationRelationshipService;
 import com.revealprecision.revealserver.service.LocationService;
 import com.revealprecision.revealserver.service.PlanService;
 import com.revealprecision.revealserver.service.TaskService;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -30,6 +36,11 @@ public class RawFormSubmissionListener extends Listener {
   private final LocationService locationService;
   private final TaskService taskService;
 
+  private final KafkaTemplate<String, Message> kafkaTemplate;
+
+  private final KafkaProperties kafkaProperties;
+
+  private final LocationRelationshipService locationRelationshipService;
   @KafkaListener(topics = "#{kafkaConfigProperties.topicMap.get('FORM_SUBMISSIONS')}", groupId = "reveal_server_group")
   public void etl(FormCaptureEvent formCaptureEvent) {
     Plan plan = planService.findPlanByIdentifier(formCaptureEvent.getPlanId());
@@ -62,6 +73,8 @@ public class RawFormSubmissionListener extends Listener {
           reportIndicators.getSupervisorFormSubmissionCount() + 1);
     } else if (rawFormEvent.getEventType().equals("irs_sa_decision")) {
       reportIndicators.setIrsDecisionFormFilled(true);
+    } else if(rawFormEvent.getEventType().equals("Register_Structure")){
+      publishDiscoveredStructureEvent(location,plan);
     }
     if (eventTask != null) {
       reportIndicators.setBusinessStatus(eventTask.getBusinessStatus());
@@ -102,5 +115,14 @@ public class RawFormSubmissionListener extends Listener {
 
   private Integer NumberValue(String value, Integer defaultValue) {
     return value != null ? Integer.valueOf(value) : defaultValue;
+  }
+  private void publishDiscoveredStructureEvent(Location location, Plan plan) {
+    List<UUID> ancestry = locationRelationshipService.getAncestryForLocation(location.getIdentifier(),plan.getLocationHierarchy().getIdentifier());
+      ancestry.stream().forEach( locationId -> {
+        String eventKey = String.format("%s_%s", plan.getIdentifier(), locationId);
+        DiscoveredStructureEvent discoveredStructureEvent = DiscoveredStructureEvent.builder().locationIdentifier(location.getIdentifier()).build();
+        kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.DISCOVERED_STRUCTURES),
+            eventKey, discoveredStructureEvent);
+      });
   }
 }
