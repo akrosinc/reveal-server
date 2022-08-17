@@ -11,7 +11,6 @@ import com.revealprecision.revealserver.persistence.domain.ReportIndicators;
 import com.revealprecision.revealserver.persistence.domain.Task;
 import com.revealprecision.revealserver.persistence.repository.ReportRepository;
 import com.revealprecision.revealserver.props.KafkaProperties;
-import com.revealprecision.revealserver.service.LocationRelationshipService;
 import com.revealprecision.revealserver.service.LocationService;
 import com.revealprecision.revealserver.service.PlanService;
 import com.revealprecision.revealserver.service.TaskService;
@@ -34,12 +33,9 @@ public class RawFormSubmissionListener extends Listener {
   private final LocationService locationService;
   private final TaskService taskService;
 
+  private final KafkaTemplate<String, FormCaptureEvent> formCaptureEventKafkaTemplate;
 
   private final KafkaProperties kafkaProperties;
-
-  private final LocationRelationshipService locationRelationshipService;
-
-  private final KafkaTemplate<String, FormCaptureEvent> formCaptureEventKafkaTemplate;
 
   @KafkaListener(topics = "#{kafkaConfigProperties.topicMap.get('FORM_SUBMISSIONS')}", groupId = "reveal_server_group")
   public void etl(FormCaptureEvent formCaptureEvent) {
@@ -81,12 +77,30 @@ public class RawFormSubmissionListener extends Listener {
     } else if (rawFormEvent.getEventType().equals("irs_sa_decision")) {
       reportIndicators.setIrsDecisionFormFilled(true);
     } else if (rawFormEvent.getEventType().equals("Register_Structure")) {
-      reportIndicators.setDiscoveredStructures((reportIndicators.getDiscoveredStructures() == null ? 0 : reportIndicators.getDiscoveredStructures() ) + 1);
+      reportIndicators.setRegisteredStructures(
+          (reportIndicators.getRegisteredStructures() == null ? 0
+              : reportIndicators.getRegisteredStructures()) + 1);
     }
     if (eventTask != null) {
       reportIndicators.setBusinessStatus(eventTask.getBusinessStatus());
     }
     reportRepository.save(reportEntry);
+    Location parentLocation = locationService.getLocationParent(location,
+        plan.getLocationHierarchy());
+    if (parentLocation != null) {
+      publishForParent(formCaptureEvent, plan, rawFormEvent, parentLocation);
+    }
+  }
+
+  private void publishForParent(FormCaptureEvent formCaptureEvent, Plan plan, EventFacade rawFormEvent,
+      Location parentLocation) {
+    FormCaptureEvent parentEvent = FormCaptureEvent.builder().rawFormEvent(rawFormEvent)
+        .locationId(parentLocation.getIdentifier())
+        .savedEventId(formCaptureEvent.getSavedEventId()).planId(formCaptureEvent.getPlanId())
+        .taskId(formCaptureEvent.getTaskId()).build();
+    formCaptureEventKafkaTemplate.send(
+        kafkaProperties.getTopicMap().get(KafkaConstants.FORM_SUBMISSIONS),
+        plan.getIdentifier().toString(), parentEvent);
   }
 
   private void extractIRSFullSprayedLocationObservations(List<Obs> observations,
@@ -102,6 +116,15 @@ public class RawFormSubmissionListener extends Listener {
         getObservation(observations, "hoh_phone"));
     reportIndicators.setNotSprayedReason(
         getObservation(observations, "notsprayed_reason"));
+    if ("yes".equals(getObservation(observations, "structure_sprayed"))) {
+      reportIndicators.setSprayedStructures((reportIndicators.getSprayedStructures() == null ? 0
+          : reportIndicators.getSprayedStructures()) + 1);
+    }
+    if ("eligible".equals(getObservation(observations, "eligibility"))) {
+      reportIndicators.setFoundStructures((reportIndicators.getFoundStructures() == null ? 0
+          : reportIndicators.getFoundStructures()) + 1);
+    }
+
   }
 
   private Report getOrInstantiateReportEntry(Plan plan, Location location) {

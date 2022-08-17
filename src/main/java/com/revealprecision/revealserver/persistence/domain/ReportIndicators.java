@@ -28,5 +28,7 @@ public class ReportIndicators {
   private Integer supervisorFormSubmissionCount;
   private boolean irsDecisionFormFilled = false;
   private String businessStatus;
-  private Integer discoveredStructures;
+  private Integer registeredStructures;
+  private Integer foundStructures;
+  private Integer sprayedStructures;
 }
