@@ -165,18 +165,6 @@ public class LocationStream {
     return locationsAssignedStream;
   }
 
-  @Bean
-  KStream<String, DiscoveredStructureEvent> discoveredStructuresStreamProcess(
-      StreamsBuilder builder) {
-    KStream<String, DiscoveredStructureEvent> discoveredStructureEventKStream = builder.stream(
-        kafkaProperties.getTopicMap().get(KafkaConstants.DISCOVERED_STRUCTURES),
-        Consumed.with(Serdes.String(), new JsonSerde<>(DiscoveredStructureEvent.class)));
-    KTable<String, Long> count = discoveredStructureEventKStream.groupByKey().count(Materialized.as(
-        kafkaProperties.getStoreMap().get(KafkaConstants.discoveredStructuresCountPerPlan)));
-    count.toStream().peek(
-        (k, v) -> streamLog.debug("Saved discovered structures count per plan at each level -(planId_location,count):", k, v));
-    return discoveredStructureEventKStream;
-  }
 
   private String getLocationPlanAncestorKey(LocationAssigned locationAssigned) {
     return locationAssigned.getIdentifier() + "_"
