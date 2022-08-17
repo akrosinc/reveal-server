@@ -63,7 +63,7 @@ public class LocationValidationBatchConfig {
   @Bean
   public Step validationStep() {
     return stepBuilderFactory.get("validationStep")
-        .<LocationRequest, LocationValidationDTO>chunk(40)
+        .<LocationRequest, LocationValidationDTO>chunk(100)
         .reader(locationValidationReader(null))
         .processor(locationValidationProcessor)
         .writer(locationValidationWriter(null))

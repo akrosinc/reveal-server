@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.batch.dto;
 
+import com.revealprecision.revealserver.enums.BulkEntryStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -12,5 +13,7 @@ import lombok.Setter;
 public class LocationValidationDTO {
 
   private String name;
+  private BulkEntryStatus status;
+  private String hashValue;
   private String error;
 }
