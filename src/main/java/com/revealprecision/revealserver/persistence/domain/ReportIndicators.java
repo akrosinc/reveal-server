@@ -26,4 +26,6 @@ public class ReportIndicators {
   private String mobilizationDate;
   private Set<String> uniqueSupervisionDates = new HashSet<>();
   private Integer supervisorFormSubmissionCount;
+  private boolean irsDecisionFormFilled = false;
+  private String businessStatus;
 }

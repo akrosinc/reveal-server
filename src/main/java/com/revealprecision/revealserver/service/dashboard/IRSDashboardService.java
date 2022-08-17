@@ -129,7 +129,7 @@ public class IRSDashboardService {
         getSprayCoverageFoundStructures(plan, childLocation));
     columns.put(STRUCTURES_REMAINING_TO_SPRAY_TO_REACH_90,
         getStructuresRemainingToReach90(plan, childLocation));
-    columns.put(REVIEWED_WITH_DECISION, getReviewedWithDecision(plan, childLocation));
+    columns.put(REVIEWED_WITH_DECISION, getReviewedWithDecision(report));
     columns.put(MOBILIZED, getMobilized(report));
     RowData rowData = new RowData();
     rowData.setLocationIdentifier(childLocation.getIdentifier());
@@ -149,8 +149,12 @@ public class IRSDashboardService {
     return columnData;
   }
 
-  private ColumnData getReviewedWithDecision(Plan plan, Location childLocation) {
+  private ColumnData getReviewedWithDecision(Report report) {
     ColumnData columnData = new ColumnData();
+    columnData.setDataType("string");
+    if (report != null) {
+      columnData.setValue(report.getReportIndicators().isIrsDecisionFormFilled() ? "yes" : "no");
+    }
     return columnData;
   }
 
@@ -195,19 +199,17 @@ public class IRSDashboardService {
     return columnData;
   }
 
-  public List<RowData> getIRSFullCoverageStructureLevelData(Plan plan, Location childLocation,
-      UUID parentLocationIdentifier) {
+  public List<RowData> getIRSFullCoverageStructureLevelData(Plan plan, Location childLocation) {
     Map<String, ColumnData> columns = new HashMap<>();
     Report report = planReportRepository.findByPlanAndLocation(plan, childLocation).orElse(null);
-
     columns.put(STRUCTURE_STATUS,
-        getLocationBusinessState(plan, childLocation, parentLocationIdentifier));
+        getLocationBusinessState(report));
     columns.put(NO_OF_MALES, getMales(report));
     columns.put(NO_OF_FEMALES, getFemales(report));
     columns.put(NO_OF_ROOMS, getRoomsSprayed(report));
     columns.put(NO_OF_PREGNANT_WOMEN, getPregnantWomen(report));
-    columns.put(NOT_SPRAYED_REASON,getNotSprayedReason(report));
-    columns.put(PHONE_NUMBER,getHeadPhoneNumber(report));
+    columns.put(NOT_SPRAYED_REASON, getNotSprayedReason(report));
+    columns.put(PHONE_NUMBER, getHeadPhoneNumber(report));
     RowData rowData = new RowData();
     rowData.setLocationIdentifier(childLocation.getIdentifier());
     rowData.setColumnDataMap(columns);
@@ -218,7 +220,7 @@ public class IRSDashboardService {
   private ColumnData getHeadPhoneNumber(Report report) {
     ColumnData columnData = new ColumnData();
     columnData.setDataType("string");
-    if (report != null && report.getReportIndicators().getPhoneNumber()!= null) {
+    if (report != null && report.getReportIndicators().getPhoneNumber() != null) {
       ReportIndicators reportIndicators = report.getReportIndicators();
       columnData.setValue(reportIndicators.getPhoneNumber());
     } else {
@@ -229,7 +231,7 @@ public class IRSDashboardService {
   private ColumnData getNotSprayedReason(Report report) {
     ColumnData columnData = new ColumnData();
     columnData.setDataType("string");
-    if (report != null && report.getReportIndicators().getNotSprayedReason()!= null) {
+    if (report != null && report.getReportIndicators().getNotSprayedReason() != null) {
       ReportIndicators reportIndicators = report.getReportIndicators();
       columnData.setValue(reportIndicators.getNotSprayedReason());
     } else {
@@ -283,30 +285,16 @@ public class IRSDashboardService {
   }
 
 
+  private ColumnData getLocationBusinessState(Report report) {
 
-  private ColumnData getLocationBusinessState(Plan plan, Location childLocation,
-      UUID parentLocationIdentifier) {
-
-    String businessStateDataStoreQueryKey =
-        plan.getIdentifier() + "_" + parentLocationIdentifier + "_" + plan.getLocationHierarchy()
-            .getIdentifier() + "_" + childLocation.getIdentifier();
-
-    LocationBusinessStatusAggregate locationBusinessStatusAggregate = locationBusinessState.get(
-        businessStateDataStoreQueryKey);
-
-    String businessStatus = "Not Applicable";
-
-    if (locationBusinessStatusAggregate != null) {
-      businessStatus = locationBusinessStatusAggregate.getBusinessStatus();
+    ColumnData column = new ColumnData();
+    column.setDataType("string");
+    if (report != null && report.getReportIndicators().getBusinessStatus() != null) {
+      column.setValue(report.getReportIndicators().getBusinessStatus());
+    } else {
+      column.setValue("Not Visited");
     }
-
-    ColumnData locationBusinessStateColumnData = new ColumnData();
-    locationBusinessStateColumnData.setValue(businessStatus);
-    locationBusinessStateColumnData.setMeta(null);
-    locationBusinessStateColumnData.setDataType("string");
-    locationBusinessStateColumnData.setIsPercentage(false);
-
-    return locationBusinessStateColumnData;
+    return column;
   }
 
   private ColumnData getTotalStructuresSprayed(Plan plan, Location childLocation) {

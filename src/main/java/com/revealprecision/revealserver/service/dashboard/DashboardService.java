@@ -127,8 +127,7 @@ public class DashboardService {
           case WITHIN_STRUCTURE_LEVEL:
           case STRUCTURE_LEVEL:
             return irsDashboardService.getIRSFullCoverageStructureLevelData(plan,
-                loc.getLocation(),
-                parentLocation.getIdentifier());
+                loc.getLocation());
 
           case DIRECTLY_ABOVE_STRUCTURE_LEVEL:
             return irsDashboardService.getIRSFullDataOperational(plan,

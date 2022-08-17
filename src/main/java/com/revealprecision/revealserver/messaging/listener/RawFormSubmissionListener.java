@@ -1,8 +1,5 @@
 package com.revealprecision.revealserver.messaging.listener;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
 import com.revealprecision.revealserver.api.v1.facade.models.EventFacade;
 import com.revealprecision.revealserver.api.v1.facade.models.Obs;
 import com.revealprecision.revealserver.messaging.message.FormCaptureEvent;
@@ -10,9 +7,11 @@ import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.Report;
 import com.revealprecision.revealserver.persistence.domain.ReportIndicators;
+import com.revealprecision.revealserver.persistence.domain.Task;
 import com.revealprecision.revealserver.persistence.repository.ReportRepository;
 import com.revealprecision.revealserver.service.LocationService;
 import com.revealprecision.revealserver.service.PlanService;
+import com.revealprecision.revealserver.service.TaskService;
 import java.util.List;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
@@ -28,23 +27,24 @@ public class RawFormSubmissionListener extends Listener {
   private final ReportRepository reportRepository;
   private final PlanService planService;
   private final LocationService locationService;
-  private final ObjectMapper objectMapper;
+  private final TaskService taskService;
 
   @KafkaListener(topics = "#{kafkaConfigProperties.topicMap.get('FORM_SUBMISSIONS')}", groupId = "reveal_server_group")
   public void etl(FormCaptureEvent formCaptureEvent) {
     Plan plan = planService.findPlanByIdentifier(formCaptureEvent.getPlanId());
+    Task eventTask = null;
+    if (formCaptureEvent.getTaskId() != null) {
+      eventTask = taskService.getTaskByIdentifier(formCaptureEvent.getTaskId());
+    }
     Location location = locationService.findByIdentifier(formCaptureEvent.getLocationId());
     Report reportEntry = getOrInstantiateReportEntry(plan, location);
-
-    ObjectReader reader = objectMapper.readerFor(new TypeReference<List<Obs>>() {
-    });
 
     List<Obs> observations = formCaptureEvent.getRawFormEvent().getObs();
     ReportIndicators reportIndicators = reportEntry.getReportIndicators();
 
     EventFacade rawFormEvent = formCaptureEvent.getRawFormEvent();
     if (rawFormEvent.getEventType().equals("Spray")) {
-      extractIRSFullSprayedLocationObservations(observations, reportIndicators);
+      extractIRSFullSprayedLocationObservations(observations, eventTask, reportIndicators);
     } else if (rawFormEvent.getEventType().equals("mobilization")) {
       reportIndicators.setMobilized(
           getObservation(observations, "mobilized"));
@@ -59,30 +59,36 @@ public class RawFormSubmissionListener extends Listener {
       reportIndicators.setUniqueSupervisionDates(currentDates);
       reportIndicators.setSupervisorFormSubmissionCount(
           reportIndicators.getSupervisorFormSubmissionCount() + 1);
+    } else if (rawFormEvent.getEventType().equals("irs_sa_decision")) {
+      reportIndicators.setIrsDecisionFormFilled(true);
     }
 
     reportRepository.save(reportEntry);
   }
 
-  private void extractIRSFullSprayedLocationObservations(List<Obs> observations,
+  private void extractIRSFullSprayedLocationObservations(List<Obs> observations, Task eventTask,
       ReportIndicators reportIndicators) {
     reportIndicators.setPregnantWomen(
-        Integer.valueOf(getObservation(observations, "sprayed_pregwomen")));
-    reportIndicators.setFemales(Integer.valueOf(
-        getObservation(observations, "sprayed_males")));
+        NumberValue(getObservation(observations, "sprayed_pregwomen"), 0));
+    reportIndicators.setFemales(NumberValue(getObservation(observations, "sprayed_males"), 0));
     reportIndicators.setMales(
-        Integer.valueOf(getObservation(observations, "sprayed_females")));
+        NumberValue(getObservation(observations, "sprayed_females"), 0));
     reportIndicators.setSprayedRooms(
-        Integer.valueOf(getObservation(observations, "rooms_sprayed")));
+        NumberValue(getObservation(observations, "rooms_sprayed"), 0));
     reportIndicators.setPhoneNumber(
         getObservation(observations, "hoh_phone"));
     reportIndicators.setNotSprayedReason(
         getObservation(observations, "notsprayed_reason"));
+    if (eventTask != null) {
+      reportIndicators.setBusinessStatus(eventTask.getBusinessStatus());
+    }
   }
 
   private Report getOrInstantiateReportEntry(Plan plan, Location location) {
     return reportRepository.findByPlanAndLocation(plan, location)
-        .orElse(Report.builder().location(location).plan(plan).reportIndicators(new ReportIndicators()).build());
+        .orElse(
+            Report.builder().location(location).plan(plan).reportIndicators(new ReportIndicators())
+                .build());
   }
 
   private String getObservation(List<Obs> observations, String fieldCode) {
@@ -92,5 +98,9 @@ public class RawFormSubmissionListener extends Listener {
       return (String) observation.getValues().get(0);
     }
     return null;
+  }
+
+  private Integer NumberValue(String value, Integer defaultValue) {
+    return value != null ? Integer.valueOf(value) : defaultValue;
   }
 }

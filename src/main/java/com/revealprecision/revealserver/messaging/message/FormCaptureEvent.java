@@ -20,4 +20,5 @@ public class FormCaptureEvent extends Message {
   UUID savedEventId;
   UUID planId;
   UUID locationId;
+  UUID taskId;
 }

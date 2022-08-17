@@ -100,7 +100,7 @@ public class FormDataProcessorService {
 
     JsonNode obsList = savedEvent.getAdditionalInformation().get("obs");
     FormCaptureEvent formCaptureEvent = FormCaptureEvent.builder()
-        .locationId(savedEvent.getLocationIdentifier()).savedEventId(savedEvent.getIdentifier()).planId(savedEvent.getPlanIdentifier()).rawFormEvent(eventFacade).build();
+        .locationId(savedEvent.getLocationIdentifier()).savedEventId(savedEvent.getIdentifier()).planId(savedEvent.getPlanIdentifier()).taskId(savedEvent.getTaskIdentifier()).rawFormEvent(eventFacade).build();
     publishFormObservations(formCaptureEvent);
 
     if (obsList.isArray()) {
