@@ -63,6 +63,8 @@ public class Location extends AbstractAuditableEntity {
   private LocationStatus status;
   private UUID externalId;
 
+  private String hashValue;
+
   @GeneratorType(type = LocationServerVersionGenerator.class, when = GenerationTime.ALWAYS)
   private Long serverVersion;
 

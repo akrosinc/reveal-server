@@ -44,6 +44,9 @@ public class LocationElastic {
   @Field(type = FieldType.Nested)
   private List<EntityMetadataElastic> metadata = new ArrayList<>();
 
+  @Field(type = FieldType.Keyword)
+  private String hashValue;
+
   @GeoShapeField
   Geometry geometry;
 }
