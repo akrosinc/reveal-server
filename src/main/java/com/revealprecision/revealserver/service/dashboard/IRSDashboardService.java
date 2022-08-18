@@ -61,7 +61,6 @@ public class IRSDashboardService {
   private static final String TOTAL_STRUCTURES_TARGETED = "Total Structures Targeted";
   private static final String TOTAL_STRUCTURES_FOUND = "Total Structures Found";
   private static final String STRUCTURES_SPRAYED = "Total Structures Sprayed";
-  private static final String SPRAY_COVERAGE = "Spray Coverage (Effectiveness)";
   private static final String PERCENTAGE_VISITED_EFFECTIVELY = "Spray Areas Effectively sprayed";
   private static final String STRUCTURE_STATUS = "Structure Status";
   private static final String NO_OF_ROOMS = "No of Rooms";
@@ -82,56 +81,50 @@ public class IRSDashboardService {
   ReadOnlyKeyValueStore<String, LocationPersonBusinessStateCountAggregate> structurePeopleCounts;
   ReadOnlyKeyValueStore<String, TreatedOperationalAreaAggregate> treatedOperationalCounts;
   ReadOnlyKeyValueStore<String, LocationPersonBusinessStateAggregate> structurePeople;
-  ReadOnlyKeyValueStore<String, Long> discoveredStructuresPerPlan;
   boolean isDatastoresInitialized = false;
-
   private final ReportRepository planReportRepository;
 
   public List<RowData> getIRSFullData(Plan plan, Location childLocation) {
-    String geoNameDirectlyAboveStructure = null;
-    if (plan.getLocationHierarchy().getNodeOrder().contains(LocationConstants.STRUCTURE)) {
-      geoNameDirectlyAboveStructure = plan.getLocationHierarchy().getNodeOrder()
-          .get(plan.getLocationHierarchy().getNodeOrder().indexOf(LocationConstants.STRUCTURE) - 1);
-    }
-
-    Report report = planReportRepository.findByPlanAndLocation(plan, childLocation).orElse(null);
-
+    String geoNameDirectlyAboveStructure = getGeoNameDirectlyAboveStructure(plan);
+    Report reportEntry = planReportRepository.findByPlanAndLocation(plan, childLocation)
+        .orElse(null);
     Map<String, ColumnData> columns = new LinkedHashMap<>();
     columns.put(TOTAL_SPRAY_AREAS,
         getTotalAreas(plan, childLocation, geoNameDirectlyAboveStructure));
     columns.put(TARGET_SPRAY_AREAS, getTargetedAreas(plan, childLocation));
     columns.put(VISITED_AREAS, getOperationalAreaVisitedCounts(plan, childLocation));
     columns.put(PERCENTAGE_VISITED_EFFECTIVELY, getSprayedEffectively(plan, childLocation));
-    columns.put(TOTAL_STRUCTURES, getTotalStructuresCounts(plan, childLocation,report));
+    columns.put(TOTAL_STRUCTURES, getTotalStructuresCounts(plan, childLocation, reportEntry));
     columns.put(TOTAL_STRUCTURES_TARGETED, getTotalStructuresTargetedCount(plan, childLocation));
-    columns.put(STRUCTURES_SPRAYED, getTotalStructuresSprayed(report));
+    columns.put(STRUCTURES_SPRAYED, getTotalStructuresSprayed(reportEntry));
     columns.put(SPRAY_COVERAGE_OF_TARGETED, getSprayCoverageOfTargeted(plan, childLocation));
-    columns.put(TOTAL_STRUCTURES_FOUND, getTotalStructuresFoundCount(report));
-    columns.put(FOUND_COVERAGE, getFoundCoverage(plan, childLocation, report));
+    columns.put(TOTAL_STRUCTURES_FOUND, getTotalStructuresFoundCount(reportEntry));
+    columns.put(FOUND_COVERAGE, getFoundCoverage(plan, childLocation, reportEntry));
     columns.put(SPRAY_COVERAGE_OF_FOUND_STRUCTURES,
-        getSprayCoverageFoundStructures(report));
+        getSprayCoverageFoundStructures(reportEntry));
     RowData rowData = new RowData();
     rowData.setLocationIdentifier(childLocation.getIdentifier());
     rowData.setColumnDataMap(columns);
     rowData.setLocationName(childLocation.getName());
     return List.of(rowData);
   }
+
 
   public List<RowData> getIRSFullDataOperational(Plan plan, Location childLocation) {
-    Report report = planReportRepository.findByPlanAndLocation(plan, childLocation).orElse(null);
-
+    Report reportEntry = planReportRepository.findByPlanAndLocation(plan, childLocation)
+        .orElse(null);
     Map<String, ColumnData> columns = new LinkedHashMap<>();
-    columns.put(TOTAL_STRUCTURES, getTotalStructuresCounts(plan, childLocation,report));
-    columns.put(TOTAL_STRUCTURES_FOUND, getTotalStructuresFoundCount(report));
-    columns.put(STRUCTURES_SPRAYED, getTotalStructuresSprayed(report));
+    columns.put(TOTAL_STRUCTURES, getTotalStructuresCounts(plan, childLocation, reportEntry));
+    columns.put(TOTAL_STRUCTURES_FOUND, getTotalStructuresFoundCount(reportEntry));
+    columns.put(STRUCTURES_SPRAYED, getTotalStructuresSprayed(reportEntry));
     columns.put(SPRAY_COVERAGE_OF_TARGETED, getSprayCoverageOfTargeted(plan, childLocation));
-    columns.put(FOUND_COVERAGE, getFoundCoverage(plan, childLocation, report));
+    columns.put(FOUND_COVERAGE, getFoundCoverage(plan, childLocation, reportEntry));
     columns.put(SPRAY_COVERAGE_OF_FOUND_STRUCTURES,
-        getSprayCoverageFoundStructures(report));
+        getSprayCoverageFoundStructures(reportEntry));
     columns.put(STRUCTURES_REMAINING_TO_SPRAY_TO_REACH_90,
-        getStructuresRemainingToReach90(plan, childLocation, report));
-    columns.put(REVIEWED_WITH_DECISION, getReviewedWithDecision(report));
-    columns.put(MOBILIZED, getMobilized(report));
+        getStructuresRemainingToReach90(plan, childLocation, reportEntry));
+    columns.put(REVIEWED_WITH_DECISION, getReviewedWithDecision(reportEntry));
+    columns.put(MOBILIZED, getMobilized(reportEntry));
     RowData rowData = new RowData();
     rowData.setLocationIdentifier(childLocation.getIdentifier());
     rowData.setColumnDataMap(columns);
@@ -139,9 +132,27 @@ public class IRSDashboardService {
     return List.of(rowData);
   }
 
+  public List<RowData> getIRSFullCoverageStructureLevelData(Plan plan, Location childLocation) {
+    Map<String, ColumnData> columns = new HashMap<>();
+    Report report = planReportRepository.findByPlanAndLocation(plan, childLocation).orElse(null);
+    columns.put(STRUCTURE_STATUS,
+        getLocationBusinessState(report));
+    columns.put(NO_OF_MALES, getMales(report));
+    columns.put(NO_OF_FEMALES, getFemales(report));
+    columns.put(NO_OF_ROOMS, getRoomsSprayed(report));
+    columns.put(NO_OF_PREGNANT_WOMEN, getPregnantWomen(report));
+    columns.put(NOT_SPRAYED_REASON, getNotSprayedReason(report));
+    columns.put(PHONE_NUMBER, getHeadPhoneNumber(report));
+    RowData rowData = new RowData();
+    rowData.setLocationIdentifier(childLocation.getIdentifier());
+    rowData.setColumnDataMap(columns);
+    rowData.setLocationName(childLocation.getName());
+    return List.of(rowData);
+  }
+
+
   private ColumnData getMobilized(Report report) {
-    ColumnData columnData = new ColumnData();
-    columnData.setDataType("string");
+    ColumnData columnData = getStringColumData();
     if (report != null && report.getReportIndicators().getMobilized() != null) {
       columnData.setValue(report.getReportIndicators().getMobilized());
     } else {
@@ -150,9 +161,9 @@ public class IRSDashboardService {
     return columnData;
   }
 
+
   private ColumnData getReviewedWithDecision(Report report) {
-    ColumnData columnData = new ColumnData();
-    columnData.setDataType("string");
+    ColumnData columnData = getStringColumData();
     if (report != null) {
       columnData.setValue(report.getReportIndicators().isIrsDecisionFormFilled() ? "yes" : "no");
     }
@@ -164,7 +175,8 @@ public class IRSDashboardService {
     ColumnData columnData = new ColumnData();
     columnData.setIsPercentage(false);
     double sprayedStructures = (double) getTotalStructuresSprayed(report).getValue();
-    double totalStructures = (double) getTotalStructuresCounts(plan, childLocation,report).getValue();
+    double totalStructures = (double) getTotalStructuresCounts(plan, childLocation,
+        report).getValue();
     double structuresRemaining = Math.round((totalStructures * 0.9) - sprayedStructures);
     if (structuresRemaining < 0) {
       columnData.setValue(0d);
@@ -201,27 +213,18 @@ public class IRSDashboardService {
     return columnData;
   }
 
-  public List<RowData> getIRSFullCoverageStructureLevelData(Plan plan, Location childLocation) {
-    Map<String, ColumnData> columns = new HashMap<>();
-    Report report = planReportRepository.findByPlanAndLocation(plan, childLocation).orElse(null);
-    columns.put(STRUCTURE_STATUS,
-        getLocationBusinessState(report));
-    columns.put(NO_OF_MALES, getMales(report));
-    columns.put(NO_OF_FEMALES, getFemales(report));
-    columns.put(NO_OF_ROOMS, getRoomsSprayed(report));
-    columns.put(NO_OF_PREGNANT_WOMEN, getPregnantWomen(report));
-    columns.put(NOT_SPRAYED_REASON, getNotSprayedReason(report));
-    columns.put(PHONE_NUMBER, getHeadPhoneNumber(report));
-    RowData rowData = new RowData();
-    rowData.setLocationIdentifier(childLocation.getIdentifier());
-    rowData.setColumnDataMap(columns);
-    rowData.setLocationName(childLocation.getName());
-    return List.of(rowData);
+
+  private String getGeoNameDirectlyAboveStructure(Plan plan) {
+    String geoNameDirectlyAboveStructure = null;
+    if (plan.getLocationHierarchy().getNodeOrder().contains(LocationConstants.STRUCTURE)) {
+      geoNameDirectlyAboveStructure = plan.getLocationHierarchy().getNodeOrder()
+          .get(plan.getLocationHierarchy().getNodeOrder().indexOf(LocationConstants.STRUCTURE) - 1);
+    }
+    return geoNameDirectlyAboveStructure;
   }
 
   private ColumnData getHeadPhoneNumber(Report report) {
-    ColumnData columnData = new ColumnData();
-    columnData.setDataType("string");
+    ColumnData columnData = getStringColumData();
     if (report != null && report.getReportIndicators().getPhoneNumber() != null) {
       ReportIndicators reportIndicators = report.getReportIndicators();
       columnData.setValue(reportIndicators.getPhoneNumber());
@@ -230,8 +233,7 @@ public class IRSDashboardService {
   }
 
   private ColumnData getNotSprayedReason(Report report) {
-    ColumnData columnData = new ColumnData();
-    columnData.setDataType("string");
+    ColumnData columnData = getStringColumData();
     if (report != null && report.getReportIndicators().getNotSprayedReason() != null) {
       ReportIndicators reportIndicators = report.getReportIndicators();
       columnData.setValue(reportIndicators.getNotSprayedReason());
@@ -288,8 +290,7 @@ public class IRSDashboardService {
 
   private ColumnData getLocationBusinessState(Report report) {
 
-    ColumnData column = new ColumnData();
-    column.setDataType("string");
+    ColumnData column = getStringColumData();
     if (report != null && report.getReportIndicators().getBusinessStatus() != null) {
       column.setValue(report.getReportIndicators().getBusinessStatus());
     } else {
@@ -305,46 +306,6 @@ public class IRSDashboardService {
       columnData.setValue(Double.valueOf(report.getReportIndicators().getSprayedStructures()));
     }
     return columnData;
-  }
-
-
-  private Entry<String, ColumnData> getSprayedSuccess(Plan plan, Location childLocation,
-      String columnName) {
-
-    String completedStructuresQueryKey =
-        plan.getIdentifier() + "_" + childLocation.getIdentifier() + "_"
-            + plan.getLocationHierarchy().getIdentifier() + "_" + "Complete";
-    Long completedStructuresCountObj = countOfStructuresByBusinessStatus.get(
-        completedStructuresQueryKey);
-    double completedStructuresCount = 0;
-    if (completedStructuresCountObj != null) {
-      completedStructuresCount = completedStructuresCountObj;
-    }
-
-    String notSprayedStructuresQueryKey =
-        plan.getIdentifier() + "_" + childLocation.getIdentifier() + "_"
-            + plan.getLocationHierarchy().getIdentifier() + "_" + "Not Sprayed";
-    Long notSprayedStructuresCountObj = countOfStructuresByBusinessStatus.get(
-        notSprayedStructuresQueryKey);
-    double notSprayedStructuresCount = 0;
-    if (notSprayedStructuresCountObj != null) {
-      notSprayedStructuresCount = notSprayedStructuresCountObj;
-    }
-
-    double totalStructuresFound = notSprayedStructuresCount + completedStructuresCount;
-
-    double spraySuccess = 0;
-    if (totalStructuresFound > 0) {
-      spraySuccess = completedStructuresCount / totalStructuresFound * 100;
-    }
-    ColumnData totalStructuresFoundColumnData = new ColumnData();
-    totalStructuresFoundColumnData.setValue(spraySuccess);
-    totalStructuresFoundColumnData.setIsPercentage(true);
-    totalStructuresFoundColumnData.setMeta(
-        "completedStructuresCount: " + completedStructuresCount + " / " + "totalStructuresFound: "
-            + totalStructuresFound);
-    return new SimpleEntry<>(columnName, totalStructuresFoundColumnData);
-
   }
 
   private ColumnData getSprayedEffectively(Plan plan, Location childLocation) {
@@ -436,7 +397,7 @@ public class IRSDashboardService {
     return operationalAreaVisitedColumnData;
   }
 
-  private ColumnData getTotalStructuresCounts(Plan plan, Location childLocation,Report report) {
+  private ColumnData getTotalStructuresCounts(Plan plan, Location childLocation, Report report) {
     String totalStructuresQueryKey =
         plan.getLocationHierarchy().getIdentifier() + "_" + childLocation.getIdentifier();
     Long totalStructuresCountObj = structureCounts.get(totalStructuresQueryKey);
@@ -455,8 +416,9 @@ public class IRSDashboardService {
       notEligibleStructuresCount = notEligibleStructuresCountObj;
     }
 
-
-    double discoveredStructuresCount = (report !=null && report.getReportIndicators().getRegisteredStructures()!=null) ? Double.valueOf(report.getReportIndicators().getRegisteredStructures()) : 0d;
+    double discoveredStructuresCount =
+        (report != null && report.getReportIndicators().getRegisteredStructures() != null)
+            ? Double.valueOf(report.getReportIndicators().getRegisteredStructures()) : 0d;
 
     double totalStructuresExcludingNotEligible =
         totalStructuresCount + discoveredStructuresCount - notEligibleStructuresCount;
@@ -556,54 +518,6 @@ public class IRSDashboardService {
     return totalStructuresTargetedColumnData;
   }
 
-  private ColumnData getSprayCoverage(Plan plan, Location childLocation) {
-
-    String totalStructuresQueryKey =
-        plan.getLocationHierarchy().getIdentifier() + "_" + childLocation.getIdentifier();
-    Long totalStructuresCountObj = structureCounts.get(totalStructuresQueryKey);
-    double totalStructuresCount = 0;
-    if (totalStructuresCountObj != null) {
-      totalStructuresCount = totalStructuresCountObj;
-    }
-
-    String notEligibleStructuresQueryKey =
-        plan.getIdentifier() + "_" + childLocation.getIdentifier() + "_"
-            + plan.getLocationHierarchy().getIdentifier() + "_" + "Not Eligible";
-    Long notEligibleStructuresCountObj = countOfStructuresByBusinessStatus.get(
-        notEligibleStructuresQueryKey);
-    double notEligibleStructuresCount = 0;
-    if (notEligibleStructuresCountObj != null) {
-      notEligibleStructuresCount = notEligibleStructuresCountObj;
-    }
-
-    String completedStructuresQueryKey =
-        plan.getIdentifier() + "_" + childLocation.getIdentifier() + "_"
-            + plan.getLocationHierarchy().getIdentifier() + "_" + "Complete";
-    Long completedStructuresCountObj = countOfStructuresByBusinessStatus.get(
-        completedStructuresQueryKey);
-    double completedStructuresCount = 0;
-    if (completedStructuresCountObj != null) {
-      completedStructuresCount = completedStructuresCountObj;
-    }
-
-    double totalStructuresExcludingNotEligible = totalStructuresCount - notEligibleStructuresCount;
-
-    double percentageOfSprayedToTotal = 0;
-    if (totalStructuresExcludingNotEligible > 0) {
-      percentageOfSprayedToTotal =
-          completedStructuresCount / totalStructuresExcludingNotEligible * 100;
-    }
-
-    ColumnData percentageOfSprayedToTotalColumnData = new ColumnData();
-    percentageOfSprayedToTotalColumnData.setValue(percentageOfSprayedToTotal);
-    percentageOfSprayedToTotalColumnData.setMeta(
-        "Total Structures Sprayed: " + completedStructuresCount + " / " + "Total Structures: "
-            + totalStructuresExcludingNotEligible);
-    percentageOfSprayedToTotalColumnData.setIsPercentage(true);
-    return percentageOfSprayedToTotalColumnData;
-  }
-
-
   public void initDataStoresIfNecessary() throws InterruptedException {
     if (!isDatastoresInitialized) {
 
@@ -652,19 +566,6 @@ public class IRSDashboardService {
   }
 
 
-  private List<LocationResponse> setGeoJsonProperties(Map<UUID, RowData> rowDataMap,
-      List<LocationResponse> locationResponses) {
-    return locationResponses.stream().peek(loc -> {
-      loc.getProperties().setColumnDataMap(rowDataMap.get(loc.getIdentifier()).getColumnDataMap());
-      loc.getProperties().setId(loc.getIdentifier().toString());
-      if (rowDataMap.get(loc.getIdentifier()).getColumnDataMap().get(SPRAY_COVERAGE_OF_TARGETED)
-          != null) {
-        loc.getProperties().setSprayCoverage(
-            rowDataMap.get(loc.getIdentifier()).getColumnDataMap().get(SPRAY_COVERAGE_OF_TARGETED)
-                .getValue());
-      }
-    }).collect(Collectors.toList());
-  }
 
   public FeatureSetResponse getFeatureSetResponse(UUID parentIdentifier,
       List<PlanLocationDetails> locationDetails, Map<UUID, RowData> rowDataMap,
@@ -681,6 +582,24 @@ public class IRSDashboardService {
     response.setFeatures(locationResponses);
     response.setIdentifier(parentIdentifier);
     return response;
+  }
+
+  private ColumnData getStringColumData() {
+    return ColumnData.builder().dataType("string").build();
+  }
+
+  private List<LocationResponse> setGeoJsonProperties(Map<UUID, RowData> rowDataMap,
+      List<LocationResponse> locationResponses) {
+    return locationResponses.stream().peek(loc -> {
+      loc.getProperties().setColumnDataMap(rowDataMap.get(loc.getIdentifier()).getColumnDataMap());
+      loc.getProperties().setId(loc.getIdentifier().toString());
+      if (rowDataMap.get(loc.getIdentifier()).getColumnDataMap().get(SPRAY_COVERAGE_OF_TARGETED)
+          != null) {
+        loc.getProperties().setSprayCoverage(
+            rowDataMap.get(loc.getIdentifier()).getColumnDataMap().get(SPRAY_COVERAGE_OF_TARGETED)
+                .getValue());
+      }
+    }).collect(Collectors.toList());
   }
 }
 
