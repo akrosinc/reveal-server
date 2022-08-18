@@ -1,5 +1,27 @@
 package com.revealprecision.revealserver.messaging.listener;
 
+import static com.revealprecision.revealserver.constants.FormConstants.COLLECTION_DATE;
+import static com.revealprecision.revealserver.constants.FormConstants.DAILY_SUMMARY;
+import static com.revealprecision.revealserver.constants.FormConstants.ELIGIBILITY;
+import static com.revealprecision.revealserver.constants.FormConstants.ELIGIBLE;
+import static com.revealprecision.revealserver.constants.FormConstants.HOH_PHONE;
+import static com.revealprecision.revealserver.constants.FormConstants.IRS_LITE_VERIFICATION;
+import static com.revealprecision.revealserver.constants.FormConstants.IRS_SA_DECISION;
+import static com.revealprecision.revealserver.constants.FormConstants.LOCATION_PARENT;
+import static com.revealprecision.revealserver.constants.FormConstants.MOBILIZATION;
+import static com.revealprecision.revealserver.constants.FormConstants.MOBILIZATION_DATE;
+import static com.revealprecision.revealserver.constants.FormConstants.MOBILIZED;
+import static com.revealprecision.revealserver.constants.FormConstants.NOTSPRAYED_REASON;
+import static com.revealprecision.revealserver.constants.FormConstants.REGISTER_STRUCTURE;
+import static com.revealprecision.revealserver.constants.FormConstants.ROOMS_SPRAYED;
+import static com.revealprecision.revealserver.constants.FormConstants.SPRAY;
+import static com.revealprecision.revealserver.constants.FormConstants.SPRAYED_FEMALES;
+import static com.revealprecision.revealserver.constants.FormConstants.SPRAYED_MALES;
+import static com.revealprecision.revealserver.constants.FormConstants.SPRAYED_PREGWOMEN;
+import static com.revealprecision.revealserver.constants.FormConstants.SPRAY_DATE;
+import static com.revealprecision.revealserver.constants.FormConstants.STRUCTURE_SPRAYED;
+import static com.revealprecision.revealserver.constants.FormConstants.YES;
+
 import com.revealprecision.revealserver.api.v1.facade.models.EventFacade;
 import com.revealprecision.revealserver.api.v1.facade.models.Obs;
 import com.revealprecision.revealserver.constants.KafkaConstants;
@@ -19,6 +41,7 @@ import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
@@ -27,6 +50,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 @Slf4j
 public class RawFormSubmissionListener extends Listener {
+
 
   private final ReportRepository reportRepository;
   private final PlanService planService;
@@ -49,7 +73,7 @@ public class RawFormSubmissionListener extends Listener {
       location = locationService.findByIdentifier(formCaptureEvent.getLocationId());
     } else {
       location = locationService.findByIdentifier(
-          UUID.fromString(formCaptureEvent.getRawFormEvent().getDetails().get("locationParent")));
+          UUID.fromString(formCaptureEvent.getRawFormEvent().getDetails().get(LOCATION_PARENT)));
 
     }
     Report reportEntry = getOrInstantiateReportEntry(plan, location);
@@ -58,28 +82,18 @@ public class RawFormSubmissionListener extends Listener {
     ReportIndicators reportIndicators = reportEntry.getReportIndicators();
 
     EventFacade rawFormEvent = formCaptureEvent.getRawFormEvent();
-    if (rawFormEvent.getEventType().equals("Spray")) {
-      extractIRSFullSprayedLocationObservations(observations, reportIndicators);
-    } else if (rawFormEvent.getEventType().equals("mobilization")) {
-      reportIndicators.setMobilized(
-          getObservation(observations, "mobilized"));
-    } else if (rawFormEvent.getEventType().equals("irs_lite_verification")) {
-      reportIndicators.setDateSprayed(
-          getObservation(observations, "sprayDate"));
-      reportIndicators.setMobilizationDate(
-          getObservation(observations, "mobilization_date"));
-    } else if (rawFormEvent.getEventType().equals("daily_summary")) {
-      Set<String> currentDates = reportIndicators.getUniqueSupervisionDates();
-      currentDates.add(getObservation(observations, "collection_date"));
-      reportIndicators.setUniqueSupervisionDates(currentDates);
-      reportIndicators.setSupervisorFormSubmissionCount(
-          reportIndicators.getSupervisorFormSubmissionCount() + 1);
-    } else if (rawFormEvent.getEventType().equals("irs_sa_decision")) {
+    if (rawFormEvent.getEventType().equals(SPRAY)) {
+      extractIRSSprayedLocationIndicators(observations, reportIndicators);
+    } else if (rawFormEvent.getEventType().equals(MOBILIZATION)) {
+      extractMobilizationIndicators(observations, reportIndicators);
+    } else if (rawFormEvent.getEventType().equals(IRS_LITE_VERIFICATION)) {
+      extractVillageVisitationIndicators(observations, reportIndicators);
+    } else if (rawFormEvent.getEventType().equals(DAILY_SUMMARY)) {
+      extractDailySupervisionIndicators(observations, reportIndicators);
+    } else if (rawFormEvent.getEventType().equals(IRS_SA_DECISION)) {
       reportIndicators.setIrsDecisionFormFilled(true);
-    } else if (rawFormEvent.getEventType().equals("Register_Structure")) {
-      reportIndicators.setRegisteredStructures(
-          (reportIndicators.getRegisteredStructures() == null ? 0
-              : reportIndicators.getRegisteredStructures()) + 1);
+    } else if (rawFormEvent.getEventType().equals(REGISTER_STRUCTURE)) {
+      extractStructureRegistrationIndicators(reportIndicators);
     }
     if (eventTask != null) {
       reportIndicators.setBusinessStatus(eventTask.getBusinessStatus());
@@ -92,7 +106,37 @@ public class RawFormSubmissionListener extends Listener {
     }
   }
 
-  private void publishForParent(FormCaptureEvent formCaptureEvent, Plan plan, EventFacade rawFormEvent,
+  private void extractStructureRegistrationIndicators(ReportIndicators reportIndicators) {
+    reportIndicators.setRegisteredStructures(
+        (reportIndicators.getRegisteredStructures() == null ? 0
+            : reportIndicators.getRegisteredStructures()) + 1);
+  }
+
+  private void extractVillageVisitationIndicators(List<Obs> observations,
+      ReportIndicators reportIndicators) {
+    reportIndicators.setDateSprayed(
+        getObservation(observations, SPRAY_DATE));
+    reportIndicators.setMobilizationDate(
+        getObservation(observations, MOBILIZATION_DATE));
+  }
+
+  private void extractMobilizationIndicators(List<Obs> observations,
+      ReportIndicators reportIndicators) {
+    reportIndicators.setMobilized(
+        getObservation(observations, MOBILIZED));
+  }
+
+  private void extractDailySupervisionIndicators(List<Obs> observations,
+      ReportIndicators reportIndicators) {
+    Set<String> currentDates = reportIndicators.getUniqueSupervisionDates();
+    currentDates.add(getObservation(observations, COLLECTION_DATE));
+    reportIndicators.setUniqueSupervisionDates(currentDates);
+    reportIndicators.setSupervisorFormSubmissionCount(
+        reportIndicators.getSupervisorFormSubmissionCount() + 1);
+  }
+
+  private void publishForParent(FormCaptureEvent formCaptureEvent, Plan plan,
+      EventFacade rawFormEvent,
       Location parentLocation) {
     FormCaptureEvent parentEvent = FormCaptureEvent.builder().rawFormEvent(rawFormEvent)
         .locationId(parentLocation.getIdentifier())
@@ -103,24 +147,24 @@ public class RawFormSubmissionListener extends Listener {
         plan.getIdentifier().toString(), parentEvent);
   }
 
-  private void extractIRSFullSprayedLocationObservations(List<Obs> observations,
+  private void extractIRSSprayedLocationIndicators(List<Obs> observations,
       ReportIndicators reportIndicators) {
     reportIndicators.setPregnantWomen(
-        NumberValue(getObservation(observations, "sprayed_pregwomen"), 0));
-    reportIndicators.setFemales(NumberValue(getObservation(observations, "sprayed_males"), 0));
+        NumberValue(getObservation(observations, SPRAYED_PREGWOMEN), 0));
+    reportIndicators.setFemales(NumberValue(getObservation(observations, SPRAYED_MALES), 0));
     reportIndicators.setMales(
-        NumberValue(getObservation(observations, "sprayed_females"), 0));
+        NumberValue(getObservation(observations, SPRAYED_FEMALES), 0));
     reportIndicators.setSprayedRooms(
-        NumberValue(getObservation(observations, "rooms_sprayed"), 0));
+        NumberValue(getObservation(observations, ROOMS_SPRAYED), 0));
     reportIndicators.setPhoneNumber(
-        getObservation(observations, "hoh_phone"));
+        getObservation(observations, HOH_PHONE));
     reportIndicators.setNotSprayedReason(
-        getObservation(observations, "notsprayed_reason"));
-    if ("yes".equals(getObservation(observations, "structure_sprayed"))) {
+        getObservation(observations, NOTSPRAYED_REASON));
+    if (YES.equals(getObservation(observations, STRUCTURE_SPRAYED))) {
       reportIndicators.setSprayedStructures((reportIndicators.getSprayedStructures() == null ? 0
           : reportIndicators.getSprayedStructures()) + 1);
     }
-    if ("eligible".equals(getObservation(observations, "eligibility"))) {
+    if (ELIGIBLE.equals(getObservation(observations, ELIGIBILITY))) {
       reportIndicators.setFoundStructures((reportIndicators.getFoundStructures() == null ? 0
           : reportIndicators.getFoundStructures()) + 1);
     }
@@ -144,6 +188,6 @@ public class RawFormSubmissionListener extends Listener {
   }
 
   private Integer NumberValue(String value, Integer defaultValue) {
-    return value != null ? Integer.valueOf(value) : defaultValue;
+    return StringUtils.isNotBlank(value) ? Integer.valueOf(value) : defaultValue;
   }
 }

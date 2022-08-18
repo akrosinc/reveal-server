@@ -10,7 +10,6 @@ import com.revealprecision.revealserver.api.v1.dto.response.FeatureSetResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationResponse;
 import com.revealprecision.revealserver.constants.KafkaConstants;
 import com.revealprecision.revealserver.constants.LocationConstants;
-import com.revealprecision.revealserver.messaging.message.LocationBusinessStatusAggregate;
 import com.revealprecision.revealserver.messaging.message.LocationPersonBusinessStateAggregate;
 import com.revealprecision.revealserver.messaging.message.LocationPersonBusinessStateCountAggregate;
 import com.revealprecision.revealserver.messaging.message.OperationalAreaVisitedCount;
@@ -26,12 +25,10 @@ import com.revealprecision.revealserver.props.DashboardProperties;
 import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.service.LocationRelationshipService;
 import com.revealprecision.revealserver.service.PlanLocationsService;
-import java.util.AbstractMap.SimpleEntry;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -151,8 +148,55 @@ public class IRSDashboardService {
   }
 
 
+  public void initDataStoresIfNecessary() throws InterruptedException {
+    if (!isDatastoresInitialized) {
+      countOfAssignedStructures = getQueryableStoreByWaiting(getKafkaStreams.getKafkaStreams(),
+          StoreQueryParameters.fromNameAndType(
+              kafkaProperties.getStoreMap().get(KafkaConstants.assignedStructureCountPerParent),
+              QueryableStoreTypes.keyValueStore()));
+
+      structureCounts = getQueryableStoreByWaiting(getKafkaStreams.getKafkaStreams(),
+          StoreQueryParameters.fromNameAndType(
+              kafkaProperties.getStoreMap().get(KafkaConstants.structureCountPerParent),
+              QueryableStoreTypes.keyValueStore()));
+
+      countOfStructuresByBusinessStatus = getQueryableStoreByWaiting(
+          getKafkaStreams.getKafkaStreams(),
+          StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap()
+                  .get(KafkaConstants.locationBusinessStatusByPlanParentHierarchy),
+              QueryableStoreTypes.keyValueStore()));
+
+      countOfOperationalArea = getQueryableStoreByWaiting(getKafkaStreams.getKafkaStreams(),
+          StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap()
+                  .get(KafkaConstants.operationalAreaByPlanParentHierarchy),
+              QueryableStoreTypes.keyValueStore()));
+
+      personBusinessStatus = getQueryableStoreByWaiting(getKafkaStreams.getKafkaStreams(),
+          StoreQueryParameters.fromNameAndType(
+              kafkaProperties.getStoreMap().get(KafkaConstants.personBusinessStatus),
+              QueryableStoreTypes.keyValueStore()));
+
+      structurePeopleCounts = getQueryableStoreByWaiting(getKafkaStreams.getKafkaStreams(),
+          StoreQueryParameters.fromNameAndType(
+              kafkaProperties.getStoreMap().get(KafkaConstants.structurePeopleCounts),
+              QueryableStoreTypes.keyValueStore()));
+
+      treatedOperationalCounts = getQueryableStoreByWaiting(getKafkaStreams.getKafkaStreams(),
+          StoreQueryParameters.fromNameAndType(
+              kafkaProperties.getStoreMap().get(KafkaConstants.operationalTreatedCounts),
+              QueryableStoreTypes.keyValueStore()));
+
+      structurePeople = getQueryableStoreByWaiting(getKafkaStreams.getKafkaStreams(),
+          StoreQueryParameters.fromNameAndType(
+              kafkaProperties.getStoreMap().get(KafkaConstants.structurePeople),
+              QueryableStoreTypes.keyValueStore()));
+      isDatastoresInitialized = true;
+    }
+  }
+
+
   private ColumnData getMobilized(Report report) {
-    ColumnData columnData = getStringColumData();
+    ColumnData columnData = getStringValueColumnData();
     if (report != null && report.getReportIndicators().getMobilized() != null) {
       columnData.setValue(report.getReportIndicators().getMobilized());
     } else {
@@ -163,7 +207,7 @@ public class IRSDashboardService {
 
 
   private ColumnData getReviewedWithDecision(Report report) {
-    ColumnData columnData = getStringColumData();
+    ColumnData columnData = getStringValueColumnData();
     if (report != null) {
       columnData.setValue(report.getReportIndicators().isIrsDecisionFormFilled() ? "yes" : "no");
     }
@@ -224,7 +268,7 @@ public class IRSDashboardService {
   }
 
   private ColumnData getHeadPhoneNumber(Report report) {
-    ColumnData columnData = getStringColumData();
+    ColumnData columnData = getStringValueColumnData();
     if (report != null && report.getReportIndicators().getPhoneNumber() != null) {
       ReportIndicators reportIndicators = report.getReportIndicators();
       columnData.setValue(reportIndicators.getPhoneNumber());
@@ -233,7 +277,7 @@ public class IRSDashboardService {
   }
 
   private ColumnData getNotSprayedReason(Report report) {
-    ColumnData columnData = getStringColumData();
+    ColumnData columnData = getStringValueColumnData();
     if (report != null && report.getReportIndicators().getNotSprayedReason() != null) {
       ReportIndicators reportIndicators = report.getReportIndicators();
       columnData.setValue(reportIndicators.getNotSprayedReason());
@@ -290,7 +334,7 @@ public class IRSDashboardService {
 
   private ColumnData getLocationBusinessState(Report report) {
 
-    ColumnData column = getStringColumData();
+    ColumnData column = getStringValueColumnData();
     if (report != null && report.getReportIndicators().getBusinessStatus() != null) {
       column.setValue(report.getReportIndicators().getBusinessStatus());
     } else {
@@ -518,54 +562,6 @@ public class IRSDashboardService {
     return totalStructuresTargetedColumnData;
   }
 
-  public void initDataStoresIfNecessary() throws InterruptedException {
-    if (!isDatastoresInitialized) {
-
-      countOfAssignedStructures = getQueryableStoreByWaiting(getKafkaStreams.getKafkaStreams(),
-          StoreQueryParameters.fromNameAndType(
-              kafkaProperties.getStoreMap().get(KafkaConstants.assignedStructureCountPerParent),
-              QueryableStoreTypes.keyValueStore()));
-
-      structureCounts = getQueryableStoreByWaiting(getKafkaStreams.getKafkaStreams(),
-          StoreQueryParameters.fromNameAndType(
-              kafkaProperties.getStoreMap().get(KafkaConstants.structureCountPerParent),
-              QueryableStoreTypes.keyValueStore()));
-
-      countOfStructuresByBusinessStatus = getQueryableStoreByWaiting(
-          getKafkaStreams.getKafkaStreams(),
-          StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap()
-                  .get(KafkaConstants.locationBusinessStatusByPlanParentHierarchy),
-              QueryableStoreTypes.keyValueStore()));
-
-      countOfOperationalArea = getQueryableStoreByWaiting(getKafkaStreams.getKafkaStreams(),
-          StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap()
-                  .get(KafkaConstants.operationalAreaByPlanParentHierarchy),
-              QueryableStoreTypes.keyValueStore()));
-
-      personBusinessStatus = getQueryableStoreByWaiting(getKafkaStreams.getKafkaStreams(),
-          StoreQueryParameters.fromNameAndType(
-              kafkaProperties.getStoreMap().get(KafkaConstants.personBusinessStatus),
-              QueryableStoreTypes.keyValueStore()));
-
-      structurePeopleCounts = getQueryableStoreByWaiting(getKafkaStreams.getKafkaStreams(),
-          StoreQueryParameters.fromNameAndType(
-              kafkaProperties.getStoreMap().get(KafkaConstants.structurePeopleCounts),
-              QueryableStoreTypes.keyValueStore()));
-
-      treatedOperationalCounts = getQueryableStoreByWaiting(getKafkaStreams.getKafkaStreams(),
-          StoreQueryParameters.fromNameAndType(
-              kafkaProperties.getStoreMap().get(KafkaConstants.operationalTreatedCounts),
-              QueryableStoreTypes.keyValueStore()));
-
-      structurePeople = getQueryableStoreByWaiting(getKafkaStreams.getKafkaStreams(),
-          StoreQueryParameters.fromNameAndType(
-              kafkaProperties.getStoreMap().get(KafkaConstants.structurePeople),
-              QueryableStoreTypes.keyValueStore()));
-      isDatastoresInitialized = true;
-    }
-  }
-
-
 
   public FeatureSetResponse getFeatureSetResponse(UUID parentIdentifier,
       List<PlanLocationDetails> locationDetails, Map<UUID, RowData> rowDataMap,
@@ -584,7 +580,7 @@ public class IRSDashboardService {
     return response;
   }
 
-  private ColumnData getStringColumData() {
+  private ColumnData getStringValueColumnData() {
     return ColumnData.builder().dataType("string").build();
   }
 
