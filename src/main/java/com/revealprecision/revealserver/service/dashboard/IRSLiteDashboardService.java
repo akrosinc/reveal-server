@@ -2,6 +2,8 @@ package com.revealprecision.revealserver.service.dashboard;
 
 
 import static com.revealprecision.revealserver.messaging.utils.DataStoreUtils.getQueryableStoreByWaiting;
+import static com.revealprecision.revealserver.util.DashboardUtils.getGeoNameDirectlyAboveStructure;
+import static com.revealprecision.revealserver.util.DashboardUtils.getStringValueColumnData;
 
 import com.revealprecision.revealserver.api.v1.dto.factory.LocationResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.models.ColumnData;
@@ -22,7 +24,6 @@ import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.Report;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import com.revealprecision.revealserver.persistence.repository.ReportRepository;
-import com.revealprecision.revealserver.props.DashboardProperties;
 import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.service.LocationRelationshipService;
 import com.revealprecision.revealserver.service.PlanLocationsService;
@@ -86,17 +87,10 @@ public class IRSLiteDashboardService {
 
 
   public List<RowData> getIRSFullData(Plan plan, Location childLocation) {
-
-    String geoNameDirectlyAboveStructure = null;
-    if (plan.getLocationHierarchy().getNodeOrder().contains(LocationConstants.STRUCTURE)) {
-      geoNameDirectlyAboveStructure = plan.getLocationHierarchy().getNodeOrder()
-          .get(plan.getLocationHierarchy().getNodeOrder().indexOf(LocationConstants.STRUCTURE) - 1);
-    }
-
     Report report = planReportRepository.findByPlanAndLocation(plan, childLocation).orElse(null);
     Map<String, ColumnData> columns = new LinkedHashMap<>();
     columns.put(TOTAL_SPRAY_AREAS,
-        getTotalAreas(plan, childLocation, geoNameDirectlyAboveStructure));
+        getTotalAreas(plan, childLocation, getGeoNameDirectlyAboveStructure(plan)));
     columns.put(TARGET_SPRAY_AREAS, getTargetedAreas(plan, childLocation));
     columns.put(VISITED_AREAS, operationalAreaVisitedCounts(plan, childLocation));
     columns.put(STRUCTURES_ON_THE_GROUND, getTotalStructuresCounts(plan, childLocation));
@@ -305,10 +299,6 @@ public class IRSLiteDashboardService {
       columnData.setValue(NO);
     }
     return columnData;
-  }
-
-  private ColumnData getStringValueColumnData() {
-    return ColumnData.builder().dataType("string").build();
   }
 
   private ColumnData getTotalStructuresSprayed(Plan plan, Location childLocation) {

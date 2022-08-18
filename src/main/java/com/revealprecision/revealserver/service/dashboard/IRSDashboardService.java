@@ -2,6 +2,8 @@ package com.revealprecision.revealserver.service.dashboard;
 
 
 import static com.revealprecision.revealserver.messaging.utils.DataStoreUtils.getQueryableStoreByWaiting;
+import static com.revealprecision.revealserver.util.DashboardUtils.getGeoNameDirectlyAboveStructure;
+import static com.revealprecision.revealserver.util.DashboardUtils.getStringValueColumnData;
 
 import com.revealprecision.revealserver.api.v1.dto.factory.LocationResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.models.ColumnData;
@@ -44,6 +46,8 @@ public class IRSDashboardService {
 
   public static final String NOT_SPRAYED_REASON = "Not Sprayed Reason";
   public static final String PHONE_NUMBER = "Phone Number";
+  public static final String NOT_VISITED = "Not Visited";
+  public static final String N_A = "n/a";
   private final StreamsBuilderFactoryBean getKafkaStreams;
   private final KafkaProperties kafkaProperties;
   private final PlanLocationsService planLocationsService;
@@ -82,12 +86,11 @@ public class IRSDashboardService {
   private final ReportRepository planReportRepository;
 
   public List<RowData> getIRSFullData(Plan plan, Location childLocation) {
-    String geoNameDirectlyAboveStructure = getGeoNameDirectlyAboveStructure(plan);
     Report reportEntry = planReportRepository.findByPlanAndLocation(plan, childLocation)
         .orElse(null);
     Map<String, ColumnData> columns = new LinkedHashMap<>();
     columns.put(TOTAL_SPRAY_AREAS,
-        getTotalAreas(plan, childLocation, geoNameDirectlyAboveStructure));
+        getTotalAreas(plan, childLocation, getGeoNameDirectlyAboveStructure(plan)));
     columns.put(TARGET_SPRAY_AREAS, getTargetedAreas(plan, childLocation));
     columns.put(VISITED_AREAS, getOperationalAreaVisitedCounts(plan, childLocation));
     columns.put(PERCENTAGE_VISITED_EFFECTIVELY, getSprayedEffectively(plan, childLocation));
@@ -257,16 +260,6 @@ public class IRSDashboardService {
     return columnData;
   }
 
-
-  private String getGeoNameDirectlyAboveStructure(Plan plan) {
-    String geoNameDirectlyAboveStructure = null;
-    if (plan.getLocationHierarchy().getNodeOrder().contains(LocationConstants.STRUCTURE)) {
-      geoNameDirectlyAboveStructure = plan.getLocationHierarchy().getNodeOrder()
-          .get(plan.getLocationHierarchy().getNodeOrder().indexOf(LocationConstants.STRUCTURE) - 1);
-    }
-    return geoNameDirectlyAboveStructure;
-  }
-
   private ColumnData getHeadPhoneNumber(Report report) {
     ColumnData columnData = getStringValueColumnData();
     if (report != null && report.getReportIndicators().getPhoneNumber() != null) {
@@ -282,7 +275,7 @@ public class IRSDashboardService {
       ReportIndicators reportIndicators = report.getReportIndicators();
       columnData.setValue(reportIndicators.getNotSprayedReason());
     } else {
-      columnData.setValue("n/a");
+      columnData.setValue(N_A);
     }
     return columnData;
   }
@@ -338,7 +331,7 @@ public class IRSDashboardService {
     if (report != null && report.getReportIndicators().getBusinessStatus() != null) {
       column.setValue(report.getReportIndicators().getBusinessStatus());
     } else {
-      column.setValue("Not Visited");
+      column.setValue(NOT_VISITED);
     }
     return column;
   }
@@ -580,9 +573,6 @@ public class IRSDashboardService {
     return response;
   }
 
-  private ColumnData getStringValueColumnData() {
-    return ColumnData.builder().dataType("string").build();
-  }
 
   private List<LocationResponse> setGeoJsonProperties(Map<UUID, RowData> rowDataMap,
       List<LocationResponse> locationResponses) {
