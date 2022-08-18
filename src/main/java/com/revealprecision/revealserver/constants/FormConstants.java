@@ -34,24 +34,26 @@ public interface FormConstants {
   String IRS_LITE_VERIFICATION_FORM_SUPERVISOR = "supervisor";
 
   String SPRAYED_PREGWOMEN = "sprayed_pregwomen";
-   String SPRAYED_MALES = "sprayed_males";
-   String SPRAYED_FEMALES = "sprayed_females";
-   String ROOMS_SPRAYED = "rooms_sprayed";
-   String HOH_PHONE = "hoh_phone";
-   String NOTSPRAYED_REASON = "notsprayed_reason";
-   String STRUCTURE_SPRAYED = "structure_sprayed";
-   String ELIGIBILITY = "eligibility";
-   String YES = "yes";
-   String ELIGIBLE = "eligible";
-   String REGISTER_STRUCTURE = "Register_Structure";
-   String IRS_SA_DECISION = "irs_sa_decision";
-   String COLLECTION_DATE = "collection_date";
-   String DAILY_SUMMARY = "daily_summary";
-   String MOBILIZATION_DATE = "mobilization_date";
-   String SPRAY_DATE = "sprayDate";
-   String IRS_LITE_VERIFICATION = "irs_lite_verification";
-   String MOBILIZED = "mobilized";
-   String MOBILIZATION = "mobilization";
-   String SPRAY = "Spray";
-   String LOCATION_PARENT = "locationParent";
+  String SPRAYED_MALES = "sprayed_males";
+  String SPRAYED_FEMALES = "sprayed_females";
+  String ROOMS_SPRAYED = "rooms_sprayed";
+  String HOH_PHONE = "hoh_phone";
+  String NOTSPRAYED_REASON = "notsprayed_reason";
+  String STRUCTURE_SPRAYED = "structure_sprayed";
+  String ELIGIBILITY = "eligibility";
+  String YES = "yes";
+  String ELIGIBLE = "eligible";
+  String REGISTER_STRUCTURE = "Register_Structure";
+  String IRS_SA_DECISION = "irs_sa_decision";
+  String COLLECTION_DATE = "collection_date";
+  String DAILY_SUMMARY = "daily_summary";
+  String MOBILIZATION_DATE = "mobilization_date";
+  String SPRAY_DATE = "sprayDate";
+  String IRS_LITE_VERIFICATION = "irs_lite_verification";
+  String MOBILIZED = "mobilized";
+  String MOBILIZATION = "mobilization";
+  String SPRAY = "Spray";
+  String LOCATION_PARENT = "locationParent";
+  String BOTTLES_EMPTY = "bottles_empty";
+
 }

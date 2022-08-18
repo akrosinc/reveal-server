@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.messaging.listener;
 
+import static com.revealprecision.revealserver.constants.FormConstants.BOTTLES_EMPTY;
 import static com.revealprecision.revealserver.constants.FormConstants.COLLECTION_DATE;
 import static com.revealprecision.revealserver.constants.FormConstants.DAILY_SUMMARY;
 import static com.revealprecision.revealserver.constants.FormConstants.ELIGIBILITY;
@@ -133,6 +134,9 @@ public class RawFormSubmissionListener extends Listener {
     reportIndicators.setUniqueSupervisionDates(currentDates);
     reportIndicators.setSupervisorFormSubmissionCount(
         reportIndicators.getSupervisorFormSubmissionCount() + 1);
+    reportIndicators.setInsecticidesUsed(
+        (reportIndicators.getInsecticidesUsed() != null ? reportIndicators.getInsecticidesUsed()
+            : 0) + NumberValue(getObservation(observations, BOTTLES_EMPTY), 0));
   }
 
   private void publishForParent(FormCaptureEvent formCaptureEvent, Plan plan,

@@ -31,4 +31,5 @@ public class ReportIndicators {
   private Integer registeredStructures;
   private Integer foundStructures;
   private Integer sprayedStructures;
+  private Integer insecticidesUsed;
 }
