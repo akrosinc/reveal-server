@@ -60,22 +60,23 @@ public class EntityTagController {
       "Entity Tags"})
   @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<Page<EntityTagResponse>> getAll(Pageable pageable,
-      @RequestParam(name = "filter", defaultValue = "all") String filter) {
+      @RequestParam(name = "filter", defaultValue = "all") String filter,
+      @RequestParam(name = "search", defaultValue = "", required = false) String search) {
     switch (filter) {
       case "global":
         return ResponseEntity.status(HttpStatus.OK)
             .body(EntityTagResponseFactory.fromEntityPage(
-                entityTagService.getAllPagedGlobalEntityTags(pageable), pageable));
+                entityTagService.getAllPagedGlobalEntityTags(pageable , search), pageable));
       case "importable":
         return ResponseEntity.status(HttpStatus.OK)
             .body(EntityTagResponseFactory.fromEntityPage(
-                entityTagService.getAllPagedGlobalNonAggregateEntityTags(pageable), pageable));
+                entityTagService.getAllPagedGlobalNonAggregateEntityTags(pageable , search), pageable));
       case "all":
       default:
         return ResponseEntity.status(HttpStatus.OK)
             .body(
                 EntityTagResponseFactory.fromEntityPage(
-                    entityTagService.getAllPagedEntityTags(pageable),
+                    entityTagService.getAllPagedEntityTags(pageable , search),
                     pageable));
     }
   }

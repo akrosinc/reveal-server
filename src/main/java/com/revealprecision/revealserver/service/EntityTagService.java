@@ -50,17 +50,17 @@ public class EntityTagService {
       INTEGER, List.of(SUM_, MAX_, MIN_, AVERAGE_),
       DOUBLE, List.of(SUM_, MAX_, MIN_, AVERAGE_));
 
-  public Page<EntityTag> getAllPagedEntityTags(Pageable pageable) {
-    return entityTagRepository.findAll(pageable);
+  public Page<EntityTag> getAllPagedEntityTags(Pageable pageable, String search) {
+    return entityTagRepository.findAllWithSearch(pageable, search);
   }
 
-  public Page<EntityTag> getAllPagedGlobalNonAggregateEntityTags(Pageable pageable) {
+  public Page<EntityTag> getAllPagedGlobalNonAggregateEntityTags(Pageable pageable, String search) {
     return entityTagRepository.findEntityTagsByScopeAndIsAggregate(EntityTagScopes.GLOBAL, false,
-        pageable);
+        pageable, search);
   }
 
-  public Page<EntityTag> getAllPagedGlobalEntityTags(Pageable pageable) {
-    return entityTagRepository.findEntityTagsByScope(EntityTagScopes.GLOBAL, pageable);
+  public Page<EntityTag> getAllPagedGlobalEntityTags(Pageable pageable, String search) {
+    return entityTagRepository.findEntityTagsByScope(EntityTagScopes.GLOBAL, pageable, search);
   }
 
 

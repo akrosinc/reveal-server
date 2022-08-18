@@ -22,11 +22,17 @@ public interface EntityTagRepository extends JpaRepository<EntityTag, UUID> {
 
   Set<EntityTag> findEntityTagsByFormFields(FormField formField);
 
+
+  @Query(value = "select et from EntityTag et where et.scope = :scope and lower(et.tag ) like concat('%', lower(:search) , '%') and et.isAggregate = :isAggregate")
   Page<EntityTag> findEntityTagsByScopeAndIsAggregate(String scope, boolean isAggregate,
-      Pageable pageable);
+      Pageable pageable, String search);
 
 
-  Page<EntityTag> findEntityTagsByScope(String scope, Pageable pageable);
+  @Query(value = "select et from EntityTag et where lower(et.tag) like concat('%', lower(:search) , '%') ")
+  Page<EntityTag> findAllWithSearch(Pageable pageable, String search);
+
+  @Query(value = "select et from EntityTag et where et.scope = :scope and lower(et.tag ) like concat('%', lower(:search) , '%') ")
+  Page<EntityTag> findEntityTagsByScope(String scope, Pageable pageable, String search);
 
 
   List<EntityTag> findEntityTagsByScopeAndIsAggregateAndLookupEntityType_Identifier(String scope,
