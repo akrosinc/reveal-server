@@ -4,14 +4,9 @@ import com.revealprecision.revealserver.api.v1.dto.request.LocationRequest;
 import com.revealprecision.revealserver.api.v1.facade.factory.LocationRequestFactory;
 import com.revealprecision.revealserver.api.v1.facade.models.CreateLocationRequest;
 import com.revealprecision.revealserver.api.v1.facade.request.LocationSyncRequest;
-import com.revealprecision.revealserver.constants.KafkaConstants;
-import com.revealprecision.revealserver.messaging.message.DiscoveredStructureEvent;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
-import com.revealprecision.revealserver.props.KafkaProperties;
-import com.revealprecision.revealserver.service.LocationRelationshipService;
 import com.revealprecision.revealserver.service.LocationService;
-import com.revealprecision.revealserver.service.PlanService;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -21,7 +16,6 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
