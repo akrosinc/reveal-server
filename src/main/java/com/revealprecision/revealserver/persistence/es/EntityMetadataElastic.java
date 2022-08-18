@@ -1,5 +1,11 @@
 package com.revealprecision.revealserver.persistence.es;
 
+import static com.revealprecision.revealserver.constants.EntityTagDataTypes.BOOLEAN;
+import static com.revealprecision.revealserver.constants.EntityTagDataTypes.DOUBLE;
+import static com.revealprecision.revealserver.constants.EntityTagDataTypes.INTEGER;
+import static com.revealprecision.revealserver.constants.EntityTagDataTypes.STRING;
+import static com.revealprecision.revealserver.constants.EntityTagDataTypes.DATE;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.revealprecision.revealserver.messaging.message.MetaDataEvent;
 import com.revealprecision.revealserver.util.ElasticModelUtil;
@@ -42,19 +48,19 @@ public class EntityMetadataElastic {
         .taskType(metadataObj.getTagData().getMeta().getTaskType())
         .build();
     switch (metadataObj.getDataType()){
-      case "string":
+      case STRING:
         this.value = metadataObj.getTagData().getValue().getValueString();
         break;
-      case "integer":
+      case INTEGER:
         this.valueNumber = metadataObj.getTagData().getValue().getValueInteger();
         break;
-      case "double":
+      case DOUBLE:
         this.valueNumber = metadataObj.getTagData().getValue().getValueDouble();
         break;
-      case "date":
+      case DATE:
         this.value = metadataObj.getTagData().getValue().getValueDate();
         break;
-      case "boolean":
+      case BOOLEAN:
         this.value = metadataObj.getTagData().getValue().getValueBoolean();
         break;
     }

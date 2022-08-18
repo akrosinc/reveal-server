@@ -48,4 +48,25 @@ public class FormDataEntityTagValueEventFactory {
         .value(value)
         .build();
   }
+
+  public static FormDataEntityTagValueEvent getEntity(UUID planIdentifier,
+      UUID locationHierarchyIdentifier,
+      String geoLevelName, String ccdName, String supervisorName,
+      String dateForScopeDateFields, Location location, EntityTagEvent referencedTagEvent,
+      Object value, UUID eventId) {
+    return FormDataEntityTagValueEvent
+        .builder()
+        .eventId(eventId)
+        .entityTagEvent(referencedTagEvent)
+        .planIdentifier(planIdentifier)
+        .locationHierarchyIdentifier(
+            locationHierarchyIdentifier)
+        .geographicLevelName(geoLevelName)
+        .entityIdentifier(location.getIdentifier())
+        .dateForScopeDate(dateForScopeDateFields)
+        .cddName(ccdName)
+        .supervisor(supervisorName)
+        .value(value)
+        .build();
+  }
 }

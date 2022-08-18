@@ -142,6 +142,10 @@
     <appender-ref ref="TASK-DATA-FILE"/>
   </logger>
 
+  <logger name="form-data-file" level="DEBUG" additivity="false">
+    <appender-ref ref="FORM-DATA-FILE"/>
+  </logger>
+
   <root level="INFO">
     <appender-ref ref="FILE"/>
     <appender-ref ref="STDOUT"/>

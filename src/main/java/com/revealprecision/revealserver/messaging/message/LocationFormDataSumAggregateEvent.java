@@ -15,7 +15,7 @@ import lombok.ToString;
 @ToString
 public class LocationFormDataSumAggregateEvent extends Message {
 
-  private Long sum;
+  private Double sum;
   private Long counter;
   private Double average;
   private UUID entityTagIdentifier;

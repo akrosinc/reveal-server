@@ -4,7 +4,7 @@ import com.revealprecision.revealserver.api.v1.dto.factory.EntityTagEventFactory
 import com.revealprecision.revealserver.constants.EntityTagDataTypes;
 import com.revealprecision.revealserver.constants.KafkaConstants;
 import com.revealprecision.revealserver.messaging.message.EntityTagEvent;
-import com.revealprecision.revealserver.messaging.message.LocationFormDataSumAggregateEvent;
+import com.revealprecision.revealserver.messaging.message.LocationFormDataMinMaxAggregateEvent;
 import com.revealprecision.revealserver.persistence.domain.EntityTag;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.Plan;
@@ -29,9 +29,9 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class MetadataAggregateListener extends Listener {
+public class MetadataMinMaxAggregateListener extends Listener {
 
-  ReadOnlyKeyValueStore<String, LocationFormDataSumAggregateEvent> locationFormDataIntegerSumOrAverage;
+  ReadOnlyKeyValueStore<String, LocationFormDataMinMaxAggregateEvent> locationFormDataMinMax;
   private final MetadataService metadataService;
   private final EntityTagService entityTagService;
   private final PlanService planService;
@@ -40,16 +40,16 @@ public class MetadataAggregateListener extends Listener {
   private final KafkaProperties kafkaProperties;
 
 
-  @KafkaListener(topics = "#{kafkaConfigProperties.topicMap.get('METADATA_AGGREGATE')}", groupId = "reveal_server_group")
-  public void listenGroupFoo(ConsumerRecord<String, LocationFormDataSumAggregateEvent> message) {
+  @KafkaListener(topics = "#{kafkaConfigProperties.topicMap.get('METADATA_MINMAX_AGGREGATE')}", groupId = "reveal_server_group")
+  public void listenGroupFoo(ConsumerRecord<String, LocationFormDataMinMaxAggregateEvent> message) {
     init();
-    locationFormDataIntegerSumOrAverage = getKafkaStreams.getKafkaStreams().store(
+    locationFormDataMinMax = getKafkaStreams.getKafkaStreams().store(
         StoreQueryParameters.fromNameAndType(
-            kafkaProperties.getStoreMap().get(KafkaConstants.locationFormDataIntegerSumOrAverage),
+            kafkaProperties.getStoreMap().get(KafkaConstants.locationFormDataMinMax),
             QueryableStoreTypes.keyValueStore()));
     log.info("Received Message k: {}  v: {}", message.key(), message.value());
     String k = message.key();
-    LocationFormDataSumAggregateEvent aggMessage = message.value();
+    LocationFormDataMinMaxAggregateEvent aggMessage = message.value();
 
     String[] keySplit = k.split("_");
 
@@ -65,30 +65,47 @@ public class MetadataAggregateListener extends Listener {
         UUID.fromString(entityParentIdentifier));
 
     UUID entityTagIdentifier = aggMessage.getEntityTagIdentifier();
-    LocationFormDataSumAggregateEvent locationFormDataSumAggregateEvent = locationFormDataIntegerSumOrAverage.get(
+    LocationFormDataMinMaxAggregateEvent locationFormDataMinMaxAggregateEvent = locationFormDataMinMax.get(
         k);
 
-    if (locationFormDataSumAggregateEvent != null) {
+    if (locationFormDataMinMaxAggregateEvent != null) {
 
       Optional<EntityTag> entityTagById = entityTagService.findEntityTagById(entityTagIdentifier);
 
       if (entityTagById.isPresent()) {
         EntityTag entityTag = entityTagById.get();
 
-        if (locationFormDataSumAggregateEvent.getSum() != null) {
+        if (locationFormDataMinMaxAggregateEvent.getMin() != null) {
 
           Optional<EntityTag> entityTagByTagName = entityTagService.getEntityTagByTagName(
-              entityTag.getTag() + "-sum");
+              entityTag.getTag() + "-min");
 
           if (entityTagByTagName.isPresent()) {
             EntityTagEvent entityTagEvent = EntityTagEventFactory.getEntityTagEvent(entityTagByTagName.get());
             entityTagEvent.setValueType(EntityTagDataTypes.DOUBLE);
             if (entityTagEvent.isAggregate()) {
-              metadataService.updateMetaData(UUID.fromString(entityParentIdentifier), locationFormDataSumAggregateEvent.getSum(),
+              metadataService.updateMetaData(UUID.fromString(entityParentIdentifier), locationFormDataMinMaxAggregateEvent.getMin(),
                   plan, null,
                   UserUtils.getCurrentPrincipleName(), entityTagEvent.getValueType(), entityTagEvent,
                   "aggregate", location, "aggregate",
-                  Location.class, k + "-sum", null);
+                  Location.class, k + "-min", null);
+            }
+          }
+        }
+        if (locationFormDataMinMaxAggregateEvent.getMax() != null) {
+
+          Optional<EntityTag> entityTagByTagName = entityTagService.getEntityTagByTagName(
+              entityTag.getTag() + "-max");
+
+          if (entityTagByTagName.isPresent()) {
+            EntityTagEvent entityTagEvent = EntityTagEventFactory.getEntityTagEvent(entityTagByTagName.get());
+            entityTagEvent.setValueType(EntityTagDataTypes.DOUBLE);
+            if (entityTagEvent.isAggregate()) {
+              metadataService.updateMetaData(UUID.fromString(entityParentIdentifier), locationFormDataMinMaxAggregateEvent.getMax(),
+                  plan, null,
+                  UserUtils.getCurrentPrincipleName(), entityTagEvent.getValueType(), entityTagEvent,
+                  "aggregate", location, "aggregate",
+                  Location.class, k + "-max", null);
             }
           }
         }

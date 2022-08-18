@@ -486,6 +486,10 @@ public class LocationRelationshipService {
     return locationRelationshipRepository.getParentLocationByLocationIdAndHierarchyId(
         location.getIdentifier(), locationHierarchy.getIdentifier());
   }
+  public List<LocationRelationship> getLocationParentWithoutHierarchyIdentifier(UUID locationIdentifier) {
+    return locationRelationshipRepository.getParentLocationByLocationIdWithoutHierarchyId(
+        locationIdentifier);
+  }
 
   public List<LocationMainData> getLocationsByHierarchyIdAndLevelName(UUID hierarchyIdentifier,
       String levelName) {

@@ -138,6 +138,11 @@ public interface LocationRelationshipRepository extends JpaRepository<LocationRe
       @Param("locationIdentifier") UUID locationIdentifier,
       @Param("hierarchyIdentifier") UUID hierarchyIdentifier);
 
+  @Query(value = "select lr from LocationRelationship lr "
+      + "where lr.location.identifier = :locationIdentifier ")
+  List<LocationRelationship> getParentLocationByLocationIdWithoutHierarchyId(
+      @Param("locationIdentifier") UUID locationIdentifier);
+
   LocationRelationship getLocationRelationshipByLocation_IdentifierAndLocationHierarchy_Identifier(
       UUID locationIdentifier, UUID hierarchyIdentifier);
 

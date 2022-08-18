@@ -10,7 +10,6 @@ import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -91,7 +90,9 @@ public interface LocationRepository extends JpaRepository<Location, UUID> {
           + " from Location l where l.identifier = :identifier")
   Optional<Location> findByIdentifierWithoutGeoJson(UUID identifier);
 
-  @Modifying
-  @Query(value = "delete from Location l where l.identifier in :identifiers")
-  void deleteFailedLocations(@Param("identifiers") Set<UUID> identifiers);
+  @Query(value =
+      "select new com.revealprecision.revealserver.persistence.domain.Location"
+          + "(l.identifier, l.type, l.name, l.status, l.externalId, l.geographicLevel, l.locationBulk)"
+          + " from Location l where l.identifier in :identifiers")
+  Set<Location> findLocationsWithoutGeoJsonByIdentifierIn(Set<UUID> identifiers);
 }

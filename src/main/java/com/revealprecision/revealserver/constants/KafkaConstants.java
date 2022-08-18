@@ -18,6 +18,8 @@ public interface KafkaConstants {
   String USER_DATA = "USER_DATA";
   String USER_PERFORMANCE_DATA = "USER_PERFORMANCE_DATA";
   String USER_PARENT_CHILD = "USER_PARENT_CHILD";
+  String METADATA_COUNT_AGGREGATE = "METADATA_COUNT_AGGREGATE";
+  String METADATA_MINMAX_AGGREGATE = "METADATA_MINMAX_AGGREGATE";
 
   String FORM_SUBMISSIONS = "FORM_SUBMISSIONS";
   String structureCountPerParent = "structureCountPerParent";
@@ -60,4 +62,5 @@ public interface KafkaConstants {
   String userPerformance = "userPerformance";
   String userPerformanceSums = "userPerformanceSums";
   String userParentChildren = "userParentChildren";
+  String locationFormDataMinMax = "locationFormDataMinMax";
 }

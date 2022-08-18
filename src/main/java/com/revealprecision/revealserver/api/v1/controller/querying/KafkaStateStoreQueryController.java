@@ -5,6 +5,7 @@ import com.revealprecision.revealserver.messaging.Message;
 import com.revealprecision.revealserver.messaging.message.LocationBusinessStatusAggregate;
 import com.revealprecision.revealserver.messaging.message.LocationFormDataAggregateEvent;
 import com.revealprecision.revealserver.messaging.message.LocationFormDataCountAggregateEvent;
+import com.revealprecision.revealserver.messaging.message.LocationFormDataMinMaxAggregateEvent;
 import com.revealprecision.revealserver.messaging.message.LocationFormDataSumAggregateEvent;
 import com.revealprecision.revealserver.messaging.message.LocationPersonBusinessStateAggregate;
 import com.revealprecision.revealserver.messaging.message.LocationPersonBusinessStateCountAggregate;
@@ -132,6 +133,17 @@ public class KafkaStateStoreQueryController<T> {
     ReadOnlyKeyValueStore<String, LocationFormDataSumAggregateEvent> counts = kafkaStreams.store(
         StoreQueryParameters.fromNameAndType(
             kafkaProperties.getStoreMap().get(KafkaConstants.locationFormDataIntegerSumOrAverage),
+            QueryableStoreTypes.keyValueStore())
+    );
+    iterateThroughStore(counts);
+  }
+
+  @GetMapping("/locationFormDataMinMax")
+  public void locationFormDataMinMax() {
+    KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
+    ReadOnlyKeyValueStore<String, LocationFormDataMinMaxAggregateEvent> counts = kafkaStreams.store(
+        StoreQueryParameters.fromNameAndType(
+            kafkaProperties.getStoreMap().get(KafkaConstants.locationFormDataMinMax),
             QueryableStoreTypes.keyValueStore())
     );
     iterateThroughStore(counts);
