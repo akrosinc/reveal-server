@@ -25,6 +25,9 @@ version = '0.0.1-SNAPSHOT'
 sourceCompatibility = '11'
 
 repositories {
+    maven {
+        url "https://repo.osgeo.org/repository/release/"
+    }
     mavenCentral()
 }
 ext {
@@ -76,6 +79,11 @@ dependencies {
     implementation 'org.springframework.cloud:spring-cloud-starter-sleuth'
     implementation 'org.apache.poi:poi:5.2.2'
     implementation 'org.apache.poi:poi-ooxml:5.2.2'
+    implementation 'com.google.code.gson:gson:2.9.1'
+    implementation 'org.locationtech.jts:jts-core:1.19.0'
+    // https://mvnrepository.com/artifact/org.geotools/gt-geojson
+    implementation 'org.geotools:gt-geojson:27.0'
+    implementation 'org.locationtech.spatial4j:spatial4j:0.8'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test:2.5.6'
     testImplementation 'org.springframework.batch:spring-batch-test:4.3.3'

@@ -6,17 +6,24 @@ import com.revealprecision.revealserver.api.v1.dto.response.IdentifierResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationBulkDetailResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationBulkResponse;
 import com.revealprecision.revealserver.batch.runner.LocationBatchRunner;
+import com.revealprecision.revealserver.batch.runner.LocationValidationRunner;
 import com.revealprecision.revealserver.service.LocationBulkService;
 import com.revealprecision.revealserver.service.StorageService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.JobParametersInvalidException;
 import org.springframework.batch.core.repository.JobExecutionAlreadyRunningException;
 import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteException;
 import org.springframework.batch.core.repository.JobRestartException;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -40,6 +47,7 @@ public class LocationBulkController {
 
   private final LocationBulkService locationBulkService;
   private final LocationBatchRunner locationBatchRunner;
+  private final LocationValidationRunner locationValidationRunner;
   private final StorageService storageService;
 
 
@@ -88,9 +96,31 @@ public class LocationBulkController {
   @GetMapping("/{identifier}")
   public ResponseEntity<Page<LocationBulkDetailResponse>> getBulkDetails(
       @Parameter(description = "Location Bulk identifier") @PathVariable("identifier") UUID identifier,
+      @RequestParam(value = "status" ,defaultValue = "all", required = false) String status,
       Pageable pageable) {
     return ResponseEntity.status(HttpStatus.OK).body(LocationBulkDetailResponseFactory
-        .fromProjectionPage(locationBulkService.getLocationBulkDetails(identifier, pageable),
+        .fromProjectionPage(locationBulkService.getLocationBulkDetails(identifier, pageable, status),
             pageable));
+  }
+
+  @Operation(summary = "Import Locations from JSON file",
+      description = "Import Locations from JSON file",
+      tags = {"Bulk Location"}
+  )
+  @PostMapping("/validate")
+  public ResponseEntity<?> validateLocationFile(
+      @RequestParam("file") MultipartFile file)
+      throws JobInstanceAlreadyCompleteException, JobExecutionAlreadyRunningException, JobParametersInvalidException, JobRestartException, IOException {
+    String path = storageService.saveJSON(file);
+    String fileName = "Validation-" +  UUID.randomUUID();
+    locationValidationRunner.run(path, fileName);
+    Path filePath = Paths.get("data/" + fileName + ".csv");
+    Resource exportFileResource = new FileSystemResource("data/" + fileName + ".csv");
+    ByteArrayResource resource = new ByteArrayResource(Files.readAllBytes(filePath));
+    exportFileResource.getFile().delete();
+    return ResponseEntity.status(HttpStatus.OK)
+        .contentType(MediaType.APPLICATION_OCTET_STREAM)
+        .header("Content-disposition", "attachment;filename=LocationValidation.csv")
+        .body(resource);
   }
 }
