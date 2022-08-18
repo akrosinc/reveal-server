@@ -3,10 +3,10 @@ package com.revealprecision.revealserver.config;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.revealprecision.revealserver.api.v1.dto.request.LocationRequest;
+import com.revealprecision.revealserver.batch.dto.LocationValidationDTO;
 import com.revealprecision.revealserver.batch.listener.LocationJobCompletionListener;
-import com.revealprecision.revealserver.batch.processor.LocationItemProcessor;
-import com.revealprecision.revealserver.batch.writer.LocationWriter;
-import com.revealprecision.revealserver.persistence.domain.Location;
+import com.revealprecision.revealserver.batch.processor.LocationValidationItemProcessor;
+import com.revealprecision.revealserver.batch.writer.LocationValidationWriter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
@@ -25,15 +25,15 @@ import org.springframework.core.io.PathResource;
 @RequiredArgsConstructor
 @Configuration
 @EnableBatchProcessing
-public class LocationBatchConfiguration {
+public class LocationValidationBatchConfig {
 
   private final JobBuilderFactory jobBuilderFactory;
   private final StepBuilderFactory stepBuilderFactory;
-  private final LocationItemProcessor locationItemProcessor;
+  private final LocationValidationItemProcessor locationValidationProcessor;
 
   @Bean
   @StepScope
-  public JsonItemReader<LocationRequest> locationReader(
+  public JsonItemReader<LocationRequest> locationValidationReader(
       @Value("#{jobParameters['filePath']}") String filePath) {
     ObjectMapper objectMapper = new ObjectMapper();
     objectMapper.enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS);
@@ -47,28 +47,26 @@ public class LocationBatchConfiguration {
   }
 
   @Bean
+  public Job importLocationValidationJob(LocationJobCompletionListener locationJobCompletionListener,
+      Step validationStep) {
+    return jobBuilderFactory.get("importLocationValidationJob")
+        .flow(validationStep).end().build();
+  }
+
+  @Bean
   @StepScope
-  public LocationWriter locationWriter() {
-    LocationWriter locationWriter = new LocationWriter();
-    return locationWriter;
+  public LocationValidationWriter locationValidationWriter(@Value("#{jobParameters['fileName']}") String fileName) {
+    LocationValidationWriter locationValidationWriter = new LocationValidationWriter(fileName);
+    return locationValidationWriter;
   }
 
   @Bean
-  public Job importLocationJob(LocationJobCompletionListener locationJobCompletionListener,
-      Step step1) {
-    return jobBuilderFactory.get("importLocationJob")
-        .listener(locationJobCompletionListener)
-        .flow(step1).end().build();
-  }
-
-  @Bean
-  public Step step1() {
-    return stepBuilderFactory.get("step1")
-        .<LocationRequest, Location>chunk(40)
-        .reader(locationReader(null))
-        .processor(locationItemProcessor)
-        .writer(locationWriter())
+  public Step validationStep() {
+    return stepBuilderFactory.get("validationStep")
+        .<LocationRequest, LocationValidationDTO>chunk(100)
+        .reader(locationValidationReader(null))
+        .processor(locationValidationProcessor)
+        .writer(locationValidationWriter(null))
         .build();
   }
-
 }
