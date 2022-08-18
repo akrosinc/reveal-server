@@ -19,8 +19,6 @@ public interface KafkaConstants {
   String USER_PERFORMANCE_DATA = "USER_PERFORMANCE_DATA";
   String USER_PARENT_CHILD = "USER_PARENT_CHILD";
 
-  String DISCOVERED_STRUCTURES = "DISCOVERED_STRUCTURES";
-
   String FORM_SUBMISSIONS = "FORM_SUBMISSIONS";
   String structureCountPerParent = "structureCountPerParent";
   String assignedStructureCountPerParent = "assignedStructureCountPerParent";
@@ -62,5 +60,4 @@ public interface KafkaConstants {
   String userPerformance = "userPerformance";
   String userPerformanceSums = "userPerformanceSums";
   String userParentChildren = "userParentChildren";
-  String discoveredStructuresCountPerPlan = "discoveredStructuresCountPerPlan";
 }
