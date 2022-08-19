@@ -6,11 +6,11 @@ import com.revealprecision.revealserver.api.v1.facade.models.TaskDto;
 import com.revealprecision.revealserver.api.v1.facade.models.TaskFacade;
 import com.revealprecision.revealserver.api.v1.facade.models.TaskUpdateFacade;
 import com.revealprecision.revealserver.api.v1.facade.util.DateTimeFormatter;
+import com.revealprecision.revealserver.constants.KafkaConstants;
 import com.revealprecision.revealserver.constants.LocationConstants;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.enums.TaskPriorityEnum;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
-import com.revealprecision.revealserver.constants.KafkaConstants;
 import com.revealprecision.revealserver.messaging.TaskEventFactory;
 import com.revealprecision.revealserver.messaging.message.Message;
 import com.revealprecision.revealserver.messaging.message.TaskAggregate;
@@ -331,7 +331,7 @@ public class TaskFacadeService {
             person.setLocations(Set.of(location));
           }
 
-          if(Arrays.asList(env.getActiveProfiles()).contains("Simulation")) {
+          if (Arrays.asList(env.getActiveProfiles()).contains("Simulation")) {
             PersonElastic personElastic = new PersonElastic(person);
             Map<String, Object> parameters = new HashMap<>();
             parameters.put("person", ElasticModelUtil.toMapFromPersonElastic(personElastic));

@@ -37,10 +37,12 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.revealprecision.revealserver.api.v1.dto.factory.EntityTagEventFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.FormDataEntityTagEventFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.FormDataEntityTagValueEventFactory;
+import com.revealprecision.revealserver.api.v1.facade.models.EventFacade;
 import com.revealprecision.revealserver.api.v1.facade.models.Obs;
 import com.revealprecision.revealserver.constants.KafkaConstants;
 import com.revealprecision.revealserver.enums.PlanInterventionTypeEnum;
 import com.revealprecision.revealserver.messaging.message.DeviceUser;
+import com.revealprecision.revealserver.messaging.message.FormCaptureEvent;
 import com.revealprecision.revealserver.messaging.message.FormDataEntityTagEvent;
 import com.revealprecision.revealserver.messaging.message.FormDataEntityTagValueEvent;
 import com.revealprecision.revealserver.messaging.message.OrgLevel;
@@ -81,17 +83,23 @@ public class FormDataProcessorService {
   private final PlanService planService;
   private final KafkaTemplate<String, FormDataEntityTagEvent> eventConsumptionTemplate;
 
+
   private final FormFieldService formFieldService;
   private final EntityTagService entityTagService;
   private final LocationService locationService;
 
-
   private final KafkaTemplate<String, UserData> userDataTemplate;
   private final KafkaTemplate<String, MDALiteLocationSupervisorCddEvent> mdaliteSupervisorTemplate;
 
-  public void processFormDataAndSubmitToMessaging(Event savedEvent) throws IOException {
+  private final KafkaTemplate<String, FormCaptureEvent> formSubmissionKafkaTemplate;
+
+
+  public void processFormDataAndSubmitToMessaging(Event savedEvent,EventFacade eventFacade) throws IOException {
 
     JsonNode obsList = savedEvent.getAdditionalInformation().get("obs");
+    FormCaptureEvent formCaptureEvent = FormCaptureEvent.builder()
+        .locationId(savedEvent.getLocationIdentifier()).savedEventId(savedEvent.getIdentifier()).planId(savedEvent.getPlanIdentifier()).taskId(savedEvent.getTaskIdentifier()).rawFormEvent(eventFacade).build();
+    publishFormObservations(formCaptureEvent);
 
     if (obsList.isArray()) {
 
@@ -223,7 +231,8 @@ public class FormDataProcessorService {
         if (savedEvent.getEventType().equals(IRS_LITE_VERIFICATION_FORM)) {
           fieldWorker = getFormValue(obsJavaList, IRS_LITE_VERIFICATION_FORM_SUPERVISOR);
 
-          String businessStatus = getFormValue(obsJavaList, IRS_LITE_VERIFICATION_FORM_BUSINESS_STATUS_FIELD);
+          String businessStatus = getFormValue(obsJavaList,
+              IRS_LITE_VERIFICATION_FORM_BUSINESS_STATUS_FIELD);
 
           if (businessStatus.equals("Sprayed")) {
             sprayed = true;
@@ -241,7 +250,6 @@ public class FormDataProcessorService {
           collect = deviceUser.getOrganizations().stream()
               .map(this::getFlattenedOrganizationalHierarchy).collect(Collectors.toList());
 
-
           fieldWorkerLabel = "Supervisor";
           userLabel = "Field Officer";
           orgLabel = "Team";
@@ -256,6 +264,13 @@ public class FormDataProcessorService {
       }
     }
   }
+
+  private void publishFormObservations(FormCaptureEvent event) {
+    formSubmissionKafkaTemplate.send(
+        kafkaProperties.getTopicMap().get(KafkaConstants.FORM_SUBMISSIONS), event.getPlanId().toString(),
+        event);
+  }
+
 
   private List<OrgLevel> getFlattenedOrganizationalHierarchy(Organization organization) {
 
