@@ -152,7 +152,6 @@ public class PlanLocationsService {
 
   public void selectPlanLocations(UUID planIdentifier, Set<UUID> locations) {
     Plan plan = planService.findPlanByIdentifier(planIdentifier);
-
     PlanLocationAssignMessage planLocationAssignMessage = new PlanLocationAssignMessage();
     planLocationAssignMessage.setPlanIdentifier(planIdentifier);
     planLocationAssignMessage.setLocationsAdded(

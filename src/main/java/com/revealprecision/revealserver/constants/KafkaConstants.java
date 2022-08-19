@@ -21,7 +21,7 @@ public interface KafkaConstants {
   String METADATA_COUNT_AGGREGATE = "METADATA_COUNT_AGGREGATE";
   String METADATA_MINMAX_AGGREGATE = "METADATA_MINMAX_AGGREGATE";
 
-
+  String FORM_SUBMISSIONS = "FORM_SUBMISSIONS";
   String structureCountPerParent = "structureCountPerParent";
   String assignedStructureCountPerParent = "assignedStructureCountPerParent";
   String tableOfAssignedStructuresWithParentKeyed = "tableOfAssignedStructuresWithParentKeyed";
