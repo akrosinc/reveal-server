@@ -129,9 +129,15 @@ public class TaskService {
     return taskRepository.findAll(TaskSpec.getTaskSpecification(taskSearchCriteria), pageable);
   }
 
-//  public List<Task> getTaskFacadesByPlansAndLocations(List<UUID> planIdentifiers, List<UUID> location){
-//    return taskRepository.
-//  }
+  public List<Task> getNonStructureTaskFacadesByLocationServerVersionAndPlan(UUID planIdentifier,
+      List<UUID> locationIdentifiers, Long serverVersion){
+    return taskRepository.getNonStructureTaskFacadesByLocationServerVersionAndPlan(planIdentifier,locationIdentifiers,serverVersion);
+  }
+
+  public   List<Task> getStructureTaskFacadesByLocationServerVersionAndPlan(UUID planIdentifier,
+      List<UUID> locationIdentifiers, Long serverVersion){
+    return taskRepository.getStructureTaskFacadesByLocationServerVersionAndPlan(planIdentifier,locationIdentifiers,serverVersion);
+  }
 
   public Long countTasksBySearchCriteria(TaskSearchCriteria taskSearchCriteria) {
     return taskRepository.count(TaskSpec.getTaskSpecification(taskSearchCriteria));

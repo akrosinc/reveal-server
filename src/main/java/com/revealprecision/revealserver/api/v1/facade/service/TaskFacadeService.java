@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.api.v1.facade.service;
 
 import com.revealprecision.revealserver.api.v1.dto.request.LocationRequest;
+import com.revealprecision.revealserver.api.v1.facade.factory.TaskFacadeFactory;
 import com.revealprecision.revealserver.api.v1.facade.models.TaskDto;
 import com.revealprecision.revealserver.api.v1.facade.models.TaskFacade;
 import com.revealprecision.revealserver.api.v1.facade.models.TaskUpdateFacade;
@@ -70,7 +71,7 @@ public class TaskFacadeService {
   private final LocationService locationService;
   private final BusinessStatusService businessStatusService;
   private final KafkaTemplate<String, Message> kafkaTemplate;
-//  private final StreamsBuilderFactoryBean getKafkaStreams;
+  //  private final StreamsBuilderFactoryBean getKafkaStreams;
   private final KafkaProperties kafkaProperties;
   private final RestHighLevelClient client;
   private final Environment env;
@@ -86,85 +87,36 @@ public class TaskFacadeService {
             plan -> getUuidListSimpleEntry(jurisdictionIdentifiers, plan))
         .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
 
+    return plans.stream().flatMap(plan -> {
+      if (plan.getPlanTargetType().getGeographicLevel().getName()
+          .equals(LocationConstants.STRUCTURE)) {
+        return taskService.getStructureTaskFacadesByLocationServerVersionAndPlan(
+            plan.getIdentifier(),
+            planTargetsMap.get(plan.getIdentifier()).stream().map(Location::getIdentifier).collect(
+                Collectors.toList()), serverVersion).stream().map(task -> TaskFacadeFactory.getTaskFacadeObj(requester,
+            task.getTaskFacade().getParentLocation().toString()
+            , task.getTaskFacade()));
+      } else {
+        return taskService.getNonStructureTaskFacadesByLocationServerVersionAndPlan(
+            plan.getIdentifier(),
+            planTargetsMap.get(plan.getIdentifier()).stream().map(Location::getIdentifier).collect(
+                Collectors.toList()), serverVersion).stream().map(task -> TaskFacadeFactory.getTaskFacadeObj(requester,
+            task.getTaskFacade().getParentLocation().toString()
+            , task.getTaskFacade()));
+      }
+    }).distinct().collect(Collectors.toList());
 
-
-//    KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
-//    ReadOnlyKeyValueStore<String, TaskEvent> taskPlanParent = kafkaStreams.store(
-//        StoreQueryParameters.fromNameAndType(
-//            kafkaProperties.getStoreMap().get(KafkaConstants.taskPlanParent),
-//            QueryableStoreTypes.keyValueStore()));
-//    ReadOnlyKeyValueStore<String, TaskAggregate> taskParent = kafkaStreams.store(
-//        StoreQueryParameters.fromNameAndType(
-//            kafkaProperties.getStoreMap().get(KafkaConstants.taskParent),
-//            QueryableStoreTypes.keyValueStore()));
-//
-//    ReadOnlyKeyValueStore<String, TaskEvent> taskStore = kafkaStreams.store(
-//        StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap().get(KafkaConstants.task),
-//            QueryableStoreTypes.keyValueStore()));
-
-    log.debug("Before task sync");
-
-//    return plans.stream().flatMap(plan -> {
-//      if (plan.getPlanTargetType().getGeographicLevel().getName()
-//          .equals(LocationConstants.STRUCTURE)) {
-////        return getTaskFacadeStream(serverVersion, requester, planTargetsMap, taskPlanParent,
-////            taskParent,
-////            plan);
-//      } else {
-////        return getTaskFacadeStream(serverVersion, requester, planTargetsMap, taskStore, plan);
-//      }
-//    }).distinct().collect(Collectors.toList());
-    return null;
   }
 
-//  private Stream<TaskFacade> getTaskFacadeStream(Long serverVersion, String requester,
-//      Map<UUID, List<Location>> planTargetsMap, ReadOnlyKeyValueStore<String, TaskEvent> taskStore,
-//      Plan plan) {
-//    return planTargetsMap.get(plan.getIdentifier()).stream()
-//        .map(location -> plan.getIdentifier() + "_" + location.getIdentifier().toString())
-//        .map(taskStore::get)
-//        .filter(Objects::nonNull)
-//        .filter(taskEvent -> taskEvent.getServerVersion() > serverVersion)
-//        .map(taskEvent -> TaskFacadeFactory.getTaskFacadeObj(requester,
-//            taskEvent.getParentLocation().toString()
-//            , taskEvent))
-//        .collect(Collectors.toList()).stream();
-//  }
-
-//  private Stream<TaskFacade> getTaskFacadeStream(Long serverVersion, String requester,
-//      Map<UUID, List<Location>> planTargetsMap,
-//      ReadOnlyKeyValueStore<String, TaskEvent> taskPlanParent,
-//      ReadOnlyKeyValueStore<String, TaskAggregate> taskParent, Plan plan) {
-//    return planTargetsMap.get(plan.getIdentifier()).stream()
-//        .peek(planObj -> log.debug("plan Id for task sync: {}", planObj))
-//        .flatMap(jurisdictionIdentifier -> {
-//          String taskKey = plan.getIdentifier() + "_" + jurisdictionIdentifier.getIdentifier();
-//          log.debug("key to retrieve task: {}", taskKey);
-//          List<TaskLocationPair> taskIds = new ArrayList<>();
-//          try {
-//            taskIds = taskParent.get(taskKey).getTaskIds();
-//          } catch (NullPointerException exp) {
-//            log.error("key: {} requested is not present in kafka store", taskKey);
-//          }
-//          return taskIds.stream()
-//              .peek(taskIdList -> log.debug("items retrieved from kafka store: {}", taskIdList))
-//              .filter(taskId -> taskId.getServerVersion() > serverVersion)
-//              .map(
-//                  taskId -> taskId.getId() + "_" + plan.getIdentifier() + "_"
-//                      + jurisdictionIdentifier.getIdentifier()).map(taskPlanParentId -> {
-//                TaskEvent task = taskPlanParent.get(taskPlanParentId);
-//                String locationParent = taskPlanParentId.split("_")[2];
-//                return TaskFacadeFactory.getTaskFacadeObj(requester, locationParent,
-//                    task);
-//              });
-//        });
-//  }
 
   private SimpleEntry<UUID, List<Location>> getUuidListSimpleEntry(
       List<UUID> jurisdictionIdentifiers, Plan plan) {
-    List<Location> collect = jurisdictionIdentifiers.stream()
-        .map(locationService::findByIdentifier)
-        .filter(location -> {
+
+    Set<Location> locationsWithoutGeoJsonByIdentifierIn = locationService.findLocationsWithoutGeoJsonByIdentifierIn(
+        new HashSet<>(jurisdictionIdentifiers));
+
+    List<Location> locations = locationsWithoutGeoJsonByIdentifierIn.stream().filter(
+        location -> {
           if (plan.getPlanTargetType().getGeographicLevel().getName()
               .equals(LocationConstants.STRUCTURE)) {
             return
@@ -177,8 +129,9 @@ public class TaskFacadeService {
                 .equals(plan.getPlanTargetType().getGeographicLevel().getName());
           }
         }).collect(Collectors.toList());
+
     return new SimpleEntry<>(plan.getIdentifier(),
-        collect);
+        locations);
   }
 
 

@@ -32,4 +32,18 @@ public interface TaskRepository extends JpaRepository<Task, UUID>,
   List<TaskProjection> findUniqueByPlanAndActionidentifier(@Param("plan") Plan plan,
       UUID actionIdentifier);
 
+  @Query(
+      "SELECT new Task(t.identifier,t.plan.identifier,t.serverVersion,t.taskFacade)from  Task t left join Location l on l = t.location left join Plan p on p = t.plan "
+          + "WHERE p.identifier = :planIdentifier and t.location.identifier in :locationIdentifiers and t.serverVersion > :serverVersion")
+  List<Task> getNonStructureTaskFacadesByLocationServerVersionAndPlan(UUID planIdentifier,
+      List<UUID> locationIdentifiers, Long serverVersion);
+
+  @Query(
+      "SELECT new Task(t.identifier,t.plan.identifier,t.serverVersion,t.taskFacade)from  Task t left join Location l on l = t.location "
+          + "left join Plan p on p = t.plan "
+          + "left join LocationRelationship  lr on lr.location = l "
+          + "WHERE p.identifier = :planIdentifier and lr.parentLocation.identifier in :locationIdentifiers and t.serverVersion > :serverVersion ")
+  List<Task> getStructureTaskFacadesByLocationServerVersionAndPlan(UUID planIdentifier,
+      List<UUID> locationIdentifiers, Long serverVersion);
+
 }
