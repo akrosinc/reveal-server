@@ -1,5 +1,8 @@
 package com.revealprecision.revealserver.constants;
 
+import java.util.Arrays;
+import java.util.List;
+
 public interface FormConstants {
 
   String CDD_SUPERVISOR_DAILY_SUMMARY_HEALTH_WORKER_SUPERVISOR_FIELD = "health_worker_supervisor";
@@ -56,4 +59,55 @@ public interface FormConstants {
 
   String BUSINESS_STATUS = "business_status";
 
+  interface BusinessStatus {
+    String NOT_VISITED = "Not Visited";
+    String NOT_SPRAYED = "Not Sprayed";
+    String SPRAYED = "Sprayed";
+    String NOT_SPRAYABLE = "Not Sprayable";
+    String COMPLETE = "Complete";
+    String ALL_TASKS_COMPLETE = "All Tasks Complete";
+    String INCOMPLETE = "Incomplete";
+    String NOT_ELIGIBLE = "Not Eligible";
+    String IN_PROGRESS = "In Progress";
+
+
+    String FULLY_RECEIVED = "Fully Received";
+    String NONE_RECEIVED = "None Received";
+    String ADHERENCE_VISIT_DONE = "Adherence Visit Done";
+    String PARTIALLY_RECEIVED = "Partially Received";
+
+    String SMC_COMPLETE = "SMC Complete";
+    String SPAQ_COMPLETE = "SPAQ Complete";
+    String INELIGIBLE = "Ineligible";
+    String TASKS_INCOMPLETE = "Tasks Incomplete";
+    String NOT_DISPENSED = "Not Dispensed";
+    String FAMILY_NO_TASK_REGISTERED = "Family No Task Registered";
+
+    String FAMILY_REGISTERED = "Family Registered";
+    String BEDNET_DISTRIBUTED = "Bednet Distributed";
+    String BLOOD_SCREENING_COMPLETE = "Blood Screening Complete";
+    String PARTIALLY_SPRAYED = "Partially Sprayed";
+
+
+    List<String> IRS_BUSINESS_STATUS = Arrays.asList(NOT_VISITED, NOT_SPRAYED,
+        SPRAYED, NOT_SPRAYABLE, COMPLETE, INCOMPLETE, NOT_ELIGIBLE, IN_PROGRESS);
+
+    List<String> FI_BUSINESS_STATUS = Arrays.asList(NOT_VISITED, FAMILY_REGISTERED, BEDNET_DISTRIBUTED,
+        BLOOD_SCREENING_COMPLETE, COMPLETE, NOT_ELIGIBLE);
+
+    List<String> MDA_LITE_BUSINESS_STATUS = Arrays.asList(NOT_VISITED,IN_PROGRESS,COMPLETE);
+    List<String> MDA_BUSINESS_STATUS = Arrays.asList(NOT_VISITED, FULLY_RECEIVED, NONE_RECEIVED,
+        ADHERENCE_VISIT_DONE, PARTIALLY_RECEIVED, COMPLETE, NOT_ELIGIBLE,NOT_VISITED, SMC_COMPLETE, INELIGIBLE,
+        TASKS_INCOMPLETE, COMPLETE, NOT_ELIGIBLE, FAMILY_NO_TASK_REGISTERED, ALL_TASKS_COMPLETE, SPAQ_COMPLETE);
+  }
+
+  interface Colors {
+    String grey = "#8B8B8B";
+    String red = "#EE0427";
+    String black = "#000000";
+
+    String orange = "#ED8231";
+
+    String green = "#6CBF0F";
+  }
 }

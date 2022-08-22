@@ -1,7 +1,9 @@
 package com.revealprecision.revealserver.service.dashboard;
 
 
+import static com.revealprecision.revealserver.constants.FormConstants.BUSINESS_STATUS;
 import static com.revealprecision.revealserver.messaging.utils.DataStoreUtils.getQueryableStoreByWaiting;
+import static com.revealprecision.revealserver.util.DashboardUtils.getBusinessStatusColor;
 import static com.revealprecision.revealserver.util.DashboardUtils.getGeoNameDirectlyAboveStructure;
 import static com.revealprecision.revealserver.util.DashboardUtils.getStringValueColumnData;
 
@@ -584,6 +586,11 @@ public class IRSLiteDashboardService {
             rowDataMap.get(loc.getIdentifier()).getColumnDataMap().get(SPRAY_COVERAGE_OF_TARGETED)
                 .getValue());
       }
+      String businessStatus = (String) rowDataMap.get(loc.getIdentifier()).getColumnDataMap()
+          .get(BUSINESS_STATUS).getValue();
+      loc.getProperties().setBusinessStatus(
+          businessStatus);
+      loc.getProperties().setStatusColor(getBusinessStatusColor(businessStatus));
     }).collect(Collectors.toList());
   }
 
