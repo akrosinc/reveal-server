@@ -38,32 +38,32 @@ public class TaskFacadeController {
     this.taskFacadeService = taskFacadeService;
   }
 
-//  @Operation(summary = "Facade for Android Task Resource", description = "Sync Tasks", tags = {
-//      "Task-Facade"})
-//  @ResponseStatus(HttpStatus.OK)
-//  @PostMapping(value = "/sync", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-//  @Transactional
-//  public ResponseEntity<List<TaskFacade>> taskSync(@RequestBody TaskSyncRequest taskSyncRequest) {
-//
-//    List<UUID> jurisdictionIdentifiers = taskSyncRequest.getGroup();
-//    boolean returnCount = taskSyncRequest.isReturnCount();
-//    Long serverVersion = taskSyncRequest.getServerVersion();
-//    if (serverVersion == null) {
-//      serverVersion = 0L;
-//    }
-//
-//    List<TaskFacade> taskFacades = taskFacadeService.syncTasks(taskSyncRequest.getPlan(),
-//        jurisdictionIdentifiers, serverVersion, UserUtils.getCurrentPrincipleName());
-//
-//    if (returnCount) {
-//      HttpHeaders headers = new HttpHeaders();
-//      headers.add(TOTAL_RECORDS, String.valueOf(taskFacades.size()));
-//      return ResponseEntity.ok().headers(headers).body(taskFacades);
-//    } else {
-//      return ResponseEntity.ok().body(taskFacades);
-//    }
-//
-//  }
+  @Operation(summary = "Facade for Android Task Resource", description = "Sync Tasks", tags = {
+      "Task-Facade"})
+  @ResponseStatus(HttpStatus.OK)
+  @PostMapping(value = "/sync", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  @Transactional
+  public ResponseEntity<List<TaskFacade>> taskSync(@RequestBody TaskSyncRequest taskSyncRequest) {
+
+    List<UUID> jurisdictionIdentifiers = taskSyncRequest.getGroup();
+    boolean returnCount = taskSyncRequest.isReturnCount();
+    Long serverVersion = taskSyncRequest.getServerVersion();
+    if (serverVersion == null) {
+      serverVersion = 0L;
+    }
+
+    List<TaskFacade> taskFacades = taskFacadeService.syncTasks(taskSyncRequest.getPlan(),
+        jurisdictionIdentifiers, serverVersion, UserUtils.getCurrentPrincipleName());
+
+    if (returnCount) {
+      HttpHeaders headers = new HttpHeaders();
+      headers.add(TOTAL_RECORDS, String.valueOf(taskFacades.size()));
+      return ResponseEntity.ok().headers(headers).body(taskFacades);
+    } else {
+      return ResponseEntity.ok().body(taskFacades);
+    }
+
+  }
 
   @Operation(summary = "Facade for Android Task Resource", description = "Sync Tasks", tags = {
       "Task-Facade"})

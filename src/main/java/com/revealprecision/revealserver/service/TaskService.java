@@ -142,6 +142,10 @@ public class TaskService {
     return taskRepository.findAll(TaskSpec.getTaskSpecification(taskSearchCriteria), pageable);
   }
 
+//  public List<Task> getTaskFacadesByPlansAndLocations(List<UUID> planIdentifiers, List<UUID> location){
+//    return taskRepository.
+//  }
+
   public Long countTasksBySearchCriteria(TaskSearchCriteria taskSearchCriteria) {
     return taskRepository.count(TaskSpec.getTaskSpecification(taskSearchCriteria));
   }
@@ -555,6 +559,12 @@ public class TaskService {
 
   public Task saveTaskAndBusinessState(Task task, String ownerId) throws IOException {
 
+    log.trace("task: {} entity: {}", task.getIdentifier(),
+        task.getBaseEntityIdentifier());
+    TaskEvent taskEvent = TaskEventFactory.getTaskEventFromTask(task);
+    taskEvent.setOwnerId(ownerId);
+    task.setTaskFacade(taskEvent);
+
     Task savedTask = taskRepository.save(task);
 
     if (savedTask.getLookupTaskStatus().getCode().equals(TASK_STATUS_CANCELLED)) {
@@ -563,12 +573,6 @@ public class TaskService {
       businessStatusService.setBusinessStatus(savedTask,
           businessStatusProperties.getDefaultLocationBusinessStatus());
     }
-
-    log.trace("task: {} entity: {}", savedTask.getIdentifier(),
-        savedTask.getBaseEntityIdentifier());
-    TaskEvent taskEvent = TaskEventFactory.getTaskEventFromTask(savedTask);
-    taskEvent.setOwnerId(ownerId);
-    kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.TASK), taskEvent);
 
     return savedTask;
   }

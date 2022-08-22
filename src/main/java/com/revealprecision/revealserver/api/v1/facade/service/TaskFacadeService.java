@@ -2,6 +2,7 @@ package com.revealprecision.revealserver.api.v1.facade.service;
 
 import com.revealprecision.revealserver.api.v1.dto.request.LocationRequest;
 import com.revealprecision.revealserver.api.v1.facade.models.TaskDto;
+import com.revealprecision.revealserver.api.v1.facade.models.TaskFacade;
 import com.revealprecision.revealserver.api.v1.facade.models.TaskUpdateFacade;
 import com.revealprecision.revealserver.api.v1.facade.util.DateTimeFormatter;
 import com.revealprecision.revealserver.constants.KafkaConstants;
@@ -39,6 +40,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -74,16 +76,18 @@ public class TaskFacadeService {
   private final Environment env;
 
 
-//  public List<TaskFacade> syncTasks(List<String> planIdentifiers,
-//      List<UUID> jurisdictionIdentifiers, Long serverVersion, String requester) {
-//
-//    List<Plan> plans = planIdentifiers.stream().map(UUID::fromString)
-//        .map(planService::findPlanByIdentifier).collect(Collectors.toList());
-//
-//    Map<UUID, List<Location>> planTargetsMap = plans.stream().map(
-//            plan -> getUuidListSimpleEntry(jurisdictionIdentifiers, plan))
-//        .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
-//
+  public List<TaskFacade> syncTasks(List<String> planIdentifiers,
+      List<UUID> jurisdictionIdentifiers, Long serverVersion, String requester) {
+
+    List<Plan> plans = planIdentifiers.stream().map(UUID::fromString)
+        .map(planService::findPlanByIdentifier).collect(Collectors.toList());
+
+    Map<UUID, List<Location>> planTargetsMap = plans.stream().map(
+            plan -> getUuidListSimpleEntry(jurisdictionIdentifiers, plan))
+        .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+
+
+
 //    KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
 //    ReadOnlyKeyValueStore<String, TaskEvent> taskPlanParent = kafkaStreams.store(
 //        StoreQueryParameters.fromNameAndType(
@@ -97,21 +101,22 @@ public class TaskFacadeService {
 //    ReadOnlyKeyValueStore<String, TaskEvent> taskStore = kafkaStreams.store(
 //        StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap().get(KafkaConstants.task),
 //            QueryableStoreTypes.keyValueStore()));
-//
-//    log.debug("Before task sync");
-//
+
+    log.debug("Before task sync");
+
 //    return plans.stream().flatMap(plan -> {
 //      if (plan.getPlanTargetType().getGeographicLevel().getName()
 //          .equals(LocationConstants.STRUCTURE)) {
-//        return getTaskFacadeStream(serverVersion, requester, planTargetsMap, taskPlanParent,
-//            taskParent,
-//            plan);
+////        return getTaskFacadeStream(serverVersion, requester, planTargetsMap, taskPlanParent,
+////            taskParent,
+////            plan);
 //      } else {
-//        return getTaskFacadeStream(serverVersion, requester, planTargetsMap, taskStore, plan);
+////        return getTaskFacadeStream(serverVersion, requester, planTargetsMap, taskStore, plan);
 //      }
 //    }).distinct().collect(Collectors.toList());
-//  }
-//
+    return null;
+  }
+
 //  private Stream<TaskFacade> getTaskFacadeStream(Long serverVersion, String requester,
 //      Map<UUID, List<Location>> planTargetsMap, ReadOnlyKeyValueStore<String, TaskEvent> taskStore,
 //      Plan plan) {
@@ -125,7 +130,7 @@ public class TaskFacadeService {
 //            , taskEvent))
 //        .collect(Collectors.toList()).stream();
 //  }
-//
+
 //  private Stream<TaskFacade> getTaskFacadeStream(Long serverVersion, String requester,
 //      Map<UUID, List<Location>> planTargetsMap,
 //      ReadOnlyKeyValueStore<String, TaskEvent> taskPlanParent,
