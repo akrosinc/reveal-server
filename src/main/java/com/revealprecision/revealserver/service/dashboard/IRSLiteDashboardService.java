@@ -1,7 +1,6 @@
 package com.revealprecision.revealserver.service.dashboard;
 
 
-import static com.revealprecision.revealserver.constants.FormConstants.BUSINESS_STATUS;
 import static com.revealprecision.revealserver.messaging.utils.DataStoreUtils.getQueryableStoreByWaiting;
 import static com.revealprecision.revealserver.util.DashboardUtils.getBusinessStatusColor;
 import static com.revealprecision.revealserver.util.DashboardUtils.getGeoNameDirectlyAboveStructure;
