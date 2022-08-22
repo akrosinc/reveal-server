@@ -137,10 +137,11 @@ public class Task extends AbstractAuditableEntity {
   @Column(columnDefinition = "jsonb")
   private TaskEvent taskFacade;
 
-  public Task(UUID identifier, UUID planIdentifier, long serverVersion, Object taskFacade) {
+  public Task(UUID identifier, UUID planIdentifier, long serverVersion, Object taskFacade, UUID parentLocation) {
     this.identifier = identifier;
     this.plan = Plan.builder().identifier(planIdentifier).build();
     this.serverVersion = serverVersion;
     this.taskFacade = (TaskEvent) taskFacade;
+    this.taskFacade.setParentLocation(parentLocation);
   }
 }
