@@ -587,11 +587,15 @@ public class IRSDashboardService {
             rowDataMap.get(loc.getIdentifier()).getColumnDataMap().get(SPRAY_COVERAGE_OF_TARGETED)
                 .getValue());
       }
-      String businessStatus = (String) rowDataMap.get(loc.getIdentifier()).getColumnDataMap()
-          .get(BUSINESS_STATUS).getValue();
-      loc.getProperties().setBusinessStatus(
-          businessStatus);
-      loc.getProperties().setStatusColor(getBusinessStatusColor(businessStatus));
+      if (rowDataMap.get(loc.getIdentifier()).getColumnDataMap()
+          .get(STRUCTURE_STATUS) != null) {
+        String businessStatus = (String) rowDataMap.get(loc.getIdentifier()).getColumnDataMap()
+            .get(STRUCTURE_STATUS).getValue();
+        loc.getProperties().setBusinessStatus(
+            businessStatus);
+        loc.getProperties().setStatusColor(getBusinessStatusColor(businessStatus));
+      }
+
     }).collect(Collectors.toList());
   }
 }

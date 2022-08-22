@@ -29,6 +29,8 @@ public class DashboardUtils {
 
   public static String getBusinessStatusColor(String businessStatus) {
     switch (businessStatus) {
+      case BusinessStatus.NOT_VISITED:
+        return Colors.yellow;
       case BusinessStatus.INELIGIBLE:
       case BusinessStatus.FAMILY_NO_TASK_REGISTERED:
         return Colors.grey;

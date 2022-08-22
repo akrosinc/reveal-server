@@ -70,6 +70,7 @@ public class IRSLiteDashboardService {
   private static final String STRUCTURES_FOUND = "Structures Found";
   private static final String STRUCTURES_SPRAYED = "Structures Sprayed";
   private static final String SPRAY_AREA_VISITED = "Spray Area Visited";
+  private static final String STRUCTURE_STATUS = "Structure Status";
 
   ReadOnlyKeyValueStore<String, Long> countOfAssignedStructures;
   ReadOnlyKeyValueStore<String, Long> structureCounts;
@@ -586,11 +587,14 @@ public class IRSLiteDashboardService {
             rowDataMap.get(loc.getIdentifier()).getColumnDataMap().get(SPRAY_COVERAGE_OF_TARGETED)
                 .getValue());
       }
-      String businessStatus = (String) rowDataMap.get(loc.getIdentifier()).getColumnDataMap()
-          .get(BUSINESS_STATUS).getValue();
-      loc.getProperties().setBusinessStatus(
-          businessStatus);
-      loc.getProperties().setStatusColor(getBusinessStatusColor(businessStatus));
+      if (rowDataMap.get(loc.getIdentifier()).getColumnDataMap()
+          .get(STRUCTURE_STATUS) != null) {
+        String businessStatus = (String) rowDataMap.get(loc.getIdentifier()).getColumnDataMap()
+            .get(STRUCTURE_STATUS).getValue();
+        loc.getProperties().setBusinessStatus(
+            businessStatus);
+        loc.getProperties().setStatusColor(getBusinessStatusColor(businessStatus));
+      }
     }).collect(Collectors.toList());
   }
 

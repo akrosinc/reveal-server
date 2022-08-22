@@ -109,5 +109,6 @@ public interface FormConstants {
     String orange = "#ED8231";
 
     String green = "#6CBF0F";
+    String yellow = "#FFCA16";
   }
 }
