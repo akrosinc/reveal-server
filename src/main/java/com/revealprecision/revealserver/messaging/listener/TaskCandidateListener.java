@@ -1,6 +1,5 @@
 package com.revealprecision.revealserver.messaging.listener;
 
-import com.revealprecision.revealserver.messaging.message.TaskEvent;
 import com.revealprecision.revealserver.messaging.message.TaskProcessEvent;
 import com.revealprecision.revealserver.persistence.domain.Task;
 import com.revealprecision.revealserver.service.TaskService;
