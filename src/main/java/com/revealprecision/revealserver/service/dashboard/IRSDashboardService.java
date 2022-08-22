@@ -499,7 +499,7 @@ public class IRSDashboardService {
   private ColumnData getTotalStructuresFoundCount(Report report) {
     ColumnData columnData = new ColumnData();
     if (report != null && report.getReportIndicators().getFoundStructures() != null) {
-      columnData.setValue(Double.valueOf(report.getReportIndicators().getSprayedStructures()));
+      columnData.setValue(Double.valueOf(report.getReportIndicators().getFoundStructures()));
     } else {
       columnData.setValue(0d);
     }
