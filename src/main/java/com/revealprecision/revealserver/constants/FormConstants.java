@@ -18,7 +18,6 @@ public interface FormConstants {
   String SPRAY_FORM = "Spray";
   String SPRAY_FORM_SPRAY_OPERATOR_FIELD = "sprayop_code";
   String SPRAY_FORM_PROVIDER = "providerId";
-  String SPRAY_FORM_BUSINESS_STATUS_FIELD = "business_status";
   String SPRAY_FORM_SACHET_COUNT_FIELD = "serial_numbers_count";
   String IRS_FOUND = "FOUND";
   String IRS_SPRAYED = "SPRAYED";
@@ -26,7 +25,6 @@ public interface FormConstants {
   String IRS_ELIGIBLE = "ELIGIBLE";
   String IRS_SACHET_COUNT = "SACHET_COUNT";
   String IRS_LITE_VERIFICATION_FORM = "irs_lite_verification";
-  String IRS_LITE_VERIFICATION_FORM_BUSINESS_STATUS_FIELD = "business_status";
   String IRS_LITE_FOUND = "FOUND";
   String IRS_LITE_SPRAYED = "SPRAYED";
   String IRS_LITE_NOT_SPRAYED = "NOT SPRAYED";
