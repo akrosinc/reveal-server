@@ -22,6 +22,7 @@ public class ElasticConfig {
     ClientConfiguration clientConfiguration
         = ClientConfiguration.builder()
         .connectedTo(bootstrapAddress)
+        .withConnectTimeout(10000)
         .build();
 
     return RestClients.create(clientConfiguration).rest();

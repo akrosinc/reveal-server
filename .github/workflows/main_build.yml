@@ -5,7 +5,7 @@ name: Reveal Server test, build and deploy
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, kafka-optimise ]
   pull_request:
     branches: [none]
 
@@ -144,9 +144,15 @@ jobs:
         with:
           name: reveal-server.jar
 
+      - name: print working dir contents
+        run: ls -lah ${{ github.workspace }}
+
+      - name: copy artefact to context
+        run: mv reveal*.jar docker-build-openjdk/reveal-server.jar
+
       - name: Build and push
         uses: docker/build-push-action@v2
         with:
-          context: .
+          context: docker-build-openjdk/
           push: true
           tags: akrosinc/reveal-server:v3.0.${{ github.run_number }}
