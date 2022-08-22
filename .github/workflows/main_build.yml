@@ -5,7 +5,7 @@ name: Reveal Server test, build and deploy
 
 on:
   push:
-    branches: [ main, kafka-optimise ]
+    branches: [ main, split-reveal-streams ]
   pull_request:
     branches: [none]
 
