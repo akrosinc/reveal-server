@@ -56,4 +56,6 @@ public interface FormConstants {
   String LOCATION_PARENT = "locationParent";
   String BOTTLES_EMPTY = "bottles_empty";
 
+  String BUSINESS_STATUS = "business_status";
+
 }
