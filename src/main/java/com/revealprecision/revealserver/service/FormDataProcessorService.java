@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.service;
 
+import static com.revealprecision.revealserver.constants.FormConstants.BUSINESS_STATUS;
 import static com.revealprecision.revealserver.constants.FormConstants.CDD_DRUG_ALLOCATION_CDD_NAME_FIELD;
 import static com.revealprecision.revealserver.constants.FormConstants.CDD_DRUG_ALLOCATION_DATE_FIELD;
 import static com.revealprecision.revealserver.constants.FormConstants.CDD_DRUG_ALLOCATION_FORM;
@@ -16,13 +17,11 @@ import static com.revealprecision.revealserver.constants.FormConstants.IRS_LITE_
 import static com.revealprecision.revealserver.constants.FormConstants.IRS_LITE_NOT_SPRAYED;
 import static com.revealprecision.revealserver.constants.FormConstants.IRS_LITE_SPRAYED;
 import static com.revealprecision.revealserver.constants.FormConstants.IRS_LITE_VERIFICATION_FORM;
-import static com.revealprecision.revealserver.constants.FormConstants.IRS_LITE_VERIFICATION_FORM_BUSINESS_STATUS_FIELD;
 import static com.revealprecision.revealserver.constants.FormConstants.IRS_LITE_VERIFICATION_FORM_SUPERVISOR;
 import static com.revealprecision.revealserver.constants.FormConstants.IRS_NOT_SPRAYED;
 import static com.revealprecision.revealserver.constants.FormConstants.IRS_SACHET_COUNT;
 import static com.revealprecision.revealserver.constants.FormConstants.IRS_SPRAYED;
 import static com.revealprecision.revealserver.constants.FormConstants.SPRAY_FORM;
-import static com.revealprecision.revealserver.constants.FormConstants.SPRAY_FORM_BUSINESS_STATUS_FIELD;
 import static com.revealprecision.revealserver.constants.FormConstants.SPRAY_FORM_SACHET_COUNT_FIELD;
 import static com.revealprecision.revealserver.constants.FormConstants.SPRAY_FORM_SPRAY_OPERATOR_FIELD;
 import static com.revealprecision.revealserver.constants.FormConstants.TABLET_ACCOUNTABILITY_CDD_NAME_FIELD;
@@ -193,7 +192,7 @@ public class FormDataProcessorService {
         if (savedEvent.getEventType().equals(SPRAY_FORM)) {
           fieldWorker = getFormValue(obsJavaList, SPRAY_FORM_SPRAY_OPERATOR_FIELD);
 
-          String businessStatus = getFormValue(obsJavaList, SPRAY_FORM_BUSINESS_STATUS_FIELD);
+          String businessStatus = getFormValue(obsJavaList, BUSINESS_STATUS);
 
           if (businessStatus.equals("Complete")) {
             sprayed = true;
@@ -232,7 +231,7 @@ public class FormDataProcessorService {
           fieldWorker = getFormValue(obsJavaList, IRS_LITE_VERIFICATION_FORM_SUPERVISOR);
 
           String businessStatus = getFormValue(obsJavaList,
-              IRS_LITE_VERIFICATION_FORM_BUSINESS_STATUS_FIELD);
+              BUSINESS_STATUS);
 
           if (businessStatus.equals("Sprayed")) {
             sprayed = true;

@@ -26,7 +26,6 @@ public class LocationJobCompletionListener implements JobExecutionListener {
   private final LocationBulkRepository locationBulkRepository;
   private final StorageService storageService;
   private final LocationRelationshipService locationRelationshipService;
-  private final ElasticsearchOperations elasticsearchOperations;
 
 
   @Override
@@ -56,7 +55,7 @@ public class LocationJobCompletionListener implements JobExecutionListener {
       }
       index++;
     }
-    if(addedLocations.isEmpty()) {
+    if (addedLocations.isEmpty()) {
       locationBulk.setStatus(BulkStatusEnum.COMPLETE);
       locationBulkRepository.save(locationBulk);
     }
