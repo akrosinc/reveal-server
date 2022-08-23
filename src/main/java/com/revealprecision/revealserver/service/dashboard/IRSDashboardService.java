@@ -4,6 +4,7 @@ package com.revealprecision.revealserver.service.dashboard;
 import static com.revealprecision.revealserver.messaging.utils.DataStoreUtils.getQueryableStoreByWaiting;
 import static com.revealprecision.revealserver.util.DashboardUtils.getBusinessStatusColor;
 import static com.revealprecision.revealserver.util.DashboardUtils.getGeoNameDirectlyAboveStructure;
+import static com.revealprecision.revealserver.util.DashboardUtils.getLocationBusinessState;
 import static com.revealprecision.revealserver.util.DashboardUtils.getStringValueColumnData;
 
 import com.revealprecision.revealserver.api.v1.dto.factory.LocationResponseFactory;
@@ -323,18 +324,6 @@ public class IRSDashboardService {
       columnData.setValue(0d);
     }
     return columnData;
-  }
-
-
-  private ColumnData getLocationBusinessState(Report report) {
-
-    ColumnData column = getStringValueColumnData();
-    if (report != null && report.getReportIndicators().getBusinessStatus() != null) {
-      column.setValue(report.getReportIndicators().getBusinessStatus());
-    } else {
-      column.setValue(NOT_VISITED);
-    }
-    return column;
   }
 
   private ColumnData getTotalStructuresSprayed(Report report) {

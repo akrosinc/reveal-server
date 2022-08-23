@@ -1,6 +1,5 @@
 package com.revealprecision.revealserver.util;
 
-import static com.revealprecision.revealserver.constants.FormConstants.BusinessStatus.NOT_DISPENSED;
 import static com.revealprecision.revealserver.constants.FormConstants.BusinessStatus.PARTIALLY_SPRAYED;
 import static com.revealprecision.revealserver.constants.FormConstants.BusinessStatus.TASKS_INCOMPLETE;
 
@@ -9,6 +8,7 @@ import com.revealprecision.revealserver.constants.FormConstants.BusinessStatus;
 import com.revealprecision.revealserver.constants.FormConstants.Colors;
 import com.revealprecision.revealserver.constants.LocationConstants;
 import com.revealprecision.revealserver.persistence.domain.Plan;
+import com.revealprecision.revealserver.persistence.domain.Report;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -27,6 +27,16 @@ public class DashboardUtils {
     return ColumnData.builder().dataType("string").build();
   }
 
+  public static ColumnData getLocationBusinessState(Report report) {
+    ColumnData column = getStringValueColumnData();
+    if (report != null && report.getReportIndicators().getBusinessStatus() != null) {
+      column.setValue(report.getReportIndicators().getBusinessStatus());
+    } else {
+      column.setValue(BusinessStatus.NOT_VISITED);
+    }
+    return column;
+  }
+
   public static String getBusinessStatusColor(String businessStatus) {
     switch (businessStatus) {
       case BusinessStatus.NOT_VISITED:
@@ -35,7 +45,7 @@ public class DashboardUtils {
       case BusinessStatus.FAMILY_NO_TASK_REGISTERED:
         return Colors.grey;
       case BusinessStatus.NOT_SPRAYED:
-      case NOT_DISPENSED:
+      case BusinessStatus.NOT_DISPENSED:
       case BusinessStatus.IN_PROGRESS:
       case BusinessStatus.NONE_RECEIVED:
         return Colors.red;
@@ -55,7 +65,7 @@ public class DashboardUtils {
       case BusinessStatus.PARTIALLY_RECEIVED:
         return Colors.orange;
       default:
-        log.debug(String.format("business status : %s is not defined :", businessStatus));
+        log.debug(String.format("business status ( %s ) is not defined", businessStatus));
         return null;
     }
   }

@@ -4,6 +4,7 @@ package com.revealprecision.revealserver.service.dashboard;
 import static com.revealprecision.revealserver.messaging.utils.DataStoreUtils.getQueryableStoreByWaiting;
 import static com.revealprecision.revealserver.util.DashboardUtils.getBusinessStatusColor;
 import static com.revealprecision.revealserver.util.DashboardUtils.getGeoNameDirectlyAboveStructure;
+import static com.revealprecision.revealserver.util.DashboardUtils.getLocationBusinessState;
 import static com.revealprecision.revealserver.util.DashboardUtils.getStringValueColumnData;
 
 import com.revealprecision.revealserver.api.v1.dto.factory.LocationResponseFactory;
@@ -69,7 +70,7 @@ public class IRSLiteDashboardService {
   private static final String STRUCTURES_FOUND = "Structures Found";
   private static final String STRUCTURES_SPRAYED = "Structures Sprayed";
   private static final String SPRAY_AREA_VISITED = "Spray Area Visited";
-  private static final String STRUCTURE_STATUS = "Structure Status";
+  private static final String LOCATION_STATUS = "Location Status";
 
   ReadOnlyKeyValueStore<String, Long> countOfAssignedStructures;
   ReadOnlyKeyValueStore<String, Long> structureCounts;
@@ -206,6 +207,7 @@ public class IRSLiteDashboardService {
     columns.put(STRUCTURES_ON_THE_GROUND, getTotalStructuresCounts(plan, childLocation));
     columns.put(MOBILIZED, getMobilized(report));
     columns.put(DATE_MOBILIZED, getMobilizedDate(report));
+    columns.put(LOCATION_STATUS, getLocationBusinessState(report));
     RowData rowData = new RowData();
     rowData.setLocationIdentifier(childLocation.getIdentifier());
     rowData.setColumnDataMap(columns);
@@ -587,9 +589,9 @@ public class IRSLiteDashboardService {
                 .getValue());
       }
       if (rowDataMap.get(loc.getIdentifier()).getColumnDataMap()
-          .get(STRUCTURE_STATUS) != null) {
+          .get(LOCATION_STATUS) != null) {
         String businessStatus = (String) rowDataMap.get(loc.getIdentifier()).getColumnDataMap()
-            .get(STRUCTURE_STATUS).getValue();
+            .get(LOCATION_STATUS).getValue();
         loc.getProperties().setBusinessStatus(
             businessStatus);
         loc.getProperties().setStatusColor(getBusinessStatusColor(businessStatus));
