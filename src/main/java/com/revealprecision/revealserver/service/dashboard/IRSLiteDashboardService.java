@@ -177,8 +177,8 @@ public class IRSLiteDashboardService {
     ColumnData columnData = new ColumnData();
 
     if (report != null && report.getReportIndicators().getUniqueSupervisionDates() != null) {
-      columnData.setValue(
-          report.getReportIndicators().getUniqueSupervisionDates().stream().count());
+      columnData.setValue(Double.valueOf(
+          report.getReportIndicators().getUniqueSupervisionDates().stream().count()));
     } else {
       columnData.setValue(0d);
     }
