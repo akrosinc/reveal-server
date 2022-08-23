@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.messaging.listener;
 
 import static com.revealprecision.revealserver.constants.FormConstants.BOTTLES_EMPTY;
+import static com.revealprecision.revealserver.constants.FormConstants.BUSINESS_STATUS;
 import static com.revealprecision.revealserver.constants.FormConstants.COLLECTION_DATE;
 import static com.revealprecision.revealserver.constants.FormConstants.DAILY_SUMMARY;
 import static com.revealprecision.revealserver.constants.FormConstants.ELIGIBILITY;
@@ -31,12 +32,10 @@ import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.Report;
 import com.revealprecision.revealserver.persistence.domain.ReportIndicators;
-import com.revealprecision.revealserver.persistence.domain.Task;
 import com.revealprecision.revealserver.persistence.repository.ReportRepository;
 import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.service.LocationService;
 import com.revealprecision.revealserver.service.PlanService;
-import com.revealprecision.revealserver.service.TaskService;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -52,11 +51,9 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class RawFormSubmissionListener extends Listener {
 
-
   private final ReportRepository reportRepository;
   private final PlanService planService;
   private final LocationService locationService;
-  private final TaskService taskService;
 
   private final KafkaTemplate<String, FormCaptureEvent> formCaptureEventKafkaTemplate;
 
@@ -65,10 +62,6 @@ public class RawFormSubmissionListener extends Listener {
   @KafkaListener(topics = "#{kafkaConfigProperties.topicMap.get('FORM_SUBMISSIONS')}", groupId = "reveal_server_group")
   public void etl(FormCaptureEvent formCaptureEvent) {
     Plan plan = planService.findPlanByIdentifier(formCaptureEvent.getPlanId());
-    Task eventTask = null;
-    if (formCaptureEvent.getTaskId() != null) {
-      eventTask = taskService.getTaskByIdentifier(formCaptureEvent.getTaskId());
-    }
     Location location;
     if (formCaptureEvent.getLocationId() != null) {
       location = locationService.findByIdentifier(formCaptureEvent.getLocationId());
@@ -96,9 +89,7 @@ public class RawFormSubmissionListener extends Listener {
     } else if (rawFormEvent.getEventType().equals(REGISTER_STRUCTURE)) {
       extractStructureRegistrationIndicators(reportIndicators);
     }
-    if (eventTask != null) {
-      reportIndicators.setBusinessStatus(eventTask.getBusinessStatus());
-    }
+    reportIndicators.setBusinessStatus(getObservation(observations, BUSINESS_STATUS));
     reportRepository.save(reportEntry);
     Location parentLocation = locationService.getLocationParent(location,
         plan.getLocationHierarchy());
@@ -172,7 +163,6 @@ public class RawFormSubmissionListener extends Listener {
       reportIndicators.setFoundStructures((reportIndicators.getFoundStructures() == null ? 0
           : reportIndicators.getFoundStructures()) + 1);
     }
-
   }
 
   private Report getOrInstantiateReportEntry(Plan plan, Location location) {

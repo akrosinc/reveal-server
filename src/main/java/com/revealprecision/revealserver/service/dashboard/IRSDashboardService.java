@@ -2,7 +2,9 @@ package com.revealprecision.revealserver.service.dashboard;
 
 
 import static com.revealprecision.revealserver.messaging.utils.DataStoreUtils.getQueryableStoreByWaiting;
+import static com.revealprecision.revealserver.util.DashboardUtils.getBusinessStatusColor;
 import static com.revealprecision.revealserver.util.DashboardUtils.getGeoNameDirectlyAboveStructure;
+import static com.revealprecision.revealserver.util.DashboardUtils.getLocationBusinessState;
 import static com.revealprecision.revealserver.util.DashboardUtils.getStringValueColumnData;
 
 import com.revealprecision.revealserver.api.v1.dto.factory.LocationResponseFactory;
@@ -324,18 +326,6 @@ public class IRSDashboardService {
     return columnData;
   }
 
-
-  private ColumnData getLocationBusinessState(Report report) {
-
-    ColumnData column = getStringValueColumnData();
-    if (report != null && report.getReportIndicators().getBusinessStatus() != null) {
-      column.setValue(report.getReportIndicators().getBusinessStatus());
-    } else {
-      column.setValue(NOT_VISITED);
-    }
-    return column;
-  }
-
   private ColumnData getTotalStructuresSprayed(Report report) {
     ColumnData columnData = new ColumnData();
     columnData.setValue(0d);
@@ -499,7 +489,7 @@ public class IRSDashboardService {
   private ColumnData getTotalStructuresFoundCount(Report report) {
     ColumnData columnData = new ColumnData();
     if (report != null && report.getReportIndicators().getFoundStructures() != null) {
-      columnData.setValue(Double.valueOf(report.getReportIndicators().getSprayedStructures()));
+      columnData.setValue(Double.valueOf(report.getReportIndicators().getFoundStructures()));
     } else {
       columnData.setValue(0d);
     }
@@ -585,6 +575,15 @@ public class IRSDashboardService {
             rowDataMap.get(loc.getIdentifier()).getColumnDataMap().get(SPRAY_COVERAGE_OF_TARGETED)
                 .getValue());
       }
+      if (rowDataMap.get(loc.getIdentifier()).getColumnDataMap()
+          .get(STRUCTURE_STATUS) != null) {
+        String businessStatus = (String) rowDataMap.get(loc.getIdentifier()).getColumnDataMap()
+            .get(STRUCTURE_STATUS).getValue();
+        loc.getProperties().setBusinessStatus(
+            businessStatus);
+        loc.getProperties().setStatusColor(getBusinessStatusColor(businessStatus));
+      }
+
     }).collect(Collectors.toList());
   }
 }

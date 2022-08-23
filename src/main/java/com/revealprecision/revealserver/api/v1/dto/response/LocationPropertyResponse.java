@@ -37,4 +37,6 @@ public class LocationPropertyResponse {
   private Map<String, ColumnData> columnDataMap;
   private List<PersonMainData> persons;
   private List<EntityMetadataResponse> metadata;
+  private String businessStatus;
+  private String statusColor;
 }
