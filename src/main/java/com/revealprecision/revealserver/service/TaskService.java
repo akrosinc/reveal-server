@@ -34,6 +34,7 @@ import com.revealprecision.revealserver.persistence.domain.ProcessTracker;
 import com.revealprecision.revealserver.persistence.domain.Task;
 import com.revealprecision.revealserver.persistence.domain.Task.Fields;
 import com.revealprecision.revealserver.persistence.domain.TaskProcessStage;
+import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.persistence.domain.actioncondition.Query;
 import com.revealprecision.revealserver.persistence.projection.TaskProjection;
 import com.revealprecision.revealserver.persistence.repository.LookupTaskStatusRepository;
@@ -57,9 +58,8 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import javax.annotation.PostConstruct;
 import javax.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
@@ -69,6 +69,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class TaskService {
 
   public static final String TASK_STATUS_READY = "READY";
@@ -80,6 +81,7 @@ public class TaskService {
   private final PersonService personService;
   private final GoalService goalService;
   private final ConditionService conditionService;
+  private final UserService userService;
 
   private final LocationService locationService;
   private final LookupTaskStatusRepository lookupTaskStatusRepository;
@@ -95,48 +97,50 @@ public class TaskService {
   private LookupTaskStatus cancelledLookupTaskStatus;
   private LookupTaskStatus readyLookupTaskStatus;
 
-  @Autowired
-  @Lazy
-  public TaskService(TaskRepository taskRepository, PlanService planService,
-      ActionService actionService, LocationService locationService,
-      LookupTaskStatusRepository lookupTaskStatusRepository, PersonService personService,
-      EntityFilterService entityFilterService, GoalService goalService,
-      ConditionService conditionService,
-      BusinessStatusProperties businessStatusProperties,
-      BusinessStatusService businessStatusService,
-      KafkaTemplate<String, Message> kafkaTemplate,
-      KafkaProperties kafkaProperties,
-      TaskProcessStageRepository taskProcessStageRepository,
-      ProcessTrackerService processTrackerService) {
-    this.taskRepository = taskRepository;
-    this.planService = planService;
-    this.actionService = actionService;
-    this.locationService = locationService;
-    this.lookupTaskStatusRepository = lookupTaskStatusRepository;
-    this.personService = personService;
-    this.entityFilterService = entityFilterService;
-    this.goalService = goalService;
-    this.conditionService = conditionService;
-    this.businessStatusProperties = businessStatusProperties;
-    this.businessStatusService = businessStatusService;
-    this.kafkaTemplate = kafkaTemplate;
-    this.kafkaProperties = kafkaProperties;
-    this.taskProcessStageRepository = taskProcessStageRepository;
-    this.processTrackerService = processTrackerService;
-  }
+//  @Autowired
+//  @Lazy
+//  public TaskService(TaskRepository taskRepository, PlanService planService,
+//      ActionService actionService, LocationService locationService,
+//      LookupTaskStatusRepository lookupTaskStatusRepository, PersonService personService,
+//      EntityFilterService entityFilterService, GoalService goalService,
+//      ConditionService conditionService,
+//      BusinessStatusProperties businessStatusProperties,
+//      BusinessStatusService businessStatusService,
+//      KafkaTemplate<String, Message> kafkaTemplate,
+//      KafkaProperties kafkaProperties,
+//      TaskProcessStageRepository taskProcessStageRepository,
+//      ProcessTrackerService processTrackerService) {
+//    this.taskRepository = taskRepository;
+//    this.planService = planService;
+//    this.actionService = actionService;
+//    this.locationService = locationService;
+//    this.lookupTaskStatusRepository = lookupTaskStatusRepository;
+//    this.personService = personService;
+//    this.entityFilterService = entityFilterService;
+//    this.goalService = goalService;
+//    this.conditionService = conditionService;
+//    this.businessStatusProperties = businessStatusProperties;
+//    this.businessStatusService = businessStatusService;
+//    this.kafkaTemplate = kafkaTemplate;
+//    this.kafkaProperties = kafkaProperties;
+//    this.taskProcessStageRepository = taskProcessStageRepository;
+//    this.processTrackerService = processTrackerService;
+//  }
 
   public Page<Task> searchTasks(TaskSearchCriteria taskSearchCriteria, Pageable pageable) {
     return taskRepository.findAll(TaskSpec.getTaskSpecification(taskSearchCriteria), pageable);
   }
 
   public List<Task> getNonStructureTaskFacadesByLocationServerVersionAndPlan(UUID planIdentifier,
-      List<UUID> locationIdentifiers, Long serverVersion){
-    return taskRepository.getNonStructureTaskFacadesByLocationServerVersionAndPlan(planIdentifier,locationIdentifiers,serverVersion);
+      List<UUID> locationIdentifiers, Long serverVersion) {
+    return taskRepository.getNonStructureTaskFacadesByLocationServerVersionAndPlan(planIdentifier,
+        locationIdentifiers, serverVersion);
   }
 
-  public   List<Task> getStructureTaskFacadesByLocationServerVersionAndPlan(UUID planIdentifier,
-      List<UUID> locationIdentifiers, Long serverVersion){
-    return taskRepository.getStructureTaskFacadesByLocationServerVersionAndPlan(planIdentifier,locationIdentifiers,serverVersion);
+  public List<Task> getStructureTaskFacadesByLocationServerVersionAndPlan(UUID planIdentifier,
+      List<UUID> locationIdentifiers, Long serverVersion) {
+    return taskRepository.getStructureTaskFacadesByLocationServerVersionAndPlan(planIdentifier,
+        locationIdentifiers, serverVersion);
   }
 
   public Long countTasksBySearchCriteria(TaskSearchCriteria taskSearchCriteria) {
@@ -405,7 +409,11 @@ public class TaskService {
       Action action = actionService.getByIdentifier(
           taskProcessEvent.getActionEvent().getIdentifier());
 
-      String ownerId = taskProcessEvent.getOwner();
+      String ownerId = null;
+      if (taskProcessEvent.getOwner() != null) {
+        User user = userService.getByKeycloakId(UUID.fromString(taskProcessEvent.getOwner()));
+        ownerId = user.getUsername();
+      }
       taskObjs = createTaskObjectFromActionAndEntityId(action,
           uuid, plan, ownerId);
 
