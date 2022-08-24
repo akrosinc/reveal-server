@@ -91,6 +91,13 @@ public class Location extends AbstractAuditableEntity {
     this.locationBulk = locationBulk;
   }
 
+  public Location(UUID identifier, UUID externalId, String geographicLevelName, String name) {
+    this.identifier = identifier;
+    this.name = name;
+    this.externalId = externalId;
+    this.geographicLevel = GeographicLevel.builder().name(geographicLevelName).build();
+  }
+
   public Location update(LocationRequest locationRequest, GeographicLevel geographicLevel) {
     this.type = locationRequest.getType();
     this.name = locationRequest.getProperties().getName();

@@ -321,7 +321,7 @@ public class LocationRelationshipService {
 
   @Async("getAsyncExecutor")
   public void createRelationshipForImportedLocation(Location location, int index,
-      int locationListSize) throws IOException {
+      int locationListSize, LocationBulk bulk) throws IOException {
     List<LocationHierarchy> locationHierarchies = locationHierarchyRepository
         .findLocationHierarchiesByNodeOrderContaining(location.getGeographicLevel().getName());
     for (var locationHierarchy : locationHierarchies) {
@@ -428,7 +428,7 @@ public class LocationRelationshipService {
       }
     }
     if (index == locationListSize - 1) {
-      LocationBulk locationBulk = location.getLocationBulk();
+      LocationBulk locationBulk = bulk;
       locationBulk.setStatus(BulkStatusEnum.COMPLETE);
       locationBulkRepository.save(locationBulk);
     }
