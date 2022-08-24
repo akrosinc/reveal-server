@@ -3,6 +3,7 @@ package com.revealprecision.revealserver.messaging.listener;
 import static com.revealprecision.revealserver.constants.FormConstants.BOTTLES_EMPTY;
 import static com.revealprecision.revealserver.constants.FormConstants.BUSINESS_STATUS;
 import static com.revealprecision.revealserver.constants.FormConstants.COLLECTION_DATE;
+import static com.revealprecision.revealserver.constants.FormConstants.COMPOUNDHEADNAME;
 import static com.revealprecision.revealserver.constants.FormConstants.DAILY_SUMMARY;
 import static com.revealprecision.revealserver.constants.FormConstants.ELIGIBILITY;
 import static com.revealprecision.revealserver.constants.FormConstants.ELIGIBLE;
@@ -13,6 +14,7 @@ import static com.revealprecision.revealserver.constants.FormConstants.LOCATION_
 import static com.revealprecision.revealserver.constants.FormConstants.MOBILIZATION;
 import static com.revealprecision.revealserver.constants.FormConstants.MOBILIZATION_DATE;
 import static com.revealprecision.revealserver.constants.FormConstants.MOBILIZED;
+import static com.revealprecision.revealserver.constants.FormConstants.NAME_HO_H;
 import static com.revealprecision.revealserver.constants.FormConstants.NOTSPRAYED_REASON;
 import static com.revealprecision.revealserver.constants.FormConstants.REGISTER_STRUCTURE;
 import static com.revealprecision.revealserver.constants.FormConstants.ROOMS_SPRAYED;
@@ -50,6 +52,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 @Slf4j
 public class RawFormSubmissionListener extends Listener {
+
 
   private final ReportRepository reportRepository;
   private final PlanService planService;
@@ -89,6 +92,7 @@ public class RawFormSubmissionListener extends Listener {
     } else if (rawFormEvent.getEventType().equals(REGISTER_STRUCTURE)) {
       extractStructureRegistrationIndicators(reportIndicators);
     }
+
     reportIndicators.setBusinessStatus(getObservation(observations, BUSINESS_STATUS));
     reportRepository.save(reportEntry);
     Location parentLocation = locationService.getLocationParent(location,
@@ -163,6 +167,11 @@ public class RawFormSubmissionListener extends Listener {
       reportIndicators.setFoundStructures((reportIndicators.getFoundStructures() == null ? 0
           : reportIndicators.getFoundStructures()) + 1);
     }
+    String houseHoldHead = getObservation(observations, COMPOUNDHEADNAME);
+    if (StringUtils.isBlank(houseHoldHead)) {
+      houseHoldHead = getObservation(observations, NAME_HO_H);
+    }
+    reportIndicators.setHouseholdHead(houseHoldHead);
   }
 
   private Report getOrInstantiateReportEntry(Plan plan, Location location) {
