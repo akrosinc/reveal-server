@@ -141,10 +141,10 @@ public class IRSDashboardService {
         getLocationBusinessState(report));
     columns.put(NO_OF_MALES, getMales(report));
     columns.put(NO_OF_FEMALES, getFemales(report));
-    columns.put(NO_OF_ROOMS, getRoomsSprayed(report));
     columns.put(NO_OF_PREGNANT_WOMEN, getPregnantWomen(report));
-    columns.put(NOT_SPRAYED_REASON, getNotSprayedReason(report));
+    columns.put(NO_OF_ROOMS, getRoomsSprayed(report));
     columns.put(PHONE_NUMBER, getHeadPhoneNumber(report));
+    columns.put(NOT_SPRAYED_REASON, getNotSprayedReason(report));
     RowData rowData = new RowData();
     rowData.setLocationIdentifier(childLocation.getIdentifier());
     rowData.setColumnDataMap(columns);
