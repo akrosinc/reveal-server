@@ -49,7 +49,7 @@ public class LocationJobCompletionListener implements JobExecutionListener {
     for (Location location : addedLocations) {
       try {
         locationRelationshipService.createRelationshipForImportedLocation(location, index,
-            addedLocations.size());
+            addedLocations.size(), locationBulk);
       } catch (IOException e) {
         e.printStackTrace();
       }

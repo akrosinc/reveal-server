@@ -40,7 +40,7 @@ public interface LocationBulkRepository extends JpaRepository<LocationBulk, UUID
   Page<LocationBulkProjection> getSuccessfulLocationsFromBulk(@Param("identifier") UUID identifier,
       Pageable pageable);
 
-  @Query(value = "select l from Location l where l.locationBulk.identifier = :identifier")
+  @Query(value = "select new com.revealprecision.revealserver.persistence.domain.Location(l.identifier, l.externalId, l.geographicLevel.name, l.name) from Location l where l.locationBulk.identifier = :identifier")
   List<Location> getAllCreatedInBulk(@Param("identifier") UUID identifier);
 
   Integer countByStatusNot(BulkStatusEnum bulkStatusEnum);
