@@ -48,8 +48,8 @@ public class IRSDashboardService {
 
   public static final String NOT_SPRAYED_REASON = "Not Sprayed Reason";
   public static final String PHONE_NUMBER = "Phone Number";
-  public static final String NOT_VISITED = "Not Visited";
   public static final String N_A = "n/a";
+  public static final String HEAD_OF_HOUSEHOLD = "Head of Household";
   private final StreamsBuilderFactoryBean getKafkaStreams;
   private final KafkaProperties kafkaProperties;
   private final PlanLocationsService planLocationsService;
@@ -137,19 +137,28 @@ public class IRSDashboardService {
   public List<RowData> getIRSFullCoverageStructureLevelData(Plan plan, Location childLocation) {
     Map<String, ColumnData> columns = new HashMap<>();
     Report report = planReportRepository.findByPlanAndLocation(plan, childLocation).orElse(null);
+    columns.put(HEAD_OF_HOUSEHOLD, getHeadOfHousehold(report));
     columns.put(STRUCTURE_STATUS,
         getLocationBusinessState(report));
     columns.put(NO_OF_MALES, getMales(report));
     columns.put(NO_OF_FEMALES, getFemales(report));
-    columns.put(NO_OF_ROOMS, getRoomsSprayed(report));
     columns.put(NO_OF_PREGNANT_WOMEN, getPregnantWomen(report));
-    columns.put(NOT_SPRAYED_REASON, getNotSprayedReason(report));
+    columns.put(NO_OF_ROOMS, getRoomsSprayed(report));
     columns.put(PHONE_NUMBER, getHeadPhoneNumber(report));
+    columns.put(NOT_SPRAYED_REASON, getNotSprayedReason(report));
     RowData rowData = new RowData();
     rowData.setLocationIdentifier(childLocation.getIdentifier());
     rowData.setColumnDataMap(columns);
     rowData.setLocationName(childLocation.getName());
     return List.of(rowData);
+  }
+
+  private ColumnData getHeadOfHousehold(Report report) {
+    ColumnData columnData = getStringValueColumnData();
+    if (report != null && report.getReportIndicators().getHouseholdHead() != null) {
+      columnData.setValue(report.getReportIndicators().getHouseholdHead());
+    }
+    return columnData;
   }
 
 
