@@ -154,7 +154,7 @@ public class IRSLiteDashboardService {
     if (numberOfSprayDays == 0) {
       columnData.setValue(0);
     } else {
-      columnData.setValue(sprayedStructures / numberOfSprayDays);
+      columnData.setValue(Math.round(sprayedStructures / numberOfSprayDays));
     }
 
     return columnData;
