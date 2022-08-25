@@ -26,6 +26,7 @@ import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.Report;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import com.revealprecision.revealserver.persistence.repository.ReportRepository;
+import com.revealprecision.revealserver.props.DashboardProperties;
 import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.service.LocationRelationshipService;
 import com.revealprecision.revealserver.service.PlanLocationsService;
@@ -59,6 +60,8 @@ public class IRSLiteDashboardService {
   private final KafkaProperties kafkaProperties;
   private final PlanLocationsService planLocationsService;
   private final LocationRelationshipService locationRelationshipService;
+
+  private final DashboardProperties dashboardProperties;
 
   private static final String TOTAL_SPRAY_AREAS = "Total spray areas";
   private static final String TARGET_SPRAY_AREAS = "Targeted spray areas";
@@ -600,7 +603,8 @@ public class IRSLiteDashboardService {
   }
 
   public FeatureSetResponse getFeatureSetResponse(UUID parentIdentifier,
-      List<PlanLocationDetails> locationDetails, Map<UUID, RowData> rowDataMap) {
+      List<PlanLocationDetails> locationDetails,
+      Map<UUID, RowData> rowDataMap, String reportLevel) {
     FeatureSetResponse response = new FeatureSetResponse();
     response.setType("FeatureCollection");
     List<LocationResponse> locationResponses = locationDetails.stream()
@@ -608,6 +612,8 @@ public class IRSLiteDashboardService {
         .collect(Collectors.toList());
 
     locationResponses = setGeoJsonProperties(rowDataMap, locationResponses);
+    response.setDefaultDisplayColumn(
+        dashboardProperties.getIrsDefaultDisplayColumns().getOrDefault(reportLevel, null));
     response.setFeatures(locationResponses);
     response.setIdentifier(parentIdentifier);
     return response;

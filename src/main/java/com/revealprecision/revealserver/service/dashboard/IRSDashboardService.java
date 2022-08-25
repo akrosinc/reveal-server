@@ -29,7 +29,6 @@ import com.revealprecision.revealserver.props.DashboardProperties;
 import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.service.LocationRelationshipService;
 import com.revealprecision.revealserver.service.PlanLocationsService;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
