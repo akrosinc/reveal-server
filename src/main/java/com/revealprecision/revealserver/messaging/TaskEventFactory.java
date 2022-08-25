@@ -4,7 +4,6 @@ import com.revealprecision.revealserver.api.v1.dto.factory.LookupEntityTypeEvent
 import com.revealprecision.revealserver.messaging.message.ActionEvent;
 import com.revealprecision.revealserver.messaging.message.GoalEvent;
 import com.revealprecision.revealserver.messaging.message.LocationHierarchyEvent;
-import com.revealprecision.revealserver.messaging.message.LookupEntityTypeEvent;
 import com.revealprecision.revealserver.messaging.message.LookupInterventionTypeEvent;
 import com.revealprecision.revealserver.messaging.message.LookupTaskStatusEvent;
 import com.revealprecision.revealserver.messaging.message.PlanEvent;
@@ -70,6 +69,7 @@ public class TaskEventFactory {
         .lastModified(taskSaved.getLastModified())
         .identifier(taskSaved.getIdentifier())
         .priority(taskSaved.getPriority())
+        .locationGeographicLevelName(taskSaved.getLocation().getGeographicLevel().getName())
         .build();
 
     if (ActionUtils.isActionForPerson(taskSaved.getAction())){

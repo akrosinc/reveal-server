@@ -94,38 +94,10 @@ public class TaskService {
   private final ProcessTrackerService processTrackerService;
 
 
+
   private LookupTaskStatus cancelledLookupTaskStatus;
   private LookupTaskStatus readyLookupTaskStatus;
 
-//  @Autowired
-//  @Lazy
-//  public TaskService(TaskRepository taskRepository, PlanService planService,
-//      ActionService actionService, LocationService locationService,
-//      LookupTaskStatusRepository lookupTaskStatusRepository, PersonService personService,
-//      EntityFilterService entityFilterService, GoalService goalService,
-//      ConditionService conditionService,
-//      BusinessStatusProperties businessStatusProperties,
-//      BusinessStatusService businessStatusService,
-//      KafkaTemplate<String, Message> kafkaTemplate,
-//      KafkaProperties kafkaProperties,
-//      TaskProcessStageRepository taskProcessStageRepository,
-//      ProcessTrackerService processTrackerService) {
-//    this.taskRepository = taskRepository;
-//    this.planService = planService;
-//    this.actionService = actionService;
-//    this.locationService = locationService;
-//    this.lookupTaskStatusRepository = lookupTaskStatusRepository;
-//    this.personService = personService;
-//    this.entityFilterService = entityFilterService;
-//    this.goalService = goalService;
-//    this.conditionService = conditionService;
-//    this.businessStatusProperties = businessStatusProperties;
-//    this.businessStatusService = businessStatusService;
-//    this.kafkaTemplate = kafkaTemplate;
-//    this.kafkaProperties = kafkaProperties;
-//    this.taskProcessStageRepository = taskProcessStageRepository;
-//    this.processTrackerService = processTrackerService;
-//  }
 
   public Page<Task> searchTasks(TaskSearchCriteria taskSearchCriteria, Pageable pageable) {
     return taskRepository.findAll(TaskSpec.getTaskSpecification(taskSearchCriteria), pageable);
@@ -394,7 +366,7 @@ public class TaskService {
   }
 
   public Task generateTaskForTaskProcess(TaskProcessEvent taskProcessEvent) throws IOException {
-    Task taskObjs = null;
+    Task task = null;
     Optional<TaskProcessStage> taskGenerationStageOptional = taskProcessStageRepository.findById(
         taskProcessEvent.getIdentifier());
 
@@ -414,7 +386,7 @@ public class TaskService {
         User user = userService.getByKeycloakId(UUID.fromString(taskProcessEvent.getOwner()));
         ownerId = user.getUsername();
       }
-      taskObjs = createTaskObjectFromActionAndEntityId(action,
+      task = createTaskObjectFromActionAndEntityId(action,
           uuid, plan, ownerId);
 
       TaskProcessStage taskGenerationStage = taskGenerationStageOptional.get();
@@ -425,7 +397,7 @@ public class TaskService {
 
     }
 
-    return taskObjs;
+    return task;
   }
 
   private void updateProcessTracker(TaskProcessEvent taskProcessEvent) {
@@ -569,6 +541,7 @@ public class TaskService {
     task.setTaskFacade(taskEvent);
 
     Task savedTask = taskRepository.save(task);
+    taskEvent.setIdentifier(savedTask.getIdentifier());
 
     if (savedTask.getLookupTaskStatus().getCode().equals(TASK_STATUS_CANCELLED)) {
       businessStatusService.deactivateBusinessStatus(savedTask);
@@ -576,6 +549,8 @@ public class TaskService {
       businessStatusService.setBusinessStatus(savedTask,
           businessStatusProperties.getDefaultLocationBusinessStatus());
     }
+
+    kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.TASK), taskEvent);
 
     return savedTask;
   }

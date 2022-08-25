@@ -137,4 +137,11 @@ public class LocationController {
         .body(locationService.downloadLocations(hierarchyIdentifier, geographicLevelName, userId,
             entityTags));
   }
+
+  @GetMapping("/refresh-counts")
+  public ResponseEntity<?> refresh()
+      throws IOException {
+      locationRelationshipService.refreshLocationCountsView();
+    return ResponseEntity.ok("refreshed requested");
+  }
 }

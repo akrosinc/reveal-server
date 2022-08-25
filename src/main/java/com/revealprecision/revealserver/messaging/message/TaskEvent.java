@@ -26,6 +26,8 @@ public class TaskEvent  extends Message  {
 
   private String locationName;
 
+  private String locationGeographicLevelName;
+
   private List<String> baseLocationIds;
 
   private String ownerId;
@@ -58,10 +60,5 @@ public class TaskEvent  extends Message  {
 
   private LocalDate executionPeriodEnd;
 
-  private List<UUID> ancestors;
-
-  private UUID flattenedLocationAncestor;
-
   private UUID parentLocation;
-
 }
