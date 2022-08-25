@@ -135,7 +135,7 @@ public class IRSDashboardService {
   }
 
   public List<RowData> getIRSFullCoverageStructureLevelData(Plan plan, Location childLocation) {
-    Map<String, ColumnData> columns = new HashMap<>();
+    Map<String, ColumnData> columns = new LinkedHashMap<>();
     Report report = planReportRepository.findByPlanAndLocation(plan, childLocation).orElse(null);
     columns.put(HEAD_OF_HOUSEHOLD, getHeadOfHousehold(report));
     columns.put(STRUCTURE_STATUS,
