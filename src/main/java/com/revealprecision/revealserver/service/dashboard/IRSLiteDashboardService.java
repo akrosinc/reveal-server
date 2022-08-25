@@ -162,13 +162,14 @@ public class IRSLiteDashboardService {
 
   private ColumnData getSPrayedProgressTargeted(Plan plan, Location childLocation) {
     ColumnData columnData = new ColumnData();
+    columnData.setIsPercentage(true);
     Double totalSprayedStructures = (Double) getTotalStructuresSprayed(plan,
         childLocation).getValue();
     Double totalTargetedStructures = (Double) getTotalStructuresTargetedCount(plan,
         childLocation).getValue();
 
     if (totalTargetedStructures != 0) {
-      columnData.setValue(totalSprayedStructures / totalTargetedStructures);
+      columnData.setValue((totalSprayedStructures / totalTargetedStructures)*100);
     } else {
       columnData.setValue(0);
     }

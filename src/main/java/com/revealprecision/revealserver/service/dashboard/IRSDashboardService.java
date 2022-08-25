@@ -542,7 +542,7 @@ public class IRSDashboardService {
     double percentageOfSprayedToTargeted = 0;
     if (totalStructuresInTargetedCount > 0) {
       percentageOfSprayedToTargeted =
-          completedStructuresCount / totalStructuresInTargetedCount * 100;
+          (completedStructuresCount / totalStructuresInTargetedCount) * 100;
     }
 
     ColumnData totalStructuresTargetedColumnData = new ColumnData();
