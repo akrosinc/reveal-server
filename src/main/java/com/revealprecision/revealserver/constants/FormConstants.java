@@ -59,6 +59,10 @@ public interface FormConstants {
 
   String BUSINESS_STATUS = "business_status";
 
+  String COMPOUNDHEADNAME = "compoundheadname";
+
+  String NAME_HO_H = "nameHoH";
+
   interface BusinessStatus {
 
     String NOT_DISPENSED = "Not Dispensed";
