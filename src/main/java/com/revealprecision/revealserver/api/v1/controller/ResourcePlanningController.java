@@ -4,7 +4,9 @@ import com.revealprecision.revealserver.api.v1.dto.factory.CampaignDrugResponseF
 import com.revealprecision.revealserver.api.v1.dto.factory.CountryCampaignFactory;
 import com.revealprecision.revealserver.api.v1.dto.response.CampaignDrugResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.CountryCampaignResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.FormulaResponse;
 import com.revealprecision.revealserver.service.ResourcePlanningService;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -30,11 +32,17 @@ public class ResourcePlanningController {
   }
 
   @GetMapping("campaign")
-  public ResponseEntity<List<CampaignDrugResponse>> getCampagins() {
+  public ResponseEntity<List<CampaignDrugResponse>> getCampaigns() {
     return ResponseEntity.ok()
         .body(resourcePlanningService.getCampaigns()
             .stream()
             .map(CampaignDrugResponseFactory::fromEntity)
             .collect(Collectors.toList()));
+  }
+
+  @GetMapping("formula")
+  public ResponseEntity<List<FormulaResponse>> getFormulas() {
+    return ResponseEntity.ok()
+        .body(Arrays.asList(FormulaResponse.list));
   }
 }
