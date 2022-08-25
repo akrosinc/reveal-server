@@ -2,6 +2,7 @@ package com.revealprecision.revealserver.service.dashboard;
 
 
 import static com.revealprecision.revealserver.messaging.utils.DataStoreUtils.getQueryableStoreByWaiting;
+import static com.revealprecision.revealserver.props.DashboardProperties.SPRAY_COVERAGE_OF_TARGETED;
 import static com.revealprecision.revealserver.util.DashboardUtils.getBusinessStatusColor;
 import static com.revealprecision.revealserver.util.DashboardUtils.getGeoNameDirectlyAboveStructure;
 import static com.revealprecision.revealserver.util.DashboardUtils.getLocationBusinessState;
@@ -47,7 +48,6 @@ import org.springframework.stereotype.Service;
 @Service
 public class IRSLiteDashboardService {
 
-  public static final String SPRAY_PROGRESS_SPRAYED_TARGETED = "Spray Progress(Sprayed/Targeted)";
   public static final String NUMBER_OF_SPRAY_DAYS = "Number of Spray days";
   public static final String TOTAL_SUPERVISOR_FORMS_SUBMITTED = "Total supervisor forms submitted";
   public static final String AVERAGE_STRUCTURES_PER_DAY = "Average Structures Per Day";
@@ -66,7 +66,6 @@ public class IRSLiteDashboardService {
   private static final String TOTAL_SPRAY_AREAS = "Total spray areas";
   private static final String TARGET_SPRAY_AREAS = "Targeted spray areas";
   private static final String VISITED_AREAS = "Total spray areas visited";
-  public static final String SPRAY_COVERAGE_OF_TARGETED = "Spray coverage of targeted (Progress)";
   public static final String SPRAY_COVERAGE_OF_FOUND = "Spray coverage of Found(Sprayed/Found)";
   private static final String STRUCTURES_ON_THE_GROUND = "Structures on the ground";
   private static final String TOTAL_STRUCTURES_TARGETED = "Total Structures Targeted";
@@ -103,7 +102,7 @@ public class IRSLiteDashboardService {
     columns.put(TOTAL_STRUCTURES_TARGETED, getTotalStructuresTargetedCount(plan, childLocation));
     columns.put(STRUCTURES_SPRAYED, getTotalStructuresSprayed(plan,
         childLocation));
-    columns.put(SPRAY_PROGRESS_SPRAYED_TARGETED,
+    columns.put(SPRAY_COVERAGE_OF_TARGETED,
         getSPrayedProgressTargeted(plan, childLocation));
     columns.put(STRUCTURES_FOUND, getTotalStructuresFoundCount(plan, childLocation));
     columns.put(SPRAY_COVERAGE_OF_FOUND, getSprayCoverageOfFound(plan, childLocation));

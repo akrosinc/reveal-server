@@ -2,6 +2,7 @@ package com.revealprecision.revealserver.service.dashboard;
 
 
 import static com.revealprecision.revealserver.messaging.utils.DataStoreUtils.getQueryableStoreByWaiting;
+import static com.revealprecision.revealserver.props.DashboardProperties.SPRAY_COVERAGE_OF_TARGETED;
 import static com.revealprecision.revealserver.util.DashboardUtils.getBusinessStatusColor;
 import static com.revealprecision.revealserver.util.DashboardUtils.getGeoNameDirectlyAboveStructure;
 import static com.revealprecision.revealserver.util.DashboardUtils.getLocationBusinessState;
@@ -58,7 +59,6 @@ public class IRSDashboardService {
   private static final String TOTAL_SPRAY_AREAS = "Total spray areas";
   private static final String TARGET_SPRAY_AREAS = "Targeted spray areas";
   private static final String VISITED_AREAS = "Total  Spray Areas Visited";
-  public static final String SPRAY_COVERAGE_OF_TARGETED = "Spray Progress (Sprayed / Targeted)";
   private static final String TOTAL_STRUCTURES = "Total structures";
   private static final String TOTAL_STRUCTURES_TARGETED = "Total Structures Targeted";
   private static final String TOTAL_STRUCTURES_FOUND = "Total Structures Found";
@@ -74,6 +74,7 @@ public class IRSDashboardService {
   private static final String STRUCTURES_REMAINING_TO_SPRAY_TO_REACH_90 = "Structures remaining to spray to reach 90% spray coverage";
   private static final String REVIEWED_WITH_DECISION = "Reviewed with decision";
   private static final String MOBILIZED = "Mobilized";
+
 
   ReadOnlyKeyValueStore<String, Long> countOfAssignedStructures;
   ReadOnlyKeyValueStore<String, Long> structureCounts;
