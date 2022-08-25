@@ -2,6 +2,7 @@ package com.revealprecision.revealserver.service.dashboard;
 
 
 import static com.revealprecision.revealserver.messaging.utils.DataStoreUtils.getQueryableStoreByWaiting;
+import static com.revealprecision.revealserver.props.DashboardProperties.SPRAY_COVERAGE_OF_TARGETED;
 import static com.revealprecision.revealserver.util.DashboardUtils.getBusinessStatusColor;
 import static com.revealprecision.revealserver.util.DashboardUtils.getGeoNameDirectlyAboveStructure;
 import static com.revealprecision.revealserver.util.DashboardUtils.getLocationBusinessState;
@@ -26,6 +27,7 @@ import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.Report;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import com.revealprecision.revealserver.persistence.repository.ReportRepository;
+import com.revealprecision.revealserver.props.DashboardProperties;
 import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.service.LocationRelationshipService;
 import com.revealprecision.revealserver.service.PlanLocationsService;
@@ -46,7 +48,6 @@ import org.springframework.stereotype.Service;
 @Service
 public class IRSLiteDashboardService {
 
-  public static final String SPRAY_PROGRESS_SPRAYED_TARGETED = "Spray Progress(Sprayed/Targeted)";
   public static final String NUMBER_OF_SPRAY_DAYS = "Number of Spray days";
   public static final String TOTAL_SUPERVISOR_FORMS_SUBMITTED = "Total supervisor forms submitted";
   public static final String AVERAGE_STRUCTURES_PER_DAY = "Average Structures Per Day";
@@ -60,10 +61,11 @@ public class IRSLiteDashboardService {
   private final PlanLocationsService planLocationsService;
   private final LocationRelationshipService locationRelationshipService;
 
+  private final DashboardProperties dashboardProperties;
+
   private static final String TOTAL_SPRAY_AREAS = "Total spray areas";
   private static final String TARGET_SPRAY_AREAS = "Targeted spray areas";
   private static final String VISITED_AREAS = "Total spray areas visited";
-  public static final String SPRAY_COVERAGE_OF_TARGETED = "Spray coverage of targeted (Progress)";
   public static final String SPRAY_COVERAGE_OF_FOUND = "Spray coverage of Found(Sprayed/Found)";
   private static final String STRUCTURES_ON_THE_GROUND = "Structures on the ground";
   private static final String TOTAL_STRUCTURES_TARGETED = "Total Structures Targeted";
@@ -100,7 +102,7 @@ public class IRSLiteDashboardService {
     columns.put(TOTAL_STRUCTURES_TARGETED, getTotalStructuresTargetedCount(plan, childLocation));
     columns.put(STRUCTURES_SPRAYED, getTotalStructuresSprayed(plan,
         childLocation));
-    columns.put(SPRAY_PROGRESS_SPRAYED_TARGETED,
+    columns.put(SPRAY_COVERAGE_OF_TARGETED,
         getSPrayedProgressTargeted(plan, childLocation));
     columns.put(STRUCTURES_FOUND, getTotalStructuresFoundCount(plan, childLocation));
     columns.put(SPRAY_COVERAGE_OF_FOUND, getSprayCoverageOfFound(plan, childLocation));
@@ -152,7 +154,7 @@ public class IRSLiteDashboardService {
     if (numberOfSprayDays == 0) {
       columnData.setValue(0);
     } else {
-      columnData.setValue(sprayedStructures / numberOfSprayDays);
+      columnData.setValue(Math.round(sprayedStructures / numberOfSprayDays));
     }
 
     return columnData;
@@ -160,13 +162,14 @@ public class IRSLiteDashboardService {
 
   private ColumnData getSPrayedProgressTargeted(Plan plan, Location childLocation) {
     ColumnData columnData = new ColumnData();
+    columnData.setIsPercentage(true);
     Double totalSprayedStructures = (Double) getTotalStructuresSprayed(plan,
         childLocation).getValue();
     Double totalTargetedStructures = (Double) getTotalStructuresTargetedCount(plan,
         childLocation).getValue();
 
     if (totalTargetedStructures != 0) {
-      columnData.setValue(totalSprayedStructures / totalTargetedStructures);
+      columnData.setValue((totalSprayedStructures / totalTargetedStructures)*100);
     } else {
       columnData.setValue(0);
     }
@@ -600,7 +603,8 @@ public class IRSLiteDashboardService {
   }
 
   public FeatureSetResponse getFeatureSetResponse(UUID parentIdentifier,
-      List<PlanLocationDetails> locationDetails, Map<UUID, RowData> rowDataMap) {
+      List<PlanLocationDetails> locationDetails,
+      Map<UUID, RowData> rowDataMap, String reportLevel) {
     FeatureSetResponse response = new FeatureSetResponse();
     response.setType("FeatureCollection");
     List<LocationResponse> locationResponses = locationDetails.stream()
@@ -608,6 +612,8 @@ public class IRSLiteDashboardService {
         .collect(Collectors.toList());
 
     locationResponses = setGeoJsonProperties(rowDataMap, locationResponses);
+    response.setDefaultDisplayColumn(
+        dashboardProperties.getIrsDefaultDisplayColumns().getOrDefault(reportLevel, null));
     response.setFeatures(locationResponses);
     response.setIdentifier(parentIdentifier);
     return response;
