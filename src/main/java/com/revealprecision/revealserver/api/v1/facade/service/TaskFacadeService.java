@@ -71,7 +71,6 @@ public class TaskFacadeService {
   private final LocationService locationService;
   private final BusinessStatusService businessStatusService;
   private final KafkaTemplate<String, Message> kafkaTemplate;
-  //  private final StreamsBuilderFactoryBean getKafkaStreams;
   private final KafkaProperties kafkaProperties;
   private final RestHighLevelClient client;
   private final Environment env;
