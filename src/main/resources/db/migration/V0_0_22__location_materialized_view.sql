@@ -21,7 +21,7 @@ FROM (SELECT arr.item_object AS parent,
 
 
 CREATE
-MATERIALIZED VIEW IF NOT EXISTS public.location_counts
+MATERIALIZED VIEW IF NOT EXISTS location_counts
 TABLESPACE pg_default
 AS
 SELECT parents.location_hierarchy_identifier,
