@@ -83,4 +83,6 @@ public interface PlanLocationsRepository extends EntityGraphJpaRepository<PlanLo
       @Param("locationHierarchyIdentifier") UUID locationHierarchyIdentifier,
       @Param("planIdentifier") UUID planIdentifier);
 
+  @Query(value = "REFRESH MATERIALIZED VIEW CONCURRENTLY assigned_structure_counts",nativeQuery = true)
+  void refreshAssignedStructureCountsMaterializedView();
 }

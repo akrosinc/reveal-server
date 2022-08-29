@@ -283,4 +283,8 @@ public class PlanLocationsService {
     return planLocationsRepository.getPlanLocationsByPlanIdAndLocationIdentifiers(planId,
         locationIds);
   }
+
+  public void refreshAssignedStructureCountsMaterializedView(){
+    planLocationsRepository.refreshAssignedStructureCountsMaterializedView();
+  }
 }

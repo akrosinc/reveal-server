@@ -4,6 +4,7 @@ import com.revealprecision.revealserver.enums.ProcessTrackerEnum;
 import com.revealprecision.revealserver.enums.ProcessType;
 import com.revealprecision.revealserver.messaging.message.PlanLocationAssignMessage;
 import com.revealprecision.revealserver.persistence.domain.ProcessTracker;
+import com.revealprecision.revealserver.service.PlanLocationsService;
 import com.revealprecision.revealserver.service.ProcessTrackerService;
 import com.revealprecision.revealserver.service.TaskService;
 import java.util.List;
@@ -20,6 +21,8 @@ public class PlanLocationListener extends Listener {
 
   private final TaskService taskService;
   private final ProcessTrackerService processTrackerService;
+  private final PlanLocationsService planLocationsService;
+
 
 
   @KafkaListener(topics = "#{kafkaConfigProperties.topicMap.get('PLAN_LOCATION_ASSIGNED')}", groupId = "reveal_server_group")
@@ -32,8 +35,9 @@ public class PlanLocationListener extends Listener {
     int saveAll = message.getSaveAll();
     updateProcessTracker(deleteByPlan,saveAll,deleteByPlanAndLocation, message.getPlanIdentifier());
 
-
     taskService.processPlanUpdateForTasks(message.getPlanIdentifier(),message.getOwnerId());
+
+    planLocationsService.refreshAssignedStructureCountsMaterializedView();
   }
 
   private void updateProcessTracker(int deleteByPlan, int saveAll,
