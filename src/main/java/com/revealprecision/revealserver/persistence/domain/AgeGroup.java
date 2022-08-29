@@ -11,8 +11,8 @@ import lombok.Setter;
 @AllArgsConstructor
 public class AgeGroup {
 
-  private String title;
+  private String name;
   private int min;
   private int max;
-
+  private String key;
 }

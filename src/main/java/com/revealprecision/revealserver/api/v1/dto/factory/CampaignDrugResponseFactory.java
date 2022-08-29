@@ -19,6 +19,7 @@ public class CampaignDrugResponseFactory {
         .full(el.isFull())
         .half(el.isHalf())
         .millis(el.isMillis())
+        .key(el.getKey())
         .build()).collect(Collectors.toList());
     return CampaignDrugResponse.builder()
         .identifier(campaignDrug.getIdentifier())

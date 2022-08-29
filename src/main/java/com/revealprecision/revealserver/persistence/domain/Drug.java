@@ -12,6 +12,7 @@ import lombok.Setter;
 public class Drug {
 
   private String name;
+  private String key;
   private int min;
   private int max;
   private boolean half;

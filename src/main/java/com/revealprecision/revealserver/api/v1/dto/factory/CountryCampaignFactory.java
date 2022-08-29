@@ -15,7 +15,8 @@ public class CountryCampaignFactory {
     List<AgeGroupResponse> ageGroupResponses = countryCampaign.getGroups().stream().map(el -> AgeGroupResponse.builder()
         .max(el.getMax())
         .min(el.getMin())
-        .title(el.getTitle())
+        .name(el.getName())
+        .key(el.getKey())
         .build()).collect(Collectors.toList());
     return CountryCampaignResponse.builder()
         .name(countryCampaign.getName())

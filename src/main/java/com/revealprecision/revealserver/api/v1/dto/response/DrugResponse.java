@@ -19,4 +19,5 @@ public class DrugResponse {
   private boolean half;
   private boolean full;
   private boolean millis;
+  private String key;
 }

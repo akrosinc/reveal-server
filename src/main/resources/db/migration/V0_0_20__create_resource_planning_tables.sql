@@ -58,9 +58,10 @@ insert into country_campaign (identifier, name, groups, entity_status, created_b
                               modified_by, modified_datetime)
 VALUES (uuid_generate_v4(), 'Nigeria', '[
   {
-    "title": "under five",
+    "name": "under five",
     "min": 0,
-    "max": 5
+    "max": 5,
+    "key": "under-five"
   }
 ]', 'ACTIVE',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
@@ -69,9 +70,10 @@ insert into country_campaign (identifier, name, groups, entity_status, created_b
                               modified_by, modified_datetime)
 VALUES (uuid_generate_v4(), 'Rwanda', '[
   {
-    "title": "under ten",
+    "name": "under ten",
     "min": 0,
-    "max": 10
+    "max": 10,
+    "key": "under-ten"
   }
 ]', 'ACTIVE',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
@@ -86,7 +88,8 @@ VALUES (uuid_generate_v4(), 'STH', '[
     "max": 5,
     "half": true,
     "full": false,
-    "millis": false
+    "millis": false,
+    "key": "drug1"
   }
 ]', 'ACTIVE',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
@@ -101,7 +104,8 @@ VALUES (uuid_generate_v4(), 'STH', '[
     "max": 5,
     "half": true,
     "full": false,
-    "millis": false
+    "millis": false,
+    "key": "drug2"
   }
 ]', 'ACTIVE',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',

@@ -13,7 +13,8 @@ import lombok.Setter;
 @Builder
 public class AgeGroupResponse {
 
-  private String title;
+  private String name;
   private int min;
   private int max;
+  private String key;
 }
