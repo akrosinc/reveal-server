@@ -542,6 +542,7 @@ public class TaskService {
 
     Task savedTask = taskRepository.save(task);
     taskEvent.setIdentifier(savedTask.getIdentifier());
+    taskEvent.setServerVersion(savedTask.getServerVersion());
 
     if (savedTask.getLookupTaskStatus().getCode().equals(TASK_STATUS_CANCELLED)) {
       businessStatusService.deactivateBusinessStatus(savedTask);
