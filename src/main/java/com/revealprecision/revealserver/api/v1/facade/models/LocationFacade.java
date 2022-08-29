@@ -24,6 +24,7 @@ public class LocationFacade extends BaseDataObject {
   private LocationFacade parentLocation;
   private Set<String> tags;
   private Map<String, Object> attributes;
+  private Set<String> planIds;
 
 
   @Override

@@ -36,9 +36,10 @@ public class LoginResponseFactory {
       locationHierarchy = plans.stream().findFirst().get().getLocationHierarchy();
       List<LocationRelationship> locationRelationships = locationHierarchy.getLocationRelationships();
       List<LocationFacade> locationFacades = assignedLocations.stream().map(
-          location -> LocationFacadeResponseFactory
-              .fromLocationEntityAndLocationRelationship(location, locationRelationships)).collect(
-          Collectors.toList());
+              location -> LocationFacadeResponseFactory
+                  .fromLocationEntityAndLocationRelationship(location, locationRelationships, plans))
+          .collect(
+              Collectors.toList());
       locationTree = new LocationTree();
       locationTree.buildTreeFromList(locationFacades);
 
