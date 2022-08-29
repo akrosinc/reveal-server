@@ -418,6 +418,8 @@ public class LocationRelationshipService {
       LocationBulk locationBulk = bulk;
       locationBulk.setStatus(BulkStatusEnum.COMPLETE);
       locationBulkRepository.save(locationBulk);
+
+      refreshLocationCountsView();
     }
   }
 

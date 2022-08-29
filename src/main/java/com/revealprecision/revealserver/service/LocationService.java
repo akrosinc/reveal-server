@@ -73,6 +73,7 @@ public class LocationService {
     locationToSave.setEntityStatus(EntityStatus.ACTIVE);
     var savedLocation = locationRepository.save(locationToSave);
     locationRelationshipService.updateLocationRelationshipsForNewLocation(savedLocation);
+    locationRelationshipService.refreshLocationCountsView();
     return savedLocation;
   }
 
