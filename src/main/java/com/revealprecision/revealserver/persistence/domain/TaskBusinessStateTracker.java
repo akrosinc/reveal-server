@@ -39,5 +39,13 @@ public class TaskBusinessStateTracker {
   private String taskBusinessStatus;
 
   private LocalDateTime taskBusinessStatusUpdateTime;
-
+  public TaskBusinessStateTracker(UUID taskLocationIdentifier,
+      String taskLocationGeographicLevelName,
+      String taskLocationName,
+      String taskBusinessStatus){
+    this.taskLocationIdentifier = taskLocationIdentifier;
+    this.taskLocationGeographicLevelName = taskLocationGeographicLevelName;
+    this.taskLocationName = taskLocationName;
+    this.taskBusinessStatus = taskBusinessStatus;
+  }
 }

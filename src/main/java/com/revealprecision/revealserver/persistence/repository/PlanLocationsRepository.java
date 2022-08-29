@@ -66,4 +66,21 @@ public interface PlanLocationsRepository extends EntityGraphJpaRepository<PlanLo
       @Param("locationIdentifier") String locationIdentifier,
       @Param("locationHierarchyIdentifier") UUID locationHierarchyIdentifier,
       @Param("planIdentifier") UUID planIdentifier);
+
+
+
+  @Query(value = "  SELECT count(*)\n"
+      + "  FROM plan_locations pl\n"
+      + "  INNER JOIN location_relationship lr on pl.location_identifier = lr.location_identifier\n"
+      + "  inner join location_relationship clr on clr.parent_identifier = lr.location_identifier\n"
+      + "  INNER JOIN location cl on cl.identifier = clr.location_identifier\n"
+      + "  LEFT JOIN geographic_level cgl on cl.geographic_level_identifier = cgl.identifier\n"
+      + "  where lr.location_hierarchy_identifier = :locationHierarchyIdentifier\n"
+      + "  and lr.location_identifier = :locationIdentifier\n"
+      + "  and pl.plan_identifier = :planIdentifier", nativeQuery = true)
+  Long getAssignedChildrenOfLocationBelow(
+      @Param("locationIdentifier") UUID locationIdentifier,
+      @Param("locationHierarchyIdentifier") UUID locationHierarchyIdentifier,
+      @Param("planIdentifier") UUID planIdentifier);
+
 }

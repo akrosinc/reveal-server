@@ -74,6 +74,10 @@ public class PlanLocationsService {
         planIdentifier);
   }
 
+  public Long getAssignedChildrenOfLocationBelow(UUID planIdentifier, UUID locationIdentifier, UUID locationHierarchyIdentifier){
+    return planLocationsRepository.getAssignedChildrenOfLocationBelow(locationIdentifier,locationHierarchyIdentifier,planIdentifier);
+  }
+
 
   public List<PlanLocations> getPlanLocationsByPlanAndLocationIdentifier(UUID locationIdentifier,
       UUID planIdentifier) {

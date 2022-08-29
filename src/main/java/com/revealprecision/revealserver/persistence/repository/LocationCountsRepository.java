@@ -17,4 +17,7 @@ public interface LocationCountsRepository extends JpaRepository<LocationCounts, 
   @Transactional
   void refreshLocationCountsMaterializedView();
 
+  LocationCounts findLocationCountsByParentLocationIdentifierAndLocationHierarchyIdentifierAndGeographicLevelName(UUID parentLocationIdentifier, UUID locationHierarchyIdentifier, String geographicLevelName);
+
+
 }

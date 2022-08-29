@@ -70,6 +70,7 @@ public class TaskEventFactory {
         .identifier(taskSaved.getIdentifier())
         .priority(taskSaved.getPriority())
         .locationGeographicLevelName(taskSaved.getLocation().getGeographicLevel().getName())
+        .lastUpdated(taskSaved.getModifiedDatetime())
         .build();
 
     if (ActionUtils.isActionForPerson(taskSaved.getAction())){

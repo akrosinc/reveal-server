@@ -1,6 +1,6 @@
 package com.revealprecision.revealserver.persistence.domain;
 
-import com.revealprecision.revealserver.persistence.primarykey.LocationCountsId;
+import com.revealprecision.revealserver.persistence.primarykey.LocationAboveStructureId;
 import java.util.UUID;
 import javax.persistence.Entity;
 import javax.persistence.Id;
@@ -19,19 +19,26 @@ import lombok.experimental.FieldNameConstants;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-@IdClass(LocationCountsId.class)
-public class LocationCounts {
+@IdClass(LocationAboveStructureId.class)
+public class LocationAboveStructure {
 
   @Id
   private UUID locationHierarchyIdentifier;
+  @Id
+  private UUID planIdentifier;
   @Id
   private UUID parentLocationIdentifier;
 
   private String parentLocationName;
 
   private String parentGeographicLevelName;
-  @Id
-  private String geographicLevelName;
 
-  private long locationCount;
+  private String locationAboveStructureGeographicLevelName;
+  private String locationAboveStructureName;
+  @Id
+  private UUID locationAboveStructureIdentifier;
+
+  private boolean isVisited;
+  private boolean isTreated;
+  private boolean isVisitedEffectively;
 }

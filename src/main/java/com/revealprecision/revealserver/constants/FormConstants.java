@@ -108,6 +108,14 @@ public interface FormConstants {
         TASKS_INCOMPLETE, COMPLETE, NOT_ELIGIBLE, FAMILY_NO_TASK_REGISTERED, ALL_TASKS_COMPLETE,
         SPAQ_COMPLETE);
   }
+  interface AboveStructureStatus {
+    String VISITED = "Visited";
+    String NOT_VISITED = "Not Visited";
+    String EFFECTIVELY = "Effectively";
+    String INEFFECTIVELY = "Ineffectively";
+    String TREATED = "Treated";
+    String NOT_TREATED = "Not Treated";
+  }
 
   interface Colors {
 

@@ -43,6 +43,7 @@ public class TaskEvent  extends Message  {
   private String description;
 
   private LocalDateTime lastModified;
+  private LocalDateTime lastUpdated;
 
   private String personId;
 
