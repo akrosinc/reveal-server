@@ -90,18 +90,29 @@ public class TaskFacadeService {
       if (plan.getPlanTargetType().getGeographicLevel().getName()
           .equals(LocationConstants.STRUCTURE)) {
         return taskService.getStructureTaskFacadesByLocationServerVersionAndPlan(
-            plan.getIdentifier(),
-            planTargetsMap.get(plan.getIdentifier()).stream().map(Location::getIdentifier).collect(
-                Collectors.toList()), serverVersion).stream().map(task -> TaskFacadeFactory.getTaskFacadeObj(requester,
-            task.getTaskFacade().getParentLocation().toString()
-            , task.getTaskFacade()));
+                plan.getIdentifier(),
+                planTargetsMap.get(plan.getIdentifier()).stream().map(Location::getIdentifier).collect(
+                    Collectors.toList()), serverVersion).stream()
+            .map(task -> {
+              TaskFacade taskFacadeObj = TaskFacadeFactory.getTaskFacadeObj(requester,
+                  task.getTaskFacade().getParentLocation().toString()
+                  , task.getTaskFacade());
+              taskFacadeObj.setServerVersion(serverVersion);
+              return taskFacadeObj;
+            });
       } else {
         return taskService.getNonStructureTaskFacadesByLocationServerVersionAndPlan(
-            plan.getIdentifier(),
-            planTargetsMap.get(plan.getIdentifier()).stream().map(Location::getIdentifier).collect(
-                Collectors.toList()), serverVersion).stream().map(task -> TaskFacadeFactory.getTaskFacadeObj(requester,
-            task.getTaskFacade().getParentLocation().toString()
-            , task.getTaskFacade()));
+                plan.getIdentifier(),
+                planTargetsMap.get(plan.getIdentifier()).stream()
+                    .map(Location::getIdentifier)
+                    .collect(Collectors.toList()), serverVersion)
+            .stream().map(task -> {
+              TaskFacade taskFacadeObj = TaskFacadeFactory.getTaskFacadeObj(requester,
+                  task.getTaskFacade().getParentLocation().toString()
+                  , task.getTaskFacade());
+              taskFacadeObj.setServerVersion(serverVersion);
+              return taskFacadeObj;
+            });
       }
     }).distinct().collect(Collectors.toList());
 
