@@ -381,13 +381,13 @@ public class TaskService {
       Action action = actionService.getByIdentifier(
           taskProcessEvent.getActionEvent().getIdentifier());
 
-      String ownerId = null;
+      String owner = null;
       if (taskProcessEvent.getOwner() != null) {
         User user = userService.getByKeycloakId(UUID.fromString(taskProcessEvent.getOwner()));
-        ownerId = user.getUsername();
+        owner = user.getUsername();
       }
       task = createTaskObjectFromActionAndEntityId(action,
-          uuid, plan, ownerId);
+          uuid, plan, owner);
 
       TaskProcessStage taskGenerationStage = taskGenerationStageOptional.get();
       taskGenerationStage.setState(ProcessTrackerEnum.DONE);
@@ -459,7 +459,7 @@ public class TaskService {
 
 
   private Task createTaskObjectFromActionAndEntityId(Action action,
-      UUID entityUUID, Plan plan, String ownerId) throws IOException {
+      UUID entityUUID, Plan plan, String owner) {
     log.debug("TASK_GENERATION  create individual task for plan: {} and action: {}",
         plan.getIdentifier(), action.getIdentifier());
 
@@ -490,7 +490,7 @@ public class TaskService {
       task.setPerson(person);
     }
 
-    Task savedTask = saveTaskAndBusinessState(task, ownerId);
+    Task savedTask = saveTaskAndBusinessState(task, owner);
 
     log.debug("TASK_GENERATION completed creating individual task for plan: {} and action: {}",
         plan.getIdentifier(), action.getIdentifier());
@@ -532,12 +532,12 @@ public class TaskService {
     return savedTask;
   }
 
-  public Task saveTaskAndBusinessState(Task task, String ownerId) {
+  public Task saveTaskAndBusinessState(Task task, String owner) {
 
     log.trace("task: {} entity: {}", task.getIdentifier(),
         task.getBaseEntityIdentifier());
     TaskEvent taskEvent = TaskEventFactory.getTaskEventFromTask(task);
-    taskEvent.setOwnerId(ownerId);
+    taskEvent.setOwner(owner);
     task.setTaskFacade(taskEvent);
 
     Task savedTask = taskRepository.save(task);
