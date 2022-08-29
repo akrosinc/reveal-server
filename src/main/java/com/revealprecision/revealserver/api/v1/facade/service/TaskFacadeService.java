@@ -97,7 +97,7 @@ public class TaskFacadeService {
               TaskFacade taskFacadeObj = TaskFacadeFactory.getTaskFacadeObj(requester,
                   task.getTaskFacade().getParentLocation().toString()
                   , task.getTaskFacade());
-              taskFacadeObj.setServerVersion(serverVersion);
+              taskFacadeObj.setServerVersion(task.getServerVersion());
               return taskFacadeObj;
             });
       } else {
@@ -110,7 +110,7 @@ public class TaskFacadeService {
               TaskFacade taskFacadeObj = TaskFacadeFactory.getTaskFacadeObj(requester,
                   task.getTaskFacade().getParentLocation().toString()
                   , task.getTaskFacade());
-              taskFacadeObj.setServerVersion(serverVersion);
+              taskFacadeObj.setServerVersion(task.getServerVersion());
               return taskFacadeObj;
             });
       }
