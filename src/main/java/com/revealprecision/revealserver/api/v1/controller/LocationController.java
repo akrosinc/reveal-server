@@ -47,7 +47,7 @@ public class LocationController {
   )
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<LocationResponse> createLocation(
-      @Valid @RequestBody LocationRequest locationRequest) throws IOException {
+      @Valid @RequestBody LocationRequest locationRequest) throws Exception {
     return ResponseEntity.status(HttpStatus.CREATED)
         .body(LocationResponseFactory.fromEntity(locationService.createLocation(locationRequest)));
   }

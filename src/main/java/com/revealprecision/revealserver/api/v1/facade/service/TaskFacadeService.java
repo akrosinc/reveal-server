@@ -93,6 +93,7 @@ public class TaskFacadeService {
                 plan.getIdentifier(),
                 planTargetsMap.get(plan.getIdentifier()).stream().map(Location::getIdentifier).collect(
                     Collectors.toList()), serverVersion).stream()
+            .filter(task -> task.getTaskFacade()!=null)
             .map(task -> {
               TaskFacade taskFacadeObj = TaskFacadeFactory.getTaskFacadeObj(requester,
                   task.getTaskFacade().getParentLocation().toString()
@@ -106,7 +107,9 @@ public class TaskFacadeService {
                 planTargetsMap.get(plan.getIdentifier()).stream()
                     .map(Location::getIdentifier)
                     .collect(Collectors.toList()), serverVersion)
-            .stream().map(task -> {
+            .stream()
+            .filter(task -> task.getTaskFacade()!=null)
+            .map(task -> {
               TaskFacade taskFacadeObj = TaskFacadeFactory.getTaskFacadeObj(requester,
                   task.getTaskFacade().getParentLocation().toString()
                   , task.getTaskFacade());
@@ -190,7 +193,7 @@ public class TaskFacadeService {
       try {
         saveTaskDto(taskDto);
       } catch (Exception e) {
-        log.error(e.toString());
+        log.error(e.toString(),e);
         e.printStackTrace();
         unprocessedTaskIds.add(taskDto);
       }
@@ -199,7 +202,7 @@ public class TaskFacadeService {
     return unprocessedTaskIds;
   }
 
-  private void saveTaskDto(TaskDto taskDto) throws IOException {
+  private void saveTaskDto(TaskDto taskDto) throws Exception {
 
     String taskCode = taskDto.getCode();
     Plan plan = planService.findPlanByIdentifier(UUID.fromString(taskDto.getPlanIdentifier()));
@@ -215,7 +218,7 @@ public class TaskFacadeService {
   }
 
   private Task saveTask(TaskDto taskDto, Plan plan, Action action,
-      Optional<LookupTaskStatus> taskStatus) throws IOException {
+      Optional<LookupTaskStatus> taskStatus) throws Exception {
     Task task;
     try {
       task = taskService.getTaskByIdentifier(UUID.fromString(taskDto.getIdentifier()));
@@ -310,10 +313,12 @@ public class TaskFacadeService {
         }
         task.setPerson(person);
       }
+      TaskEvent taskEvent = TaskEventFactory.getTaskEventFromTask(task);
+      taskEvent.setOwnerId(UserUtils.getCurrentPrincipleName());
+      task.setTaskFacade(taskEvent);
       Task taskSaved = taskService.saveTask(task);
       businessStatusService.setBusinessStatus(taskSaved, taskDto.getBusinessStatus());
-      TaskEvent taskEvent = TaskEventFactory.getTaskEventFromTask(taskSaved);
-      taskEvent.setOwnerId(UserUtils.getCurrentPrincipleName());
+
       kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.TASK), taskEvent);
       return taskSaved;
     } else {
