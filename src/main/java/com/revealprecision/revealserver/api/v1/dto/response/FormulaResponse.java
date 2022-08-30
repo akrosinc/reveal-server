@@ -44,5 +44,15 @@ public class FormulaResponse {
           InputTypeEnum.DROPDOWN, List.of(new String[]{"Yes", "No"}), null, null), Arrays.asList(new SkipPattern("Yes", "choice_cdd"))),
       new FormulaResponse("On average, how many people can you estimate that 1 CDD can treat in 1 campaign day?", "cdd_target", new FieldType(
           InputTypeEnum.INTEGER, null, null, null), null),
+      new FormulaResponse("On average, how many structures (or households) can be visited on 1 campaign day by 1 CDD?", "structure_day", new FieldType(
+          InputTypeEnum.INTEGER, null, null, null), null),
+      new FormulaResponse("What is the daily allowance for CDDs? (in local currency)", "cdd_allow", new FieldType(
+          InputTypeEnum.INTEGER, null, null, null), null),
+      new FormulaResponse("What is the estimated cost of supplies, job aids, registers, and other materials for 1 CDD? (in local currency)", "cdd_job", new FieldType(
+          InputTypeEnum.DECIMAL, null, null, null), null),
+      new FormulaResponse("How many CDDs report to 1 supervisor (on average)?", "cdd_super", new FieldType(
+          InputTypeEnum.INTEGER, null, null, null), null),
+      new FormulaResponse("What is the daily allowance for CDDs supervisors? (in local currency)", "super_allow", new FieldType(
+          InputTypeEnum.INTEGER, null, null, null), null)
   };
 }
