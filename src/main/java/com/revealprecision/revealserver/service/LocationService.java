@@ -1,5 +1,9 @@
 package com.revealprecision.revealserver.service;
 
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.mapping;
+import static java.util.stream.Collectors.toSet;
+
 import com.revealprecision.revealserver.api.v1.dto.request.LocationRequest;
 import com.revealprecision.revealserver.constants.LocationConstants;
 import com.revealprecision.revealserver.enums.EntityStatus;
@@ -224,10 +228,10 @@ public class LocationService {
     return response;
   }
 
-  public Set<Location> getAssignedLocationsFromPlanAssignments(
+  public Map<Plan, Set<Location>> getAssignedLocationsFromPlanAssignments(
       Set<PlanAssignment> planAssignments) {
     return planAssignments.stream().map(PlanAssignment::getPlanLocations)
-        .map(PlanLocations::getLocation).collect(Collectors.toSet());
+        .collect(groupingBy(PlanLocations::getPlan, mapping(PlanLocations::getLocation, toSet())));
   }
 
   public LocationCoordinatesProjection getLocationCentroidCoordinatesByIdentifier(
@@ -274,7 +278,8 @@ public class LocationService {
   public ByteArrayResource downloadLocations(UUID hierarchyIdentifier, String geographicLevelName,
       UUID userId, ArrayList<UUID> entityTags)
       throws IOException {
-    LocationHierarchy locationHierarchy = locationHierarchyService.findByIdentifier(hierarchyIdentifier);
+    LocationHierarchy locationHierarchy = locationHierarchyService.findByIdentifier(
+        hierarchyIdentifier);
     GeographicLevel geographicLevel = geographicLevelService.findByName(geographicLevelName);
     List<Location> locationList = locationRepository.findByGeographicLevelIdentifier(
         geographicLevel.getIdentifier());
@@ -344,7 +349,7 @@ public class LocationService {
         index++;
 
         int entityTagIndex = 4;
-        for(UUID el : entityTags) {
+        for (UUID el : entityTags) {
           EntityTag entityTag = entityTagService.getEntityTagByIdentifier(el);
           sheet.setColumnWidth(entityTagIndex, 9600);
           headerCell = header.createCell(entityTagIndex);
@@ -353,7 +358,7 @@ public class LocationService {
           cell = row.createCell(entityTagIndex);
           cell.setCellStyle(style);
           entityTagIndex++;
-        };
+        }
       }
 
       workbook.write(outputStream);

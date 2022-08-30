@@ -12,7 +12,9 @@ import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
 import com.revealprecision.revealserver.persistence.domain.Organization;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.User;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.AccessLevel;
@@ -22,8 +24,10 @@ import lombok.NoArgsConstructor;
 public class LoginResponseFactory {
 
   public static LoginResponse fromEntities(User user, Organization organization,
-      Set<Location> assignedLocations, Set<Plan> plans) {
+      Map<Plan, Set<Location>> assignedLocationsPerPlan) {
     UserFacadeResponse userFacadeResponse = UserFacadeResponseFactory.fromEntity(user);
+    Set<Location> assignedLocations = assignedLocationsPerPlan.values().stream().flatMap(
+        Collection::stream).collect(Collectors.toSet());
     Set<String> jurisdictionIds = extractJurisdictionIdentifiers(assignedLocations);
     List<String> jurisdictionNames = extractJurisdictionNames(assignedLocations);
 
@@ -31,15 +35,22 @@ public class LoginResponseFactory {
 
     LocationHierarchy locationHierarchy;
     LocationTree locationTree = null;
+
+    Set<Plan> plans = assignedLocationsPerPlan.keySet();
     if (!plans.isEmpty()) {
       //We pick one hierarchy for now:
       locationHierarchy = plans.stream().findFirst().get().getLocationHierarchy();
       List<LocationRelationship> locationRelationships = locationHierarchy.getLocationRelationships();
       List<LocationFacade> locationFacades = assignedLocations.stream().map(
               location -> LocationFacadeResponseFactory
-                  .fromLocationEntityAndLocationRelationship(location, locationRelationships, plans))
+                  .fromLocationEntityAndLocationRelationship(location, locationRelationships,
+                      plans.stream()
+                          .filter(plan -> assignedLocationsPerPlan.get(plan).contains(location))
+                          .collect(
+                              Collectors.toSet())))
           .collect(
               Collectors.toList());
+
       locationTree = new LocationTree();
       locationTree.buildTreeFromList(locationFacades);
 

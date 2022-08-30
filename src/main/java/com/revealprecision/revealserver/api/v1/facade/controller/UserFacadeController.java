@@ -11,6 +11,7 @@ import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
+import java.util.Map;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -33,10 +34,9 @@ public class UserFacadeController {
     User user = userService.getCurrentUser();
     Organization organization = userFacadeService.getOrganizationsAssignedToCurrentUser().stream()
         .findFirst().get();
-    Set<Plan> plansAssignedToUser = userFacadeService.getPlansAssignedToCurrentUser();
-    Set<Location> assignedLocations = userFacadeService.getLocationsAssignedToCurrentUser();
+    Map<Plan, Set<Location>> assignedLocationsPerPlan = userFacadeService.getLocationsAssignedToCurrentUser();
     LoginResponse loginResponse = LoginResponseFactory
-        .fromEntities(user, organization, assignedLocations, plansAssignedToUser);
+        .fromEntities(user, organization, assignedLocationsPerPlan);
     return ResponseEntity.status(HttpStatus.OK).body(loginResponse);
   }
 
@@ -44,11 +44,10 @@ public class UserFacadeController {
       "UserAssignment"})
   @GetMapping(value = "/rest/organization/user-assignment", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<UserAssignmentResponse> getUserAssignedLocationsAndPlans() {
-    Set<Plan> plansAssignedToUser = userFacadeService.getPlansAssignedToCurrentUser();
-    Set<Location> assignedLocations = userFacadeService.getLocationsAssignedToCurrentUser();
+    Map<Plan,Set<Location>> assignedLocationsPerPlan = userFacadeService.getLocationsAssignedToCurrentUser();
     Set<Organization> organizations = userFacadeService.getOrganizationsAssignedToCurrentUser();
     return ResponseEntity.status(HttpStatus.OK)
-        .body(UserAssignmentResponseFactory.fromEntities(plansAssignedToUser,
-            organizations, assignedLocations));
+        .body(UserAssignmentResponseFactory.fromEntities(
+            organizations, assignedLocationsPerPlan));
   }
 }
