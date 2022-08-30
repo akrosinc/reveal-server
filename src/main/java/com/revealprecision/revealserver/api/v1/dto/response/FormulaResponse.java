@@ -41,7 +41,7 @@ public class FormulaResponse {
       new FormulaResponse("What is the average number of CDDs per location selected on the map?", "cdd_number", new FieldType(
           InputTypeEnum.INTEGER, null, null, null), null),
       new FormulaResponse("Are you planning your CDDs based on the campaign target population for the campaign? (The campaign target population is a sub-set of the total population) If no, then the total population with growth rate will be used to calculate CDD requirements on the dashboard.", "cdd_number", new FieldType(
-          InputTypeEnum.DROPDOWN, List.of(new String[]{"Yes", "No"}), null, null), Arrays.asList(new SkipPattern("Yes", "choice_cdd"))),
+          InputTypeEnum.DROPDOWN, List.of(new String[]{"Yes", "No"}), null, null), Arrays.asList(new SkipPattern("Yes", "cdd_denom"))),
       new FormulaResponse("On average, how many people can you estimate that 1 CDD can treat in 1 campaign day?", "cdd_target", new FieldType(
           InputTypeEnum.INTEGER, null, null, null), null),
       new FormulaResponse("On average, how many structures (or households) can be visited on 1 campaign day by 1 CDD?", "structure_day", new FieldType(
