@@ -13,6 +13,6 @@ import lombok.Setter;
 @Builder
 public class SkipPattern {
 
-  private String skipFieldName;
   private String skipValue;
+  private String skipFieldName;
 }

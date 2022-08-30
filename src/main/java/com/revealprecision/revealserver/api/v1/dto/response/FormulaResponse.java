@@ -2,7 +2,6 @@ package com.revealprecision.revealserver.api.v1.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.revealprecision.revealserver.enums.InputTypeEnum;
-import java.util.Arrays;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -21,7 +20,7 @@ public class FormulaResponse {
   private String question;
   private String fieldName;
   private FieldType fieldType;
-  private List<SkipPattern> skipPattern;
+  private SkipPattern skipPattern;
 
   public static FormulaResponse[] list = {
       new FormulaResponse("Which campaign(s) are you planning in the selected locations?", "NTD_name", new FieldType(
@@ -35,13 +34,13 @@ public class FormulaResponse {
       new FormulaResponse("Is the number of days of the campaign fixed?", "choice_days", new FieldType(
           InputTypeEnum.DROPDOWN, List.of(new String[]{"Yes", "No"}), null, null), null),
       new FormulaResponse("How many days will this campaign run?", "mda_days", new FieldType(
-          InputTypeEnum.INTEGER, null, 1, 90), Arrays.asList(new SkipPattern("Yes", "cdd_denom"))),
+          InputTypeEnum.INTEGER, null, 1, 90), new SkipPattern("Yes", "choice_days")),
       new FormulaResponse("Is the number of CDDs per location fixed?", "choice_cdd", new FieldType(
           InputTypeEnum.DROPDOWN, List.of(new String[]{"Yes", "No"}), null, null), null),
       new FormulaResponse("What is the average number of CDDs per location selected on the map?", "cdd_number", new FieldType(
           InputTypeEnum.INTEGER, null, null, null), null),
       new FormulaResponse("Are you planning your CDDs based on the campaign target population for the campaign? (The campaign target population is a sub-set of the total population) If no, then the total population with growth rate will be used to calculate CDD requirements on the dashboard.", "cdd_number", new FieldType(
-          InputTypeEnum.DROPDOWN, List.of(new String[]{"Yes", "No"}), null, null), Arrays.asList(new SkipPattern("Yes", "cdd_denom"))),
+          InputTypeEnum.DROPDOWN, List.of(new String[]{"Yes", "No"}), null, null), new SkipPattern("Yes", "choice_cdd")),
       new FormulaResponse("On average, how many people can you estimate that 1 CDD can treat in 1 campaign day?", "cdd_target", new FieldType(
           InputTypeEnum.INTEGER, null, null, null), null),
       new FormulaResponse("On average, how many structures (or households) can be visited on 1 campaign day by 1 CDD?", "structure_day", new FieldType(
