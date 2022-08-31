@@ -4,11 +4,16 @@ import static com.revealprecision.revealserver.enums.WhereClauseEnum.AND;
 
 import com.revealprecision.revealserver.enums.WhereClauseEnum;
 import com.revealprecision.revealserver.persistence.domain.Event;
+import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
 import com.revealprecision.revealserver.persistence.domain.Organization;
 import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.service.models.EventSearchCriteria;
 import java.util.List;
 import java.util.UUID;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Predicate;
+import javax.persistence.criteria.Root;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -37,8 +42,10 @@ public class EventSpec {
           whereUserIdentifierIn(eventSearchCriteria.getUserIdentifiers()), AND);
     }
     if (eventSearchCriteria.getLocationIdentifiers() != null) {
+//      eventSpecification = getSpecification(eventSpecification,
+//          whereLocationIn(eventSearchCriteria.getLocationIdentifiers()), AND);
       eventSpecification = getSpecification(eventSpecification,
-          whereLocationIn(eventSearchCriteria.getLocationIdentifiers()), AND);
+          whereLocationIsChildOf(eventSearchCriteria.getLocationIdentifiers()),AND);
     }
     if (eventSearchCriteria.getUserNames() != null) {
       eventSpecification = getSpecification(eventSpecification,
@@ -67,6 +74,20 @@ public class EventSpec {
         .in(locationIdentifiers);
   }
 
+  private static Specification<Event> whereLocationIsChildOf(List<UUID> locationIdentifiers) {
+    return new Specification<Event>() {
+      @Override
+      public Predicate toPredicate(Root<Event> root, CriteriaQuery<?> query,
+          CriteriaBuilder criteriaBuilder) {
+        CriteriaQuery<UUID> locationRelationshipCriteriaQuery = criteriaBuilder.createQuery(UUID.class);
+        Root<LocationRelationship> locationRelationshipRoot = locationRelationshipCriteriaQuery.from(LocationRelationship.class);
+        CriteriaQuery<UUID> childrenSelection = locationRelationshipCriteriaQuery.select(
+                locationRelationshipRoot.get("location").get("identifier"))
+            .where(locationRelationshipRoot.get("parentLocation").get("identifier").in(locationIdentifiers));
+        return root.get("locationIdentifier").in(childrenSelection);
+      }
+    };
+  }
   private static Specification<Event> whereOrganizationNameIn(List<String> organizationNames) {
     return (root, query, criteriaBuilder) -> root.get("organization")
         .<Organization>get("name").in(organizationNames);
