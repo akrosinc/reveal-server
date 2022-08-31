@@ -4,6 +4,7 @@ import static com.revealprecision.revealserver.constants.LocationConstants.STRUC
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.revealprecision.revealserver.constants.KafkaConstants;
 import com.revealprecision.revealserver.enums.BulkStatusEnum;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.messaging.message.LocationRelationshipMessage;
@@ -407,6 +408,21 @@ public class LocationRelationshipService {
                 .build();
             locationRelationshipToSave.setEntityStatus(EntityStatus.ACTIVE);
             locationRelationshipRepository.save(locationRelationshipToSave);
+
+
+            LocationRelationshipMessage locationRelationshipMessage = new LocationRelationshipMessage();
+            locationRelationshipMessage.setLocationIdentifier(
+                locationRelationshipToSave.getLocation().getIdentifier());
+            locationRelationshipMessage.setGeoName(
+                locationRelationshipToSave.getLocation().getGeographicLevel().getName());
+            locationRelationshipMessage.setParentLocationIdentifier(
+                locationRelationshipToSave.getParentLocation().getIdentifier());
+            locationRelationshipMessage.setAncestry(locationRelationshipToSave.getAncestry());
+            locationRelationshipMessage.setLocationName(location.getName());
+            locationRelationshipMessage.setLocationHierarchyIdentifier(
+                locationHierarchy.getIdentifier());
+            kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.LOCATIONS_IMPORTED),
+                locationRelationshipMessage);
 
           }
         }
