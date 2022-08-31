@@ -62,8 +62,25 @@ public class RawFormSubmissionListener extends Listener {
 
   private final KafkaProperties kafkaProperties;
 
+
+  // 1. Added 2 listeners here for the "original" events and the events generated for each parent in the location hierarchy
+  // 2. The events generated for the location parents will go into the FORM_SUBMISSIONS_PARENT topic
+  // 3. In the event that a replay of the topic is needed the offset of FORM_SUBMISSIONS should be set to beginning
+  //      and the offset on topic FORM_SUBMISSIONS_PARENT should be set to the end
+
   @KafkaListener(topics = "#{kafkaConfigProperties.topicMap.get('FORM_SUBMISSIONS')}", groupId = "reveal_server_group")
   public void etl(FormCaptureEvent formCaptureEvent) {
+    handleEvent(formCaptureEvent);
+  }
+
+  //TODO: Opportunity here for topic events for FORM_SUBMISSIONS_PARENT to have a short expiry as a disk space optimization
+  @KafkaListener(topics = "#{kafkaConfigProperties.topicMap.get('FORM_SUBMISSIONS_PARENT')}", groupId = "reveal_server_group")
+  public void etlForParent(FormCaptureEvent formCaptureEvent) {
+    handleEvent(formCaptureEvent);
+  }
+
+  private void handleEvent(FormCaptureEvent formCaptureEvent) {
+    log.debug("Received Message {}, ", formCaptureEvent);
     Plan plan = planService.findPlanByIdentifier(formCaptureEvent.getPlanId());
     Location location;
     if (formCaptureEvent.getLocationId() != null) {
@@ -71,7 +88,6 @@ public class RawFormSubmissionListener extends Listener {
     } else {
       location = locationService.findByIdentifier(
           UUID.fromString(formCaptureEvent.getRawFormEvent().getDetails().get(LOCATION_PARENT)));
-
     }
     Report reportEntry = getOrInstantiateReportEntry(plan, location);
 
@@ -142,7 +158,7 @@ public class RawFormSubmissionListener extends Listener {
         .savedEventId(formCaptureEvent.getSavedEventId()).planId(formCaptureEvent.getPlanId())
         .taskId(formCaptureEvent.getTaskId()).build();
     formCaptureEventKafkaTemplate.send(
-        kafkaProperties.getTopicMap().get(KafkaConstants.FORM_SUBMISSIONS),
+        kafkaProperties.getTopicMap().get(KafkaConstants.FORM_SUBMISSIONS_PARENT),
         plan.getIdentifier().toString(), parentEvent);
   }
 

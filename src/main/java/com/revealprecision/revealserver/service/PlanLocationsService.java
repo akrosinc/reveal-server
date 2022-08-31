@@ -27,6 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 
@@ -72,6 +73,10 @@ public class PlanLocationsService {
         locationIdentifier.toString(),
         locationHierarchyIdentifier,
         planIdentifier);
+  }
+
+  public Long getAssignedChildrenOfLocationBelow(UUID planIdentifier, UUID locationIdentifier, UUID locationHierarchyIdentifier){
+    return planLocationsRepository.getAssignedChildrenOfLocationBelow(locationIdentifier,locationHierarchyIdentifier,planIdentifier);
   }
 
 
@@ -278,5 +283,10 @@ public class PlanLocationsService {
       List<UUID> locationIds) {
     return planLocationsRepository.getPlanLocationsByPlanIdAndLocationIdentifiers(planId,
         locationIds);
+  }
+
+  @Async
+  public void refreshAssignedStructureCountsMaterializedView(){
+    planLocationsRepository.refreshAssignedStructureCountsMaterializedView();
   }
 }

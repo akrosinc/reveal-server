@@ -34,6 +34,7 @@ import com.revealprecision.revealserver.persistence.domain.ProcessTracker;
 import com.revealprecision.revealserver.persistence.domain.Task;
 import com.revealprecision.revealserver.persistence.domain.Task.Fields;
 import com.revealprecision.revealserver.persistence.domain.TaskProcessStage;
+import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.persistence.domain.actioncondition.Query;
 import com.revealprecision.revealserver.persistence.projection.TaskProjection;
 import com.revealprecision.revealserver.persistence.repository.LookupTaskStatusRepository;
@@ -57,9 +58,8 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import javax.annotation.PostConstruct;
 import javax.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
@@ -69,6 +69,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class TaskService {
 
   public static final String TASK_STATUS_READY = "READY";
@@ -80,6 +81,7 @@ public class TaskService {
   private final PersonService personService;
   private final GoalService goalService;
   private final ConditionService conditionService;
+  private final UserService userService;
 
   private final LocationService locationService;
   private final LookupTaskStatusRepository lookupTaskStatusRepository;
@@ -92,41 +94,25 @@ public class TaskService {
   private final ProcessTrackerService processTrackerService;
 
 
+
   private LookupTaskStatus cancelledLookupTaskStatus;
   private LookupTaskStatus readyLookupTaskStatus;
 
-  @Autowired
-  @Lazy
-  public TaskService(TaskRepository taskRepository, PlanService planService,
-      ActionService actionService, LocationService locationService,
-      LookupTaskStatusRepository lookupTaskStatusRepository, PersonService personService,
-      EntityFilterService entityFilterService, GoalService goalService,
-      ConditionService conditionService,
-      BusinessStatusProperties businessStatusProperties,
-      BusinessStatusService businessStatusService,
-      KafkaTemplate<String, Message> kafkaTemplate,
-      KafkaProperties kafkaProperties,
-      TaskProcessStageRepository taskProcessStageRepository,
-      ProcessTrackerService processTrackerService) {
-    this.taskRepository = taskRepository;
-    this.planService = planService;
-    this.actionService = actionService;
-    this.locationService = locationService;
-    this.lookupTaskStatusRepository = lookupTaskStatusRepository;
-    this.personService = personService;
-    this.entityFilterService = entityFilterService;
-    this.goalService = goalService;
-    this.conditionService = conditionService;
-    this.businessStatusProperties = businessStatusProperties;
-    this.businessStatusService = businessStatusService;
-    this.kafkaTemplate = kafkaTemplate;
-    this.kafkaProperties = kafkaProperties;
-    this.taskProcessStageRepository = taskProcessStageRepository;
-    this.processTrackerService = processTrackerService;
-  }
 
   public Page<Task> searchTasks(TaskSearchCriteria taskSearchCriteria, Pageable pageable) {
     return taskRepository.findAll(TaskSpec.getTaskSpecification(taskSearchCriteria), pageable);
+  }
+
+  public List<Task> getNonStructureTaskFacadesByLocationServerVersionAndPlan(UUID planIdentifier,
+      List<UUID> locationIdentifiers, Long serverVersion) {
+    return taskRepository.getNonStructureTaskFacadesByLocationServerVersionAndPlan(planIdentifier,
+        locationIdentifiers, serverVersion);
+  }
+
+  public List<Task> getStructureTaskFacadesByLocationServerVersionAndPlan(UUID planIdentifier,
+      List<UUID> locationIdentifiers, Long serverVersion) {
+    return taskRepository.getStructureTaskFacadesByLocationServerVersionAndPlan(planIdentifier,
+        locationIdentifiers, serverVersion);
   }
 
   public Long countTasksBySearchCriteria(TaskSearchCriteria taskSearchCriteria) {
@@ -380,7 +366,7 @@ public class TaskService {
   }
 
   public Task generateTaskForTaskProcess(TaskProcessEvent taskProcessEvent) throws IOException {
-    Task taskObjs = null;
+    Task task = null;
     Optional<TaskProcessStage> taskGenerationStageOptional = taskProcessStageRepository.findById(
         taskProcessEvent.getIdentifier());
 
@@ -395,9 +381,13 @@ public class TaskService {
       Action action = actionService.getByIdentifier(
           taskProcessEvent.getActionEvent().getIdentifier());
 
-      String ownerId = taskProcessEvent.getOwner();
-      taskObjs = createTaskObjectFromActionAndEntityId(action,
-          uuid, plan, ownerId);
+      String owner = null;
+      if (taskProcessEvent.getOwner() != null) {
+        User user = userService.getByKeycloakId(UUID.fromString(taskProcessEvent.getOwner()));
+        owner = user.getUsername();
+      }
+      task = createTaskObjectFromActionAndEntityId(action,
+          uuid, plan, owner);
 
       TaskProcessStage taskGenerationStage = taskGenerationStageOptional.get();
       taskGenerationStage.setState(ProcessTrackerEnum.DONE);
@@ -407,7 +397,7 @@ public class TaskService {
 
     }
 
-    return taskObjs;
+    return task;
   }
 
   private void updateProcessTracker(TaskProcessEvent taskProcessEvent) {
@@ -469,7 +459,7 @@ public class TaskService {
 
 
   private Task createTaskObjectFromActionAndEntityId(Action action,
-      UUID entityUUID, Plan plan, String ownerId) throws IOException {
+      UUID entityUUID, Plan plan, String owner) {
     log.debug("TASK_GENERATION  create individual task for plan: {} and action: {}",
         plan.getIdentifier(), action.getIdentifier());
 
@@ -500,7 +490,7 @@ public class TaskService {
       task.setPerson(person);
     }
 
-    Task savedTask = saveTaskAndBusinessState(task, ownerId);
+    Task savedTask = saveTaskAndBusinessState(task, owner);
 
     log.debug("TASK_GENERATION completed creating individual task for plan: {} and action: {}",
         plan.getIdentifier(), action.getIdentifier());
@@ -542,9 +532,17 @@ public class TaskService {
     return savedTask;
   }
 
-  public Task saveTaskAndBusinessState(Task task, String ownerId) {
+  public Task saveTaskAndBusinessState(Task task, String owner) {
+
+    log.trace("task: {} entity: {}", task.getIdentifier(),
+        task.getBaseEntityIdentifier());
+    TaskEvent taskEvent = TaskEventFactory.getTaskEventFromTask(task);
+    taskEvent.setOwner(owner);
+    task.setTaskFacade(taskEvent);
 
     Task savedTask = taskRepository.save(task);
+    taskEvent.setIdentifier(savedTask.getIdentifier());
+    taskEvent.setServerVersion(savedTask.getServerVersion());
 
     if (savedTask.getLookupTaskStatus().getCode().equals(TASK_STATUS_CANCELLED)) {
       businessStatusService.deactivateBusinessStatus(savedTask);
@@ -553,10 +551,6 @@ public class TaskService {
           businessStatusProperties.getDefaultLocationBusinessStatus());
     }
 
-    log.trace("task: {} entity: {}", savedTask.getIdentifier(),
-        savedTask.getBaseEntityIdentifier());
-    TaskEvent taskEvent = TaskEventFactory.getTaskEventFromTask(savedTask);
-    taskEvent.setOwnerId(ownerId);
     kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.TASK), taskEvent);
 
     return savedTask;

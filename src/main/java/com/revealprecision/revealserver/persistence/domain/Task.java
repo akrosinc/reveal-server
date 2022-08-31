@@ -2,12 +2,15 @@ package com.revealprecision.revealserver.persistence.domain;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.revealprecision.revealserver.enums.TaskPriorityEnum;
+import com.revealprecision.revealserver.messaging.message.TaskEvent;
 import com.revealprecision.revealserver.persistence.generator.TaskServerVersionGenerator;
+import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import javax.persistence.CascadeType;
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
@@ -31,6 +34,8 @@ import org.hibernate.annotations.GenerationTime;
 import org.hibernate.annotations.GeneratorType;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.Type;
+import org.hibernate.annotations.TypeDef;
 import org.hibernate.annotations.Where;
 import org.hibernate.envers.Audited;
 
@@ -44,6 +49,7 @@ import org.hibernate.envers.Audited;
 @FieldNameConstants
 @NoArgsConstructor
 @AllArgsConstructor
+@TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
 public class Task extends AbstractAuditableEntity {
 
   @Id
@@ -126,4 +132,18 @@ public class Task extends AbstractAuditableEntity {
   private Long serverVersion;
 
   private String businessStatus;
+
+  @Type(type = "jsonb")
+  @Column(columnDefinition = "jsonb")
+  private TaskEvent taskFacade;
+
+  public Task(UUID identifier, UUID planIdentifier, long serverVersion, Object taskFacade, UUID parentLocation) {
+    this.identifier = identifier;
+    this.plan = Plan.builder().identifier(planIdentifier).build();
+    this.serverVersion = serverVersion;
+    if (taskFacade != null) {
+      this.taskFacade = (TaskEvent) taskFacade;
+      this.taskFacade.setParentLocation(parentLocation);
+    }
+  }
 }

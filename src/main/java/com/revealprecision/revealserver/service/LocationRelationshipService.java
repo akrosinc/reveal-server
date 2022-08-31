@@ -4,9 +4,9 @@ import static com.revealprecision.revealserver.constants.LocationConstants.STRUC
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.revealprecision.revealserver.constants.KafkaConstants;
 import com.revealprecision.revealserver.enums.BulkStatusEnum;
 import com.revealprecision.revealserver.enums.EntityStatus;
-import com.revealprecision.revealserver.constants.KafkaConstants;
 import com.revealprecision.revealserver.messaging.message.LocationRelationshipMessage;
 import com.revealprecision.revealserver.persistence.domain.GeographicLevel;
 import com.revealprecision.revealserver.persistence.domain.Location;
@@ -19,6 +19,7 @@ import com.revealprecision.revealserver.persistence.projection.LocationRelations
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import com.revealprecision.revealserver.persistence.repository.GeographicLevelRepository;
 import com.revealprecision.revealserver.persistence.repository.LocationBulkRepository;
+import com.revealprecision.revealserver.persistence.repository.LocationCountsRepository;
 import com.revealprecision.revealserver.persistence.repository.LocationHierarchyRepository;
 import com.revealprecision.revealserver.persistence.repository.LocationRelationshipRepository;
 import com.revealprecision.revealserver.persistence.repository.LocationRepository;
@@ -70,7 +71,9 @@ public class LocationRelationshipService {
   private final KafkaProperties kafkaProperties;
   private final LocationBulkRepository locationBulkRepository;
   private final Logger importLog = LoggerFactory.getLogger("location-import-file");
+
   private final Environment env;
+  private final LocationCountsRepository locationCountsRepository;
 
   @Autowired
   public LocationRelationshipService(LocationRelationshipRepository locationRelationshipRepository,
@@ -78,7 +81,7 @@ public class LocationRelationshipService {
       LocationHierarchyRepository locationHierarchyRepository, RestHighLevelClient client,
       KafkaTemplate<String, LocationRelationshipMessage> kafkaTemplate,
       KafkaProperties kafkaProperties, LocationBulkRepository locationBulkRepository,
-      Environment env) {
+      Environment env, LocationCountsRepository locationCountsRepository) {
     this.locationRelationshipRepository = locationRelationshipRepository;
     this.geographicLevelRepository = geographicLevelRepository;
     this.locationRepository = locationRepository;
@@ -88,6 +91,7 @@ public class LocationRelationshipService {
     this.kafkaProperties = kafkaProperties;
     this.locationBulkRepository = locationBulkRepository;
     this.env = env;
+    this.locationCountsRepository = locationCountsRepository;
   }
 
 
@@ -405,9 +409,7 @@ public class LocationRelationshipService {
             locationRelationshipToSave.setEntityStatus(EntityStatus.ACTIVE);
             locationRelationshipRepository.save(locationRelationshipToSave);
 
-            // Proceed with caution here as new updates / removals to the object will prevent rewind of the streams application.
-            // In the event of new data being introduced, ensure that null pointers are catered in the streams
-            // application if the event comes through, and it does not have the new fields populated
+
             LocationRelationshipMessage locationRelationshipMessage = new LocationRelationshipMessage();
             locationRelationshipMessage.setLocationIdentifier(
                 locationRelationshipToSave.getLocation().getIdentifier());
@@ -421,6 +423,7 @@ public class LocationRelationshipService {
                 locationHierarchy.getIdentifier());
             kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.LOCATIONS_IMPORTED),
                 locationRelationshipMessage);
+
           }
         }
       } else if (nodePosition == -1) {
@@ -431,6 +434,8 @@ public class LocationRelationshipService {
       LocationBulk locationBulk = bulk;
       locationBulk.setStatus(BulkStatusEnum.COMPLETE);
       locationBulkRepository.save(locationBulk);
+
+      refreshLocationCountsView();
     }
   }
 
@@ -440,6 +445,10 @@ public class LocationRelationshipService {
         locationIdentifier, locationHierarchyIdentifier);
   }
 
+  @Async
+  public void refreshLocationCountsView() {
+    locationCountsRepository.refreshLocationCountsMaterializedView();
+  }
 
   public List<Location> getChildrenLocations(UUID hierarchyIdentifier, UUID locationIdentifier) {
     List<Location> children = locationRelationshipRepository.getChildren(hierarchyIdentifier,
@@ -486,7 +495,9 @@ public class LocationRelationshipService {
     return locationRelationshipRepository.getParentLocationByLocationIdAndHierarchyId(
         location.getIdentifier(), locationHierarchy.getIdentifier());
   }
-  public List<LocationRelationship> getLocationParentWithoutHierarchyIdentifier(UUID locationIdentifier) {
+
+  public List<LocationRelationship> getLocationParentWithoutHierarchyIdentifier(
+      UUID locationIdentifier) {
     return locationRelationshipRepository.getParentLocationByLocationIdWithoutHierarchyId(
         locationIdentifier);
   }

@@ -21,12 +21,15 @@ import com.revealprecision.revealserver.persistence.projection.LocationChildrenC
 import com.revealprecision.revealserver.persistence.projection.LocationCoordinatesProjection;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import com.revealprecision.revealserver.persistence.repository.LocationRepository;
+import com.revealprecision.revealserver.util.ElasticModelUtil;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -63,13 +66,21 @@ public class LocationService {
   private final EntityTagService entityTagService;
   private final LocationHierarchyService locationHierarchyService;
 
-  public Location createLocation(LocationRequest locationRequest) throws IOException {
+  public Location createLocation(LocationRequest locationRequest) throws Exception {
     GeographicLevel geographicLevel = geographicLevelService.findByName(
         locationRequest.getProperties().getGeographicLevel());
+    MessageDigest digest = MessageDigest.getInstance("SHA-256");
+
+    String hash = ElasticModelUtil.bytesToHex(digest.digest(locationRequest
+        .getGeometry()
+        .toString()
+        .getBytes(StandardCharsets.UTF_8)));
+
     var locationToSave = Location.builder().geographicLevel(geographicLevel)
         .type(locationRequest.getType()).geometry(locationRequest.getGeometry())
         .name(locationRequest.getProperties().getName())
         .status(locationRequest.getProperties().getStatus())
+        .hashValue(hash)
         .externalId(locationRequest.getProperties().getExternalId()).build();
     if (locationRequest.getProperties().getExternalId() != null) {
       locationToSave.setIdentifier(locationRequest.getProperties().getExternalId());
@@ -77,6 +88,7 @@ public class LocationService {
     locationToSave.setEntityStatus(EntityStatus.ACTIVE);
     var savedLocation = locationRepository.save(locationToSave);
     locationRelationshipService.updateLocationRelationshipsForNewLocation(savedLocation);
+    locationRelationshipService.refreshLocationCountsView();
     return savedLocation;
   }
 
