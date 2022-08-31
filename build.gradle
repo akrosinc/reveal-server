@@ -46,7 +46,6 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-undertow:2.5.6'
 
     implementation 'org.springframework.kafka:spring-kafka'
-//    implementation 'org.apache.kafka:kafka-streams'
 
     implementation 'org.hibernate:hibernate-java8:5.6.1.Final'
     implementation 'org.hibernate:hibernate-envers:5.6.1.Final'

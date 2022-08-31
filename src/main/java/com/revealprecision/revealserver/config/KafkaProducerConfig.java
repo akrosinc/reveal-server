@@ -31,7 +31,6 @@ public class KafkaProducerConfig<T extends Message> {
     configProps.put(
         ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
         JsonSerializer.class);
-//    configProps.put(JsonSerializer.ADD_TYPE_INFO_HEADERS,false);
     return new DefaultKafkaProducerFactory<>(configProps);
   }
 

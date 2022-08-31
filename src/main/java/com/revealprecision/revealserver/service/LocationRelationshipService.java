@@ -80,7 +80,7 @@ public class LocationRelationshipService {
       LocationHierarchyRepository locationHierarchyRepository, RestHighLevelClient client,
       KafkaTemplate<String, LocationRelationshipMessage> kafkaTemplate,
       KafkaProperties kafkaProperties, LocationBulkRepository locationBulkRepository,
-      Environment env,LocationCountsRepository locationCountsRepository) {
+      Environment env, LocationCountsRepository locationCountsRepository) {
     this.locationRelationshipRepository = locationRelationshipRepository;
     this.geographicLevelRepository = geographicLevelRepository;
     this.locationRepository = locationRepository;
@@ -428,8 +428,9 @@ public class LocationRelationshipService {
     return locationRelationshipRepository.getLocationRelationshipByLocation_IdentifierAndLocationHierarchy_Identifier(
         locationIdentifier, locationHierarchyIdentifier);
   }
+
   @Async
-  public void refreshLocationCountsView(){
+  public void refreshLocationCountsView() {
     locationCountsRepository.refreshLocationCountsMaterializedView();
   }
 
@@ -478,7 +479,9 @@ public class LocationRelationshipService {
     return locationRelationshipRepository.getParentLocationByLocationIdAndHierarchyId(
         location.getIdentifier(), locationHierarchy.getIdentifier());
   }
-  public List<LocationRelationship> getLocationParentWithoutHierarchyIdentifier(UUID locationIdentifier) {
+
+  public List<LocationRelationship> getLocationParentWithoutHierarchyIdentifier(
+      UUID locationIdentifier) {
     return locationRelationshipRepository.getParentLocationByLocationIdWithoutHierarchyId(
         locationIdentifier);
   }

@@ -9,7 +9,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class LocationAboveStructureId implements Serializable {
 
-
   private UUID locationHierarchyIdentifier;
 
   private UUID planIdentifier;

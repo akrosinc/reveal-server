@@ -41,7 +41,6 @@ public class TaskListener extends Listener {
 
   @KafkaListener(topics = "#{kafkaConfigProperties.topicMap.get('TASK')}", groupId = "reveal_server_group")
   public void listenGroupFoo(TaskEvent message) {
-    //TODO: make this traceable - i.e. the application should know when task generation starts / ends
     log.info("Received Message in group foo: {}", message.toString());
     init();
 
