@@ -152,4 +152,8 @@ public interface LocationRelationshipRepository extends JpaRepository<LocationRe
           + "where l.geographicLevel.name = :levelName and lr.locationHierarchy.identifier = :hierarchyIdentifier")
   List<LocationMainData> getLocationsByHierarchyIdAndLevelName(
       @Param("hierarchyIdentifier") UUID hierarchyIdentifier, @Param("levelName") String levelName);
+
+  @Query(value = "select distinct lr.location.identifier from LocationRelationship  lr where lr.parentLocation.identifier in (:parentIdentifiers)")
+  List<UUID> getDistinctChildrenLocationsGivenParentIds(
+      @Param("parentIdentifiers") List<UUID> parentIdentifiers);
 }
