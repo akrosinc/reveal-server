@@ -519,5 +519,8 @@ public class LocationRelationshipService {
         locationId, locationHierarchyId).getAncestry();
   }
 
+  public List<UUID> getChildrenLocationIdentifiersGivenParentIdentifiers(List<UUID> parentIdentifiers){
+    return locationRelationshipRepository.getDistinctChildrenLocationsGivenParentIds(parentIdentifiers);
+  }
 }
 

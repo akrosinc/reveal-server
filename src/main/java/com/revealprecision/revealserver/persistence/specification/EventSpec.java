@@ -4,23 +4,24 @@ import static com.revealprecision.revealserver.enums.WhereClauseEnum.AND;
 
 import com.revealprecision.revealserver.enums.WhereClauseEnum;
 import com.revealprecision.revealserver.persistence.domain.Event;
-import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
 import com.revealprecision.revealserver.persistence.domain.Organization;
 import com.revealprecision.revealserver.persistence.domain.User;
+import com.revealprecision.revealserver.service.LocationRelationshipService;
 import com.revealprecision.revealserver.service.models.EventSearchCriteria;
 import java.util.List;
 import java.util.UUID;
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Predicate;
-import javax.persistence.criteria.Root;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Component;
 
 @Slf4j
+@Component
+@RequiredArgsConstructor
 public class EventSpec {
 
-  public static Specification<Event> getEventSpecification(
+  private final LocationRelationshipService locationRelationshipService;
+  public  Specification<Event> getEventSpecification(
       EventSearchCriteria eventSearchCriteria) {
 
     Specification<Event> eventSpecification = Specification.where(null);
@@ -42,72 +43,66 @@ public class EventSpec {
           whereUserIdentifierIn(eventSearchCriteria.getUserIdentifiers()), AND);
     }
     if (eventSearchCriteria.getLocationIdentifiers() != null) {
-//      eventSpecification = getSpecification(eventSpecification,
-//          whereLocationIn(eventSearchCriteria.getLocationIdentifiers()), AND);
       eventSpecification = getSpecification(eventSpecification,
-          whereLocationIsChildOf(eventSearchCriteria.getLocationIdentifiers()),AND);
+          whereLocationIn(eventSearchCriteria.getLocationIdentifiers()).or(
+              whereLocationIsChildOf(eventSearchCriteria.getLocationIdentifiers())), AND);
     }
     if (eventSearchCriteria.getUserNames() != null) {
       eventSpecification = getSpecification(eventSpecification,
           whereUserNamesIn(eventSearchCriteria.getUserNames()), AND);
     }
 
-    if(eventSearchCriteria.getServerVersion() != null) {
+    if (eventSearchCriteria.getServerVersion() != null) {
       eventSpecification = getSpecification(eventSpecification,
           whereServerVersionIsGreaterThan(eventSearchCriteria.getServerVersion()), AND);
     }
     return eventSpecification;
   }
 
-  private static Specification<Event> whereBaseIdentifierIn(List<UUID> baseIdentifiers) {
+  private  Specification<Event> whereBaseIdentifierIn(List<UUID> baseIdentifiers) {
     return (root, query, criteriaBuilder) -> root.get("baseEntityIdentifier")
         .in(baseIdentifiers);
   }
 
-  private static Specification<Event> whereUserIdentifierIn(List<UUID> providerIdentifiers) {
-    return (root, query, criteriaBuilder) -> root.get("user").<User>get("identifier").in(providerIdentifiers);
+  private  Specification<Event> whereUserIdentifierIn(List<UUID> providerIdentifiers) {
+    return (root, query, criteriaBuilder) -> root.get("user").<User>get("identifier")
+        .in(providerIdentifiers);
   }
 
-  private static Specification<Event> whereLocationIn(
+  private  Specification<Event> whereLocationIn(
       List<UUID> locationIdentifiers) {
     return (root, query, criteriaBuilder) -> root.get("locationIdentifier")
         .in(locationIdentifiers);
   }
 
-  private static Specification<Event> whereLocationIsChildOf(List<UUID> locationIdentifiers) {
-    return new Specification<Event>() {
-      @Override
-      public Predicate toPredicate(Root<Event> root, CriteriaQuery<?> query,
-          CriteriaBuilder criteriaBuilder) {
-        CriteriaQuery<UUID> locationRelationshipCriteriaQuery = criteriaBuilder.createQuery(UUID.class);
-        Root<LocationRelationship> locationRelationshipRoot = locationRelationshipCriteriaQuery.from(LocationRelationship.class);
-        CriteriaQuery<UUID> childrenSelection = locationRelationshipCriteriaQuery.select(
-                locationRelationshipRoot.get("location").get("identifier"))
-            .where(locationRelationshipRoot.get("parentLocation").get("identifier").in(locationIdentifiers));
-        return root.get("locationIdentifier").in(childrenSelection);
-      }
+  private  Specification<Event> whereLocationIsChildOf(List<UUID> locationIdentifiers) {
+    return (root, query, criteriaBuilder) -> {
+      List<UUID> children = locationRelationshipService.getChildrenLocationIdentifiersGivenParentIdentifiers(locationIdentifiers);
+      return root.get("locationIdentifier").in(children);
     };
   }
-  private static Specification<Event> whereOrganizationNameIn(List<String> organizationNames) {
+
+  private  Specification<Event> whereOrganizationNameIn(List<String> organizationNames) {
     return (root, query, criteriaBuilder) -> root.get("organization")
         .<Organization>get("name").in(organizationNames);
   }
 
-  private static Specification<Event> whereUserNamesIn(List<String> usernames) {
+  private  Specification<Event> whereUserNamesIn(List<String> usernames) {
     return (root, query, criteriaBuilder) -> root.get("user").<User>get("username").in(usernames);
   }
 
-  private static Specification<Event> whereOrganizationIdIn(List<UUID> identifiers) {
+  private  Specification<Event> whereOrganizationIdIn(List<UUID> identifiers) {
     return (root, query, criteriaBuilder) -> root.get("organization")
         .<Organization>get("identifier").in(identifiers);
   }
 
-  private static Specification<Event> whereServerVersionIsGreaterThan(Long serverVersion){
-    return (root, query, criteriaBuilder) -> criteriaBuilder.greaterThan(root.get("serverVersion"),serverVersion);
+  private  Specification<Event> whereServerVersionIsGreaterThan(Long serverVersion) {
+    return (root, query, criteriaBuilder) -> criteriaBuilder.greaterThan(root.get("serverVersion"),
+        serverVersion);
   }
 
 
-  private static Specification<Event> getSpecification(Specification<Event> original,
+  private  Specification<Event> getSpecification(Specification<Event> original,
       Specification<Event> additional, WhereClauseEnum type) {
     if (type.equals(AND)) {
       return original.and(additional);
