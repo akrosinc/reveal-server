@@ -21,23 +21,20 @@ import com.revealprecision.revealserver.persistence.domain.LookupTaskStatus.Fiel
 import com.revealprecision.revealserver.persistence.domain.Person;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.Task;
-import com.revealprecision.revealserver.persistence.es.PersonElastic;
 import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.service.ActionService;
 import com.revealprecision.revealserver.service.BusinessStatusService;
 import com.revealprecision.revealserver.service.LocationService;
+import com.revealprecision.revealserver.service.MetadataService;
 import com.revealprecision.revealserver.service.PersonService;
 import com.revealprecision.revealserver.service.PlanService;
 import com.revealprecision.revealserver.service.TaskService;
 import com.revealprecision.revealserver.util.ActionUtils;
-import com.revealprecision.revealserver.util.ElasticModelUtil;
 import com.revealprecision.revealserver.util.UserUtils;
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -48,12 +45,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.reindex.UpdateByQueryRequest;
-import org.elasticsearch.script.Script;
-import org.elasticsearch.script.ScriptType;
 import org.springframework.core.env.Environment;
 import org.springframework.data.util.Pair;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -72,7 +63,7 @@ public class TaskFacadeService {
   private final BusinessStatusService businessStatusService;
   private final KafkaTemplate<String, Message> kafkaTemplate;
   private final KafkaProperties kafkaProperties;
-  private final RestHighLevelClient client;
+  private final MetadataService metadataService;
   private final Environment env;
 
 
@@ -93,7 +84,7 @@ public class TaskFacadeService {
                 plan.getIdentifier(),
                 planTargetsMap.get(plan.getIdentifier()).stream().map(Location::getIdentifier).collect(
                     Collectors.toList()), serverVersion).stream()
-            .filter(task -> task.getTaskFacade()!=null)
+            .filter(task -> task.getTaskFacade() != null)
             .map(task -> {
               TaskFacade taskFacadeObj = TaskFacadeFactory.getTaskFacadeObj(requester,
                   task.getTaskFacade().getParentLocation().toString()
@@ -108,7 +99,7 @@ public class TaskFacadeService {
                     .map(Location::getIdentifier)
                     .collect(Collectors.toList()), serverVersion)
             .stream()
-            .filter(task -> task.getTaskFacade()!=null)
+            .filter(task -> task.getTaskFacade() != null)
             .map(task -> {
               TaskFacade taskFacadeObj = TaskFacadeFactory.getTaskFacadeObj(requester,
                   task.getTaskFacade().getParentLocation().toString()
@@ -167,6 +158,7 @@ public class TaskFacadeService {
         task.setLookupTaskStatus(taskStatus.get());
         task.setBusinessStatus(updateFacade.getBusinessStatus());
         businessStatusService.setBusinessStatus(task, updateFacade.getBusinessStatus());
+        task.setTaskFacade(TaskEventFactory.getTaskEventFromTask(task));
         Task savedTask = taskService.saveTask(task);
         identifier = task.getIdentifier();
 
@@ -193,7 +185,7 @@ public class TaskFacadeService {
       try {
         saveTaskDto(taskDto);
       } catch (Exception e) {
-        log.error(e.toString(),e);
+        log.error(e.toString(), e);
         e.printStackTrace();
         unprocessedTaskIds.add(taskDto);
       }
@@ -292,23 +284,7 @@ public class TaskFacadeService {
           }
 
           if (Arrays.asList(env.getActiveProfiles()).contains("Simulation")) {
-            PersonElastic personElastic = new PersonElastic(person);
-            Map<String, Object> parameters = new HashMap<>();
-            parameters.put("person", ElasticModelUtil.toMapFromPersonElastic(personElastic));
-            parameters.put("personId", personElastic.getIdentifier());
-            UpdateByQueryRequest request = new UpdateByQueryRequest("location");
-            List<String> locationIds = person.getLocations().stream()
-                .map(loc -> loc.getIdentifier().toString()).collect(
-                    Collectors.toList());
-
-            request.setQuery(QueryBuilders.termsQuery("_id", locationIds));
-            request.setScript(new Script(
-                ScriptType.INLINE, "painless",
-                "def foundPerson = ctx._source.person.find(attr-> attr.identifier == params.personId);"
-                    + " if(foundPerson == null) {ctx._source.person.add(params.person);}",
-                parameters
-            ));
-            client.updateByQuery(request, RequestOptions.DEFAULT);
+            metadataService.updatePersonDetailsOnElasticSearch(person);
           }
         }
         task.setPerson(person);
@@ -327,4 +303,6 @@ public class TaskFacadeService {
           LookupTaskStatus.class);
     }
   }
+
+
 }
