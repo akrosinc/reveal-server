@@ -115,8 +115,8 @@ public class TaskListener extends Listener {
           .getNodeOrder();
       String node = nodeOrder.get(nodeOrder.indexOf(LocationConstants.STRUCTURE) - 1);
 
-      List<Location> parentsAboveNodeAboveStructure = IntStream.range(0,
-              nodeOrder.indexOf(LocationConstants.STRUCTURE) - 1).mapToObj(
+      List<Location> parentsAboveNodeAboveStructure = IntStream.range(1,
+              nodeOrder.indexOf(LocationConstants.STRUCTURE)).mapToObj(
               trackers::get)
           .map(taskBusinessStateTracker ->
               Location.builder()
