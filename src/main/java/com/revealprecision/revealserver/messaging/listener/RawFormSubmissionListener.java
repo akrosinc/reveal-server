@@ -29,6 +29,7 @@ import static com.revealprecision.revealserver.constants.FormConstants.YES;
 import com.revealprecision.revealserver.api.v1.facade.models.EventFacade;
 import com.revealprecision.revealserver.api.v1.facade.models.Obs;
 import com.revealprecision.revealserver.constants.KafkaConstants;
+import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.messaging.message.FormCaptureEvent;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.Plan;
@@ -62,7 +63,6 @@ public class RawFormSubmissionListener extends Listener {
 
   private final KafkaProperties kafkaProperties;
 
-
   // 1. Added 2 listeners here for the "original" events and the events generated for each parent in the location hierarchy
   // 2. The events generated for the location parents will go into the FORM_SUBMISSIONS_PARENT topic
   // 3. In the event that a replay of the topic is needed the offset of FORM_SUBMISSIONS should be set to beginning
@@ -85,9 +85,26 @@ public class RawFormSubmissionListener extends Listener {
     Location location;
     if (formCaptureEvent.getLocationId() != null) {
       location = locationService.findByIdentifier(formCaptureEvent.getLocationId());
-    } else {
+    } else if (formCaptureEvent.getRawFormEvent().getLocationId() != null
+        && !formCaptureEvent.getRawFormEvent().getLocationId().isEmpty()) {
       location = locationService.findByIdentifier(
-          UUID.fromString(formCaptureEvent.getRawFormEvent().getDetails().get(LOCATION_PARENT)));
+          UUID.fromString(formCaptureEvent.getRawFormEvent().getLocationId()));
+    } else {
+      Location locationFromBaseEntityId = null;
+      try {
+        locationFromBaseEntityId = locationService.findByIdentifier(
+            UUID.fromString(formCaptureEvent.getRawFormEvent().getBaseEntityId()));
+      } catch (NotFoundException notFoundException) {
+        log.warn("Unable to find associated location for this event: {}",
+            formCaptureEvent.getSavedEventId());
+      }
+
+      if (locationFromBaseEntityId != null) {
+        location = locationFromBaseEntityId;
+      } else {
+        location = locationService.findByIdentifier(
+            UUID.fromString(formCaptureEvent.getRawFormEvent().getDetails().get(LOCATION_PARENT)));
+      }
     }
     Report reportEntry = getOrInstantiateReportEntry(plan, location);
 
@@ -144,7 +161,8 @@ public class RawFormSubmissionListener extends Listener {
     currentDates.add(getObservation(observations, COLLECTION_DATE));
     reportIndicators.setUniqueSupervisionDates(currentDates);
     reportIndicators.setSupervisorFormSubmissionCount(
-        reportIndicators.getSupervisorFormSubmissionCount() + 1);
+        reportIndicators.getSupervisorFormSubmissionCount() == null ? 0
+            : reportIndicators.getSupervisorFormSubmissionCount() + 1);
     reportIndicators.setInsecticidesUsed(
         (reportIndicators.getInsecticidesUsed() != null ? reportIndicators.getInsecticidesUsed()
             : 0) + NumberValue(getObservation(observations, BOTTLES_EMPTY), 0));
