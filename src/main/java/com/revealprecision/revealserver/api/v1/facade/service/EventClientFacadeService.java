@@ -18,16 +18,15 @@ import com.revealprecision.revealserver.persistence.domain.Event;
 import com.revealprecision.revealserver.persistence.domain.Group;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.Person;
-import com.revealprecision.revealserver.persistence.es.PersonElastic;
 import com.revealprecision.revealserver.service.EventService;
 import com.revealprecision.revealserver.service.FormDataProcessorService;
 import com.revealprecision.revealserver.service.GroupService;
 import com.revealprecision.revealserver.service.LocationService;
+import com.revealprecision.revealserver.service.MetadataService;
 import com.revealprecision.revealserver.service.OrganizationService;
 import com.revealprecision.revealserver.service.PersonService;
 import com.revealprecision.revealserver.service.UserService;
 import com.revealprecision.revealserver.service.models.EventSearchCriteria;
-import com.revealprecision.revealserver.util.ElasticModelUtil;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -46,12 +45,6 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.reindex.UpdateByQueryRequest;
-import org.elasticsearch.script.Script;
-import org.elasticsearch.script.ScriptType;
 import org.json.JSONObject;
 import org.springframework.core.env.Environment;
 import org.springframework.data.domain.Page;
@@ -74,7 +67,7 @@ public class EventClientFacadeService {
   private final GroupService groupService;
   private final ObjectMapper objectMapper;
   private final FormDataProcessorService formDataProcessorService;
-  private final RestHighLevelClient client;
+  private final MetadataService metadataService;
   private final Environment env;
 
 
@@ -105,7 +98,7 @@ public class EventClientFacadeService {
     eventFacadeList.forEach(eventFacade -> {
       try {
         Event savedEvent = saveEvent(eventFacade);
-        formDataProcessorService.processFormDataAndSubmitToMessaging(savedEvent,eventFacade);
+        formDataProcessorService.processFormDataAndSubmitToMessaging(savedEvent, eventFacade);
       } catch (Exception exception) {
         exception.printStackTrace();
         failedEvents.add(eventFacade);
@@ -155,24 +148,7 @@ public class EventClientFacadeService {
     person = personService.savePerson(person);
 
     if (Arrays.asList(env.getActiveProfiles()).contains("Simulation")) { //TODO: remove when needed
-      PersonElastic personElastic = new PersonElastic(person);
-      Map<String, Object> parameters = new HashMap<>();
-
-      parameters.put("person", ElasticModelUtil.toMapFromPersonElastic(personElastic));
-      parameters.put("personId", personElastic.getIdentifier());
-      UpdateByQueryRequest request = new UpdateByQueryRequest("location");
-      List<String> locationIds = person.getLocations().stream()
-          .map(loc -> loc.getIdentifier().toString()).collect(
-              Collectors.toList());
-
-      request.setQuery(QueryBuilders.termsQuery("_id", locationIds));
-      request.setScript(new Script(
-          ScriptType.INLINE, "painless",
-          "def foundPerson = ctx._source.person.find(attr-> attr.identifier == params.personId);"
-              + " if(foundPerson == null) {ctx._source.person.add(params.person);}",
-          parameters
-      ));
-      client.updateByQuery(request, RequestOptions.DEFAULT);
+      metadataService.updatePersonDetailsOnElasticSearch(person);
     }
   }
 
