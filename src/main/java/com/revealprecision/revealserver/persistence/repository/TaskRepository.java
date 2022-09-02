@@ -33,8 +33,9 @@ public interface TaskRepository extends JpaRepository<Task, UUID>,
       UUID actionIdentifier);
 
   @Query(
-      "SELECT new com.revealprecision.revealserver.persistence.domain.Task(t.identifier,t.plan.identifier,t.serverVersion,t.taskFacade,t.location.identifier) from  Task t "
+      "SELECT new com.revealprecision.revealserver.persistence.domain.Task(t.identifier,t.plan.identifier,t.serverVersion,t.taskFacade, lr.parentLocation.identifier) from  Task t "
           + "left join Location l on l = t.location left join Plan p on p = t.plan "
+          + "left join LocationRelationship  lr on lr.location = l "
           + "WHERE p.identifier = :planIdentifier and t.location.identifier in :locationIdentifiers and t.serverVersion > :serverVersion")
   List<Task> getNonStructureTaskFacadesByLocationServerVersionAndPlan(UUID planIdentifier,
       List<UUID> locationIdentifiers, Long serverVersion);
