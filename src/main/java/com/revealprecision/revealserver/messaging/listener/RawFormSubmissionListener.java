@@ -114,7 +114,7 @@ public class RawFormSubmissionListener extends Listener {
     EventFacade rawFormEvent = formCaptureEvent.getRawFormEvent();
     if (rawFormEvent.getEventType().equals(SPRAY)) {
       extractIRSSprayedLocationIndicators(observations, reportIndicators);
-    } else if (rawFormEvent.getEventType().equals(MOBILIZATION)) {
+    } else if (rawFormEvent.getEventType().equals(MOBILIZED)) {
       extractMobilizationIndicators(observations, reportIndicators);
     } else if (rawFormEvent.getEventType().equals(IRS_LITE_VERIFICATION)) {
       extractVillageVisitationIndicators(observations, reportIndicators);
