@@ -39,4 +39,6 @@ public class CountryCampaign extends AbstractAuditableEntity{
   @Type(type = "jsonb")
   @Column(columnDefinition = "jsonb")
   private List<AgeGroup> groups;
+
+  private String key;
 }

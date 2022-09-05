@@ -6,7 +6,7 @@ import com.revealprecision.revealserver.api.v1.dto.request.ResourcePlanningReque
 import com.revealprecision.revealserver.api.v1.dto.response.CampaignDrugResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.CountryCampaignResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.FormulaResponse;
-import com.revealprecision.revealserver.api.v1.dto.response.ResourcePlanningQuestionResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.SecondStepQuestionsResponse;
 import com.revealprecision.revealserver.service.ResourcePlanningService;
 import java.util.Arrays;
 import java.util.List;
@@ -52,7 +52,7 @@ public class ResourcePlanningController {
   }
 
   @PostMapping("formula")
-  public ResponseEntity<ResourcePlanningQuestionResponse> getFormulasSecondStep(@Valid @RequestBody
+  public ResponseEntity<List<SecondStepQuestionsResponse>> getFormulasSecondStep(@Valid @RequestBody
       ResourcePlanningRequest request) {
     return ResponseEntity.ok()
         .body(resourcePlanningService.getSecondStepQuestions(request));

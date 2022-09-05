@@ -3,7 +3,6 @@ package com.revealprecision.revealserver.service;
 import com.revealprecision.revealserver.api.v1.dto.request.ResourcePlanningRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.FieldType;
 import com.revealprecision.revealserver.api.v1.dto.response.FormulaResponse;
-import com.revealprecision.revealserver.api.v1.dto.response.ResourcePlanningQuestionResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.SecondStepQuestionsResponse;
 import com.revealprecision.revealserver.enums.InputTypeEnum;
 import com.revealprecision.revealserver.exceptions.ConflictException;
@@ -39,8 +38,8 @@ public class ResourcePlanningService {
     return campaignDrugRepository.findAll();
   }
 
-  public ResourcePlanningQuestionResponse getSecondStepQuestions(ResourcePlanningRequest request) {
-    ResourcePlanningQuestionResponse response = new ResourcePlanningQuestionResponse();
+  public List<SecondStepQuestionsResponse> getSecondStepQuestions(ResourcePlanningRequest request) {
+    List<SecondStepQuestionsResponse> response = new ArrayList<>();
 
     List<CountryCampaign> countryCampaigns = countryCampaignRepository.getAllByIdentifiers(request.getCountryIdentifiers());
     List<CampaignDrug> campaignDrugs = campaignDrugRepository.getAllByIdentifiers(request.getCampaignIdentifiers());
@@ -59,30 +58,39 @@ public class ResourcePlanningService {
         if(index != -1) {
           List<AgeGroup> targetedAgeGroups = con.getGroups().subList(index, con.getGroups().size());
           targetedAgeGroups.forEach(el -> {
-            questions.getQuestions().add(new FormulaResponse(String.format(popPercent, el.getName()), el.getKey().concat("_percent"), new FieldType(
+            questions.getQuestions().add(new FormulaResponse(String.format(popPercent, el.getName()), el.getKey().concat("_percent").concat("_" + con.getKey()), new FieldType(
                 InputTypeEnum.DECIMAL, null, 0, 100), null));
-            questions.getQuestions().add(new FormulaResponse(coveragePercent, el.getKey().concat("_coverage"), new FieldType(
+            questions.getQuestions().add(new FormulaResponse(coveragePercent, el.getKey().concat("_coverage").concat("_" + con.getKey()), new FieldType(
                 InputTypeEnum.INTEGER, null, 0, 100), null));
+
+            for(CampaignDrug campaign : campaignDrugs) {
+              campaign.getDrugs().forEach(drug->{
+                questions.getQuestions().add(new FormulaResponse(String.format(drugDosageQuestion, drug.getName(), el.getName()), drug.getKey() + "_" + el.getKey() + "_" + con.getKey(), new FieldType(
+                    InputTypeEnum.DROPDOWN, getPossibleValues(drug), null, null), null));
+              });
+            }
           });
         }
 
         for(CampaignDrug campaign : campaignDrugs) {
-          con.getGroups().forEach(ageGroup -> {
-            campaign.getDrugs().forEach(el->{
-              questions.getQuestions().add(new FormulaResponse(String.format(drugDosageQuestion, el.getName(), ageGroup.getName()), ageGroup.getKey() + "_" + el.getKey(), new FieldType(
-                  InputTypeEnum.DROPDOWN, getPossibleValues(el), null, null), null));
+//          con.getGroups().forEach(ageGroup -> {
+//            campaign.getDrugs().forEach(el->{
+//              questions.getQuestions().add(new FormulaResponse(String.format(drugDosageQuestion, el.getName(), ageGroup.getName()), ageGroup.getKey() + "_" + el.getKey() + "_" + con.getKey(), new FieldType(
+//                  InputTypeEnum.DROPDOWN, getPossibleValues(el), null, null), null));
+//            });
+//          });
+
+          //buffer questions
+          campaignDrugs.forEach(el -> {
+            el.getDrugs().forEach(drug -> {
+              questions.getQuestions().add(new FormulaResponse(String.format(bufferQuestion, drug.getName()), drug.getKey().concat(suffix).concat("_" + con.getKey()), new FieldType(
+                  InputTypeEnum.INTEGER, null, 0, 100), null));
             });
           });
         }
-        response.getSecondStepQuestions().add(questions);
+        response.add(questions);
       }
-      //buffer questions
-      campaignDrugs.forEach(el -> {
-        el.getDrugs().forEach(drug -> {
-          response.getBufferQuestions().add(new FormulaResponse(String.format(bufferQuestion, drug.getName()), drug.getKey().concat(suffix), new FieldType(
-              InputTypeEnum.INTEGER, null, 0, 100), null));
-        });
-      });
+
     }
     return response;
   }
@@ -101,7 +109,7 @@ public class ResourcePlanningService {
     }else if(drug.isHalf()) {
       double counter = (double)drug.getMin();
       while(counter < (double)drug.getMax()) {
-        counter++;
+        counter += 0.5;
         response.add(counter);
       }
     }
