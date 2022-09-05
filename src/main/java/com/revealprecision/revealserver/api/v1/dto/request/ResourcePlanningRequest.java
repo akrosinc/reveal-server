@@ -16,8 +16,11 @@ import lombok.Setter;
 public class ResourcePlanningRequest {
 
   @NotNull
-  private UUID countryIdentifier;
+  private Set<UUID> countryIdentifiers;
 
   @NotEmpty
   private Set<UUID> campaignIdentifiers;
+
+  @NotNull
+  private String ageGroupKey;
 }

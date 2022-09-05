@@ -2,16 +2,21 @@ package com.revealprecision.revealserver.api.v1.controller;
 
 import com.revealprecision.revealserver.api.v1.dto.factory.CampaignDrugResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.CountryCampaignFactory;
+import com.revealprecision.revealserver.api.v1.dto.request.ResourcePlanningRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.CampaignDrugResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.CountryCampaignResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.FormulaResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.ResourcePlanningQuestionResponse;
 import com.revealprecision.revealserver.service.ResourcePlanningService;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -45,4 +50,12 @@ public class ResourcePlanningController {
     return ResponseEntity.ok()
         .body(Arrays.asList(FormulaResponse.list));
   }
+
+  @PostMapping("formula")
+  public ResponseEntity<ResourcePlanningQuestionResponse> getFormulasSecondStep(@Valid @RequestBody
+      ResourcePlanningRequest request) {
+    return ResponseEntity.ok()
+        .body(resourcePlanningService.getSecondStepQuestions(request));
+  }
+
 }

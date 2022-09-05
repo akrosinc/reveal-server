@@ -13,8 +13,8 @@ public class Drug {
 
   private String name;
   private String key;
-  private int min;
-  private int max;
+  private Object min;
+  private Object max;
   private boolean half;
   private boolean full;
   private boolean millis;

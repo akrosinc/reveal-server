@@ -18,7 +18,7 @@ import lombok.Setter;
 public class FieldType {
 
   private InputTypeEnum inputType;
-  private List<String> values;
-  private Integer min;
-  private Integer max;
+  private List<Object> values;
+  private Object min;
+  private Object max;
 }
