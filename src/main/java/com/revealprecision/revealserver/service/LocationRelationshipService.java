@@ -18,6 +18,7 @@ import com.revealprecision.revealserver.persistence.projection.LocationMainData;
 import com.revealprecision.revealserver.persistence.projection.LocationRelationshipProjection;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import com.revealprecision.revealserver.persistence.repository.GeographicLevelRepository;
+import com.revealprecision.revealserver.persistence.repository.LiteStructureCountRepository;
 import com.revealprecision.revealserver.persistence.repository.LocationBulkRepository;
 import com.revealprecision.revealserver.persistence.repository.LocationCountsRepository;
 import com.revealprecision.revealserver.persistence.repository.LocationHierarchyRepository;
@@ -74,6 +75,7 @@ public class LocationRelationshipService {
 
   private final Environment env;
   private final LocationCountsRepository locationCountsRepository;
+  private final LiteStructureCountRepository liteStructureCountRepository;
 
   @Autowired
   public LocationRelationshipService(LocationRelationshipRepository locationRelationshipRepository,
@@ -81,7 +83,8 @@ public class LocationRelationshipService {
       LocationHierarchyRepository locationHierarchyRepository, RestHighLevelClient client,
       KafkaTemplate<String, LocationRelationshipMessage> kafkaTemplate,
       KafkaProperties kafkaProperties, LocationBulkRepository locationBulkRepository,
-      Environment env, LocationCountsRepository locationCountsRepository) {
+      Environment env, LocationCountsRepository locationCountsRepository,
+      LiteStructureCountRepository liteStructureCountRepository) {
     this.locationRelationshipRepository = locationRelationshipRepository;
     this.geographicLevelRepository = geographicLevelRepository;
     this.locationRepository = locationRepository;
@@ -92,6 +95,7 @@ public class LocationRelationshipService {
     this.locationBulkRepository = locationBulkRepository;
     this.env = env;
     this.locationCountsRepository = locationCountsRepository;
+    this.liteStructureCountRepository = liteStructureCountRepository;
   }
 
 
@@ -409,7 +413,6 @@ public class LocationRelationshipService {
             locationRelationshipToSave.setEntityStatus(EntityStatus.ACTIVE);
             locationRelationshipRepository.save(locationRelationshipToSave);
 
-
             LocationRelationshipMessage locationRelationshipMessage = new LocationRelationshipMessage();
             locationRelationshipMessage.setLocationIdentifier(
                 locationRelationshipToSave.getLocation().getIdentifier());
@@ -436,6 +439,7 @@ public class LocationRelationshipService {
       locationBulkRepository.save(locationBulk);
 
       refreshLocationCountsView();
+      refreshLiteStructureCountView();
     }
   }
 
@@ -448,6 +452,11 @@ public class LocationRelationshipService {
   @Async
   public void refreshLocationCountsView() {
     locationCountsRepository.refreshLocationCountsMaterializedView();
+  }
+
+  @Async
+  public void refreshLiteStructureCountView() {
+    liteStructureCountRepository.refreshLiteStructureCount();
   }
 
   public List<Location> getChildrenLocations(UUID hierarchyIdentifier, UUID locationIdentifier) {
@@ -519,8 +528,10 @@ public class LocationRelationshipService {
         locationId, locationHierarchyId).getAncestry();
   }
 
-  public List<UUID> getChildrenLocationIdentifiersGivenParentIdentifiers(List<UUID> parentIdentifiers){
-    return locationRelationshipRepository.getDistinctChildrenLocationsGivenParentIds(parentIdentifiers);
+  public List<UUID> getChildrenLocationIdentifiersGivenParentIdentifiers(
+      List<UUID> parentIdentifiers) {
+    return locationRelationshipRepository.getDistinctChildrenLocationsGivenParentIds(
+        parentIdentifiers);
   }
 }
 

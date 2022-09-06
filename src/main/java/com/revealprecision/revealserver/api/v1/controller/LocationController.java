@@ -141,7 +141,8 @@ public class LocationController {
   @GetMapping("/refresh-counts")
   public ResponseEntity<?> refresh()
       throws IOException {
-      locationRelationshipService.refreshLocationCountsView();
+    locationRelationshipService.refreshLocationCountsView();
+    locationRelationshipService.refreshLiteStructureCountView();
     return ResponseEntity.ok("refreshed requested");
   }
 }

@@ -89,6 +89,7 @@ public class LocationService {
     var savedLocation = locationRepository.save(locationToSave);
     locationRelationshipService.updateLocationRelationshipsForNewLocation(savedLocation);
     locationRelationshipService.refreshLocationCountsView();
+    locationRelationshipService.refreshLiteStructureCountView();
     return savedLocation;
   }
 

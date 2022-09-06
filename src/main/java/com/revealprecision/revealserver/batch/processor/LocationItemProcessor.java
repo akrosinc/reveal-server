@@ -54,6 +54,7 @@ public class LocationItemProcessor implements ItemProcessor<LocationRequest, Loc
         .name(item.getProperties().getName())
         .status(item.getProperties().getStatus())
         .externalId(item.getProperties().getExternalId())
+        .locationProperty(item.getProperties())
         .build();
     location.setEntityStatus(EntityStatus.ACTIVE);
     location.setLocationBulk(locationBulk);
