@@ -1,6 +1,6 @@
 package com.revealprecision.revealserver.config;
 
-import com.revealprecision.revealserver.messaging.Message;
+import com.revealprecision.revealserver.messaging.message.Message;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -35,8 +35,8 @@ public class KafkaConsumerConfig {
     props.put(ErrorHandlingDeserializer.KEY_DESERIALIZER_CLASS, StringDeserializer.class);
     props.put(ErrorHandlingDeserializer.VALUE_DESERIALIZER_CLASS, JsonDeserializer.class);
     props.put(JsonDeserializer.VALUE_DEFAULT_TYPE,
-        "com.revealprecision.revealserver.messaging.Message");
-    props.put(JsonDeserializer.TRUSTED_PACKAGES, "com.revealprecision");
+        "com.revealprecision.revealserver.messaging.message.Message");
+    props.put(JsonDeserializer.TRUSTED_PACKAGES, "*");
     props.put(JsonDeserializer.KEY_DEFAULT_TYPE, String.class);
 
     return new DefaultKafkaConsumerFactory<>(props);

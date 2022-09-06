@@ -10,8 +10,14 @@ import static com.revealprecision.revealserver.constants.FormConstants.CDD_SUPER
 import static com.revealprecision.revealserver.constants.FormConstants.CDD_SUPERVISOR_DAILY_SUMMARY_DATE_FIELD;
 import static com.revealprecision.revealserver.constants.FormConstants.CDD_SUPERVISOR_DAILY_SUMMARY_FORM;
 import static com.revealprecision.revealserver.constants.FormConstants.CDD_SUPERVISOR_DAILY_SUMMARY_HEALTH_WORKER_SUPERVISOR_FIELD;
+import static com.revealprecision.revealserver.constants.FormConstants.COLLECTION_DATE;
+import static com.revealprecision.revealserver.constants.FormConstants.DAILY_SUMMARY;
 import static com.revealprecision.revealserver.constants.FormConstants.IRS_ELIGIBLE;
 import static com.revealprecision.revealserver.constants.FormConstants.IRS_FOUND;
+import static com.revealprecision.revealserver.constants.FormConstants.IRS_LITE_DAILY_SUMMARY_DISTRICT_MANAGER;
+import static com.revealprecision.revealserver.constants.FormConstants.IRS_LITE_DAILY_SUMMARY_LOCATION_ZONE;
+import static com.revealprecision.revealserver.constants.FormConstants.IRS_LITE_DAILY_SUMMARY_MOPUP_MAIN;
+import static com.revealprecision.revealserver.constants.FormConstants.IRS_LITE_DAILY_SUMMARY_SPRAY_AREAS;
 import static com.revealprecision.revealserver.constants.FormConstants.IRS_LITE_ELIGIBLE;
 import static com.revealprecision.revealserver.constants.FormConstants.IRS_LITE_FOUND;
 import static com.revealprecision.revealserver.constants.FormConstants.IRS_LITE_NOT_SPRAYED;
@@ -21,6 +27,7 @@ import static com.revealprecision.revealserver.constants.FormConstants.IRS_LITE_
 import static com.revealprecision.revealserver.constants.FormConstants.IRS_NOT_SPRAYED;
 import static com.revealprecision.revealserver.constants.FormConstants.IRS_SACHET_COUNT;
 import static com.revealprecision.revealserver.constants.FormConstants.IRS_SPRAYED;
+import static com.revealprecision.revealserver.constants.FormConstants.LOCATION_ID;
 import static com.revealprecision.revealserver.constants.FormConstants.SPRAY_FORM;
 import static com.revealprecision.revealserver.constants.FormConstants.SPRAY_FORM_SACHET_COUNT_FIELD;
 import static com.revealprecision.revealserver.constants.FormConstants.SPRAY_FORM_SPRAY_OPERATOR_FIELD;
@@ -93,11 +100,14 @@ public class FormDataProcessorService {
   private final KafkaTemplate<String, FormCaptureEvent> formSubmissionKafkaTemplate;
 
 
-  public void processFormDataAndSubmitToMessaging(Event savedEvent,EventFacade eventFacade) throws IOException {
+  public void processFormDataAndSubmitToMessaging(Event savedEvent, EventFacade eventFacade)
+      throws IOException {
 
     JsonNode obsList = savedEvent.getAdditionalInformation().get("obs");
     FormCaptureEvent formCaptureEvent = FormCaptureEvent.builder()
-        .locationId(savedEvent.getLocationIdentifier()).savedEventId(savedEvent.getIdentifier()).planId(savedEvent.getPlanIdentifier()).taskId(savedEvent.getTaskIdentifier()).rawFormEvent(eventFacade).build();
+        .locationId(savedEvent.getLocationIdentifier()).savedEventId(savedEvent.getIdentifier())
+        .planId(savedEvent.getPlanIdentifier()).taskId(savedEvent.getTaskIdentifier())
+        .rawFormEvent(eventFacade).build();
     publishFormObservations(formCaptureEvent);
 
     if (obsList.isArray()) {
@@ -112,6 +122,7 @@ public class FormDataProcessorService {
       String dateString = null;
       String supervisorName = null;
       String cdd = null;
+      String additionalKey = "";
       UUID baseEntityIdentifier = savedEvent.getBaseEntityIdentifier();
 
       if (plan != null) {
@@ -154,8 +165,34 @@ public class FormDataProcessorService {
 
             submitSupervisorCddToMessaging(supervisorName, cdd, baseEntityIdentifier, plan);
           }
-        }
 
+        }
+        if (plan.getInterventionType().getCode().equals(PlanInterventionTypeEnum.IRS_LITE.name())) {
+          if (savedEvent.getEventType().equals(DAILY_SUMMARY)) {
+
+            dateString = getFormValue(obsJavaList, COLLECTION_DATE);
+
+            supervisorName = getFormValue(obsJavaList,
+                IRS_LITE_VERIFICATION_FORM_SUPERVISOR);
+
+            String zone = getFormValue(obsJavaList,
+                IRS_LITE_DAILY_SUMMARY_LOCATION_ZONE);
+            String districtManager = getFormValue(obsJavaList,
+                IRS_LITE_DAILY_SUMMARY_DISTRICT_MANAGER);
+            String mopUp = getFormValue(obsJavaList,
+                IRS_LITE_DAILY_SUMMARY_MOPUP_MAIN);
+            String sprayAreas = getFormValueFromList(obsJavaList,
+                IRS_LITE_DAILY_SUMMARY_SPRAY_AREAS);
+
+            additionalKey =
+                (zone != null ? zone + "_" : "") + (districtManager != null ? districtManager + "_"
+                    : "") + (mopUp != null ? mopUp : "_") + (sprayAreas != null ? sprayAreas : " ");
+
+            baseEntityIdentifier = UUID.fromString(
+                savedEvent.getDetails().get(LOCATION_ID).asText());
+
+          }
+        }
         List<FormDataEntityTagValueEvent> formDataEntityTagValueEvents = obsJavaList.stream()
             .flatMap(obs -> {
               Object value = FormDataUtil.extractData(obs).get(obs.getFieldCode());
@@ -174,7 +211,7 @@ public class FormDataProcessorService {
 
         FormDataEntityTagEvent entityTagEvent = FormDataEntityTagEventFactory.getEntity(savedEvent,
             formDataEntityTagValueEvents, plan, baseEntityIdentifier, dateString, cdd,
-            supervisorName);
+            supervisorName, additionalKey);
 
         eventConsumptionTemplate.send(
             kafkaProperties.getTopicMap().get(KafkaConstants.EVENT_CONSUMPTION), entityTagEvent);
@@ -266,7 +303,8 @@ public class FormDataProcessorService {
 
   private void publishFormObservations(FormCaptureEvent event) {
     formSubmissionKafkaTemplate.send(
-        kafkaProperties.getTopicMap().get(KafkaConstants.FORM_SUBMISSIONS), event.getPlanId().toString(),
+        kafkaProperties.getTopicMap().get(KafkaConstants.FORM_SUBMISSIONS),
+        event.getPlanId().toString(),
         event);
   }
 
@@ -313,11 +351,16 @@ public class FormDataProcessorService {
     return null;
   }
 
-  private String getFormValue(List<Obs> obsJavaList, String tabletAccountabilityCddNameField) {
-    Optional<Obs> cddName = obsJavaList.stream()
-        .filter(obs -> obs.getFieldCode().equals(tabletAccountabilityCddNameField)).findFirst();
-    return cddName.map(obs -> (String) FormDataUtil.extractData(obs).get(obs.getFieldCode()))
+  private String getFormValue(List<Obs> obsJavaList, String key) {
+    Optional<Obs> ob = obsJavaList.stream()
+        .filter(obs -> obs.getFieldCode().equals(key)).findFirst();
+    return ob.map(obs -> (String) FormDataUtil.extractData(obs).get(obs.getFieldCode()))
         .orElse(null);
   }
-
+  private String getFormValueFromList(List<Obs> obsJavaList, String key) {
+    Optional<Obs> ob = obsJavaList.stream()
+        .filter(obs -> obs.getFieldCode().equals(key)).findFirst();
+    return ob.map(obs -> (String) FormDataUtil.extractDataFromList(obs).get(obs.getFieldCode()))
+        .orElse(null);
+  }
 }

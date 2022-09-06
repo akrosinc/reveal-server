@@ -29,5 +29,6 @@ public class FormDataEntityTagValueEvent extends Message {
   private String cddName;
 
   private UUID eventId;
+  private String additionalKeyString;
 
 }

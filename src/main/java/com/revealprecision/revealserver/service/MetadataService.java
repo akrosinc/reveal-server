@@ -514,7 +514,8 @@ public class MetadataService {
         value.setValueDate((LocalDateTime) tagValue);
         break;
       case DOUBLE:
-        value.setValueDouble((Double) tagValue);
+        value.setValueDouble(tagValue instanceof String ? Double.valueOf((String) tagValue)
+            : tagValue instanceof Integer ? ((Integer) tagValue).doubleValue() : (Double) tagValue);
         break;
       case BOOLEAN:
         value.setValueBoolean((Boolean) tagValue);
@@ -551,12 +552,13 @@ public class MetadataService {
       List<MetaImportDTO> metaImportDTOS = metaFieldSetMapper.mapMetaFields(sheet);
 
       if (metaImportDTOS.stream().map(MetaImportDTO::getErrors).map(Map::size).reduce(0,
-          Integer::sum) >1){
-        throw new FileFormatException("Invalid file errors with: "+
-            metaImportDTOS.stream().map(MetaImportDTO::getErrors).flatMap(error->error.entrySet().stream()).map(entry->
-                "tag: "+entry.getKey().getTag() + "value: "+entry.getValue()
-            ).collect(Collectors.joining("\r\n"))
-            );
+          Integer::sum) > 1) {
+        throw new FileFormatException("Invalid file errors with: " +
+            metaImportDTOS.stream().map(MetaImportDTO::getErrors)
+                .flatMap(error -> error.entrySet().stream()).map(entry ->
+                    "tag: " + entry.getKey().getTag() + "value: " + entry.getValue()
+                ).collect(Collectors.joining("\r\n"))
+        );
       }
 
       //send data to kafka listener

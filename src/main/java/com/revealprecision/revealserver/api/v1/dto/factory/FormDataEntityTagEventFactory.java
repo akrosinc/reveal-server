@@ -14,7 +14,7 @@ public class FormDataEntityTagEventFactory {
   // application if the event comes through, and it does not have the new fields populated
   public static FormDataEntityTagEvent getEntity(Event savedEvent,
       List<FormDataEntityTagValueEvent> formDataEntityTagValueEvents, Plan plan,
-      UUID baseEntityIdentifier, String dateString, String cdd, String supervisorName) {
+      UUID baseEntityIdentifier, String dateString, String cdd, String supervisorName,String additionalKey) {
     return FormDataEntityTagEvent.builder()
         .formDataEntityTagValueEvents(formDataEntityTagValueEvents)
         .eventId(savedEvent.getIdentifier().toString())
@@ -27,6 +27,7 @@ public class FormDataEntityTagEventFactory {
         .cddName(cdd)
         .user(savedEvent.getUser().getUsername())
         .supervisor(supervisorName)
+        .additionalKeyString(additionalKey)
         .build();
   }
 }
