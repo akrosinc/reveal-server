@@ -12,6 +12,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.experimental.FieldNameConstants;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
@@ -28,6 +29,7 @@ import org.hibernate.envers.Audited;
 @SQLDelete(sql = "UPDATE campaign_drug SET entity_status = 'DELETED' where identifier=?")
 @Where(clause = "entity_status='ACTIVE'")
 @TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
+@FieldNameConstants
 public class CampaignDrug {
 
   @Id
