@@ -173,13 +173,17 @@ public class TaskFacadeService {
         task.setLookupTaskStatus(taskStatus.get());
         task.setBusinessStatus(updateFacade.getBusinessStatus());
         businessStatusService.setBusinessStatus(task, updateFacade.getBusinessStatus());
-        task.setTaskFacade(TaskEventFactory.getTaskEventFromTask(task));
-        Task savedTask = taskService.saveTask(task);
+
         identifier = task.getIdentifier();
 
-        TaskEvent taskEvent = TaskEventFactory.getTaskEventFromTask(savedTask);
+        TaskEvent taskEvent = TaskEventFactory.getTaskEventFromTask(task);
         taskEvent.setOwnerId(UserUtils.getCurrentPrincipleName());
         taskEvent.setOwner(owner);
+
+        task.setTaskFacade(taskEvent);
+
+        Task savedTask = taskService.saveTask(task);
+
         kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.TASK), taskEvent);
 
       } else {
