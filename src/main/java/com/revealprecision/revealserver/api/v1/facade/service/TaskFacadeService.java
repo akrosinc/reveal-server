@@ -21,6 +21,7 @@ import com.revealprecision.revealserver.persistence.domain.LookupTaskStatus.Fiel
 import com.revealprecision.revealserver.persistence.domain.Person;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.Task;
+import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.service.ActionService;
 import com.revealprecision.revealserver.service.BusinessStatusService;
@@ -29,6 +30,7 @@ import com.revealprecision.revealserver.service.MetadataService;
 import com.revealprecision.revealserver.service.PersonService;
 import com.revealprecision.revealserver.service.PlanService;
 import com.revealprecision.revealserver.service.TaskService;
+import com.revealprecision.revealserver.service.UserService;
 import com.revealprecision.revealserver.util.ActionUtils;
 import com.revealprecision.revealserver.util.UserUtils;
 import java.time.LocalDateTime;
@@ -65,6 +67,7 @@ public class TaskFacadeService {
   private final KafkaProperties kafkaProperties;
   private final MetadataService metadataService;
   private final Environment env;
+  private final UserService userService;
 
 
   public List<TaskFacade> syncTasks(List<String> planIdentifiers,
@@ -141,11 +144,23 @@ public class TaskFacadeService {
 
   public List<String> updateTaskStatusAndBusinessStatusForListOfTasks(
       List<TaskUpdateFacade> taskUpdateFacades) {
-    return taskUpdateFacades.stream().map(this::updateTaskStatusAndBusinessStatus)
+
+    return taskUpdateFacades.stream().map(taskUpdateFacade -> updateTaskStatusAndBusinessStatus(taskUpdateFacade,
+            getOwner()))
         .filter(Optional::isPresent).map(Optional::get).collect(Collectors.toList());
   }
 
-  private Optional<String> updateTaskStatusAndBusinessStatus(TaskUpdateFacade updateFacade) {
+  private String getOwner() {
+    String owner = null;
+
+    if (UserUtils.getCurrentPrincipleName()!=null){
+      User user = userService.getByKeycloakId(UUID.fromString(UserUtils.getCurrentPrincipleName()));
+      owner = user.getUsername();
+    }
+    return owner;
+  }
+
+  private Optional<String> updateTaskStatusAndBusinessStatus(TaskUpdateFacade updateFacade, String owner) {
     UUID identifier = null;
     try {
       Task task = taskService.getTaskByIdentifier(UUID.fromString(updateFacade.getIdentifier()));
@@ -164,6 +179,7 @@ public class TaskFacadeService {
 
         TaskEvent taskEvent = TaskEventFactory.getTaskEventFromTask(savedTask);
         taskEvent.setOwnerId(UserUtils.getCurrentPrincipleName());
+        taskEvent.setOwner(owner);
         kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.TASK), taskEvent);
 
       } else {
@@ -183,7 +199,7 @@ public class TaskFacadeService {
 
     taskDtos.forEach(taskDto -> {
       try {
-        saveTaskDto(taskDto);
+        saveTaskDto(taskDto,getOwner());
       } catch (Exception e) {
         log.error(e.toString(), e);
         e.printStackTrace();
@@ -194,7 +210,7 @@ public class TaskFacadeService {
     return unprocessedTaskIds;
   }
 
-  private void saveTaskDto(TaskDto taskDto) throws Exception {
+  private void saveTaskDto(TaskDto taskDto, String owner) throws Exception {
 
     String taskCode = taskDto.getCode();
     Plan plan = planService.findPlanByIdentifier(UUID.fromString(taskDto.getPlanIdentifier()));
@@ -205,12 +221,12 @@ public class TaskFacadeService {
             lookupTaskStatus -> lookupTaskStatus.getCode().equalsIgnoreCase(taskDto.getStatus().name()))
         .findFirst();
 
-    Task task = saveTask(taskDto, plan, action, taskStatus);
+    Task task = saveTask(taskDto, plan, action, taskStatus,owner);
 
   }
 
   private Task saveTask(TaskDto taskDto, Plan plan, Action action,
-      Optional<LookupTaskStatus> taskStatus) throws Exception {
+      Optional<LookupTaskStatus> taskStatus, String owner) throws Exception {
     Task task;
     try {
       task = taskService.getTaskByIdentifier(UUID.fromString(taskDto.getIdentifier()));
@@ -291,6 +307,7 @@ public class TaskFacadeService {
       }
       TaskEvent taskEvent = TaskEventFactory.getTaskEventFromTask(task);
       taskEvent.setOwnerId(UserUtils.getCurrentPrincipleName());
+      taskEvent.setOwner(owner);
       task.setTaskFacade(taskEvent);
       Task taskSaved = taskService.saveTask(task);
       businessStatusService.setBusinessStatus(taskSaved, taskDto.getBusinessStatus());
