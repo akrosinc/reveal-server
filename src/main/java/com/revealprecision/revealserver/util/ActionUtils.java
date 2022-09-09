@@ -16,14 +16,4 @@ public class ActionUtils {
     return action.getLookupEntityType() != null && LookupEntityTypeCodeEnum.LOCATION_CODE
         .getLookupEntityType().equals(action.getLookupEntityType().getCode());
   }
-  public static Boolean isActionForPerson(ActionEvent action) {
-    return action.getLookupEntityType() != null && LookupEntityTypeCodeEnum.PERSON_CODE
-        .getLookupEntityType().equals(
-            action.getLookupEntityType().getCode());
-  }
-
-  public static Boolean isActionForLocation(ActionEvent action) {
-    return action.getLookupEntityType() != null && LookupEntityTypeCodeEnum.LOCATION_CODE
-        .getLookupEntityType().equals(action.getLookupEntityType().getCode());
-  }
 }
