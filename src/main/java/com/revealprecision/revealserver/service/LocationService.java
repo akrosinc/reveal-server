@@ -90,6 +90,7 @@ public class LocationService {
     locationRelationshipService.updateLocationRelationshipsForNewLocation(savedLocation);
     locationRelationshipService.refreshLocationCountsView();
     locationRelationshipService.refreshLiteStructureCountView();
+    locationRelationshipService.refreshLocationRelationshipMaterializedView();
     return savedLocation;
   }
 

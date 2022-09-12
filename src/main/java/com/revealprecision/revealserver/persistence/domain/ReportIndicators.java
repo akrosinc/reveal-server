@@ -34,5 +34,7 @@ public class ReportIndicators {
   private Integer sprayedStructures;
   private Integer insecticidesUsed;
   private String householdHead;
+  private boolean isAggregateLevel;
+  private boolean isEligible;
 
 }
