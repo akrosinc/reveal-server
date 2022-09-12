@@ -143,6 +143,7 @@ public class LocationController {
       throws IOException {
     locationRelationshipService.refreshLocationCountsView();
     locationRelationshipService.refreshLiteStructureCountView();
+    locationRelationshipService.refreshLocationRelationshipMaterializedView();
     return ResponseEntity.ok("refreshed requested");
   }
 }

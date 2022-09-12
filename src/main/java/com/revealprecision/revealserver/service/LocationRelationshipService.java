@@ -440,6 +440,7 @@ public class LocationRelationshipService {
 
       refreshLocationCountsView();
       refreshLiteStructureCountView();
+      refreshLocationRelationshipMaterializedView();
     }
   }
 
@@ -452,6 +453,10 @@ public class LocationRelationshipService {
   @Async
   public void refreshLocationCountsView() {
     locationCountsRepository.refreshLocationCountsMaterializedView();
+  }
+  @Async
+  public void refreshLocationRelationshipMaterializedView() {
+    locationRelationshipRepository.refreshLocationRelationshipMaterializedView();
   }
 
   @Async
