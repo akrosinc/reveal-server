@@ -114,10 +114,9 @@ public class RawFormSubmissionListener extends Listener {
     EventFacade rawFormEvent = formCaptureEvent.getRawFormEvent();
     if (rawFormEvent.getEventType().equals(SPRAY)) {
       extractIRSSprayedLocationIndicators(observations, reportIndicators);
-    } else if (rawFormEvent.getEventType().equals(MOBILIZED)) {
-      extractMobilizationIndicators(observations, reportIndicators);
     } else if (rawFormEvent.getEventType().equals(IRS_LITE_VERIFICATION)) {
       extractVillageVisitationIndicators(observations, reportIndicators);
+      extractMobilizationIndicators(observations, reportIndicators);
     } else if (rawFormEvent.getEventType().equals(DAILY_SUMMARY)) {
       extractDailySupervisionIndicators(observations, reportIndicators);
     } else if (rawFormEvent.getEventType().equals(IRS_SA_DECISION)) {
@@ -161,7 +160,7 @@ public class RawFormSubmissionListener extends Listener {
     currentDates.add(getObservation(observations, COLLECTION_DATE));
     reportIndicators.setUniqueSupervisionDates(currentDates);
     reportIndicators.setSupervisorFormSubmissionCount(
-        reportIndicators.getSupervisorFormSubmissionCount() == null ? 0
+        reportIndicators.getSupervisorFormSubmissionCount() == null ? 1
             : reportIndicators.getSupervisorFormSubmissionCount() + 1);
     reportIndicators.setInsecticidesUsed(
         (reportIndicators.getInsecticidesUsed() != null ? reportIndicators.getInsecticidesUsed()
