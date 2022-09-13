@@ -285,8 +285,5 @@ public class PlanLocationsService {
         locationIds);
   }
 
-  @Async
-  public void refreshAssignedStructureCountsMaterializedView(){
-    planLocationsRepository.refreshAssignedStructureCountsMaterializedView();
-  }
+
 }

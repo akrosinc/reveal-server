@@ -65,6 +65,7 @@ public class LocationService {
   private final StorageService storageService;
   private final EntityTagService entityTagService;
   private final LocationHierarchyService locationHierarchyService;
+  private final AssignedStructureService assignedStructureService;
 
   public Location createLocation(LocationRequest locationRequest) throws Exception {
     GeographicLevel geographicLevel = geographicLevelService.findByName(
@@ -91,6 +92,7 @@ public class LocationService {
     locationRelationshipService.refreshLocationCountsView();
     locationRelationshipService.refreshLiteStructureCountView();
     locationRelationshipService.refreshLocationRelationshipMaterializedView();
+    assignedStructureService.refreshAssignedStructureCountsMaterializedView();
     return savedLocation;
   }
 
