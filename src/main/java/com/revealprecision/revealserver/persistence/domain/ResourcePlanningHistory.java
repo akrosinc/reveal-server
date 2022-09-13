@@ -1,7 +1,8 @@
 package com.revealprecision.revealserver.persistence.domain;
 
+import com.revealprecision.revealserver.api.v1.dto.request.ResourcePlanningDashboardRequest;
+import com.revealprecision.revealserver.enums.EntityStatus;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
-import java.util.List;
 import java.util.UUID;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -12,27 +13,37 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.experimental.FieldNameConstants;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
+import org.hibernate.annotations.Where;
+import org.hibernate.envers.Audited;
 
 @Entity
+@Audited
 @Getter
 @Setter
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@Where(clause = "entity_status='ACTIVE'")
 @TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
-public class CountryCampaign{
+@FieldNameConstants
+public class ResourcePlanningHistory extends AbstractAuditableEntity{
 
   @Id
   @GeneratedValue
   private UUID identifier;
 
-  private String name;
-
   @Type(type = "jsonb")
   @Column(columnDefinition = "jsonb")
-  private List<AgeGroup> groups;
+  private ResourcePlanningDashboardRequest history;
 
-  private String key;
+  private String name;
+
+  public ResourcePlanningHistory(ResourcePlanningDashboardRequest history, String name){
+    this.history = history;
+    this.name = name;
+    this.setEntityStatus(EntityStatus.ACTIVE);
+  }
 }

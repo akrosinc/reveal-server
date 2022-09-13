@@ -6,6 +6,7 @@ import com.revealprecision.revealserver.api.v1.dto.request.ResourcePlanningDashb
 import com.revealprecision.revealserver.api.v1.dto.request.ResourcePlanningRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.FieldType;
 import com.revealprecision.revealserver.api.v1.dto.response.FormulaResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.ResourcePlanningHistoryResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.SecondStepQuestionsResponse;
 import com.revealprecision.revealserver.enums.InputTypeEnum;
 import com.revealprecision.revealserver.exceptions.ConflictException;
@@ -15,10 +16,13 @@ import com.revealprecision.revealserver.persistence.domain.CampaignDrug;
 import com.revealprecision.revealserver.persistence.domain.CampaignDrug.Fields;
 import com.revealprecision.revealserver.persistence.domain.CountryCampaign;
 import com.revealprecision.revealserver.persistence.domain.Drug;
+import com.revealprecision.revealserver.persistence.domain.EntityTag;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
+import com.revealprecision.revealserver.persistence.domain.ResourcePlanningHistory;
 import com.revealprecision.revealserver.persistence.es.LocationElastic;
 import com.revealprecision.revealserver.persistence.repository.CampaignDrugRepository;
 import com.revealprecision.revealserver.persistence.repository.CountryCampaignRepository;
+import com.revealprecision.revealserver.persistence.repository.ResourcePlanningHistoryRepository;
 import com.revealprecision.revealserver.service.models.LocationResourcePlanning;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -44,8 +48,9 @@ public class ResourcePlanningService {
   private final CountryCampaignRepository countryCampaignRepository;
   private final CampaignDrugRepository campaignDrugRepository;
   private final LocationHierarchyService locationHierarchyService;
-  private final LocationRelationshipService locationRelationshipService;
+  private final ResourcePlanningHistoryRepository resourcePlanningHistoryRepository;
   private final RestHighLevelClient client;
+  private final EntityTagService entityTagService;
 
   private static String suffix = "_buffer";
   private static String bufferQuestion = "What percent of buffer stock of '%s' is planned?";
@@ -64,6 +69,11 @@ public class ResourcePlanningService {
   public CampaignDrug getCampaignByIdentifier(UUID identifier) {
     return campaignDrugRepository.findById(identifier).orElseThrow(() -> new NotFoundException(Pair.of(
         Fields.identifier, identifier), CampaignDrug.class));
+  }
+
+  public CountryCampaign getCountryCampaignByIdentifier(UUID identifier) {
+    return countryCampaignRepository.findById(identifier).orElseThrow(() -> new NotFoundException(Pair.of(
+        Fields.identifier, identifier), CountryCampaign.class));
   }
 
   public List<SecondStepQuestionsResponse> getSecondStepQuestions(ResourcePlanningRequest request) {
@@ -141,16 +151,46 @@ public class ResourcePlanningService {
   public List<LocationResourcePlanning> getDashboardData(ResourcePlanningDashboardRequest request) throws IOException {
     CampaignDrug campaign = getCampaignByIdentifier(request.getCampaign());
     LocationHierarchy locationHierarchy = locationHierarchyService.findByIdentifier(request.getLocationHierarchy());
+    CountryCampaign countryCampaign = getCountryCampaignByIdentifier(request.getCountry());
+    String minAgeGroup = (String) request.getStepTwoAnswers().get("ageGroup");
+    List<AgeGroup> targetedAgeGroups = new ArrayList<>();
     if(!locationHierarchy.getNodeOrder().contains(request.getLowestGeography())) {
       throw new ConflictException("Geography level does not exist in Location hierarch.");
     }
     List<LocationResourcePlanning> response = getDataFromElastic(request);
+
+    int index = IntStream.range(0, countryCampaign.getGroups().size())
+        .filter(i -> countryCampaign.getGroups().get(i).getKey().equals(minAgeGroup))
+        .findFirst()
+        .orElse(-1);
+
+    if(index != -1) {
+      targetedAgeGroups = countryCampaign.getGroups().subList(index, countryCampaign.getGroups().size());
+    }else {
+      throw new ConflictException("Age group does not exist");
+    }
+
+    calculateAdjustedPopulation(response, request);
+    calculateAgeGroupColumns(response, targetedAgeGroups, request, countryCampaign.getKey());
+    calculateTotals(response, request);
+    calculateDrugs(response, request, campaign, countryCampaign, targetedAgeGroups);
+
+    ResourcePlanningHistory resourcePlanningHistory = new ResourcePlanningHistory(request, countryCampaign.getName() + " - " + campaign.getName());
+    resourcePlanningHistoryRepository.save(resourcePlanningHistory);
 
     return response;
   }
 
   private List<LocationResourcePlanning> getDataFromElastic(ResourcePlanningDashboardRequest request) throws IOException {
     List<LocationElastic> foundLocations = new ArrayList<>();
+    EntityTag popTag = entityTagService.getEntityTagByIdentifier(request.getPopulationTag());
+    String structureCountTag;
+    if(!request.isCountBasedOnImportedLocations()) {
+      structureCountTag = entityTagService.getEntityTagByIdentifier(request.getStructureCountTag()).getTag();
+    }else {
+      structureCountTag = "total_structure";
+    }
+
     List<LocationResourcePlanning> response = new ArrayList<>();
     BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
 
@@ -171,11 +211,11 @@ public class ResourcePlanningService {
     }
 
     for(LocationElastic loc : foundLocations) {
-      Object total_population = loc.getMetadata().stream().filter(el-> el.getTag().equals("total_population")).findFirst().orElse(null).getValueNumber();
-      Object total_structure = loc.getMetadata().stream().filter(el-> el.getTag().equals("total_structure")).findFirst().orElse(null).getValueNumber();
+      Object total_population = loc.getMetadata().stream().filter(el-> el.getTag().equals(popTag.getTag())).findFirst().orElse(null).getValueNumber();
+      Object total_structure = loc.getMetadata().stream().filter(el-> el.getTag().equals(structureCountTag)).findFirst().orElse(null).getValueNumber();
       response.add(new LocationResourcePlanning(loc, total_population, total_structure));
     }
-    calculateAdjustedPopulation(response, request);
+
     return response;
   }
 
@@ -188,5 +228,103 @@ public class ResourcePlanningService {
       double val = (double)el.getColumnDataMap().get("Official population").getValue() + ((mdaYear - popYear)*popGrowth*100);
       el.getColumnDataMap().put("Total population with growth rate applied", ColumnData.builder().isPercentage(false).dataType("double").value(val).build());
     });
+  }
+
+  private void calculateAgeGroupColumns(List<LocationResourcePlanning> data, List<AgeGroup> targetedAgeGroups, ResourcePlanningDashboardRequest request, String countryKey) {
+    double total;
+    for(LocationResourcePlanning el : data){
+      total = 0;
+      double pop_adjust = (double) el.getColumnDataMap().get("Total population with growth rate applied").getValue();
+      for(AgeGroup ageGroup : targetedAgeGroups){
+        double ageGroupPercent = Double.parseDouble((String) request.getStepTwoAnswers().get(ageGroup.getKey().concat("_percent_").concat(countryKey)));
+        int ageGroupCoverage = Integer.parseInt((String) request.getStepTwoAnswers().get(ageGroup.getKey().concat("_coverage_").concat(countryKey)));
+        double value = ageGroupPercent * pop_adjust * ageGroupCoverage;
+        total += value;
+        el.getColumnDataMap().put(ageGroup.getName(), ColumnData.builder().isPercentage(false).dataType("double").value(value).build());
+      }
+      el.getColumnDataMap().put("Total target population", ColumnData.builder().isPercentage(false).dataType("double").value(total).build());
+    }
+  }
+
+  private void calculateTotals(List<LocationResourcePlanning> data, ResourcePlanningDashboardRequest request) {
+    //cdd_denom yes -> cdd_total = (target_pop / mda_days)/cdd_target
+    //              -> days_total = target_pop/(cdd_number*cdd_target)
+    //              -> ((cdd_total*days_total*cdd_target)/target_pop)*100
+    //          no  -> cdd_total = (pop_adjust / mda_days)/cdd_target
+    //              -> days_total = pop_adjust/(cdd_number*cdd_target)
+    //              -> ((cdd_total*days_total*cdd_target)/pop_adjust)*100
+    boolean flag;
+    if(request.getStepOneAnswers().containsKey("cdd_denom")) {
+      if(request.getStepOneAnswers().get("cdd_denom").equals("Yes")) {
+        flag = true;
+      }else {
+        flag = false;
+      }
+    }else {
+      flag = false;
+    }
+    int mda_days = Integer.parseInt((String) request.getStepOneAnswers().get("mda_days"));
+    int cdd_target = Integer.parseInt((String) request.getStepOneAnswers().get("cdd_target"));
+    int cdd_number = Integer.parseInt((String) request.getStepOneAnswers().get("cdd_number"));
+    int structure_day = Integer.parseInt((String) request.getStepOneAnswers().get("structure_day"));
+    data.forEach(el -> {
+      double val = 0;
+      double cddResult = 0;
+      double daysResult = 0;
+      double campPopCove = 0;
+      double totalStructure = 0;
+      double cddSuper = 0;
+      if (flag) {
+        val = (double) el.getColumnDataMap().get("Total target population").getValue();
+        cddResult = (val/mda_days)/cdd_target;
+        daysResult = val/(cdd_number*cdd_target);
+        el.getColumnDataMap().put("CDDs planned", ColumnData.builder().isPercentage(false).dataType("double").value(cddResult).build());
+        el.getColumnDataMap().put("Days planned", ColumnData.builder().isPercentage(false).dataType("double").value(daysResult).build());
+        el.getColumnDataMap().put("Anticipated campaign population coverage based on CDDs", ColumnData.builder().isPercentage(true).dataType("double").value(((cddResult*daysResult*cdd_target)/val)*100).build());
+      }else {
+        val = (double) el.getColumnDataMap().get("Total population with growth rate applied").getValue();
+        cddResult = (val/mda_days)/cdd_target;
+        daysResult = val/(cdd_number*cdd_target);
+        el.getColumnDataMap().put("CDDs planned", ColumnData.builder().isPercentage(false).dataType("double").value(cddResult).build());
+        el.getColumnDataMap().put("Days planned", ColumnData.builder().isPercentage(false).dataType("double").value(daysResult).build());
+        el.getColumnDataMap().put("Anticipated campaign population coverage based on CDDs", ColumnData.builder().isPercentage(true).dataType("double").value(((cddResult*daysResult*cdd_target)/val)*100).build());
+      }
+      campPopCove = daysResult*structure_day*cddResult;
+      totalStructure = (double) el.getColumnDataMap().get("Number of structures in the campaign location").getValue();
+      cddSuper = Double.parseDouble((String) request.getStepOneAnswers().get("cdd_super"));
+      el.getColumnDataMap().put("Anticipated number of structures that can be visited", ColumnData.builder().isPercentage(true).dataType("double").value(campPopCove).build());
+      el.getColumnDataMap().put("Anticipated campaign coverage of structures based on number of structures in the location", ColumnData.builder().isPercentage(true).dataType("double").value(campPopCove/totalStructure).build());
+      el.getColumnDataMap().put("CDD Supervisors planned", ColumnData.builder().isPercentage(true).dataType("double").value(cddResult/cddSuper).build());
+    });
+  }
+
+  private void calculateDrugs(List<LocationResourcePlanning> data, ResourcePlanningDashboardRequest request, CampaignDrug campaignDrug, CountryCampaign country, List<AgeGroup> targetedAgeGroups) {
+    for(LocationResourcePlanning row : data) {
+      double bufferVal;
+      for(Drug drug : campaignDrug.getDrugs()) {
+        double total = 0;
+        double drugVal;
+        bufferVal = Double.parseDouble((String) request.getStepTwoAnswers().get(drug.getKey() + "_buffer_" + country.getKey()));
+        for(AgeGroup ageGroup : targetedAgeGroups) {
+
+          String firstValue = drug.getKey() + "_" + ageGroup.getKey() + "_" + country.getKey();
+          drugVal = Double.parseDouble((String) request.getStepTwoAnswers().get(firstValue));
+
+          total += drugVal*(double) row.getColumnDataMap().get(ageGroup.getName()).getValue();
+        }
+        row.getColumnDataMap().put(drug.getName(), ColumnData.builder().isPercentage(true).dataType("double").value(total).build());
+        row.getColumnDataMap().put("Buffer stock of " + drug.getName(), ColumnData.builder().isPercentage(true).dataType("double").value(total * bufferVal).build());
+      }
+    }
+  }
+
+  public List<ResourcePlanningHistoryResponse> getHistory() {
+    return resourcePlanningHistoryRepository.getHistory();
+  }
+
+  public  ResourcePlanningDashboardRequest getHistoryByIdentifier(UUID identifier) {
+    ResourcePlanningHistory history = resourcePlanningHistoryRepository.findById(identifier).orElseThrow(() -> new NotFoundException(Pair.of(
+        Fields.identifier, identifier), ResourcePlanningHistory.class));
+    return history.getHistory();
   }
 }

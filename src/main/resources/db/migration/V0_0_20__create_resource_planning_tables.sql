@@ -2,7 +2,7 @@ CREATE TABLE IF NOT EXISTS country_campaign
 (
     identifier        UUID                     NOT NULL,
     name              VARCHAR(255)             NOT NULL,
-    key              VARCHAR(255)             NOT NULL,
+    key               VARCHAR(255)             NOT NULL,
     groups            JSONB                    NOT NULL,
     entity_status     VARCHAR(36)              NOT NULL,
     created_by        VARCHAR(36)              NOT NULL,
@@ -12,21 +12,6 @@ CREATE TABLE IF NOT EXISTS country_campaign
     PRIMARY KEY (identifier)
 );
 
-CREATE TABLE IF NOT EXISTS country_campaign_aud
-(
-    identifier        UUID                     NOT NULL,
-    REV               INT                      NOT NULL,
-    REVTYPE           INTEGER                  NULL,
-    name              VARCHAR(255)             NOT NULL,
-    key              VARCHAR(255)             NOT NULL,
-    groups            JSONB                    NOT NULL,
-    entity_status     VARCHAR(36)              NOT NULL,
-    created_by        VARCHAR(36)              NOT NULL,
-    created_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,
-    modified_by       VARCHAR(36)              NOT NULL,
-    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
-    PRIMARY KEY (identifier, REV)
-);
 
 CREATE TABLE IF NOT EXISTS campaign_drug
 (
@@ -41,13 +26,26 @@ CREATE TABLE IF NOT EXISTS campaign_drug
     PRIMARY KEY (identifier)
 );
 
-CREATE TABLE IF NOT EXISTS campaign_drug_aud
+CREATE TABLE IF NOT EXISTS resource_planning_history
+(
+    identifier        UUID                     NOT NULL,
+    name              VARCHAR(255)             NOT NULL,
+    history           JSONB                    NOT NULL,
+    entity_status     VARCHAR(36)              NOT NULL,
+    created_by        VARCHAR(36)              NOT NULL,
+    created_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,
+    modified_by       VARCHAR(36)              NOT NULL,
+    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    PRIMARY KEY (identifier)
+);
+
+CREATE TABLE IF NOT EXISTS resource_planning_history_aud
 (
     identifier        UUID                     NOT NULL,
     REV               INT                      NOT NULL,
     REVTYPE           INTEGER                  NULL,
     name              VARCHAR(255)             NOT NULL,
-    drugs             JSONB                    NOT NULL,
+    history           JSONB                    NOT NULL,
     entity_status     VARCHAR(36)              NOT NULL,
     created_by        VARCHAR(36)              NOT NULL,
     created_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -56,9 +54,11 @@ CREATE TABLE IF NOT EXISTS campaign_drug_aud
     PRIMARY KEY (identifier, REV)
 );
 
-insert into country_campaign (identifier, name, key, groups, entity_status, created_by, created_datetime,
+
+insert into country_campaign (identifier, name, key, groups, entity_status, created_by,
+                              created_datetime,
                               modified_by, modified_datetime)
-VALUES (uuid_generate_v4(), 'Kenya', 'ken','[
+VALUES (uuid_generate_v4(), 'Kenya', 'ken', '[
   {
     "name": "0-11 months",
     "min": 0,
@@ -86,9 +86,10 @@ VALUES (uuid_generate_v4(), 'Kenya', 'ken','[
 ]', 'ACTIVE',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00');
-insert into country_campaign (identifier, name, key, groups, entity_status, created_by, created_datetime,
+insert into country_campaign (identifier, name, key, groups, entity_status, created_by,
+                              created_datetime,
                               modified_by, modified_datetime)
-VALUES (uuid_generate_v4(), 'Rwanda', 'rwa','[
+VALUES (uuid_generate_v4(), 'Rwanda', 'rwa', '[
   {
     "name": "6-11 months",
     "min": 6,
@@ -118,7 +119,7 @@ VALUES (uuid_generate_v4(), 'Rwanda', 'rwa','[
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00');
 
 insert into campaign_drug (identifier, name, drugs, entity_status, created_by, created_datetime,
-                              modified_by, modified_datetime)
+                           modified_by, modified_datetime)
 VALUES (uuid_generate_v4(), 'STH', '[
   {
     "name": "Albendazole (ALB)",

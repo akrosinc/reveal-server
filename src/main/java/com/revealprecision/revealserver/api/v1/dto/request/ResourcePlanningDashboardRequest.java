@@ -18,6 +18,8 @@ public class ResourcePlanningDashboardRequest {
   @NotNull
   private UUID campaign;
   @NotNull
+  private UUID country;
+  @NotNull
   private UUID locationHierarchy;
   @NotNull
   private String lowestGeography;

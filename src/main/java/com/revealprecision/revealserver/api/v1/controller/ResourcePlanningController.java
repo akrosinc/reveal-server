@@ -7,17 +7,20 @@ import com.revealprecision.revealserver.api.v1.dto.request.ResourcePlanningReque
 import com.revealprecision.revealserver.api.v1.dto.response.CampaignDrugResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.CountryCampaignResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.FormulaResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.ResourcePlanningHistoryResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.SecondStepQuestionsResponse;
 import com.revealprecision.revealserver.service.ResourcePlanningService;
 import com.revealprecision.revealserver.service.models.LocationResourcePlanning;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -68,4 +71,16 @@ public class ResourcePlanningController {
         .body(resourcePlanningService.getDashboardData(request));
   }
 
+  @GetMapping("history")
+  public ResponseEntity<List<ResourcePlanningHistoryResponse>> getHistory() {
+    return ResponseEntity.ok()
+        .body(resourcePlanningService.getHistory());
+  }
+
+  @GetMapping("history/{identifier}")
+  public ResponseEntity<ResourcePlanningDashboardRequest> getHistoryByIdentifier(@PathVariable
+      UUID identifier) {
+    return ResponseEntity.ok()
+        .body(resourcePlanningService.getHistoryByIdentifier(identifier));
+  }
 }

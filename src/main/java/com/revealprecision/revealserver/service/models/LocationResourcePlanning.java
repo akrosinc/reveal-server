@@ -2,7 +2,7 @@ package com.revealprecision.revealserver.service.models;
 
 import com.revealprecision.revealserver.api.v1.dto.models.ColumnData;
 import com.revealprecision.revealserver.persistence.es.LocationElastic;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -18,7 +18,7 @@ public class LocationResourcePlanning {
 
   private UUID identifier;
   private String name;
-  private Map<String, ColumnData> columnDataMap = new HashMap<>();
+  private Map<String, ColumnData> columnDataMap = new LinkedHashMap<>();
 
   public LocationResourcePlanning(LocationElastic locationElastic, Object populationCount, Object structureCount) {
     this.identifier = UUID.fromString(locationElastic.getId());
