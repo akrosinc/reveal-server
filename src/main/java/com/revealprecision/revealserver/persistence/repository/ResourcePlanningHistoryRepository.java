@@ -14,6 +14,6 @@ import org.springframework.stereotype.Repository;
 public interface ResourcePlanningHistoryRepository extends JpaRepository<ResourcePlanningHistory, UUID> {
 
   @Query(value = "select new com.revealprecision.revealserver.api.v1.dto.response.ResourcePlanningHistoryResponse(rh.identifier, rh.name, u.username, rh.createdDatetime) from ResourcePlanningHistory rh "
-      + "left join User u on CAST(u.identifier as string) = rh.createdBy ")
+      + "left join User u on CAST(u.sid as string) = rh.createdBy ")
   Page<ResourcePlanningHistoryResponse> getHistory(Pageable pageable);
 }
