@@ -1,7 +1,7 @@
 DROP MATERIALIZED VIEW location_relationships;
 
 CREATE
-MATERIALIZED VIEW IF NOT EXISTS location_relationships
+MATERIALIZED VIEW IF NOT EXISTS location_relationships AS
 SELECT parents.location_hierarchy_identifier,
        parents.parent AS location_parent_identifier,
        pgl.name       AS parent_geographic_level_name,

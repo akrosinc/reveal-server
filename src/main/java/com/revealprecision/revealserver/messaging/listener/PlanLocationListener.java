@@ -4,7 +4,7 @@ import com.revealprecision.revealserver.enums.ProcessTrackerEnum;
 import com.revealprecision.revealserver.enums.ProcessType;
 import com.revealprecision.revealserver.messaging.message.PlanLocationAssignMessage;
 import com.revealprecision.revealserver.persistence.domain.ProcessTracker;
-import com.revealprecision.revealserver.service.PlanLocationsService;
+import com.revealprecision.revealserver.service.AssignedStructureService;
 import com.revealprecision.revealserver.service.ProcessTrackerService;
 import com.revealprecision.revealserver.service.TaskService;
 import java.util.List;
@@ -21,7 +21,7 @@ public class PlanLocationListener extends Listener {
 
   private final TaskService taskService;
   private final ProcessTrackerService processTrackerService;
-  private final PlanLocationsService planLocationsService;
+  private final AssignedStructureService assignedStructureService;
 
 
 
@@ -37,7 +37,7 @@ public class PlanLocationListener extends Listener {
 
     taskService.processPlanUpdateForTasks(message.getPlanIdentifier(),message.getOwnerId());
 
-    planLocationsService.refreshAssignedStructureCountsMaterializedView();
+    assignedStructureService.refreshAssignedStructureCountsMaterializedView();
   }
 
   private void updateProcessTracker(int deleteByPlan, int saveAll,

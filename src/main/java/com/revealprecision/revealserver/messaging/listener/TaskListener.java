@@ -15,7 +15,6 @@ import com.revealprecision.revealserver.service.LocationBusinessStatusService;
 import com.revealprecision.revealserver.service.LocationRelationshipService;
 import com.revealprecision.revealserver.service.LocationService;
 import com.revealprecision.revealserver.service.PlanLocationsService;
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -107,7 +106,8 @@ public class TaskListener extends Listener {
     return trackers;
   }
 
-  private void saveDataForLocationsAboveStructure(TaskEvent message, List<TaskBusinessStateTracker> trackers) {
+  private void saveDataForLocationsAboveStructure(TaskEvent message,
+      List<TaskBusinessStateTracker> trackers) {
     if (message.getAction().getGoal().getPlan().getPlanTargetTypeEvent().getGeographicLevelName()
         .equals(
             LocationConstants.STRUCTURE)) {
@@ -115,9 +115,13 @@ public class TaskListener extends Listener {
           .getNodeOrder();
       String node = nodeOrder.get(nodeOrder.indexOf(LocationConstants.STRUCTURE) - 1);
 
-      List<Location> parentsAboveNodeAboveStructure = IntStream.range(1,
-              nodeOrder.indexOf(LocationConstants.STRUCTURE)).mapToObj(
-              trackers::get)
+      List<Location> parentsAboveNodeAboveStructure = IntStream.range(0,
+              nodeOrder.indexOf(LocationConstants.STRUCTURE) - 1)
+          .mapToObj(nodeOrder::get)
+          .map(
+              node1 -> trackers.stream()
+                  .filter(tracker -> tracker.getParentGeographicLevelName().equals(node1)).findFirst()
+                  .get())
           .map(taskBusinessStateTracker ->
               Location.builder()
                   .identifier(taskBusinessStateTracker.getParentLocationIdentifier())
@@ -131,11 +135,13 @@ public class TaskListener extends Listener {
           taskBusinessStateTracker -> taskBusinessStateTracker.getParentGeographicLevelName()
               .equals(node)).findFirst();
       first.ifPresent(
-          taskBusinessStateTracker -> collectLocationAboveStructureData(message, parentsAboveNodeAboveStructure, taskBusinessStateTracker));
+          taskBusinessStateTracker -> collectLocationAboveStructureData(message,
+              parentsAboveNodeAboveStructure, taskBusinessStateTracker));
     }
   }
 
-  private void collectLocationAboveStructureData(TaskEvent message, List<Location> parentsAboveNodeAboveStructure,
+  private void collectLocationAboveStructureData(TaskEvent message,
+      List<Location> parentsAboveNodeAboveStructure,
       TaskBusinessStateTracker taskBusinessStateTracker) {
     Set<LocationBusinessStateCount> locationBusinessStateObjPerGeoLevel = locationBusinessStatusService.getLocationBusinessStateObjPerGeoLevel(
         message.getAction().getGoal().getPlan().getIdentifier(),
@@ -172,7 +178,7 @@ public class TaskListener extends Listener {
       }
 
       double percentageVisited =
-          (complete) / ((double) countOfAssignedStructuresInArea -  notEligible) * 100;
+          (complete) / ((double) countOfAssignedStructuresInArea - notEligible) * 100;
 
       if (percentageVisited >= 85d) {
         visitedEffectivelyStatus = true;
@@ -209,31 +215,27 @@ public class TaskListener extends Listener {
       }
 
       double percentageVisited =
-          100 - (( countOfAssignedStructuresInArea - notVisited - notEligible)/ (countOfAssignedStructuresInArea - notEligible))
+          100 - ((countOfAssignedStructuresInArea - notVisited - notEligible) / (
+              countOfAssignedStructuresInArea - notEligible))
               * 100;
-
 
       double percentageTreated =
           (smcComplete + spaqComplete) / (((double) countOfAssignedStructuresInArea) - notEligible)
               * 100;
 
-
       if (percentageTreated > 95) {
         treatedStatus = true;
       }
 
-
-      if (percentageVisited > 20){
+      if (percentageVisited > 20) {
         visitedStatus = true;
       }
 
     }
-    if (visitedStatus || visitedEffectivelyStatus || treatedStatus) {
-      updateOrSaveLocationAboveStructureData(parentsAboveNodeAboveStructure,
-          taskBusinessStateTracker, treatedStatus,
-          visitedStatus,
-          visitedEffectivelyStatus);
-    }
+    updateOrSaveLocationAboveStructureData(parentsAboveNodeAboveStructure,
+        taskBusinessStateTracker, treatedStatus,
+        visitedStatus,
+        visitedEffectivelyStatus);
   }
 
   private void updateOrSaveLocationAboveStructureData(List<Location> parentsAboveNodeAboveStructure,
@@ -266,7 +268,8 @@ public class TaskListener extends Listener {
         locationAboveStructureList);
   }
 
-  private LocationAboveStructure getLocationAboveStructure(TaskBusinessStateTracker taskBusinessStateTracker,
+  private LocationAboveStructure getLocationAboveStructure(
+      TaskBusinessStateTracker taskBusinessStateTracker,
       boolean finalVisitedStatus, boolean finalTreatedStatus, boolean finalVisitedEffectivelyStatus,
       Location location) {
     return LocationAboveStructure.builder()

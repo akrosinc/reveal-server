@@ -1,7 +1,6 @@
 DROP MATERIALIZED VIEW lite_structure_count;
 
-CREATE MATERIALIZED VIEW IF NOT EXISTS public.lite_structure_count
-TABLESPACE pg_default
+CREATE MATERIALIZED VIEW IF NOT EXISTS lite_structure_count
 AS
 SELECT t.location_hierarchy_identifier,
        t.parent_location_identifier,
