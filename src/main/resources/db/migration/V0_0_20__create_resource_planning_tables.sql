@@ -148,8 +148,8 @@ insert into campaign_drug (identifier, name, drugs, entity_status, created_by, c
 VALUES (uuid_generate_v4(), 'SCH', '[
   {
     "name": "Praziquantel (PZQ)",
-    "min": 0,
-    "max": 5,
+    "min": 0.5,
+    "max": 5.5,
     "half": true,
     "full": false,
     "millis": false,
@@ -247,7 +247,7 @@ VALUES (uuid_generate_v4(), 'Seasonal Malaria Chemoprevention', '[
   {
     "name": "Amodiaquine (AQ)",
     "min": 0.5,
-    "max": 3,
+    "max": 3.0,
     "half": true,
     "full": false,
     "millis": false,
@@ -256,7 +256,7 @@ VALUES (uuid_generate_v4(), 'Seasonal Malaria Chemoprevention', '[
   {
     "name": "Sulfadoxine–pyrimethamine (SP)",
     "min": 0.5,
-    "max": 1,
+    "max": 1.0,
     "half": true,
     "full": false,
     "millis": false,

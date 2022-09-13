@@ -38,6 +38,8 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 
@@ -318,8 +320,8 @@ public class ResourcePlanningService {
     }
   }
 
-  public List<ResourcePlanningHistoryResponse> getHistory() {
-    return resourcePlanningHistoryRepository.getHistory();
+  public Page<ResourcePlanningHistoryResponse> getHistory(Pageable pageable) {
+    return resourcePlanningHistoryRepository.getHistory(pageable);
   }
 
   public  ResourcePlanningDashboardRequest getHistoryByIdentifier(UUID identifier) {

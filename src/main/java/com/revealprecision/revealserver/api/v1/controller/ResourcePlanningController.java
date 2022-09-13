@@ -18,6 +18,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -72,9 +74,9 @@ public class ResourcePlanningController {
   }
 
   @GetMapping("history")
-  public ResponseEntity<List<ResourcePlanningHistoryResponse>> getHistory() {
+  public ResponseEntity<Page<ResourcePlanningHistoryResponse>> getHistory(Pageable pageable) {
     return ResponseEntity.ok()
-        .body(resourcePlanningService.getHistory());
+        .body(resourcePlanningService.getHistory(pageable));
   }
 
   @GetMapping("history/{identifier}")
