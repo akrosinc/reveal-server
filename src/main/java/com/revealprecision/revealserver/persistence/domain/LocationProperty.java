@@ -29,4 +29,6 @@ public class LocationProperty {
   private String geographicLevel;
 
   private Long structures;
+
+  private Boolean isOtherArea;
 }
