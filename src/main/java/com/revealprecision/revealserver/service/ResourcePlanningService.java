@@ -20,14 +20,19 @@ import com.revealprecision.revealserver.persistence.domain.EntityTag;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.ResourcePlanningHistory;
 import com.revealprecision.revealserver.persistence.es.LocationElastic;
+import com.revealprecision.revealserver.persistence.projection.LocationStructureCount;
 import com.revealprecision.revealserver.persistence.repository.CampaignDrugRepository;
 import com.revealprecision.revealserver.persistence.repository.CountryCampaignRepository;
+import com.revealprecision.revealserver.persistence.repository.LocationRelationshipRepository;
 import com.revealprecision.revealserver.persistence.repository.ResourcePlanningHistoryRepository;
 import com.revealprecision.revealserver.service.models.LocationResourcePlanning;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import lombok.RequiredArgsConstructor;
 import org.elasticsearch.action.search.SearchRequest;
@@ -50,6 +55,7 @@ public class ResourcePlanningService {
   private final CountryCampaignRepository countryCampaignRepository;
   private final CampaignDrugRepository campaignDrugRepository;
   private final LocationHierarchyService locationHierarchyService;
+  private final LocationRelationshipRepository locationRelationshipRepository;
   private final ResourcePlanningHistoryRepository resourcePlanningHistoryRepository;
   private final RestHighLevelClient client;
   private final EntityTagService entityTagService;
@@ -150,12 +156,12 @@ public class ResourcePlanningService {
     return response;
   }
 
-  public List<LocationResourcePlanning> getDashboardData(ResourcePlanningDashboardRequest request) throws IOException {
+  public List<LocationResourcePlanning> getDashboardData(ResourcePlanningDashboardRequest request, boolean saveData) throws IOException {
     CampaignDrug campaign = getCampaignByIdentifier(request.getCampaign());
     LocationHierarchy locationHierarchy = locationHierarchyService.findByIdentifier(request.getLocationHierarchy());
     CountryCampaign countryCampaign = getCountryCampaignByIdentifier(request.getCountry());
     String minAgeGroup = (String) request.getStepTwoAnswers().get("ageGroup");
-    List<AgeGroup> targetedAgeGroups = new ArrayList<>();
+    List<AgeGroup> targetedAgeGroups;
     if(!locationHierarchy.getNodeOrder().contains(request.getLowestGeography())) {
       throw new ConflictException("Geography level does not exist in Location hierarch.");
     }
@@ -177,20 +183,26 @@ public class ResourcePlanningService {
     calculateTotals(response, request);
     calculateDrugs(response, request, campaign, countryCampaign, targetedAgeGroups);
 
-    ResourcePlanningHistory resourcePlanningHistory = new ResourcePlanningHistory(request, countryCampaign.getName() + " - " + campaign.getName());
-    resourcePlanningHistoryRepository.save(resourcePlanningHistory);
-
+    if(saveData) {
+      ResourcePlanningHistory resourcePlanningHistory = new ResourcePlanningHistory(request,
+          countryCampaign.getName() + " - " + campaign.getName());
+      resourcePlanningHistoryRepository.save(resourcePlanningHistory);
+    }
     return response;
   }
 
   private List<LocationResourcePlanning> getDataFromElastic(ResourcePlanningDashboardRequest request) throws IOException {
     List<LocationElastic> foundLocations = new ArrayList<>();
     EntityTag popTag = entityTagService.getEntityTagByIdentifier(request.getPopulationTag());
-    String structureCountTag;
+    String structureCountTag = null;
+    List<LocationStructureCount> structureCounts = new ArrayList<>();
+    Map<String, Long> mapStructureCount = new HashMap<>();
     if(!request.isCountBasedOnImportedLocations()) {
       structureCountTag = entityTagService.getEntityTagByIdentifier(request.getStructureCountTag()).getTag();
     }else {
-      structureCountTag = "total_structure";
+      structureCounts = locationRelationshipRepository.getNumberOfStructures(request.getLocationHierarchy(), request.getLowestGeography());
+      mapStructureCount = structureCounts.stream().collect(Collectors.toMap(el-> el.getIdentifier(),
+          LocationStructureCount::getStructureCount));
     }
 
     List<LocationResourcePlanning> response = new ArrayList<>();
@@ -214,7 +226,15 @@ public class ResourcePlanningService {
 
     for(LocationElastic loc : foundLocations) {
       Object total_population = loc.getMetadata().stream().filter(el-> el.getTag().equals(popTag.getTag())).findFirst().orElse(null).getValueNumber();
-      Object total_structure = loc.getMetadata().stream().filter(el-> el.getTag().equals(structureCountTag)).findFirst().orElse(null).getValueNumber();
+      Object total_structure;
+      if(!request.isCountBasedOnImportedLocations()) {
+        String finalStructureCountTag = structureCountTag;
+        total_structure = loc.getMetadata().stream().filter(el-> el.getTag().equals(
+            finalStructureCountTag)).findFirst().orElse(null).getValueNumber();
+      }else {
+        total_structure = mapStructureCount.get(loc.getId());
+      }
+
       response.add(new LocationResourcePlanning(loc, total_population, total_structure));
     }
 
@@ -274,7 +294,7 @@ public class ResourcePlanningService {
       double cddResult = 0;
       double daysResult = 0;
       double campPopCove = 0;
-      double totalStructure = 0;
+      long totalStructure = 0;
       double cddSuper = 0;
       if (flag) {
         val = (double) el.getColumnDataMap().get("Total target population").getValue();
@@ -292,7 +312,7 @@ public class ResourcePlanningService {
         el.getColumnDataMap().put("Anticipated campaign population coverage based on CDDs", ColumnData.builder().isPercentage(true).dataType("double").value(((cddResult*daysResult*cdd_target)/val)*100).build());
       }
       campPopCove = daysResult*structure_day*cddResult;
-      totalStructure = (double) el.getColumnDataMap().get("Number of structures in the campaign location").getValue();
+      totalStructure = (long) el.getColumnDataMap().get("Number of structures in the campaign location").getValue();
       cddSuper = Double.parseDouble((String) request.getStepOneAnswers().get("cdd_super"));
       el.getColumnDataMap().put("Anticipated number of structures that can be visited", ColumnData.builder().isPercentage(true).dataType("double").value(campPopCove).build());
       el.getColumnDataMap().put("Anticipated campaign coverage of structures based on number of structures in the location", ColumnData.builder().isPercentage(true).dataType("double").value(campPopCove/totalStructure).build());

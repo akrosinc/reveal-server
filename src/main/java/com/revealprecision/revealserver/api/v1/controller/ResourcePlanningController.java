@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RequiredArgsConstructor
@@ -68,9 +69,9 @@ public class ResourcePlanningController {
 
   @PostMapping("dashboard")
   public ResponseEntity<List<LocationResourcePlanning>> getFormulasSecondStep(@Valid @RequestBody
-      ResourcePlanningDashboardRequest request) throws IOException {
+      ResourcePlanningDashboardRequest request, @RequestParam(name = "saveData", required = false, defaultValue = "false") boolean saveData) throws IOException {
     return ResponseEntity.ok()
-        .body(resourcePlanningService.getDashboardData(request));
+        .body(resourcePlanningService.getDashboardData(request, saveData));
   }
 
   @GetMapping("history")
