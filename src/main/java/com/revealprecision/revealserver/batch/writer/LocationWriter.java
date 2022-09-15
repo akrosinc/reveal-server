@@ -98,8 +98,8 @@ public class LocationWriter implements ItemWriter<Location> {
       for(Map.Entry<String, String> entry : e.getFailedDocuments().entrySet()) {
         failedLocationIds.add(UUID.fromString(entry.getKey()));
         String errorMessage;
-        if(entry.getValue().split("reason")[2].replace("=","").startsWith("Unable to Tessellate")) {
-          errorMessage = "Unable to Tessellate location";
+        if(entry.getValue().split("reason")[2].replace("=","").length() > 251) {
+          errorMessage = entry.getValue().split("reason")[2].replace("=","").substring(0, 251).concat("...");
         }else {
           errorMessage = entry.getValue().split("reason")[2].replace("=","");
         }
