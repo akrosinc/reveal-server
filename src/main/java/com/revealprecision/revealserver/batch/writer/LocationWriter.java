@@ -97,8 +97,14 @@ public class LocationWriter implements ItemWriter<Location> {
       List<LocationBulkException> exceptions = new ArrayList<>();
       for(Map.Entry<String, String> entry : e.getFailedDocuments().entrySet()) {
         failedLocationIds.add(UUID.fromString(entry.getKey()));
+        String errorMessage;
+        if(entry.getValue().split("reason")[2].replace("=","").startsWith("Unable to Tessellate")) {
+          errorMessage = "Unable to Tessellate location";
+        }else {
+          errorMessage = entry.getValue().split("reason")[2].replace("=","");
+        }
         LocationBulkException locationBulkException = LocationBulkException.builder()
-            .message(entry.getValue().split("reason")[2].replace("=",""))
+            .message(errorMessage)
             .locationBulk(locationBulk)
             .name(locNames.get(UUID.fromString(entry.getKey())))
             .build();
