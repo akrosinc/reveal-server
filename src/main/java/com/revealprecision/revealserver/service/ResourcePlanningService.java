@@ -190,7 +190,7 @@ public class ResourcePlanningService {
         throw new ConflictException("Name cannot be blank");
       }
       ResourcePlanningHistory resourcePlanningHistory = new ResourcePlanningHistory(request,
-          countryCampaign.getName() + " - " + campaign.getName());
+          request.getName());
       resourcePlanningHistoryRepository.save(resourcePlanningHistory);
     }
     return response;
@@ -302,7 +302,13 @@ public class ResourcePlanningService {
     }else {
       flag = false;
     }
-    int mda_days = Integer.parseInt((String) request.getStepOneAnswers().get("mda_days"));
+    int mda_days;
+    if(!request.getStepOneAnswers().get("mda_days").equals("")) {
+      mda_days = 1;
+    } else {
+      mda_days = Integer.parseInt((String) request.getStepOneAnswers().get("mda_days"));
+    }
+
     int cdd_target = Integer.parseInt((String) request.getStepOneAnswers().get("cdd_target"));
     int cdd_number = Integer.parseInt((String) request.getStepOneAnswers().get("cdd_number"));
     int structure_day = Integer.parseInt((String) request.getStepOneAnswers().get("structure_day"));
