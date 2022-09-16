@@ -45,7 +45,7 @@ public class MetaFieldSetMapper {
     //starting from 1st
     int fileRowsCount = sheet.getPhysicalNumberOfRows();
     if (fileRowsCount > 1) {
-      log.info("Import file has records");
+      log.info("Import file has records {}",fileRowsCount);
     } else {
       throw new FileFormatException(
           "File is empty or not valid.");
@@ -88,6 +88,7 @@ public class MetaFieldSetMapper {
       if (dataRow != null) {
         rowCount++;
         try {
+          log.trace("dataRow.getCell(0) {}",dataRow.getCell(0));
           hierarchyList.add(UUID.fromString(dataRow.getCell(0).toString()));
         } catch (IllegalArgumentException e) {
           log.warn("Hierarchy Id is not a uuid in row: {}", i);
@@ -95,6 +96,7 @@ public class MetaFieldSetMapper {
 
         }
         try {
+          log.trace("dataRow.getCell(1) {}",dataRow.getCell(1));
           locationList.add(UUID.fromString(dataRow.getCell(1).toString()));
         } catch (IllegalArgumentException e) {
           log.warn("Location Id is not a uuid in row: {}", i);

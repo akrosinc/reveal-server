@@ -1,11 +1,10 @@
 package com.revealprecision.revealserver.messaging.listener;
 
 import static com.revealprecision.revealserver.constants.EntityTagDataTypes.INTEGER;
+import static com.revealprecision.revealserver.constants.EntityTagScopes.DATE;
 import static com.revealprecision.revealserver.constants.EntityTagScopes.EVENT;
 import static com.revealprecision.revealserver.constants.EntityTagScopes.GLOBAL;
 import static com.revealprecision.revealserver.constants.EntityTagScopes.PLAN;
-import static com.revealprecision.revealserver.constants.EntityTagScopes.DATE;
-
 
 import com.revealprecision.revealserver.api.v1.dto.factory.EntityTagEventFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.FormDataEntityTagValueEventFactory;
@@ -64,17 +63,17 @@ public class EventConsumptionListener extends Listener {
 
   @KafkaListener(topics = "#{kafkaConfigProperties.topicMap.get('EVENT_CONSUMPTION')}", groupId = "reveal_server_group")
   public void eventConsumption(FormDataEntityTagEvent eventMetadata) {
-    log.info("Received Message in group foo: {}" , eventMetadata.toString());
+    log.info("Received Message in group foo: {}", eventMetadata.toString());
     init();
     Plan plan;
     String metadataTitle;
     Task task;
     UUID eventId = UUID.fromString(eventMetadata.getEventId());
-    if (eventMetadata.getTaskIdentifier()==null) {
-       plan = planService.findPlanByIdentifier(eventMetadata.getPlanIdentifier());
-       metadataTitle = eventMetadata.getEventType();
-       task = null;
-    } else{
+    if (eventMetadata.getTaskIdentifier() == null) {
+      plan = planService.findPlanByIdentifier(eventMetadata.getPlanIdentifier());
+      metadataTitle = eventMetadata.getEventType();
+      task = null;
+    } else {
       task = taskService.getTaskByIdentifier(eventMetadata.getTaskIdentifier());
       plan = task.getAction().getGoal().getPlan();
       metadataTitle = task.getAction().getTitle();
@@ -114,8 +113,10 @@ public class EventConsumptionListener extends Listener {
                   referencedTag);
 
               if (referencedTagEvent.isGenerated()) {
-                processReferencedEntityTagEvent(eventMetadata, plan, metadataTitle, task, dateForScopeDateFields,
-                    formDataEntityTagValueEvents1, location, referencedTagEvent, eventId, formDataEntityTagValueEvent.getSelectedformField());
+                processReferencedEntityTagEvent(eventMetadata, plan, metadataTitle, task,
+                    dateForScopeDateFields,
+                    formDataEntityTagValueEvents1, location, referencedTagEvent, eventId,
+                    formDataEntityTagValueEvent.getSelectedformField());
               }
             }
           }
@@ -130,7 +131,8 @@ public class EventConsumptionListener extends Listener {
     }
   }
 
-  private void processReferencedEntityTagEvent(FormDataEntityTagEvent eventMetadata, Plan plan, String metadataTitle,
+  private void processReferencedEntityTagEvent(FormDataEntityTagEvent eventMetadata, Plan plan,
+      String metadataTitle,
       Task task, String dateForScopeDateFields,
       List<FormDataEntityTagValueEvent> formDataEntityTagValueEvents1, Location location,
       EntityTagEvent referencedTagEvent, UUID eventId, FormFieldEvent formFieldEvent) {
@@ -182,7 +184,7 @@ public class EventConsumptionListener extends Listener {
         }
 
       } catch (NoSuchMethodException e) {
-        log.error("spel method execution error: {}",e.getMessage(),e);
+        log.error("spel method execution error: {}", e.getMessage(), e);
       }
     }
   }
@@ -238,22 +240,27 @@ public class EventConsumptionListener extends Listener {
   private List<FormDataEntityTagValueEvent> getFormDataEntityTagValueEvents(
       FormDataEntityTagValueEvent formDataEntityTagValueEvent,
       LocationMetadata locationMetadataByLocation) {
-    Set<UUID> entityTagIdentifierList = locationMetadataByLocation.getEntityValue()
-        .getMetadataObjs()
-        .stream().map(MetadataObj::getEntityTagId).collect(
-            Collectors.toSet());
+    if (locationMetadataByLocation != null) {
+      Set<UUID> entityTagIdentifierList = locationMetadataByLocation.getEntityValue()
+          .getMetadataObjs()
+          .stream().map(MetadataObj::getEntityTagId).collect(
+              Collectors.toSet());
 
-    Map<UUID, EntityTag> entityTagMap = entityTagService.findEntityTagsByIdList(
-            entityTagIdentifierList).stream().map(entityTag -> new SimpleEntry<>(
-            entityTag.getIdentifier(), entityTag))
-        .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+      Map<UUID, EntityTag> entityTagMap = entityTagService.findEntityTagsByIdList(
+              entityTagIdentifierList).stream().map(entityTag -> new SimpleEntry<>(
+              entityTag.getIdentifier(), entityTag))
+          .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
 
-    return locationMetadataByLocation.getEntityValue()
-        .getMetadataObjs().stream().map(metadataObj -> FormDataEntityTagValueEventFactory
-            .getEntity(MetadataService.getValueFromValueObject(metadataObj).getSecond(),
-                formDataEntityTagValueEvent.getSelectedformField(),EntityTagEventFactory.getEntityTagEvent(
-                    entityTagMap.get(metadataObj.getEntityTagId())))
-            ).collect(Collectors.toList());
+      return locationMetadataByLocation.getEntityValue()
+          .getMetadataObjs().stream().map(metadataObj -> FormDataEntityTagValueEventFactory
+              .getEntity(MetadataService.getValueFromValueObject(metadataObj).getSecond(),
+                  formDataEntityTagValueEvent.getSelectedformField(),
+                  EntityTagEventFactory.getEntityTagEvent(
+                      entityTagMap.get(metadataObj.getEntityTagId())))
+          ).collect(Collectors.toList());
+
+    }
+    return new ArrayList<>();
   }
 
   private List<Location> getLocations(FormDataEntityTagEvent eventMetadata, Task task) {
@@ -277,7 +284,8 @@ public class EventConsumptionListener extends Listener {
   private Object getCastedValue(FormFieldEvent formField, Object tagValue) {
     Object tagValueCasted;
     if (formField.getDataType().equals(INTEGER)) {
-      tagValueCasted = ( tagValue instanceof Integer ) ? tagValue : Integer.valueOf((String) tagValue);
+      tagValueCasted =
+          (tagValue instanceof Integer) ? tagValue : Integer.valueOf((String) tagValue);
     } else {
       tagValueCasted = tagValue;
     }

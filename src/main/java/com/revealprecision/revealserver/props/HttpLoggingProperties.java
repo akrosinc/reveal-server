@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.props;
 
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -21,4 +22,6 @@ public class HttpLoggingProperties {
   private boolean shouldLogToDatabase = true;
 
   private  Integer logLength = 2000;
+
+  private List<String> excludedPaths = List.of("/actuator/");
 }

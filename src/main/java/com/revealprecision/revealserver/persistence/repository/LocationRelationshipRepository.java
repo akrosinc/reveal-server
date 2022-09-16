@@ -11,7 +11,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import javax.transaction.Transactional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -163,4 +165,14 @@ public interface LocationRelationshipRepository extends JpaRepository<LocationRe
         + "left join geographic_level gl on gl.identifier = l.geographic_level_identifier "
         + "where gl.name = :geographicLevel and lr.location_hierarchy_identifier = :hierarchyIdentifier", nativeQuery = true)
   List<LocationStructureCount> getNumberOfStructures(UUID hierarchyIdentifier, String geographicLevel);
+
+  @Query(value = "select distinct lr.location.identifier from LocationRelationship  lr where lr.parentLocation.identifier in (:parentIdentifiers)")
+  List<UUID> getDistinctChildrenLocationsGivenParentIds(
+      @Param("parentIdentifiers") List<UUID> parentIdentifiers);
+
+  @Query(value = "REFRESH MATERIALIZED VIEW CONCURRENTLY location_relationships",nativeQuery = true)
+  @Transactional
+  @Modifying
+  void refreshLocationRelationshipMaterializedView();
+
 }

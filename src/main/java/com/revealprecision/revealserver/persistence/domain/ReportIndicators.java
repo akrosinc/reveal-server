@@ -15,6 +15,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @JsonInclude(Include.NON_NULL)
 public class ReportIndicators {
+
   private Integer sprayedRooms;
   private Integer males;
   private Integer females;
@@ -32,4 +33,8 @@ public class ReportIndicators {
   private Integer foundStructures;
   private Integer sprayedStructures;
   private Integer insecticidesUsed;
+  private String householdHead;
+  private boolean isAggregateLevel;
+  private boolean isEligible;
+
 }

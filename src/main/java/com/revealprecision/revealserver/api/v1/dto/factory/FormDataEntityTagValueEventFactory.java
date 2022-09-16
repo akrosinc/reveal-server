@@ -45,6 +45,7 @@ public class FormDataEntityTagValueEventFactory {
         .dateForScopeDate(dateForScopeDateFields)
         .cddName(eventMetadata.getCddName())
         .supervisor(eventMetadata.getSupervisor())
+        .additionalKeyString(eventMetadata.getAdditionalKeyString())
         .value(value)
         .build();
   }

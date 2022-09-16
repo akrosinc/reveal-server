@@ -40,11 +40,12 @@ import com.revealprecision.revealserver.persistence.domain.metadata.infra.TagDat
 import com.revealprecision.revealserver.persistence.domain.metadata.infra.TagValue;
 import com.revealprecision.revealserver.persistence.domain.metadata.metadataImport.MetaImportDTO;
 import com.revealprecision.revealserver.persistence.domain.metadata.metadataImport.fieldMapper.MetaFieldSetMapper;
+import com.revealprecision.revealserver.persistence.es.PersonElastic;
 import com.revealprecision.revealserver.persistence.repository.LocationMetadataRepository;
 import com.revealprecision.revealserver.persistence.repository.MetadataImportRepository;
 import com.revealprecision.revealserver.persistence.repository.PersonMetadataRepository;
-import com.revealprecision.revealserver.persistence.repository.PersonRepository;
 import com.revealprecision.revealserver.props.KafkaProperties;
+import com.revealprecision.revealserver.util.ElasticModelUtil;
 import com.revealprecision.revealserver.util.UserUtils;
 import java.io.IOException;
 import java.security.Principal;
@@ -52,9 +53,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.UUID;
@@ -66,6 +67,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.SerializationUtils;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.reindex.UpdateByQueryRequest;
+import org.elasticsearch.script.Script;
+import org.elasticsearch.script.ScriptType;
 import org.keycloak.KeycloakPrincipal;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -80,7 +87,6 @@ public class MetadataService {
 
   private final LocationMetadataRepository locationMetadataRepository;
   private final PersonMetadataRepository personMetadataRepository;
-  private final PersonRepository personRepository;
   private final KafkaTemplate<String, LocationMetadataEvent> locationMetadataKafkaTemplate;
   private final KafkaTemplate<String, PersonMetadataEvent> personMetadataKafkaTemplate;
   private final KafkaProperties kafkaProperties;
@@ -88,9 +94,10 @@ public class MetadataService {
   private final MetadataImportRepository metadataImportRepository;
   private final UserService userService;
   private final StorageService storageService;
-  private final EntityTagService entityTagService;
   private final KafkaTemplate<String, Message> kafkaTemplate;
   private final MetaFieldSetMapper metaFieldSetMapper;
+
+  private final RestHighLevelClient client;
 
   public LocationMetadata getLocationMetadataByLocation(UUID locationIdentifier) {
     //TODO fix this
@@ -507,7 +514,8 @@ public class MetadataService {
         value.setValueDate((LocalDateTime) tagValue);
         break;
       case DOUBLE:
-        value.setValueDouble((Double) tagValue);
+        value.setValueDouble(tagValue instanceof String ? Double.valueOf((String) tagValue)
+            : tagValue instanceof Integer ? ((Integer) tagValue).doubleValue() : (Double) tagValue);
         break;
       case BOOLEAN:
         value.setValueBoolean((Boolean) tagValue);
@@ -544,12 +552,13 @@ public class MetadataService {
       List<MetaImportDTO> metaImportDTOS = metaFieldSetMapper.mapMetaFields(sheet);
 
       if (metaImportDTOS.stream().map(MetaImportDTO::getErrors).map(Map::size).reduce(0,
-          Integer::sum) >1){
-        throw new FileFormatException("Invalid file errors with: "+
-            metaImportDTOS.stream().map(MetaImportDTO::getErrors).flatMap(error->error.entrySet().stream()).map(entry->
-                "tag: "+entry.getKey().getTag() + "value: "+entry.getValue()
-            ).collect(Collectors.joining("\r\n"))
-            );
+          Integer::sum) > 1) {
+        throw new FileFormatException("Invalid file errors with: " +
+            metaImportDTOS.stream().map(MetaImportDTO::getErrors)
+                .flatMap(error -> error.entrySet().stream()).map(entry ->
+                    "tag: " + entry.getKey().getTag() + "value: " + entry.getValue()
+                ).collect(Collectors.joining("\r\n"))
+        );
       }
 
       //send data to kafka listener
@@ -641,5 +650,26 @@ public class MetadataService {
     } else {
       throw new NotFoundException("MetaImport not found.");
     }
+  }
+
+
+  public void updatePersonDetailsOnElasticSearch(Person person) throws IOException {
+    PersonElastic personElastic = new PersonElastic(person);
+    Map<String, Object> parameters = new HashMap<>();
+    parameters.put("person", ElasticModelUtil.toMapFromPersonElastic(personElastic));
+    parameters.put("personId", personElastic.getIdentifier());
+    UpdateByQueryRequest request = new UpdateByQueryRequest("location");
+    List<String> locationIds = person.getLocations().stream()
+        .map(loc -> loc.getIdentifier().toString()).collect(
+            Collectors.toList());
+
+    request.setQuery(QueryBuilders.termsQuery("_id", locationIds));
+    request.setScript(new Script(
+        ScriptType.INLINE, "painless",
+        "def foundPerson = ctx._source.person.find(attr-> attr.identifier == params.personId);"
+            + " if(foundPerson == null) {ctx._source.person.add(params.person);}",
+        parameters
+    ));
+    client.updateByQuery(request, RequestOptions.DEFAULT);
   }
 }

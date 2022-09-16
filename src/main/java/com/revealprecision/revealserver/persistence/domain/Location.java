@@ -79,6 +79,10 @@ public class Location extends AbstractAuditableEntity {
   @ManyToMany(mappedBy = "locations")
   private Set<Person> people;
 
+  @Type(type = "jsonb")
+  @Column(columnDefinition = "jsonb")
+  private LocationProperty locationProperty;
+
   public Location(UUID identifier, String type, String name, LocationStatus status, UUID externalId,
       GeographicLevel geographicLevel,
       LocationBulk locationBulk) {

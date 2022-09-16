@@ -1,5 +1,9 @@
 package com.revealprecision.revealserver.service;
 
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.mapping;
+import static java.util.stream.Collectors.toSet;
+
 import com.revealprecision.revealserver.api.v1.dto.request.LocationRequest;
 import com.revealprecision.revealserver.constants.LocationConstants;
 import com.revealprecision.revealserver.enums.EntityStatus;
@@ -17,12 +21,15 @@ import com.revealprecision.revealserver.persistence.projection.LocationChildrenC
 import com.revealprecision.revealserver.persistence.projection.LocationCoordinatesProjection;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import com.revealprecision.revealserver.persistence.repository.LocationRepository;
+import com.revealprecision.revealserver.util.ElasticModelUtil;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -58,14 +65,23 @@ public class LocationService {
   private final StorageService storageService;
   private final EntityTagService entityTagService;
   private final LocationHierarchyService locationHierarchyService;
+  private final AssignedStructureService assignedStructureService;
 
-  public Location createLocation(LocationRequest locationRequest) throws IOException {
+  public Location createLocation(LocationRequest locationRequest) throws Exception {
     GeographicLevel geographicLevel = geographicLevelService.findByName(
         locationRequest.getProperties().getGeographicLevel());
+    MessageDigest digest = MessageDigest.getInstance("SHA-256");
+
+    String hash = ElasticModelUtil.bytesToHex(digest.digest(locationRequest
+        .getGeometry()
+        .toString()
+        .getBytes(StandardCharsets.UTF_8)));
+
     var locationToSave = Location.builder().geographicLevel(geographicLevel)
         .type(locationRequest.getType()).geometry(locationRequest.getGeometry())
         .name(locationRequest.getProperties().getName())
         .status(locationRequest.getProperties().getStatus())
+        .hashValue(hash)
         .externalId(locationRequest.getProperties().getExternalId()).build();
     if (locationRequest.getProperties().getExternalId() != null) {
       locationToSave.setIdentifier(locationRequest.getProperties().getExternalId());
@@ -73,6 +89,10 @@ public class LocationService {
     locationToSave.setEntityStatus(EntityStatus.ACTIVE);
     var savedLocation = locationRepository.save(locationToSave);
     locationRelationshipService.updateLocationRelationshipsForNewLocation(savedLocation);
+    locationRelationshipService.refreshLocationCountsView();
+    locationRelationshipService.refreshLiteStructureCountView();
+    locationRelationshipService.refreshLocationRelationshipMaterializedView();
+    assignedStructureService.refreshAssignedStructureCountsMaterializedView();
     return savedLocation;
   }
 
@@ -224,10 +244,10 @@ public class LocationService {
     return response;
   }
 
-  public Set<Location> getAssignedLocationsFromPlanAssignments(
+  public Map<Plan, Set<Location>> getAssignedLocationsFromPlanAssignments(
       Set<PlanAssignment> planAssignments) {
     return planAssignments.stream().map(PlanAssignment::getPlanLocations)
-        .map(PlanLocations::getLocation).collect(Collectors.toSet());
+        .collect(groupingBy(PlanLocations::getPlan, mapping(PlanLocations::getLocation, toSet())));
   }
 
   public LocationCoordinatesProjection getLocationCentroidCoordinatesByIdentifier(
@@ -274,7 +294,8 @@ public class LocationService {
   public ByteArrayResource downloadLocations(UUID hierarchyIdentifier, String geographicLevelName,
       UUID userId, ArrayList<UUID> entityTags)
       throws IOException {
-    LocationHierarchy locationHierarchy = locationHierarchyService.findByIdentifier(hierarchyIdentifier);
+    LocationHierarchy locationHierarchy = locationHierarchyService.findByIdentifier(
+        hierarchyIdentifier);
     GeographicLevel geographicLevel = geographicLevelService.findByName(geographicLevelName);
     List<Location> locationList = locationRepository.findByGeographicLevelIdentifier(
         geographicLevel.getIdentifier());
@@ -344,7 +365,7 @@ public class LocationService {
         index++;
 
         int entityTagIndex = 4;
-        for(UUID el : entityTags) {
+        for (UUID el : entityTags) {
           EntityTag entityTag = entityTagService.getEntityTagByIdentifier(el);
           sheet.setColumnWidth(entityTagIndex, 9600);
           headerCell = header.createCell(entityTagIndex);
@@ -353,7 +374,7 @@ public class LocationService {
           cell = row.createCell(entityTagIndex);
           cell.setCellStyle(style);
           entityTagIndex++;
-        };
+        }
       }
 
       workbook.write(outputStream);

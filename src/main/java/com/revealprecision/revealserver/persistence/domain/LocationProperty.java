@@ -27,4 +27,8 @@ public class LocationProperty {
   private UUID externalId;
   @NotNull
   private String geographicLevel;
+
+  private Long structures;
+
+  private Boolean isOtherArea;
 }

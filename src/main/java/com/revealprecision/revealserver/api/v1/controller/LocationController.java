@@ -47,7 +47,7 @@ public class LocationController {
   )
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<LocationResponse> createLocation(
-      @Valid @RequestBody LocationRequest locationRequest) throws IOException {
+      @Valid @RequestBody LocationRequest locationRequest) throws Exception {
     return ResponseEntity.status(HttpStatus.CREATED)
         .body(LocationResponseFactory.fromEntity(locationService.createLocation(locationRequest)));
   }
@@ -136,5 +136,14 @@ public class LocationController {
         .header("Content-disposition", "attachment;filename=Location.xlsx")
         .body(locationService.downloadLocations(hierarchyIdentifier, geographicLevelName, userId,
             entityTags));
+  }
+
+  @GetMapping("/refresh-counts")
+  public ResponseEntity<?> refresh()
+      throws IOException {
+    locationRelationshipService.refreshLocationCountsView();
+    locationRelationshipService.refreshLiteStructureCountView();
+    locationRelationshipService.refreshLocationRelationshipMaterializedView();
+    return ResponseEntity.ok("refreshed requested");
   }
 }

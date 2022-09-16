@@ -84,47 +84,4 @@ public class BusinessStatusService {
         LookupEntityTypeCodeEnum.PERSON_CODE);
     personBusinessStatusEntityTagOptional.ifPresent(entityTag -> personEntityTag = entityTag);
   }
-
-
-  public String getBusinessStatus(Task task) {
-
-    if (task.getLocation() != null) {
-      LocationMetadata locationMetadata = metadataService.getLocationMetadataByLocation(
-          task.getLocation().getIdentifier());
-      if (locationMetadata != null) {
-        Optional<String> businessStatusValueOptional = locationMetadata.getEntityValue()
-            .getMetadataObjs().stream()
-            .filter(
-                metadataObj -> metadataObj.getTag()
-                    .equals(businessStatusProperties.getBusinessStatusTagName().concat("_")
-                        .concat(task.getPlan().getIdentifier().toString()).concat("_")
-                        .concat(task.getIdentifier().toString())))
-            .map(metadataObj -> metadataObj.getCurrent().getValue().getValueString())
-            .findFirst();
-        if (businessStatusValueOptional.isPresent()) {
-          return businessStatusValueOptional.get();
-        }
-      }
-    }
-    if (task.getPerson() != null) {
-      PersonMetadata personMetadata = metadataService.getPersonMetadataByPerson(
-          task.getPerson().getIdentifier());
-      if (personMetadata != null) {
-        Optional<String> businessStatusValueOptional = personMetadata.getEntityValue()
-            .getMetadataObjs().stream()
-            .filter(
-                metadataObj -> metadataObj.getTag()
-                    .equals(businessStatusProperties.getBusinessStatusTagName().concat("_")
-                        .concat(task.getPlan().getIdentifier().toString()).concat("_")
-                        .concat(task.getIdentifier().toString())))
-            .map(metadataObj -> metadataObj.getCurrent().getValue().getValueString())
-            .findFirst();
-        if (businessStatusValueOptional.isPresent()) {
-          return businessStatusValueOptional.get();
-        }
-      }
-    }
-    return null;
-  }
-
 }

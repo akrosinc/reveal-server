@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 public class EventService {
 
   private final EventRepository eventRepository;
+  private final EventSpec eventSpec;
 
   public Event saveEvent(Event event) {
     return eventRepository.save(event);
@@ -29,7 +30,7 @@ public class EventService {
   }
 
   public Page<Event> searchEvents(EventSearchCriteria eventSearchCriteria, Pageable pageable) {
-    return eventRepository.findAll(EventSpec.getEventSpecification(eventSearchCriteria), pageable);
+    return eventRepository.findAll(eventSpec.getEventSpecification(eventSearchCriteria), pageable);
   }
 
 }

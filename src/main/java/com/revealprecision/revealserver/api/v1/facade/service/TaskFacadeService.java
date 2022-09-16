@@ -13,9 +13,7 @@ import com.revealprecision.revealserver.enums.TaskPriorityEnum;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.messaging.TaskEventFactory;
 import com.revealprecision.revealserver.messaging.message.Message;
-import com.revealprecision.revealserver.messaging.message.TaskAggregate;
 import com.revealprecision.revealserver.messaging.message.TaskEvent;
-import com.revealprecision.revealserver.messaging.message.TaskLocationPair;
 import com.revealprecision.revealserver.persistence.domain.Action;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LookupTaskStatus;
@@ -23,48 +21,34 @@ import com.revealprecision.revealserver.persistence.domain.LookupTaskStatus.Fiel
 import com.revealprecision.revealserver.persistence.domain.Person;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.Task;
-import com.revealprecision.revealserver.persistence.es.PersonElastic;
+import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.service.ActionService;
 import com.revealprecision.revealserver.service.BusinessStatusService;
 import com.revealprecision.revealserver.service.LocationService;
+import com.revealprecision.revealserver.service.MetadataService;
 import com.revealprecision.revealserver.service.PersonService;
 import com.revealprecision.revealserver.service.PlanService;
 import com.revealprecision.revealserver.service.TaskService;
+import com.revealprecision.revealserver.service.UserService;
 import com.revealprecision.revealserver.util.ActionUtils;
-import com.revealprecision.revealserver.util.ElasticModelUtil;
 import com.revealprecision.revealserver.util.UserUtils;
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.kafka.streams.KafkaStreams;
-import org.apache.kafka.streams.StoreQueryParameters;
-import org.apache.kafka.streams.state.QueryableStoreTypes;
-import org.apache.kafka.streams.state.ReadOnlyKeyValueStore;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.reindex.UpdateByQueryRequest;
-import org.elasticsearch.script.Script;
-import org.elasticsearch.script.ScriptType;
 import org.springframework.core.env.Environment;
 import org.springframework.data.util.Pair;
-import org.springframework.kafka.config.StreamsBuilderFactoryBean;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
@@ -80,10 +64,11 @@ public class TaskFacadeService {
   private final LocationService locationService;
   private final BusinessStatusService businessStatusService;
   private final KafkaTemplate<String, Message> kafkaTemplate;
-  private final StreamsBuilderFactoryBean getKafkaStreams;
   private final KafkaProperties kafkaProperties;
-  private final RestHighLevelClient client;
+  private final MetadataService metadataService;
   private final Environment env;
+  private final UserService userService;
+
 
   public List<TaskFacade> syncTasks(List<String> planIdentifiers,
       List<UUID> jurisdictionIdentifiers, Long serverVersion, String requester) {
@@ -95,82 +80,50 @@ public class TaskFacadeService {
             plan -> getUuidListSimpleEntry(jurisdictionIdentifiers, plan))
         .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
 
-    KafkaStreams kafkaStreams = getKafkaStreams.getKafkaStreams();
-    ReadOnlyKeyValueStore<String, TaskEvent> taskPlanParent = kafkaStreams.store(
-        StoreQueryParameters.fromNameAndType(
-            kafkaProperties.getStoreMap().get(KafkaConstants.taskPlanParent),
-            QueryableStoreTypes.keyValueStore()));
-    ReadOnlyKeyValueStore<String, TaskAggregate> taskParent = kafkaStreams.store(
-        StoreQueryParameters.fromNameAndType(
-            kafkaProperties.getStoreMap().get(KafkaConstants.taskParent),
-            QueryableStoreTypes.keyValueStore()));
-
-    ReadOnlyKeyValueStore<String, TaskEvent> taskStore = kafkaStreams.store(
-        StoreQueryParameters.fromNameAndType(kafkaProperties.getStoreMap().get(KafkaConstants.task),
-            QueryableStoreTypes.keyValueStore()));
-
-    log.debug("Before task sync");
-
     return plans.stream().flatMap(plan -> {
       if (plan.getPlanTargetType().getGeographicLevel().getName()
           .equals(LocationConstants.STRUCTURE)) {
-        return getTaskFacadeStream(serverVersion, requester, planTargetsMap, taskPlanParent,
-            taskParent,
-            plan);
+        return taskService.getStructureTaskFacadesByLocationServerVersionAndPlan(
+                plan.getIdentifier(),
+                planTargetsMap.get(plan.getIdentifier()).stream().map(Location::getIdentifier).collect(
+                    Collectors.toList()), serverVersion).stream()
+            .filter(task -> task.getTaskFacade() != null)
+            .map(task -> {
+              TaskFacade taskFacadeObj = TaskFacadeFactory.getTaskFacadeObj(requester,
+                  task.getTaskFacade().getParentLocation().toString()
+                  , task.getTaskFacade());
+              taskFacadeObj.setServerVersion(task.getServerVersion());
+              return taskFacadeObj;
+            });
       } else {
-        return getTaskFacadeStream(serverVersion, requester, planTargetsMap, taskStore, plan);
+        return taskService.getNonStructureTaskFacadesByLocationServerVersionAndPlan(
+                plan.getIdentifier(),
+                planTargetsMap.get(plan.getIdentifier()).stream()
+                    .map(Location::getIdentifier)
+                    .collect(Collectors.toList()), serverVersion)
+            .stream()
+            .filter(task -> task.getTaskFacade() != null)
+            .map(task -> {
+              TaskFacade taskFacadeObj = TaskFacadeFactory.getTaskFacadeObj(requester,
+                  task.getTaskFacade().getParentLocation().toString()
+                  , task.getTaskFacade());
+              taskFacadeObj.setServerVersion(task.getServerVersion());
+              return taskFacadeObj;
+            });
       }
     }).distinct().collect(Collectors.toList());
+
   }
 
-  private Stream<TaskFacade> getTaskFacadeStream(Long serverVersion, String requester,
-      Map<UUID, List<Location>> planTargetsMap, ReadOnlyKeyValueStore<String, TaskEvent> taskStore,
-      Plan plan) {
-    return planTargetsMap.get(plan.getIdentifier()).stream()
-        .map(location -> plan.getIdentifier() + "_" + location.getIdentifier().toString())
-        .map(taskStore::get)
-        .filter(Objects::nonNull)
-        .filter(taskEvent -> taskEvent.getServerVersion() > serverVersion)
-        .map(taskEvent -> TaskFacadeFactory.getTaskFacadeObj(requester,
-            taskEvent.getParentLocation().toString()
-            , taskEvent))
-        .collect(Collectors.toList()).stream();
-  }
-
-  private Stream<TaskFacade> getTaskFacadeStream(Long serverVersion, String requester,
-      Map<UUID, List<Location>> planTargetsMap,
-      ReadOnlyKeyValueStore<String, TaskEvent> taskPlanParent,
-      ReadOnlyKeyValueStore<String, TaskAggregate> taskParent, Plan plan) {
-    return planTargetsMap.get(plan.getIdentifier()).stream()
-        .peek(planObj -> log.debug("plan Id for task sync: {}", planObj))
-        .flatMap(jurisdictionIdentifier -> {
-          String taskKey = plan.getIdentifier() + "_" + jurisdictionIdentifier.getIdentifier();
-          log.debug("key to retrieve task: {}", taskKey);
-          List<TaskLocationPair> taskIds = new ArrayList<>();
-          try {
-            taskIds = taskParent.get(taskKey).getTaskIds();
-          } catch (NullPointerException exp) {
-            log.error("key: {} requested is not present in kafka store", taskKey);
-          }
-          return taskIds.stream()
-              .peek(taskIdList -> log.debug("items retrieved from kafka store: {}", taskIdList))
-              .filter(taskId -> taskId.getServerVersion() > serverVersion)
-              .map(
-                  taskId -> taskId.getId() + "_" + plan.getIdentifier() + "_"
-                      + jurisdictionIdentifier.getIdentifier()).map(taskPlanParentId -> {
-                TaskEvent task = taskPlanParent.get(taskPlanParentId);
-                String locationParent = taskPlanParentId.split("_")[2];
-                return TaskFacadeFactory.getTaskFacadeObj(requester, locationParent,
-                    task);
-              });
-        });
-  }
 
   private SimpleEntry<UUID, List<Location>> getUuidListSimpleEntry(
       List<UUID> jurisdictionIdentifiers, Plan plan) {
-    List<Location> collect = jurisdictionIdentifiers.stream()
-        .map(locationService::findByIdentifier)
-        .filter(location -> {
+
+    Set<Location> locationsWithoutGeoJsonByIdentifierIn = locationService.findLocationsWithoutGeoJsonByIdentifierIn(
+        new HashSet<>(jurisdictionIdentifiers));
+
+    List<Location> locations = locationsWithoutGeoJsonByIdentifierIn.stream().filter(
+        location -> {
           if (plan.getPlanTargetType().getGeographicLevel().getName()
               .equals(LocationConstants.STRUCTURE)) {
             return
@@ -183,18 +136,31 @@ public class TaskFacadeService {
                 .equals(plan.getPlanTargetType().getGeographicLevel().getName());
           }
         }).collect(Collectors.toList());
+
     return new SimpleEntry<>(plan.getIdentifier(),
-        collect);
+        locations);
   }
 
 
   public List<String> updateTaskStatusAndBusinessStatusForListOfTasks(
       List<TaskUpdateFacade> taskUpdateFacades) {
-    return taskUpdateFacades.stream().map(this::updateTaskStatusAndBusinessStatus)
+
+    return taskUpdateFacades.stream().map(taskUpdateFacade -> updateTaskStatusAndBusinessStatus(taskUpdateFacade,
+            getOwner()))
         .filter(Optional::isPresent).map(Optional::get).collect(Collectors.toList());
   }
 
-  private Optional<String> updateTaskStatusAndBusinessStatus(TaskUpdateFacade updateFacade) {
+  private String getOwner() {
+    String owner = null;
+
+    if (UserUtils.getCurrentPrincipleName()!=null){
+      User user = userService.getByKeycloakId(UUID.fromString(UserUtils.getCurrentPrincipleName()));
+      owner = user.getUsername();
+    }
+    return owner;
+  }
+
+  private Optional<String> updateTaskStatusAndBusinessStatus(TaskUpdateFacade updateFacade, String owner) {
     UUID identifier = null;
     try {
       Task task = taskService.getTaskByIdentifier(UUID.fromString(updateFacade.getIdentifier()));
@@ -207,11 +173,17 @@ public class TaskFacadeService {
         task.setLookupTaskStatus(taskStatus.get());
         task.setBusinessStatus(updateFacade.getBusinessStatus());
         businessStatusService.setBusinessStatus(task, updateFacade.getBusinessStatus());
-        Task savedTask = taskService.saveTask(task);
+
         identifier = task.getIdentifier();
 
-        TaskEvent taskEvent = TaskEventFactory.getTaskEventFromTask(savedTask);
+        TaskEvent taskEvent = TaskEventFactory.getTaskEventFromTask(task);
         taskEvent.setOwnerId(UserUtils.getCurrentPrincipleName());
+        taskEvent.setOwner(owner);
+
+        task.setTaskFacade(taskEvent);
+
+        Task savedTask = taskService.saveTask(task);
+
         kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.TASK), taskEvent);
 
       } else {
@@ -231,9 +203,9 @@ public class TaskFacadeService {
 
     taskDtos.forEach(taskDto -> {
       try {
-        saveTaskDto(taskDto);
+        saveTaskDto(taskDto,getOwner());
       } catch (Exception e) {
-        log.error(e.toString());
+        log.error(e.toString(), e);
         e.printStackTrace();
         unprocessedTaskIds.add(taskDto);
       }
@@ -242,7 +214,7 @@ public class TaskFacadeService {
     return unprocessedTaskIds;
   }
 
-  private void saveTaskDto(TaskDto taskDto) throws IOException {
+  private void saveTaskDto(TaskDto taskDto, String owner) throws Exception {
 
     String taskCode = taskDto.getCode();
     Plan plan = planService.findPlanByIdentifier(UUID.fromString(taskDto.getPlanIdentifier()));
@@ -253,12 +225,12 @@ public class TaskFacadeService {
             lookupTaskStatus -> lookupTaskStatus.getCode().equalsIgnoreCase(taskDto.getStatus().name()))
         .findFirst();
 
-    Task task = saveTask(taskDto, plan, action, taskStatus);
+    Task task = saveTask(taskDto, plan, action, taskStatus,owner);
 
   }
 
   private Task saveTask(TaskDto taskDto, Plan plan, Action action,
-      Optional<LookupTaskStatus> taskStatus) throws IOException {
+      Optional<LookupTaskStatus> taskStatus, String owner) throws Exception {
     Task task;
     try {
       task = taskService.getTaskByIdentifier(UUID.fromString(taskDto.getIdentifier()));
@@ -332,31 +304,18 @@ public class TaskFacadeService {
           }
 
           if (Arrays.asList(env.getActiveProfiles()).contains("Simulation")) {
-            PersonElastic personElastic = new PersonElastic(person);
-            Map<String, Object> parameters = new HashMap<>();
-            parameters.put("person", ElasticModelUtil.toMapFromPersonElastic(personElastic));
-            parameters.put("personId", personElastic.getIdentifier());
-            UpdateByQueryRequest request = new UpdateByQueryRequest("location");
-            List<String> locationIds = person.getLocations().stream()
-                .map(loc -> loc.getIdentifier().toString()).collect(
-                    Collectors.toList());
-
-            request.setQuery(QueryBuilders.termsQuery("_id", locationIds));
-            request.setScript(new Script(
-                ScriptType.INLINE, "painless",
-                "def foundPerson = ctx._source.person.find(attr-> attr.identifier == params.personId);"
-                    + " if(foundPerson == null) {ctx._source.person.add(params.person);}",
-                parameters
-            ));
-            client.updateByQuery(request, RequestOptions.DEFAULT);
+            metadataService.updatePersonDetailsOnElasticSearch(person);
           }
         }
         task.setPerson(person);
       }
+      TaskEvent taskEvent = TaskEventFactory.getTaskEventFromTask(task);
+      taskEvent.setOwnerId(UserUtils.getCurrentPrincipleName());
+      taskEvent.setOwner(owner);
+      task.setTaskFacade(taskEvent);
       Task taskSaved = taskService.saveTask(task);
       businessStatusService.setBusinessStatus(taskSaved, taskDto.getBusinessStatus());
-      TaskEvent taskEvent = TaskEventFactory.getTaskEventFromTask(taskSaved);
-      taskEvent.setOwnerId(UserUtils.getCurrentPrincipleName());
+
       kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.TASK), taskEvent);
       return taskSaved;
     } else {
@@ -365,4 +324,6 @@ public class TaskFacadeService {
           LookupTaskStatus.class);
     }
   }
+
+
 }

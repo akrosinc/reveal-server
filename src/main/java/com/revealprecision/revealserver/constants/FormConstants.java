@@ -33,6 +33,10 @@ public interface FormConstants {
   String IRS_LITE_NOT_SPRAYED = "NOT SPRAYED";
   String IRS_LITE_ELIGIBLE = "ELIGIBLE";
   String IRS_LITE_VERIFICATION_FORM_SUPERVISOR = "supervisor";
+  String IRS_LITE_DAILY_SUMMARY_DISTRICT_MANAGER= "district_manager";
+  String IRS_LITE_DAILY_SUMMARY_LOCATION_ZONE= "location_zone";
+  String IRS_LITE_DAILY_SUMMARY_SPRAY_AREAS= "spray_areas";
+  String IRS_LITE_DAILY_SUMMARY_MOPUP_MAIN= "mopup_main";
 
   String SPRAYED_PREGWOMEN = "sprayed_pregwomen";
   String SPRAYED_MALES = "sprayed_males";
@@ -56,8 +60,13 @@ public interface FormConstants {
   String SPRAY = "Spray";
   String LOCATION_PARENT = "locationParent";
   String BOTTLES_EMPTY = "bottles_empty";
+  String LOCATION_ID = "location_id";
 
   String BUSINESS_STATUS = "business_status";
+
+  String COMPOUNDHEADNAME = "compoundheadname";
+
+  String NAME_HO_H = "nameHoH";
 
   interface BusinessStatus {
 
@@ -103,6 +112,14 @@ public interface FormConstants {
         INELIGIBLE,
         TASKS_INCOMPLETE, COMPLETE, NOT_ELIGIBLE, FAMILY_NO_TASK_REGISTERED, ALL_TASKS_COMPLETE,
         SPAQ_COMPLETE);
+  }
+  interface AboveStructureStatus {
+    String VISITED = "Visited";
+    String NOT_VISITED = "Not Visited";
+    String EFFECTIVELY = "Effectively";
+    String INEFFECTIVELY = "Ineffectively";
+    String TREATED = "Treated";
+    String NOT_TREATED = "Not Treated";
   }
 
   interface Colors {
