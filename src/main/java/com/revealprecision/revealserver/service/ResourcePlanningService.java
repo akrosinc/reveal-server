@@ -303,7 +303,7 @@ public class ResourcePlanningService {
       flag = false;
     }
     int mda_days;
-    if(!request.getStepOneAnswers().get("mda_days").equals("")) {
+    if(request.getStepOneAnswers().get("mda_days").equals("")) {
       mda_days = 1;
     } else {
       mda_days = Integer.parseInt((String) request.getStepOneAnswers().get("mda_days"));
