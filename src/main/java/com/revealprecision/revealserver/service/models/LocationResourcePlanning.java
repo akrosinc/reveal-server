@@ -26,12 +26,12 @@ public class LocationResourcePlanning {
     if(populationCount != null) {
       columnDataMap.put("Official population", ColumnData.builder().isPercentage(false).dataType("integer").value(populationCount).build());
     }else {
-      columnDataMap.put("Official population", ColumnData.builder().isPercentage(false).dataType("integer").value(0).build());
+      columnDataMap.put("Official population", ColumnData.builder().isPercentage(false).dataType("integer").value(0.0).build());
     }
     if(structureCount != null) {
       columnDataMap.put("Number of structures in the campaign location", ColumnData.builder().isPercentage(false).dataType("integer").value(structureCount).build());
     }else {
-      columnDataMap.put("Number of structures in the campaign location", ColumnData.builder().isPercentage(false).dataType("integer").value(0).build());
+      columnDataMap.put("Number of structures in the campaign location", ColumnData.builder().isPercentage(false).dataType("integer").value(0.0).build());
     }
   }
 }

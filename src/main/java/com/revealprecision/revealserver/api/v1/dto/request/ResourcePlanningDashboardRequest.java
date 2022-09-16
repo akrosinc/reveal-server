@@ -25,6 +25,7 @@ public class ResourcePlanningDashboardRequest {
   private String lowestGeography;
   @NotNull
   private UUID populationTag;
+  private String name;
   private UUID structureCountTag;
   @NotNull
   private String minimalAgeGroup;
