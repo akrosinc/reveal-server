@@ -25,6 +25,7 @@ import com.revealprecision.revealserver.api.v1.dto.response.GoalResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.PlanResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.TargetResponse;
 import com.revealprecision.revealserver.enums.SummaryEnum;
+import com.revealprecision.revealserver.persistence.projection.PlanLocationsAssigned;
 import com.revealprecision.revealserver.service.ActionService;
 import com.revealprecision.revealserver.service.ConditionService;
 import com.revealprecision.revealserver.service.GoalService;
@@ -331,5 +332,12 @@ public class PlanController {
       @Parameter(description = "Plan identifier") @PathVariable("planIdentifier") UUID planIdentifier) {
     planService.activatePlan(planIdentifier);
     return ResponseEntity.status(HttpStatus.OK).build();
+  }
+
+  @GetMapping("/assignedLocations/{planIdentifier}")
+  public ResponseEntity<List<PlanLocationsAssigned>> getPlanLocationsWithSearch(@PathVariable("planIdentifier") UUID planIdentifier,
+      @RequestParam(name = "search", defaultValue = "") String search) {
+    return ResponseEntity.status(HttpStatus.OK)
+        .body(planLocationsService.getPlanLocationsWithSearch(planIdentifier, search));
   }
 }

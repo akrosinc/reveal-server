@@ -3,6 +3,7 @@ package com.revealprecision.revealserver.persistence.repository;
 import com.cosium.spring.data.jpa.entity.graph.repository.EntityGraphJpaRepository;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.PlanLocations;
+import com.revealprecision.revealserver.persistence.projection.PlanLocationsAssigned;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -87,4 +88,9 @@ public interface PlanLocationsRepository extends EntityGraphJpaRepository<PlanLo
   @Transactional
   @Modifying
   void refreshAssignedStructureCountsMaterializedView();
+
+  @Query(value = "select new com.revealprecision.revealserver.persistence.projection.PlanLocationsAssigned(l.identifier, l.name) from PlanLocations pl "
+      + "left join Location l on pl.location.identifier = l.identifier "
+      + "where pl.plan.identifier = :planIdentifier and lower(l.name) like lower(concat('%', :search, '%'))")
+  List<PlanLocationsAssigned> getPlanLocationByPlanIdentifierAndSearch(UUID planIdentifier, String search);
 }

@@ -12,6 +12,7 @@ import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.PlanAssignment;
 import com.revealprecision.revealserver.persistence.domain.PlanLocations;
+import com.revealprecision.revealserver.persistence.projection.PlanLocationsAssigned;
 import com.revealprecision.revealserver.persistence.repository.PlanLocationsRepository;
 import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.util.UserUtils;
@@ -27,7 +28,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 
@@ -286,4 +286,8 @@ public class PlanLocationsService {
   }
 
 
+  public List<PlanLocationsAssigned> getPlanLocationsWithSearch(UUID planIdentifier, String search) {
+    Plan plan = planService.findPlanByIdentifier(planIdentifier);
+    return planLocationsRepository.getPlanLocationByPlanIdentifierAndSearch(planIdentifier, search);
+  }
 }
