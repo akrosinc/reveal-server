@@ -340,4 +340,12 @@ public class PlanController {
     return ResponseEntity.status(HttpStatus.OK)
         .body(planLocationsService.getPlanLocationsWithSearch(planIdentifier, search));
   }
+
+  @GetMapping("/assignedLocationsToTeam/{planIdentifier}/{organizationIdentifier}")
+  public ResponseEntity<List<PlanLocationsAssigned>> getAssignedLocationsToTeam(@PathVariable("planIdentifier") UUID planIdentifier,
+      @PathVariable("organizationIdentifier") UUID organizationIdentifier) {
+    return ResponseEntity.status(HttpStatus.OK)
+        .body(planLocationsService.getAssignedLocationsToTeam(planIdentifier, organizationIdentifier));
+  }
+
 }

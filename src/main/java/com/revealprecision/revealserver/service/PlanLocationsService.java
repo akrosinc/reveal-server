@@ -9,6 +9,7 @@ import com.revealprecision.revealserver.enums.PlanInterventionTypeEnum;
 import com.revealprecision.revealserver.messaging.message.PlanLocationAssignMessage;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
+import com.revealprecision.revealserver.persistence.domain.Organization;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.PlanAssignment;
 import com.revealprecision.revealserver.persistence.domain.PlanLocations;
@@ -42,6 +43,7 @@ public class PlanLocationsService {
   private final PlanAssignmentService planAssignmentService;
   private final KafkaTemplate<String, PlanLocationAssignMessage> kafkaTemplate;
   private final KafkaProperties kafkaProperties;
+  private final OrganizationService organizationService;
 
   @Autowired
   public PlanLocationsService(PlanLocationsRepository planLocationsRepository,
@@ -49,7 +51,8 @@ public class PlanLocationsService {
       LocationHierarchyService locationHierarchyService,
       @Lazy PlanAssignmentService planAssignmentService,
       KafkaTemplate<String, PlanLocationAssignMessage> kafkaTemplate,
-      KafkaProperties kafkaProperties) {
+      KafkaProperties kafkaProperties,
+      OrganizationService organizationService) {
     this.planLocationsRepository = planLocationsRepository;
     this.planService = planService;
     this.locationService = locationService;
@@ -57,6 +60,7 @@ public class PlanLocationsService {
     this.planAssignmentService = planAssignmentService;
     this.kafkaTemplate = kafkaTemplate;
     this.kafkaProperties = kafkaProperties;
+    this.organizationService = organizationService;
 
   }
 
@@ -289,5 +293,11 @@ public class PlanLocationsService {
   public List<PlanLocationsAssigned> getPlanLocationsWithSearch(UUID planIdentifier, String search) {
     Plan plan = planService.findPlanByIdentifier(planIdentifier);
     return planLocationsRepository.getPlanLocationByPlanIdentifierAndSearch(planIdentifier, search);
+  }
+
+  public List<PlanLocationsAssigned> getAssignedLocationsToTeam(UUID planIdentifier, UUID organizationIdentifier) {
+    Plan plan = planService.findPlanByIdentifier(planIdentifier);
+    Organization organization = organizationService.findById(organizationIdentifier, true);
+    return planLocationsRepository.getAssignedLocationsToTeam(planIdentifier, organizationIdentifier);
   }
 }

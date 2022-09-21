@@ -93,4 +93,11 @@ public interface PlanLocationsRepository extends EntityGraphJpaRepository<PlanLo
       + "left join Location l on pl.location.identifier = l.identifier "
       + "where pl.plan.identifier = :planIdentifier and lower(l.name) like lower(concat('%', :search, '%'))")
   List<PlanLocationsAssigned> getPlanLocationByPlanIdentifierAndSearch(UUID planIdentifier, String search);
+
+  @Query(value = "select new com.revealprecision.revealserver.persistence.projection.PlanLocationsAssigned(l.identifier, l.name) "
+      + "from PlanLocations pl "
+      + "left join Location l on pl.location.identifier = l.identifier "
+      + "left join PlanAssignment pa on pa.planLocations.identifier = pl.identifier "
+      + "where pl.plan.identifier = :planIdentifier and pa.organization.identifier = :organizationIdentifier")
+  List<PlanLocationsAssigned> getAssignedLocationsToTeam(UUID planIdentifier, UUID organizationIdentifier);
 }
