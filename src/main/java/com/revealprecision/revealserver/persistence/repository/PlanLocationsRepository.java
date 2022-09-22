@@ -53,14 +53,14 @@ public interface PlanLocationsRepository extends EntityGraphJpaRepository<PlanLo
   int deleteByPlanIdentifier(UUID planIdentifier);
 
 
-  @Query(value = "SELECT count(*)\n"
-      + "FROM plan_locations pl\n"
-      + "         INNER JOIN location_relationship lr on pl.location_identifier = lr.location_identifier\n"
-      + "         INNER JOIN location l on l.identifier = lr.location_identifier\n"
-      + "         LEFT JOIN geographic_level gl on l.geographic_level_identifier = gl.identifier\n"
-      + "where lr.location_hierarchy_identifier = :locationHierarchyIdentifier \n"
-      + "  AND gl.name = :geographicLevelName \n"
-      + "  AND CAST(STRING_TO_ARRAY(:locationIdentifier, ',') as uuid[]) && lr.ancestry\n"
+  @Query(value = "SELECT count(*) "
+      + "FROM plan_locations pl "
+      + "         INNER JOIN location_relationship lr on pl.location_identifier = lr.location_identifier "
+      + "         INNER JOIN location l on l.identifier = lr.location_identifier "
+      + "         LEFT JOIN geographic_level gl on l.geographic_level_identifier = gl.identifier "
+      + "where lr.location_hierarchy_identifier = :locationHierarchyIdentifier  "
+      + "  AND gl.name = :geographicLevelName  "
+      + "  AND CAST(STRING_TO_ARRAY(:locationIdentifier, ',') as uuid[]) && lr.ancestry "
       + "  and pl.plan_identifier = :planIdentifier ", nativeQuery = true)
   Long getNumberOfAssignedChildrenByGeoLevelNameWithinLocationAndHierarchyAndPlan(
       @Param("geographicLevelName") String geographicLevelName,
@@ -70,14 +70,14 @@ public interface PlanLocationsRepository extends EntityGraphJpaRepository<PlanLo
 
 
 
-  @Query(value = "  SELECT count(*)\n"
-      + "  FROM plan_locations pl\n"
-      + "  INNER JOIN location_relationship lr on pl.location_identifier = lr.location_identifier\n"
-      + "  inner join location_relationship clr on clr.parent_identifier = lr.location_identifier\n"
-      + "  INNER JOIN location cl on cl.identifier = clr.location_identifier\n"
-      + "  LEFT JOIN geographic_level cgl on cl.geographic_level_identifier = cgl.identifier\n"
-      + "  where lr.location_hierarchy_identifier = :locationHierarchyIdentifier\n"
-      + "  and lr.location_identifier = :locationIdentifier\n"
+  @Query(value = "  SELECT count(*) "
+      + "  FROM plan_locations pl "
+      + "  INNER JOIN location_relationship lr on pl.location_identifier = lr.location_identifier "
+      + "  inner join location_relationship clr on clr.parent_identifier = lr.location_identifier "
+      + "  INNER JOIN location cl on cl.identifier = clr.location_identifier "
+      + "  LEFT JOIN geographic_level cgl on cl.geographic_level_identifier = cgl.identifier "
+      + "  where lr.location_hierarchy_identifier = :locationHierarchyIdentifier "
+      + "  and lr.location_identifier = :locationIdentifier "
       + "  and pl.plan_identifier = :planIdentifier", nativeQuery = true)
   Long getAssignedChildrenOfLocationBelow(
       @Param("locationIdentifier") UUID locationIdentifier,
@@ -100,4 +100,31 @@ public interface PlanLocationsRepository extends EntityGraphJpaRepository<PlanLo
       + "left join PlanAssignment pa on pa.planLocations.identifier = pl.identifier "
       + "where pl.plan.identifier = :planIdentifier and pa.organization.identifier = :organizationIdentifier")
   List<PlanLocationsAssigned> getAssignedLocationsToTeam(UUID planIdentifier, UUID organizationIdentifier);
+  
+  @Query(value = "WITH RECURSIVE ancestors(id, parent_id, lvl) AS ( "
+      + "            SELECT lr.location_identifier, lr.parent_identifier,1 AS lvl "
+      + "            FROM location_relationship lr "
+      + "            WHERE lr.parent_identifier in :locationIdentifiers and lr.location_hierarchy_identifier = :hierarchyIdentifier "
+      + "            UNION ALL "
+      + "            SELECT parent.location_identifier, parent.parent_identifier, child.lvl + 1 AS lvl "
+      + "            FROM location_relationship parent "
+      + "              JOIN ancestors child ON parent.parent_identifier = child.id "
+      + "              join location loc on parent.location_identifier = loc.identifier "
+      + "              join geographic_level gl on gl.identifier = loc.geographic_level_identifier "
+      + "              join plan_locations pl on pl.location_identifier = loc.identifier and pl.plan_identifier = :planIdentifier "
+      + "          where gl.name <> 'structure' and parent.location_hierarchy_identifier = :hierarchyIdentifier "
+      + "           ) "
+      + "            select distinct cast(a.id as varchar) from ancestors a", nativeQuery = true)
+  List<UUID> getChildrenAssignedLocations(UUID planIdentifier, Set<UUID> locationIdentifiers, UUID hierarchyIdentifier);
+  
+  @Query(value = "select lr.ancestry from LocationRelationship lr "
+      + "    left join PlanLocations pl on pl.location.identifier = lr.location.identifier and pl.plan.identifier = :planIdentifier "
+      + "    where lr.location.identifier in :locationIdentifiers "
+      + "    and lr.locationHierarchy.identifier = :hierarchyIdentifier")
+  List<List<UUID>> getParentsAssignedLocations(Set<UUID> locationIdentifiers, UUID planIdentifier, UUID hierarchyIdentifier);
+
+  @Query(value = "select pl.location.identifier from PlanLocations pl "
+      + "join PlanAssignment pa on pa.planLocations.identifier = pl.identifier "
+      + "where pl.plan.identifier = :planIdentifier and pa.organization.identifier = :organizationIdentifier ")
+  List<UUID> getPlanLocationsIdentifiers(UUID planIdentifier, UUID organizationIdentifier);
 }

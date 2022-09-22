@@ -1,7 +1,6 @@
 package com.revealprecision.revealserver.persistence.repository;
 
 import com.revealprecision.revealserver.persistence.domain.Location;
-import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
 import com.revealprecision.revealserver.persistence.projection.LocationChildrenCountProjection;
 import com.revealprecision.revealserver.persistence.projection.LocationMainData;
@@ -163,4 +162,6 @@ public interface LocationRelationshipRepository extends JpaRepository<LocationRe
   @Transactional
   @Modifying
   void refreshLocationRelationshipMaterializedView();
+
+
 }
