@@ -23,10 +23,13 @@ public interface FormConstants {
   String SPRAY_FORM_PROVIDER = "providerId";
   String SPRAY_FORM_SACHET_COUNT_FIELD = "serial_numbers_count";
   String IRS_FOUND = "FOUND";
+  String IRS_FOUND_FROM_SUMMARY = "IRS_FOUND_FROM_SUMMARY";
   String IRS_SPRAYED = "SPRAYED";
+  String IRS_SPRAYED_FROM_SUMMARY = "IRS_SPRAYED_FROM_SUMMARY";
   String IRS_NOT_SPRAYED = "NOT SPRAYED";
   String IRS_ELIGIBLE = "ELIGIBLE";
   String IRS_SACHET_COUNT = "SACHET_COUNT";
+  String IRS_FORM_SUPERVISOR = "supervisor";
   String IRS_LITE_VERIFICATION_FORM = "irs_lite_verification";
   String IRS_LITE_FOUND = "FOUND";
   String IRS_LITE_SPRAYED = "SPRAYED";
@@ -37,6 +40,8 @@ public interface FormConstants {
   String IRS_LITE_DAILY_SUMMARY_LOCATION_ZONE= "location_zone";
   String IRS_LITE_DAILY_SUMMARY_SPRAY_AREAS= "spray_areas";
   String IRS_LITE_DAILY_SUMMARY_MOPUP_MAIN= "mopup_main";
+  String IRS_NOT_SPRAYED_REFUSED = "NOT_SPRAYED_REFUSED";
+  String IRS_NOT_SPRAYED_OTHER = "NOT_SPRAYED_OTHER";
 
   String SPRAYED_PREGWOMEN = "sprayed_pregwomen";
   String SPRAYED_MALES = "sprayed_males";
@@ -48,6 +53,7 @@ public interface FormConstants {
   String ELIGIBILITY = "eligibility";
   String YES = "yes";
   String ELIGIBLE = "eligible";
+  String FOUND = "found";
   String REGISTER_STRUCTURE = "Register_Structure";
   String IRS_SA_DECISION = "irs_sa_decision";
   String COLLECTION_DATE = "collection_date";
@@ -61,6 +67,7 @@ public interface FormConstants {
   String LOCATION_PARENT = "locationParent";
   String BOTTLES_EMPTY = "bottles_empty";
   String LOCATION_ID = "location_id";
+  String SPRAYED = "sprayed";
 
   String BUSINESS_STATUS = "business_status";
 

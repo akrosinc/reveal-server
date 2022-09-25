@@ -13,6 +13,7 @@ import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationBulk;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
+import com.revealprecision.revealserver.persistence.projection.LocationAndHigherParentProjection;
 import com.revealprecision.revealserver.persistence.projection.LocationChildrenCountProjection;
 import com.revealprecision.revealserver.persistence.projection.LocationMainData;
 import com.revealprecision.revealserver.persistence.projection.LocationRelationshipProjection;
@@ -454,6 +455,7 @@ public class LocationRelationshipService {
   public void refreshLocationCountsView() {
     locationCountsRepository.refreshLocationCountsMaterializedView();
   }
+
   @Async
   public void refreshLocationRelationshipMaterializedView() {
     locationRelationshipRepository.refreshLocationRelationshipMaterializedView();
@@ -537,6 +539,12 @@ public class LocationRelationshipService {
       List<UUID> parentIdentifiers) {
     return locationRelationshipRepository.getDistinctChildrenLocationsGivenParentIds(
         parentIdentifiers);
+  }
+
+  public LocationAndHigherParentProjection getHigherLocationParentByLocationAndParentGeographicLevelType(UUID locationIdentifier,
+      UUID locationHierarchyIdentifier, String parentGeographicLevelName) {
+    return locationRelationshipRepository.getHigherLocationParentByLocationAndParentGeographicLevelType(
+        locationIdentifier, locationHierarchyIdentifier, parentGeographicLevelName);
   }
 }
 
