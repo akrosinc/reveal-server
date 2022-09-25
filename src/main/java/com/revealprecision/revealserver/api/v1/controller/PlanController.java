@@ -9,6 +9,7 @@ import com.revealprecision.revealserver.api.v1.dto.factory.PlanResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.TargetResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.ActionRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.AssignLocationRequest;
+import com.revealprecision.revealserver.api.v1.dto.request.AssignLocationsToTeamRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.AssignTeamHierarchyRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.AssignTeamsRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.ConditionRequest;
@@ -25,6 +26,7 @@ import com.revealprecision.revealserver.api.v1.dto.response.GoalResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.PlanResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.TargetResponse;
 import com.revealprecision.revealserver.enums.SummaryEnum;
+import com.revealprecision.revealserver.persistence.projection.PlanLocationsAssigned;
 import com.revealprecision.revealserver.service.ActionService;
 import com.revealprecision.revealserver.service.ConditionService;
 import com.revealprecision.revealserver.service.GoalService;
@@ -330,6 +332,27 @@ public class PlanController {
   public ResponseEntity<Void> activatePlan(
       @Parameter(description = "Plan identifier") @PathVariable("planIdentifier") UUID planIdentifier) {
     planService.activatePlan(planIdentifier);
+    return ResponseEntity.status(HttpStatus.OK).build();
+  }
+
+  @GetMapping("/assignedLocations/{planIdentifier}")
+  public ResponseEntity<List<PlanLocationsAssigned>> getPlanLocationsWithSearch(@PathVariable("planIdentifier") UUID planIdentifier,
+      @RequestParam(name = "search", defaultValue = "") String search) {
+    return ResponseEntity.status(HttpStatus.OK)
+        .body(planLocationsService.getPlanLocationsWithSearch(planIdentifier, search));
+  }
+
+  @GetMapping("/assignedLocationsToTeam/{planIdentifier}/{organizationIdentifier}")
+  public ResponseEntity<List<PlanLocationsAssigned>> getAssignedLocationsToTeam(@PathVariable("planIdentifier") UUID planIdentifier,
+      @PathVariable("organizationIdentifier") UUID organizationIdentifier) {
+    return ResponseEntity.status(HttpStatus.OK)
+        .body(planLocationsService.getAssignedLocationsToTeam(planIdentifier, organizationIdentifier));
+  }
+
+  @PostMapping("/assignLocationsToTeam/{planIdentifier}")
+  public ResponseEntity<Void> assignLocationsToTeam(@Valid @RequestBody
+      AssignLocationsToTeamRequest request, @PathVariable("planIdentifier") UUID planIdentifier) {
+    planLocationsService.assignLocationsToTeam(planIdentifier, request);
     return ResponseEntity.status(HttpStatus.OK).build();
   }
 }
