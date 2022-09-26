@@ -175,74 +175,77 @@ public class FormDataProcessorService {
         Integer summarySprayed = null;
         Integer summaryFound = null;
         LocalDateTime captureDatetime = savedEvent.getCaptureDatetime();
-        if (savedEvent.getEventType().equals(SPRAY_FORM)) {
-          fieldWorker = getFormValue(obsJavaList, SPRAY_FORM_SPRAY_OPERATOR_FIELD);
+        String deviceUserString = getFormValue(obsJavaList, IRS_FORM_SUPERVISOR);
 
-          locationIdentifier = savedEvent.getLocationIdentifier();
+        if (deviceUserString != null) {
+          if (savedEvent.getEventType().equals(SPRAY_FORM)) {
+            fieldWorker = getFormValue(obsJavaList, SPRAY_FORM_SPRAY_OPERATOR_FIELD);
 
-          String deviceUserString = getFormValue(obsJavaList, IRS_FORM_SUPERVISOR);
-          try {
-            User user = userService.getByUserName(deviceUserString.split("\\|")[0].split(":")[0]);
-            if (user != null) {
-              deviceUser = user;
+            locationIdentifier = savedEvent.getLocationIdentifier();
+
+            try {
+              User user = userService.getByUserName(deviceUserString.split("\\|")[0].split(":")[0]);
+              if (user != null) {
+                deviceUser = user;
+              }
+            } catch (NotFoundException notFoundException) {
+              log.warn("Supervisor {} not found in Reveal", deviceUserString);
             }
-          } catch (NotFoundException notFoundException) {
-            log.warn("Supervisor {} not found in Reveal", deviceUserString);
-          }
 
-          String businessStatus = getFormValue(obsJavaList, BUSINESS_STATUS);
+            String businessStatus = getFormValue(obsJavaList, BUSINESS_STATUS);
 
-          if (businessStatus.equals("Complete")) {
-            sprayed = true;
-          }
-          if (businessStatus.equals("Not Eligible")) {
-            isEligible = false;
-          }
-          if (businessStatus.equals("Not Sprayed")) {
-            notSprayed = true;
-          }
-          boolean found = true;
-
-          String sachetCount = getFormValue(obsJavaList, SPRAY_FORM_SACHET_COUNT_FIELD);
-          Integer sachetCountInt = 0;
-          try {
-            sachetCountInt = Integer.parseInt(sachetCount);
-          } catch (ClassCastException e) {
-            log.warn("Could not cast form data: {}, of value: {}", SPRAY_FORM_SACHET_COUNT_FIELD,
-                sachetCount);
-          }
-
-          String notSprayedReason = getFormValue(obsJavaList, NOTSPRAYED_REASON);
-          if (notSprayedReason != null) {
-            if (notSprayedReason.equals("Refused")) {
-              notSprayedRefused = true;
-            } else if (!notSprayedReason.trim().equals("") && !notSprayedReason.isEmpty()) {
-              notSprayedOther = true;
+            if (businessStatus.equals("Complete")) {
+              sprayed = true;
             }
+            if (businessStatus.equals("Not Eligible")) {
+              isEligible = false;
+            }
+            if (businessStatus.equals("Not Sprayed")) {
+              notSprayed = true;
+            }
+            boolean found = true;
+
+            String sachetCount = getFormValue(obsJavaList, SPRAY_FORM_SACHET_COUNT_FIELD);
+            Integer sachetCountInt = 0;
+            try {
+              sachetCountInt = Integer.parseInt(sachetCount);
+            } catch (ClassCastException e) {
+              log.warn("Could not cast form data: {}, of value: {}", SPRAY_FORM_SACHET_COUNT_FIELD,
+                  sachetCount);
+            }
+
+            String notSprayedReason = getFormValue(obsJavaList, NOTSPRAYED_REASON);
+            if (notSprayedReason != null) {
+              if (notSprayedReason.equals("Refused")) {
+                notSprayedRefused = true;
+              } else if (!notSprayedReason.trim().equals("") && !notSprayedReason.isEmpty()) {
+                notSprayedOther = true;
+              }
+            }
+            fields.put(IRS_FOUND, found);
+            fields.put(IRS_SPRAYED, sprayed);
+            fields.put(IRS_NOT_SPRAYED, notSprayed);
+            fields.put(IRS_ELIGIBLE, isEligible);
+            fields.put(IRS_SACHET_COUNT, sachetCountInt);
+            fields.put(IRS_NOT_SPRAYED_REFUSED, notSprayedRefused);
+            fields.put(IRS_NOT_SPRAYED_OTHER, notSprayedOther);
+
+            submissionId = savedEvent.getTaskIdentifier().toString();
+
+            LocationAndHigherParentProjection locationWithParent = locationRelationshipService.getHigherLocationParentByLocationAndParentGeographicLevelType(
+                locationIdentifier, plan.getLocationHierarchy().getIdentifier(),
+                LocationConstants.DISTRICT);
+
+            district = locationWithParent.getHigherLocationParentName();
+            districtLabel = "district";
+
+            collect = deviceUser.getOrganizations().stream()
+                .map(this::getFlattenedOrganizationalHierarchy).collect(Collectors.toList());
+
+            fieldWorkerLabel = "Spray Operator";
+            userLabel = "Supervisor";
+            orgLabel = "Team";
           }
-          fields.put(IRS_FOUND, found);
-          fields.put(IRS_SPRAYED, sprayed);
-          fields.put(IRS_NOT_SPRAYED, notSprayed);
-          fields.put(IRS_ELIGIBLE, isEligible);
-          fields.put(IRS_SACHET_COUNT, sachetCountInt);
-          fields.put(IRS_NOT_SPRAYED_REFUSED, notSprayedRefused);
-          fields.put(IRS_NOT_SPRAYED_OTHER, notSprayedOther);
-
-          submissionId = savedEvent.getTaskIdentifier().toString();
-
-          LocationAndHigherParentProjection locationWithParent = locationRelationshipService.getHigherLocationParentByLocationAndParentGeographicLevelType(
-              locationIdentifier, plan.getLocationHierarchy().getIdentifier(),
-              LocationConstants.DISTRICT);
-
-          district = locationWithParent.getHigherLocationParentName();
-          districtLabel = "district";
-
-          collect = deviceUser.getOrganizations().stream()
-              .map(this::getFlattenedOrganizationalHierarchy).collect(Collectors.toList());
-
-          fieldWorkerLabel = "Spray Operator";
-          userLabel = "Supervisor";
-          orgLabel = "Team";
         }
         if (savedEvent.getEventType().equals(IRS_LITE_VERIFICATION_FORM)) {
           fieldWorker = getFormValue(obsJavaList, IRS_LITE_VERIFICATION_FORM_SUPERVISOR);
@@ -270,53 +273,54 @@ public class FormDataProcessorService {
           userLabel = "Field Officer";
           orgLabel = "Team";
         }
-        if (savedEvent.getEventType().equals(DAILY_SUMMARY)) {
-          fieldWorker = getFormValue(obsJavaList, SPRAY_FORM_SPRAY_OPERATOR_FIELD);
+        if (deviceUserString !=null) {
+          if (savedEvent.getEventType().equals(DAILY_SUMMARY)) {
+            fieldWorker = getFormValue(obsJavaList, SPRAY_FORM_SPRAY_OPERATOR_FIELD);
 
-          String deviceUserString = getFormValue(obsJavaList, IRS_FORM_SUPERVISOR);
+            String collectionDate = getFormValue(obsJavaList, COLLECTION_DATE);
+            captureDatetime = LocalDate.parse(collectionDate,
+                DateTimeFormatter.ISO_LOCAL_DATE).atStartOfDay();
 
-          String collectionDate = getFormValue(obsJavaList, COLLECTION_DATE);
-          captureDatetime = LocalDate.parse(collectionDate,
-              DateTimeFormatter.ISO_LOCAL_DATE).atStartOfDay();
-
-          try {
-            User user = userService.getByUserName(deviceUserString.split("\\|")[0]);
-            if (user != null) {
-              deviceUser = user;
+            try {
+              User user = userService.getByUserName(deviceUserString.split("\\|")[0]);
+              if (user != null) {
+                deviceUser = user;
+              }
+            } catch (NotFoundException notFoundException) {
+              log.warn("Supervisor {} not found in Reveal", deviceUserString);
             }
-          } catch (NotFoundException notFoundException) {
-            log.warn("Supervisor {} not found in Reveal", deviceUserString);
+
+            locationIdentifier = savedEvent.getLocationIdentifier();
+
+            LocationAndHigherParentProjection locationWithParent = locationRelationshipService.getHigherLocationParentByLocationAndParentGeographicLevelType(
+                locationIdentifier, plan.getLocationHierarchy().getIdentifier(),
+                LocationConstants.DISTRICT);
+
+            district = locationWithParent.getHigherLocationParentName();
+            districtLabel = "district";
+
+            submissionId =
+                plan.getIdentifier() + "_" + collectionDate + "_" + deviceUserString + "_"
+                    + fieldWorker;
+
+            String foundSummary = getFormValue(obsJavaList, FOUND);
+
+            String sprayedSummary = getFormValue(obsJavaList, SPRAYED);
+
+            summarySprayed = Integer.parseInt(sprayedSummary);
+            summaryFound = Integer.parseInt(foundSummary);
+
+            fields.put(IRS_FOUND_FROM_SUMMARY, summaryFound);
+            fields.put(IRS_SPRAYED_FROM_SUMMARY, summarySprayed);
+
+            collect = deviceUser.getOrganizations().stream()
+                .map(this::getFlattenedOrganizationalHierarchy).collect(Collectors.toList());
+
+            fieldWorkerLabel = "Supervisor";
+            userLabel = "Field Officer";
+            orgLabel = "Team";
+
           }
-
-          locationIdentifier = savedEvent.getLocationIdentifier();
-
-          LocationAndHigherParentProjection locationWithParent = locationRelationshipService.getHigherLocationParentByLocationAndParentGeographicLevelType(
-              locationIdentifier, plan.getLocationHierarchy().getIdentifier(),
-              LocationConstants.DISTRICT);
-
-          district = locationWithParent.getHigherLocationParentName();
-          districtLabel = "district";
-
-          submissionId = plan.getIdentifier() + "_" + collectionDate + "_" + deviceUserString + "_"
-              + fieldWorker;
-
-          String foundSummary = getFormValue(obsJavaList, FOUND);
-
-          String sprayedSummary = getFormValue(obsJavaList, SPRAYED);
-
-          summarySprayed = Integer.parseInt(sprayedSummary);
-          summaryFound = Integer.parseInt(foundSummary);
-
-          fields.put(IRS_FOUND_FROM_SUMMARY, summaryFound);
-          fields.put(IRS_SPRAYED_FROM_SUMMARY, summarySprayed);
-
-          collect = deviceUser.getOrganizations().stream()
-              .map(this::getFlattenedOrganizationalHierarchy).collect(Collectors.toList());
-
-          fieldWorkerLabel = "Supervisor";
-          userLabel = "Field Officer";
-          orgLabel = "Team";
-
         }
 
         userDataTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.USER_DATA),
