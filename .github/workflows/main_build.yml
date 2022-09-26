@@ -5,7 +5,7 @@ name: Reveal Server test, build and deploy
 
 on:
   push:
-    branches: [ main , reprocess_events ]
+    branches: [ main , reprocess-events ]
   pull_request:
     branches: [none]
 
