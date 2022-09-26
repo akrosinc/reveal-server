@@ -52,7 +52,7 @@ public class UserDataListener extends Listener {
 
     processUserData(message,false);
     if (previousPerformanceEvent != null) {
-      processUserData(previousPerformanceEvent.getUserData(),false);
+      processUserData(previousPerformanceEvent.getUserData(),true);
       previousPerformanceEvent.setUserData(message);
       performanceEventTrackerRepository.save(previousPerformanceEvent);
     } else {
@@ -67,7 +67,7 @@ public class UserDataListener extends Listener {
   }
 
   private void processUserData(UserData message, boolean isUndo) {
-    Plan plan = planService.getPlanByIdentifier(message.getPlanIdentifier());
+    Plan plan = planService.findPlanByIdentifier(message.getPlanIdentifier());
 
     if (plan.getInterventionType().getCode().equals(PlanInterventionTypeEnum.IRS_LITE.name())){
       processUserDataIRSLite( message,  isUndo);

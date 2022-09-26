@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -100,6 +101,10 @@ public class LocationService {
     return locationRepository.findById(identifier).orElseThrow(
         () -> new NotFoundException(Pair.of(Location.Fields.identifier, identifier),
             Location.class));
+  }
+
+  public Optional<Location> findNullableByIdentifier(UUID identifier) {
+    return locationRepository.findById(identifier);
   }
 
   public Location findByIdentifierWithoutGeoJson(UUID identifier) {
