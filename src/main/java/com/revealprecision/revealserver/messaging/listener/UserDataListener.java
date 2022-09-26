@@ -39,7 +39,7 @@ public class UserDataListener extends Listener {
 
   private final KafkaTemplate<String, UserDataParentChild> userDataParentChildKafkaTemplate;
 
-  @KafkaListener(topics = "#{kafkaConfigProperties.topicMap.get('USER_DATA')}", groupId = "reveal_server_group")
+//  @KafkaListener(topics = "#{kafkaConfigProperties.topicMap.get('USER_DATA')}", groupId = "reveal_server_group")
   public void listenGroupFoo(UserData message) {
     log.info("Received Message {}", message);
     init();
