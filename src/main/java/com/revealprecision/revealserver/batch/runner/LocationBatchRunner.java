@@ -12,13 +12,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
-@Service
+//@Service
 public class LocationBatchRunner {
 
   private JobLauncher jobLauncher;
   private Job importLocationJob;
 
-  @Autowired
+//  @Autowired
   public LocationBatchRunner(Job importLocationJob, @Qualifier("asyncJobLauncher") JobLauncher jobLauncher) {
     this.importLocationJob = importLocationJob;
     this.jobLauncher = jobLauncher;

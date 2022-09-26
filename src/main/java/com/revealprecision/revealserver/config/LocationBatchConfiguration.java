@@ -23,52 +23,52 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.PathResource;
 
 @RequiredArgsConstructor
-@Configuration
-@EnableBatchProcessing
+//@Configuration
+//@EnableBatchProcessing
 public class LocationBatchConfiguration {
 
   private final JobBuilderFactory jobBuilderFactory;
   private final StepBuilderFactory stepBuilderFactory;
   private final LocationItemProcessor locationItemProcessor;
 
-  @Bean
-  @StepScope
-  public JsonItemReader<LocationRequest> locationReader(
-      @Value("#{jobParameters['filePath']}") String filePath) {
-    ObjectMapper objectMapper = new ObjectMapper();
-    objectMapper.enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS);
-    JacksonJsonObjectReader<LocationRequest> jsonObjectReader = new JacksonJsonObjectReader<>(LocationRequest.class);
-    jsonObjectReader.setMapper(objectMapper);
-    return new JsonItemReaderBuilder<LocationRequest>()
-        .name("locationReader")
-        .resource(new PathResource(filePath))
-        .jsonObjectReader(jsonObjectReader)
-        .build();
-  }
-
-  @Bean
-  @StepScope
-  public LocationWriter locationWriter() {
-    LocationWriter locationWriter = new LocationWriter();
-    return locationWriter;
-  }
-
-  @Bean
-  public Job importLocationJob(LocationJobCompletionListener locationJobCompletionListener,
-      Step step1) {
-    return jobBuilderFactory.get("importLocationJob")
-        .listener(locationJobCompletionListener)
-        .flow(step1).end().build();
-  }
-
-  @Bean
-  public Step step1() {
-    return stepBuilderFactory.get("step1")
-        .<LocationRequest, Location>chunk(150)
-        .reader(locationReader(null))
-        .processor(locationItemProcessor)
-        .writer(locationWriter())
-        .build();
-  }
+//  @Bean
+//  @StepScope
+//  public JsonItemReader<LocationRequest> locationReader(
+//      @Value("#{jobParameters['filePath']}") String filePath) {
+//    ObjectMapper objectMapper = new ObjectMapper();
+//    objectMapper.enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS);
+//    JacksonJsonObjectReader<LocationRequest> jsonObjectReader = new JacksonJsonObjectReader<>(LocationRequest.class);
+//    jsonObjectReader.setMapper(objectMapper);
+//    return new JsonItemReaderBuilder<LocationRequest>()
+//        .name("locationReader")
+//        .resource(new PathResource(filePath))
+//        .jsonObjectReader(jsonObjectReader)
+//        .build();
+//  }
+//
+//  @Bean
+//  @StepScope
+//  public LocationWriter locationWriter() {
+//    LocationWriter locationWriter = new LocationWriter();
+//    return locationWriter;
+//  }
+//
+//  @Bean
+//  public Job importLocationJob(LocationJobCompletionListener locationJobCompletionListener,
+//      Step step1) {
+//    return jobBuilderFactory.get("importLocationJob")
+//        .listener(locationJobCompletionListener)
+//        .flow(step1).end().build();
+//  }
+//
+//  @Bean
+//  public Step step1() {
+//    return stepBuilderFactory.get("step1")
+//        .<LocationRequest, Location>chunk(150)
+//        .reader(locationReader(null))
+//        .processor(locationItemProcessor)
+//        .writer(locationWriter())
+//        .build();
+//  }
 
 }

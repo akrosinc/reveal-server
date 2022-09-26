@@ -11,17 +11,17 @@ import org.springframework.batch.core.repository.JobRestartException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-@Service
+//@Service
 public class LocationValidationRunner {
 
   private JobLauncher jobLauncher;
   private Job importLocationValidationJob;
 
-  @Autowired
-  public LocationValidationRunner(Job importLocationValidationJob, JobLauncher jobLauncher) {
-    this.importLocationValidationJob = importLocationValidationJob;
-    this.jobLauncher = jobLauncher;
-  }
+//  @Autowired
+//  public LocationValidationRunner(Job importLocationValidationJob, JobLauncher jobLauncher) {
+//    this.importLocationValidationJob = importLocationValidationJob;
+//    this.jobLauncher = jobLauncher;
+//  }
 
   public void run(String filePath, String fileName)
       throws JobInstanceAlreadyCompleteException, JobExecutionAlreadyRunningException, JobParametersInvalidException, JobRestartException {

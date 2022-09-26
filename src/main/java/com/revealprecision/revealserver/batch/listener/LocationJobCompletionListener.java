@@ -17,10 +17,10 @@ import org.springframework.batch.core.JobExecutionListener;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.stereotype.Component;
 
-@Component
+//@Component
 @RequiredArgsConstructor
 @Slf4j
-public class LocationJobCompletionListener implements JobExecutionListener {
+public class LocationJobCompletionListener {//implements JobExecutionListener {
 
   private final LocationBulkService locationBulkService;
   private final LocationBulkRepository locationBulkRepository;
@@ -28,42 +28,42 @@ public class LocationJobCompletionListener implements JobExecutionListener {
   private final LocationRelationshipService locationRelationshipService;
 
 
-  @Override
-  public void beforeJob(JobExecution jobExecution) {
+//  @Override
+//  public void beforeJob(JobExecution jobExecution) {
+//
+//  }
 
-  }
-
-  @Override
-  public void afterJob(JobExecution jobExecution) {
-    String locationBulkId = jobExecution.getJobParameters().getString("locationBulkId");
-    String filePath = jobExecution.getJobParameters().getString("filePath");
-    LocationBulk locationBulk = locationBulkService.findById(UUID.fromString(locationBulkId));
-
-    locationBulk.setStatus(BulkStatusEnum.GENERATING_RELATIONSHIPS);
-    locationBulkRepository.save(locationBulk);
-
-    List<Location> addedLocations = locationBulkRepository.getAllCreatedInBulk(
-        locationBulk.getIdentifier());
-    log.info("addLocations size: {}", addedLocations.size());
-    int index = 0;
-    for (Location location : addedLocations) {
-      try {
-        locationRelationshipService.createRelationshipForImportedLocation(location, index,
-            addedLocations.size(), locationBulk);
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
-      index++;
-    }
-    if (addedLocations.isEmpty()) {
-      locationBulk.setStatus(BulkStatusEnum.COMPLETE);
-      locationBulkRepository.save(locationBulk);
-    }
-
-    try {
-      storageService.deleteFile(filePath);
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-  }
+//  @Override
+//  public void afterJob(JobExecution jobExecution) {
+//    String locationBulkId = jobExecution.getJobParameters().getString("locationBulkId");
+//    String filePath = jobExecution.getJobParameters().getString("filePath");
+//    LocationBulk locationBulk = locationBulkService.findById(UUID.fromString(locationBulkId));
+//
+//    locationBulk.setStatus(BulkStatusEnum.GENERATING_RELATIONSHIPS);
+//    locationBulkRepository.save(locationBulk);
+//
+//    List<Location> addedLocations = locationBulkRepository.getAllCreatedInBulk(
+//        locationBulk.getIdentifier());
+//    log.info("addLocations size: {}", addedLocations.size());
+//    int index = 0;
+//    for (Location location : addedLocations) {
+//      try {
+//        locationRelationshipService.createRelationshipForImportedLocation(location, index,
+//            addedLocations.size(), locationBulk);
+//      } catch (IOException e) {
+//        e.printStackTrace();
+//      }
+//      index++;
+//    }
+//    if (addedLocations.isEmpty()) {
+//      locationBulk.setStatus(BulkStatusEnum.COMPLETE);
+//      locationBulkRepository.save(locationBulk);
+//    }
+//
+//    try {
+//      storageService.deleteFile(filePath);
+//    } catch (IOException e) {
+//      e.printStackTrace();
+//    }
+//  }
 }

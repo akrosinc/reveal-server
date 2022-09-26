@@ -40,9 +40,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 
 @RequiredArgsConstructor
-@RestController
-@RequestMapping("/api/v1/location/bulk")
-@CrossOrigin(originPatterns = "*", origins = "*")
+//@RestController
+//@RequestMapping("/api/v1/location/bulk")
+//@CrossOrigin(originPatterns = "*", origins = "*")
 public class LocationBulkController {
 
   private final LocationBulkService locationBulkService;
@@ -51,21 +51,21 @@ public class LocationBulkController {
   private final StorageService storageService;
 
 
-  @Operation(summary = "Import Locations from JSON file",
-      description = "Import Locations from JSON file",
-      tags = {"Bulk Location"}
-  )
-  @PostMapping()
-  public ResponseEntity<IdentifierResponse> importLocations(
-      @RequestParam("file") MultipartFile file)
-      throws JobInstanceAlreadyCompleteException, JobExecutionAlreadyRunningException, JobParametersInvalidException, JobRestartException {
-
-    String path = storageService.saveJSON(file);
-    UUID identifier = locationBulkService.saveBulk(file.getOriginalFilename());
-    locationBatchRunner.run(identifier.toString(), path);
-    return ResponseEntity.status(HttpStatus.ACCEPTED)
-        .body(IdentifierResponse.builder().identifier(identifier).build());
-  }
+//  @Operation(summary = "Import Locations from JSON file",
+//      description = "Import Locations from JSON file",
+//      tags = {"Bulk Location"}
+//  )
+//  @PostMapping()
+//  public ResponseEntity<IdentifierResponse> importLocations(
+//      @RequestParam("file") MultipartFile file)
+//      throws JobInstanceAlreadyCompleteException, JobExecutionAlreadyRunningException, JobParametersInvalidException, JobRestartException {
+//
+//    String path = storageService.saveJSON(file);
+//    UUID identifier = locationBulkService.saveBulk(file.getOriginalFilename());
+//    locationBatchRunner.run(identifier.toString(), path);
+//    return ResponseEntity.status(HttpStatus.ACCEPTED)
+//        .body(IdentifierResponse.builder().identifier(identifier).build());
+//  }
 
   @Operation(summary = "Get List of LocationBulk operations",
       description = "Get List of LocationBulk operations",

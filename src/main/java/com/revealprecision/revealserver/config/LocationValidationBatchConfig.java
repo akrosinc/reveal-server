@@ -23,50 +23,50 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.PathResource;
 
 @RequiredArgsConstructor
-@Configuration
-@EnableBatchProcessing
+//@Configuration
+//@EnableBatchProcessing
 public class LocationValidationBatchConfig {
 
   private final JobBuilderFactory jobBuilderFactory;
   private final StepBuilderFactory stepBuilderFactory;
   private final LocationValidationItemProcessor locationValidationProcessor;
 
-  @Bean
-  @StepScope
-  public JsonItemReader<LocationRequest> locationValidationReader(
-      @Value("#{jobParameters['filePath']}") String filePath) {
-    ObjectMapper objectMapper = new ObjectMapper();
-    objectMapper.enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS);
-    JacksonJsonObjectReader<LocationRequest> jsonObjectReader = new JacksonJsonObjectReader<>(LocationRequest.class);
-    jsonObjectReader.setMapper(objectMapper);
-    return new JsonItemReaderBuilder<LocationRequest>()
-        .name("locationReader")
-        .resource(new PathResource(filePath))
-        .jsonObjectReader(jsonObjectReader)
-        .build();
-  }
-
-  @Bean
-  public Job importLocationValidationJob(LocationJobCompletionListener locationJobCompletionListener,
-      Step validationStep) {
-    return jobBuilderFactory.get("importLocationValidationJob")
-        .flow(validationStep).end().build();
-  }
-
-  @Bean
-  @StepScope
-  public LocationValidationWriter locationValidationWriter(@Value("#{jobParameters['fileName']}") String fileName) {
-    LocationValidationWriter locationValidationWriter = new LocationValidationWriter(fileName);
-    return locationValidationWriter;
-  }
-
-  @Bean
-  public Step validationStep() {
-    return stepBuilderFactory.get("validationStep")
-        .<LocationRequest, LocationValidationDTO>chunk(100)
-        .reader(locationValidationReader(null))
-        .processor(locationValidationProcessor)
-        .writer(locationValidationWriter(null))
-        .build();
-  }
+//  @Bean
+//  @StepScope
+//  public JsonItemReader<LocationRequest> locationValidationReader(
+//      @Value("#{jobParameters['filePath']}") String filePath) {
+//    ObjectMapper objectMapper = new ObjectMapper();
+//    objectMapper.enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS);
+//    JacksonJsonObjectReader<LocationRequest> jsonObjectReader = new JacksonJsonObjectReader<>(LocationRequest.class);
+//    jsonObjectReader.setMapper(objectMapper);
+//    return new JsonItemReaderBuilder<LocationRequest>()
+//        .name("locationReader")
+//        .resource(new PathResource(filePath))
+//        .jsonObjectReader(jsonObjectReader)
+//        .build();
+//  }
+//
+//  @Bean
+//  public Job importLocationValidationJob(LocationJobCompletionListener locationJobCompletionListener,
+//      Step validationStep) {
+//    return jobBuilderFactory.get("importLocationValidationJob")
+//        .flow(validationStep).end().build();
+//  }
+//
+//  @Bean
+//  @StepScope
+//  public LocationValidationWriter locationValidationWriter(@Value("#{jobParameters['fileName']}") String fileName) {
+//    LocationValidationWriter locationValidationWriter = new LocationValidationWriter(fileName);
+//    return locationValidationWriter;
+//  }
+//
+//  @Bean
+//  public Step validationStep() {
+//    return stepBuilderFactory.get("validationStep")
+//        .<LocationRequest, LocationValidationDTO>chunk(100)
+//        .reader(locationValidationReader(null))
+//        .processor(locationValidationProcessor)
+//        .writer(locationValidationWriter(null))
+//        .build();
+//  }
 }

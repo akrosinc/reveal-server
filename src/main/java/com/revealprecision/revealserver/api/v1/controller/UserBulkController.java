@@ -33,64 +33,64 @@ import org.springframework.web.multipart.MultipartFile;
 
 
 @RequiredArgsConstructor
-@RestController
-@RequestMapping("/api/v1/user/bulk")
-@CrossOrigin(originPatterns = "*", origins = "*")
+//@RestController
+//@RequestMapping("/api/v1/user/bulk")
+//@CrossOrigin(originPatterns = "*", origins = "*")
 public class UserBulkController {
 
   private final UserBulkService userBulkService;
   private final UserBatchRunner userBatchRunner;
   private final StorageService storageService;
 
-  @Operation(summary = "Get bulk details",
-      description = "Get bulk details",
-      tags = {"User bulk"}
-  )
-  @GetMapping("/{identifier}")
-  public ResponseEntity<Page<UserBulkDetailResponse>> getBulkDetails(
-      @Parameter(description = "User bulk identifier") @PathVariable("identifier") UUID identifier,
-      Pageable pageable) {
-    return ResponseEntity.status(HttpStatus.OK).body(
-        UserBulkDetailResponseFactory.fromProjectionPage(
-            userBulkService.getUserBulkDetails(identifier, pageable), pageable));
-  }
+//  @Operation(summary = "Get bulk details",
+//      description = "Get bulk details",
+//      tags = {"User bulk"}
+//  )
+//  @GetMapping("/{identifier}")
+//  public ResponseEntity<Page<UserBulkDetailResponse>> getBulkDetails(
+//      @Parameter(description = "User bulk identifier") @PathVariable("identifier") UUID identifier,
+//      Pageable pageable) {
+//    return ResponseEntity.status(HttpStatus.OK).body(
+//        UserBulkDetailResponseFactory.fromProjectionPage(
+//            userBulkService.getUserBulkDetails(identifier, pageable), pageable));
+//  }
 
-  @Operation(summary = "Get all user bulks",
-      description = "Get all user bulks",
-      tags = {"User bulk"}
-  )
-  @GetMapping()
-  public ResponseEntity<Page<UserBulkResponse>> getUserBulks(Pageable pageable) {
-    return ResponseEntity.status(HttpStatus.OK).body(
-        UserBulkResponseFactory.fromEntityPage(userBulkService.getUserBulks(pageable), pageable));
-  }
+//  @Operation(summary = "Get all user bulks",
+//      description = "Get all user bulks",
+//      tags = {"User bulk"}
+//  )
+//  @GetMapping()
+//  public ResponseEntity<Page<UserBulkResponse>> getUserBulks(Pageable pageable) {
+//    return ResponseEntity.status(HttpStatus.OK).body(
+//        UserBulkResponseFactory.fromEntityPage(userBulkService.getUserBulks(pageable), pageable));
+//  }
+//
+//  @Operation(summary = "Import users from CSV",
+//      description = "Import users from CSV file",
+//      tags = {"User bulk"}
+//  )
+//  @PostMapping()
+//  public ResponseEntity<IdentifierResponse> importUsers(
+//      @RequestParam("file") MultipartFile file)
+//      throws JobInstanceAlreadyCompleteException, JobExecutionAlreadyRunningException, JobParametersInvalidException, JobRestartException {
+//
+//    String path = storageService.saveCSV(file);
+//    UUID identifier = userBulkService.saveBulk(file.getOriginalFilename());
+//    userBatchRunner.run(identifier.toString(), path);
+//    return ResponseEntity.status(HttpStatus.ACCEPTED)
+//        .body(IdentifierResponse.builder().identifier(identifier).build());
+//  }
 
-  @Operation(summary = "Import users from CSV",
-      description = "Import users from CSV file",
-      tags = {"User bulk"}
-  )
-  @PostMapping()
-  public ResponseEntity<IdentifierResponse> importUsers(
-      @RequestParam("file") MultipartFile file)
-      throws JobInstanceAlreadyCompleteException, JobExecutionAlreadyRunningException, JobParametersInvalidException, JobRestartException {
-
-    String path = storageService.saveCSV(file);
-    UUID identifier = userBulkService.saveBulk(file.getOriginalFilename());
-    userBatchRunner.run(identifier.toString(), path);
-    return ResponseEntity.status(HttpStatus.ACCEPTED)
-        .body(IdentifierResponse.builder().identifier(identifier).build());
-  }
-
-  @Operation(summary = "Download excel template for user import",
-      description = "Download excel template for user import",
-      tags = {"User bulk"}
-  )
-  @GetMapping("/csv")
-  public ResponseEntity<?> downloadTemplate() throws IOException {
-    return ResponseEntity.status(HttpStatus.OK)
-        .contentType(MediaType.APPLICATION_OCTET_STREAM)
-        .header("Content-disposition", "attachment;filename=UserTemplate.xlsx")
-        .body(storageService.downloadTemplate("UserTemplate.xlsx"));
-  }
+//  @Operation(summary = "Download excel template for user import",
+//      description = "Download excel template for user import",
+//      tags = {"User bulk"}
+//  )
+//  @GetMapping("/csv")
+//  public ResponseEntity<?> downloadTemplate() throws IOException {
+//    return ResponseEntity.status(HttpStatus.OK)
+//        .contentType(MediaType.APPLICATION_OCTET_STREAM)
+//        .header("Content-disposition", "attachment;filename=UserTemplate.xlsx")
+//        .body(storageService.downloadTemplate("UserTemplate.xlsx"));
+//  }
 
 }

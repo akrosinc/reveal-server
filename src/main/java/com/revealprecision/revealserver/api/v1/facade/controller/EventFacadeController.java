@@ -43,19 +43,20 @@ public class EventFacadeController {
   @PostMapping(value = "/add", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<EventClientFacadeResponse> eventAdd(
       @RequestBody String eventsClientsRequest) throws JSONException, JsonProcessingException {
-    JSONObject eventsClientsRequestJSON = new JSONObject(eventsClientsRequest);
-    if (!eventsClientsRequestJSON.has(EVENTS) && !eventsClientsRequestJSON.has(CLIENTS)) {
-      return new ResponseEntity<>(BAD_REQUEST);
-    }
-    Pair<List<EventFacade>, List<ClientFacade>> failedEventsAndClients = eventClientFacadeService
-        .processEventsClientsRequest(eventsClientsRequestJSON);
-    if (failedEventsAndClients.getFirst().isEmpty() && failedEventsAndClients.getSecond()
-        .isEmpty()) {
-      return new ResponseEntity<>(CREATED);
-    } else {
-      return ResponseEntity.status(CREATED)
-          .body(EventClientFacadeResponseFactory.fromEventsAndClients(failedEventsAndClients));
-    }
+//    JSONObject eventsClientsRequestJSON = new JSONObject(eventsClientsRequest);
+//    if (!eventsClientsRequestJSON.has(EVENTS) && !eventsClientsRequestJSON.has(CLIENTS)) {
+//      return new ResponseEntity<>(BAD_REQUEST);
+//    }
+//    Pair<List<EventFacade>, List<ClientFacade>> failedEventsAndClients = eventClientFacadeService
+//        .processEventsClientsRequest(eventsClientsRequestJSON);
+//    if (failedEventsAndClients.getFirst().isEmpty() && failedEventsAndClients.getSecond()
+//        .isEmpty()) {
+//      return new ResponseEntity<>(CREATED);
+//    } else {
+//      return ResponseEntity.status(CREATED)
+//          .body(EventClientFacadeResponseFactory.fromEventsAndClients(failedEventsAndClients));
+//    }
+    return null;
   }
 
   @Operation(summary = "Sync down Events and Client objects to Android client",
@@ -64,23 +65,24 @@ public class EventFacadeController {
   @PostMapping(value = "/sync", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<EventClientFacadeSyncResponse> getEventClients(
       @RequestBody SyncParamFacade syncParam) {
-    if (syncParam.getTeam() != null || syncParam.getProviderId() != null
-        || syncParam.getLocationId() != null || syncParam.getBaseEntityId() != null
-        || syncParam.getTeamId() != null) {
-      Pair<List<EventFacade>, List<ClientFacade>> eventsAndClients = eventClientFacadeService
-          .getSyncedEventsAndClients(syncParam);
-      EventClientFacadeSyncResponse eventClientFacadeSyncResponse = EventClientFacadeSyncResponseFactory
-          .fromEventsAndClients(eventsAndClients);
-      if (syncParam.isReturnCount()) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.add(TOTAL_RECORDS, String.valueOf(eventClientFacadeSyncResponse.getTotalRecords()));
-        return ResponseEntity.ok().headers(headers).body(eventClientFacadeSyncResponse);
-      } else {
-        return ResponseEntity.ok().body(eventClientFacadeSyncResponse);
-      }
-    } else {
-      return new ResponseEntity<>(BAD_REQUEST);
-    }
+//    if (syncParam.getTeam() != null || syncParam.getProviderId() != null
+//        || syncParam.getLocationId() != null || syncParam.getBaseEntityId() != null
+//        || syncParam.getTeamId() != null) {
+//      Pair<List<EventFacade>, List<ClientFacade>> eventsAndClients = eventClientFacadeService
+//          .getSyncedEventsAndClients(syncParam);
+//      EventClientFacadeSyncResponse eventClientFacadeSyncResponse = EventClientFacadeSyncResponseFactory
+//          .fromEventsAndClients(eventsAndClients);
+//      if (syncParam.isReturnCount()) {
+//        HttpHeaders headers = new HttpHeaders();
+//        headers.add(TOTAL_RECORDS, String.valueOf(eventClientFacadeSyncResponse.getTotalRecords()));
+//        return ResponseEntity.ok().headers(headers).body(eventClientFacadeSyncResponse);
+//      } else {
+//        return ResponseEntity.ok().body(eventClientFacadeSyncResponse);
+//      }
+//    } else {
+//      return new ResponseEntity<>(BAD_REQUEST);
+//    }
+    return null;
   }
 
 

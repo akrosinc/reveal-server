@@ -33,9 +33,9 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.security.task.DelegatingSecurityContextAsyncTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 
-@Configuration
+//@Configuration
 @RequiredArgsConstructor
-@EnableBatchProcessing
+//@EnableBatchProcessing
 public class UserBatchConfiguration {
 
   private final UserFieldSetMapper userFieldSetMapper;
@@ -48,7 +48,7 @@ public class UserBatchConfiguration {
   private final PlatformTransactionManager platformTransactionManager;
 
 
-  @Bean
+//  @Bean
   public TaskExecutor getAsyncExecutor() {
 
     ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
@@ -61,7 +61,7 @@ public class UserBatchConfiguration {
         executor);
   }
 
-  @Bean
+//  @Bean
   public TaskExecutor getAsyncExecutorTest() {
 
     ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
@@ -74,7 +74,7 @@ public class UserBatchConfiguration {
         executor);
   }
 
-  @Bean
+//  @Bean
   public JobLauncher asyncJobLauncher() throws Exception {
     SimpleJobLauncher jobLauncher = new SimpleJobLauncher();
 
@@ -83,7 +83,7 @@ public class UserBatchConfiguration {
     return jobLauncher;
   }
 
-  @Bean
+//  @Bean
   public LineMapper<UserBatchDTO> userLineMapper() {
     DefaultLineMapper<UserBatchDTO> lineMapper = new DefaultLineMapper<>();
     lineMapper.setLineTokenizer(new DelimitedLineTokenizer() {
@@ -96,25 +96,25 @@ public class UserBatchConfiguration {
     return lineMapper;
   }
 
-  @Bean
-  @StepScope
-  public FlatFileItemReader<UserBatchDTO> userReader(
-      @Value("#{jobParameters['filePath']}") String filePath) {
-    return new FlatFileItemReaderBuilder<UserBatchDTO>().name("userReader")
-        .resource(new PathResource(filePath))
-        .lineMapper(userLineMapper())
-        .linesToSkip(1)
-        .build();
-  }
+//  @Bean
+//  @StepScope
+//  public FlatFileItemReader<UserBatchDTO> userReader(
+//      @Value("#{jobParameters['filePath']}") String filePath) {
+//    return new FlatFileItemReaderBuilder<UserBatchDTO>().name("userReader")
+//        .resource(new PathResource(filePath))
+//        .lineMapper(userLineMapper())
+//        .linesToSkip(1)
+//        .build();
+//  }
 
-  @Bean
+//  @Bean
   public JpaItemWriter<User> userWriter() {
     JpaItemWriter<User> writer = new JpaItemWriter<>();
     writer.setEntityManagerFactory(entityManagerFactory);
     return writer;
   }
 
-  @Bean
+//  @Bean
   public Job importUserJob(UserJobCompletionNotificationListener jobListener, Step userStep) {
     return jobBuilderFactory.get("importUserJob")
         .listener(jobListener)
@@ -123,11 +123,11 @@ public class UserBatchConfiguration {
         .build();
   }
 
-  @Bean
+//  @Bean
   public Step userStep() {
     return stepBuilderFactory.get("step1")
         .<UserBatchDTO, User>chunk(10)
-        .reader(userReader(null))
+//        .reader(userReader(null))
         .processor(userItemProcessor)
         .writer(userWriter())
         .faultTolerant()
