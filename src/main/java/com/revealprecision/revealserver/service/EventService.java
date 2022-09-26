@@ -6,6 +6,7 @@ import com.revealprecision.revealserver.persistence.domain.Event.Fields;
 import com.revealprecision.revealserver.persistence.repository.EventRepository;
 import com.revealprecision.revealserver.persistence.specification.EventSpec;
 import com.revealprecision.revealserver.service.models.EventSearchCriteria;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -37,6 +38,10 @@ public class EventService {
 
   public Map<UUID,Event> findEventsByTaskIdentifier(UUID taskIdentifier){
     return eventRepository.findEventsByTaskIdentifier(taskIdentifier).stream().collect(Collectors.toMap(event -> event.getIdentifier(),event -> event));
+  }
+
+  public List<Event> getAllEvents(){
+    return eventRepository.findAll();
   }
 
 }

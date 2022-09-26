@@ -33,7 +33,7 @@ public class LocationMetadataUpdateListener extends Listener{
   private final RestHighLevelClient client;
 
 
-  @KafkaListener(topics = "#{kafkaConfigProperties.topicMap.get('LOCATION_METADATA_UPDATE')}", groupId = "reveal_server_group")
+//  @KafkaListener(topics = "#{kafkaConfigProperties.topicMap.get('LOCATION_METADATA_UPDATE')}", groupId = "reveal_server_group")
   public void updateLocationMetadata(Message message) throws IOException {
     log.info("Received Message in group foo: {}" , message.toString());
     init();

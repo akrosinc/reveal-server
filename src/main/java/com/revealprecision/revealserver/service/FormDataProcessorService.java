@@ -117,24 +117,35 @@ public class FormDataProcessorService {
   private final LocationRelationshipService locationRelationshipService;
 
 
-  public void processFormDataAndSubmitToMessaging(Event savedEvent, EventFacade eventFacade)
+
+
+
+
+
+  private List<OrgLevel> getFlattenedOrganizationalHierarchy(Organization organization) {
+    int levelCounter = 0;
+    List<OrgLevel> orgHierarchy = new ArrayList<>();
+    orgHierarchy.add(new OrgLevel(organization.getIdentifier().toString(), organization.getName(),
+        levelCounter));
+    Organization loopOrg = organization;
+
+    while (loopOrg.getParent() != null) {
+      loopOrg = loopOrg.getParent();
+      orgHierarchy.add(
+          new OrgLevel(loopOrg.getIdentifier().toString(), loopOrg.getName(), levelCounter));
+      levelCounter++;
+    }
+    return orgHierarchy;
+  }
+
+
+
+  public void processFormDataAndSubmitToMessagingTemp(Event savedEvent)
       throws IOException {
 
     JsonNode obsList = savedEvent.getAdditionalInformation().get("obs");
-    FormCaptureEvent formCaptureEvent = FormCaptureEvent.builder()
-        .locationId(savedEvent.getLocationIdentifier()).savedEventId(savedEvent.getIdentifier())
-        .planId(savedEvent.getPlanIdentifier()).taskId(savedEvent.getTaskIdentifier())
-        .rawFormEvent(eventFacade).build();
-    publishFormObservations(formCaptureEvent);
 
     if (obsList.isArray()) {
-
-      Map<UUID, Event> taskEvents = new HashMap<>();
-      if (savedEvent.getTaskIdentifier() != null) {
-        taskEvents = eventService.findEventsByTaskIdentifier(savedEvent.getTaskIdentifier());
-      } else {
-        taskEvents.put(savedEvent.getIdentifier(), savedEvent);
-      }
 
       Plan plan = planService.getPlanByIdentifier(savedEvent.getPlanIdentifier());
 
@@ -143,102 +154,7 @@ public class FormDataProcessorService {
 
       List<Obs> obsJavaList = reader.readValue(obsList);
 
-      String dateString = null;
-      String supervisorName = null;
-      String cdd = null;
-      String additionalKey = "";
-      UUID baseEntityIdentifier = savedEvent.getBaseEntityIdentifier();
-
       if (plan != null) {
-        if (plan.getInterventionType().getCode().equals(PlanInterventionTypeEnum.MDA_LITE.name())) {
-          if (savedEvent.getEventType().equals(CDD_SUPERVISOR_DAILY_SUMMARY_FORM)) {
-
-            dateString = getFormValue(obsJavaList, CDD_SUPERVISOR_DAILY_SUMMARY_DATE_FIELD);
-
-            supervisorName = getFormValue(obsJavaList,
-                CDD_SUPERVISOR_DAILY_SUMMARY_HEALTH_WORKER_SUPERVISOR_FIELD);
-
-            cdd = getFormValue(obsJavaList, CDD_SUPERVISOR_DAILY_SUMMARY_CDD_NAME_FIELD);
-
-            submitSupervisorCddToMessaging(supervisorName, cdd, baseEntityIdentifier, plan);
-          }
-          if (savedEvent.getEventType().equals(TABLET_ACCOUNTABILITY_FORM)) {
-
-            baseEntityIdentifier = getBaseEntityIdentifierFromLocationFormData(obsJavaList,
-                TABLET_ACCOUNTABILITY_LOCATION_FIELD);
-
-            supervisorName = getFormValue(obsJavaList,
-                TABLET_ACCOUNTABILITY_HEALTH_WORKER_SUPERVISOR_FIELD);
-
-            cdd = getFormValue(obsJavaList, TABLET_ACCOUNTABILITY_CDD_NAME_FIELD);
-
-            submitSupervisorCddToMessaging(supervisorName, cdd, baseEntityIdentifier, plan);
-
-          }
-          if (savedEvent.getEventType().equals(CDD_DRUG_ALLOCATION_FORM)) {
-
-            dateString = getFormValue(obsJavaList, CDD_DRUG_ALLOCATION_DATE_FIELD);
-
-            supervisorName = getFormValue(obsJavaList,
-                CDD_DRUG_ALLOCATION_HEALTH_WORKER_SUPERVISOR_FIELD);
-
-            cdd = getFormValue(obsJavaList, CDD_DRUG_ALLOCATION_CDD_NAME_FIELD);
-
-            baseEntityIdentifier = getBaseEntityIdentifierFromLocationFormData(obsJavaList,
-                CDD_DRUG_ALLOCATION_LOCATION_FIELD);
-
-            submitSupervisorCddToMessaging(supervisorName, cdd, baseEntityIdentifier, plan);
-          }
-
-        }
-        if (plan.getInterventionType().getCode().equals(PlanInterventionTypeEnum.IRS_LITE.name())) {
-          if (savedEvent.getEventType().equals(DAILY_SUMMARY)) {
-
-            dateString = getFormValue(obsJavaList, COLLECTION_DATE);
-
-            supervisorName = getFormValue(obsJavaList,
-                IRS_LITE_VERIFICATION_FORM_SUPERVISOR);
-
-            String zone = getFormValue(obsJavaList,
-                IRS_LITE_DAILY_SUMMARY_LOCATION_ZONE);
-            String districtManager = getFormValue(obsJavaList,
-                IRS_LITE_DAILY_SUMMARY_DISTRICT_MANAGER);
-            String mopUp = getFormValue(obsJavaList,
-                IRS_LITE_DAILY_SUMMARY_MOPUP_MAIN);
-            String sprayAreas = getFormValueFromList(obsJavaList,
-                IRS_LITE_DAILY_SUMMARY_SPRAY_AREAS);
-
-            additionalKey =
-                (zone != null ? zone + "_" : "") + (districtManager != null ? districtManager + "_"
-                    : "") + (mopUp != null ? mopUp : "_") + (sprayAreas != null ? sprayAreas : " ");
-
-            baseEntityIdentifier = UUID.fromString(
-                savedEvent.getDetails().get(LOCATION_ID).asText());
-
-          }
-        }
-        List<FormDataEntityTagValueEvent> formDataEntityTagValueEvents = obsJavaList.stream()
-            .flatMap(obs -> {
-              Object value = FormDataUtil.extractData(obs).get(obs.getFieldCode());
-              FormField formField = formFieldService.findByNameAndFormTitle(obs.getFieldCode(),
-                  savedEvent.getEventType());
-              if (formField != null) {
-                Set<EntityTag> entityTagsByFieldName = entityTagService.findEntityTagsByFormField(
-                    formField);
-                return entityTagsByFieldName.stream().map(EntityTagEventFactory::getEntityTagEvent)
-                    .map(entityTagEvent -> FormDataEntityTagValueEventFactory.getEntity(value,
-                        formField, entityTagEvent));
-              } else {
-                return null;
-              }
-            }).filter(Objects::nonNull).collect(Collectors.toList());
-
-        FormDataEntityTagEvent entityTagEvent = FormDataEntityTagEventFactory.getEntity(savedEvent,
-            formDataEntityTagValueEvents, plan, baseEntityIdentifier, dateString, cdd,
-            supervisorName, additionalKey);
-
-        eventConsumptionTemplate.send(
-            kafkaProperties.getTopicMap().get(KafkaConstants.EVENT_CONSUMPTION), entityTagEvent);
 
         User deviceUser = savedEvent.getUser();
         String fieldWorker = null;
@@ -411,42 +327,6 @@ public class FormDataProcessorService {
                 fields));
 
       }
-    }
-  }
-
-  private void publishFormObservations(FormCaptureEvent event) {
-    formSubmissionKafkaTemplate.send(
-        kafkaProperties.getTopicMap().get(KafkaConstants.FORM_SUBMISSIONS),
-        event.getPlanId().toString(),
-        event);
-  }
-
-
-  private List<OrgLevel> getFlattenedOrganizationalHierarchy(Organization organization) {
-    int levelCounter = 0;
-    List<OrgLevel> orgHierarchy = new ArrayList<>();
-    orgHierarchy.add(new OrgLevel(organization.getIdentifier().toString(), organization.getName(),
-        levelCounter));
-    Organization loopOrg = organization;
-
-    while (loopOrg.getParent() != null) {
-      loopOrg = loopOrg.getParent();
-      orgHierarchy.add(
-          new OrgLevel(loopOrg.getIdentifier().toString(), loopOrg.getName(), levelCounter));
-      levelCounter++;
-    }
-    return orgHierarchy;
-  }
-
-  private void submitSupervisorCddToMessaging(String supervisorName, String cdd,
-      UUID baseEntityIdentifier, Plan plan) {
-    if (supervisorName != null && cdd != null) {
-      mdaliteSupervisorTemplate.send(
-          kafkaProperties.getTopicMap().get(KafkaConstants.LOCATION_SUPERVISOR_CDD),
-          MDALiteLocationSupervisorCddEvent.builder().cddName(cdd).supervisorName(supervisorName)
-              .locationIdentifier(baseEntityIdentifier)
-              .locationHierarchyIdentifier(plan.getLocationHierarchy().getIdentifier())
-              .planIdentifier(plan.getIdentifier()).build());
     }
   }
 

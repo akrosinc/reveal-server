@@ -68,13 +68,13 @@ public class RawFormSubmissionListener extends Listener {
   // 3. In the event that a replay of the topic is needed the offset of FORM_SUBMISSIONS should be set to beginning
   //      and the offset on topic FORM_SUBMISSIONS_PARENT should be set to the end
 
-  @KafkaListener(topics = "#{kafkaConfigProperties.topicMap.get('FORM_SUBMISSIONS')}", groupId = "reveal_server_group")
+//  @KafkaListener(topics = "#{kafkaConfigProperties.topicMap.get('FORM_SUBMISSIONS')}", groupId = "reveal_server_group")
   public void etl(FormCaptureEvent formCaptureEvent) {
     handleEvent(formCaptureEvent, false);
   }
 
   //TODO: Opportunity here for topic events for FORM_SUBMISSIONS_PARENT to have a short expiry as a disk space optimization
-  @KafkaListener(topics = "#{kafkaConfigProperties.topicMap.get('FORM_SUBMISSIONS_PARENT')}", groupId = "reveal_server_group")
+//  @KafkaListener(topics = "#{kafkaConfigProperties.topicMap.get('FORM_SUBMISSIONS_PARENT')}", groupId = "reveal_server_group")
   public void etlForParent(FormCaptureEvent formCaptureEvent) {
     handleEvent(formCaptureEvent, true);
   }

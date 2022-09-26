@@ -25,7 +25,7 @@ public class PlanLocationListener extends Listener {
 
 
 
-  @KafkaListener(topics = "#{kafkaConfigProperties.topicMap.get('PLAN_LOCATION_ASSIGNED')}", groupId = "reveal_server_group")
+//  @KafkaListener(topics = "#{kafkaConfigProperties.topicMap.get('PLAN_LOCATION_ASSIGNED')}", groupId = "reveal_server_group")
   public void listenGroupFoo(PlanLocationAssignMessage message) {
     log.info("Received Message in group foo: {}" , message.toString());
     init();

@@ -10,14 +10,14 @@ import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.ElasticsearchRestTemplate;
 import org.springframework.data.elasticsearch.repository.config.EnableElasticsearchRepositories;
 
-@Configuration
-@EnableElasticsearchRepositories(basePackages = "com.revealprecision.revealserver.persistence.repository")
+//@Configuration
+//@EnableElasticsearchRepositories(basePackages = "com.revealprecision.revealserver.persistence.repository")
 public class ElasticConfig {
 
-  @Value(value = "${elasticsearch.bootstrapAddress}")
+//  @Value(value = "${elasticsearch.bootstrapAddress}")
   private String bootstrapAddress;
 
-  @Bean
+//  @Bean
   public RestHighLevelClient client() {
     ClientConfiguration clientConfiguration
         = ClientConfiguration.builder()
@@ -29,7 +29,7 @@ public class ElasticConfig {
     return RestClients.create(clientConfiguration).rest();
   }
 
-  @Bean
+//  @Bean
   public ElasticsearchOperations elasticsearchTemplate() {
     return new ElasticsearchRestTemplate(client());
   }

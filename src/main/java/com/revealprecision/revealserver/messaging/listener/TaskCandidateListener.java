@@ -16,7 +16,7 @@ public class TaskCandidateListener extends Listener {
 
   private final TaskService taskService;
 
-  @KafkaListener(topics = "#{kafkaConfigProperties.topicMap.get('TASK_CANDIDATE')}", groupId = "reveal_server_group")
+//  @KafkaListener(topics = "#{kafkaConfigProperties.topicMap.get('TASK_CANDIDATE')}", groupId = "reveal_server_group")
   public void listenGroupFoo(TaskProcessEvent message) throws IOException {
     //TODO: make this traceable - i.e. the application should know when task generation starts / ends
     log.info("Received Message in group foo: {}", message.toString());

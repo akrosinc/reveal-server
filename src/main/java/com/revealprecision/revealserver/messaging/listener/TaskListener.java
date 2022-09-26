@@ -38,7 +38,7 @@ public class TaskListener extends Listener {
   private final LocationBusinessStatusService locationBusinessStatusService;
   private final PlanLocationsService planLocationsService;
 
-  @KafkaListener(topics = "#{kafkaConfigProperties.topicMap.get('TASK')}", groupId = "reveal_server_group")
+//  @KafkaListener(topics = "#{kafkaConfigProperties.topicMap.get('TASK')}", groupId = "reveal_server_group")
   public void listenGroupFoo(TaskEvent message) {
     log.info("Received Message in group foo: {}", message.toString());
     init();

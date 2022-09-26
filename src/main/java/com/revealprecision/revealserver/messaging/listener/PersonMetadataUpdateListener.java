@@ -31,7 +31,7 @@ public class PersonMetadataUpdateListener extends Listener {
 
   private final RestHighLevelClient client;
 
-  @KafkaListener(topics = "#{kafkaConfigProperties.topicMap.get('PERSON_METADATA_UPDATE')}", groupId = "reveal_server_group")
+//  @KafkaListener(topics = "#{kafkaConfigProperties.topicMap.get('PERSON_METADATA_UPDATE')}", groupId = "reveal_server_group")
   public void updatePersonMetadata(PersonMetadataEvent event) throws IOException {
     log.info("Received Message in group foo: {}", event.toString());
     init();

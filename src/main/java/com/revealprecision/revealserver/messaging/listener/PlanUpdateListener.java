@@ -14,7 +14,7 @@ public class PlanUpdateListener extends Listener {
 
   private final TaskService taskService;
 
-  @KafkaListener(topics = "#{kafkaConfigProperties.topicMap.get('PLAN_UPDATE')}", groupId = "reveal_server_group")
+//  @KafkaListener(topics = "#{kafkaConfigProperties.topicMap.get('PLAN_UPDATE')}", groupId = "reveal_server_group")
   public void listenGroupFoo(PlanUpdateMessage message) {
     log.info("Received Message in group foo: {}" , message.toString());
     init();

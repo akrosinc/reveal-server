@@ -24,7 +24,7 @@ public class LocationImportListener extends Listener{
 
   private final RestHighLevelClient client;
 
-  @KafkaListener(topics = "#{kafkaConfigProperties.topicMap.get('LOCATIONS_IMPORTED')}", groupId = "reveal_server_group")
+//  @KafkaListener(topics = "#{kafkaConfigProperties.topicMap.get('LOCATIONS_IMPORTED')}", groupId = "reveal_server_group")
   public void locationImport(LocationRelationshipMessage message) throws IOException {
     Map<String, Object> parameters = new HashMap<>();
     Map<String, List<String>> object = new HashMap<>();

@@ -62,7 +62,7 @@ public class EventConsumptionListener extends Listener {
   private final PersonService personService;
 
 
-  @KafkaListener(topics = "#{kafkaConfigProperties.topicMap.get('EVENT_CONSUMPTION')}", groupId = "reveal_server_group")
+//  @KafkaListener(topics = "#{kafkaConfigProperties.topicMap.get('EVENT_CONSUMPTION')}", groupId = "reveal_server_group")
   public void eventConsumption(FormDataEntityTagEvent eventMetadata) {
     log.info("Received Message in group foo: {}", eventMetadata.toString());
     init();
