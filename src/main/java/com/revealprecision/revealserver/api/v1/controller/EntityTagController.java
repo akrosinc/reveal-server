@@ -21,7 +21,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.elasticsearch.client.RestHighLevelClient;
+//import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -43,8 +43,8 @@ public class EntityTagController {
   private final EntityTagService entityTagService;
   private final EntityFilterService entityFilterService;
   private final LookupEntityTypeService lookupEntityTypeService;
-  private final LocationElasticRepository locationElasticRepository;
-  private final RestHighLevelClient client;
+//  private final LocationElasticRepository locationElasticRepository;
+//  private final RestHighLevelClient client;
 
   @Operation(summary = "Create Tag", description = "Create Tag", tags = {"Entity Tags"})
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -131,16 +131,5 @@ public class EntityTagController {
             LookupEntityTagResponseFactory::fromEntity).collect(Collectors.toList()));
   }
 
-  @PostMapping("/filter")
-  public ResponseEntity<FeatureSetResponse> filterEntities(
-      @Valid @RequestBody DataFilterRequest request)
-      throws IOException, ParseException {
-    return ResponseEntity.ok().body(entityFilterService.filterEntites(request));
-  }
-
-  @GetMapping("/person/{personIdentifier}")
-  public ResponseEntity<PersonMainData> getPersonDetails(@PathVariable UUID personIdentifier)
-      throws IOException {
-    return ResponseEntity.ok().body(entityFilterService.getPersonsDetails(personIdentifier));
-  }
+//.
 }

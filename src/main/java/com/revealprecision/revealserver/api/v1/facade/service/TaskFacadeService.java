@@ -304,7 +304,7 @@ public class TaskFacadeService {
           }
 
           if (Arrays.asList(env.getActiveProfiles()).contains("Simulation")) {
-            metadataService.updatePersonDetailsOnElasticSearch(person);
+//            metadataService.updatePersonDetailsOnElasticSearch(person);
           }
         }
         task.setPerson(person);

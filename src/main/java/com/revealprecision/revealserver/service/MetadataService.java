@@ -67,12 +67,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.SerializationUtils;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.reindex.UpdateByQueryRequest;
-import org.elasticsearch.script.Script;
-import org.elasticsearch.script.ScriptType;
+//import org.elasticsearch.client.RequestOptions;
+//import org.elasticsearch.client.RestHighLevelClient;
+//import org.elasticsearch.index.query.QueryBuilders;
+//import org.elasticsearch.index.reindex.UpdateByQueryRequest;
+//import org.elasticsearch.script.Script;
+//import org.elasticsearch.script.ScriptType;
 import org.keycloak.KeycloakPrincipal;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -97,7 +97,7 @@ public class MetadataService {
   private final KafkaTemplate<String, Message> kafkaTemplate;
   private final MetaFieldSetMapper metaFieldSetMapper;
 
-  private final RestHighLevelClient client;
+//  private final RestHighLevelClient client;
 
   public LocationMetadata getLocationMetadataByLocation(UUID locationIdentifier) {
     //TODO fix this
@@ -653,23 +653,23 @@ public class MetadataService {
   }
 
 
-  public void updatePersonDetailsOnElasticSearch(Person person) throws IOException {
-    PersonElastic personElastic = new PersonElastic(person);
-    Map<String, Object> parameters = new HashMap<>();
-    parameters.put("person", ElasticModelUtil.toMapFromPersonElastic(personElastic));
-    parameters.put("personId", personElastic.getIdentifier());
-    UpdateByQueryRequest request = new UpdateByQueryRequest("location");
-    List<String> locationIds = person.getLocations().stream()
-        .map(loc -> loc.getIdentifier().toString()).collect(
-            Collectors.toList());
-
-    request.setQuery(QueryBuilders.termsQuery("_id", locationIds));
-    request.setScript(new Script(
-        ScriptType.INLINE, "painless",
-        "def foundPerson = ctx._source.person.find(attr-> attr.identifier == params.personId);"
-            + " if(foundPerson == null) {ctx._source.person.add(params.person);}",
-        parameters
-    ));
-    client.updateByQuery(request, RequestOptions.DEFAULT);
-  }
+//  public void updatePersonDetailsOnElasticSearch(Person person) throws IOException {
+//    PersonElastic personElastic = new PersonElastic(person);
+//    Map<String, Object> parameters = new HashMap<>();
+//    parameters.put("person", ElasticModelUtil.toMapFromPersonElastic(personElastic));
+//    parameters.put("personId", personElastic.getIdentifier());
+//    UpdateByQueryRequest request = new UpdateByQueryRequest("location");
+//    List<String> locationIds = person.getLocations().stream()
+//        .map(loc -> loc.getIdentifier().toString()).collect(
+//            Collectors.toList());
+//
+//    request.setQuery(QueryBuilders.termsQuery("_id", locationIds));
+//    request.setScript(new Script(
+//        ScriptType.INLINE, "painless",
+//        "def foundPerson = ctx._source.person.find(attr-> attr.identifier == params.personId);"
+//            + " if(foundPerson == null) {ctx._source.person.add(params.person);}",
+//        parameters
+//    ));
+////    client.updateByQuery(request, RequestOptions.DEFAULT);
+//  }
 }

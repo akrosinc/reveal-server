@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Date;
-import org.joda.time.DateTime;
+//import org.joda.time.DateTime;
 
 public class DateTimeFormatter {
 
@@ -54,13 +54,13 @@ public class DateTimeFormatter {
     return LocalDateTime.parse(androidFacadeDateString.replace("T", " "), formatter);
   }
 
-  public static LocalDateTime getLocalDateTimeFromZonedAndroidFacadeString(
-      String androidFacadeDateString) {
-    //Note android uses joda time, we handle that here until we unify.
-    return LocalDateTime.ofInstant(
-        Instant.ofEpochMilli(org.joda.time.DateTime.parse(androidFacadeDateString).getMillis()),
-        ZoneId.systemDefault());
-  }
+//  public static LocalDateTime getLocalDateTimeFromZonedAndroidFacadeString(
+//      String androidFacadeDateString) {
+//    //Note android uses joda time, we handle that here until we unify.
+//    return LocalDateTime.ofInstant(
+//        Instant.ofEpochMilli(org.joda.time.DateTime.parse(androidFacadeDateString).getMillis()),
+//        ZoneId.systemDefault());
+//  }
 
 
 }

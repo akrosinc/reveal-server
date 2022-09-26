@@ -15,28 +15,29 @@ public class PersonMainDataResponseFactory {
   public static PersonMainData fromPersonElasticSummary(PersonElastic personElastic) {
     return PersonMainData.builder()
         .coreFields(PersonCoreFields.builder()
-            .identifier(personElastic.getIdentifier())
-            .firstName(personElastic.getNameText())
-            .lastName(personElastic.getNameFamily())
+//            .identifier(personElastic.getIdentifier())
+//            .firstName(personElastic.getNameText())
+//            .lastName(personElastic.getNameFamily())
             .build())
         .build();
   }
 
   public static PersonMainData fromPersonElastic(PersonElastic personElastic) {
-    List<EntityMetadataResponse> personMetadata = personElastic.getMetadata()
-        .stream()
-        .map(pm -> new EntityMetadataResponse(pm.getValue(), pm.getType()))
-        .collect( Collectors.toList());
-    return PersonMainData.builder()
-        .coreFields(PersonCoreFields.builder()
-          .identifier(personElastic.getIdentifier())
-          .firstName(personElastic.getNameText())
-          .lastName(personElastic.getNameFamily())
-          .birthDate(personElastic.getBirthDate())
-          .birthDateApprox(personElastic.isBirthDateApprox())
-          .gender(personElastic.getGender())
-          .build())
-        .metadata(personMetadata)
-        .build();
+//    List<EntityMetadataResponse> personMetadata = personElastic.getMetadata()
+//        .stream()
+//        .map(pm -> new EntityMetadataResponse(pm.getValue(), pm.getType()))
+//        .collect( Collectors.toList());
+//    return PersonMainData.builder()
+//        .coreFields(PersonCoreFields.builder()
+//          .identifier(personElastic.getIdentifier())
+//          .firstName(personElastic.getNameText())
+//          .lastName(personElastic.getNameFamily())
+//          .birthDate(personElastic.getBirthDate())
+//          .birthDateApprox(personElastic.isBirthDateApprox())
+//          .gender(personElastic.getGender())
+//          .build())
+//        .metadata(personMetadata)
+//        .build();
+    return null;
   }
 }

@@ -426,34 +426,34 @@ public class TaskService {
       List<Condition> conditions) {
     List<UUID> uuids = new ArrayList<>();
 
-    if (conditions == null || conditions.isEmpty()) {
-      try {
-        uuids = entityFilterService.filterEntities(null, plan,
-            plan.getLocationHierarchy().getIdentifier(), action);
-
-
-      } catch (QueryGenerationException e) {
-        log.error("unable to get tasks unconditionally for action: {}", action.getIdentifier());
-        e.printStackTrace();
-      }
-    } else {
-      for (Condition condition : conditions) {
-        Query query = ConditionQueryUtil.getQueryObject(condition.getQuery(),
-            action.getLookupEntityType().getCode());
-
-        try {
-          List<UUID> filteredUUIDs = entityFilterService.filterEntities(query, plan,
-              plan.getLocationHierarchy().getIdentifier(), action);
-
-          uuids.addAll(filteredUUIDs);
-
-        } catch (QueryGenerationException e) {
-          log.error("unable to get tasks for action: {} condition: {}", action.getIdentifier(),
-              condition.getIdentifier());
-          e.printStackTrace();
-        }
-      }
-    }
+//    if (conditions == null || conditions.isEmpty()) {
+//      try {
+//        uuids = entityFilterService.filterEntities(null, plan,
+//            plan.getLocationHierarchy().getIdentifier(), action);
+//
+//
+//      } catch (QueryGenerationException e) {
+//        log.error("unable to get tasks unconditionally for action: {}", action.getIdentifier());
+//        e.printStackTrace();
+//      }
+//    } else {
+//      for (Condition condition : conditions) {
+//        Query query = ConditionQueryUtil.getQueryObject(condition.getQuery(),
+//            action.getLookupEntityType().getCode());
+//
+//        try {
+//          List<UUID> filteredUUIDs = entityFilterService.filterEntities(query, plan,
+//              plan.getLocationHierarchy().getIdentifier(), action);
+//
+//          uuids.addAll(filteredUUIDs);
+//
+//        } catch (QueryGenerationException e) {
+//          log.error("unable to get tasks for action: {} condition: {}", action.getIdentifier(),
+//              condition.getIdentifier());
+//          e.printStackTrace();
+//        }
+//      }
+//    }
     return uuids;
   }
 

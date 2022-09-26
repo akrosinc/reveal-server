@@ -47,7 +47,7 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFFont;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.elasticsearch.client.RestHighLevelClient;
+//import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -62,7 +62,7 @@ public class LocationService {
   private final GeographicLevelService geographicLevelService;
   private final LocationRelationshipService locationRelationshipService;
   private final PlanService planService;
-  private final RestHighLevelClient client;
+//  private final RestHighLevelClient client;
   private final StorageService storageService;
   private final EntityTagService entityTagService;
   private final LocationHierarchyService locationHierarchyService;
