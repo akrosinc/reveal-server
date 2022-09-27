@@ -75,7 +75,9 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.util.Pair;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -99,6 +101,17 @@ public class FormDataProcessorService {
 
   private final KafkaTemplate<String, FormCaptureEvent> formSubmissionKafkaTemplate;
 
+  @Async
+  public void processFormDataAndSubmitToMessaging(List<Pair<EventFacade,Event>> eventFacadeEventPairList){
+    eventFacadeEventPairList.stream().forEach(eventEventFacadePair ->
+        {
+          try {
+            processFormDataAndSubmitToMessaging(eventEventFacadePair.getSecond(),eventEventFacadePair.getFirst());
+          } catch (Exception e) {
+            log.error("Error processing Event Data to submit to messaging {}", eventEventFacadePair.getFirst(),e);
+          }
+        });
+  }
 
   public void processFormDataAndSubmitToMessaging(Event savedEvent, EventFacade eventFacade)
       throws IOException {

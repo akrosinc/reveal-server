@@ -93,7 +93,7 @@ public class CustomResponseBodyAdviceAdapter implements ResponseBodyAdvice<Objec
               jwtKid);
         }
       } catch (ClassCastException e) {
-        e.printStackTrace();
+        log.error("Failure to log http response ",e);
       }
     }
     return o;

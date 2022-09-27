@@ -433,7 +433,7 @@ public class TaskService {
 
 
       } catch (QueryGenerationException e) {
-        log.error("unable to get tasks unconditionally for action: {}", action.getIdentifier());
+        log.error("unable to get tasks unconditionally for action: {}", action.getIdentifier(),e);
         e.printStackTrace();
       }
     } else {
@@ -449,7 +449,7 @@ public class TaskService {
 
         } catch (QueryGenerationException e) {
           log.error("unable to get tasks for action: {} condition: {}", action.getIdentifier(),
-              condition.getIdentifier());
+              condition.getIdentifier(),e);
           e.printStackTrace();
         }
       }
