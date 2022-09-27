@@ -4,6 +4,7 @@ import com.revealprecision.revealserver.api.v1.dto.request.LocationRequest;
 import com.revealprecision.revealserver.api.v1.facade.models.CreateLocationRequest;
 import com.revealprecision.revealserver.persistence.domain.LocationProperty;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.AccessLevel;
@@ -27,10 +28,11 @@ public class LocationRequestFactory {
     return locationRequest;
   }
 
-  public static List<LocationRequest> fromPhysicalLocationRequests(
+  public static Map<LocationRequest, UUID> fromPhysicalLocationRequests(
       List<CreateLocationRequest> physicalLocationRequest) {
-    return physicalLocationRequest.stream().map(LocationRequestFactory::fromPhysicalLocationRequest)
-        .collect(
-            Collectors.toList());
+    return physicalLocationRequest.stream().collect(Collectors.toMap(
+        createLocationRequest -> LocationRequestFactory.fromPhysicalLocationRequest(
+            createLocationRequest), createLocationRequest -> UUID.fromString(
+            createLocationRequest.getProperties().getParentId())));
   }
 }
