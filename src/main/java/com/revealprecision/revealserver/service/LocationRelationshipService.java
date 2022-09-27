@@ -509,9 +509,9 @@ public class LocationRelationshipService {
     return structureLocations;
   }
 
-  public Location getLocationParent(Location location, LocationHierarchy locationHierarchy) {
+  public Location getLocationParent(UUID locationIdentifier, UUID locationHierarchyIdentifier) {
     return locationRelationshipRepository.getParentLocationByLocationIdAndHierarchyId(
-        location.getIdentifier(), locationHierarchy.getIdentifier());
+        locationIdentifier, locationHierarchyIdentifier);
   }
 
   public List<LocationRelationship> getLocationParentWithoutHierarchyIdentifier(

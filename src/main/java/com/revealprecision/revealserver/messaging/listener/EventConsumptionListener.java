@@ -9,6 +9,7 @@ import static com.revealprecision.revealserver.constants.EntityTagScopes.PLAN;
 import com.revealprecision.revealserver.api.v1.dto.factory.EntityTagEventFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.FormDataEntityTagValueEventFactory;
 import com.revealprecision.revealserver.constants.KafkaConstants;
+import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.messaging.message.EntityTagEvent;
 import com.revealprecision.revealserver.messaging.message.FormDataEntityTagEvent;
 import com.revealprecision.revealserver.messaging.message.FormDataEntityTagValueEvent;
@@ -66,18 +67,17 @@ public class EventConsumptionListener extends Listener {
   public void eventConsumption(FormDataEntityTagEvent eventMetadata) {
     log.info("Received Message in group foo: {}", eventMetadata.toString());
     init();
-    Plan plan;
-    String metadataTitle;
-    Task task;
+    Task task = null;
     UUID eventId = UUID.fromString(eventMetadata.getEventId());
-    if (eventMetadata.getTaskIdentifier() == null) {
-      plan = planService.findPlanByIdentifier(eventMetadata.getPlanIdentifier());
-      metadataTitle = eventMetadata.getEventType();
-      task = null;
-    } else {
-      task = taskService.getTaskByIdentifier(eventMetadata.getTaskIdentifier());
-      plan = task.getAction().getGoal().getPlan();
-      metadataTitle = task.getAction().getTitle();
+    Plan plan = planService.findPlanByIdentifier(eventMetadata.getPlanIdentifier());
+    String metadataTitle = eventMetadata.getEventType();
+    if (eventMetadata.getTaskIdentifier() != null) {
+      try {
+        task = taskService.getTaskByIdentifier(eventMetadata.getTaskIdentifier());
+        metadataTitle = task.getAction().getTitle();
+      }catch (NotFoundException e){
+        log.warn("Task not found {} - it may still need to be synced!",eventMetadata.getTaskIdentifier());
+      }
     }
     List<FormDataEntityTagValueEvent> formDataEntityTagValueEvents = eventMetadata.getFormDataEntityTagValueEvents();
 

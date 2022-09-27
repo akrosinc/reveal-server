@@ -272,8 +272,8 @@ public class LocationService {
     return details;
   }
 
-  public Location getLocationParent(Location location, LocationHierarchy locationHierarchy) {
-    return locationRelationshipService.getLocationParent(location, locationHierarchy);
+  public Location getLocationParent(UUID locationIdentifier, UUID locationHierarchyIdentifier) {
+    return locationRelationshipService.getLocationParent(locationIdentifier, locationHierarchyIdentifier);
   }
 
   public Location getLocationParentByLocationIdentifierAndHierarchyIdentifier(
