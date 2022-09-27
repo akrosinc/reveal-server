@@ -128,6 +128,7 @@ public class LocationRelationshipService {
               createParentChildRelationship(location, potentialChild, locationHierarchy);
             } catch (IOException e) {
               e.printStackTrace();
+              log.error("Exception creating parent child relation {}", location.getIdentifier(), e);
             }
           }
         }
@@ -210,6 +211,7 @@ public class LocationRelationshipService {
       childGeometry = mapper.writeValueAsString(childLocation.getGeometry());
     } catch (JsonProcessingException e) {
       e.printStackTrace();
+      log.error("Json Exception converting json to string", e);
     }
     if (locationRelationshipRepository.hasParentChildRelationship(parentGeometry, childGeometry)) {
       List<UUID> ancestry = getAncestryFromParentLocation(parentLocation, locationHierarchy);
