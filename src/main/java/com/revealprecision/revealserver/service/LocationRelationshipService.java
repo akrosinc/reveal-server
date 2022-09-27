@@ -456,6 +456,7 @@ public class LocationRelationshipService {
   public void refreshLocationCountsView() {
     locationCountsRepository.refreshLocationCountsMaterializedView();
   }
+
   @Async
   public void refreshLocationRelationshipMaterializedView() {
     locationRelationshipRepository.refreshLocationRelationshipMaterializedView();
@@ -539,6 +540,22 @@ public class LocationRelationshipService {
       List<UUID> parentIdentifiers) {
     return locationRelationshipRepository.getDistinctChildrenLocationsGivenParentIds(
         parentIdentifiers);
+  }
+
+  public void createLocationRelationship(Location parentLocation, Location childLocation,
+      LocationHierarchy hierarchy) {
+    List<UUID> ancestry = new ArrayList<>();
+    ancestry.addAll(
+        locationRelationshipRepository.findByLocationHierarchyIdentifierAndLocationIdentifier(
+            hierarchy.getIdentifier(), parentLocation.getIdentifier()).get().getAncestry());
+    ancestry.add(parentLocation.getIdentifier());
+    LocationRelationship locationRelationship = LocationRelationship.builder()
+        .parentLocation(parentLocation)
+        .location(childLocation)
+        .locationHierarchy(hierarchy).ancestry(ancestry).build();
+    locationRelationship.setEntityStatus(EntityStatus.ACTIVE);
+    locationRelationshipRepository.save(
+        locationRelationship);
   }
 }
 

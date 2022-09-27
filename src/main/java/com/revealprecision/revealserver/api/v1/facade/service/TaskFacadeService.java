@@ -279,7 +279,7 @@ public class TaskFacadeService {
       } else {
         //Let's add the new location
         LocationRequest locationRequest = taskDto.getLocationRequest();
-        location = locationService.createLocation(locationRequest);
+        location = locationService.createLocation(locationRequest,null);
         if (ActionUtils.isActionForLocation(action)) {
           task.setLocation(location);
         }

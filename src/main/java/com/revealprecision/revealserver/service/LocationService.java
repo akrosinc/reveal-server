@@ -46,7 +46,6 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFFont;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -61,13 +60,13 @@ public class LocationService {
   private final GeographicLevelService geographicLevelService;
   private final LocationRelationshipService locationRelationshipService;
   private final PlanService planService;
-  private final RestHighLevelClient client;
   private final StorageService storageService;
   private final EntityTagService entityTagService;
   private final LocationHierarchyService locationHierarchyService;
   private final AssignedStructureService assignedStructureService;
 
-  public Location createLocation(LocationRequest locationRequest) throws Exception {
+  public Location createLocation(LocationRequest locationRequest, UUID parentLocationId)
+      throws Exception {
     GeographicLevel geographicLevel = geographicLevelService.findByName(
         locationRequest.getProperties().getGeographicLevel());
     MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -81,6 +80,7 @@ public class LocationService {
         .type(locationRequest.getType()).geometry(locationRequest.getGeometry())
         .name(locationRequest.getProperties().getName())
         .status(locationRequest.getProperties().getStatus())
+        .locationProperty(locationRequest.getProperties())
         .hashValue(hash)
         .externalId(locationRequest.getProperties().getExternalId()).build();
     if (locationRequest.getProperties().getExternalId() != null) {
@@ -88,7 +88,17 @@ public class LocationService {
     }
     locationToSave.setEntityStatus(EntityStatus.ACTIVE);
     var savedLocation = locationRepository.save(locationToSave);
-    locationRelationshipService.updateLocationRelationshipsForNewLocation(savedLocation);
+    Location parentLocation =
+        parentLocationId != null ? locationRepository.findById(parentLocationId).orElse(null)
+            : null;
+
+    if (parentLocation != null) {
+      LocationHierarchy locationHierarchy = locationHierarchyService.findByName("default").get(0);
+      locationRelationshipService.createLocationRelationship(parentLocation, savedLocation,
+          locationHierarchy);
+    } else {
+      locationRelationshipService.updateLocationRelationshipsForNewLocation(savedLocation);
+    }
     locationRelationshipService.refreshLocationCountsView();
     locationRelationshipService.refreshLiteStructureCountView();
     locationRelationshipService.refreshLocationRelationshipMaterializedView();
