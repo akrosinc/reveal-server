@@ -80,6 +80,7 @@ public class LocationService {
         .type(locationRequest.getType()).geometry(locationRequest.getGeometry())
         .name(locationRequest.getProperties().getName())
         .status(locationRequest.getProperties().getStatus())
+        .locationProperty(locationRequest.getProperties())
         .hashValue(hash)
         .externalId(locationRequest.getProperties().getExternalId()).build();
     if (locationRequest.getProperties().getExternalId() != null) {
