@@ -179,7 +179,7 @@ public class TaskListener extends Listener {
 
       Double complete = 0D;
       if (structureCountsByBusinessStatus.containsKey(BusinessStatus.COMPLETE)) {
-        notVisited = Double.valueOf(
+        complete = Double.valueOf(
             structureCountsByBusinessStatus.get(BusinessStatus.COMPLETE));
       }
 

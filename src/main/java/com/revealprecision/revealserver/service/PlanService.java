@@ -67,12 +67,6 @@ public class PlanService {
         () -> new NotFoundException(Pair.of(Fields.identifier, planIdentifier), Plan.class));
   }
 
-
-
-  public Plan getPlanByIdentifier(UUID planIdentifier) {
-    return planRepository.getById(planIdentifier);
-  }
-
   public List<Location> findLocationsForPlan(UUID planIdentifier) {
     return planRepository.findLocationsForPlan(planIdentifier);
   }

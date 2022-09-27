@@ -375,7 +375,7 @@ public class TaskService {
 
       UUID uuid = taskProcessEvent.getBaseEntityIdentifier();
 
-      Plan plan = planService.getPlanByIdentifier(
+      Plan plan = planService.findPlanByIdentifier(
           taskProcessEvent.getPlanEvent().getIdentifier());
 
       Action action = actionService.getByIdentifier(

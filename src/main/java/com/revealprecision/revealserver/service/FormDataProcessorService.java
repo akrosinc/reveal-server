@@ -125,7 +125,7 @@ public class FormDataProcessorService {
 
     if (obsList.isArray()) {
 
-      Plan plan = planService.getPlanByIdentifier(savedEvent.getPlanIdentifier());
+      Plan plan = planService.findPlanByIdentifier(savedEvent.getPlanIdentifier());
 
       ObjectReader reader = objectMapper.readerFor(new TypeReference<List<Obs>>() {
       });
