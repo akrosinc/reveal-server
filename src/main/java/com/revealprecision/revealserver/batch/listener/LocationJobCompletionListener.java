@@ -52,6 +52,7 @@ public class LocationJobCompletionListener implements JobExecutionListener {
             addedLocations.size(), locationBulk);
       } catch (IOException e) {
         e.printStackTrace();
+        log.error("Error creating relationship for location {}", location.getIdentifier(),e);
       }
       index++;
     }
@@ -64,6 +65,7 @@ public class LocationJobCompletionListener implements JobExecutionListener {
       storageService.deleteFile(filePath);
     } catch (IOException e) {
       e.printStackTrace();
+      log.error("Error deleting storage file at path {}",filePath,e);
     }
   }
 }

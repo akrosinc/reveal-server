@@ -95,15 +95,20 @@ public class EventClientFacadeService {
 
   private List<EventFacade> addOrUpdateEvents(List<EventFacade> eventFacadeList) {
     List<EventFacade> failedEvents = new ArrayList<>();
-    eventFacadeList.forEach(eventFacade -> {
+    List<Pair<EventFacade, Event>> savedEventFacadeEventPairList = eventFacadeList.stream().map(eventFacade -> {
+      Event savedEvent = null;
       try {
-        Event savedEvent = saveEvent(eventFacade);
-        formDataProcessorService.processFormDataAndSubmitToMessaging(savedEvent, eventFacade);
+        savedEvent = saveEvent(eventFacade);
       } catch (Exception exception) {
-        exception.printStackTrace();
+        log.error("Error saving event {}", eventFacade.getBaseEntityId(),exception);
         failedEvents.add(eventFacade);
       }
-    });
+      if (savedEvent == null){
+        return null;
+      }
+      return Pair.of(eventFacade, savedEvent);
+    }).filter(Objects::nonNull).collect(Collectors.toList());
+    formDataProcessorService.processFormDataAndSubmitToMessaging(savedEventFacadeEventPairList);
     return failedEvents;
   }
 
@@ -346,7 +351,7 @@ public class EventClientFacadeService {
         clientFacade.setIdentifiers(clientFacadeMetadata.getIdentifiers());
       }
     } catch (JsonProcessingException e) {
-      log.error("Additional Info on Person cannot be mapped to metadata Object");
+      log.error("Additional Info on Person cannot be mapped to metadata Object",e);
       e.printStackTrace();
     }
     clientFacade.setBaseEntityId(person.getIdentifier().toString());
@@ -369,7 +374,7 @@ public class EventClientFacadeService {
       clientFacade.setIdentifiers(clientFacadeMetadata.getIdentifiers());
       clientFacade.setGender(clientFacadeMetadata.getFamilyHeadGender());
     } catch (JsonProcessingException e) {
-      log.error("Additional Info on Person cannot be mapped to metadata Object");
+      log.error("Additional Info on Person cannot be mapped to metadata Object",e);
       e.printStackTrace();
     }
     clientFacade.setBaseEntityId(group.getIdentifier().toString());

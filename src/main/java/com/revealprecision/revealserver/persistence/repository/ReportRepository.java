@@ -12,7 +12,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ReportRepository extends JpaRepository<Report, UUID> {
 
-  Optional<Report> findByPlanAndLocation(Plan plan, Location location);
+  Optional<Report> findByPlan_IdentifierAndLocation_Identifier(UUID plan, UUID location);
 
   @Query(value = "SELECT count(*) from report r\n"
       + "left join location l on l.identifier = r.location_id\n"

@@ -59,6 +59,7 @@ public class HttpDBHttpLoggingService implements HttpLoggingService {
           .requestor(requestor).jwtKid(jwtKid).build());
     } catch (JsonProcessingException e) {
       e.printStackTrace();
+      log.error("Json Exception converting json to string", e);
     }
   }
 
