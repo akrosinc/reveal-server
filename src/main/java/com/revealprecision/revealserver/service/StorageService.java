@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.env.Environment;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.MediaType;
@@ -15,6 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class StorageService {
 
 
@@ -35,6 +37,7 @@ public class StorageService {
       file.transferTo(filePath);
     } catch (IOException e) {
       e.printStackTrace();
+      log.error("Error transferring storage file at path {}",filePath,e);
     }
     return path;
   }
@@ -52,6 +55,7 @@ public class StorageService {
       file.transferTo(filePath);
     } catch (IOException e) {
       e.printStackTrace();
+      log.error("Error transferring storage file at path {}",filePath,e);
     }
     return path;
   }
@@ -66,6 +70,7 @@ public class StorageService {
       file.transferTo(filePath);
     } catch (IOException e) {
       e.printStackTrace();
+      log.error("Error transferring storage file at path {}",filePath,e);
     }
     return path;
   }

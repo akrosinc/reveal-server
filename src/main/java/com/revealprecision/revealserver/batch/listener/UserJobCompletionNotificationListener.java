@@ -8,12 +8,14 @@ import com.revealprecision.revealserver.service.UserBulkService;
 import java.io.IOException;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobExecutionListener;
 import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class UserJobCompletionNotificationListener implements JobExecutionListener {
 
   private final UserBulkService userBulkService;
@@ -36,6 +38,7 @@ public class UserJobCompletionNotificationListener implements JobExecutionListen
       storageService.deleteFile(filePath);
     } catch (IOException e) {
       e.printStackTrace();
+      log.error("Error deleting storage file at path {}",filePath,e);
     }
   }
 }
