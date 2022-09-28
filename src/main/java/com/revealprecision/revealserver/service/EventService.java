@@ -6,7 +6,9 @@ import com.revealprecision.revealserver.persistence.domain.Event.Fields;
 import com.revealprecision.revealserver.persistence.repository.EventRepository;
 import com.revealprecision.revealserver.persistence.specification.EventSpec;
 import com.revealprecision.revealserver.service.models.EventSearchCriteria;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -24,13 +26,9 @@ public class EventService {
     return eventRepository.save(event);
   }
 
-  public Event findEventByIdentifier(UUID eventIdentifier) {
-    return eventRepository.findById(eventIdentifier).orElseThrow(
-        () -> new NotFoundException(Pair.of(Fields.identifier, eventIdentifier), Event.class));
-  }
-
   public Page<Event> searchEvents(EventSearchCriteria eventSearchCriteria, Pageable pageable) {
     return eventRepository.findAll(eventSpec.getEventSpecification(eventSearchCriteria), pageable);
   }
+
 
 }
