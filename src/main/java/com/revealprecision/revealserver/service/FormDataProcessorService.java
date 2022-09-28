@@ -110,7 +110,6 @@ public class FormDataProcessorService {
   private final FormFieldService formFieldService;
   private final EntityTagService entityTagService;
   private final LocationService locationService;
-  private final EventService eventService;
 
   private final KafkaTemplate<String, UserData> userDataTemplate;
   private final KafkaTemplate<String, MDALiteLocationSupervisorCddEvent> mdaliteSupervisorTemplate;
