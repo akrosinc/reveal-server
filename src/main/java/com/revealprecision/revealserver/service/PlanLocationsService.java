@@ -335,7 +335,7 @@ public class PlanLocationsService {
     if(!toBeAdded.isEmpty()) {
       Set<PlanLocations> planLocations = planLocationsRepository.getPlanLocationsByPlanIdAndLocationIdentifiers(planIdentifier, toBeAdded);
       List<PlanAssignment> addAssignments = new ArrayList<>();
-      planLocations.forEach(el -> addAssignments.add(new PlanAssignment(organization, el)));
+      planLocations.forEach(el -> addAssignments.add(new PlanAssignment(organization, el, request.getLocationIdentifiers().contains(el.getLocation().getIdentifier()))));
 
       planAssignmentRepository.saveAll(addAssignments);
     }
