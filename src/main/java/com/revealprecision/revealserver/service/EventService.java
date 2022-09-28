@@ -6,7 +6,9 @@ import com.revealprecision.revealserver.persistence.domain.Event.Fields;
 import com.revealprecision.revealserver.persistence.repository.EventRepository;
 import com.revealprecision.revealserver.persistence.specification.EventSpec;
 import com.revealprecision.revealserver.service.models.EventSearchCriteria;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -31,6 +33,10 @@ public class EventService {
 
   public Page<Event> searchEvents(EventSearchCriteria eventSearchCriteria, Pageable pageable) {
     return eventRepository.findAll(eventSpec.getEventSpecification(eventSearchCriteria), pageable);
+  }
+
+  public Map<UUID,Event> findEventsByTaskIdentifier(UUID taskIdentifier){
+    return eventRepository.findEventsByTaskIdentifier(taskIdentifier).stream().collect(Collectors.toMap(event -> event.getIdentifier(),event -> event));
   }
 
 }

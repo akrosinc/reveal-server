@@ -15,9 +15,11 @@ import lombok.Setter;
 @NoArgsConstructor
 public class UserPerformanceData extends Message {
 
+  private String submissionId;
   private UUID planIdentifier;
   private List<UserLevel> orgHierarchy;
   private LocalDateTime captureTime;
   private Map<String, Object> fields;
+  private boolean isUndo;
 
 }

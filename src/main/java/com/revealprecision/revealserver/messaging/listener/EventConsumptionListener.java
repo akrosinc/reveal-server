@@ -36,6 +36,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -266,8 +267,10 @@ public class EventConsumptionListener extends Listener {
   private List<Location> getLocations(FormDataEntityTagEvent eventMetadata, Task task) {
     List<Location> locations = new ArrayList<>();
     if (task == null) {
-      Location location = locationService.findByIdentifier(eventMetadata.getEntityId());
-      locations.add(location);
+      if (eventMetadata.getEntityId() != null) {
+        Optional<Location> location = locationService.findNullableByIdentifier(eventMetadata.getEntityId());
+        location.ifPresent(locations::add);
+      }
     } else {
       if (ActionUtils.isActionForPerson(task.getAction())) {
         Person person = personService.getPersonByIdentifier(eventMetadata.getEntityId());
