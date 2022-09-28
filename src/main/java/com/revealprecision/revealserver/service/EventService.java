@@ -26,17 +26,9 @@ public class EventService {
     return eventRepository.save(event);
   }
 
-  public Event findEventByIdentifier(UUID eventIdentifier) {
-    return eventRepository.findById(eventIdentifier).orElseThrow(
-        () -> new NotFoundException(Pair.of(Fields.identifier, eventIdentifier), Event.class));
-  }
-
   public Page<Event> searchEvents(EventSearchCriteria eventSearchCriteria, Pageable pageable) {
     return eventRepository.findAll(eventSpec.getEventSpecification(eventSearchCriteria), pageable);
   }
 
-  public Map<UUID,Event> findEventsByTaskIdentifier(UUID taskIdentifier){
-    return eventRepository.findEventsByTaskIdentifier(taskIdentifier).stream().collect(Collectors.toMap(event -> event.getIdentifier(),event -> event));
-  }
 
 }
