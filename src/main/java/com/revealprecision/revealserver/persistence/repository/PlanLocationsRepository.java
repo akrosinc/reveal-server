@@ -98,7 +98,7 @@ public interface PlanLocationsRepository extends EntityGraphJpaRepository<PlanLo
       + "from PlanLocations pl "
       + "left join Location l on pl.location.identifier = l.identifier "
       + "left join PlanAssignment pa on pa.planLocations.identifier = pl.identifier "
-      + "where pl.plan.identifier = :planIdentifier and pa.organization.identifier = :organizationIdentifier")
+      + "where pl.plan.identifier = :planIdentifier and pa.organization.identifier = :organizationIdentifier and pa.selected = true")
   List<PlanLocationsAssigned> getAssignedLocationsToTeam(UUID planIdentifier, UUID organizationIdentifier);
   
   @Query(value = "WITH RECURSIVE ancestors(id, parent_id, lvl) AS ( "
