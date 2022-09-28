@@ -142,13 +142,6 @@ public class FormDataProcessorService {
 
     if (obsList.isArray()) {
 
-      Map<UUID, Event> taskEvents = new HashMap<>();
-      if (savedEvent.getTaskIdentifier() != null) {
-        taskEvents = eventService.findEventsByTaskIdentifier(savedEvent.getTaskIdentifier());
-      } else {
-        taskEvents.put(savedEvent.getIdentifier(), savedEvent);
-      }
-
       Plan plan = planService.findPlanByIdentifier(savedEvent.getPlanIdentifier());
 
       ObjectReader reader = objectMapper.readerFor(new TypeReference<List<Obs>>() {
