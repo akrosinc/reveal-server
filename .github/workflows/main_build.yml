@@ -5,11 +5,7 @@ name: Reveal Server test, build and deploy
 
 on:
   push:
-<<<<<<< HEAD
-    branches: [ main, planning-resource ]
-=======
-    branches: [ main , zambia_2022]
->>>>>>> 6ba05e8f170cba3fad78a89b32d2145ab5345ae6
+    branches: [ main, zambia_2022, planning-resource ]
   pull_request:
     branches: [none]
 
