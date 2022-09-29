@@ -2,6 +2,7 @@ package com.revealprecision.revealserver.persistence.repository;
 
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
+import com.revealprecision.revealserver.persistence.projection.LocationAndHigherParentProjection;
 import com.revealprecision.revealserver.persistence.projection.LocationChildrenCountProjection;
 import com.revealprecision.revealserver.persistence.projection.LocationMainData;
 import com.revealprecision.revealserver.persistence.projection.LocationRelationshipProjection;
@@ -79,15 +80,12 @@ public interface LocationRelationshipRepository extends JpaRepository<LocationRe
   Optional<Long> getChildrenNumber(UUID locationIdentifier);
 
   @Query(value = "SELECT ST_Contains (ST_AsText(ST_GeomFromGeoJSON(:parent)),ST_AsText(ST_Centroid(ST_GeomFromGeoJSON(:child))))", nativeQuery = true)
-  Boolean hasParentChildRelationship(@Param("parent") String parent,
-      @Param("child") String child);
+  Boolean hasParentChildRelationship(@Param("parent") String parent, @Param("child") String child);
 
-  @Query(value = "select lr.location.identifier "
-      + "from LocationRelationship lr "
+  @Query(value = "select lr.location.identifier " + "from LocationRelationship lr "
       + "where lr.locationHierarchy.identifier = :hierarchyIdentifier "
       + "and lr.location.identifier in :locations")
-  List<UUID> findLocationsInHierarchy(
-      @Param("hierarchyIdentifier") UUID hierarchyIdentifier,
+  List<UUID> findLocationsInHierarchy(@Param("hierarchyIdentifier") UUID hierarchyIdentifier,
       @Param("locations") Set<UUID> locations);
 
 
@@ -118,15 +116,13 @@ public interface LocationRelationshipRepository extends JpaRepository<LocationRe
       @Param("planIdentifier") UUID planIdentifier);
 
 
-  @Query(value = "select lr.location "
-      + "from LocationRelationship lr "
+  @Query(value = "select lr.location " + "from LocationRelationship lr "
       + "where lr.locationHierarchy.identifier = :hierarchyIdentifier "
       + "and lr.parentLocation.identifier = :locationIdentifier")
   List<Location> getChildren(@Param("hierarchyIdentifier") UUID hierarchyIdentifier,
       @Param("locationIdentifier") UUID locationIdentifier);
 
-  @Query(value = "select lr.location "
-      + "from LocationRelationship lr "
+  @Query(value = "select lr.location " + "from LocationRelationship lr "
       + "where lr.parentLocation.identifier in :parentLocationIdentifier "
       + "and lr.locationHierarchy.identifier = :hierarchyIdentifier")
   List<Location> findLocationRelationshipUuidsByParentLocation_IdentifierAndHierarchyIdentifier(
@@ -170,9 +166,26 @@ public interface LocationRelationshipRepository extends JpaRepository<LocationRe
   List<UUID> getDistinctChildrenLocationsGivenParentIds(
       @Param("parentIdentifiers") List<UUID> parentIdentifiers);
 
-  @Query(value = "REFRESH MATERIALIZED VIEW CONCURRENTLY location_relationships",nativeQuery = true)
+  @Query(value = "REFRESH MATERIALIZED VIEW CONCURRENTLY location_relationships", nativeQuery = true)
   @Transactional
   @Modifying
   void refreshLocationRelationshipMaterializedView();
 
+  @Query(value =
+      "SELECT  DISTINCT  cast(l.identifier  as varchar) as locationIdentifier"
+          + ", l.name as locationName"
+          + ", gl.name as locationGeographicLevelName"
+          + ", cast(lp.identifier as varchar) as higherLocationParentIdentifier"
+          + ", lp.name as higherLocationParentName"
+          + ", pgl.name as higherLocationParentGeographicLevelName "
+          + "from location l\n"
+          + "left join geographic_level gl on gl.identifier = l.geographic_level_identifier\n"
+          + "left join \n"
+          + "(SELECT arr.item_object, lr.location_identifier from location_relationship lr, LATERAL unnest(lr.ancestry) WITH ORDINALITY arr(item_object, \"position\")\n"
+          + "WHERE lr.location_hierarchy_identifier = :locationHierarchyIdentifier"
+          + ") ancestors  on ancestors.location_identifier = l.identifier\n"
+          + "left join location lp on lp.identifier = ancestors.item_object\n"
+          + "left join geographic_level pgl on pgl.identifier = lp.geographic_level_identifier\n"
+          + "WHERE l.identifier = :locationIdentifier and pgl.name = :parentGeographicLevelName", nativeQuery = true)
+  LocationAndHigherParentProjection getHigherLocationParentByLocationAndParentGeographicLevelType(UUID locationIdentifier, UUID locationHierarchyIdentifier, String parentGeographicLevelName);
 }

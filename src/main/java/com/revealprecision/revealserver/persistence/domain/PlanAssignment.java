@@ -42,6 +42,8 @@ public class PlanAssignment extends AbstractAuditableEntity {
   @JoinColumn(name = "plan_locations_identifier", referencedColumnName = "identifier")
   private PlanLocations planLocations;
 
+  private boolean selected = false;
+
   public PlanAssignment(Organization organization, PlanLocations planLocations) {
     this.organization = organization;
     this.planLocations = planLocations;
@@ -50,6 +52,17 @@ public class PlanAssignment extends AbstractAuditableEntity {
     this.setCreatedDatetime(LocalDateTime.now());
     this.setModifiedBy(UserUtils.getCurrentPrinciple().getName());
     this.setModifiedDatetime(LocalDateTime.now());
+  }
+
+  public PlanAssignment(Organization organization, PlanLocations planLocations, boolean selected) {
+    this.organization = organization;
+    this.planLocations = planLocations;
+    this.setEntityStatus(EntityStatus.ACTIVE);
+    this.setCreatedBy(UserUtils.getCurrentPrinciple().getName());
+    this.setCreatedDatetime(LocalDateTime.now());
+    this.setModifiedBy(UserUtils.getCurrentPrinciple().getName());
+    this.setModifiedDatetime(LocalDateTime.now());
+    this.selected = selected;
   }
 
   public PlanAssignment(UUID identifier, UUID orgIdentifier, String orgName, UUID planLocationIdentifier, UUID locationIdentifier) {

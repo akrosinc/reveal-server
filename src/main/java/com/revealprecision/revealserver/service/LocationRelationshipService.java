@@ -13,6 +13,7 @@ import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationBulk;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
+import com.revealprecision.revealserver.persistence.projection.LocationAndHigherParentProjection;
 import com.revealprecision.revealserver.persistence.projection.LocationChildrenCountProjection;
 import com.revealprecision.revealserver.persistence.projection.LocationMainData;
 import com.revealprecision.revealserver.persistence.projection.LocationRelationshipProjection;
@@ -127,6 +128,7 @@ public class LocationRelationshipService {
               createParentChildRelationship(location, potentialChild, locationHierarchy);
             } catch (IOException e) {
               e.printStackTrace();
+              log.error("Exception creating parent child relation {}", location.getIdentifier(), e);
             }
           }
         }
@@ -209,6 +211,7 @@ public class LocationRelationshipService {
       childGeometry = mapper.writeValueAsString(childLocation.getGeometry());
     } catch (JsonProcessingException e) {
       e.printStackTrace();
+      log.error("Json Exception converting json to string", e);
     }
     if (locationRelationshipRepository.hasParentChildRelationship(parentGeometry, childGeometry)) {
       List<UUID> ancestry = getAncestryFromParentLocation(parentLocation, locationHierarchy);
@@ -454,6 +457,7 @@ public class LocationRelationshipService {
   public void refreshLocationCountsView() {
     locationCountsRepository.refreshLocationCountsMaterializedView();
   }
+
   @Async
   public void refreshLocationRelationshipMaterializedView() {
     locationRelationshipRepository.refreshLocationRelationshipMaterializedView();
@@ -505,9 +509,9 @@ public class LocationRelationshipService {
     return structureLocations;
   }
 
-  public Location getLocationParent(Location location, LocationHierarchy locationHierarchy) {
+  public Location getLocationParent(UUID locationIdentifier, UUID locationHierarchyIdentifier) {
     return locationRelationshipRepository.getParentLocationByLocationIdAndHierarchyId(
-        location.getIdentifier(), locationHierarchy.getIdentifier());
+        locationIdentifier, locationHierarchyIdentifier);
   }
 
   public List<LocationRelationship> getLocationParentWithoutHierarchyIdentifier(
@@ -537,6 +541,28 @@ public class LocationRelationshipService {
       List<UUID> parentIdentifiers) {
     return locationRelationshipRepository.getDistinctChildrenLocationsGivenParentIds(
         parentIdentifiers);
+  }
+
+  public void createLocationRelationship(Location parentLocation, Location childLocation,
+      LocationHierarchy hierarchy) {
+    List<UUID> ancestry = new ArrayList<>();
+    ancestry.addAll(
+        locationRelationshipRepository.findByLocationHierarchyIdentifierAndLocationIdentifier(
+            hierarchy.getIdentifier(), parentLocation.getIdentifier()).get().getAncestry());
+    ancestry.add(parentLocation.getIdentifier());
+    LocationRelationship locationRelationship = LocationRelationship.builder()
+        .parentLocation(parentLocation)
+        .location(childLocation)
+        .locationHierarchy(hierarchy).ancestry(ancestry).build();
+    locationRelationship.setEntityStatus(EntityStatus.ACTIVE);
+    locationRelationshipRepository.save(
+        locationRelationship);
+  }
+
+  public LocationAndHigherParentProjection getHigherLocationParentByLocationAndParentGeographicLevelType(UUID locationIdentifier,
+      UUID locationHierarchyIdentifier, String parentGeographicLevelName) {
+    return locationRelationshipRepository.getHigherLocationParentByLocationAndParentGeographicLevelType(
+        locationIdentifier, locationHierarchyIdentifier, parentGeographicLevelName);
   }
 }
 

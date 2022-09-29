@@ -4,4 +4,5 @@ public interface LocationConstants {
 
   String STRUCTURE = "structure";
   String OPERATIONAL = "operational";
+  String DISTRICT = "district";
 }

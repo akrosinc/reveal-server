@@ -10,6 +10,8 @@ import com.revealprecision.revealserver.service.LocationService;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -47,14 +49,16 @@ public class LocationFacadeService {
 
   public Set<String> saveSyncedLocations(List<CreateLocationRequest> createLocationRequests) {
     Set<String> locationRequestsWithErrors = new HashSet<>();
-    List<LocationRequest> locationRequests = LocationRequestFactory
+    Map<LocationRequest, UUID> locationRequestWithParent = LocationRequestFactory
         .fromPhysicalLocationRequests(createLocationRequests);
-    for (LocationRequest locationRequest : locationRequests) {
+    for (Entry<LocationRequest, UUID> locationRequestUUIDEntry : locationRequestWithParent.entrySet()) {
       try {
-        locationService.createLocation(locationRequest);
+        locationService.createLocation(locationRequestUUIDEntry.getKey(),
+            locationRequestUUIDEntry.getValue());
       } catch (Exception e) {
         log.error(e.getMessage(), e);
-        locationRequestsWithErrors.add(locationRequest.getProperties().getExternalId().toString());
+        locationRequestsWithErrors.add(
+            locationRequestUUIDEntry.getKey().getProperties().getExternalId().toString());
       }
     }
     return locationRequestsWithErrors;

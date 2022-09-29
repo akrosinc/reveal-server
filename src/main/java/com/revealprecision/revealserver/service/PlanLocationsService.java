@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.service;
 
 import com.revealprecision.revealserver.api.v1.dto.factory.OrganizationResponseFactory;
+import com.revealprecision.revealserver.api.v1.dto.request.AssignLocationsToTeamRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.GeoTreeResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.OrganizationResponse;
 import com.revealprecision.revealserver.constants.KafkaConstants;
@@ -9,9 +10,12 @@ import com.revealprecision.revealserver.enums.PlanInterventionTypeEnum;
 import com.revealprecision.revealserver.messaging.message.PlanLocationAssignMessage;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
+import com.revealprecision.revealserver.persistence.domain.Organization;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.PlanAssignment;
 import com.revealprecision.revealserver.persistence.domain.PlanLocations;
+import com.revealprecision.revealserver.persistence.projection.PlanLocationsAssigned;
+import com.revealprecision.revealserver.persistence.repository.PlanAssignmentRepository;
 import com.revealprecision.revealserver.persistence.repository.PlanLocationsRepository;
 import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.util.UserUtils;
@@ -20,6 +24,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -27,8 +32,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 
 @Service
@@ -40,8 +45,10 @@ public class PlanLocationsService {
   private final LocationService locationService;
   private final LocationHierarchyService locationHierarchyService;
   private final PlanAssignmentService planAssignmentService;
+  private final PlanAssignmentRepository planAssignmentRepository;
   private final KafkaTemplate<String, PlanLocationAssignMessage> kafkaTemplate;
   private final KafkaProperties kafkaProperties;
+  private final OrganizationService organizationService;
 
   @Autowired
   public PlanLocationsService(PlanLocationsRepository planLocationsRepository,
@@ -49,7 +56,9 @@ public class PlanLocationsService {
       LocationHierarchyService locationHierarchyService,
       @Lazy PlanAssignmentService planAssignmentService,
       KafkaTemplate<String, PlanLocationAssignMessage> kafkaTemplate,
-      KafkaProperties kafkaProperties) {
+      KafkaProperties kafkaProperties,
+      OrganizationService organizationService,
+      PlanAssignmentRepository planAssignmentRepository) {
     this.planLocationsRepository = planLocationsRepository;
     this.planService = planService;
     this.locationService = locationService;
@@ -57,7 +66,8 @@ public class PlanLocationsService {
     this.planAssignmentService = planAssignmentService;
     this.kafkaTemplate = kafkaTemplate;
     this.kafkaProperties = kafkaProperties;
-
+    this.organizationService = organizationService;
+    this.planAssignmentRepository = planAssignmentRepository;
   }
 
   public List<PlanLocations> getPlanLocationsByPlanIdentifier(UUID planIdentifier) {
@@ -286,4 +296,52 @@ public class PlanLocationsService {
   }
 
 
+  public List<PlanLocationsAssigned> getPlanLocationsWithSearch(UUID planIdentifier, String search) {
+    planService.findPlanByIdentifier(planIdentifier);
+    return planLocationsRepository.getPlanLocationByPlanIdentifierAndSearch(planIdentifier, search);
+  }
+
+  public List<PlanLocationsAssigned> getAssignedLocationsToTeam(UUID planIdentifier, UUID organizationIdentifier) {
+    planService.findPlanByIdentifier(planIdentifier);
+    organizationService.findById(organizationIdentifier, true);
+    return planLocationsRepository.getAssignedLocationsToTeam(planIdentifier, organizationIdentifier);
+  }
+
+  @Transactional
+  public void assignLocationsToTeam(UUID planIdentifier, AssignLocationsToTeamRequest request) {
+    Plan plan = planService.findPlanByIdentifier(planIdentifier);
+    Organization organization = organizationService.findById(request.getOrganizationIdentifier(), true);
+    if(request.getLocationIdentifiers().isEmpty()) {
+      planAssignmentRepository.deletePlanAssignmentsByPlanLocations_Plan_Identifier(planIdentifier);
+      return;
+    }
+
+    List<UUID> locationsWithChildren = planLocationsRepository.getChildrenAssignedLocations(planIdentifier, request.getLocationIdentifiers(), plan.getLocationHierarchy().getIdentifier());
+    List<List<UUID>> parentLocations = planLocationsRepository.getParentsAssignedLocations(request.getLocationIdentifiers(), planIdentifier, plan.getLocationHierarchy().getIdentifier());
+    Set<UUID> currentLocations = new HashSet<>(locationsWithChildren);
+    currentLocations.addAll(request.getLocationIdentifiers());
+    if(parentLocations != null) {
+      parentLocations.stream().filter(Objects::nonNull).forEach(currentLocations::addAll);
+    }
+
+    List<UUID> locations = planLocationsRepository.getPlanLocationsIdentifiers(planIdentifier, request.getOrganizationIdentifier());
+
+    List<UUID> toBeAdded = new ArrayList<>(currentLocations);
+    toBeAdded.removeAll(locations);
+
+    List<UUID> toBeRemoved = new ArrayList<>(locations);
+    toBeRemoved.removeAll(currentLocations);
+
+    if(!toBeAdded.isEmpty()) {
+      Set<PlanLocations> planLocations = planLocationsRepository.getPlanLocationsByPlanIdAndLocationIdentifiers(planIdentifier, toBeAdded);
+      List<PlanAssignment> addAssignments = new ArrayList<>();
+      planLocations.forEach(el -> addAssignments.add(new PlanAssignment(organization, el, request.getLocationIdentifiers().contains(el.getLocation().getIdentifier()))));
+
+      planAssignmentRepository.saveAll(addAssignments);
+    }
+
+    if(!toBeRemoved.isEmpty()) {
+      planAssignmentRepository.deleteAllByPlanIdentifierAndLocationIdentifiers(toBeRemoved, planIdentifier);
+    }
+  }
 }

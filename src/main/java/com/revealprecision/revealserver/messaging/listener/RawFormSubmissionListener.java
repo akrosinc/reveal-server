@@ -40,6 +40,7 @@ import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.service.LocationService;
 import com.revealprecision.revealserver.service.PlanService;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -82,13 +83,13 @@ public class RawFormSubmissionListener extends Listener {
   private void handleEvent(FormCaptureEvent formCaptureEvent, boolean isAggregatedLevel) {
     log.debug("Received Message {}, ", formCaptureEvent);
     Plan plan = planService.findPlanByIdentifier(formCaptureEvent.getPlanId());
-    Location location;
+    String locationString = null;
+
     if (formCaptureEvent.getLocationId() != null) {
-      location = locationService.findByIdentifier(formCaptureEvent.getLocationId());
+      locationString = formCaptureEvent.getLocationId().toString();
     } else if (formCaptureEvent.getRawFormEvent().getLocationId() != null
         && !formCaptureEvent.getRawFormEvent().getLocationId().isEmpty()) {
-      location = locationService.findByIdentifier(
-          UUID.fromString(formCaptureEvent.getRawFormEvent().getLocationId()));
+      locationString = formCaptureEvent.getRawFormEvent().getLocationId();
     } else {
       Location locationFromBaseEntityId = null;
       try {
@@ -100,41 +101,51 @@ public class RawFormSubmissionListener extends Listener {
       }
 
       if (locationFromBaseEntityId != null) {
-        location = locationFromBaseEntityId;
+        locationString = locationFromBaseEntityId.getIdentifier().toString();
       } else {
-        location = locationService.findByIdentifier(
-            UUID.fromString(formCaptureEvent.getRawFormEvent().getDetails().get(LOCATION_PARENT)));
+        locationString = formCaptureEvent.getRawFormEvent().getDetails().get(LOCATION_PARENT);
       }
     }
-    Report reportEntry = getOrInstantiateReportEntry(plan, location);
-
-    List<Obs> observations = formCaptureEvent.getRawFormEvent().getObs();
-    ReportIndicators reportIndicators = reportEntry.getReportIndicators();
-    reportIndicators.setAggregateLevel(isAggregatedLevel);
-
-    EventFacade rawFormEvent = formCaptureEvent.getRawFormEvent();
-    if (rawFormEvent.getEventType().equals(SPRAY)) {
-      extractIRSSprayedLocationIndicators(observations, reportIndicators, plan, location);
-    } else if (rawFormEvent.getEventType().equals(IRS_LITE_VERIFICATION)) {
-      extractVillageVisitationIndicators(observations, reportIndicators);
-      extractMobilizationIndicators(observations, reportIndicators);
-    } else if (rawFormEvent.getEventType().equals(DAILY_SUMMARY)) {
-      extractDailySupervisionIndicators(observations, reportIndicators);
-    } else if (rawFormEvent.getEventType().equals(IRS_SA_DECISION)) {
-      reportIndicators.setIrsDecisionFormFilled(true);
-    } else if (rawFormEvent.getEventType().equals(REGISTER_STRUCTURE)) {
-      extractStructureRegistrationIndicators(reportIndicators);
+    UUID locationUuid = null;
+    try{
+      locationUuid = UUID.fromString(locationString);
+    }catch (IllegalArgumentException e){
+      log.warn("location id is not a uuid {}",locationUuid);
     }
+    if (locationUuid !=null) {
+      Optional<Report> reportEntryOptional = getOrInstantiateReportEntry(plan, locationUuid);
 
-    if (!isAggregatedLevel){
-      reportIndicators.setBusinessStatus(getObservation(observations, BUSINESS_STATUS));
-    }
+      if (reportEntryOptional.isPresent()) {
+        Report reportEntry = reportEntryOptional.get();
+        List<Obs> observations = formCaptureEvent.getRawFormEvent().getObs();
+        ReportIndicators reportIndicators = reportEntry.getReportIndicators();
+        reportIndicators.setAggregateLevel(isAggregatedLevel);
 
-    reportRepository.save(reportEntry);
-    Location parentLocation = locationService.getLocationParent(location,
-        plan.getLocationHierarchy());
-    if (parentLocation != null) {
-      publishForParent(formCaptureEvent, plan, rawFormEvent, parentLocation);
+        EventFacade rawFormEvent = formCaptureEvent.getRawFormEvent();
+        if (rawFormEvent.getEventType().equals(SPRAY)) {
+          extractIRSSprayedLocationIndicators(observations, reportIndicators, plan, locationUuid);
+        } else if (rawFormEvent.getEventType().equals(IRS_LITE_VERIFICATION)) {
+          extractVillageVisitationIndicators(observations, reportIndicators);
+          extractMobilizationIndicators(observations, reportIndicators);
+        } else if (rawFormEvent.getEventType().equals(DAILY_SUMMARY)) {
+          extractDailySupervisionIndicators(observations, reportIndicators);
+        } else if (rawFormEvent.getEventType().equals(IRS_SA_DECISION)) {
+          reportIndicators.setIrsDecisionFormFilled(true);
+        } else if (rawFormEvent.getEventType().equals(REGISTER_STRUCTURE)) {
+          extractStructureRegistrationIndicators(reportIndicators);
+        }
+
+        if (!isAggregatedLevel) {
+          reportIndicators.setBusinessStatus(getObservation(observations, BUSINESS_STATUS));
+        }
+
+        reportRepository.save(reportEntry);
+        Location parentLocation = locationService.getLocationParent(locationUuid,
+            plan.getLocationHierarchy().getIdentifier());
+        if (parentLocation != null) {
+          publishForParent(formCaptureEvent, plan, rawFormEvent, parentLocation);
+        }
+      }
     }
   }
 
@@ -184,7 +195,7 @@ public class RawFormSubmissionListener extends Listener {
   }
 
   private void extractIRSSprayedLocationIndicators(List<Obs> observations,
-      ReportIndicators reportIndicators, Plan plan, Location location) {
+      ReportIndicators reportIndicators, Plan plan, UUID locationIdentifier) {
     reportIndicators.setPregnantWomen(
         NumberValue(getObservation(observations, SPRAYED_PREGWOMEN), 0));
     reportIndicators.setFemales(NumberValue(getObservation(observations, SPRAYED_MALES), 0));
@@ -218,10 +229,10 @@ public class RawFormSubmissionListener extends Listener {
     if (reportIndicators.isAggregateLevel()) {
       reportIndicators.setSprayedStructures(
           reportRepository.getCountOfStructuresByPlanLocationParentBusinessStatus(
-              plan.getIdentifier(), location.getIdentifier(), BusinessStatus.COMPLETE));
+              plan.getIdentifier(), locationIdentifier, BusinessStatus.COMPLETE));
       reportIndicators.setFoundStructures(
           reportRepository.getCountOfEligibleStructuresByPlanLocationParent(plan.getIdentifier(),
-              location.getIdentifier()));
+              locationIdentifier));
     }
 
     String houseHoldHead = getObservation(observations, COMPOUNDHEADNAME);
@@ -231,13 +242,21 @@ public class RawFormSubmissionListener extends Listener {
     reportIndicators.setHouseholdHead(houseHoldHead);
   }
 
-  private Report getOrInstantiateReportEntry(Plan plan, Location location) {
+  private Optional<Report> getOrInstantiateReportEntry(Plan plan, UUID locationUuid) {
     log.debug("getOrInstantiateReportEntry - plan {} location {}", plan.getIdentifier(),
-        location.getIdentifier());
-    return reportRepository.findByPlanAndLocation(plan, location)
-        .orElse(
-            Report.builder().location(location).plan(plan).reportIndicators(new ReportIndicators())
-                .build());
+        locationUuid);
+    if (locationUuid != null) {
+      Report report = reportRepository.findByPlan_IdentifierAndLocation_Identifier(
+              plan.getIdentifier(), locationUuid)
+          .orElse(
+              Report.builder().location(Location.builder().identifier(locationUuid).build())
+                  .plan(plan)
+                  .reportIndicators(new ReportIndicators())
+                  .build());
+      return Optional.of(report);
+    } else {
+      return Optional.empty();
+    }
   }
 
   private String getObservation(List<Obs> observations, String fieldCode) {

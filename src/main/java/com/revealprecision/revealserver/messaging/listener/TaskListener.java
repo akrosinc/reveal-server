@@ -171,6 +171,12 @@ public class TaskListener extends Listener {
             structureCountsByBusinessStatus.get(BusinessStatus.NOT_ELIGIBLE));
       }
 
+      Double notVisited = 0D;
+      if (structureCountsByBusinessStatus.containsKey(BusinessStatus.NOT_VISITED)) {
+        notVisited = Double.valueOf(
+            structureCountsByBusinessStatus.get(BusinessStatus.NOT_VISITED));
+      }
+
       Double complete = 0D;
       if (structureCountsByBusinessStatus.containsKey(BusinessStatus.COMPLETE)) {
         complete = Double.valueOf(
@@ -178,16 +184,17 @@ public class TaskListener extends Listener {
       }
 
       double percentageVisited =
-          (complete) / ((double) countOfAssignedStructuresInArea - notEligible) * 100;
-
-      if (percentageVisited >= 85d) {
-        visitedEffectivelyStatus = true;
-      }
+          (countOfAssignedStructuresInArea - notVisited - notEligible) / ((double) countOfAssignedStructuresInArea - notEligible) * 100;
 
       if (percentageVisited > 20d) {
         visitedStatus = true;
-      }
 
+        double percentageVisitedEffectively = (complete) / ((double) countOfAssignedStructuresInArea - notEligible) * 100;
+
+        if (percentageVisitedEffectively > 85d){
+          visitedEffectivelyStatus = true;
+        }
+      }
     }
     if (message.getAction().getGoal().getPlan().getInterventionType().getName().equals(
         PlanInterventionTypeEnum.MDA.name())) {

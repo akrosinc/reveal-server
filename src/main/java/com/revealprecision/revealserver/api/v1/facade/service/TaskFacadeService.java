@@ -161,7 +161,8 @@ public class TaskFacadeService {
   }
 
   private Optional<String> updateTaskStatusAndBusinessStatus(TaskUpdateFacade updateFacade, String owner) {
-    UUID identifier = null;
+    String identifier = null;
+    UUID identifierUuid;
     try {
       Task task = taskService.getTaskByIdentifier(UUID.fromString(updateFacade.getIdentifier()));
 
@@ -174,7 +175,8 @@ public class TaskFacadeService {
         task.setBusinessStatus(updateFacade.getBusinessStatus());
         businessStatusService.setBusinessStatus(task, updateFacade.getBusinessStatus());
 
-        identifier = task.getIdentifier();
+        identifierUuid = task.getIdentifier();
+        identifier = identifierUuid.toString();
 
         TaskEvent taskEvent = TaskEventFactory.getTaskEventFromTask(task);
         taskEvent.setOwnerId(UserUtils.getCurrentPrincipleName());
@@ -193,9 +195,9 @@ public class TaskFacadeService {
       log.error("Task does not exist: {}", updateFacade.getIdentifier());
     } catch (Exception e) {
       e.printStackTrace();
-      log.error("Some error with updating task: {}", e.getMessage());
+      log.error("Some error with updating task: {}", e.getMessage(),e);
     }
-    return Optional.ofNullable(identifier.toString());
+    return Optional.ofNullable(identifier);
   }
 
   public List<TaskDto> addTaskDtos(List<TaskDto> taskDtos) {
@@ -205,7 +207,7 @@ public class TaskFacadeService {
       try {
         saveTaskDto(taskDto,getOwner());
       } catch (Exception e) {
-        log.error(e.toString(), e);
+        log.error("Exception adding tasks {}",e.getMessage(), e);
         e.printStackTrace();
         unprocessedTaskIds.add(taskDto);
       }
@@ -277,7 +279,7 @@ public class TaskFacadeService {
       } else {
         //Let's add the new location
         LocationRequest locationRequest = taskDto.getLocationRequest();
-        location = locationService.createLocation(locationRequest);
+        location = locationService.createLocation(locationRequest,null);
         if (ActionUtils.isActionForLocation(action)) {
           task.setLocation(location);
         }

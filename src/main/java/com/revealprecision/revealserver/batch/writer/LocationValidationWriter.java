@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -28,6 +29,7 @@ import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 
 @StepScope
+@Slf4j
 public class LocationValidationWriter extends AbstractFileItemWriter<LocationValidationDTO> {
 
   protected LineAggregator<LocationValidationDTO> lineAggregator;
@@ -66,7 +68,7 @@ public class LocationValidationWriter extends AbstractFileItemWriter<LocationVal
         withErrors.add(new LocationValidationDTO(locationElastic.getName(), BulkEntryStatus.FAILED, locationElastic.getHashValue(), "Already exist"));
       }
     } catch (IOException e) {
-      e.printStackTrace();
+      log.error("Error Searching Elastic Search {}",searchRequest.toString(),e);
     }
 
     for (LocationValidationDTO item : withErrors) {
