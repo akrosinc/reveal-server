@@ -23,7 +23,6 @@ import com.revealprecision.revealserver.persistence.es.EntityMetadataElastic;
 import com.revealprecision.revealserver.persistence.es.LocationElastic;
 import com.revealprecision.revealserver.persistence.projection.LocationStructureCount;
 import com.revealprecision.revealserver.persistence.repository.CampaignDrugRepository;
-import com.revealprecision.revealserver.persistence.repository.CountryCampaignRepository;
 import com.revealprecision.revealserver.persistence.repository.LocationRelationshipRepository;
 import com.revealprecision.revealserver.persistence.repository.ResourcePlanningHistoryRepository;
 import com.revealprecision.revealserver.service.models.LocationResourcePlanning;
@@ -54,13 +53,13 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class ResourcePlanningService {
 
-  private final CountryCampaignRepository countryCampaignRepository;
   private final CampaignDrugRepository campaignDrugRepository;
   private final LocationHierarchyService locationHierarchyService;
   private final LocationRelationshipRepository locationRelationshipRepository;
   private final ResourcePlanningHistoryRepository resourcePlanningHistoryRepository;
   private final RestHighLevelClient client;
   private final EntityTagService entityTagService;
+  private final CountryCampaign countryCampaign;
 
   private static String suffix = "_buffer";
   private static String bufferQuestion = "What percent of buffer stock of '%s' is planned?";
@@ -69,7 +68,8 @@ public class ResourcePlanningService {
   private static String coveragePercent = "What percent of this population do you expect to reach during the campaign?";
 
   public List<CountryCampaign> getCountries() {
-    return countryCampaignRepository.findAll();
+    System.out.println("dsad");
+    return List.of(countryCampaign);
   }
 
   public List<CampaignDrug> getCampaigns() {
@@ -82,14 +82,17 @@ public class ResourcePlanningService {
   }
 
   public CountryCampaign getCountryCampaignByIdentifier(UUID identifier) {
-    return countryCampaignRepository.findById(identifier).orElseThrow(() -> new NotFoundException(Pair.of(
-        Fields.identifier, identifier), CountryCampaign.class));
+    if(identifier.equals(countryCampaign.getIdentifier())) {
+      return countryCampaign;
+    }else {
+      throw new NotFoundException("Country with id: " + identifier + " not found");
+    }
   }
 
   public List<SecondStepQuestionsResponse> getSecondStepQuestions(ResourcePlanningRequest request) {
     List<SecondStepQuestionsResponse> response = new ArrayList<>();
 
-    List<CountryCampaign> countryCampaigns = countryCampaignRepository.getAllByIdentifiers(request.getCountryIdentifiers());
+    List<CountryCampaign> countryCampaigns = List.of(countryCampaign);
     List<CampaignDrug> campaignDrugs = campaignDrugRepository.getAllByIdentifiers(request.getCampaignIdentifiers());
     if(countryCampaigns.size() != request.getCountryIdentifiers().size() || campaignDrugs.size() != request.getCampaignIdentifiers().size()) {
       throw new ConflictException("Did not find all countries and campaigns");

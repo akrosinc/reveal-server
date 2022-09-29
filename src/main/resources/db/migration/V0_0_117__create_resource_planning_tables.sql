@@ -55,69 +55,6 @@ CREATE TABLE IF NOT EXISTS resource_planning_history_aud
 );
 
 
-insert into country_campaign (identifier, name, key, groups, entity_status, created_by,
-                              created_datetime,
-                              modified_by, modified_datetime)
-VALUES (uuid_generate_v4(), 'Kenya', 'ken', '[
-  {
-    "name": "0-11 months",
-    "min": 0,
-    "max": 11,
-    "key": "0-11months"
-  },
-  {
-    "name": "12-59 months",
-    "min": 12,
-    "max": 59,
-    "key": "12-59months"
-  },
-  {
-    "name": "5-14 years",
-    "min": 5,
-    "max": 14,
-    "key": "5-14years"
-  },
-  {
-    "name": "5 years and above",
-    "min": 5,
-    "max": 105,
-    "key": "5years-and-above"
-  }
-]', 'ACTIVE',
-        '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
-        '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00');
-insert into country_campaign (identifier, name, key, groups, entity_status, created_by,
-                              created_datetime,
-                              modified_by, modified_datetime)
-VALUES (uuid_generate_v4(), 'Rwanda', 'rwa', '[
-  {
-    "name": "6-11 months",
-    "min": 6,
-    "max": 11,
-    "key": "6-11months"
-  },
-  {
-    "name": "12-59 months",
-    "min": 12,
-    "max": 59,
-    "key": "12-59months"
-  },
-  {
-    "name": "5-15 years",
-    "min": 5,
-    "max": 15,
-    "key": "5-15years"
-  },
-  {
-    "name": "16 years and above",
-    "min": 16,
-    "max": 105,
-    "key": "16years-and-above"
-  }
-]', 'ACTIVE',
-        '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
-        '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00');
-
 insert into campaign_drug (identifier, name, drugs, entity_status, created_by, created_datetime,
                            modified_by, modified_datetime)
 VALUES (uuid_generate_v4(), 'STH', '[
