@@ -1,5 +1,6 @@
-package com.revealprecision.revealserver.persistence.domain;
+package com.revealprecision.revealserver.props;
 
+import com.revealprecision.revealserver.persistence.domain.AgeGroup;
 import java.util.List;
 import java.util.UUID;
 import javax.validation.constraints.NotNull;

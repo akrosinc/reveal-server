@@ -14,7 +14,7 @@ import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.AgeGroup;
 import com.revealprecision.revealserver.persistence.domain.CampaignDrug;
 import com.revealprecision.revealserver.persistence.domain.CampaignDrug.Fields;
-import com.revealprecision.revealserver.persistence.domain.CountryCampaign;
+import com.revealprecision.revealserver.props.CountryCampaign;
 import com.revealprecision.revealserver.persistence.domain.Drug;
 import com.revealprecision.revealserver.persistence.domain.EntityTag;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
@@ -68,7 +68,6 @@ public class ResourcePlanningService {
   private static String coveragePercent = "What percent of this population do you expect to reach during the campaign?";
 
   public List<CountryCampaign> getCountries() {
-    System.out.println("dsad");
     return List.of(countryCampaign);
   }
 

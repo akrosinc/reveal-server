@@ -1,18 +1,3 @@
-CREATE TABLE IF NOT EXISTS country_campaign
-(
-    identifier        UUID                     NOT NULL,
-    name              VARCHAR(255)             NOT NULL,
-    key               VARCHAR(255)             NOT NULL,
-    groups            JSONB                    NOT NULL,
-    entity_status     VARCHAR(36)              NOT NULL,
-    created_by        VARCHAR(36)              NOT NULL,
-    created_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,
-    modified_by       VARCHAR(36)              NOT NULL,
-    modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
-    PRIMARY KEY (identifier)
-);
-
-
 CREATE TABLE IF NOT EXISTS campaign_drug
 (
     identifier        UUID                     NOT NULL,

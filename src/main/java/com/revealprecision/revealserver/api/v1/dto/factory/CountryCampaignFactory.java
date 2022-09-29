@@ -2,7 +2,7 @@ package com.revealprecision.revealserver.api.v1.dto.factory;
 
 import com.revealprecision.revealserver.api.v1.dto.response.AgeGroupResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.CountryCampaignResponse;
-import com.revealprecision.revealserver.persistence.domain.CountryCampaign;
+import com.revealprecision.revealserver.props.CountryCampaign;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.AccessLevel;

@@ -23,8 +23,6 @@ public class FormulaResponse {
   private SkipPattern skipPattern;
 
   public static FormulaResponse[] list = {
-//      new FormulaResponse("Which campaign(s) are you planning in the selected locations?", "NTD_name", new FieldType(
-//          InputTypeEnum.DROPDOWN, List.of(new String[]{"STH", "SCH", "LF", "Onchocerciasis", "Tarchoma", "Vitamin A"}), null, null), null),
       new FormulaResponse("What year is the next campaign?", "mda_year", new FieldType(
           InputTypeEnum.DROPDOWN, List.of(new String[]{"2022", "2023", "2024", "2025", "2026", "2027"}), null, null), null),
       new FormulaResponse("What year was the uploaded population counted?", "pop_year", new FieldType(
