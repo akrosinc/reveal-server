@@ -184,11 +184,14 @@ public class MetaFieldSetMapper {
 
                 }
 
+                log.trace("sheet data type = {}",dataRow.getCell(j).getCellType());
+                log.trace("sheet value = {}",sheetValue);
                 metaImportDTO.getRawEntityData()
                     .put(entityTag, sheetValue);
 
                 Object value;
 
+                log.trace("entity type= {}",entityTag.getValueType());
                 try {
                   switch (entityTag.getValueType()) {
                     case INTEGER:
