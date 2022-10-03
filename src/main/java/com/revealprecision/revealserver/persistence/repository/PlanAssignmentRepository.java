@@ -28,8 +28,7 @@ public interface PlanAssignmentRepository extends EntityGraphJpaRepository<PlanA
   @Query(value = "delete from plan_assignment pa "
       + "using plan_locations pl "
       + "where pa.plan_locations_identifier = pl.identifier "
-      + "and pl.plan_identifier = :planIdentifier"
-      + "and pl.organization_identifier = :orgIdentifier", nativeQuery = true)
+      + "and pl.plan_identifier = :planIdentifier", nativeQuery = true)
   void deletePlanAssignmentsByPlanLocations_Plan_Identifier(
       @Param("planIdentifier") UUID planIdentifier);
 
