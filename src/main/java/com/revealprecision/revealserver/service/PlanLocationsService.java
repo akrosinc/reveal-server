@@ -70,36 +70,13 @@ public class PlanLocationsService {
     this.planAssignmentRepository = planAssignmentRepository;
   }
 
-  public List<PlanLocations> getPlanLocationsByPlanIdentifier(UUID planIdentifier) {
-    return planLocationsRepository.findByPlan_Identifier(planIdentifier);
+
+  public Long getAssignedChildrenOfLocationBelow(UUID planIdentifier, UUID locationIdentifier,
+      UUID locationHierarchyIdentifier) {
+    return planLocationsRepository.getAssignedChildrenOfLocationBelow(locationIdentifier,
+        locationHierarchyIdentifier, planIdentifier);
   }
 
-  public Long getNumberOfAssignedChildrenByGeoLevelNameWithinLocationAndHierarchyAndPlan(
-      UUID planIdentifier,
-      String geoLevelName, UUID locationIdentifier, UUID locationHierarchyIdentifier
-  ) {
-    return planLocationsRepository.getNumberOfAssignedChildrenByGeoLevelNameWithinLocationAndHierarchyAndPlan(
-        geoLevelName,
-        locationIdentifier.toString(),
-        locationHierarchyIdentifier,
-        planIdentifier);
-  }
-
-  public Long getAssignedChildrenOfLocationBelow(UUID planIdentifier, UUID locationIdentifier, UUID locationHierarchyIdentifier){
-    return planLocationsRepository.getAssignedChildrenOfLocationBelow(locationIdentifier,locationHierarchyIdentifier,planIdentifier);
-  }
-
-
-  public List<PlanLocations> getPlanLocationsByPlanAndLocationIdentifier(UUID locationIdentifier,
-      UUID planIdentifier) {
-    return planLocationsRepository.findByLocation_IdentifierAndPlan_Identifier(locationIdentifier,
-        planIdentifier);
-  }
-
-  public List<PlanLocations> getPlanLocationsByLocationIdentifierList(
-      List<UUID> locationIdentifiers) {
-    return planLocationsRepository.findByLocation_IdentifierIn(locationIdentifiers);
-  }
 
   public PlanLocations getPlanLocationByPlanIdentifierAndLocationIdentifier(UUID planId,
       UUID locationId) {
@@ -114,7 +91,6 @@ public class PlanLocationsService {
 
   public void assignLocation(UUID planIdentifier, UUID locationIdentifier) {
     Plan plan = planService.findPlanByIdentifier(planIdentifier);
-    Location location = locationService.findByIdentifier(locationIdentifier);
 
     List<UUID> locationsToAdd;
 
@@ -296,35 +272,45 @@ public class PlanLocationsService {
   }
 
 
-  public List<PlanLocationsAssigned> getPlanLocationsWithSearch(UUID planIdentifier, String search) {
+  public List<PlanLocationsAssigned> getPlanLocationsWithSearch(UUID planIdentifier,
+      String search) {
     planService.findPlanByIdentifier(planIdentifier);
     return planLocationsRepository.getPlanLocationByPlanIdentifierAndSearch(planIdentifier, search);
   }
 
-  public List<PlanLocationsAssigned> getAssignedLocationsToTeam(UUID planIdentifier, UUID organizationIdentifier) {
+  public List<PlanLocationsAssigned> getAssignedLocationsToTeam(UUID planIdentifier,
+      UUID organizationIdentifier) {
     planService.findPlanByIdentifier(planIdentifier);
     organizationService.findById(organizationIdentifier, true);
-    return planLocationsRepository.getAssignedLocationsToTeam(planIdentifier, organizationIdentifier);
+    return planLocationsRepository.getAssignedLocationsToTeam(planIdentifier,
+        organizationIdentifier);
   }
 
   @Transactional
   public void assignLocationsToTeam(UUID planIdentifier, AssignLocationsToTeamRequest request) {
     Plan plan = planService.findPlanByIdentifier(planIdentifier);
-    Organization organization = organizationService.findById(request.getOrganizationIdentifier(), true);
-    if(request.getLocationIdentifiers().isEmpty()) {
-      planAssignmentRepository.deletePlanAssignmentsByPlanLocations_Plan_Identifier(planIdentifier);
+    Organization organization = organizationService.findById(request.getOrganizationIdentifier(),
+        true);
+    if (request.getLocationIdentifiers().isEmpty()) {
+      planAssignmentRepository.deletePlanAssignmentsPerOrganizationPerPlan(
+          planIdentifier, organization.getIdentifier());
       return;
     }
 
-    List<UUID> locationsWithChildren = planLocationsRepository.getChildrenAssignedLocations(planIdentifier, request.getLocationIdentifiers(), plan.getLocationHierarchy().getIdentifier());
-    List<List<UUID>> parentLocations = planLocationsRepository.getParentsAssignedLocations(request.getLocationIdentifiers(), planIdentifier, plan.getLocationHierarchy().getIdentifier());
+    List<UUID> locationsWithChildren = planLocationsRepository.getChildrenAssignedLocations(
+        planIdentifier, request.getLocationIdentifiers(),
+        plan.getLocationHierarchy().getIdentifier());
+    List<List<UUID>> parentLocations = planLocationsRepository.getParentsAssignedLocations(
+        request.getLocationIdentifiers(), planIdentifier,
+        plan.getLocationHierarchy().getIdentifier());
     Set<UUID> currentLocations = new HashSet<>(locationsWithChildren);
     currentLocations.addAll(request.getLocationIdentifiers());
-    if(parentLocations != null) {
+    if (parentLocations != null) {
       parentLocations.stream().filter(Objects::nonNull).forEach(currentLocations::addAll);
     }
 
-    List<UUID> locations = planLocationsRepository.getPlanLocationsIdentifiers(planIdentifier, request.getOrganizationIdentifier());
+    List<UUID> locations = planLocationsRepository.getPlanLocationsIdentifiers(planIdentifier,
+        request.getOrganizationIdentifier());
 
     List<UUID> toBeAdded = new ArrayList<>(currentLocations);
     toBeAdded.removeAll(locations);
@@ -332,16 +318,19 @@ public class PlanLocationsService {
     List<UUID> toBeRemoved = new ArrayList<>(locations);
     toBeRemoved.removeAll(currentLocations);
 
-    if(!toBeAdded.isEmpty()) {
-      Set<PlanLocations> planLocations = planLocationsRepository.getPlanLocationsByPlanIdAndLocationIdentifiers(planIdentifier, toBeAdded);
+    if (!toBeAdded.isEmpty()) {
+      Set<PlanLocations> planLocations = planLocationsRepository.getPlanLocationsByPlanIdAndLocationIdentifiers(
+          planIdentifier, toBeAdded);
       List<PlanAssignment> addAssignments = new ArrayList<>();
-      planLocations.forEach(el -> addAssignments.add(new PlanAssignment(organization, el, request.getLocationIdentifiers().contains(el.getLocation().getIdentifier()))));
+      planLocations.forEach(el -> addAssignments.add(new PlanAssignment(organization, el,
+          request.getLocationIdentifiers().contains(el.getLocation().getIdentifier()))));
 
       planAssignmentRepository.saveAll(addAssignments);
     }
 
-    if(!toBeRemoved.isEmpty()) {
-      planAssignmentRepository.deleteAllByPlanIdentifierAndLocationIdentifiers(toBeRemoved, planIdentifier);
+    if (!toBeRemoved.isEmpty()) {
+      planAssignmentRepository.deleteAllByPlanIdentifierAndLocationIdentifiers(toBeRemoved,
+          planIdentifier);
     }
   }
 }
