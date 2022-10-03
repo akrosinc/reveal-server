@@ -87,6 +87,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.util.Pair;
@@ -118,6 +119,7 @@ public class FormDataProcessorService {
   private final LocationRelationshipService locationRelationshipService;
 
   @Async
+  @Transactional
   public void processFormDataAndSubmitToMessaging(List<Pair<EventFacade,Event>> eventFacadeEventPairList){
     eventFacadeEventPairList.stream().forEach(eventEventFacadePair ->
         {
@@ -128,6 +130,7 @@ public class FormDataProcessorService {
           }
         });
   }
+
 
   public void processFormDataAndSubmitToMessaging(Event savedEvent, EventFacade eventFacade)
       throws IOException {

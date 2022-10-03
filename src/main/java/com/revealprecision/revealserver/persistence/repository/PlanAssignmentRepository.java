@@ -29,7 +29,18 @@ public interface PlanAssignmentRepository extends EntityGraphJpaRepository<PlanA
       + "using plan_locations pl "
       + "where pa.plan_locations_identifier = pl.identifier "
       + "and pl.plan_identifier = :planIdentifier", nativeQuery = true)
-  void deletePlanAssignmentsByPlanLocations_Plan_Identifier(@Param("planIdentifier") UUID planIdentifier);
+  void deletePlanAssignmentsByPlanLocations_Plan_Identifier(
+      @Param("planIdentifier") UUID planIdentifier);
+
+  @Modifying
+  @Transactional
+  @Query(value = "delete from plan_assignment pa "
+      + "using plan_locations pl "
+      + "where pa.plan_locations_identifier = pl.identifier "
+      + "and pl.plan_identifier = :planIdentifier "
+      + "and pa.organization_identifier = :orgIdentifier", nativeQuery = true)
+  void deletePlanAssignmentsPerOrganizationPerPlan(@Param("planIdentifier") UUID planIdentifier,
+      @Param("orgIdentifier") UUID orgIdentifier);
 
   List<PlanAssignment> findPlanAssignmentsByPlanLocations_Plan_IdentifierAndPlanLocations_Location_Identifier(
       UUID planIdentifier, UUID locationIdentifier);
@@ -46,5 +57,6 @@ public interface PlanAssignmentRepository extends EntityGraphJpaRepository<PlanA
       + "where pa.plan_locations_identifier = pl.identifier "
       + "and pl.location_identifier in :locationIdentifier "
       + "and pl.plan_identifier = :planIdentifier", nativeQuery = true)
-  void deleteAllByPlanIdentifierAndLocationIdentifiers(List<UUID> locationIdentifier, UUID planIdentifier);
+  void deleteAllByPlanIdentifierAndLocationIdentifiers(List<UUID> locationIdentifier,
+      UUID planIdentifier);
 }
