@@ -85,7 +85,7 @@ public class MetaFieldSetMapper {
     for (int i = 1; i < fileRowsCount; i++) {
 
       XSSFRow dataRow = sheet.getRow(i);
-      if (dataRow != null) {
+      if (dataRow != null && dataRow.getCell(0)!=null) {
         rowCount++;
         try {
           log.trace("dataRow.getCell(0) {}",dataRow.getCell(0));
