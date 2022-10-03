@@ -5,14 +5,10 @@ import com.revealprecision.revealserver.enums.LookupEntityTypeCodeEnum;
 import com.revealprecision.revealserver.persistence.domain.EntityTag;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.Task;
-import com.revealprecision.revealserver.persistence.domain.metadata.LocationMetadata;
-import com.revealprecision.revealserver.persistence.domain.metadata.PersonMetadata;
 import com.revealprecision.revealserver.props.BusinessStatusProperties;
 import com.revealprecision.revealserver.util.ActionUtils;
 import com.revealprecision.revealserver.util.UserUtils;
-import java.io.IOException;
 import java.util.Optional;
-import java.util.UUID;
 import javax.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -59,7 +55,6 @@ public class BusinessStatusService {
   public void deactivateBusinessStatus(Task task) {
 
     Plan plan = task.getAction().getGoal().getPlan();
-    UUID planIdentifier = plan.getIdentifier();
 
     if (ActionUtils.isActionForLocation(task.getAction())) {
       metadataService.deactivateLocationMetadata(task.getBaseEntityIdentifier(),
