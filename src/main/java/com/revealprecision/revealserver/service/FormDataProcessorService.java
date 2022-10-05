@@ -274,7 +274,10 @@ public class FormDataProcessorService {
 
           String deviceUserString = getFormValue(obsJavaList, IRS_FORM_SUPERVISOR);
           try {
-            User user = userService.getByUserName(deviceUserString.split("\\|")[0].split(":")[0]);
+            String username = deviceUserString.split("\\|")[0].split(":")[0];
+            String usernameTrimmed = username.trim();
+            log.info("Checking for user: {}",usernameTrimmed);
+            User user = userService.getByUserName(usernameTrimmed);
             if (user != null) {
               deviceUser = user;
             }
@@ -326,8 +329,10 @@ public class FormDataProcessorService {
               locationIdentifier, plan.getLocationHierarchy().getIdentifier(),
               LocationConstants.DISTRICT);
 
-          district = locationWithParent.getHigherLocationParentName();
-          districtLabel = "district";
+          if(locationWithParent != null){
+            district = locationWithParent.getHigherLocationParentName();
+            districtLabel = "district";
+          }
 
           collect = deviceUser.getOrganizations().stream()
               .map(this::getFlattenedOrganizationalHierarchy).collect(Collectors.toList());
@@ -372,7 +377,10 @@ public class FormDataProcessorService {
               DateTimeFormatter.ISO_LOCAL_DATE).atStartOfDay();
 
           try {
-            User user = userService.getByUserName(deviceUserString.split("\\|")[0]);
+            String username = deviceUserString.split("\\|")[0].split(":")[0];
+            String usernameTrimmed = username.trim();
+            log.info("Checking for user: {}",usernameTrimmed);
+            User user = userService.getByUserName(usernameTrimmed);
             if (user != null) {
               deviceUser = user;
             }
@@ -386,8 +394,10 @@ public class FormDataProcessorService {
               locationIdentifier, plan.getLocationHierarchy().getIdentifier(),
               LocationConstants.DISTRICT);
 
-          district = locationWithParent.getHigherLocationParentName();
-          districtLabel = "district";
+          if(locationWithParent != null){
+            district = locationWithParent.getHigherLocationParentName();
+            districtLabel = "district";
+          }
 
           submissionId = plan.getIdentifier() + "_" + collectionDate + "_" + deviceUserString + "_"
               + fieldWorker;
