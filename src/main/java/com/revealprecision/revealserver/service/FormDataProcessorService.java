@@ -143,7 +143,7 @@ public class FormDataProcessorService {
   public void processFormDataAndSubmitToMessagingTemp(Event savedEvent)
       throws IOException {
 
-    log.info("Processing event data: {}", savedEvent.getIdentifier());
+    log.info("Processing event data : {} with event Type: {}", savedEvent.getIdentifier(),savedEvent.getEventType());
 
     JsonNode obsList = savedEvent.getAdditionalInformation().get("obs");
 
@@ -186,7 +186,10 @@ public class FormDataProcessorService {
             locationIdentifier = savedEvent.getLocationIdentifier();
 
             try {
-              User user = userService.getByUserName(deviceUserString.split("\\|")[0].split(":")[0]);
+              String username = deviceUserString.split("\\|")[0].split(":")[0];
+              String usernameTrimmed = username.trim();
+              log.info("Checking for user: {}",usernameTrimmed);
+              User user = userService.getByUserName(usernameTrimmed);
               if (user != null) {
                 deviceUser = user;
               }
@@ -288,7 +291,10 @@ public class FormDataProcessorService {
                 DateTimeFormatter.ISO_LOCAL_DATE).atStartOfDay();
 
             try {
-              User user = userService.getByUserName(deviceUserString.split("\\|")[0]);
+              String username = deviceUserString.split("\\|")[0].split(":")[0];
+              String usernameTrimmed = username.trim();
+              log.info("Checking for user: {}",usernameTrimmed);
+              User user = userService.getByUserName(usernameTrimmed);
               if (user != null) {
                 deviceUser = user;
               }
