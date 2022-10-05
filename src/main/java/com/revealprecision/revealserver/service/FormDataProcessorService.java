@@ -143,6 +143,8 @@ public class FormDataProcessorService {
   public void processFormDataAndSubmitToMessagingTemp(Event savedEvent)
       throws IOException {
 
+    log.info("Processing event data: {}", savedEvent.getIdentifier());
+
     JsonNode obsList = savedEvent.getAdditionalInformation().get("obs");
 
     if (obsList.isArray()) {
@@ -236,6 +238,10 @@ public class FormDataProcessorService {
                 locationIdentifier, plan.getLocationHierarchy().getIdentifier(),
                 LocationConstants.DISTRICT);
 
+            if (locationWithParent == null){
+              log.error("location parent is null {} - {}",locationIdentifier,LocationConstants.DISTRICT);
+              return;
+            }
             district = locationWithParent.getHigherLocationParentName();
             districtLabel = "district";
 
