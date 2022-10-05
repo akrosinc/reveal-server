@@ -242,18 +242,18 @@ public class RawFormSubmissionListener extends Listener {
     reportIndicators.setHouseholdHead(houseHoldHead);
   }
 
-  private Optional<Report> getOrInstantiateReportEntry(Plan plan, UUID locationUuid) {
+
+  private synchronized Optional<Report> getOrInstantiateReportEntry(Plan plan, UUID locationUuid) {
     log.debug("getOrInstantiateReportEntry - plan {} location {}", plan.getIdentifier(),
         locationUuid);
     if (locationUuid != null) {
-      Report report = reportRepository.findByPlan_IdentifierAndLocation_Identifier(
+      return Optional.of(reportRepository.findByPlan_IdentifierAndLocation_Identifier(
               plan.getIdentifier(), locationUuid)
           .orElse(
-              Report.builder().location(Location.builder().identifier(locationUuid).build())
+              reportRepository.save(Report.builder().location(Location.builder().identifier(locationUuid).build())
                   .plan(plan)
                   .reportIndicators(new ReportIndicators())
-                  .build());
-      return Optional.of(report);
+                  .build())));
     } else {
       return Optional.empty();
     }
