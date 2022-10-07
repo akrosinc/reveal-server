@@ -247,13 +247,20 @@ public class RawFormSubmissionListener extends Listener {
     log.debug("getOrInstantiateReportEntry - plan {} location {}", plan.getIdentifier(),
         locationUuid);
     if (locationUuid != null) {
-      return Optional.of(reportRepository.findByPlan_IdentifierAndLocation_Identifier(
-              plan.getIdentifier(), locationUuid)
-          .orElse(
-              reportRepository.save(Report.builder().location(Location.builder().identifier(locationUuid).build())
-                  .plan(plan)
-                  .reportIndicators(new ReportIndicators())
-                  .build())));
+
+      Optional<Report> optionalExistingReport = reportRepository.findByPlan_IdentifierAndLocation_Identifier(
+          plan.getIdentifier(), locationUuid);
+      if (optionalExistingReport.isPresent()){
+       log.trace("found report for plan {} location {}", plan.getIdentifier(),locationUuid);
+       return optionalExistingReport;
+      } else{
+        Report report = reportRepository.save(
+            Report.builder().location(Location.builder().identifier(locationUuid).build())
+                .plan(plan)
+                .reportIndicators(new ReportIndicators())
+                .build());
+        return Optional.of(report);
+      }
     } else {
       return Optional.empty();
     }
