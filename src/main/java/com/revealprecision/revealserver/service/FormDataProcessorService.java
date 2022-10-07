@@ -44,6 +44,7 @@ import static com.revealprecision.revealserver.constants.FormConstants.TABLET_AC
 import static com.revealprecision.revealserver.constants.FormConstants.TABLET_ACCOUNTABILITY_HEALTH_WORKER_SUPERVISOR_FIELD;
 import static com.revealprecision.revealserver.constants.FormConstants.TABLET_ACCOUNTABILITY_LOCATION_FIELD;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -137,8 +138,25 @@ public class FormDataProcessorService {
     }
     return orgHierarchy;
   }
+  public void processFormDataAndSubmitToMessagingForReport(Event savedEvent)
+      throws JsonProcessingException {
 
+    EventFacade eventFacade = objectMapper.treeToValue(savedEvent.getAdditionalInformation(),
+        EventFacade.class);
 
+    FormCaptureEvent formCaptureEvent = FormCaptureEvent.builder()
+        .locationId(savedEvent.getLocationIdentifier()).savedEventId(savedEvent.getIdentifier())
+        .planId(savedEvent.getPlanIdentifier()).taskId(savedEvent.getTaskIdentifier())
+        .rawFormEvent(eventFacade).build();
+    publishFormObservations(formCaptureEvent);
+  }
+
+  private void publishFormObservations(FormCaptureEvent event) {
+    formSubmissionKafkaTemplate.send(
+        kafkaProperties.getTopicMap().get(KafkaConstants.FORM_SUBMISSIONS),
+        event.getPlanId().toString(),
+        event);
+  }
 
   public void processFormDataAndSubmitToMessagingTemp(Event savedEvent)
       throws IOException {
