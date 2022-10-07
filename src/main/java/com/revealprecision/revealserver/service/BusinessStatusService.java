@@ -57,13 +57,28 @@ public class BusinessStatusService {
     Plan plan = task.getAction().getGoal().getPlan();
 
     if (ActionUtils.isActionForLocation(task.getAction())) {
-      metadataService.deactivateLocationMetadata(task.getBaseEntityIdentifier(),
-          locationEntityTag, plan);
+      metadataService.activateOrDeactivateLocationMetadata(task.getBaseEntityIdentifier(),
+          locationEntityTag, plan, false);
     }
 
     if (ActionUtils.isActionForPerson(task.getAction())) {
-      metadataService.deactivatePersonMetadata(task.getBaseEntityIdentifier(),
-          personEntityTag, plan);
+      metadataService.activateOrDeactivatePersonMetadata(task.getBaseEntityIdentifier(),
+          personEntityTag, plan,false);
+    }
+  }
+
+  public void activateBusinessStatus(Task task) {
+
+    Plan plan = task.getAction().getGoal().getPlan();
+
+    if (ActionUtils.isActionForLocation(task.getAction())) {
+      metadataService.activateOrDeactivateLocationMetadata(task.getBaseEntityIdentifier(),
+          locationEntityTag, plan, true);
+    }
+
+    if (ActionUtils.isActionForPerson(task.getAction())) {
+      metadataService.activateOrDeactivatePersonMetadata(task.getBaseEntityIdentifier(),
+          personEntityTag, plan, true);
     }
   }
 

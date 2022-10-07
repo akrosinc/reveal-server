@@ -8,6 +8,7 @@ import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.enums.PlanStatusEnum;
 import com.revealprecision.revealserver.enums.ProcessTrackerEnum;
 import com.revealprecision.revealserver.enums.ProcessType;
+import com.revealprecision.revealserver.enums.TaskGenerateRequestValidationStateEnum;
 import com.revealprecision.revealserver.enums.TaskPriorityEnum;
 import com.revealprecision.revealserver.enums.TaskProcessEnum;
 import com.revealprecision.revealserver.exceptions.DuplicateTaskCreationException;
@@ -51,6 +52,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -97,6 +99,10 @@ public class TaskService {
 
   private LookupTaskStatus cancelledLookupTaskStatus;
   private LookupTaskStatus readyLookupTaskStatus;
+
+  public Page<Task> getAllTasksByPlan(UUID planIdentifier, Pageable pageable){
+    return taskRepository.findTasksByPlan_Identifier(planIdentifier,pageable);
+  }
 
 
   public Page<Task> searchTasks(TaskSearchCriteria taskSearchCriteria, Pageable pageable) {
@@ -225,6 +231,7 @@ public class TaskService {
 
   }
 
+
   public void processPlanUpdatePerActionForTasks(Action action, Plan plan, String ownerId,
       ProcessTracker processTracker) {
 
@@ -232,6 +239,52 @@ public class TaskService {
         action.getIdentifier());
 
     List<UUID> uuids = getUuidsForTaskGeneration(action, plan, conditions);
+    processLocationListForTasks( action,  plan,  ownerId,
+         processTracker, uuids, true,true, true);
+
+  }
+
+
+  public Map<TaskGenerateRequestValidationStateEnum, List<UUID>> validateImportedLocationsForTaskGeneration(List<UUID> suppliedLocationUuidList,Action action, Plan plan){
+    List<UUID> uuidsThatShouldBeInPlan = getUuidsForTaskGeneration(action, plan, null);
+
+    List<UUID> existingTaskUuids = taskRepository.findUniqueByPlanAndActionidentifier(
+        plan, action.getIdentifier())
+        .stream().map(
+        existingTask -> new TaskProjectionObj(existingTask.getIdentifier(),
+            existingTask.getBaseEntityIdentifier()))
+        .map(TaskProjectionObj::getBaseIdentifier)
+        .map(UUID::fromString)
+        .collect(
+            Collectors.toList());
+
+    List<UUID> alreadyExistingTasks = new ArrayList<>(uuidsThatShouldBeInPlan);
+    alreadyExistingTasks.retainAll(existingTaskUuids);
+    List<UUID> requestedButExisting = new ArrayList<>(suppliedLocationUuidList);
+    requestedButExisting.retainAll(alreadyExistingTasks);
+
+    List<UUID> alreadyExistingTasksCanGenerate = new ArrayList<>(uuidsThatShouldBeInPlan);
+    alreadyExistingTasksCanGenerate.removeAll(existingTaskUuids);
+    List<UUID> canGenerate = new ArrayList<>(suppliedLocationUuidList);
+    canGenerate.retainAll(alreadyExistingTasksCanGenerate);
+
+    List<UUID> shouldNotGenerateList = new ArrayList<>(suppliedLocationUuidList);
+    shouldNotGenerateList.removeAll(uuidsThatShouldBeInPlan);
+
+    List<UUID> alreadyExistingTasksShouldBeCreated = new ArrayList<>(uuidsThatShouldBeInPlan);
+    alreadyExistingTasksShouldBeCreated.removeAll(existingTaskUuids);
+    alreadyExistingTasksShouldBeCreated.removeAll(suppliedLocationUuidList);
+
+    return Map.of(TaskGenerateRequestValidationStateEnum.ALREADY_EXISTING, requestedButExisting,
+        TaskGenerateRequestValidationStateEnum.CAN_GENERATE, canGenerate,
+        TaskGenerateRequestValidationStateEnum.NOT_IN_PLAN, shouldNotGenerateList,
+        TaskGenerateRequestValidationStateEnum.SHOULD_GENERATE_BUT_NOT_REQUESTED, alreadyExistingTasksShouldBeCreated);
+
+  }
+
+  public void processLocationListForTasks(Action action, Plan plan, String ownerId,
+      ProcessTracker processTracker,List<UUID> uuids,boolean generate, boolean reactivate, boolean cancel) {
+
 
     List<TaskProjection> existingTasks = taskRepository.findUniqueByPlanAndActionidentifier(
         plan, action.getIdentifier());
@@ -247,6 +300,66 @@ public class TaskService {
         .collect(
             Collectors.toList());
 
+    List<TaskGen> tasksToProcess = new ArrayList<>();
+
+    if (generate) {
+      List<TaskGen> tasksToGenerate = buildGenerationTaskCandidateList(
+          uuids, existingTaskUuids);
+
+      tasksToProcess.addAll(tasksToGenerate);
+    }
+
+    if (reactivate) {
+      List<TaskGen> tasksToReactivate = buildReactivationCandidateTaskList(
+          uuids, existingTaskObjs, existingTaskUuids);
+
+      tasksToProcess.addAll(tasksToReactivate);
+    }
+
+    if (cancel) {
+      List<TaskGen> tasksToCancel = buildTaskCancellationCandidateList(
+          uuids, existingTaskObjs, existingTaskUuids);
+
+      tasksToProcess.addAll(tasksToCancel);
+    }
+
+    List<TaskProcessStage> taskCandidatesToProcess = tasksToProcess.stream()
+        .map(taskGen -> getTaskProcessStage(processTracker, taskGen)).collect(Collectors.toList());
+
+    List<TaskProcessStage> taskProcessStages = taskProcessStageRepository.saveAll(
+        taskCandidatesToProcess);
+
+    submitTaskCandidatesToKafka(action, plan, ownerId, taskProcessStages);
+  }
+
+  private TaskProcessStage getTaskProcessStage(ProcessTracker processTracker, TaskGen taskGen) {
+    TaskProcessStage taskGenerationStage = new TaskProcessStage();
+    taskGenerationStage.setState(ProcessTrackerEnum.NEW);
+    taskGenerationStage.setProcessTracker(processTracker);
+    taskGenerationStage.setEntityStatus(EntityStatus.ACTIVE);
+    taskGenerationStage.setTaskProcess(taskGen.getTaskProcessEnum());
+
+    if (taskGen.getBaseEntityIdentifier() != null) {
+      taskGenerationStage.setBaseEntityIdentifier(taskGen.getBaseEntityIdentifier());
+    }
+    if (taskGen.getIdentifier() != null) {
+      taskGenerationStage.setTaskIdentifier(taskGen.getIdentifier());
+    }
+    return taskGenerationStage;
+  }
+
+  private List<TaskGen> buildGenerationTaskCandidateList(List<UUID> uuids, List<UUID> existingTaskUuids) {
+    List<UUID> uuidToGenerate = new ArrayList<>(uuids);
+    uuidToGenerate.removeAll(existingTaskUuids);
+
+    List<TaskGen> tasksToGenerate = uuidToGenerate
+        .stream().map(identifier -> new TaskGen(TaskProcessEnum.GENERATE, identifier))
+        .collect(Collectors.toList());
+    return tasksToGenerate;
+  }
+
+  private List<TaskGen> buildReactivationCandidateTaskList(List<UUID> uuids, List<TaskProjectionObj> existingTaskObjs,
+      List<UUID> existingTaskUuids) {
     List<UUID> potentialUuidsToReactivate = new ArrayList<>(uuids);
     potentialUuidsToReactivate.retainAll(existingTaskUuids);
 
@@ -257,6 +370,11 @@ public class TaskService {
         .map(identifier -> new TaskGen(UUID.fromString(identifier), TaskProcessEnum.REACTIVATE))
         .collect(
             Collectors.toList());
+    return tasksToReactivate;
+  }
+
+  private List<TaskGen> buildTaskCancellationCandidateList(List<UUID> uuids, List<TaskProjectionObj> existingTaskObjs,
+      List<UUID> existingTaskUuids) {
 
     List<UUID> uuidsToCancel = new ArrayList<>(existingTaskUuids);
     uuidsToCancel.removeAll(uuids);
@@ -269,76 +387,61 @@ public class TaskService {
         .collect(
             Collectors.toList());
 
-    List<UUID> uuidToGenerate = new ArrayList<>(uuids);
-    uuidToGenerate.removeAll(existingTaskUuids);
+    return tasksToCancel;
+  }
 
-    List<TaskGen> tasksToGenerate = uuidToGenerate
-        .stream().map(identifier -> new TaskGen(TaskProcessEnum.GENERATE, identifier))
-        .collect(Collectors.toList());
-
-    List<TaskGen> tasksToProcess = new ArrayList<>();
-    tasksToProcess.addAll(tasksToGenerate);
-    tasksToProcess.addAll(tasksToCancel);
-    tasksToProcess.addAll(tasksToReactivate);
-
-    log.debug("tasksToGenerate: {} tasksToCancel: {} tasksToReactivate: {} existingTasks: {}",
-        tasksToGenerate.size(), tasksToCancel.size(), tasksToReactivate.size(),
-        existingTaskUuids.size());
-
-    List<TaskProcessStage> collect = tasksToProcess.stream()
-        .map(taskGen -> {
-          TaskProcessStage taskGenerationStage = new TaskProcessStage();
-          taskGenerationStage.setState(ProcessTrackerEnum.NEW);
-          taskGenerationStage.setProcessTracker(processTracker);
-          taskGenerationStage.setEntityStatus(EntityStatus.ACTIVE);
-          taskGenerationStage.setTaskProcess(taskGen.getTaskProcessEnum());
-
-          if (taskGen.getBaseEntityIdentifier() != null) {
-            taskGenerationStage.setBaseEntityIdentifier(taskGen.getBaseEntityIdentifier());
-          }
-          if (taskGen.getIdentifier() != null) {
-            taskGenerationStage.setTaskIdentifier(taskGen.getIdentifier());
-          }
-          return taskGenerationStage;
-        }).collect(Collectors.toList());
-
-    List<TaskProcessStage> taskProcessStages = taskProcessStageRepository.saveAll(
-        collect);
-
+  private void submitTaskCandidatesToKafka(Action action, Plan plan, String ownerId,
+      List<TaskProcessStage> taskProcessStages) {
     taskProcessStages.forEach(taskProcessStage -> {
-          // Proceed with caution here as new updates / removals to the object will prevent rewind of the kafka listener application.
-          // In the event of new data being introduced, ensure that null pointers are catered in the kafka listener
-          // application if the event comes through, and it does not have the new fields populated
-          TaskProcessEvent taskProcessEvent = TaskProcessEvent.builder()
-              .baseEntityIdentifier(taskProcessStage.getBaseEntityIdentifier())
-              .owner(ownerId)
-              .taskProcessEnum(taskProcessStage.getTaskProcess())
-              .actionEvent(ActionEvent.builder()
-                  .identifier(action.getIdentifier())
-                  .lookupEntityType(LookupEntityTypeEvent.builder()
-                      .code(action.getLookupEntityType().getCode())
-                      .build())
-                  .build())
-              .planEvent(PlanEvent.builder()
-                  .identifier(plan.getIdentifier())
-                  .build())
-              .state(taskProcessStage.getState())
-              .processTracker(ProcessTrackerEvent.builder()
-                  .processTriggerIdentifier(
-                      taskProcessStage.getProcessTracker().getProcessTriggerIdentifier())
-                  .processType(taskProcessStage.getProcessTracker().getProcessType())
-                  .planIdentifier(taskProcessStage.getProcessTracker().getPlanIdentifier())
-                  .identifier(taskProcessStage.getProcessTracker().getIdentifier())
-                  .build()
-              )
-              .taskIdentifier(taskProcessStage.getTaskIdentifier())
-              .identifier(taskProcessStage.getIdentifier())
-              .build();
-          kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.TASK_CANDIDATE),
-              taskProcessEvent);
-        }
+      TaskProcessEvent taskProcessEvent = getTaskProcessEventObj(
+          action, plan, ownerId, taskProcessStage);
 
+      switch (taskProcessStage.getTaskProcess()) {
+            case CANCEL:
+            kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.TASK_CANDIDATE_CANCEL),
+                taskProcessEvent);
+                break;
+            case GENERATE:
+              kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.TASK_CANDIDATE_GENERATE),
+                  taskProcessEvent);
+                break;
+            case REACTIVATE:
+              kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.TASK_CANDIDATE_REACTIVATE),
+                  taskProcessEvent);
+              break;
+          }
+        }
     );
+  }
+
+  private TaskProcessEvent getTaskProcessEventObj(Action action, Plan plan, String ownerId,
+      TaskProcessStage taskProcessStage) {
+    TaskProcessEvent taskProcessEvent = TaskProcessEvent.builder()
+        .baseEntityIdentifier(taskProcessStage.getBaseEntityIdentifier())
+        .owner(ownerId)
+        .taskProcessEnum(taskProcessStage.getTaskProcess())
+        .actionEvent(ActionEvent.builder()
+            .identifier(action.getIdentifier())
+            .lookupEntityType(LookupEntityTypeEvent.builder()
+                .code(action.getLookupEntityType().getCode())
+                .build())
+            .build())
+        .planEvent(PlanEvent.builder()
+            .identifier(plan.getIdentifier())
+            .build())
+        .state(taskProcessStage.getState())
+        .processTracker(ProcessTrackerEvent.builder()
+            .processTriggerIdentifier(
+                taskProcessStage.getProcessTracker().getProcessTriggerIdentifier())
+            .processType(taskProcessStage.getProcessTracker().getProcessType())
+            .planIdentifier(taskProcessStage.getProcessTracker().getPlanIdentifier())
+            .identifier(taskProcessStage.getProcessTracker().getIdentifier())
+            .build()
+        )
+        .taskIdentifier(taskProcessStage.getTaskIdentifier())
+        .identifier(taskProcessStage.getIdentifier())
+        .build();
+    return taskProcessEvent;
   }
 
 
@@ -547,8 +650,7 @@ public class TaskService {
     if (savedTask.getLookupTaskStatus().getCode().equals(TASK_STATUS_CANCELLED)) {
       businessStatusService.deactivateBusinessStatus(savedTask);
     } else {
-      businessStatusService.setBusinessStatus(savedTask,
-          businessStatusProperties.getDefaultLocationBusinessStatus());
+      businessStatusService.activateBusinessStatus(savedTask);
     }
 
     kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.TASK), taskEvent);

@@ -318,8 +318,8 @@ public class MetadataService {
     return savedLocationMetadata;
   }
 
-  public LocationMetadata deactivateLocationMetadata(UUID locationIdentifier, EntityTag tag,
-      Plan plan) {
+  public LocationMetadata activateOrDeactivateLocationMetadata(UUID locationIdentifier, EntityTag tag,
+      Plan plan,boolean activate) {
 
     LocationMetadata locationMetadata;
 
@@ -343,7 +343,7 @@ public class MetadataService {
             locationMetadataOptional.get().getEntityValue().getMetadataObjs().get(arrIndex)
                 .getCurrent());
 
-        locationMetadata.getEntityValue().getMetadataObjs().get(arrIndex).setActive(false);
+        locationMetadata.getEntityValue().getMetadataObjs().get(arrIndex).setActive(activate);
 
         if (locationMetadata.getEntityValue().getMetadataObjs().get(arrIndex).getHistory()
             != null) {
@@ -377,8 +377,8 @@ public class MetadataService {
   }
 
 
-  public PersonMetadata deactivatePersonMetadata(UUID locationIdentifier, EntityTag tag,
-      Plan plan) {
+  public PersonMetadata activateOrDeactivatePersonMetadata(UUID locationIdentifier, EntityTag tag,
+      Plan plan, boolean activate) {
 
     PersonMetadata personMetadata;
 
@@ -402,7 +402,7 @@ public class MetadataService {
             personMetadataOptional.get().getEntityValue().getMetadataObjs().get(arrIndex)
                 .getCurrent());
 
-        personMetadata.getEntityValue().getMetadataObjs().get(arrIndex).setActive(false);
+        personMetadata.getEntityValue().getMetadataObjs().get(arrIndex).setActive(activate);
 
         if (personMetadata.getEntityValue().getMetadataObjs().get(arrIndex).getHistory()
             != null) {
