@@ -98,6 +98,9 @@ public class TaskService {
   private LookupTaskStatus cancelledLookupTaskStatus;
   private LookupTaskStatus readyLookupTaskStatus;
 
+  public Page<Task> getAllTasks(Pageable pageable){
+    return taskRepository.findAll(pageable);
+  }
 
   public Page<Task> searchTasks(TaskSearchCriteria taskSearchCriteria, Pageable pageable) {
     return taskRepository.findAll(TaskSpec.getTaskSpecification(taskSearchCriteria), pageable);
