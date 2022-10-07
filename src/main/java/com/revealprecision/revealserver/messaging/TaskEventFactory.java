@@ -90,7 +90,7 @@ public class TaskEventFactory {
         .build();
   }
 
-  private static ActionEvent getActionEventFromAction(Action action, Goal goal, Plan plan,
+  public static ActionEvent getActionEventFromAction(Action action, Goal goal, Plan plan,
       LocationHierarchy locationHierarchy, LookupInterventionType interventionType,
       LookupEntityType lookupEntityType) {
     return ActionEvent.builder()
@@ -115,7 +115,7 @@ public class TaskEventFactory {
         .build();
   }
 
-  private static PlanEvent getPlanEventFromPlan(Plan plan, LocationHierarchy locationHierarchy,
+  public static PlanEvent getPlanEventFromPlan(Plan plan, LocationHierarchy locationHierarchy,
       LookupInterventionType interventionType) {
     return PlanEvent.builder()
         .locationHierarchy(getLocationHierarchyEventFromLocationHierarchy(locationHierarchy))
