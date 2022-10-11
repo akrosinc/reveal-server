@@ -12,7 +12,6 @@ import com.revealprecision.revealserver.enums.TaskPriorityEnum;
 import com.revealprecision.revealserver.enums.TaskProcessEnum;
 import com.revealprecision.revealserver.exceptions.DuplicateTaskCreationException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
-import com.revealprecision.revealserver.exceptions.QueryGenerationException;
 import com.revealprecision.revealserver.messaging.TaskEventFactory;
 import com.revealprecision.revealserver.messaging.dto.TaskGen;
 import com.revealprecision.revealserver.messaging.message.ActionEvent;
@@ -35,7 +34,6 @@ import com.revealprecision.revealserver.persistence.domain.Task;
 import com.revealprecision.revealserver.persistence.domain.Task.Fields;
 import com.revealprecision.revealserver.persistence.domain.TaskProcessStage;
 import com.revealprecision.revealserver.persistence.domain.User;
-import com.revealprecision.revealserver.persistence.domain.actioncondition.Query;
 import com.revealprecision.revealserver.persistence.projection.TaskProjection;
 import com.revealprecision.revealserver.persistence.repository.LookupTaskStatusRepository;
 import com.revealprecision.revealserver.persistence.repository.TaskProcessStageRepository;
@@ -45,7 +43,6 @@ import com.revealprecision.revealserver.props.BusinessStatusProperties;
 import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.service.models.TaskSearchCriteria;
 import com.revealprecision.revealserver.util.ActionUtils;
-import com.revealprecision.revealserver.util.ConditionQueryUtil;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -100,6 +97,10 @@ public class TaskService {
 
   public Page<Task> getAllTasks(Pageable pageable){
     return taskRepository.findAll(pageable);
+  }
+
+  public Page<Task> getAllTasksForPlanWhereBusinessStatusNotIn(UUID planIdentifier, String businessStatus, Pageable pageable){
+    return taskRepository.findTasksByPlan_IdentifierAndBusinessStatusNotIn( planIdentifier, businessStatus,pageable);
   }
 
   public Page<Task> searchTasks(TaskSearchCriteria taskSearchCriteria, Pageable pageable) {
