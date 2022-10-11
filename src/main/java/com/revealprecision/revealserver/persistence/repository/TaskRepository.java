@@ -18,7 +18,7 @@ import org.springframework.stereotype.Repository;
 public interface TaskRepository extends JpaRepository<Task, UUID>,
     JpaSpecificationExecutor<Task> {
 
-  Page<Task> findTasksByPlan_IdentifierAndBusinessStatusNotIn(UUID planIdentifier,String businessStatus, Pageable pageable);
+  Page<Task> findTasksByPlan_IdentifierAndBusinessStatusNotIn(UUID planIdentifier,List<String> businessStatus, Pageable pageable);
 
   Optional<Task> findByIdentifier(UUID identifier);
 

@@ -80,7 +80,7 @@ public class KafkaEventManipulateController {
   void processVisitedTasksAsync(UUID planIdentifier){
     int page = 0;
     PageRequest pageRequest = PageRequest.of(page,reprocessEventsProperties.getTaskBatchSize());
-    Page<Task> allTasks = taskService.getAllTasksForPlanWhereBusinessStatusNotIn(planIdentifier,BusinessStatus.NOT_VISITED, pageRequest);
+    Page<Task> allTasks = taskService.getAllTasksForPlanWhereBusinessStatusNotIn(planIdentifier,List.of(BusinessStatus.NOT_VISITED), pageRequest);
     int totalProcessed = 0;
     while (page < allTasks.getTotalPages()) {
 
@@ -94,7 +94,7 @@ public class KafkaEventManipulateController {
       page++;
       totalProcessed = totalProcessed + size;
       pageRequest = PageRequest.of(page,reprocessEventsProperties.getTaskBatchSize());
-      allTasks = taskService.getAllTasksForPlanWhereBusinessStatusNotIn(planIdentifier,BusinessStatus.NOT_VISITED, pageRequest);
+      allTasks = taskService.getAllTasksForPlanWhereBusinessStatusNotIn(planIdentifier,List.of(BusinessStatus.NOT_VISITED), pageRequest);
     }
     log.info("Total tasks resent-> {}",totalProcessed);
   }

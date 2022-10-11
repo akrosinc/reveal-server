@@ -99,8 +99,8 @@ public class TaskService {
     return taskRepository.findAll(pageable);
   }
 
-  public Page<Task> getAllTasksForPlanWhereBusinessStatusNotIn(UUID planIdentifier, String businessStatus, Pageable pageable){
-    return taskRepository.findTasksByPlan_IdentifierAndBusinessStatusNotIn( planIdentifier, businessStatus,pageable);
+  public Page<Task> getAllTasksForPlanWhereBusinessStatusNotIn(UUID planIdentifier, List<String> businessStatuses, Pageable pageable){
+    return taskRepository.findTasksByPlan_IdentifierAndBusinessStatusNotIn( planIdentifier, businessStatuses,pageable);
   }
 
   public Page<Task> searchTasks(TaskSearchCriteria taskSearchCriteria, Pageable pageable) {
