@@ -47,23 +47,15 @@ public class KafkaEventManipulateController {
   @Value(value = "${kafka.groupId}")
   private String kafkaGroupId;
 
-  @GetMapping("/reprocess-events")
-  public String reprocessEvents() {
-
-    List<Event> allEvents = eventService.getAllEvents();
-    for (Event event:allEvents) {
-      try {
-        formDataProcessorService.processFormDataAndSubmitToMessagingTemp(event);
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
-    }
-    return "ok";
-  }
 
   @GetMapping("/reprocess-events-for-report")
   public void reprocessEventsForReport() {
     processEventsAsync();
+  }
+
+  @GetMapping("/reprocess-events-for-report-and-performance")
+  public void reprocessEventsForReportAndPerformance() {
+    processEventsForReportAndPerformanceAsync();
   }
 
   @GetMapping("/reprocess-visited-tasks-for-report/{planIdentifier}")
@@ -136,6 +128,34 @@ public class KafkaEventManipulateController {
       for (Event event : allEvents) {
         try {
           formDataProcessorService.processFormDataAndSubmitToMessagingForReport(event);
+
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
+      }
+      int size = allEvents.getContent().size();
+      log.info("Complete page {} with {} number of rows",page, size);
+      page++;
+      totalProcessed = totalProcessed + size;
+
+      pageRequest = PageRequest.of(page,reprocessEventsProperties.getEventBatchSize());
+      allEvents = eventService.getAllEvents(pageRequest);
+    }
+    log.info("Total events resent-> {}",totalProcessed);
+
+  }
+  @Async
+  void processEventsForReportAndPerformanceAsync() {
+    int page = 0;
+    PageRequest pageRequest = PageRequest.of(page,reprocessEventsProperties.getEventBatchSize());
+    Page<Event> allEvents = eventService.getAllEvents(pageRequest);
+    int totalProcessed = 0;
+    while (page < allEvents.getTotalPages()) {
+
+      for (Event event : allEvents) {
+        try {
+          formDataProcessorService.processFormDataAndSubmitToMessagingForReport(event);
+          formDataProcessorService.processFormDataAndSubmitToMessagingTemp(event);
         } catch (IOException e) {
           e.printStackTrace();
         }

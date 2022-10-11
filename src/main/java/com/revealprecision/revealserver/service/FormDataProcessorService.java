@@ -207,7 +207,7 @@ public class FormDataProcessorService {
               String username = deviceUserString.split("\\|")[0].split(":")[0];
               String usernameTrimmed = username.trim();
               log.info("Checking for user: {}",usernameTrimmed);
-              User user = userService.getByUserName(usernameTrimmed);
+              User user = userService.findByUsername(usernameTrimmed);
               if (user != null) {
                 deviceUser = user;
               }
@@ -312,7 +312,7 @@ public class FormDataProcessorService {
               String username = deviceUserString.split("\\|")[0].split(":")[0];
               String usernameTrimmed = username.trim();
               log.info("Checking for user: {}",usernameTrimmed);
-              User user = userService.getByUserName(usernameTrimmed);
+              User user = userService.findByUsername(usernameTrimmed);
               if (user != null) {
                 deviceUser = user;
               }
