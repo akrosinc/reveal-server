@@ -129,4 +129,9 @@ public class UserService {
         .orElseThrow(() -> new NotFoundException(Pair.of(Fields.username, username), User.class));
   }
 
+  public User findByUsername(String username) {
+    return userRepository.findByUsername(username)
+        .orElseThrow(() -> new NotFoundException(Pair.of(Fields.username, username), User.class));
+  }
+
 }

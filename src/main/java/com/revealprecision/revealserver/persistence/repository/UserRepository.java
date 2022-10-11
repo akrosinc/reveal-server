@@ -20,6 +20,8 @@ public interface UserRepository extends EntityGraphJpaRepository<User, UUID> {
   @Query(value = "select * from users u where u.username = :username and u.entity_status != 'DELETED'", nativeQuery = true)
   Optional<User> getByUsername(@Param("username") String username);
 
+  Optional<User> findByUsername(@Param("username") String username);
+
   @Query(value = "select * from users u where u.email = :email and u.entity_status != 'DELETED'", nativeQuery = true)
   Optional<User> findByEmail(@Param("email") String email);
 
