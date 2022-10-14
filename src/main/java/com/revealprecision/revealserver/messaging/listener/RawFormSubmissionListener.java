@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.messaging.listener;
 
+import static com.revealprecision.revealserver.constants.EventClientConstants.RESET_TASK;
 import static com.revealprecision.revealserver.constants.FormConstants.BOTTLES_EMPTY;
 import static com.revealprecision.revealserver.constants.FormConstants.BUSINESS_STATUS;
 import static com.revealprecision.revealserver.constants.FormConstants.COLLECTION_DATE;
@@ -84,6 +85,10 @@ public class RawFormSubmissionListener extends Listener {
 
   private void handleEvent(FormCaptureEvent formCaptureEvent, boolean isAggregatedLevel) {
     log.debug("Received Message {}, ", formCaptureEvent);
+    EventFacade rawFormEvent = formCaptureEvent.getRawFormEvent();
+    if(RESET_TASK.equals(rawFormEvent.getEventType())){
+      return;
+    }
     Plan plan = planService.findPlanByIdentifier(formCaptureEvent.getPlanId());
     String locationString = null;
 
@@ -122,8 +127,6 @@ public class RawFormSubmissionListener extends Listener {
         List<Obs> observations = formCaptureEvent.getRawFormEvent().getObs();
         ReportIndicators reportIndicators = reportEntry.getReportIndicators();
         reportIndicators.setAggregateLevel(isAggregatedLevel);
-
-        EventFacade rawFormEvent = formCaptureEvent.getRawFormEvent();
         if (rawFormEvent.getEventType().equals(SPRAY)) {
           extractIRSSprayedLocationIndicators(observations, reportIndicators, plan, locationUuid);
         } else if (rawFormEvent.getEventType().equals(MOBILIZATION)) {
