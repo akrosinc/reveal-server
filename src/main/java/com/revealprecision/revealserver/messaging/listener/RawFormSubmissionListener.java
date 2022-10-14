@@ -12,6 +12,7 @@ import static com.revealprecision.revealserver.constants.FormConstants.HOH_PHONE
 import static com.revealprecision.revealserver.constants.FormConstants.IRS_LITE_VERIFICATION;
 import static com.revealprecision.revealserver.constants.FormConstants.IRS_SA_DECISION;
 import static com.revealprecision.revealserver.constants.FormConstants.LOCATION_PARENT;
+import static com.revealprecision.revealserver.constants.FormConstants.MOBILIZATION;
 import static com.revealprecision.revealserver.constants.FormConstants.MOBILIZATION_DATE;
 import static com.revealprecision.revealserver.constants.FormConstants.MOBILIZED;
 import static com.revealprecision.revealserver.constants.FormConstants.NAME_HO_H;
@@ -30,6 +31,7 @@ import com.revealprecision.revealserver.api.v1.facade.models.EventFacade;
 import com.revealprecision.revealserver.api.v1.facade.models.Obs;
 import com.revealprecision.revealserver.constants.FormConstants.BusinessStatus;
 import com.revealprecision.revealserver.constants.KafkaConstants;
+import com.revealprecision.revealserver.enums.PlanInterventionTypeEnum;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.messaging.message.FormCaptureEvent;
 import com.revealprecision.revealserver.persistence.domain.Location;
@@ -127,6 +129,8 @@ public class RawFormSubmissionListener extends Listener {
         reportIndicators.setAggregateLevel(isAggregatedLevel);
         if (rawFormEvent.getEventType().equals(SPRAY)) {
           extractIRSSprayedLocationIndicators(observations, reportIndicators, plan, locationUuid);
+        } else if (rawFormEvent.getEventType().equals(MOBILIZATION)) {
+          extractMobilizationIndicators(observations, reportIndicators);
         } else if (rawFormEvent.getEventType().equals(IRS_LITE_VERIFICATION)) {
           extractVillageVisitationIndicators(observations, reportIndicators);
           extractMobilizationIndicators(observations, reportIndicators);
@@ -143,10 +147,12 @@ public class RawFormSubmissionListener extends Listener {
         }
 
         reportRepository.save(reportEntry);
-        Location parentLocation = locationService.getLocationParent(locationUuid,
-            plan.getLocationHierarchy().getIdentifier());
-        if (parentLocation != null) {
-          publishForParent(formCaptureEvent, plan, rawFormEvent, parentLocation);
+        if (!plan.getInterventionType().getCode().equals(PlanInterventionTypeEnum.IRS.name())) {
+          Location parentLocation = locationService.getLocationParent(locationUuid,
+              plan.getLocationHierarchy().getIdentifier());
+          if (parentLocation != null) {
+            publishForParent(formCaptureEvent, plan, rawFormEvent, parentLocation);
+          }
         }
       }
     }
