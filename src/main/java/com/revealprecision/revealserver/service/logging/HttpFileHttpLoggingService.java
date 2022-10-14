@@ -20,11 +20,11 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-@Profile("Http-Alternate-Logging")
+@Profile("Http-File-Logging")
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class HttpAlternateHttpLoggingService implements HttpLoggingService {
+public class HttpFileHttpLoggingService implements HttpLoggingService {
 
   private final ObjectMapper objectMapper;
   private final HttpLoggingProperties httpLoggingProperties;
