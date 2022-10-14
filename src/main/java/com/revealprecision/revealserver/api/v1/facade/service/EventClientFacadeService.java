@@ -17,7 +17,9 @@ import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.Event;
 import com.revealprecision.revealserver.persistence.domain.Group;
 import com.revealprecision.revealserver.persistence.domain.Location;
+import com.revealprecision.revealserver.persistence.domain.Organization;
 import com.revealprecision.revealserver.persistence.domain.Person;
+import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.service.EventService;
 import com.revealprecision.revealserver.service.FormDataProcessorService;
 import com.revealprecision.revealserver.service.GroupService;
@@ -27,6 +29,7 @@ import com.revealprecision.revealserver.service.OrganizationService;
 import com.revealprecision.revealserver.service.PersonService;
 import com.revealprecision.revealserver.service.UserService;
 import com.revealprecision.revealserver.service.models.EventSearchCriteria;
+import com.revealprecision.revealserver.util.UserUtils;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -301,14 +304,29 @@ public class EventClientFacadeService {
 
   private Event saveEvent(EventFacade eventFacade) {
     Map<String, String> details = eventFacade.getDetails();
+
+    Organization organization;
+    if (StringUtils.isNotBlank(eventFacade.getEventId())) {
+      organization = organizationService.findById(UUID.fromString(eventFacade.getTeamId()),
+          false);
+    } else {
+      organization = userService.getCurrentUser().getOrganizations().stream().findFirst().get();
+    }
+
+    User user;
+    if (StringUtils.isNotBlank(eventFacade.getProviderId())) {
+      user = userService.getByUserName(eventFacade.getProviderId());
+    } else {
+      user = userService.getCurrentUser();
+    }
     Event event = Event.builder()
         .additionalInformation(objectMapper.valueToTree(eventFacade)).captureDatetime(
             DateTimeFormatter
                 .getLocalDateTimeFromZonedAndroidFacadeString(eventFacade.getEventDate()))
         .eventType(eventFacade.getEventType())
         .details(objectMapper.valueToTree(details))
-        .organization(organizationService.findById(UUID.fromString(eventFacade.getTeamId()), false))
-        .user(userService.getByUserName(eventFacade.getProviderId()))
+        .organization(organization)
+        .user(user)
         .planIdentifier(UUID.fromString(details.get("planIdentifier")))
         .build();
     String taskIdentifier = details.get("taskIdentifier");
@@ -351,7 +369,7 @@ public class EventClientFacadeService {
         clientFacade.setIdentifiers(clientFacadeMetadata.getIdentifiers());
       }
     } catch (JsonProcessingException e) {
-      log.error("Additional Info on Person cannot be mapped to metadata Object",e);
+      log.error("Additional Info on Person cannot be mapped to metadata Object", e);
       e.printStackTrace();
     }
     clientFacade.setBaseEntityId(person.getIdentifier().toString());
@@ -374,7 +392,7 @@ public class EventClientFacadeService {
       clientFacade.setIdentifiers(clientFacadeMetadata.getIdentifiers());
       clientFacade.setGender(clientFacadeMetadata.getFamilyHeadGender());
     } catch (JsonProcessingException e) {
-      log.error("Additional Info on Person cannot be mapped to metadata Object",e);
+      log.error("Additional Info on Person cannot be mapped to metadata Object", e);
       e.printStackTrace();
     }
     clientFacade.setBaseEntityId(group.getIdentifier().toString());
