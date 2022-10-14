@@ -52,11 +52,11 @@ public class EventFacadeController {
 
     try {
       eventService.saveRawEvent(RawEvent.builder()
-          .captureDatetime(LocalDateTime.now())
+          .createdDatetime(LocalDateTime.now())
           .eventString(eventsClientsRequest)
           .build());
     } catch (Exception e){
-      log.error("Error saving raw event: {}");
+      log.error("Error saving raw event: {}",eventsClientsRequest.substring(0,2000),e);
     }
 
     JSONObject eventsClientsRequestJSON = new JSONObject(eventsClientsRequest);
