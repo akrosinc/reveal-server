@@ -9,7 +9,7 @@
   <springProperty scope="context" name="loggingStreamRollingFileName"
     source="reveal.logging.stream-rolling-file-name"/>
   <springProperty scope="context" name="loggingPattern" source="reveal.logging.pattern"/>
-  <springProperty scope="context" name="loggingPatternAlternate" source="reveal.logging.alternate-pattern"/>
+  <springProperty scope="context" name="loggingHttpFilePattern" source="reveal.logging.http-file-pattern"/>
   <springProperty scope="context" name="maxHistory" source="reveal.logging.max-history"/>
   <springProperty scope="context" name="maxFileSize" source="reveal.logging.max-file-size"/>
   <springProperty scope="context" name="totalSizeCap" source="reveal.logging.total-size-cap"/>
@@ -134,7 +134,7 @@
       <maxFileSize>${maxFileSize}</maxFileSize>
     </rollingPolicy>
     <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-      <pattern>${loggingPatternAlternate}</pattern>
+      <pattern>${loggingHttpFilePattern}</pattern>
     </encoder>
   </appender>
 
