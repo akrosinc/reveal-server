@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.messaging.listener;
 
+import static com.revealprecision.revealserver.constants.EventClientConstants.RESET_TASK;
 import static com.revealprecision.revealserver.constants.FormConstants.BOTTLES_EMPTY;
 import static com.revealprecision.revealserver.constants.FormConstants.BUSINESS_STATUS;
 import static com.revealprecision.revealserver.constants.FormConstants.COLLECTION_DATE;
@@ -11,6 +12,7 @@ import static com.revealprecision.revealserver.constants.FormConstants.HOH_PHONE
 import static com.revealprecision.revealserver.constants.FormConstants.IRS_LITE_VERIFICATION;
 import static com.revealprecision.revealserver.constants.FormConstants.IRS_SA_DECISION;
 import static com.revealprecision.revealserver.constants.FormConstants.LOCATION_PARENT;
+import static com.revealprecision.revealserver.constants.FormConstants.MOBILIZATION;
 import static com.revealprecision.revealserver.constants.FormConstants.MOBILIZATION_DATE;
 import static com.revealprecision.revealserver.constants.FormConstants.MOBILIZED;
 import static com.revealprecision.revealserver.constants.FormConstants.NAME_HO_H;
@@ -29,6 +31,7 @@ import com.revealprecision.revealserver.api.v1.facade.models.EventFacade;
 import com.revealprecision.revealserver.api.v1.facade.models.Obs;
 import com.revealprecision.revealserver.constants.FormConstants.BusinessStatus;
 import com.revealprecision.revealserver.constants.KafkaConstants;
+import com.revealprecision.revealserver.enums.PlanInterventionTypeEnum;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.messaging.message.FormCaptureEvent;
 import com.revealprecision.revealserver.persistence.domain.Location;
@@ -82,6 +85,10 @@ public class RawFormSubmissionListener extends Listener {
 
   private void handleEvent(FormCaptureEvent formCaptureEvent, boolean isAggregatedLevel) {
     log.debug("Received Message {}, ", formCaptureEvent);
+    EventFacade rawFormEvent = formCaptureEvent.getRawFormEvent();
+    if(RESET_TASK.equals(rawFormEvent.getEventType())){
+      return;
+    }
     Plan plan = planService.findPlanByIdentifier(formCaptureEvent.getPlanId());
     String locationString = null;
 
@@ -120,10 +127,10 @@ public class RawFormSubmissionListener extends Listener {
         List<Obs> observations = formCaptureEvent.getRawFormEvent().getObs();
         ReportIndicators reportIndicators = reportEntry.getReportIndicators();
         reportIndicators.setAggregateLevel(isAggregatedLevel);
-
-        EventFacade rawFormEvent = formCaptureEvent.getRawFormEvent();
         if (rawFormEvent.getEventType().equals(SPRAY)) {
           extractIRSSprayedLocationIndicators(observations, reportIndicators, plan, locationUuid);
+        } else if (rawFormEvent.getEventType().equals(MOBILIZATION)) {
+          extractMobilizationIndicators(observations, reportIndicators);
         } else if (rawFormEvent.getEventType().equals(IRS_LITE_VERIFICATION)) {
           extractVillageVisitationIndicators(observations, reportIndicators);
           extractMobilizationIndicators(observations, reportIndicators);
@@ -140,10 +147,12 @@ public class RawFormSubmissionListener extends Listener {
         }
 
         reportRepository.save(reportEntry);
-        Location parentLocation = locationService.getLocationParent(locationUuid,
-            plan.getLocationHierarchy().getIdentifier());
-        if (parentLocation != null) {
-          publishForParent(formCaptureEvent, plan, rawFormEvent, parentLocation);
+        if (!plan.getInterventionType().getCode().equals(PlanInterventionTypeEnum.IRS.name())) {
+          Location parentLocation = locationService.getLocationParent(locationUuid,
+              plan.getLocationHierarchy().getIdentifier());
+          if (parentLocation != null) {
+            publishForParent(formCaptureEvent, plan, rawFormEvent, parentLocation);
+          }
         }
       }
     }
@@ -247,13 +256,20 @@ public class RawFormSubmissionListener extends Listener {
     log.debug("getOrInstantiateReportEntry - plan {} location {}", plan.getIdentifier(),
         locationUuid);
     if (locationUuid != null) {
-      return Optional.of(reportRepository.findByPlan_IdentifierAndLocation_Identifier(
-              plan.getIdentifier(), locationUuid)
-          .orElse(
-              reportRepository.save(Report.builder().location(Location.builder().identifier(locationUuid).build())
-                  .plan(plan)
-                  .reportIndicators(new ReportIndicators())
-                  .build())));
+
+      Optional<Report> optionalExistingReport = reportRepository.findByPlan_IdentifierAndLocation_Identifier(
+          plan.getIdentifier(), locationUuid);
+      if (optionalExistingReport.isPresent()){
+       log.trace("found report for plan {} location {}", plan.getIdentifier(),locationUuid);
+       return optionalExistingReport;
+      } else{
+        Report report = reportRepository.save(
+            Report.builder().location(Location.builder().identifier(locationUuid).build())
+                .plan(plan)
+                .reportIndicators(new ReportIndicators())
+                .build());
+        return Optional.of(report);
+      }
     } else {
       return Optional.empty();
     }

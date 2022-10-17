@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.service;
 
+import static com.revealprecision.revealserver.constants.EventClientConstants.RESET_TASK;
 import static com.revealprecision.revealserver.constants.FormConstants.BUSINESS_STATUS;
 import static com.revealprecision.revealserver.constants.FormConstants.CDD_DRUG_ALLOCATION_CDD_NAME_FIELD;
 import static com.revealprecision.revealserver.constants.FormConstants.CDD_DRUG_ALLOCATION_DATE_FIELD;
@@ -120,21 +121,27 @@ public class FormDataProcessorService {
 
   @Async
   @Transactional
-  public void processFormDataAndSubmitToMessaging(List<Pair<EventFacade,Event>> eventFacadeEventPairList){
+  public void processFormDataAndSubmitToMessaging(
+      List<Pair<EventFacade, Event>> eventFacadeEventPairList) {
     eventFacadeEventPairList.stream().forEach(eventEventFacadePair ->
-        {
-          try {
-            processFormDataAndSubmitToMessaging(eventEventFacadePair.getSecond(),eventEventFacadePair.getFirst());
-          } catch (Exception e) {
-            log.error("Error processing Event Data to submit to messaging {}", eventEventFacadePair.getFirst(),e);
-          }
-        });
+    {
+      try {
+        processFormDataAndSubmitToMessaging(eventEventFacadePair.getSecond(),
+            eventEventFacadePair.getFirst());
+      } catch (Exception e) {
+        log.error("Error processing Event Data to submit to messaging {}",
+            eventEventFacadePair.getFirst(), e);
+      }
+    });
   }
 
 
   public void processFormDataAndSubmitToMessaging(Event savedEvent, EventFacade eventFacade)
       throws IOException {
 
+    if (RESET_TASK.equals(savedEvent.getEventType())) {
+      return;
+    }
     JsonNode obsList = savedEvent.getAdditionalInformation().get("obs");
     FormCaptureEvent formCaptureEvent = FormCaptureEvent.builder()
         .locationId(savedEvent.getLocationIdentifier()).savedEventId(savedEvent.getIdentifier())
@@ -274,7 +281,10 @@ public class FormDataProcessorService {
 
           String deviceUserString = getFormValue(obsJavaList, IRS_FORM_SUPERVISOR);
           try {
-            User user = userService.getByUserName(deviceUserString.split("\\|")[0].split(":")[0]);
+            String username = deviceUserString.split("\\|")[0].split(":")[0];
+            String usernameTrimmed = username.trim();
+            log.info("Checking for user: {}", usernameTrimmed);
+            User user = userService.findByUsername(usernameTrimmed);
             if (user != null) {
               deviceUser = user;
             }
@@ -326,8 +336,10 @@ public class FormDataProcessorService {
               locationIdentifier, plan.getLocationHierarchy().getIdentifier(),
               LocationConstants.DISTRICT);
 
-          district = locationWithParent.getHigherLocationParentName();
-          districtLabel = "district";
+          if (locationWithParent != null) {
+            district = locationWithParent.getHigherLocationParentName();
+            districtLabel = "district";
+          }
 
           collect = deviceUser.getOrganizations().stream()
               .map(this::getFlattenedOrganizationalHierarchy).collect(Collectors.toList());
@@ -372,7 +384,10 @@ public class FormDataProcessorService {
               DateTimeFormatter.ISO_LOCAL_DATE).atStartOfDay();
 
           try {
-            User user = userService.getByUserName(deviceUserString.split("\\|")[0]);
+            String username = deviceUserString.split("\\|")[0].split(":")[0];
+            String usernameTrimmed = username.trim();
+            log.info("Checking for user: {}", usernameTrimmed);
+            User user = userService.findByUsername(usernameTrimmed);
             if (user != null) {
               deviceUser = user;
             }
@@ -386,8 +401,10 @@ public class FormDataProcessorService {
               locationIdentifier, plan.getLocationHierarchy().getIdentifier(),
               LocationConstants.DISTRICT);
 
-          district = locationWithParent.getHigherLocationParentName();
-          districtLabel = "district";
+          if (locationWithParent != null) {
+            district = locationWithParent.getHigherLocationParentName();
+            districtLabel = "district";
+          }
 
           submissionId = plan.getIdentifier() + "_" + collectionDate + "_" + deviceUserString + "_"
               + fieldWorker;

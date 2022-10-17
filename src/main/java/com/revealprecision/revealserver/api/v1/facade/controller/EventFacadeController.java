@@ -16,9 +16,13 @@ import com.revealprecision.revealserver.api.v1.facade.models.EventFacade;
 import com.revealprecision.revealserver.api.v1.facade.models.SyncParamFacade;
 import com.revealprecision.revealserver.api.v1.facade.response.EventClientFacadeResponse;
 import com.revealprecision.revealserver.api.v1.facade.service.EventClientFacadeService;
+import com.revealprecision.revealserver.persistence.domain.RawEvent;
+import com.revealprecision.revealserver.service.EventService;
 import io.swagger.v3.oas.annotations.Operation;
+import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.data.util.Pair;
@@ -33,9 +37,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/rest/event")
 @RequiredArgsConstructor
+@Slf4j
 public class EventFacadeController {
 
   private final EventClientFacadeService eventClientFacadeService;
+  private final EventService eventService;
 
   @Operation(summary = "Add new Events and Client objects originating from Android client",
       description = "Add new Events and Client objects originating from Android client",
@@ -43,6 +49,16 @@ public class EventFacadeController {
   @PostMapping(value = "/add", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<EventClientFacadeResponse> eventAdd(
       @RequestBody String eventsClientsRequest) throws JSONException, JsonProcessingException {
+
+    try {
+      eventService.saveRawEvent(RawEvent.builder()
+          .createdDatetime(LocalDateTime.now())
+          .eventString(eventsClientsRequest)
+          .build());
+    } catch (Exception e){
+      log.error("Error saving raw event: {}",eventsClientsRequest.substring(0,2000),e);
+    }
+
     JSONObject eventsClientsRequestJSON = new JSONObject(eventsClientsRequest);
     if (!eventsClientsRequestJSON.has(EVENTS) && !eventsClientsRequestJSON.has(CLIENTS)) {
       return new ResponseEntity<>(BAD_REQUEST);

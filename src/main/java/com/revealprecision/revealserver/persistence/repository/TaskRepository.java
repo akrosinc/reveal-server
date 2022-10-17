@@ -6,6 +6,8 @@ import com.revealprecision.revealserver.persistence.projection.TaskProjection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -22,6 +24,7 @@ public interface TaskRepository extends JpaRepository<Task, UUID>,
       UUID locationIdentifier);
 
   List<Task> findTasksByPlan_Identifier(UUID planIdentifier);
+  Page<Task> findTasksByPlan_Identifier(UUID planIdentifier, Pageable pageable);
 
   @Query("select t from Task t where t.plan = :plan and t.baseEntityIdentifier in :baseEntityIdentifiers and t.serverVersion >= :serverVersion")
   List<Task> findByPlanAndBaseEntityIdentifiersAndMinimumServerVersion(@Param("plan") Plan plan,
