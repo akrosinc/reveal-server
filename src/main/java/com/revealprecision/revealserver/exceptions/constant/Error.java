@@ -12,5 +12,5 @@ public class Error {
   public static final String RESOURCES_NOT_WIRED = "Resource '%s' with identifier: %s does not belong to resource '%s' with identifier '%s'";
   public static final String WRONG_FORMAT = "Resource '%s' with value '%s' does not have format of '%s'";
 
-  public static final String ONE_HIERARCHY_SUPPORT = "Currently have support for one hierarchy per instance";
+  public static final String ONE_HIERARCHY_SUPPORT = "Cannot create another hierarchy, currently have support for one hierarchy per instance";
 }
