@@ -127,7 +127,7 @@ public class CustomExceptionHandler {
   }
 
   @ExceptionHandler(NotImplementedException.class)
-  protected ResponseEntity<ApiErrorResponse> handleFileFormatException(NotImplementedException ex) {
+  protected ResponseEntity<ApiErrorResponse> handleNotImplementedException(NotImplementedException ex) {
     ApiErrorResponse response = ApiErrorResponse.builder()
         .statusCode(HttpStatus.NOT_IMPLEMENTED.value())
         .timestamp(LocalDateTime.now())
