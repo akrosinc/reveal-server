@@ -27,15 +27,15 @@ public interface TaskRepository extends JpaRepository<Task, UUID>,
 
   List<Task> findTasksByPlan_Identifier(UUID planIdentifier);
 
-  @Query(value = "SELECT DISTINCT t.identifier from task t\n"
+  @Query(value = "SELECT DISTINCT cast(t.identifier as varchar)  from task t\n"
       + "left join task_business_state_tracker tbst on t.base_entity_identifier = tbst.task_location_identifier\n"
       + "WHERE t.business_status != tbst.task_business_status limit :limit", nativeQuery = true)
-  List<UUID> findTasksNotSameAsInTaskBusinessStateTracker(int limit);
+  List<String> findTasksNotSameAsInTaskBusinessStateTracker(int limit);
 
-  @Query(value = "SELECT DISTINCT t.identifier from task t\n"
+  @Query(value = "SELECT DISTINCT cast(t.identifier as varchar) from task t\n"
       + "left join task_business_state_tracker tbst on t.base_entity_identifier = tbst.task_location_identifier\n"
       + "WHERE t.business_status != tbst.task_business_status  and t.identifier = :identifier", nativeQuery = true)
-  UUID findTasksNotSameAsInTaskBusinessStateTrackerByIdentifier(UUID identifier);
+  String findTasksNotSameAsInTaskBusinessStateTrackerByIdentifier(UUID identifier);
 
   @Query("select t from Task t where t.plan = :plan and t.baseEntityIdentifier in :baseEntityIdentifiers and t.serverVersion >= :serverVersion")
   List<Task> findByPlanAndBaseEntityIdentifiersAndMinimumServerVersion(@Param("plan") Plan plan,

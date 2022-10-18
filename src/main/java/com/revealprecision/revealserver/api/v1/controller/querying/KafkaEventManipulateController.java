@@ -132,10 +132,10 @@ public class KafkaEventManipulateController {
 
   @Async
   void processTasksNotInTaskBusinessStateTrackerAsync(int limit) {
-    List<UUID> allTasks = taskService.getAllTasksNotSameAsTaskBusinessStateTracker(limit);
+    List<String> allTasks = taskService.getAllTasksNotSameAsTaskBusinessStateTracker(limit);
     int totalProcessed = 0;
 
-    allTasks.stream().map(taskService::getTaskByIdentifier).map(TaskEventFactory::getTaskEventFromTask)
+    allTasks.stream().map(UUID::fromString).map(taskService::getTaskByIdentifier).map(TaskEventFactory::getTaskEventFromTask)
         .forEach(taskEvent ->
             kafkaTemplate.send(kafkaProperties.getTopicMap().get(
                 KafkaConstants.TASK), taskEvent));
@@ -145,10 +145,10 @@ public class KafkaEventManipulateController {
 
   @Async
   void processTasksNotInTaskBusinessStateTrackerByIdentifierAsync(UUID identifier) {
-    UUID allTasks = taskService.getAllTasksNotSameAsTaskBusinessStateTrackerByIdentifier(
+    String allTasks = taskService.getAllTasksNotSameAsTaskBusinessStateTrackerByIdentifier(
         identifier);
 
-    Task taskByIdentifier = taskService.getTaskByIdentifier(allTasks);
+    Task taskByIdentifier = taskService.getTaskByIdentifier(UUID.fromString(allTasks));
 
     TaskEvent taskEvent = TaskEventFactory.getTaskEventFromTask(taskByIdentifier);
 

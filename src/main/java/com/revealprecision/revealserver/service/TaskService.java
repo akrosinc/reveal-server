@@ -98,11 +98,11 @@ public class TaskService {
   public Page<Task> getAllTasks(Pageable pageable){
     return taskRepository.findAll(pageable);
   }
-  public List<UUID> getAllTasksNotSameAsTaskBusinessStateTracker(int limit){
+  public List<String> getAllTasksNotSameAsTaskBusinessStateTracker(int limit){
     return taskRepository.findTasksNotSameAsInTaskBusinessStateTracker(limit);
   }
 
-  public UUID getAllTasksNotSameAsTaskBusinessStateTrackerByIdentifier(UUID identifier){
+  public String getAllTasksNotSameAsTaskBusinessStateTrackerByIdentifier(UUID identifier){
     return taskRepository.findTasksNotSameAsInTaskBusinessStateTrackerByIdentifier(identifier);
   }
 
