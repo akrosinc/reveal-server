@@ -545,6 +545,9 @@ public class LocationRelationshipService {
 
   public void createLocationRelationship(Location parentLocation, Location childLocation,
       LocationHierarchy hierarchy) {
+    if (hierarchy == null) {
+      return;
+    }
     List<UUID> ancestry = new ArrayList<>();
     ancestry.addAll(
         locationRelationshipRepository.findByLocationHierarchyIdentifierAndLocationIdentifier(
@@ -559,7 +562,8 @@ public class LocationRelationshipService {
         locationRelationship);
   }
 
-  public LocationAndHigherParentProjection getHigherLocationParentByLocationAndParentGeographicLevelType(UUID locationIdentifier,
+  public LocationAndHigherParentProjection getHigherLocationParentByLocationAndParentGeographicLevelType(
+      UUID locationIdentifier,
       UUID locationHierarchyIdentifier, String parentGeographicLevelName) {
     return locationRelationshipRepository.getHigherLocationParentByLocationAndParentGeographicLevelType(
         locationIdentifier, locationHierarchyIdentifier, parentGeographicLevelName);

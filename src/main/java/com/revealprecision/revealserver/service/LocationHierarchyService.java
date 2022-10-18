@@ -166,4 +166,14 @@ public class LocationHierarchyService {
   public List<LocationHierarchy> findByName(String name) {
     return locationHierarchyRepository.findByName(name);
   }
+
+  public LocationHierarchy getActiveLocationHierarchy(){
+    //Assumption: current support of 1 hierarchy per instance
+    LocationHierarchy locationHierarchy = null;
+    List<LocationHierarchy> hierarchies = locationHierarchyRepository.findAll();
+    if(!hierarchies.isEmpty()){
+      locationHierarchy = hierarchies.get(0);
+    }
+    return locationHierarchy;
+  }
 }
