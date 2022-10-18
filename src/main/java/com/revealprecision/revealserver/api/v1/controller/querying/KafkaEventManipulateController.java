@@ -5,6 +5,7 @@ import com.revealprecision.revealserver.constants.FormConstants.BusinessStatus;
 import com.revealprecision.revealserver.constants.KafkaConstants;
 import com.revealprecision.revealserver.messaging.TaskEventFactory;
 import com.revealprecision.revealserver.messaging.message.Message;
+import com.revealprecision.revealserver.messaging.message.TaskEvent;
 import com.revealprecision.revealserver.persistence.domain.Event;
 import com.revealprecision.revealserver.persistence.domain.Task;
 import com.revealprecision.revealserver.props.KafkaProperties;
@@ -37,7 +38,7 @@ public class KafkaEventManipulateController {
   private final EventService eventService;
   private final TaskService taskService;
   private final FormDataProcessorService formDataProcessorService;
-  private final ObjectMapper  objectMapper;
+  private final ObjectMapper objectMapper;
   private final KafkaTemplate<String, Message> kafkaTemplate;
   private final ReprocessEventsProperties reprocessEventsProperties;
 
@@ -68,11 +69,23 @@ public class KafkaEventManipulateController {
     processTasksAsync();
   }
 
+  @GetMapping("/reprocess-single-tasks-not-same-for-report/{identifier}")
+  public void reprocesssingleTasksForReport(@PathVariable("identifier") UUID identifier) {
+    processTasksNotInTaskBusinessStateTrackerByIdentifierAsync(identifier);
+  }
+
+  @GetMapping("/reprocess-batch-tasks-not-same-for-report/{limit}")
+  public void reprocesssingleTasksForReport(@PathVariable("limit") int limit) {
+    processTasksNotInTaskBusinessStateTrackerAsync(limit);
+  }
+
+
   @Async
-  void processVisitedTasksAsync(UUID planIdentifier){
+  void processVisitedTasksAsync(UUID planIdentifier) {
     int page = 0;
-    PageRequest pageRequest = PageRequest.of(page,reprocessEventsProperties.getTaskBatchSize());
-    Page<Task> allTasks = taskService.getAllTasksForPlanWhereBusinessStatusNotIn(planIdentifier,List.of(BusinessStatus.NOT_VISITED), pageRequest);
+    PageRequest pageRequest = PageRequest.of(page, reprocessEventsProperties.getTaskBatchSize());
+    Page<Task> allTasks = taskService.getAllTasksForPlanWhereBusinessStatusNotIn(planIdentifier,
+        List.of(BusinessStatus.NOT_VISITED), pageRequest);
     int totalProcessed = 0;
     while (page < allTasks.getTotalPages()) {
 
@@ -82,45 +95,72 @@ public class KafkaEventManipulateController {
                   KafkaConstants.TASK), taskEvent));
 
       int size = allTasks.getContent().size();
-      log.info("Complete page {} with {} number of rows",page, size);
+      log.info("Complete page {} with {} number of rows", page, size);
       page++;
       totalProcessed = totalProcessed + size;
-      pageRequest = PageRequest.of(page,reprocessEventsProperties.getTaskBatchSize());
-      allTasks = taskService.getAllTasksForPlanWhereBusinessStatusNotIn(planIdentifier,List.of(BusinessStatus.NOT_VISITED), pageRequest);
+      pageRequest = PageRequest.of(page, reprocessEventsProperties.getTaskBatchSize());
+      allTasks = taskService.getAllTasksForPlanWhereBusinessStatusNotIn(planIdentifier,
+          List.of(BusinessStatus.NOT_VISITED), pageRequest);
     }
-    log.info("Total tasks resent-> {}",totalProcessed);
+    log.info("Total tasks resent-> {}", totalProcessed);
   }
 
 
   @Async
-  void processTasksAsync(){
+  void processTasksAsync() {
     int page = 0;
-    PageRequest pageRequest = PageRequest.of(page,reprocessEventsProperties.getTaskBatchSize());
+    PageRequest pageRequest = PageRequest.of(page, reprocessEventsProperties.getTaskBatchSize());
     Page<Task> allTasks = taskService.getAllTasks(pageRequest);
     int totalProcessed = 0;
     while (page < allTasks.getTotalPages()) {
 
       allTasks.stream().map(TaskEventFactory::getTaskEventFromTask)
-              .forEach(taskEvent ->
-                  kafkaTemplate.send(kafkaProperties.getTopicMap().get(
+          .forEach(taskEvent ->
+              kafkaTemplate.send(kafkaProperties.getTopicMap().get(
                   KafkaConstants.TASK), taskEvent));
 
       int size = allTasks.getContent().size();
-      log.info("Complete page {} with {} number of rows",page, size);
+      log.info("Complete page {} with {} number of rows", page, size);
       page++;
       totalProcessed = totalProcessed + size;
-      pageRequest = PageRequest.of(page,reprocessEventsProperties.getTaskBatchSize());
+      pageRequest = PageRequest.of(page, reprocessEventsProperties.getTaskBatchSize());
       allTasks = taskService.getAllTasks(pageRequest);
     }
-    log.info("Total tasks resent-> {}",totalProcessed);
+    log.info("Total tasks resent-> {}", totalProcessed);
   }
 
+
+  @Async
+  void processTasksNotInTaskBusinessStateTrackerAsync(int limit) {
+    List<Task> allTasks = taskService.getAllTasksNotSameAsTaskBusinessStateTracker(limit);
+    int totalProcessed = 0;
+
+    allTasks.stream().map(TaskEventFactory::getTaskEventFromTask)
+        .forEach(taskEvent ->
+            kafkaTemplate.send(kafkaProperties.getTopicMap().get(
+                KafkaConstants.TASK), taskEvent));
+
+    log.info("Completed sending tasks");
+  }
+
+  @Async
+  void processTasksNotInTaskBusinessStateTrackerByIdentifierAsync(UUID identifier) {
+    Task allTasks = taskService.getAllTasksNotSameAsTaskBusinessStateTrackerByIdentifier(
+        identifier);
+
+    TaskEvent taskEvent = TaskEventFactory.getTaskEventFromTask(allTasks);
+
+    kafkaTemplate.send(kafkaProperties.getTopicMap().get(
+        KafkaConstants.TASK), taskEvent);
+
+    log.info("Completed sending tasks");
+  }
 
 
   @Async
   void processEventsAsync() {
     int page = 0;
-    PageRequest pageRequest = PageRequest.of(page,reprocessEventsProperties.getEventBatchSize());
+    PageRequest pageRequest = PageRequest.of(page, reprocessEventsProperties.getEventBatchSize());
     Page<Event> allEvents = eventService.getAllEvents(pageRequest);
     int totalProcessed = 0;
     while (page < allEvents.getTotalPages()) {
@@ -134,20 +174,21 @@ public class KafkaEventManipulateController {
         }
       }
       int size = allEvents.getContent().size();
-      log.info("Complete page {} with {} number of rows",page, size);
+      log.info("Complete page {} with {} number of rows", page, size);
       page++;
       totalProcessed = totalProcessed + size;
 
-      pageRequest = PageRequest.of(page,reprocessEventsProperties.getEventBatchSize());
+      pageRequest = PageRequest.of(page, reprocessEventsProperties.getEventBatchSize());
       allEvents = eventService.getAllEvents(pageRequest);
     }
-    log.info("Total events resent-> {}",totalProcessed);
+    log.info("Total events resent-> {}", totalProcessed);
 
   }
+
   @Async
   void processEventsForReportAndPerformanceAsync() {
     int page = 0;
-    PageRequest pageRequest = PageRequest.of(page,reprocessEventsProperties.getEventBatchSize());
+    PageRequest pageRequest = PageRequest.of(page, reprocessEventsProperties.getEventBatchSize());
     Page<Event> allEvents = eventService.getAllEvents(pageRequest);
     int totalProcessed = 0;
     while (page < allEvents.getTotalPages()) {
@@ -161,14 +202,14 @@ public class KafkaEventManipulateController {
         }
       }
       int size = allEvents.getContent().size();
-      log.info("Complete page {} with {} number of rows",page, size);
+      log.info("Complete page {} with {} number of rows", page, size);
       page++;
       totalProcessed = totalProcessed + size;
 
-      pageRequest = PageRequest.of(page,reprocessEventsProperties.getEventBatchSize());
+      pageRequest = PageRequest.of(page, reprocessEventsProperties.getEventBatchSize());
       allEvents = eventService.getAllEvents(pageRequest);
     }
-    log.info("Total events resent-> {}",totalProcessed);
+    log.info("Total events resent-> {}", totalProcessed);
 
   }
 }
