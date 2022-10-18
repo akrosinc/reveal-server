@@ -94,7 +94,7 @@ public class LocationService {
             : null;
 
     if (parentLocation != null) {
-      LocationHierarchy locationHierarchy = locationHierarchyService.findByName("default").get(0);
+      LocationHierarchy locationHierarchy = locationHierarchyService.getActiveLocationHierarchy();
       locationRelationshipService.createLocationRelationship(parentLocation, savedLocation,
           locationHierarchy);
     } else {

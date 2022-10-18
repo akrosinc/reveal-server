@@ -19,6 +19,6 @@ public class LocationHierarchyFacadeService {
     if(hierarchyIdentifier != null){
       return locationHierarchyService.findByIdentifier(UUID.fromString(hierarchyIdentifier));
     }
-    return locationHierarchyService.findByName("default").get(0);
+    return locationHierarchyService.getActiveLocationHierarchy();
   }
 }

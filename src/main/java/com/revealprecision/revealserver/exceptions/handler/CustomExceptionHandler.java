@@ -6,6 +6,7 @@ import com.revealprecision.revealserver.exceptions.FileFormatException;
 import com.revealprecision.revealserver.exceptions.InvalidDateFormatException;
 import com.revealprecision.revealserver.exceptions.KeycloakException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
+import com.revealprecision.revealserver.exceptions.NotImplementedException;
 import com.revealprecision.revealserver.exceptions.WrongEnumException;
 import com.revealprecision.revealserver.exceptions.dto.ApiErrorResponse;
 import com.revealprecision.revealserver.exceptions.dto.ValidationErrorResponse;
@@ -123,5 +124,14 @@ public class CustomExceptionHandler {
         .message(ex.getMessage())
         .build();
     return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+  }
+
+  @ExceptionHandler(NotImplementedException.class)
+  protected ResponseEntity<ApiErrorResponse> handleNotImplementedException(NotImplementedException ex) {
+    ApiErrorResponse response = ApiErrorResponse.builder()
+        .statusCode(HttpStatus.NOT_IMPLEMENTED.value())
+        .timestamp(LocalDateTime.now())
+        .message(ex.getMessage()).build();
+    return new ResponseEntity<>(response, HttpStatus.NOT_IMPLEMENTED);
   }
 }

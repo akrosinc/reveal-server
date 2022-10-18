@@ -8,9 +8,11 @@ import com.revealprecision.revealserver.api.v1.dto.response.LocationPropertyResp
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.exceptions.ConflictException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
+import com.revealprecision.revealserver.exceptions.NotImplementedException;
 import com.revealprecision.revealserver.exceptions.constant.Error;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
+import com.revealprecision.revealserver.persistence.domain.Setting.Fields;
 import com.revealprecision.revealserver.persistence.projection.LocationChildrenCountProjection;
 import com.revealprecision.revealserver.persistence.projection.LocationRelationshipProjection;
 import com.revealprecision.revealserver.persistence.repository.LocationHierarchyRepository;
@@ -20,11 +22,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import javax.ws.rs.NotSupportedException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -37,9 +41,8 @@ public class LocationHierarchyService {
 
   public LocationHierarchy createLocationHierarchy(
       LocationHierarchyRequest locationHierarchyRequest) {
-
+    enforceOneHierarchyPerInstance();
     geographicLevelService.validateGeographyLevels(locationHierarchyRequest.getNodeOrder());
-
     validateLocationHierarchy(locationHierarchyRequest);
 
     var locationHierarchyToSave = LocationHierarchy.builder()
@@ -49,6 +52,12 @@ public class LocationHierarchyService {
     var savedLocationHierarchy = locationHierarchyRepository.save(locationHierarchyToSave);
     locationRelationshipService.createLocationRelationships(savedLocationHierarchy);
     return savedLocationHierarchy;
+  }
+
+  private void enforceOneHierarchyPerInstance() {
+    if (locationHierarchyRepository.activeHierarchyCount() > 0) {
+      throw new NotImplementedException(Error.ONE_HIERARCHY_SUPPORT);
+    }
   }
 
   private void validateLocationHierarchy(LocationHierarchyRequest locationHierarchyRequest) {
@@ -66,7 +75,8 @@ public class LocationHierarchyService {
   }
 
   public Set<LocationHierarchy> getLocationHierarchiesIn(Set<UUID> locationHierarchyIdentifiers) {
-    return locationHierarchyRepository.findLocationHierarchiesByIdentifierIn(locationHierarchyIdentifiers);
+    return locationHierarchyRepository.findLocationHierarchiesByIdentifierIn(
+        locationHierarchyIdentifiers);
   }
 
   public List<LocationHierarchy> findByNodeOrder(List<String> nodeOrder) {
@@ -165,5 +175,15 @@ public class LocationHierarchyService {
 
   public List<LocationHierarchy> findByName(String name) {
     return locationHierarchyRepository.findByName(name);
+  }
+
+  public LocationHierarchy getActiveLocationHierarchy() {
+    //Assumption: current support of 1 hierarchy per instance
+    LocationHierarchy locationHierarchy = null;
+    List<LocationHierarchy> hierarchies = locationHierarchyRepository.findAll();
+    if (!hierarchies.isEmpty()) {
+      locationHierarchy = hierarchies.get(0);
+    }
+    return locationHierarchy;
   }
 }
