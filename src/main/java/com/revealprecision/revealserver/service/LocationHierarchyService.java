@@ -8,6 +8,7 @@ import com.revealprecision.revealserver.api.v1.dto.response.LocationPropertyResp
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.exceptions.ConflictException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
+import com.revealprecision.revealserver.exceptions.NotImplementedException;
 import com.revealprecision.revealserver.exceptions.constant.Error;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
@@ -21,6 +22,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import javax.ws.rs.NotSupportedException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -54,7 +56,7 @@ public class LocationHierarchyService {
 
   private void enforceOneHierarchyPerInstance() {
     if (locationHierarchyRepository.activeHierarchyCount() > 0) {
-      throw new ConflictException(Error.ONE_HIERARCHY_SUPPORT);
+      throw new NotImplementedException(Error.ONE_HIERARCHY_SUPPORT);
     }
   }
 
