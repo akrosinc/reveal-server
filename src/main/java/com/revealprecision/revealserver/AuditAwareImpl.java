@@ -22,6 +22,6 @@ public class AuditAwareImpl implements AuditorAware<String> {
       KafkaPrincipal principal = (KafkaPrincipal) authentication.getPrincipal();
       return Optional.of(principal.getName());
     }
-    return Optional.empty();
+    return Optional.of("default");
   }
 }
