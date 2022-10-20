@@ -19,6 +19,10 @@ public class PhysicalLocationResponseFactory {
         .name(location.getName()).geographicLevel(location.getGeographicLevel().getName())
         .parentId(parentLocation != null ? parentLocation.getIdentifier().toString() : null)
         .build();
+    if (location.getLocationProperty() != null
+        && location.getLocationProperty().getStatus() != null) {
+      locationPropertyFacade.setStatus(location.getLocationProperty().getStatus());
+    }
     return PhysicalLocation.builder()
         .id(location.getIdentifier().toString()).type(location.getGeometry().getType())
         .geometry(location.getGeometry()).properties(locationPropertyFacade)
