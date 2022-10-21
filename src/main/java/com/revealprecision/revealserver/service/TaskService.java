@@ -44,6 +44,7 @@ import com.revealprecision.revealserver.persistence.repository.TaskRepository;
 import com.revealprecision.revealserver.persistence.specification.TaskSpec;
 import com.revealprecision.revealserver.props.BusinessStatusProperties;
 import com.revealprecision.revealserver.props.KafkaProperties;
+import com.revealprecision.revealserver.props.TaskGenerationProperties;
 import com.revealprecision.revealserver.service.models.TaskSearchCriteria;
 import com.revealprecision.revealserver.util.ActionUtils;
 import com.revealprecision.revealserver.util.ConditionQueryUtil;
@@ -94,7 +95,7 @@ public class TaskService {
   private final KafkaProperties kafkaProperties;
   private final TaskProcessStageRepository taskProcessStageRepository;
   private final ProcessTrackerService processTrackerService;
-
+  private final TaskGenerationProperties taskGenerationProperties;
 
 
   private LookupTaskStatus cancelledLookupTaskStatus;
@@ -240,7 +241,7 @@ public class TaskService {
 
     List<UUID> uuids = getUuidsForTaskGeneration(action, plan, conditions);
     processLocationListForTasks( action,  plan,  ownerId,
-         processTracker, uuids, true,true, true);
+         processTracker, uuids, taskGenerationProperties.isGenerate(),taskGenerationProperties.isReactivate(), taskGenerationProperties.isCancel());
 
   }
 
