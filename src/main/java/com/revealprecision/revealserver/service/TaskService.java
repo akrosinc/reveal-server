@@ -48,7 +48,6 @@ import com.revealprecision.revealserver.props.TaskGenerationProperties;
 import com.revealprecision.revealserver.service.models.TaskSearchCriteria;
 import com.revealprecision.revealserver.util.ActionUtils;
 import com.revealprecision.revealserver.util.ConditionQueryUtil;
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -101,8 +100,8 @@ public class TaskService {
   private LookupTaskStatus cancelledLookupTaskStatus;
   private LookupTaskStatus readyLookupTaskStatus;
 
-  public Page<Task> getAllTasksByPlan(UUID planIdentifier, Pageable pageable){
-    return taskRepository.findTasksByPlan_Identifier(planIdentifier,pageable);
+  public Page<Task> getAllTasksByPlan(UUID planIdentifier, Pageable pageable) {
+    return taskRepository.findTasksByPlan_Identifier(planIdentifier, pageable);
   }
 
 
@@ -240,20 +239,22 @@ public class TaskService {
         action.getIdentifier());
 
     List<UUID> uuids = getUuidsForTaskGeneration(action, plan, conditions);
-    processLocationListForTasks( action,  plan,  ownerId,
-         processTracker, uuids, taskGenerationProperties.isGenerate(),taskGenerationProperties.isReactivate(), taskGenerationProperties.isCancel());
+    processLocationListForTasks(action, plan, ownerId,
+        processTracker, uuids, taskGenerationProperties.isGenerate(),
+        taskGenerationProperties.isReactivate(), taskGenerationProperties.isCancel());
 
   }
 
 
-  public Map<TaskGenerateRequestValidationStateEnum, List<UUID>> validateImportedLocationsForTaskGeneration(List<UUID> suppliedLocationUuidList,Action action, Plan plan){
+  public Map<TaskGenerateRequestValidationStateEnum, List<UUID>> validateImportedLocationsForTaskGeneration(
+      List<UUID> suppliedLocationUuidList, Action action, Plan plan) {
     List<UUID> uuidsThatShouldBeInPlan = getUuidsForTaskGeneration(action, plan, null);
 
     List<UUID> existingTaskUuids = taskRepository.findUniqueByPlanAndActionidentifier(
-        plan, action.getIdentifier())
+            plan, action.getIdentifier())
         .stream().map(
-        existingTask -> new TaskProjectionObj(existingTask.getIdentifier(),
-            existingTask.getBaseEntityIdentifier()))
+            existingTask -> new TaskProjectionObj(existingTask.getIdentifier(),
+                existingTask.getBaseEntityIdentifier()))
         .map(TaskProjectionObj::getBaseIdentifier)
         .map(UUID::fromString)
         .collect(
@@ -279,13 +280,14 @@ public class TaskService {
     return Map.of(TaskGenerateRequestValidationStateEnum.ALREADY_EXISTING, requestedButExisting,
         TaskGenerateRequestValidationStateEnum.CAN_GENERATE, canGenerate,
         TaskGenerateRequestValidationStateEnum.NOT_IN_PLAN, shouldNotGenerateList,
-        TaskGenerateRequestValidationStateEnum.SHOULD_GENERATE_BUT_NOT_REQUESTED, alreadyExistingTasksShouldBeCreated);
+        TaskGenerateRequestValidationStateEnum.SHOULD_GENERATE_BUT_NOT_REQUESTED,
+        alreadyExistingTasksShouldBeCreated);
 
   }
 
   public void processLocationListForTasks(Action action, Plan plan, String ownerId,
-      ProcessTracker processTracker,List<UUID> uuids,boolean generate, boolean reactivate, boolean cancel) {
-
+      ProcessTracker processTracker, List<UUID> uuids, boolean generate, boolean reactivate,
+      boolean cancel) {
 
     List<TaskProjection> existingTasks = taskRepository.findUniqueByPlanAndActionidentifier(
         plan, action.getIdentifier());
@@ -349,7 +351,8 @@ public class TaskService {
     return taskGenerationStage;
   }
 
-  private List<TaskGen> buildGenerationTaskCandidateList(List<UUID> uuids, List<UUID> existingTaskUuids) {
+  private List<TaskGen> buildGenerationTaskCandidateList(List<UUID> uuids,
+      List<UUID> existingTaskUuids) {
     List<UUID> uuidToGenerate = new ArrayList<>(uuids);
     uuidToGenerate.removeAll(existingTaskUuids);
 
@@ -359,7 +362,8 @@ public class TaskService {
     return tasksToGenerate;
   }
 
-  private List<TaskGen> buildReactivationCandidateTaskList(List<UUID> uuids, List<TaskProjectionObj> existingTaskObjs,
+  private List<TaskGen> buildReactivationCandidateTaskList(List<UUID> uuids,
+      List<TaskProjectionObj> existingTaskObjs,
       List<UUID> existingTaskUuids) {
     List<UUID> potentialUuidsToReactivate = new ArrayList<>(uuids);
     potentialUuidsToReactivate.retainAll(existingTaskUuids);
@@ -374,7 +378,8 @@ public class TaskService {
     return tasksToReactivate;
   }
 
-  private List<TaskGen> buildTaskCancellationCandidateList(List<UUID> uuids, List<TaskProjectionObj> existingTaskObjs,
+  private List<TaskGen> buildTaskCancellationCandidateList(List<UUID> uuids,
+      List<TaskProjectionObj> existingTaskObjs,
       List<UUID> existingTaskUuids) {
 
     List<UUID> uuidsToCancel = new ArrayList<>(existingTaskUuids);
@@ -394,20 +399,23 @@ public class TaskService {
   private void submitTaskCandidatesToKafka(Action action, Plan plan, String ownerId,
       List<TaskProcessStage> taskProcessStages) {
     taskProcessStages.forEach(taskProcessStage -> {
-      TaskProcessEvent taskProcessEvent = getTaskProcessEventObj(
-          action, plan, ownerId, taskProcessStage);
+          TaskProcessEvent taskProcessEvent = getTaskProcessEventObj(
+              action, plan, ownerId, taskProcessStage);
 
-      switch (taskProcessStage.getTaskProcess()) {
+          switch (taskProcessStage.getTaskProcess()) {
             case CANCEL:
-            kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.TASK_CANDIDATE_CANCEL),
-                taskProcessEvent);
-                break;
-            case GENERATE:
-              kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.TASK_CANDIDATE_GENERATE),
+              kafkaTemplate.send(
+                  kafkaProperties.getTopicMap().get(KafkaConstants.TASK_CANDIDATE_CANCEL),
                   taskProcessEvent);
-                break;
+              break;
+            case GENERATE:
+              kafkaTemplate.send(
+                  kafkaProperties.getTopicMap().get(KafkaConstants.TASK_CANDIDATE_GENERATE),
+                  taskProcessEvent);
+              break;
             case REACTIVATE:
-              kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.TASK_CANDIDATE_REACTIVATE),
+              kafkaTemplate.send(
+                  kafkaProperties.getTopicMap().get(KafkaConstants.TASK_CANDIDATE_REACTIVATE),
                   taskProcessEvent);
               break;
           }
@@ -469,7 +477,7 @@ public class TaskService {
             LookupTaskStatus.class));
   }
 
-  public Task generateTaskForTaskProcess(TaskProcessEvent taskProcessEvent) throws IOException {
+  public Task generateTaskForTaskProcess(TaskProcessEvent taskProcessEvent) {
     Task task = null;
     Optional<TaskProcessStage> taskGenerationStageOptional = taskProcessStageRepository.findById(
         taskProcessEvent.getIdentifier());
@@ -537,7 +545,7 @@ public class TaskService {
 
 
       } catch (QueryGenerationException e) {
-        log.error("unable to get tasks unconditionally for action: {}", action.getIdentifier(),e);
+        log.error("unable to get tasks unconditionally for action: {}", action.getIdentifier(), e);
         e.printStackTrace();
       }
     } else {
@@ -553,7 +561,7 @@ public class TaskService {
 
         } catch (QueryGenerationException e) {
           log.error("unable to get tasks for action: {} condition: {}", action.getIdentifier(),
-              condition.getIdentifier(),e);
+              condition.getIdentifier(), e);
           e.printStackTrace();
         }
       }

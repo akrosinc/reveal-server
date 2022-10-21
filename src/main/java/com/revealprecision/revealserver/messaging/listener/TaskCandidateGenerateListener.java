@@ -6,7 +6,6 @@ import com.revealprecision.revealserver.persistence.domain.ProcessTracker;
 import com.revealprecision.revealserver.persistence.domain.Task;
 import com.revealprecision.revealserver.service.ProcessTrackerService;
 import com.revealprecision.revealserver.service.TaskService;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -27,7 +26,7 @@ public class TaskCandidateGenerateListener extends Listener {
   private static final List<String> skipList = new ArrayList<>();
 
   @KafkaListener(topics = "#{kafkaConfigProperties.topicMap.get('TASK_CANDIDATE_GENERATE')}", groupId = "reveal_server_group")
-  public void listenGroupFoo(TaskProcessEvent message) throws IOException {
+  public void listenGroupFoo(TaskProcessEvent message) {
     log.info("Received Message in group foo: {}", message.toString());
     init();
 
