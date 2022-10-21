@@ -35,7 +35,8 @@ public class TaskCandidateGenerateListener extends Listener {
 
     if (processTracker.isPresent()) {
       ProcessTracker processTracker1 = processTracker.get();
-      if (processTracker1.getState().equals(ProcessTrackerEnum.NEW)) {
+      if (processTracker1.getState().equals(ProcessTrackerEnum.NEW) || processTracker1.getState()
+          .equals(ProcessTrackerEnum.BUSY)) {
         Task task;
         taskService.generateTaskForTaskProcess(message);
       } else {

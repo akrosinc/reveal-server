@@ -8,7 +8,6 @@ import com.revealprecision.revealserver.service.ProcessTrackerService;
 import com.revealprecision.revealserver.service.TaskService;
 import java.io.IOException;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -34,7 +33,8 @@ public class TaskCandidateListener extends Listener {
 
     if (processTracker.isPresent()) {
       ProcessTracker processTracker1 = processTracker.get();
-      if (processTracker1.getState().equals(ProcessTrackerEnum.NEW)){
+      if (processTracker1.getState().equals(ProcessTrackerEnum.NEW) || processTracker1.getState()
+          .equals(ProcessTrackerEnum.BUSY)) {
         Task task;
         switch (message.getTaskProcessEnum()) {
           case GENERATE:
