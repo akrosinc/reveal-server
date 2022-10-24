@@ -20,7 +20,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface LocationRelationshipRepository extends JpaRepository<LocationRelationship, UUID> {//, CustomLocationRelationshipRepository {
+public interface LocationRelationshipRepository extends JpaRepository<LocationRelationship, UUID> {
 
   Optional<LocationRelationship> findByLocationHierarchyIdentifierAndLocationIdentifier(
       UUID locationHierarchyIdentifier, UUID locationIdentifier);
