@@ -60,11 +60,11 @@ public interface LocationRelationshipRepository extends JpaRepository<LocationRe
       + "                  LEFT JOIN geographic_level gl on l.geographic_level_identifier = gl.identifier "
       + "where lr.location_hierarchy_identifier = :locationHierarchyIdentifier "
       + "  AND gl.name = :geographicLevelName AND "
-      + "        CAST(STRING_TO_ARRAY(:locationIdentifierListString,',')as uuid[]) && lr.ancestry"
+      + "        lr.parent_identifier in :locationIdentifierListString"
       + " and l.server_version >= :serverVersion and l.entity_status = 'ACTIVE'", nativeQuery = true)
   List<LocationWithParentProjection> getChildrenByGeoLevelNameWithinLocationListHierarchyAndServerVersion(
       @Param("geographicLevelName") String geographicLevelName,
-      @Param("locationIdentifierListString") String locationIdentifierListString,
+      @Param("locationIdentifierListString") List<UUID> locationIdentifierListString,
       @Param("locationHierarchyIdentifier") UUID locationHierarchyIdentifier, Long serverVersion);
 
   @Query(value =

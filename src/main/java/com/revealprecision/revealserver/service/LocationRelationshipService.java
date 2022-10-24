@@ -142,8 +142,7 @@ public class LocationRelationshipService {
       List<UUID> parentIdentifiers,
       UUID locationHierarchyIdentifier, Long serverVersion, String geographicLevelName) {
     return locationRelationshipRepository.getChildrenByGeoLevelNameWithinLocationListHierarchyAndServerVersion(
-        geographicLevelName, parentIdentifiers.stream().map(UUID::toString).collect(
-            Collectors.joining(",")),
+        geographicLevelName, parentIdentifiers,
         locationHierarchyIdentifier, serverVersion);
   }
 
