@@ -6,6 +6,8 @@ public interface LocationWithParentProjection {
 
   String getName();
 
+  String getGeometry();
+
   String getType();
 
   String getStatus();

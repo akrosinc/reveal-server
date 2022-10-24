@@ -1,16 +1,25 @@
 package com.revealprecision.revealserver.api.v1.facade.factory;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.revealprecision.revealserver.api.v1.facade.models.LocationPropertyFacade;
 import com.revealprecision.revealserver.api.v1.facade.models.PhysicalLocation;
 import com.revealprecision.revealserver.enums.LocationStatus;
+import com.revealprecision.revealserver.persistence.domain.Geometry;
 import com.revealprecision.revealserver.persistence.projection.LocationWithParentProjection;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
+@Component
+@RequiredArgsConstructor
+@Slf4j
 public class PhysicalLocationResponseFactory {
 
-  public static PhysicalLocation fromLocationWithParentProjection(LocationWithParentProjection locationWithParentProjection){
+  private final ObjectMapper objectMapper;
+
+  public  PhysicalLocation fromLocationWithParentProjection(LocationWithParentProjection locationWithParentProjection)
+       {
 
     LocationPropertyFacade locationPropertyFacade = LocationPropertyFacade.builder()
         .name(locationWithParentProjection.getName())
@@ -19,11 +28,19 @@ public class PhysicalLocationResponseFactory {
         .status(LocationStatus.valueOf(locationWithParentProjection.getStatus()))
         .build();
 
+         Geometry geometry= null;
+    try {
+      geometry = objectMapper.readValue(locationWithParentProjection.getGeometry(),
+          Geometry.class);
+    }catch (JsonProcessingException e){
+      log.error("Cannot create geometry obj from string {}", locationWithParentProjection.getIdentifier(),e);
+    }
     return PhysicalLocation.builder()
         .id(locationWithParentProjection.getIdentifier())
         .type(locationWithParentProjection.getType())
         .properties(locationPropertyFacade)
         .serverVersion(locationWithParentProjection.getServerVersion())
+        .geometry(geometry)
         .build();
   }
 
