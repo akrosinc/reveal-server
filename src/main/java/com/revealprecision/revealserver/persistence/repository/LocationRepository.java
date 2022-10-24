@@ -2,6 +2,7 @@ package com.revealprecision.revealserver.persistence.repository;
 
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.projection.LocationCoordinatesProjection;
+import com.revealprecision.revealserver.persistence.projection.LocationWithParentProjection;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import java.util.List;
 import java.util.Optional;
@@ -26,8 +27,37 @@ public interface LocationRepository extends JpaRepository<Location, UUID> {
   @Query(value = "SELECT COUNT(l) FROM Location l WHERE (lower(l.name) like lower(concat('%', :param, '%'))) AND l.entityStatus='ACTIVE'")
   long findAllCountByCriteria(@Param("param") String param);
 
-  @Query(value = "select l from Location l where l.identifier in :identifiers")
-  List<Location> getAllByIdentifiers(@Param("identifiers") List<UUID> identifiers);
+  @Query(value = "select "
+      + " cast(l.identifier as varchar) as identifier,\n"
+      + "l.name as name,\n"
+      + "l.geometry->>'type' as type,\n"
+      + "l.status as status,\n"
+      + " cast(l.external_id as varchar) as externalId,\n"
+      + "gl.name as geographicLevelName,\n"
+      + "l.entity_status as entityStatus,\n"
+      + "l.server_version as serverVersion,\n"
+      + "l.hash_value as hashValue,\n"
+      + "null as parentIdentifier \n"
+      + " from location  l left join geographic_level gl on gl.identifier = l.geographic_level_identifier "
+      + "where  l.identifier in :identifiers and l.server_version >= :serverVersion and gl.name != 'structure'", nativeQuery = true)
+  List<LocationWithParentProjection> getAllNotStructuresByIdentifiersAndServerVersion(
+      @Param("identifiers") List<UUID> identifiers, @Param("serverVersion") long serverVersion);
+
+  @Query(value = "select "
+      + " cast(l.identifier as varchar) as identifier,\n"
+      + "l.name as name,\n"
+      + "l.geometry->>'type' as type,\n"
+      + "l.status as status,\n"
+      + " cast(l.external_id as varchar) as externalId,\n"
+      + "gl.name as geographicLevelName,\n"
+      + "l.entity_status as entityStatus,\n"
+      + "l.server_version as serverVersion,\n"
+      + "l.hash_value as hashValue,\n"
+      + "null as parentIdentifier \n"
+      + " from location  l left join geographic_level gl on gl.identifier = l.geographic_level_identifier "
+      + "where  l.name in :names and l.server_version >= :serverVersion and gl.name != 'structure'", nativeQuery = true)
+  List<LocationWithParentProjection> getAllNotStructureByNamesAndServerVersion(@Param("names") List<String> names,
+      @Param("serverVersion") long serverVersion);
 
   @Query(value = "select l from Location  l where  l.name in :names")
   List<Location> getAllByNames(@Param("names") List<String> names);
@@ -39,6 +69,8 @@ public interface LocationRepository extends JpaRepository<Location, UUID> {
 
   @Query(value = "select ST_AsText(ST_Centroid(st_geomfromgeojson(l.geometry))) from location l where l.identifier = :identifier", nativeQuery = true)
   String getCentroid(@Param("identifier") UUID identifier);
+
+  List<Location> findLocationsByIdentifierIn(List<UUID> uuids);
 
   @Query(value =
       "select new com.revealprecision.revealserver.persistence.projection.PlanLocationDetails(l, count(pl), count(pa)) from Location l "

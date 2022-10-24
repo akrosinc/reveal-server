@@ -5,7 +5,6 @@ import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toSet;
 
 import com.revealprecision.revealserver.api.v1.dto.request.LocationRequest;
-import com.revealprecision.revealserver.constants.LocationConstants;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.enums.PlanInterventionTypeEnum;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
@@ -13,12 +12,12 @@ import com.revealprecision.revealserver.persistence.domain.EntityTag;
 import com.revealprecision.revealserver.persistence.domain.GeographicLevel;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
-import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.PlanAssignment;
 import com.revealprecision.revealserver.persistence.domain.PlanLocations;
 import com.revealprecision.revealserver.persistence.projection.LocationChildrenCountProjection;
 import com.revealprecision.revealserver.persistence.projection.LocationCoordinatesProjection;
+import com.revealprecision.revealserver.persistence.projection.LocationWithParentProjection;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import com.revealprecision.revealserver.persistence.repository.LocationRepository;
 import com.revealprecision.revealserver.util.ElasticModelUtil;
@@ -100,10 +99,7 @@ public class LocationService {
     } else {
       locationRelationshipService.updateLocationRelationshipsForNewLocation(savedLocation);
     }
-    locationRelationshipService.refreshLocationCountsView();
-    locationRelationshipService.refreshLiteStructureCountView();
-    locationRelationshipService.refreshLocationRelationshipMaterializedView();
-    assignedStructureService.refreshAssignedStructureCountsMaterializedView();
+
     return savedLocation;
   }
 
@@ -115,6 +111,10 @@ public class LocationService {
 
   public Optional<Location> findNullableByIdentifier(UUID identifier) {
     return locationRepository.findById(identifier);
+  }
+
+  public Map<UUID,Location> getLocationsByIdentifierList(List<UUID> locationList){
+    return locationRepository.findLocationsByIdentifierIn(locationList).stream().collect(Collectors.toMap(Location::getIdentifier,a->a));
   }
 
   public Location findByIdentifierWithoutGeoJson(UUID identifier) {
@@ -149,27 +149,16 @@ public class LocationService {
     return locationRepository.save(location.update(locationRequest, geographicLevel));
   }
 
-  public List<Location> getAllByIdentifiers(List<UUID> identifiers) {
-    return locationRepository.getAllByIdentifiers(identifiers);
+  public List<LocationWithParentProjection> getAllNotStructuresByIdentifiersAndServerVersion(List<UUID> identifiers, long serverVersion) {
+    return locationRepository.getAllNotStructuresByIdentifiersAndServerVersion(identifiers, serverVersion);
   }
 
   public List<Location> getAllByNames(List<String> names) {
     return locationRepository.getAllByNames(names);
   }
 
-  public List<Location> getStructuresByParentIdentifiers(List<UUID> parentIdentifiers,
-      LocationHierarchy locationHierarchy, Long serverVersion) {
-    List<LocationRelationship> locationRelationships = locationHierarchy.getLocationRelationships();
-    List<Location> locations = locationRelationships.stream().filter(
-            locationRelationship -> locationRelationship.getParentLocation() != null
-                && parentIdentifiers.contains(locationRelationship.getParentLocation().getIdentifier()))
-        .map(LocationRelationship::getLocation).collect(Collectors.toList());
-
-    return locations.stream()
-        .filter(location -> location.getGeographicLevel().getName().equalsIgnoreCase(
-            LocationConstants.STRUCTURE)
-            && location.getServerVersion() >= serverVersion)
-        .collect(Collectors.toList());//TODO: to update once we figure the target level part.
+  public List<LocationWithParentProjection> getAllNotStructureByNamesAndServerVersion(List<String> names, Long serverVersion) {
+    return locationRepository.getAllNotStructureByNamesAndServerVersion(names, serverVersion);
   }
 
   public List<PlanLocationDetails> getLocationsByParentIdentifierAndPlanIdentifier(
@@ -283,13 +272,8 @@ public class LocationService {
   }
 
   public Location getLocationParent(UUID locationIdentifier, UUID locationHierarchyIdentifier) {
-    return locationRelationshipService.getLocationParent(locationIdentifier, locationHierarchyIdentifier);
-  }
-
-  public Location getLocationParentByLocationIdentifierAndHierarchyIdentifier(
-      UUID locationIdentifier, UUID locationHierarchyIdentifier) {
-    return locationRelationshipService.getLocationParentByLocationIdentifierAndHierarchyIdentifier(
-        locationIdentifier, locationHierarchyIdentifier);
+    return locationRelationshipService.getLocationParent(locationIdentifier,
+        locationHierarchyIdentifier);
   }
 
   public List<UUID> getAllLocationChildren(UUID locationIdentifier, UUID hierarchyIdentifier) {

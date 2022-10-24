@@ -2,10 +2,14 @@ package com.revealprecision.revealserver.api.v1.facade.service;
 
 import com.revealprecision.revealserver.api.v1.dto.request.LocationRequest;
 import com.revealprecision.revealserver.api.v1.facade.factory.LocationRequestFactory;
+import com.revealprecision.revealserver.api.v1.facade.factory.PhysicalLocationResponseFactory;
 import com.revealprecision.revealserver.api.v1.facade.models.CreateLocationRequest;
+import com.revealprecision.revealserver.api.v1.facade.models.PhysicalLocation;
 import com.revealprecision.revealserver.api.v1.facade.request.LocationSyncRequest;
+import com.revealprecision.revealserver.constants.LocationConstants;
 import com.revealprecision.revealserver.persistence.domain.Location;
-import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
+import com.revealprecision.revealserver.persistence.projection.LocationWithParentProjection;
+import com.revealprecision.revealserver.service.LocationRelationshipService;
 import com.revealprecision.revealserver.service.LocationService;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -29,16 +33,30 @@ public class LocationFacadeService {
 
   private final LocationService locationService;
 
-  public List<Location> syncLocations(LocationSyncRequest locationSyncRequest,
-      LocationHierarchy hierarchy) {
+  private final LocationRelationshipService locationRelationshipService;
+
+  public List<PhysicalLocation> syncLocations(LocationSyncRequest locationSyncRequest,
+      String hierarchyIdentifier) {
     boolean isJurisdiction = locationSyncRequest.getIsJurisdiction();
-    List<Location> locations;
+    List<PhysicalLocation> physicalLocations;
     if (isJurisdiction) {
-      locations = getLocationsByJurisdictions(locationSyncRequest);
+      physicalLocations = getLocationsByJurisdictionsWithoutGeometry(locationSyncRequest);
     } else {
-      locations = geStructures(locationSyncRequest, hierarchy);
+      physicalLocations = getStructuresWithoutGeometry(locationSyncRequest, UUID.fromString(hierarchyIdentifier));
     }
-    return locations;
+
+    List<UUID> collect = physicalLocations.stream().map(PhysicalLocation::getId)
+        .map(UUID::fromString)
+        .collect(Collectors.toList());
+
+    Map<UUID, Location> locationsByIdentifierList = locationService.getLocationsByIdentifierList(
+        collect);
+
+    return physicalLocations.stream()
+        .peek(physicalLocation -> physicalLocation.setGeometry(
+            locationsByIdentifierList.get(UUID.fromString(physicalLocation.getId()))
+                .getGeometry())).collect(Collectors.toList());
+
   }
 
   public HttpHeaders addCountToHeaders(Long count,
@@ -65,34 +83,41 @@ public class LocationFacadeService {
   }
 
 
-  private List<Location> geStructures(LocationSyncRequest locationSyncRequest,
-      LocationHierarchy hierarchy) {
-    List<Location> locations = new ArrayList<>();
-    List<String> requestParentIds = locationSyncRequest.getParentId();
-    if (requestParentIds != null && !requestParentIds.isEmpty()) {
-      List<UUID> parentIdentifiers = extractLocationIdentifiers(
-          locationSyncRequest.getParentId());
-      locations = locationService
-          .getStructuresByParentIdentifiers(parentIdentifiers, hierarchy,
-              locationSyncRequest.getServerVersion());
+  private List<PhysicalLocation> getStructuresWithoutGeometry(LocationSyncRequest locationSyncRequest,
+      UUID hierarchyIdentifier) {
+    if (locationSyncRequest.getParentId() != null && !locationSyncRequest.getParentId().isEmpty()) {
+       return locationRelationshipService
+          .getChildrenByGeoLevelNameWithinLocationListHierarchyAndServerVersion(
+              extractLocationIdentifiers(locationSyncRequest.getParentId())
+              , hierarchyIdentifier
+              , locationSyncRequest.getServerVersion()
+              , LocationConstants.STRUCTURE
+          )
+          .stream().map(PhysicalLocationResponseFactory::fromLocationWithParentProjection)
+          .collect(Collectors.toList());
     }
-    return locations;
+    return new ArrayList<>();
   }
 
-  private List<Location> getLocationsByJurisdictions(LocationSyncRequest locationSyncRequest) {
-    List<Location> locations;
+  private List<PhysicalLocation> getLocationsByJurisdictionsWithoutGeometry(
+      LocationSyncRequest locationSyncRequest) {
+    List<LocationWithParentProjection> locations;
     List<String> requestLocationIds = locationSyncRequest.getLocationIds();
     if (requestLocationIds != null && !requestLocationIds.isEmpty()) {
       List<UUID> locationIdentifiers = extractLocationIdentifiers(
           locationSyncRequest.getLocationIds());
-      locations = locationService.getAllByIdentifiers(locationIdentifiers);
+      //TODO: until we find way to differentiate target level and structures
+      locations = locationService.getAllNotStructuresByIdentifiersAndServerVersion(
+          locationIdentifiers, locationSyncRequest.getServerVersion());
     } else {
-      locations = locationService.getAllByNames(locationSyncRequest.getLocationNames());
+      //TODO: until we find way to differentiate target level and structures
+      locations = locationService.getAllNotStructureByNamesAndServerVersion(
+          locationSyncRequest.getLocationNames(), locationSyncRequest.getServerVersion());
     }
-    return locations.stream().filter(
-        location -> !location.getGeographicLevel().getName().equalsIgnoreCase("structure")
-            && location.getServerVersion() >= locationSyncRequest.getServerVersion()).collect(
-        Collectors.toList()); //TODO: until we find way to differentiate target level and structures
+    return locations.stream()
+        .map(PhysicalLocationResponseFactory::fromLocationWithParentProjection)
+        .collect(
+            Collectors.toList());
   }
 
   private List<UUID> extractLocationIdentifiers(List<String> locationIds) {

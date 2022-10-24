@@ -2,52 +2,30 @@ package com.revealprecision.revealserver.api.v1.facade.factory;
 
 import com.revealprecision.revealserver.api.v1.facade.models.LocationPropertyFacade;
 import com.revealprecision.revealserver.api.v1.facade.models.PhysicalLocation;
-import com.revealprecision.revealserver.persistence.domain.Location;
-import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
-import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
+import com.revealprecision.revealserver.enums.LocationStatus;
+import com.revealprecision.revealserver.persistence.projection.LocationWithParentProjection;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class PhysicalLocationResponseFactory {
 
-  public static PhysicalLocation fromEntity(Location location, Location parentLocation) {
+  public static PhysicalLocation fromLocationWithParentProjection(LocationWithParentProjection locationWithParentProjection){
+
     LocationPropertyFacade locationPropertyFacade = LocationPropertyFacade.builder()
-        .name(location.getName()).geographicLevel(location.getGeographicLevel().getName())
-        .parentId(parentLocation != null ? parentLocation.getIdentifier().toString() : null)
+        .name(locationWithParentProjection.getName())
+        .geographicLevel(locationWithParentProjection.getGeographicLevelName())
+        .parentId(locationWithParentProjection.getParentIdentifier())
+        .status(LocationStatus.valueOf(locationWithParentProjection.getStatus()))
         .build();
-    if (location.getLocationProperty() != null
-        && location.getLocationProperty().getStatus() != null) {
-      locationPropertyFacade.setStatus(location.getLocationProperty().getStatus());
-    }
+
     return PhysicalLocation.builder()
-        .id(location.getIdentifier().toString()).type(location.getGeometry().getType())
-        .geometry(location.getGeometry()).properties(locationPropertyFacade)
-        .serverVersion(location.getServerVersion()).build();
+        .id(locationWithParentProjection.getIdentifier())
+        .type(locationWithParentProjection.getType())
+        .properties(locationPropertyFacade)
+        .serverVersion(locationWithParentProjection.getServerVersion())
+        .build();
   }
 
-  public static PhysicalLocation fromEntityLocationAndRelationship(Location location,
-      List<LocationRelationship> locationRelationships) {
-    Optional<Location> parentLocationOptional = locationRelationships.stream()
-        .filter(lr -> lr.getLocation().equals(location) && lr.getParentLocation() != null)
-        .map(LocationRelationship::getParentLocation).findFirst();
-    Location parentLocation = null;
-    if (parentLocationOptional.isPresent()) {
-      parentLocation = parentLocationOptional.get();
-    }
-    PhysicalLocation physicalLocation = fromEntity(location, parentLocation);
-    return physicalLocation;
-  }
 
-  public static List<PhysicalLocation> fromLocationsAndHierarchy(List<Location> locations,
-      LocationHierarchy locationHierarchy) {
-    return locations.stream()
-        .map(location -> fromEntityLocationAndRelationship(location,
-            locationHierarchy.getLocationRelationships()))
-        .collect(
-            Collectors.toList());
-  }
 }

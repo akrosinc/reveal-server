@@ -6,6 +6,7 @@ import com.revealprecision.revealserver.persistence.projection.LocationAndHigher
 import com.revealprecision.revealserver.persistence.projection.LocationChildrenCountProjection;
 import com.revealprecision.revealserver.persistence.projection.LocationMainData;
 import com.revealprecision.revealserver.persistence.projection.LocationRelationshipProjection;
+import com.revealprecision.revealserver.persistence.projection.LocationWithParentProjection;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import java.util.List;
 import java.util.Optional;
@@ -42,6 +43,28 @@ public interface LocationRelationshipRepository extends JpaRepository<LocationRe
       @Param("locationIdentifier") String locationIdentifier,
       @Param("locationHierarchyIdentifier") UUID locationHierarchyIdentifier);
 
+  @Query(value = "SELECT "
+      + "CAST(l.identifier as varchar) as identifier,\n"
+      + "l.name as name,\n"
+      + "l.geometry->>'type' as type,\n"
+      + "l.status as status,\n"
+      + "CAST(l.external_id as varchar) as externalId,\n"
+      + "gl.name as geographicLevelName,\n"
+      + "l.entity_status as entityStatus,\n"
+      + "l.server_version as serverVersion,\n"
+      + "l.hash_value as hashValue,\n"
+      + "CAST(lr.parent_identifier as varchar) as parentIdentifier"
+      + " FROM location_relationship lr "
+      + "                  left JOIN location l on l.identifier = lr.location_identifier "
+      + "                  LEFT JOIN geographic_level gl on l.geographic_level_identifier = gl.identifier "
+      + "where lr.location_hierarchy_identifier = :locationHierarchyIdentifier "
+      + "  AND gl.name = :geographicLevelName AND "
+      + "        CAST(STRING_TO_ARRAY(:locationIdentifierListString,',')as uuid[]) && lr.ancestry"
+      + " and l.server_version >= :serverVersion and l.entity_status = 'ACTIVE'", nativeQuery = true)
+  List<LocationWithParentProjection> getChildrenByGeoLevelNameWithinLocationListHierarchyAndServerVersion(
+      @Param("geographicLevelName") String geographicLevelName,
+      @Param("locationIdentifierListString") String locationIdentifierListString,
+      @Param("locationHierarchyIdentifier") UUID locationHierarchyIdentifier, Long serverVersion);
 
   @Query(value =
       "SELECT cast(lr.identifier as varchar) identifier, l.name locationName, cast(l.identifier as varchar) locationIdentifier, cast(lr.parent_identifier as varchar) parentIdentifier, gl.name geographicLevelName FROM location_relationship lr "

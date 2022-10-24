@@ -37,7 +37,6 @@ public class PlanLocationListener extends Listener {
 
     taskService.processPlanUpdateForTasks(message.getPlanIdentifier(),message.getOwnerId());
 
-    assignedStructureService.refreshAssignedStructureCountsMaterializedView();
   }
 
   private void updateProcessTracker(int deleteByPlan, int saveAll,
