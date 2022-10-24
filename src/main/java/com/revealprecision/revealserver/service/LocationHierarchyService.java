@@ -95,6 +95,14 @@ public class LocationHierarchyService {
             LocationHierarchy.class));
   }
 
+  public UUID findNativeByName(String hierarchyName) {
+    return locationHierarchyRepository.findLocationHierarchyByName(hierarchyName);
+  }
+
+  public UUID findNativeById(UUID hierarchyIdentifier) {
+    return locationHierarchyRepository.findLocationHierarchyByIdentifier(hierarchyIdentifier);
+  }
+
   public List<GeoTreeResponse> getGeoTreeFromLocationHierarchy(
       LocationHierarchy locationHierarchy) {
     List<LocationRelationship> locationRelationship = getLocationRelationshipsForLocationHierarchy(

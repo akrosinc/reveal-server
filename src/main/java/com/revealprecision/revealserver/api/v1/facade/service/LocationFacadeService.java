@@ -36,13 +36,13 @@ public class LocationFacadeService {
   private final LocationRelationshipService locationRelationshipService;
 
   public List<PhysicalLocation> syncLocations(LocationSyncRequest locationSyncRequest,
-      String hierarchyIdentifier) {
+      UUID hierarchyIdentifier) {
     boolean isJurisdiction = locationSyncRequest.getIsJurisdiction();
     List<PhysicalLocation> physicalLocations;
     if (isJurisdiction) {
       physicalLocations = getLocationsByJurisdictionsWithoutGeometry(locationSyncRequest);
     } else {
-      physicalLocations = getStructuresWithoutGeometry(locationSyncRequest, UUID.fromString(hierarchyIdentifier));
+      physicalLocations = getStructuresWithoutGeometry(locationSyncRequest, hierarchyIdentifier);
     }
 
     List<UUID> collect = physicalLocations.stream().map(PhysicalLocation::getId)
