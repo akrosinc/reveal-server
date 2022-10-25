@@ -21,6 +21,12 @@ LocationHierarchyRepository extends JpaRepository<LocationHierarchy, UUID> {
 
   Set<LocationHierarchy> findLocationHierarchiesByIdentifierIn(Set<UUID> locationIdentifiers);
 
+  @Query("SELECT l.identifier from LocationHierarchy l WHERE l.name = :hierarchyName")
+  UUID findLocationHierarchyByName(@Param("hierarchyName") String hierarchyName);
+
+  @Query("SELECT l.identifier from LocationHierarchy l WHERE l.identifier = :hierarchyIdentifier")
+  UUID findLocationHierarchyByIdentifier(@Param("hierarchyIdentifier") UUID hierarchyIdentifier);
+
   @Query(value = "SELECT count(*) FROM location_hierarchy lh WHERE entity_status = 'ACTIVE'",nativeQuery = true)
   Long activeHierarchyCount();
 }

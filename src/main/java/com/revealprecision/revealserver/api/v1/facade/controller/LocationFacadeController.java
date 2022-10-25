@@ -1,16 +1,14 @@
 package com.revealprecision.revealserver.api.v1.facade.controller;
 
-import com.revealprecision.revealserver.api.v1.facade.factory.PhysicalLocationResponseFactory;
 import com.revealprecision.revealserver.api.v1.facade.models.CreateLocationRequest;
 import com.revealprecision.revealserver.api.v1.facade.models.PhysicalLocation;
 import com.revealprecision.revealserver.api.v1.facade.request.LocationSyncRequest;
 import com.revealprecision.revealserver.api.v1.facade.service.LocationFacadeService;
 import com.revealprecision.revealserver.api.v1.facade.service.LocationHierarchyFacadeService;
-import com.revealprecision.revealserver.persistence.domain.Location;
-import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import io.swagger.v3.oas.annotations.Operation;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -38,12 +36,13 @@ public class LocationFacadeController {
   @PostMapping(value = "/sync", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<List<PhysicalLocation>> getLocations(
       @RequestBody LocationSyncRequest locationSyncRequest) {
-    LocationHierarchy locationHierarchy = locationHierarchyFacadeService
-        .getRequestedOrReturnDefault(locationSyncRequest);
-    List<Location> locations = locationFacadeService
-        .syncLocations(locationSyncRequest, locationHierarchy);
-    List<PhysicalLocation> physicalLocations = PhysicalLocationResponseFactory
-        .fromLocationsAndHierarchy(locations, locationHierarchy);
+
+    UUID hierarchyIdentifier = locationHierarchyFacadeService.getIdRequestedOrReturnDefault(
+        locationSyncRequest);
+
+    List<PhysicalLocation> physicalLocations = locationFacadeService
+        .syncLocations(locationSyncRequest, hierarchyIdentifier);
+
     HttpHeaders headers = new HttpHeaders();
     headers = locationFacadeService.addCountToHeaders(physicalLocations.stream().count(), headers);
     return ResponseEntity.status(HttpStatus.OK).headers(headers).body(physicalLocations);

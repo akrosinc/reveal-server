@@ -37,10 +37,10 @@ public abstract class AbstractAuditableEntity {
   protected LocalDateTime modifiedDatetime = LocalDateTime.now();
 
   @CreatedBy
-  protected String createdBy;
+  protected String createdBy = "default";
 
   @LastModifiedBy
-  protected String modifiedBy;
+  protected String modifiedBy = "default";
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
