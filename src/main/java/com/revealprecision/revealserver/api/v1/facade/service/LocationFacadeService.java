@@ -7,7 +7,6 @@ import com.revealprecision.revealserver.api.v1.facade.models.CreateLocationReque
 import com.revealprecision.revealserver.api.v1.facade.models.PhysicalLocation;
 import com.revealprecision.revealserver.api.v1.facade.request.LocationSyncRequest;
 import com.revealprecision.revealserver.constants.LocationConstants;
-import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.projection.LocationWithParentProjection;
 import com.revealprecision.revealserver.service.LocationRelationshipService;
 import com.revealprecision.revealserver.service.LocationService;
@@ -35,27 +34,18 @@ public class LocationFacadeService {
 
   private final LocationRelationshipService locationRelationshipService;
 
+  private final PhysicalLocationResponseFactory physicalLocationResponseFactory;
+
   public List<PhysicalLocation> syncLocations(LocationSyncRequest locationSyncRequest,
-      String hierarchyIdentifier) {
+      UUID hierarchyIdentifier) {
     boolean isJurisdiction = locationSyncRequest.getIsJurisdiction();
     List<PhysicalLocation> physicalLocations;
     if (isJurisdiction) {
       physicalLocations = getLocationsByJurisdictionsWithoutGeometry(locationSyncRequest);
     } else {
-      physicalLocations = getStructuresWithoutGeometry(locationSyncRequest, UUID.fromString(hierarchyIdentifier));
+      physicalLocations = getStructuresWithoutGeometry(locationSyncRequest, hierarchyIdentifier);
     }
-
-    List<UUID> collect = physicalLocations.stream().map(PhysicalLocation::getId)
-        .map(UUID::fromString)
-        .collect(Collectors.toList());
-
-    Map<UUID, Location> locationsByIdentifierList = locationService.getLocationsByIdentifierList(
-        collect);
-
-    return physicalLocations.stream()
-        .peek(physicalLocation -> physicalLocation.setGeometry(
-            locationsByIdentifierList.get(UUID.fromString(physicalLocation.getId()))
-                .getGeometry())).collect(Collectors.toList());
+    return physicalLocations;
 
   }
 
@@ -93,7 +83,8 @@ public class LocationFacadeService {
               , locationSyncRequest.getServerVersion()
               , LocationConstants.STRUCTURE
           )
-          .stream().map(PhysicalLocationResponseFactory::fromLocationWithParentProjection)
+          .stream()
+           .map(physicalLocationResponseFactory::fromLocationWithParentProjection)
           .collect(Collectors.toList());
     }
     return new ArrayList<>();
@@ -115,7 +106,7 @@ public class LocationFacadeService {
           locationSyncRequest.getLocationNames(), locationSyncRequest.getServerVersion());
     }
     return locations.stream()
-        .map(PhysicalLocationResponseFactory::fromLocationWithParentProjection)
+        .map(physicalLocationResponseFactory::fromLocationWithParentProjection)
         .collect(
             Collectors.toList());
   }

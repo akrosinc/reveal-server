@@ -21,4 +21,12 @@ public class LocationHierarchyFacadeService {
     }
     return locationHierarchyService.findByName("default").get(0);
   }
+
+  public UUID getIdRequestedOrReturnDefault(LocationSyncRequest locationSyncRequest) {
+    String hierarchyIdentifier = locationSyncRequest.getHierarchyIdentifier();
+    if(hierarchyIdentifier != null){
+      return locationHierarchyService.findNativeById(UUID.fromString(hierarchyIdentifier));
+    }
+    return locationHierarchyService.findNativeByName("default");
+  }
 }

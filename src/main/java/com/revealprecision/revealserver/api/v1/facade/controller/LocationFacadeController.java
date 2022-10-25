@@ -8,6 +8,7 @@ import com.revealprecision.revealserver.api.v1.facade.service.LocationHierarchyF
 import io.swagger.v3.oas.annotations.Operation;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -36,9 +37,11 @@ public class LocationFacadeController {
   public ResponseEntity<List<PhysicalLocation>> getLocations(
       @RequestBody LocationSyncRequest locationSyncRequest) {
 
+    UUID hierarchyIdentifier = locationHierarchyFacadeService.getIdRequestedOrReturnDefault(
+        locationSyncRequest);
 
     List<PhysicalLocation> physicalLocations = locationFacadeService
-        .syncLocations(locationSyncRequest, locationSyncRequest.getHierarchyIdentifier());
+        .syncLocations(locationSyncRequest, hierarchyIdentifier);
 
     HttpHeaders headers = new HttpHeaders();
     headers = locationFacadeService.addCountToHeaders(physicalLocations.stream().count(), headers);
