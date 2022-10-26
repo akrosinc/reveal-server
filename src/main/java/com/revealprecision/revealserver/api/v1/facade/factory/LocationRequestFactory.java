@@ -22,7 +22,8 @@ public class LocationRequestFactory {
         .status(physicalLocation.getProperties().getStatus()).build();
 
     LocationRequest locationRequest = LocationRequest.builder()
-        .geometry(physicalLocation.getGeometry()).type(physicalLocation.getType())
+        .geometry(physicalLocation.getGeometry())
+        .type(physicalLocation.getType())
         .properties(locationPropertyRequest)
         .build();
     return locationRequest;

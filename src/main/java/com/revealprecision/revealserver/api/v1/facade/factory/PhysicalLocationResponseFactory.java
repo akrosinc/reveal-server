@@ -1,49 +1,48 @@
 package com.revealprecision.revealserver.api.v1.facade.factory;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.revealprecision.revealserver.api.v1.facade.models.LocationPropertyFacade;
 import com.revealprecision.revealserver.api.v1.facade.models.PhysicalLocation;
-import com.revealprecision.revealserver.persistence.domain.Location;
-import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
-import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
+import com.revealprecision.revealserver.enums.LocationStatus;
+import com.revealprecision.revealserver.persistence.domain.Geometry;
+import com.revealprecision.revealserver.persistence.projection.LocationWithParentProjection;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
+@Component
+@RequiredArgsConstructor
+@Slf4j
 public class PhysicalLocationResponseFactory {
 
-  public static PhysicalLocation fromEntity(Location location, Location parentLocation) {
+  private final ObjectMapper objectMapper;
+
+  public  PhysicalLocation fromLocationWithParentProjection(LocationWithParentProjection locationWithParentProjection)
+       {
+
     LocationPropertyFacade locationPropertyFacade = LocationPropertyFacade.builder()
-        .name(location.getName()).geographicLevel(location.getGeographicLevel().getName())
-        .parentId(parentLocation != null ? parentLocation.getIdentifier().toString() : null)
+        .name(locationWithParentProjection.getName())
+        .geographicLevel(locationWithParentProjection.getGeographicLevelName())
+        .parentId(locationWithParentProjection.getParentIdentifier())
+        .status(LocationStatus.valueOf(locationWithParentProjection.getStatus()))
         .build();
-    return PhysicalLocation.builder()
-        .id(location.getIdentifier().toString()).type(location.getGeometry().getType())
-        .geometry(location.getGeometry()).properties(locationPropertyFacade)
-        .serverVersion(location.getServerVersion()).build();
-  }
 
-  public static PhysicalLocation fromEntityLocationAndRelationship(Location location,
-      List<LocationRelationship> locationRelationships) {
-    Optional<Location> parentLocationOptional = locationRelationships.stream()
-        .filter(lr -> lr.getLocation().equals(location) && lr.getParentLocation() != null)
-        .map(LocationRelationship::getParentLocation).findFirst();
-    Location parentLocation = null;
-    if (parentLocationOptional.isPresent()) {
-      parentLocation = parentLocationOptional.get();
+         Geometry geometry= null;
+    try {
+      geometry = objectMapper.readValue(locationWithParentProjection.getGeometry(),
+          Geometry.class);
+    }catch (JsonProcessingException e){
+      log.error("Cannot create geometry obj from string {}", locationWithParentProjection.getIdentifier(),e);
     }
-    PhysicalLocation physicalLocation = fromEntity(location, parentLocation);
-    return physicalLocation;
+    return PhysicalLocation.builder()
+        .id(locationWithParentProjection.getIdentifier())
+        .type(locationWithParentProjection.getType())
+        .properties(locationPropertyFacade)
+        .serverVersion(locationWithParentProjection.getServerVersion())
+        .geometry(geometry)
+        .build();
   }
 
-  public static List<PhysicalLocation> fromLocationsAndHierarchy(List<Location> locations,
-      LocationHierarchy locationHierarchy) {
-    return locations.stream()
-        .map(location -> fromEntityLocationAndRelationship(location,
-            locationHierarchy.getLocationRelationships()))
-        .collect(
-            Collectors.toList());
-  }
+
 }

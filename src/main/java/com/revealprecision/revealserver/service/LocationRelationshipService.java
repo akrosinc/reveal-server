@@ -17,6 +17,7 @@ import com.revealprecision.revealserver.persistence.projection.LocationAndHigher
 import com.revealprecision.revealserver.persistence.projection.LocationChildrenCountProjection;
 import com.revealprecision.revealserver.persistence.projection.LocationMainData;
 import com.revealprecision.revealserver.persistence.projection.LocationRelationshipProjection;
+import com.revealprecision.revealserver.persistence.projection.LocationWithParentProjection;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import com.revealprecision.revealserver.persistence.repository.GeographicLevelRepository;
 import com.revealprecision.revealserver.persistence.repository.LiteStructureCountRepository;
@@ -135,6 +136,14 @@ public class LocationRelationshipService {
       }
     });
 
+  }
+
+  public List<LocationWithParentProjection> getChildrenByGeoLevelNameWithinLocationListHierarchyAndServerVersion(
+      List<UUID> parentIdentifiers,
+      UUID locationHierarchyIdentifier, Long serverVersion, String geographicLevelName) {
+    return locationRelationshipRepository.getChildrenByGeoLevelNameWithinLocationListHierarchyAndServerVersion(
+        geographicLevelName, parentIdentifiers,
+        locationHierarchyIdentifier, serverVersion);
   }
 
   public void deleteLocationRelationshipsForHierarchy(LocationHierarchy locationHierarchy) {
@@ -441,9 +450,6 @@ public class LocationRelationshipService {
       locationBulk.setStatus(BulkStatusEnum.COMPLETE);
       locationBulkRepository.save(locationBulk);
 
-      refreshLocationCountsView();
-      refreshLiteStructureCountView();
-      refreshLocationRelationshipMaterializedView();
     }
   }
 

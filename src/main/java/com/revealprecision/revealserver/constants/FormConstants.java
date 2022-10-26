@@ -94,6 +94,10 @@ public interface FormConstants {
     String ADHERENCE_VISIT_DONE = "Adherence Visit Done";
     String PARTIALLY_RECEIVED = "Partially Received";
 
+    String MDA_COMPLETE = "MDA complete";
+    String MDA_REFUSED_OR_ABSENT = "MDA refused or absent";
+    String MDA_PARTIALLY_COMPLETE = "MDA partially complete";
+
     String SMC_COMPLETE = "SMC Complete";
     String SPAQ_COMPLETE = "SPAQ Complete";
     String INELIGIBLE = "Ineligible";
