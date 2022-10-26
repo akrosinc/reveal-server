@@ -38,7 +38,7 @@ public interface LocationRepository extends JpaRepository<Location, UUID> {
       + "l.entity_status as entityStatus,\n"
       + "l.server_version as serverVersion,\n"
       + "l.hash_value as hashValue,\n"
-      + "lr.parent_identifier as parentIdentifier \n"
+      + "cast(lr.parent_identifier as varchar) as parentIdentifier \n"
       + " from location  l left join geographic_level gl on gl.identifier = l.geographic_level_identifier "
       + "left join location_relationship lr on lr.location_identifier = l.identifier "
       + "where  l.identifier in :identifiers and l.server_version >= :serverVersion and gl.name != 'structure'", nativeQuery = true)
@@ -56,7 +56,7 @@ public interface LocationRepository extends JpaRepository<Location, UUID> {
       + "l.entity_status as entityStatus,\n"
       + "l.server_version as serverVersion,\n"
       + "l.hash_value as hashValue,\n"
-      + "lr.parent_identifier as parentIdentifier \n"
+      + "cast(lr.parent_identifier as varchar)  as parentIdentifier \n"
       + " from location  l left join geographic_level gl on gl.identifier = l.geographic_level_identifier "
       + "left join location_relationship lr on lr.location_identifier = l.identifier "
       + "where  l.name in :names and l.server_version >= :serverVersion and gl.name != 'structure'", nativeQuery = true)
