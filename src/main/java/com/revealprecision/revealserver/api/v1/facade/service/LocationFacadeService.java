@@ -75,17 +75,26 @@ public class LocationFacadeService {
 
   private List<PhysicalLocation> getStructuresWithoutGeometry(LocationSyncRequest locationSyncRequest,
       UUID hierarchyIdentifier) {
-    if (locationSyncRequest.getParentId() != null && !locationSyncRequest.getParentId().isEmpty()) {
-       return locationRelationshipService
-          .getChildrenByGeoLevelNameWithinLocationListHierarchyAndServerVersion(
-              extractLocationIdentifiers(locationSyncRequest.getParentId())
-              , hierarchyIdentifier
-              , locationSyncRequest.getServerVersion()
-              , LocationConstants.STRUCTURE
-          )
-          .stream()
-           .map(physicalLocationResponseFactory::fromLocationWithParentProjection)
-          .collect(Collectors.toList());
+
+    if (locationSyncRequest.getParentId() != null) {
+      List<UUID> parents = locationSyncRequest.getParentId().stream()
+          .filter(parent -> !parent.isBlank())
+          .map(UUID::fromString)
+          .collect(
+              Collectors.toList());
+
+      if (!parents.isEmpty()) {
+        return locationRelationshipService
+            .getChildrenByGeoLevelNameWithinLocationListHierarchyAndServerVersion(
+                parents
+                , hierarchyIdentifier
+                , locationSyncRequest.getServerVersion()
+                , LocationConstants.STRUCTURE
+            )
+            .stream()
+            .map(physicalLocationResponseFactory::fromLocationWithParentProjection)
+            .collect(Collectors.toList());
+      }
     }
     return new ArrayList<>();
   }
