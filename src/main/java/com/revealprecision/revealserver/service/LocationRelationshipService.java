@@ -551,6 +551,9 @@ public class LocationRelationshipService {
 
   public void createLocationRelationship(Location parentLocation, Location childLocation,
       LocationHierarchy hierarchy) {
+    if (hierarchy == null) {
+      return;
+    }
     List<UUID> ancestry = new ArrayList<>();
     ancestry.addAll(
         locationRelationshipRepository.findByLocationHierarchyIdentifierAndLocationIdentifier(

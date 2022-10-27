@@ -6,6 +6,7 @@ import com.revealprecision.revealserver.persistence.projection.LocationAndHigher
 import com.revealprecision.revealserver.persistence.projection.LocationChildrenCountProjection;
 import com.revealprecision.revealserver.persistence.projection.LocationMainData;
 import com.revealprecision.revealserver.persistence.projection.LocationRelationshipProjection;
+import com.revealprecision.revealserver.persistence.projection.LocationStructureCount;
 import com.revealprecision.revealserver.persistence.projection.LocationWithParentProjection;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import java.util.List;
@@ -173,6 +174,17 @@ public interface LocationRelationshipRepository extends JpaRepository<LocationRe
           + "where l.geographicLevel.name = :levelName and lr.locationHierarchy.identifier = :hierarchyIdentifier")
   List<LocationMainData> getLocationsByHierarchyIdAndLevelName(
       @Param("hierarchyIdentifier") UUID hierarchyIdentifier, @Param("levelName") String levelName);
+
+  @Query(value =
+    "select cast(lr.location_identifier as varchar) as identifier, ( select count(*) from location_relationship lre "
+        + "left join location loc on loc.identifier = lre.location_identifier "
+        + "left join geographic_level gle on gle.identifier = loc.geographic_level_identifier "
+        + "where lr.location_identifier = any(lre.ancestry)  and gle.name = 'structure') as structureCount "
+        + "from location_relationship lr "
+        + "left join location l on lr.location_identifier = l.identifier "
+        + "left join geographic_level gl on gl.identifier = l.geographic_level_identifier "
+        + "where gl.name = :geographicLevel and lr.location_hierarchy_identifier = :hierarchyIdentifier", nativeQuery = true)
+  List<LocationStructureCount> getNumberOfStructures(UUID hierarchyIdentifier, String geographicLevel);
 
   @Query(value = "select distinct lr.location.identifier from LocationRelationship  lr where lr.parentLocation.identifier in (:parentIdentifiers)")
   List<UUID> getDistinctChildrenLocationsGivenParentIds(
