@@ -39,8 +39,10 @@ public class ActionService {
       ActionRequest actionRequest) {
     Plan plan = planService.findPlanByIdentifier(planIdentifier);
     Goal goal = goalService.findByIdentifier(goalIdentifier);
-    Form form = formService.findById(actionRequest.getFormIdentifier());
-
+    Form form = null;
+    if (actionRequest.getFormIdentifier() != null) {
+      form = formService.findById(actionRequest.getFormIdentifier());
+    }
     LookupEntityType lookupEntityTypeByCode = lookupEntityTypeService.getLookupEntityTypeByCode(
         ActionTitleEnum.lookup(actionRequest.getTitle()).getEntityType().getLookupEntityType());
 
@@ -53,8 +55,10 @@ public class ActionService {
       ActionRequest actionRequest, UUID actionIdentifier) {
     Plan plan = planService.findPlanByIdentifier(planIdentifier);
     Goal goal = goalService.findByIdentifier(goalIdentifier);
-    Form form = formService.findById(actionRequest.getFormIdentifier());
-
+    Form form = null;
+    if (actionRequest.getFormIdentifier() != null) {
+       form = formService.findById(actionRequest.getFormIdentifier());
+    }
     Action action = getByIdentifier(actionIdentifier);
     action.update(actionRequest, form);
     actionRepository.save(action);
