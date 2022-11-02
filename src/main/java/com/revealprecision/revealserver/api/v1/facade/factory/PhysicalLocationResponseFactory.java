@@ -34,6 +34,13 @@ public class PhysicalLocationResponseFactory {
     try {
       geometry = objectMapper.readValue(locationWithParentProjection.getGeometry(),
           Geometry.class);
+
+    } catch (JsonProcessingException e) {
+      log.error("Cannot create geometry obj from string {}",
+          locationWithParentProjection.getIdentifier(), e);
+    }
+
+    try {
       locationProperty = objectMapper.readValue(locationWithParentProjection.getLocationProperty(),
           LocationProperty.class);
 
@@ -43,7 +50,7 @@ public class PhysicalLocationResponseFactory {
         }
       }
     } catch (JsonProcessingException e) {
-      log.error("Cannot create geometry obj from string {}",
+      log.error("Cannot create location properties obj from string {}",
           locationWithParentProjection.getIdentifier(), e);
     }
     return PhysicalLocation.builder()
