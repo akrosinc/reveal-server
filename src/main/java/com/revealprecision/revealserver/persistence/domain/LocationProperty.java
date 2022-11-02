@@ -31,4 +31,6 @@ public class LocationProperty {
   private Long structures;
 
   private Boolean isOtherArea;
+
+  private String surveyLocationType;
 }

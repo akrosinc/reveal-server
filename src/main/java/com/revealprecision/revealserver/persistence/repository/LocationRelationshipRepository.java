@@ -52,6 +52,7 @@ public interface LocationRelationshipRepository extends JpaRepository<LocationRe
       + "l.status as status,\n"
       + "CAST(l.external_id as varchar) as externalId,\n"
       + "gl.name as geographicLevelName,\n"
+      + "CAST(l.location_property as varchar) as locationProperty,\n"
       + "l.entity_status as entityStatus,\n"
       + "l.server_version as serverVersion,\n"
       + "l.hash_value as hashValue,\n"

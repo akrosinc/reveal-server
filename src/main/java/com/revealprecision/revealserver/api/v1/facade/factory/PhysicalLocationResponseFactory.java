@@ -6,6 +6,7 @@ import com.revealprecision.revealserver.api.v1.facade.models.LocationPropertyFac
 import com.revealprecision.revealserver.api.v1.facade.models.PhysicalLocation;
 import com.revealprecision.revealserver.enums.LocationStatus;
 import com.revealprecision.revealserver.persistence.domain.Geometry;
+import com.revealprecision.revealserver.persistence.domain.LocationProperty;
 import com.revealprecision.revealserver.persistence.projection.LocationWithParentProjection;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,8 +19,8 @@ public class PhysicalLocationResponseFactory {
 
   private final ObjectMapper objectMapper;
 
-  public  PhysicalLocation fromLocationWithParentProjection(LocationWithParentProjection locationWithParentProjection)
-       {
+  public PhysicalLocation fromLocationWithParentProjection(
+      LocationWithParentProjection locationWithParentProjection) {
 
     LocationPropertyFacade locationPropertyFacade = LocationPropertyFacade.builder()
         .name(locationWithParentProjection.getName())
@@ -28,12 +29,22 @@ public class PhysicalLocationResponseFactory {
         .status(LocationStatus.valueOf(locationWithParentProjection.getStatus()))
         .build();
 
-         Geometry geometry= null;
+    Geometry geometry = null;
+    LocationProperty locationProperty = null;
     try {
       geometry = objectMapper.readValue(locationWithParentProjection.getGeometry(),
           Geometry.class);
-    }catch (JsonProcessingException e){
-      log.error("Cannot create geometry obj from string {}", locationWithParentProjection.getIdentifier(),e);
+      locationProperty = objectMapper.readValue(locationWithParentProjection.getLocationProperty(),
+          LocationProperty.class);
+
+      if (locationProperty != null) {
+        if (locationProperty.getSurveyLocationType() != null) {
+          locationPropertyFacade.setSurveyLocationType(locationProperty.getSurveyLocationType());
+        }
+      }
+    } catch (JsonProcessingException e) {
+      log.error("Cannot create geometry obj from string {}",
+          locationWithParentProjection.getIdentifier(), e);
     }
     return PhysicalLocation.builder()
         .id(locationWithParentProjection.getIdentifier())

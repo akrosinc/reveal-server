@@ -333,4 +333,14 @@ public class PlanLocationsService {
           planIdentifier);
     }
   }
+
+  List<UUID> getPlanLocationsForHabitatSurvey(UUID planIdentifier, String surveyLocationType) {
+    return planLocationsRepository.getPlanLocationsForHabitatSurvey(planIdentifier,
+        surveyLocationType).stream().map(UUID::fromString).collect(Collectors.toList());
+  }
+
+  List<UUID> getPlanLocationsForHouseholdSurvey(UUID planIdentifier) {
+    return planLocationsRepository.getPlanLocationsForHouseholdSurvey(planIdentifier)
+        .stream().map(UUID::fromString).collect(Collectors.toList());
+  }
 }

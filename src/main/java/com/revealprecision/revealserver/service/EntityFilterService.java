@@ -606,7 +606,8 @@ public class EntityFilterService {
       if (entityTag.getValueType().equals(STRING)) {
         andStatement.must(QueryBuilders.matchPhraseQuery(searchField.concat("value"),
             request.getSearchValue().getValue()));
-      } else if (entityTag.getValueType().equals(INTEGER) || entityTag.getValueType().equals(DOUBLE)) {
+      } else if (entityTag.getValueType().equals(INTEGER) || entityTag.getValueType()
+          .equals(DOUBLE)) {
         if (request.getSearchValue().getSign().equals(SignEntity.EQ)) {
           andStatement.must(QueryBuilders.matchQuery(searchField.concat("valueNumber"),
               request.getSearchValue().getValue()));
@@ -664,7 +665,8 @@ public class EntityFilterService {
         if (entityTag.getValueType().equals(STRING)) {
           orStatement.should(
               QueryBuilders.matchPhraseQuery(searchField.concat("value"), value.getValue()));
-        } else if (entityTag.getValueType().equals(INTEGER) || entityTag.getValueType().equals(DOUBLE)) {
+        } else if (entityTag.getValueType().equals(INTEGER) || entityTag.getValueType()
+            .equals(DOUBLE)) {
           if (value.getSign().equals(SignEntity.EQ)) {
             orStatement.should(QueryBuilders.matchQuery(searchField.concat("valueNumber"),
                 value.getValue()));
@@ -695,7 +697,8 @@ public class EntityFilterService {
     }
   }
 
-  private AbstractQueryBuilder<?> rangeStatement(EntityFilterRequest request) throws ParseException {
+  private AbstractQueryBuilder<?> rangeStatement(EntityFilterRequest request)
+      throws ParseException {
     BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
     LookupEntityType lookupEntityType = lookupEntityTypeService.getLookUpEntityTypeById(
         request.getEntityIdentifier());
@@ -713,9 +716,10 @@ public class EntityFilterService {
         } else {
           searchField = lookupEntityType.getTableName().concat(".metadata.");
         }
-        boolQuery.must(QueryBuilders.matchPhraseQuery(searchField.concat("tag"), entityTag.getTag()));
+        boolQuery.must(
+            QueryBuilders.matchPhraseQuery(searchField.concat("tag"), entityTag.getTag()));
         String searchFieldName = "value";
-        if (entityTag.getValueType().equals(INTEGER)||entityTag.getValueType().equals(DOUBLE)){
+        if (entityTag.getValueType().equals(INTEGER) || entityTag.getValueType().equals(DOUBLE)) {
           searchFieldName = "valueNumber";
         }
         boolQuery.must(QueryBuilders.rangeQuery(searchField.concat(searchFieldName))

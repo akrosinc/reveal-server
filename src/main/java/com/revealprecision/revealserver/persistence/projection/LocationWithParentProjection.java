@@ -24,4 +24,6 @@ public interface LocationWithParentProjection {
 
   String getParentIdentifier();
 
+  String getLocationProperty();
+
 }
