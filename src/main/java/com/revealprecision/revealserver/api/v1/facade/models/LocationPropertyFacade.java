@@ -1,5 +1,7 @@
 package com.revealprecision.revealserver.api.v1.facade.models;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.revealprecision.revealserver.enums.LocationStatus;
 import java.io.Serializable;
 import java.util.Date;
@@ -36,6 +38,9 @@ public class LocationPropertyFacade implements Serializable {
   private int version;
 
   private String username;
+
+  @JsonInclude(Include.NON_ABSENT)
+  private String surveyLocationType;
 
   private transient Map<String, String> customProperties;
 

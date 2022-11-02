@@ -45,7 +45,9 @@ public interface PlanLocationsRepository extends EntityGraphJpaRepository<PlanLo
 
 
   @Query(value = "select new com.revealprecision.revealserver.persistence.domain.PlanLocations(pl.identifier, pl.location.identifier, pl.plan.identifier) from PlanLocations pl where pl.plan.identifier = :planIdentifier and pl.location.identifier in :locationIdentifiers")
-  Set<PlanLocations> getPlanLocationsByPlanIdAndLocationIdentifiers(@Param("planIdentifier")UUID planIdentifier, @Param("locationIdentifiers")List<UUID> locationIdentifiers);
+  Set<PlanLocations> getPlanLocationsByPlanIdAndLocationIdentifiers(
+      @Param("planIdentifier") UUID planIdentifier,
+      @Param("locationIdentifiers") List<UUID> locationIdentifiers);
 
   @Transactional
   @Modifying
@@ -69,7 +71,6 @@ public interface PlanLocationsRepository extends EntityGraphJpaRepository<PlanLo
       @Param("planIdentifier") UUID planIdentifier);
 
 
-
   @Query(value = "  SELECT count(*) "
       + "  FROM plan_locations pl "
       + "  INNER JOIN location_relationship lr on pl.location_identifier = lr.location_identifier "
@@ -84,23 +85,27 @@ public interface PlanLocationsRepository extends EntityGraphJpaRepository<PlanLo
       @Param("locationHierarchyIdentifier") UUID locationHierarchyIdentifier,
       @Param("planIdentifier") UUID planIdentifier);
 
-  @Query(value = "REFRESH MATERIALIZED VIEW CONCURRENTLY assigned_structure_counts",nativeQuery = true)
+  @Query(value = "REFRESH MATERIALIZED VIEW CONCURRENTLY assigned_structure_counts", nativeQuery = true)
   @Transactional
   @Modifying
   void refreshAssignedStructureCountsMaterializedView();
 
-  @Query(value = "select new com.revealprecision.revealserver.persistence.projection.PlanLocationsAssigned(l.identifier, l.name) from PlanLocations pl "
-      + "left join Location l on pl.location.identifier = l.identifier "
-      + "where pl.plan.identifier = :planIdentifier and lower(l.name) like lower(concat('%', :search, '%'))")
-  List<PlanLocationsAssigned> getPlanLocationByPlanIdentifierAndSearch(UUID planIdentifier, String search);
+  @Query(value =
+      "select new com.revealprecision.revealserver.persistence.projection.PlanLocationsAssigned(l.identifier, l.name) from PlanLocations pl "
+          + "left join Location l on pl.location.identifier = l.identifier "
+          + "where pl.plan.identifier = :planIdentifier and lower(l.name) like lower(concat('%', :search, '%'))")
+  List<PlanLocationsAssigned> getPlanLocationByPlanIdentifierAndSearch(UUID planIdentifier,
+      String search);
 
-  @Query(value = "select new com.revealprecision.revealserver.persistence.projection.PlanLocationsAssigned(l.identifier, l.name) "
-      + "from PlanLocations pl "
-      + "left join Location l on pl.location.identifier = l.identifier "
-      + "left join PlanAssignment pa on pa.planLocations.identifier = pl.identifier "
-      + "where pl.plan.identifier = :planIdentifier and pa.organization.identifier = :organizationIdentifier and pa.selected = true")
-  List<PlanLocationsAssigned> getAssignedLocationsToTeam(UUID planIdentifier, UUID organizationIdentifier);
-  
+  @Query(value =
+      "select new com.revealprecision.revealserver.persistence.projection.PlanLocationsAssigned(l.identifier, l.name) "
+          + "from PlanLocations pl "
+          + "left join Location l on pl.location.identifier = l.identifier "
+          + "left join PlanAssignment pa on pa.planLocations.identifier = pl.identifier "
+          + "where pl.plan.identifier = :planIdentifier and pa.organization.identifier = :organizationIdentifier and pa.selected = true")
+  List<PlanLocationsAssigned> getAssignedLocationsToTeam(UUID planIdentifier,
+      UUID organizationIdentifier);
+
   @Query(value = "WITH RECURSIVE ancestors(id, parent_id, lvl) AS ( "
       + "            SELECT lr.location_identifier, lr.parent_identifier,1 AS lvl "
       + "            FROM location_relationship lr "
@@ -115,16 +120,49 @@ public interface PlanLocationsRepository extends EntityGraphJpaRepository<PlanLo
       + "          where gl.name <> 'structure' and parent.location_hierarchy_identifier = :hierarchyIdentifier "
       + "           ) "
       + "            select distinct cast(a.id as varchar) from ancestors a", nativeQuery = true)
-  List<UUID> getChildrenAssignedLocations(UUID planIdentifier, Set<UUID> locationIdentifiers, UUID hierarchyIdentifier);
-  
+  List<UUID> getChildrenAssignedLocations(UUID planIdentifier, Set<UUID> locationIdentifiers,
+      UUID hierarchyIdentifier);
+
   @Query(value = "select lr.ancestry from LocationRelationship lr "
       + "    left join PlanLocations pl on pl.location.identifier = lr.location.identifier and pl.plan.identifier = :planIdentifier "
       + "    where lr.location.identifier in :locationIdentifiers "
       + "    and lr.locationHierarchy.identifier = :hierarchyIdentifier")
-  List<List<UUID>> getParentsAssignedLocations(Set<UUID> locationIdentifiers, UUID planIdentifier, UUID hierarchyIdentifier);
+  List<List<UUID>> getParentsAssignedLocations(Set<UUID> locationIdentifiers, UUID planIdentifier,
+      UUID hierarchyIdentifier);
 
   @Query(value = "select pl.location.identifier from PlanLocations pl "
       + "join PlanAssignment pa on pa.planLocations.identifier = pl.identifier "
       + "where pl.plan.identifier = :planIdentifier and pa.organization.identifier = :organizationIdentifier ")
   List<UUID> getPlanLocationsIdentifiers(UUID planIdentifier, UUID organizationIdentifier);
+
+  @Query(value = "SELECT DISTINCT CAST(lr.location_identifier as varchar) from  location_relationship lr "
+      + "left join location l on lr.location_identifier = l.identifier "
+      + "WHERE lr.parent_identifier in "
+      + "(SELECT l.identifier from plan_locations pl  "
+      + "left join location l on pl.location_identifier = l.identifier "
+      + "left join geographic_level gl on gl.identifier = l.geographic_level_identifier "
+      + "left join plan p on pl.plan_identifier = p.identifier "
+      + "inner join plan_target_type ptt on p.identifier = ptt.plan_identifier "
+      + "left join location_hierarchy lh on p.hierarchy_identifier = lh.identifier "
+      + "left join geographic_level tgl on tgl.identifier = ptt.geographic_level_identifier "
+      + "WHERE lh.entity_status = 'ACTIVE' AND gl.name = lh.node_order[array_position(lh.node_order,tgl.name)-1] "
+      + "and  p.identifier = :planIdentifier "
+      + ") and (l.location_property ->> 'surveyLocationType' = :surveyLocationType)", nativeQuery = true)
+  List<String> getPlanLocationsForHabitatSurvey(UUID planIdentifier, @Param("surveyLocationType")  String surveyLocationType);
+
+  @Query(value = "SELECT DISTINCT CAST(lr.location_identifier as varchar) from  location_relationship lr "
+      + "left join location l on lr.location_identifier = l.identifier "
+      + "WHERE lr.parent_identifier in "
+      + "(SELECT l.identifier from plan_locations pl "
+      + "left join location l on pl.location_identifier = l.identifier "
+      + "left join geographic_level gl on gl.identifier = l.geographic_level_identifier "
+      + "left join plan p on pl.plan_identifier = p.identifier "
+      + "inner join plan_target_type ptt on p.identifier = ptt.plan_identifier "
+      + "left join location_hierarchy lh on p.hierarchy_identifier = lh.identifier "
+      + "left join geographic_level tgl on tgl.identifier = ptt.geographic_level_identifier "
+      + "WHERE lh.entity_status = 'ACTIVE' AND gl.name = lh.node_order[array_position(lh.node_order,tgl.name)-1] "
+      + "and  p.identifier = :planIdentifier) "
+      + "and jsonb_exists_any(l.location_property,ARRAY['surveyLocationType'])=false", nativeQuery = true)
+  List<String> getPlanLocationsForHouseholdSurvey(UUID planIdentifier);
+
 }

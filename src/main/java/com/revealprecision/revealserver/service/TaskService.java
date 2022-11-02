@@ -4,6 +4,8 @@ import com.revealprecision.revealserver.api.v1.dto.factory.TaskEntityFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.TaskCreateRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.TaskUpdateRequest;
 import com.revealprecision.revealserver.constants.KafkaConstants;
+import com.revealprecision.revealserver.constants.LocationConstants;
+import com.revealprecision.revealserver.enums.ActionTitleEnum;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.enums.PlanStatusEnum;
 import com.revealprecision.revealserver.enums.ProcessTrackerEnum;
@@ -95,6 +97,7 @@ public class TaskService {
   private final TaskProcessStageRepository taskProcessStageRepository;
   private final ProcessTrackerService processTrackerService;
   private final TaskGenerationProperties taskGenerationProperties;
+  private final PlanLocationsService planLocationsService;
 
 
   private LookupTaskStatus cancelledLookupTaskStatus;
@@ -237,8 +240,14 @@ public class TaskService {
 
     List<Condition> conditions = conditionService.getConditionsByActionIdentifier(
         action.getIdentifier());
-
-    List<UUID> uuids = getUuidsForTaskGeneration(action, plan, conditions);
+    List<UUID> uuids = null;
+    if (action.getTitle().equals(ActionTitleEnum.HABITAT_SURVEY.getActionTitle())) {
+      uuids = getUuidsForTaskGenerationForHabitatSurvey(plan);
+    } else if (action.getTitle().equals(ActionTitleEnum.LSM_HOUSEHOLD_SURVEY.getActionTitle())) {
+      uuids = getUuidsForTaskGenerationForHouseholdSurvey(plan);
+    } else {
+      uuids = getUuidsForTaskGeneration(action, plan, conditions);
+    }
     processLocationListForTasks(action, plan, ownerId,
         processTracker, uuids, taskGenerationProperties.isGenerate(),
         taskGenerationProperties.isReactivate(), taskGenerationProperties.isCancel());
@@ -533,6 +542,17 @@ public class TaskService {
     }
   }
 
+  private List<UUID> getUuidsForTaskGenerationForHabitatSurvey(Plan plan) {
+
+    return planLocationsService.getPlanLocationsForHabitatSurvey(plan.getIdentifier(),
+        LocationConstants.WATERBODY
+    );
+  }
+
+  private List<UUID> getUuidsForTaskGenerationForHouseholdSurvey(Plan plan) {
+
+    return planLocationsService.getPlanLocationsForHouseholdSurvey(plan.getIdentifier());
+  }
 
   private List<UUID> getUuidsForTaskGeneration(Action action, Plan plan,
       List<Condition> conditions) {
