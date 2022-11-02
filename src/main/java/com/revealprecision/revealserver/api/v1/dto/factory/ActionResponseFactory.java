@@ -29,7 +29,7 @@ public class ActionResponseFactory {
             .build())
         .type(action.getType())
         .conditions(conditions)
-        .formIdentifier(action.getForm().getIdentifier())
+        .formIdentifier(action.getForm() != null ? action.getForm().getIdentifier() : null)
         .build();
   }
 
