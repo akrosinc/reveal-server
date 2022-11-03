@@ -13,6 +13,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import org.apache.commons.collections4.MapUtils;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ActionEntityFactory {
@@ -26,11 +27,12 @@ public class ActionEntityFactory {
         .timingPeriodStart(actionRequest.getTimingPeriod().getStart())
         .timingPeriodEnd(actionRequest.getTimingPeriod().getEnd())
         .goal(goal)
-        .form(forms.get(actionRequest.getFormIdentifier()))
         .type(actionRequest.getType())
         .build();
+    if (MapUtils.isNotEmpty(forms)) {
+      action.setForm(forms.get(actionRequest.getFormIdentifier()));
+    }
     action.setEntityStatus(EntityStatus.ACTIVE);
-
     lookupEntityTypes.stream()
         .filter(lookupEntityType -> lookupEntityType.getCode()
             .equals(ActionTitleEnum.lookup(actionRequest.getTitle())
