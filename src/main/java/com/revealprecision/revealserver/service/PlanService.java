@@ -33,6 +33,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -108,20 +109,21 @@ public class PlanService {
     if (!isNullOrEmpty(planRequest.getGoals())) {
       planRequest.getGoals().forEach(goalRequest -> {
         if (!isNullOrEmpty(goalRequest.getActions())) {
-          goalRequest.getActions()
+          goalRequest.getActions().stream()
+              .filter(actionRequest -> Objects.nonNull(actionRequest.getFormIdentifier()))
               .forEach(actionRequest -> forms.add(actionRequest.getFormIdentifier()));
         }
       });
     }
 
-    Map<UUID, Form> foundForms = formService.findByIdentifiers(forms);
-
+    Map<UUID, Form> foundForms = forms.isEmpty() ? Map.of() : formService.findByIdentifiers(forms);
     Plan plan = PlanEntityFactory.toEntity(planRequest, interventionType, locationHierarchy,
         foundForms, allLookUpEntityTypes);
 
     GeographicLevel geographicLevel;
 
-    if (!interventionType.getCode().equals(PlanInterventionTypeEnum.IRS_LITE.name()) && !interventionType.getCode()
+    if (!interventionType.getCode().equals(PlanInterventionTypeEnum.IRS_LITE.name())
+        && !interventionType.getCode()
         .equals(PlanInterventionTypeEnum.MDA_LITE.name())) {
       geographicLevel = geographicLevelService.findByName(LocationConstants.STRUCTURE);
     } else {
