@@ -34,4 +34,8 @@ public class LocationCounts {
   private String geographicLevelName;
 
   private long locationCount;
+
+  private long locationWithoutSurveyLocationType;
+
+  private long waterBodyCount;
 }

@@ -39,4 +39,8 @@ public class AssignedStructureCounts {
   private String geographicLevelName;
 
   private long structureCount;
+
+  private long locationWithoutSurveyLocationType;
+
+  private long waterBodyCount;
 }
