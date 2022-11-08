@@ -10,9 +10,7 @@ import com.revealprecision.revealserver.api.v1.facade.models.ClientFacade;
 import com.revealprecision.revealserver.api.v1.facade.models.ClientFacadeMetadata;
 import com.revealprecision.revealserver.api.v1.facade.models.EventFacade;
 import com.revealprecision.revealserver.api.v1.facade.models.SyncParamFacade;
-import com.revealprecision.revealserver.api.v1.facade.models.TaskUpdateFacade;
 import com.revealprecision.revealserver.api.v1.facade.util.DateTimeFormatter;
-import com.revealprecision.revealserver.constants.FormConstants;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.enums.NameUseEnum;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
@@ -22,7 +20,6 @@ import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.Organization;
 import com.revealprecision.revealserver.persistence.domain.Person;
 import com.revealprecision.revealserver.persistence.domain.User;
-import com.revealprecision.revealserver.props.SystemOverrideProperties;
 import com.revealprecision.revealserver.service.EventService;
 import com.revealprecision.revealserver.service.FormDataProcessorService;
 import com.revealprecision.revealserver.service.GroupService;
@@ -30,9 +27,9 @@ import com.revealprecision.revealserver.service.LocationService;
 import com.revealprecision.revealserver.service.MetadataService;
 import com.revealprecision.revealserver.service.OrganizationService;
 import com.revealprecision.revealserver.service.PersonService;
-import com.revealprecision.revealserver.service.TaskService;
 import com.revealprecision.revealserver.service.UserService;
 import com.revealprecision.revealserver.service.models.EventSearchCriteria;
+import com.revealprecision.revealserver.util.UserUtils;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -75,9 +72,6 @@ public class EventClientFacadeService {
   private final FormDataProcessorService formDataProcessorService;
   private final MetadataService metadataService;
   private final Environment env;
-  private final TaskFacadeService taskFacadeService;
-  private final TaskService taskService;
-  private final SystemOverrideProperties systemOverrideProperties;
 
 
   public Pair<List<EventFacade>, List<ClientFacade>> processEventsClientsRequest(
@@ -104,50 +98,21 @@ public class EventClientFacadeService {
 
   private List<EventFacade> addOrUpdateEvents(List<EventFacade> eventFacadeList) {
     List<EventFacade> failedEvents = new ArrayList<>();
-    List<Pair<EventFacade, Event>> savedEventFacadeEventPairList = eventFacadeList.stream()
-        .map(eventFacade -> {
-          Event savedEvent = null;
-          try {
-            savedEvent = saveEvent(eventFacade);
-          } catch (Exception exception) {
-            log.error("Error saving event {}", eventFacade.getBaseEntityId(), exception);
-            failedEvents.add(eventFacade);
-          }
-          if (savedEvent == null) {
-            return null;
-          }
-          return Pair.of(eventFacade, savedEvent);
-        }).filter(Objects::nonNull).collect(Collectors.toList());
-
-    if (systemOverrideProperties.isUpdateTaskFromEventData()) {
-      updateTaskFromEventData(savedEventFacadeEventPairList);
-    }
-
+    List<Pair<EventFacade, Event>> savedEventFacadeEventPairList = eventFacadeList.stream().map(eventFacade -> {
+      Event savedEvent = null;
+      try {
+        savedEvent = saveEvent(eventFacade);
+      } catch (Exception exception) {
+        log.error("Error saving event {}", eventFacade.getBaseEntityId(),exception);
+        failedEvents.add(eventFacade);
+      }
+      if (savedEvent == null){
+        return null;
+      }
+      return Pair.of(eventFacade, savedEvent);
+    }).filter(Objects::nonNull).collect(Collectors.toList());
     formDataProcessorService.processFormDataAndSubmitToMessaging(savedEventFacadeEventPairList);
     return failedEvents;
-  }
-
-  private void updateTaskFromEventData(
-      List<Pair<EventFacade, Event>> savedEventFacadeEventPairList) {
-    savedEventFacadeEventPairList.forEach(eventFacadeEventPair ->
-        eventFacadeEventPair.getFirst().getObs().stream()
-            .filter(obs -> obs.getFormSubmissionField().equals(
-                FormConstants.BUSINESS_STATUS)).findFirst()
-            .flatMap(obs -> obs.getValues().stream().findFirst())
-            .ifPresent(businessStatus -> {
-              taskFacadeService.updateTaskStatusAndBusinessStatus(
-                  TaskUpdateFacade.builder()
-                      .businessStatus((String) businessStatus)
-                      //TODO: Understand if android will send any other status other than completed
-                      .status(taskService.getCompletedLookupTaskStatus().getCode())
-                      .identifier(
-                          eventFacadeEventPair.getSecond().getTaskIdentifier().toString())
-                      .build(),
-                  taskFacadeService.getOwner()
-
-              );
-            })
-    );
   }
 
   private List<ClientFacade> addOrUpdateClients(List<ClientFacade> clientFacadeList) {
