@@ -555,10 +555,10 @@ public class LocationRelationshipService {
       return;
     }
     List<UUID> ancestry = new ArrayList<>();
+    ancestry.add(parentLocation.getIdentifier());
     ancestry.addAll(
         locationRelationshipRepository.findByLocationHierarchyIdentifierAndLocationIdentifier(
             hierarchy.getIdentifier(), parentLocation.getIdentifier()).get().getAncestry());
-    ancestry.add(parentLocation.getIdentifier());
     LocationRelationship locationRelationship = LocationRelationship.builder()
         .parentLocation(parentLocation)
         .location(childLocation)
