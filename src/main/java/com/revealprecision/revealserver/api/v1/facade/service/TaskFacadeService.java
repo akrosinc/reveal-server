@@ -150,7 +150,7 @@ public class TaskFacadeService {
         .filter(Optional::isPresent).map(Optional::get).collect(Collectors.toList());
   }
 
-  public String getOwner() {
+  private String getOwner() {
     String owner = null;
 
     if (UserUtils.getCurrentPrincipleName()!=null){
@@ -160,7 +160,7 @@ public class TaskFacadeService {
     return owner;
   }
 
-  public Optional<String> updateTaskStatusAndBusinessStatus(TaskUpdateFacade updateFacade, String owner) {
+  private Optional<String> updateTaskStatusAndBusinessStatus(TaskUpdateFacade updateFacade, String owner) {
     String identifier = null;
     UUID identifierUuid;
     try {

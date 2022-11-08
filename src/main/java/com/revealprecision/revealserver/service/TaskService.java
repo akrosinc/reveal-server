@@ -62,7 +62,6 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import javax.annotation.PostConstruct;
 import javax.transaction.Transactional;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -79,7 +78,6 @@ public class TaskService {
 
   public static final String TASK_STATUS_READY = "READY";
   public static final String TASK_STATUS_CANCELLED = "CANCELLED";
-  public static final String TASK_STATUS_COMPLETED = "COMPLETED";
   private final TaskRepository taskRepository;
 
   private final PlanService planService;
@@ -102,12 +100,8 @@ public class TaskService {
   private final PlanLocationsService planLocationsService;
 
 
-  @Getter
   private LookupTaskStatus cancelledLookupTaskStatus;
-  @Getter
   private LookupTaskStatus readyLookupTaskStatus;
-  @Getter
-  private LookupTaskStatus completedLookupTaskStatus;
 
   public Page<Task> getAllTasksByPlan(UUID planIdentifier, Pageable pageable) {
     return taskRepository.findTasksByPlan_Identifier(planIdentifier, pageable);
@@ -489,11 +483,6 @@ public class TaskService {
     readyLookupTaskStatus = lookupTaskStatusRepository.findByCode(
         TASK_STATUS_READY).orElseThrow(
         () -> new NotFoundException(Pair.of(LookupTaskStatus.Fields.code, TASK_STATUS_READY),
-            LookupTaskStatus.class));
-
-    completedLookupTaskStatus = lookupTaskStatusRepository.findByCode(
-        TASK_STATUS_COMPLETED).orElseThrow(
-        () -> new NotFoundException(Pair.of(LookupTaskStatus.Fields.code, TASK_STATUS_COMPLETED),
             LookupTaskStatus.class));
   }
 
