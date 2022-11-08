@@ -44,12 +44,14 @@ import static com.revealprecision.revealserver.constants.FormConstants.TABLET_AC
 import static com.revealprecision.revealserver.constants.FormConstants.TABLET_ACCOUNTABILITY_FORM;
 import static com.revealprecision.revealserver.constants.FormConstants.TABLET_ACCOUNTABILITY_HEALTH_WORKER_SUPERVISOR_FIELD;
 import static com.revealprecision.revealserver.constants.FormConstants.TABLET_ACCOUNTABILITY_LOCATION_FIELD;
+import static com.revealprecision.revealserver.constants.KafkaConstants.EVENT_TRACKER;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.revealprecision.revealserver.api.v1.dto.factory.EntityTagEventFactory;
+import com.revealprecision.revealserver.api.v1.dto.factory.EventTrackerMessageFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.FormDataEntityTagEventFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.FormDataEntityTagValueEventFactory;
 import com.revealprecision.revealserver.api.v1.facade.models.EventFacade;
@@ -59,6 +61,7 @@ import com.revealprecision.revealserver.constants.LocationConstants;
 import com.revealprecision.revealserver.enums.PlanInterventionTypeEnum;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.messaging.message.DeviceUser;
+import com.revealprecision.revealserver.messaging.message.EventTrackerMessage;
 import com.revealprecision.revealserver.messaging.message.FormCaptureEvent;
 import com.revealprecision.revealserver.messaging.message.FormDataEntityTagEvent;
 import com.revealprecision.revealserver.messaging.message.FormDataEntityTagValueEvent;
@@ -117,6 +120,7 @@ public class FormDataProcessorService {
   private final KafkaTemplate<String, MDALiteLocationSupervisorCddEvent> mdaliteSupervisorTemplate;
 
   private final KafkaTemplate<String, FormCaptureEvent> formSubmissionKafkaTemplate;
+  private final KafkaTemplate<String, EventTrackerMessage> eventTrackerKafkaTemplate;
   private final LocationRelationshipService locationRelationshipService;
 
   @Async
@@ -175,7 +179,20 @@ public class FormDataProcessorService {
 
             cdd = getFormValue(obsJavaList, CDD_SUPERVISOR_DAILY_SUMMARY_CDD_NAME_FIELD);
 
+            String aggregationKey =
+                (dateString == null ? "" : dateString) + "-" + (baseEntityIdentifier ==
+                    null ? "" : baseEntityIdentifier) + "-" + (supervisorName == null ? ""
+                    : supervisorName) + "" + (cdd == null ? "" : cdd);
+
             submitSupervisorCddToMessaging(supervisorName, cdd, baseEntityIdentifier, plan);
+
+            eventTrackerKafkaTemplate.send(kafkaProperties.getTopicMap().get(EVENT_TRACKER),
+                EventTrackerMessageFactory.getEntity(savedEvent, eventFacade, plan, dateString,
+                    supervisorName,
+                    cdd,
+                    baseEntityIdentifier,
+                    aggregationKey));
+
           }
           if (savedEvent.getEventType().equals(TABLET_ACCOUNTABILITY_FORM)) {
 
@@ -203,6 +220,7 @@ public class FormDataProcessorService {
                 CDD_DRUG_ALLOCATION_LOCATION_FIELD);
 
             submitSupervisorCddToMessaging(supervisorName, cdd, baseEntityIdentifier, plan);
+
           }
 
         }
@@ -438,6 +456,10 @@ public class FormDataProcessorService {
       }
     }
   }
+
+
+
+
 
   private void publishFormObservations(FormCaptureEvent event) {
     formSubmissionKafkaTemplate.send(
