@@ -21,10 +21,14 @@ public class LocationRequestFactory {
         .geographicLevel(physicalLocation.getProperties().getGeographicLevel())
         .status(physicalLocation.getProperties().getStatus()).build();
 
-    if (physicalLocation.getProperties().getSurveyLocationType()!=null){
-      locationPropertyRequest.setSurveyLocationType(physicalLocation.getProperties().getSurveyLocationType());
+    if (physicalLocation.getProperties().getSurveyLocationType() != null) {
+      locationPropertyRequest.setSurveyLocationType(
+          physicalLocation.getProperties().getSurveyLocationType());
     }
 
+    if (physicalLocation.getProperties().getStructureNumber() != null) {
+      locationPropertyRequest.setStructureNumber(physicalLocation.getProperties().getStructureNumber());
+    }
     LocationRequest locationRequest = LocationRequest.builder()
         .geometry(physicalLocation.getGeometry())
         .type(physicalLocation.getType())
