@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS event_tracker
     aggregation_key     character varying NOT NULL,
     location_identifier uuid,
     plan_identifier     uuid              NOT NULL,
-    event_type          uuid              NOT NULL,
+    event_type   character varying            NOT NULL,
     task_identifier     uuid,
     observations        jsonb             not null,
     supervisor          character varying,

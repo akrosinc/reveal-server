@@ -20,7 +20,7 @@ import org.springframework.data.elasticsearch.annotations.GeoShapeField;
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
-@Document(indexName = "location")
+@Document(indexName = "#{@environment.getProperty('reveal.elastic.index-name')}")
 public class LocationElastic {
 
   @Id
