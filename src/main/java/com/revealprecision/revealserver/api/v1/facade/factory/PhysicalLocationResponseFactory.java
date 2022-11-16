@@ -30,7 +30,7 @@ public class PhysicalLocationResponseFactory {
         .build();
 
     Geometry geometry = null;
-    LocationProperty locationProperty = null;
+    LocationProperty locationProperty;
     try {
       geometry = objectMapper.readValue(locationWithParentProjection.getGeometry(),
           Geometry.class);
@@ -44,10 +44,11 @@ public class PhysicalLocationResponseFactory {
       locationProperty = objectMapper.readValue(locationWithParentProjection.getLocationProperty(),
           LocationProperty.class);
 
-      if (locationProperty != null) {
-        if (locationProperty.getSurveyLocationType() != null) {
-          locationPropertyFacade.setSurveyLocationType(locationProperty.getSurveyLocationType());
-        }
+      if (locationProperty != null && locationProperty.getSurveyLocationType() != null) {
+        locationPropertyFacade.setSurveyLocationType(locationProperty.getSurveyLocationType());
+      }
+      if (locationProperty != null && locationProperty.getStructureNumber() != null) {
+        locationPropertyFacade.setStructureNumber(locationProperty.getStructureNumber());
       }
     } catch (JsonProcessingException e) {
       log.error("Cannot create location properties obj from string {}",
