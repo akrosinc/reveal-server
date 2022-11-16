@@ -25,7 +25,7 @@ import org.springframework.stereotype.Service;
 
 @RequiredArgsConstructor
 @Service
-@Profile("Simulation")
+@Profile("Simulation & (Running | Listening | person-metadata-update-listener))")
 @Slf4j
 public class PersonMetadataUpdateListener extends Listener {
 

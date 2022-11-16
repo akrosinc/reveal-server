@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 @Component
 @Slf4j
-@Profile("Refresh-Materialized-Views")
+@Profile("Running | Refresh-Materialized-Views")
 public class RefreshMaterializedViewSchedule {
 
   private final LocationRelationshipService locationRelationshipService;

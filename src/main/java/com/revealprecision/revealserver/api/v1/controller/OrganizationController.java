@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import java.util.UUID;
 import javax.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -28,6 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/organization")
+@Profile("Running")
 public class OrganizationController {
 
   private final OrganizationService organizationService;

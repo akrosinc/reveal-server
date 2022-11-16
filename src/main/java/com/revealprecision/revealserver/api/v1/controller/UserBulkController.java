@@ -17,6 +17,7 @@ import org.springframework.batch.core.JobParametersInvalidException;
 import org.springframework.batch.core.repository.JobExecutionAlreadyRunningException;
 import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteException;
 import org.springframework.batch.core.repository.JobRestartException;
+import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -36,6 +37,7 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequestMapping("/api/v1/user/bulk")
 @CrossOrigin(originPatterns = "*", origins = "*")
+@Profile("Running")
 public class UserBulkController {
 
   private final UserBulkService userBulkService;
@@ -47,6 +49,7 @@ public class UserBulkController {
       tags = {"User bulk"}
   )
   @GetMapping("/{identifier}")
+
   public ResponseEntity<Page<UserBulkDetailResponse>> getBulkDetails(
       @Parameter(description = "User bulk identifier") @PathVariable("identifier") UUID identifier,
       Pageable pageable) {

@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -26,6 +27,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 @Controller
 @RequestMapping("/api/v1/settings")
 @RequiredArgsConstructor
+@Profile("Running")
 public class SettingsController {
 
   private final SettingService settingService;

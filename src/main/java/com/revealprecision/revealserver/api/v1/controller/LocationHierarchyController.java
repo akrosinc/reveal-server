@@ -19,6 +19,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -36,6 +37,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/locationHierarchy")
+@Profile("Running")
 public class LocationHierarchyController {
 
   private final LocationHierarchyService locationHierarchyService;
