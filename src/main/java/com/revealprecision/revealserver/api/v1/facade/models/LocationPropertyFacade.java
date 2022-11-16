@@ -42,6 +42,8 @@ public class LocationPropertyFacade implements Serializable {
   @JsonInclude(Include.NON_ABSENT)
   private String surveyLocationType;
 
+  private String structureNumber;
+
   private transient Map<String, String> customProperties;
 
 }
