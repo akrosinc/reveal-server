@@ -55,7 +55,7 @@ public class KafkaEventManipulateController {
   }
 
   //Run fourth
-  @GetMapping("/reprocess-tasks-align-task-business-status-tracker")
+  @GetMapping("/reprocess-tasks-not-in-task-business-status-tracker")
   private void reprocessTasksNotInTaskBusinessStateTrackers() {
     processTasksNotInTaskBusinessStateTrackerAsync();
   }
