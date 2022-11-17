@@ -455,7 +455,7 @@ public class LocationRelationshipService {
 
   public LocationRelationship getLocationRelationshipsForLocation(
       UUID locationHierarchyIdentifier, UUID locationIdentifier) {
-    return locationRelationshipRepository.getLocationRelationshipByLocation_IdentifierAndLocationHierarchy_Identifier(
+    return locationRelationshipRepository.getFirstLocationRelationshipByLocation_IdentifierAndLocationHierarchy_Identifier(
         locationIdentifier, locationHierarchyIdentifier);
   }
 
@@ -520,11 +520,6 @@ public class LocationRelationshipService {
         locationIdentifier, locationHierarchyIdentifier);
   }
 
-  public List<LocationRelationship> getLocationParentWithoutHierarchyIdentifier(
-      UUID locationIdentifier) {
-    return locationRelationshipRepository.getParentLocationByLocationIdWithoutHierarchyId(
-        locationIdentifier);
-  }
 
   public List<LocationMainData> getLocationsByHierarchyIdAndLevelName(UUID hierarchyIdentifier,
       String levelName) {
@@ -532,14 +527,8 @@ public class LocationRelationshipService {
         levelName);
   }
 
-  public Location getLocationParentByLocationIdentifierAndHierarchyIdentifier(
-      UUID locationIdentifier, UUID locationHierarchyIdentifier) {
-    return locationRelationshipRepository.getParentLocationByLocationIdAndHierarchyId(
-        locationIdentifier, locationHierarchyIdentifier);
-  }
-
   public List<UUID> getAncestryForLocation(UUID locationId, UUID locationHierarchyId) {
-    return locationRelationshipRepository.getLocationRelationshipByLocation_IdentifierAndLocationHierarchy_Identifier(
+    return locationRelationshipRepository.getFirstLocationRelationshipByLocation_IdentifierAndLocationHierarchy_Identifier(
         locationId, locationHierarchyId).getAncestry();
   }
 
