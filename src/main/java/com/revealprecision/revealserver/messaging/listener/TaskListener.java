@@ -7,7 +7,6 @@ import com.revealprecision.revealserver.messaging.message.TaskEvent;
 import com.revealprecision.revealserver.persistence.domain.GeographicLevel;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationAboveStructure;
-import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
 import com.revealprecision.revealserver.persistence.domain.TaskBusinessStateTracker;
 import com.revealprecision.revealserver.persistence.projection.LocationBusinessStateCount;
 import com.revealprecision.revealserver.persistence.repository.TaskBusinessStateTrackerRepository;
@@ -64,7 +63,7 @@ public class TaskListener extends Listener {
 
   private List<TaskBusinessStateTracker> createBusinessStateTrackers(TaskEvent message) {
     List<TaskBusinessStateTracker> trackers;
-    LocationRelationship locationRelationshipsForLocation = locationRelationshipService.getLocationRelationshipsForLocation(
+    List<UUID> ancestry = locationRelationshipService.getAncestryForLocation(
         message.getAction().getGoal().getPlan().getLocationHierarchy().getIdentifier(),
         UUID.fromString(message.getLocationId()));
 
@@ -80,7 +79,7 @@ public class TaskListener extends Listener {
       locationName = message.getLocationName();
     }
 
-    trackers = locationRelationshipsForLocation.getAncestry()
+    trackers = ancestry
         .stream().map(ancestor -> {
 
           Location locationAncestor = locationService.findByIdentifier(ancestor);

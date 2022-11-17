@@ -520,22 +520,11 @@ public class LocationRelationshipService {
         locationIdentifier, locationHierarchyIdentifier);
   }
 
-  public List<LocationRelationship> getLocationParentWithoutHierarchyIdentifier(
-      UUID locationIdentifier) {
-    return locationRelationshipRepository.getParentLocationByLocationIdWithoutHierarchyId(
-        locationIdentifier);
-  }
 
   public List<LocationMainData> getLocationsByHierarchyIdAndLevelName(UUID hierarchyIdentifier,
       String levelName) {
     return locationRelationshipRepository.getLocationsByHierarchyIdAndLevelName(hierarchyIdentifier,
         levelName);
-  }
-
-  public Location getLocationParentByLocationIdentifierAndHierarchyIdentifier(
-      UUID locationIdentifier, UUID locationHierarchyIdentifier) {
-    return locationRelationshipRepository.getParentLocationByLocationIdAndHierarchyId(
-        locationIdentifier, locationHierarchyIdentifier);
   }
 
   public List<UUID> getAncestryForLocation(UUID locationId, UUID locationHierarchyId) {
