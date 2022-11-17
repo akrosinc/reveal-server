@@ -439,7 +439,7 @@ public class FormDataProcessorService {
     }
   }
 
-  private void publishFormObservations(FormCaptureEvent event) {
+  public void publishFormObservations(FormCaptureEvent event) {
     formSubmissionKafkaTemplate.send(
         kafkaProperties.getTopicMap().get(KafkaConstants.FORM_SUBMISSIONS),
         event.getPlanId().toString(),
@@ -447,7 +447,7 @@ public class FormDataProcessorService {
   }
 
 
-  private List<OrgLevel> getFlattenedOrganizationalHierarchy(Organization organization) {
+  public List<OrgLevel> getFlattenedOrganizationalHierarchy(Organization organization) {
     int levelCounter = 0;
     List<OrgLevel> orgHierarchy = new ArrayList<>();
     orgHierarchy.add(new OrgLevel(organization.getIdentifier().toString(), organization.getName(),
@@ -487,7 +487,7 @@ public class FormDataProcessorService {
     return null;
   }
 
-  private String getFormValue(List<Obs> obsJavaList, String key) {
+  public String getFormValue(List<Obs> obsJavaList, String key) {
     Optional<Obs> ob = obsJavaList.stream()
         .filter(obs -> obs.getFieldCode().equals(key)).findFirst();
     return ob.map(obs -> (String) FormDataUtil.extractData(obs).get(obs.getFieldCode()))
