@@ -478,7 +478,7 @@ public class EventClientFacadeService {
         .collect(Collectors.toList());
   }
 
-  private EventFacade getEventFacade(Event event) {
+  public EventFacade getEventFacade(Event event) {
     ObjectMapper mapper = new ObjectMapper();
     EventFacade eventFacade = mapper
         .convertValue(event.getAdditionalInformation(), EventFacade.class);

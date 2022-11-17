@@ -6,6 +6,7 @@ import com.revealprecision.revealserver.persistence.repository.EventRepository;
 import com.revealprecision.revealserver.persistence.repository.RawEventRepository;
 import com.revealprecision.revealserver.persistence.specification.EventSpec;
 import com.revealprecision.revealserver.service.models.EventSearchCriteria;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -31,4 +32,7 @@ public class EventService {
     return rawEventRepository.save(rawEvent);
   }
 
+  public Event getEventById(UUID identifier){
+    return eventRepository.getById(identifier);
+  }
 }

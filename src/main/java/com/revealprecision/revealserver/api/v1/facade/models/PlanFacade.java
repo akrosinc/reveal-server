@@ -2,7 +2,6 @@ package com.revealprecision.revealserver.api.v1.facade.models;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.revealprecision.revealserver.api.v1.dto.request.EffectivePeriod;
-import com.revealprecision.revealserver.api.v1.dto.request.Jurisdiction;
 import com.revealprecision.revealserver.enums.PlanStatusEnum;
 import java.time.LocalDate;
 import java.util.List;
