@@ -52,4 +52,17 @@ public interface TaskRepository extends JpaRepository<Task, UUID>,
   List<Task> getStructureTaskFacadesByLocationServerVersionAndPlan(UUID planIdentifier,
       List<UUID> locationIdentifiers, Long serverVersion);
 
+
+  @Query(value = "SELECT DISTINCT cast(t.identifier as varchar)  from task t\n"
+      + "left join task_business_state_tracker tbst on t.base_entity_identifier = tbst.task_location_identifier\n"
+      + "WHERE t.business_status != 'Not Visited' and t.business_status != tbst.task_business_status", nativeQuery = true)
+  List<String> findTasksNotSameAsInTaskBusinessStateTracker();
+
+  @Query(value = "SELECT  DISTINCT cast(t.identifier as varchar)  from task t \n"
+      + "left join task_business_state_tracker tbst on t.base_entity_identifier = tbst.task_location_identifier\n"
+      + "\n"
+      + "WHERE t.business_status != 'Not Visited' and tbst.identifier is null",nativeQuery = true)
+  List<String> findTasksByNotPresentInTaskBusinessStateTracker();
+
+
 }
