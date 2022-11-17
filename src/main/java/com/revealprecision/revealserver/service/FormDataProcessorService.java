@@ -135,6 +135,12 @@ public class FormDataProcessorService {
     });
   }
 
+  @Transactional
+  public void processFormDataAndSubmitToMessagingTransactional(Event savedEvent, EventFacade eventFacade)
+      throws IOException {
+    processFormDataAndSubmitToMessaging(savedEvent,
+        eventFacade);
+  }
 
   public void processFormDataAndSubmitToMessaging(Event savedEvent, EventFacade eventFacade)
       throws IOException {

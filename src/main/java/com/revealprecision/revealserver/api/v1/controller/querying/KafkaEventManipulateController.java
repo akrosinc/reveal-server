@@ -123,7 +123,7 @@ public class KafkaEventManipulateController {
           eventService.getEventById(UUID.fromString(eventId))
           ).filter(Optional::isPresent).map(Optional::get).forEach(event -> {
         try {
-          formDataProcessorService.processFormDataAndSubmitToMessaging(event,eventClientFacadeService.getEventFacade(event));
+          formDataProcessorService.processFormDataAndSubmitToMessagingTransactional(event,eventClientFacadeService.getEventFacade(event));
         } catch (Exception ioe) {
           log.error("cannot process event {}",event.getIdentifier(),ioe);
         }
