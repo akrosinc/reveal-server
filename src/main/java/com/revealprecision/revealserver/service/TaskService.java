@@ -135,6 +135,7 @@ public class TaskService {
   }
 
   public Task saveTask(Task task) {
+    task.setLastModified(LocalDateTime.now());
     return taskRepository.save(task);
   }
 

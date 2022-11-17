@@ -184,7 +184,7 @@ public class TaskFacadeService {
 
         task.setTaskFacade(taskEvent);
 
-        Task savedTask = taskService.saveTask(task);
+        taskService.saveTask(task);
 
         kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.TASK), taskEvent);
 
@@ -226,9 +226,7 @@ public class TaskFacadeService {
     Optional<LookupTaskStatus> taskStatus = lookupTaskStatuses.stream().filter(
             lookupTaskStatus -> lookupTaskStatus.getCode().equalsIgnoreCase(taskDto.getStatus().name()))
         .findFirst();
-
-    Task task = saveTask(taskDto, plan, action, taskStatus,owner);
-
+    saveTask(taskDto, plan, action, taskStatus,owner);
   }
 
   private Task saveTask(TaskDto taskDto, Plan plan, Action action,
