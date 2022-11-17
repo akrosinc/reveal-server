@@ -14,7 +14,7 @@ import com.revealprecision.revealserver.service.FormDataProcessorService;
 import com.revealprecision.revealserver.service.TaskService;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -121,7 +121,7 @@ public class KafkaEventManipulateController {
     if (!combinedEventIds.isEmpty()){
       combinedEventIds.stream().map(eventId ->
           eventService.getEventById(UUID.fromString(eventId))
-          ).filter(Objects::nonNull).forEach(event -> {
+          ).filter(Optional::isPresent).map(Optional::get).forEach(event -> {
         try {
           formDataProcessorService.processFormDataAndSubmitToMessaging(event,eventClientFacadeService.getEventFacade(event));
         } catch (Exception ioe) {
