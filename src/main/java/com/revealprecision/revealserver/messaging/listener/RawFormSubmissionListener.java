@@ -57,7 +57,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-@Profile("Running | Listening | raw-form-submission-listener")
+@Profile("Listening | raw-form-submission-listener")
 public class RawFormSubmissionListener extends Listener {
 
 

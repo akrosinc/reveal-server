@@ -28,7 +28,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/kafka-config")
 @Slf4j
 @RequiredArgsConstructor
-@Profile("Running")
 public class KafkaGenerateIndividualTasksController {
 
   private final ProcessTrackerService processTrackerService;

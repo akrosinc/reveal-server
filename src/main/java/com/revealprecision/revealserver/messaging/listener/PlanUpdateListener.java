@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-@Profile("Running | Listening | plan-update-listener")
+@Profile("Listening | plan-update-listener")
 public class PlanUpdateListener extends Listener {
 
   private final TaskService taskService;

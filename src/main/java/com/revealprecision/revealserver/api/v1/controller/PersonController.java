@@ -36,7 +36,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/person")
 @Slf4j
-@Profile("Running")
 public class PersonController {
 
   private final PersonService personService;

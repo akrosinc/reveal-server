@@ -50,7 +50,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 @Service
 @Slf4j
-@Profile("Running | Listening | event-consumption")
+@Profile("Listening | event-consumption")
 public class EventConsumptionListener extends Listener {
 
 

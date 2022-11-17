@@ -27,7 +27,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 @Controller
 @RequestMapping("/api/v1/settings")
 @RequiredArgsConstructor
-@Profile("Running")
 public class SettingsController {
 
   private final SettingService settingService;

@@ -35,7 +35,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/task/")
 @Slf4j
-@Profile("Running")
 public class TaskController {
 
   private final TaskService taskService;

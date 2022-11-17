@@ -18,7 +18,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-@Profile("Running | Listening | task-candidate-generation-listener")
+@Profile("Listening | task-candidate-generation-listener")
 public class TaskCandidateGenerateListener extends Listener {
 
   private final TaskService taskService;

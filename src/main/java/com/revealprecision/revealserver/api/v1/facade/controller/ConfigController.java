@@ -15,7 +15,6 @@ import org.springframework.web.client.RestTemplate;
 @RestController
 @RequestMapping("/rest/config")
 @RequiredArgsConstructor
-@Profile("Running")
 public class ConfigController {
 
   private final KeycloakDeployment keycloakDeployment;

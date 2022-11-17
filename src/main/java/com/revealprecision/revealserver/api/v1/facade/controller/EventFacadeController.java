@@ -39,7 +39,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/rest/event")
 @RequiredArgsConstructor
 @Slf4j
-@Profile("Running")
 public class EventFacadeController {
 
   private final EventClientFacadeService eventClientFacadeService;

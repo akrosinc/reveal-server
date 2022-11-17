@@ -24,7 +24,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/rest/location")
 @RequiredArgsConstructor
-@Profile("Running")
 public class LocationFacadeController {
 
   private final LocationFacadeService locationFacadeService;

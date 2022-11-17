@@ -25,7 +25,6 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/v1/metaImport")
-@Profile("Running")
 public class MetaImportController {
 
   private final StorageService storageService;

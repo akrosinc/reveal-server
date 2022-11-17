@@ -29,7 +29,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/rest/v2/task")
 @Slf4j
-@Profile("Running")
 public class TaskFacadeController {
 
   public static final String TOTAL_RECORDS = "total_records";

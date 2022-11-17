@@ -26,7 +26,7 @@ import org.springframework.stereotype.Service;
 
 @RequiredArgsConstructor
 @Service
-@Profile("Simulation & (Running | Listening | location-metadata-update-listener))")
+@Profile("Simulation & (Listening | location-metadata-update-listener))")
 @Slf4j
 public class LocationMetadataUpdateListener extends Listener{
 

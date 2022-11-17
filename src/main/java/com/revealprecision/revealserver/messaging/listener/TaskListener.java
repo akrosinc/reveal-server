@@ -31,7 +31,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-@Profile("Running | Listening | task-listener")
+@Profile("Listening | task-listener")
 public class TaskListener extends Listener {
 
   private final TaskBusinessStateTrackerRepository taskBusinessStateTrackerRepository;

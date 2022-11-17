@@ -26,7 +26,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/geographicLevel")
-@Profile("Running")
 public class GeographicLevelController {
 
   private final GeographicLevelService geographicLevelService;

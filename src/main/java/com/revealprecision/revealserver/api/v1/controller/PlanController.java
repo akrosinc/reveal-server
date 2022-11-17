@@ -59,7 +59,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/v1/plan")
-@Profile("Running")
 public class PlanController {
 
   private final PlanService planService;

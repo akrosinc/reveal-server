@@ -44,7 +44,6 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequestMapping("/api/v1/location/bulk")
 @CrossOrigin(originPatterns = "*", origins = "*")
-@Profile("Running")
 public class LocationBulkController {
 
   private final LocationBulkService locationBulkService;

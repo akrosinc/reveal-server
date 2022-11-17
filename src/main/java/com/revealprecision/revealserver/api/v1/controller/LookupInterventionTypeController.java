@@ -19,7 +19,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/v1/lookupInterventionType")
-@Profile("Running")
 public class LookupInterventionTypeController {
 
   private final LookupInterventionTypeService interventionTypeService;

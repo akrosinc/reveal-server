@@ -37,7 +37,6 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequestMapping("/api/v1/user/bulk")
 @CrossOrigin(originPatterns = "*", origins = "*")
-@Profile("Running")
 public class UserBulkController {
 
   private final UserBulkService userBulkService;

@@ -21,7 +21,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/rest")
-@Profile("Running")
 public class PlanFacadeController {
 
   private final PlanFacadeService planFacadeService;

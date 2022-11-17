@@ -37,7 +37,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/locationHierarchy")
-@Profile("Running")
 public class LocationHierarchyController {
 
   private final LocationHierarchyService locationHierarchyService;

@@ -18,7 +18,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-@Profile("Running | Listening | plan-location-listener")
+@Profile("Listening | plan-location-listener")
 public class PlanLocationListener extends Listener {
 
   private final TaskService taskService;

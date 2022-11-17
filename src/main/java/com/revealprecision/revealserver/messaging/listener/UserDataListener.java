@@ -29,7 +29,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-@Profile("Running | Listening | user-data-listener")
+@Profile("Listening | user-data-listener")
 public class UserDataListener extends Listener {
 
   private final KafkaProperties kafkaProperties;
