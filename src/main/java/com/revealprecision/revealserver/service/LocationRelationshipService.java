@@ -539,7 +539,7 @@ public class LocationRelationshipService {
         return locationRelationship.getAncestry();
       }
     }
-    throw new NotFoundException("Not Ancestry for location id " + locationId + " hierarchy " +
+    throw new NotFoundException("No Ancestry for location id " + locationId + " hierarchy " +
         locationHierarchyId);
   }
 
