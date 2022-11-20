@@ -14,6 +14,7 @@ import com.revealprecision.revealserver.service.LocationBusinessStatusService;
 import com.revealprecision.revealserver.service.LocationRelationshipService;
 import com.revealprecision.revealserver.service.LocationService;
 import com.revealprecision.revealserver.service.PlanLocationsService;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -62,7 +63,7 @@ public class TaskListener extends Listener {
   }
 
   private List<TaskBusinessStateTracker> createBusinessStateTrackers(TaskEvent message) {
-    List<TaskBusinessStateTracker> trackers;
+    List<TaskBusinessStateTracker> trackers = new ArrayList<>();
     List<UUID> ancestry = locationRelationshipService.getAncestryForLocation(
         message.getAction().getGoal().getPlan().getLocationHierarchy().getIdentifier(),
         UUID.fromString(message.getLocationId()));
@@ -79,14 +80,17 @@ public class TaskListener extends Listener {
       locationName = message.getLocationName();
     }
 
-    trackers = ancestry
-        .stream().map(ancestor -> {
+    if (ancestry != null) {
+      trackers = ancestry
+          .stream().map(ancestor -> {
 
-          Location locationAncestor = locationService.findByIdentifier(ancestor);
+            Location locationAncestor = locationService.findByIdentifier(ancestor);
 
-          return getTaskBusinessStateTracker(message, locationGeographicLevelName, locationName,
-              locationAncestor);
-        }).collect(Collectors.toList());
+            return getTaskBusinessStateTracker(message, locationGeographicLevelName, locationName,
+                locationAncestor);
+          }).collect(Collectors.toList());
+
+    }
     return trackers;
   }
 
@@ -121,7 +125,8 @@ public class TaskListener extends Listener {
           .mapToObj(nodeOrder::get)
           .map(
               node1 -> trackers.stream()
-                  .filter(tracker -> tracker.getParentGeographicLevelName().equals(node1)).findFirst()
+                  .filter(tracker -> tracker.getParentGeographicLevelName().equals(node1))
+                  .findFirst()
                   .get())
           .map(taskBusinessStateTracker ->
               Location.builder()
@@ -185,14 +190,16 @@ public class TaskListener extends Listener {
       }
 
       double percentageVisited =
-          (countOfAssignedStructuresInArea - notVisited - notEligible) / ((double) countOfAssignedStructuresInArea - notEligible) * 100;
+          (countOfAssignedStructuresInArea - notVisited - notEligible) / (
+              (double) countOfAssignedStructuresInArea - notEligible) * 100;
 
       if (percentageVisited > 20d) {
         visitedStatus = true;
 
-        double percentageVisitedEffectively = (complete) / ((double) countOfAssignedStructuresInArea - notEligible) * 100;
+        double percentageVisitedEffectively =
+            (complete) / ((double) countOfAssignedStructuresInArea - notEligible) * 100;
 
-        if (percentageVisitedEffectively > 85d){
+        if (percentageVisitedEffectively > 85d) {
           visitedEffectivelyStatus = true;
         }
       }
