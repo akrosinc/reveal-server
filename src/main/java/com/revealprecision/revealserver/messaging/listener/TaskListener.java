@@ -64,32 +64,36 @@ public class TaskListener extends Listener {
 
   private List<TaskBusinessStateTracker> createBusinessStateTrackers(TaskEvent message) {
     List<TaskBusinessStateTracker> trackers = new ArrayList<>();
-    List<UUID> ancestry = locationRelationshipService.getAncestryForLocation(
-        message.getAction().getGoal().getPlan().getLocationHierarchy().getIdentifier(),
-        UUID.fromString(message.getLocationId()));
-
-    String locationGeographicLevelName;
-    String locationName;
-    if (message.getLocationGeographicLevelName() == null || message.getLocationName() == null) {
-      Location location = locationService.findByIdentifier(
+    try {
+      List<UUID> ancestry = locationRelationshipService.getAncestryForLocation(
+          message.getAction().getGoal().getPlan().getLocationHierarchy().getIdentifier(),
           UUID.fromString(message.getLocationId()));
-      locationGeographicLevelName = location.getGeographicLevel().getName();
-      locationName = location.getName();
-    } else {
-      locationGeographicLevelName = message.getLocationGeographicLevelName();
-      locationName = message.getLocationName();
-    }
 
-    if (ancestry != null) {
-      trackers = ancestry
-          .stream().map(ancestor -> {
+      String locationGeographicLevelName;
+      String locationName;
+      if (message.getLocationGeographicLevelName() == null || message.getLocationName() == null) {
+        Location location = locationService.findByIdentifier(
+            UUID.fromString(message.getLocationId()));
+        locationGeographicLevelName = location.getGeographicLevel().getName();
+        locationName = location.getName();
+      } else {
+        locationGeographicLevelName = message.getLocationGeographicLevelName();
+        locationName = message.getLocationName();
+      }
 
-            Location locationAncestor = locationService.findByIdentifier(ancestor);
+      if (ancestry != null) {
+        trackers = ancestry
+            .stream().map(ancestor -> {
 
-            return getTaskBusinessStateTracker(message, locationGeographicLevelName, locationName,
-                locationAncestor);
-          }).collect(Collectors.toList());
+              Location locationAncestor = locationService.findByIdentifier(ancestor);
 
+              return getTaskBusinessStateTracker(message, locationGeographicLevelName, locationName,
+                  locationAncestor);
+            }).collect(Collectors.toList());
+
+      }
+    } catch (Exception e){
+      log.error("Unable to create task tracker for "+message,e);
     }
     return trackers;
   }
