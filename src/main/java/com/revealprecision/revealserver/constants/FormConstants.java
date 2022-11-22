@@ -31,6 +31,8 @@ public interface FormConstants {
   String CDD_DRUG_RECEIVED_HEALTH_WORKER_SUPERVISOR_FIELD = "health_worker_supervisor";
   String CDD_DRUG_RECEIVED_CDD_NAME_FIELD = "cdd_name";
   String CDD_DRUG_RECEIVED_DRUG_ISSUED_FIELD = "drug_issued";
+  String CDD_DRUG_RECEIVED_DRUG_ALLOCATION_FIELD = "drug_allocation";
+  String CDD_DRUG_RECEIVED_DRUG_ALLOCATION_VALUE_INITIAL_BALANCE = "Initial balance";
 
   String CDD_DRUG_WITHDRAWAL_FORM = "cdd_drug_withdrawal";
   String CDD_DRUG_WITHDRAWAL_DATE_FIELD = "date";
