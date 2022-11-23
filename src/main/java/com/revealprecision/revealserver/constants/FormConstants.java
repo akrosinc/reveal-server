@@ -9,19 +9,43 @@ public interface FormConstants {
   String CDD_SUPERVISOR_DAILY_SUMMARY_CDD_NAME_FIELD = "cdd_name";
   String CDD_SUPERVISOR_DAILY_SUMMARY_FORM = "cdd_supervisor_daily_summary";
   String CDD_SUPERVISOR_DAILY_SUMMARY_DATE_FIELD = "date";
+  String CDD_SUPERVISOR_DAILY_SUMMARY_DRUGS_FIELD = "drugs";
+  String CDD_SUPERVISOR_DAILY_SUMMARY_NTD_TREATED_FIELD = "ntd_treated";
+
   String TABLET_ACCOUNTABILITY_FORM = "tablet_accountability";
   String TABLET_ACCOUNTABILITY_LOCATION_FIELD = "location";
   String TABLET_ACCOUNTABILITY_HEALTH_WORKER_SUPERVISOR_FIELD = "health_worker_supervisor";
   String TABLET_ACCOUNTABILITY_CDD_NAME_FIELD = "cdd_name";
+  String TABLET_ACCOUNTABILITY_DRUG_DISTRIBUTED_FIELD = "drug_distributed";
+
   String CDD_DRUG_ALLOCATION_FORM = "cdd_drug_allocation";
   String CDD_DRUG_ALLOCATION_DATE_FIELD = "date";
   String CDD_DRUG_ALLOCATION_LOCATION_FIELD = "location";
   String CDD_DRUG_ALLOCATION_HEALTH_WORKER_SUPERVISOR_FIELD = "health_worker_supervisor";
   String CDD_DRUG_ALLOCATION_CDD_NAME_FIELD = "cdd_name";
+  String CDD_DRUG_ALLOCATION_DRUG_DISTRIBUTED_FIELD = "drug_distributed";
+
+  String CDD_DRUG_RECEIVED_FORM = "cdd_drug_received";
+  String CDD_DRUG_RECEIVED_DATE_FIELD = "date";
+  String CDD_DRUG_RECEIVED_LOCATION_FIELD = "location";
+  String CDD_DRUG_RECEIVED_HEALTH_WORKER_SUPERVISOR_FIELD = "health_worker_supervisor";
+  String CDD_DRUG_RECEIVED_CDD_NAME_FIELD = "cdd_name";
+  String CDD_DRUG_RECEIVED_DRUG_ISSUED_FIELD = "drug_issued";
+  String CDD_DRUG_RECEIVED_DRUG_ALLOCATION_FIELD = "drug_allocation";
+  String CDD_DRUG_RECEIVED_DRUG_ALLOCATION_VALUE_INITIAL_BALANCE = "Initial balance";
+
+  String CDD_DRUG_WITHDRAWAL_FORM = "cdd_drug_withdrawal";
+  String CDD_DRUG_WITHDRAWAL_DATE_FIELD = "date";
+  String CDD_DRUG_WITHDRAWAL_HEALTH_WORKER_SUPERVISOR_FIELD = "health_worker_supervisor";
+  String CDD_DRUG_WITHDRAWAL_CDD_NAME_FIELD = "cdd_name";
+  String CDD_DRUG_WITHDRAWAL_LOCATION_FIELD = "location";
+  String CDD_DRUG_WITHDRAWAL_DRUG_WITHDRAWN_FIELD = "drug_withdrawn";
+
   String SPRAY_FORM = "Spray";
   String SPRAY_FORM_SPRAY_OPERATOR_FIELD = "sprayop_code";
   String SPRAY_FORM_PROVIDER = "providerId";
   String SPRAY_FORM_SACHET_COUNT_FIELD = "serial_numbers_count";
+
   String IRS_FOUND = "FOUND";
   String IRS_FOUND_FROM_SUMMARY = "IRS_FOUND_FROM_SUMMARY";
   String IRS_SPRAYED = "SPRAYED";
@@ -30,6 +54,7 @@ public interface FormConstants {
   String IRS_ELIGIBLE = "ELIGIBLE";
   String IRS_SACHET_COUNT = "SACHET_COUNT";
   String IRS_FORM_SUPERVISOR = "supervisor";
+
   String IRS_LITE_VERIFICATION_FORM = "irs_lite_verification";
   String IRS_LITE_FOUND = "FOUND";
   String IRS_LITE_SPRAYED = "SPRAYED";

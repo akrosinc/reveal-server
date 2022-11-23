@@ -56,6 +56,7 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.data.util.Pair;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -75,6 +76,9 @@ public class LocationRelationshipService {
   private final KafkaProperties kafkaProperties;
   private final LocationBulkRepository locationBulkRepository;
   private final Logger importLog = LoggerFactory.getLogger("location-import-file");
+
+  @Value(value = "${reveal.elastic.index-name}")
+  private String elasticLocationIndexName;
 
   private final Environment env;
   private final LocationCountsRepository locationCountsRepository;
@@ -362,7 +366,7 @@ public class LocationRelationshipService {
             ShapeRelation.CONTAINS));
         SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
         sourceBuilder.query(boolQuery);
-        SearchRequest searchRequest = new SearchRequest("location");
+        SearchRequest searchRequest = new SearchRequest(elasticLocationIndexName);
         searchRequest.source(sourceBuilder);
         SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
         if (searchResponse.getHits().getHits().length == 0) {

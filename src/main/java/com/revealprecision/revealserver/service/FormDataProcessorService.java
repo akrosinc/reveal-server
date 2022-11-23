@@ -4,13 +4,28 @@ import static com.revealprecision.revealserver.constants.EventClientConstants.RE
 import static com.revealprecision.revealserver.constants.FormConstants.BUSINESS_STATUS;
 import static com.revealprecision.revealserver.constants.FormConstants.CDD_DRUG_ALLOCATION_CDD_NAME_FIELD;
 import static com.revealprecision.revealserver.constants.FormConstants.CDD_DRUG_ALLOCATION_DATE_FIELD;
+import static com.revealprecision.revealserver.constants.FormConstants.CDD_DRUG_ALLOCATION_DRUG_DISTRIBUTED_FIELD;
 import static com.revealprecision.revealserver.constants.FormConstants.CDD_DRUG_ALLOCATION_FORM;
 import static com.revealprecision.revealserver.constants.FormConstants.CDD_DRUG_ALLOCATION_HEALTH_WORKER_SUPERVISOR_FIELD;
 import static com.revealprecision.revealserver.constants.FormConstants.CDD_DRUG_ALLOCATION_LOCATION_FIELD;
+import static com.revealprecision.revealserver.constants.FormConstants.CDD_DRUG_RECEIVED_CDD_NAME_FIELD;
+import static com.revealprecision.revealserver.constants.FormConstants.CDD_DRUG_RECEIVED_DRUG_ALLOCATION_FIELD;
+import static com.revealprecision.revealserver.constants.FormConstants.CDD_DRUG_RECEIVED_DRUG_ALLOCATION_VALUE_INITIAL_BALANCE;
+import static com.revealprecision.revealserver.constants.FormConstants.CDD_DRUG_RECEIVED_DRUG_ISSUED_FIELD;
+import static com.revealprecision.revealserver.constants.FormConstants.CDD_DRUG_RECEIVED_FORM;
+import static com.revealprecision.revealserver.constants.FormConstants.CDD_DRUG_RECEIVED_HEALTH_WORKER_SUPERVISOR_FIELD;
+import static com.revealprecision.revealserver.constants.FormConstants.CDD_DRUG_RECEIVED_LOCATION_FIELD;
+import static com.revealprecision.revealserver.constants.FormConstants.CDD_DRUG_WITHDRAWAL_CDD_NAME_FIELD;
+import static com.revealprecision.revealserver.constants.FormConstants.CDD_DRUG_WITHDRAWAL_DATE_FIELD;
+import static com.revealprecision.revealserver.constants.FormConstants.CDD_DRUG_WITHDRAWAL_DRUG_WITHDRAWN_FIELD;
+import static com.revealprecision.revealserver.constants.FormConstants.CDD_DRUG_WITHDRAWAL_FORM;
+import static com.revealprecision.revealserver.constants.FormConstants.CDD_DRUG_WITHDRAWAL_HEALTH_WORKER_SUPERVISOR_FIELD;
+import static com.revealprecision.revealserver.constants.FormConstants.CDD_DRUG_WITHDRAWAL_LOCATION_FIELD;
 import static com.revealprecision.revealserver.constants.FormConstants.CDD_SUPERVISOR_DAILY_SUMMARY_CDD_NAME_FIELD;
 import static com.revealprecision.revealserver.constants.FormConstants.CDD_SUPERVISOR_DAILY_SUMMARY_DATE_FIELD;
 import static com.revealprecision.revealserver.constants.FormConstants.CDD_SUPERVISOR_DAILY_SUMMARY_FORM;
 import static com.revealprecision.revealserver.constants.FormConstants.CDD_SUPERVISOR_DAILY_SUMMARY_HEALTH_WORKER_SUPERVISOR_FIELD;
+import static com.revealprecision.revealserver.constants.FormConstants.CDD_SUPERVISOR_DAILY_SUMMARY_NTD_TREATED_FIELD;
 import static com.revealprecision.revealserver.constants.FormConstants.COLLECTION_DATE;
 import static com.revealprecision.revealserver.constants.FormConstants.DAILY_SUMMARY;
 import static com.revealprecision.revealserver.constants.FormConstants.FOUND;
@@ -41,15 +56,18 @@ import static com.revealprecision.revealserver.constants.FormConstants.SPRAY_FOR
 import static com.revealprecision.revealserver.constants.FormConstants.SPRAY_FORM_SACHET_COUNT_FIELD;
 import static com.revealprecision.revealserver.constants.FormConstants.SPRAY_FORM_SPRAY_OPERATOR_FIELD;
 import static com.revealprecision.revealserver.constants.FormConstants.TABLET_ACCOUNTABILITY_CDD_NAME_FIELD;
+import static com.revealprecision.revealserver.constants.FormConstants.TABLET_ACCOUNTABILITY_DRUG_DISTRIBUTED_FIELD;
 import static com.revealprecision.revealserver.constants.FormConstants.TABLET_ACCOUNTABILITY_FORM;
 import static com.revealprecision.revealserver.constants.FormConstants.TABLET_ACCOUNTABILITY_HEALTH_WORKER_SUPERVISOR_FIELD;
 import static com.revealprecision.revealserver.constants.FormConstants.TABLET_ACCOUNTABILITY_LOCATION_FIELD;
+import static com.revealprecision.revealserver.constants.KafkaConstants.EVENT_TRACKER;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.revealprecision.revealserver.api.v1.dto.factory.EntityTagEventFactory;
+import com.revealprecision.revealserver.api.v1.dto.factory.EventTrackerMessageFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.FormDataEntityTagEventFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.FormDataEntityTagValueEventFactory;
 import com.revealprecision.revealserver.api.v1.facade.models.EventFacade;
@@ -59,6 +77,7 @@ import com.revealprecision.revealserver.constants.LocationConstants;
 import com.revealprecision.revealserver.enums.PlanInterventionTypeEnum;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.messaging.message.DeviceUser;
+import com.revealprecision.revealserver.messaging.message.EventTrackerMessage;
 import com.revealprecision.revealserver.messaging.message.FormCaptureEvent;
 import com.revealprecision.revealserver.messaging.message.FormDataEntityTagEvent;
 import com.revealprecision.revealserver.messaging.message.FormDataEntityTagValueEvent;
@@ -80,6 +99,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -117,6 +137,7 @@ public class FormDataProcessorService {
   private final KafkaTemplate<String, MDALiteLocationSupervisorCddEvent> mdaliteSupervisorTemplate;
 
   private final KafkaTemplate<String, FormCaptureEvent> formSubmissionKafkaTemplate;
+  private final KafkaTemplate<String, EventTrackerMessage> eventTrackerKafkaTemplate;
   private final LocationRelationshipService locationRelationshipService;
 
   @Async
@@ -181,7 +202,26 @@ public class FormDataProcessorService {
 
             cdd = getFormValue(obsJavaList, CDD_SUPERVISOR_DAILY_SUMMARY_CDD_NAME_FIELD);
 
+            String ntdTreated = getFormValue(obsJavaList,
+                CDD_SUPERVISOR_DAILY_SUMMARY_NTD_TREATED_FIELD);
+
             submitSupervisorCddToMessaging(supervisorName, cdd, baseEntityIdentifier, plan);
+
+            if (!areAnyEmptyOrNull(dateString, baseEntityIdentifier, supervisorName, cdd,
+                ntdTreated)) {
+
+              String aggregationKey =
+                  dateString + "-" + "-" +
+                      baseEntityIdentifier + "-" + supervisorName + "-" + cdd + "-" + ntdTreated;
+
+              eventTrackerKafkaTemplate.send(kafkaProperties.getTopicMap().get(EVENT_TRACKER),
+                  EventTrackerMessageFactory.getEntity(savedEvent, eventFacade, plan, dateString,
+                      supervisorName,
+                      cdd,
+                      baseEntityIdentifier,
+                      aggregationKey));
+            }
+
           }
           if (savedEvent.getEventType().equals(TABLET_ACCOUNTABILITY_FORM)) {
 
@@ -195,6 +235,21 @@ public class FormDataProcessorService {
 
             submitSupervisorCddToMessaging(supervisorName, cdd, baseEntityIdentifier, plan);
 
+            String drugDistributed = getFormValue(obsJavaList,
+                TABLET_ACCOUNTABILITY_DRUG_DISTRIBUTED_FIELD);
+
+            if (!areAnyEmptyOrNull(baseEntityIdentifier, supervisorName, cdd, drugDistributed)) {
+
+              String aggregationKey =
+                  baseEntityIdentifier + "-" + supervisorName + "-" + cdd + "-" + drugDistributed;
+
+              eventTrackerKafkaTemplate.send(kafkaProperties.getTopicMap().get(EVENT_TRACKER),
+                  EventTrackerMessageFactory.getEntity(savedEvent, eventFacade, plan, dateString,
+                      supervisorName,
+                      cdd,
+                      baseEntityIdentifier,
+                      aggregationKey));
+            }
           }
           if (savedEvent.getEventType().equals(CDD_DRUG_ALLOCATION_FORM)) {
 
@@ -209,6 +264,98 @@ public class FormDataProcessorService {
                 CDD_DRUG_ALLOCATION_LOCATION_FIELD);
 
             submitSupervisorCddToMessaging(supervisorName, cdd, baseEntityIdentifier, plan);
+
+            String drugDistributed = getFormValue(obsJavaList,
+                CDD_DRUG_ALLOCATION_DRUG_DISTRIBUTED_FIELD);
+
+            if (!areAnyEmptyOrNull(dateString, baseEntityIdentifier, supervisorName, cdd,
+                drugDistributed)) {
+
+              String aggregationKey =
+                  dateString + "-" +
+                      baseEntityIdentifier + "-" + supervisorName + "-" + cdd + "-"
+                      + drugDistributed;
+
+              eventTrackerKafkaTemplate.send(kafkaProperties.getTopicMap().get(EVENT_TRACKER),
+                  EventTrackerMessageFactory.getEntity(savedEvent, eventFacade, plan, dateString,
+                      supervisorName,
+                      cdd,
+                      baseEntityIdentifier,
+                      aggregationKey));
+            }
+          }
+
+          if (savedEvent.getEventType().equals(CDD_DRUG_WITHDRAWAL_FORM)) {
+
+            dateString = getFormValue(obsJavaList, CDD_DRUG_WITHDRAWAL_DATE_FIELD);
+
+            supervisorName = getFormValue(obsJavaList,
+                CDD_DRUG_WITHDRAWAL_HEALTH_WORKER_SUPERVISOR_FIELD);
+
+            cdd = getFormValue(obsJavaList, CDD_DRUG_WITHDRAWAL_CDD_NAME_FIELD);
+
+            baseEntityIdentifier = getBaseEntityIdentifierFromLocationFormData(obsJavaList,
+                CDD_DRUG_WITHDRAWAL_LOCATION_FIELD);
+
+            submitSupervisorCddToMessaging(supervisorName, cdd, baseEntityIdentifier, plan);
+
+            String drugWithdrawn = getFormValue(obsJavaList,
+                CDD_DRUG_WITHDRAWAL_DRUG_WITHDRAWN_FIELD);
+
+            if (!areAnyEmptyOrNull(dateString, baseEntityIdentifier, supervisorName, cdd,
+                drugWithdrawn)) {
+
+              String aggregationKey =
+                  dateString + "-" +
+                      baseEntityIdentifier + "-" + supervisorName + "-" + cdd + "-" + drugWithdrawn;
+
+              eventTrackerKafkaTemplate.send(kafkaProperties.getTopicMap().get(EVENT_TRACKER),
+                  EventTrackerMessageFactory.getEntity(savedEvent, eventFacade, plan, dateString,
+                      supervisorName,
+                      cdd,
+                      baseEntityIdentifier,
+                      aggregationKey));
+            }
+          }
+          if (savedEvent.getEventType().equals(CDD_DRUG_RECEIVED_FORM)) {
+
+            dateString = getFormValue(obsJavaList, CDD_DRUG_RECEIVED_CDD_NAME_FIELD);
+
+            supervisorName = getFormValue(obsJavaList,
+                CDD_DRUG_RECEIVED_HEALTH_WORKER_SUPERVISOR_FIELD);
+
+            cdd = getFormValue(obsJavaList, CDD_DRUG_RECEIVED_CDD_NAME_FIELD);
+
+            baseEntityIdentifier = getBaseEntityIdentifierFromLocationFormData(obsJavaList,
+                CDD_DRUG_RECEIVED_LOCATION_FIELD);
+
+            submitSupervisorCddToMessaging(supervisorName, cdd, baseEntityIdentifier, plan);
+
+            String drugWithReceived = getFormValue(obsJavaList,
+                CDD_DRUG_RECEIVED_DRUG_ISSUED_FIELD);
+
+            String drugAllocation = getFormValue(obsJavaList,
+                CDD_DRUG_RECEIVED_DRUG_ALLOCATION_FIELD);
+
+            if (!drugAllocation.equals(CDD_DRUG_RECEIVED_DRUG_ALLOCATION_VALUE_INITIAL_BALANCE)) {
+              drugAllocation = drugAllocation + "-" + LocalDateTime.now();
+            }
+
+            if (!areAnyEmptyOrNull(dateString, baseEntityIdentifier, supervisorName, cdd,
+                drugWithReceived, drugAllocation)) {
+
+              String aggregationKey =
+                  dateString + "-" +
+                      baseEntityIdentifier + "-" + supervisorName + "-" + cdd + "-"
+                      + drugWithReceived + "-" + drugAllocation;
+
+              eventTrackerKafkaTemplate.send(kafkaProperties.getTopicMap().get(EVENT_TRACKER),
+                  EventTrackerMessageFactory.getEntity(savedEvent, eventFacade, plan, dateString,
+                      supervisorName,
+                      cdd,
+                      baseEntityIdentifier,
+                      aggregationKey));
+            }
           }
 
         }
@@ -445,7 +592,8 @@ public class FormDataProcessorService {
     }
   }
 
-  public void publishFormObservations(FormCaptureEvent event) {
+
+  private void publishFormObservations(FormCaptureEvent event) {
     formSubmissionKafkaTemplate.send(
         kafkaProperties.getTopicMap().get(KafkaConstants.FORM_SUBMISSIONS),
         event.getPlanId().toString(),
@@ -506,4 +654,10 @@ public class FormDataProcessorService {
     return ob.map(obs -> (String) FormDataUtil.extractDataFromList(obs).get(obs.getFieldCode()))
         .orElse(null);
   }
+
+  private static boolean areAnyEmptyOrNull(Object... strings) {
+    return Arrays.stream(strings).anyMatch(Objects::isNull) || Arrays.stream(strings)
+        .map(Object::toString).anyMatch(String::isEmpty);
+  }
+
 }
