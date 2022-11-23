@@ -1,8 +1,5 @@
 package com.revealprecision.revealserver.api.v1.controller;
 
-import com.revealprecision.revealserver.api.v1.dto.factory.LocationBulkResponseFactory;
-import com.revealprecision.revealserver.api.v1.dto.response.IdentifierResponse;
-import com.revealprecision.revealserver.api.v1.dto.response.LocationBulkResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.MetadataFileImportResponse;
 import com.revealprecision.revealserver.exceptions.FileFormatException;
 import com.revealprecision.revealserver.service.MetadataService;
@@ -11,10 +8,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import java.io.IOException;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import org.springframework.batch.core.JobParametersInvalidException;
-import org.springframework.batch.core.repository.JobExecutionAlreadyRunningException;
-import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteException;
-import org.springframework.batch.core.repository.JobRestartException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;

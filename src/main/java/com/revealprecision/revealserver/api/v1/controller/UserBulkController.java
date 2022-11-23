@@ -47,6 +47,7 @@ public class UserBulkController {
       tags = {"User bulk"}
   )
   @GetMapping("/{identifier}")
+
   public ResponseEntity<Page<UserBulkDetailResponse>> getBulkDetails(
       @Parameter(description = "User bulk identifier") @PathVariable("identifier") UUID identifier,
       Pageable pageable) {

@@ -2,13 +2,10 @@ package com.revealprecision.revealserver.api.v1.controller.querying;
 
 import com.revealprecision.revealserver.enums.ProcessType;
 import com.revealprecision.revealserver.enums.TaskGenerateRequestValidationStateEnum;
-import com.revealprecision.revealserver.enums.TaskProcessEnum;
 import com.revealprecision.revealserver.persistence.domain.Action;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.ProcessTracker;
-import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.service.ActionService;
-import com.revealprecision.revealserver.service.PlanService;
 import com.revealprecision.revealserver.service.ProcessTrackerService;
 import com.revealprecision.revealserver.service.TaskService;
 import com.revealprecision.revealserver.util.UserUtils;
@@ -19,10 +16,7 @@ import java.util.UUID;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.util.Pair;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.Mapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -35,13 +29,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class KafkaGenerateIndividualTasksController {
 
-
-
   private final ProcessTrackerService processTrackerService;
   private final TaskService taskService;
-
   private final ActionService actionService;
-
 
   @PostMapping("/validate-individual-tasks")
   public Map<TaskGenerateRequestValidationStateEnum, List<UUID>> validate(@RequestParam("planIdentifier") UUID planIdentifier,

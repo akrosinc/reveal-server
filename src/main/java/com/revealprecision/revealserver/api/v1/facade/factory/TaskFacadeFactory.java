@@ -6,13 +6,6 @@ import com.revealprecision.revealserver.api.v1.facade.models.TaskFacade.TaskPrio
 import com.revealprecision.revealserver.api.v1.facade.models.TaskFacade.TaskStatus;
 import com.revealprecision.revealserver.api.v1.facade.util.DateTimeFormatter;
 import com.revealprecision.revealserver.messaging.message.TaskEvent;
-import com.revealprecision.revealserver.persistence.domain.Action;
-import com.revealprecision.revealserver.persistence.domain.Location;
-import com.revealprecision.revealserver.persistence.domain.Person;
-import com.revealprecision.revealserver.persistence.domain.Task;
-import com.revealprecision.revealserver.persistence.domain.User;
-import com.revealprecision.revealserver.util.ActionUtils;
-import java.util.Optional;
 
 public class TaskFacadeFactory {
   public static TaskFacade getTaskFacadeObj(String requester, String groupId, TaskEvent task) {

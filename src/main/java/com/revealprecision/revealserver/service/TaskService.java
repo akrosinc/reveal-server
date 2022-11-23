@@ -698,4 +698,14 @@ public class TaskService {
     return savedTask;
   }
 
+
+  public List<String> getAllTasksNotSameAsTaskBusinessStateTracker(){
+    return taskRepository.findTasksNotSameAsInTaskBusinessStateTracker();
+  }
+
+  public List<String> getAllTasksNotInTaskBusinessStateTracker(){
+    return taskRepository.findTasksByNotPresentInTaskBusinessStateTracker();
+  }
+
+
 }

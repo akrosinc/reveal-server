@@ -166,8 +166,10 @@ public interface LocationRelationshipRepository extends JpaRepository<LocationRe
   List<LocationRelationship> getParentLocationByLocationIdWithoutHierarchyId(
       @Param("locationIdentifier") UUID locationIdentifier);
 
-  LocationRelationship getLocationRelationshipByLocation_IdentifierAndLocationHierarchy_Identifier(
+  LocationRelationship getFirstLocationRelationshipByLocation_IdentifierAndLocationHierarchy_Identifier(
       UUID locationIdentifier, UUID hierarchyIdentifier);
+
+  List<LocationRelationship> findLocationRelationshipsByLocation_IdentifierAndLocationHierarchy_Identifier(UUID locationIdentifier, UUID hierarchyIdentifier);
 
   @Query(value =
       "select new com.revealprecision.revealserver.persistence.projection.LocationMainData(l.identifier, l.name) from LocationRelationship lr "
