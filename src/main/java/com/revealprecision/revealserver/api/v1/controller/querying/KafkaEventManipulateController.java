@@ -14,7 +14,7 @@ import com.revealprecision.revealserver.service.FormDataProcessorService;
 import com.revealprecision.revealserver.service.TaskService;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -55,8 +55,8 @@ public class KafkaEventManipulateController {
   }
 
   //Run fourth
-  @GetMapping("/reprocess-tasks-align-task-business-status-tracker")
-  private void reprocessTasksAddMissingTaskBusinessStatusTrackers() {
+  @GetMapping("/reprocess-tasks-not-in-task-business-status-tracker")
+  private void reprocessTasksNotInTaskBusinessStateTrackers() {
     processTasksNotInTaskBusinessStateTrackerAsync();
   }
 
@@ -121,9 +121,9 @@ public class KafkaEventManipulateController {
     if (!combinedEventIds.isEmpty()){
       combinedEventIds.stream().map(eventId ->
           eventService.getEventById(UUID.fromString(eventId))
-          ).filter(Objects::nonNull).forEach(event -> {
+          ).filter(Optional::isPresent).map(Optional::get).forEach(event -> {
         try {
-          formDataProcessorService.processFormDataAndSubmitToMessaging(event,eventClientFacadeService.getEventFacade(event));
+          formDataProcessorService.processFormDataAndSubmitToMessagingTransactional(event,eventClientFacadeService.getEventFacade(event));
         } catch (Exception ioe) {
           log.error("cannot process event {}",event.getIdentifier(),ioe);
         }

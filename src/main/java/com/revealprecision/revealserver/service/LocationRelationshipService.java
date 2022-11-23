@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.revealprecision.revealserver.constants.KafkaConstants;
 import com.revealprecision.revealserver.enums.BulkStatusEnum;
 import com.revealprecision.revealserver.enums.EntityStatus;
+import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.messaging.message.LocationRelationshipMessage;
 import com.revealprecision.revealserver.persistence.domain.GeographicLevel;
 import com.revealprecision.revealserver.persistence.domain.Location;
@@ -455,7 +456,7 @@ public class LocationRelationshipService {
 
   public LocationRelationship getLocationRelationshipsForLocation(
       UUID locationHierarchyIdentifier, UUID locationIdentifier) {
-    return locationRelationshipRepository.getLocationRelationshipByLocation_IdentifierAndLocationHierarchy_Identifier(
+    return locationRelationshipRepository.getFirstLocationRelationshipByLocation_IdentifierAndLocationHierarchy_Identifier(
         locationIdentifier, locationHierarchyIdentifier);
   }
 
@@ -520,11 +521,6 @@ public class LocationRelationshipService {
         locationIdentifier, locationHierarchyIdentifier);
   }
 
-  public List<LocationRelationship> getLocationParentWithoutHierarchyIdentifier(
-      UUID locationIdentifier) {
-    return locationRelationshipRepository.getParentLocationByLocationIdWithoutHierarchyId(
-        locationIdentifier);
-  }
 
   public List<LocationMainData> getLocationsByHierarchyIdAndLevelName(UUID hierarchyIdentifier,
       String levelName) {
@@ -532,15 +528,19 @@ public class LocationRelationshipService {
         levelName);
   }
 
-  public Location getLocationParentByLocationIdentifierAndHierarchyIdentifier(
-      UUID locationIdentifier, UUID locationHierarchyIdentifier) {
-    return locationRelationshipRepository.getParentLocationByLocationIdAndHierarchyId(
-        locationIdentifier, locationHierarchyIdentifier);
-  }
+  public List<UUID> getAncestryForLocation(UUID locationId, UUID locationHierarchyId) throws NotFoundException{
 
-  public List<UUID> getAncestryForLocation(UUID locationId, UUID locationHierarchyId) {
-    return locationRelationshipRepository.getLocationRelationshipByLocation_IdentifierAndLocationHierarchy_Identifier(
-        locationId, locationHierarchyId).getAncestry();
+    List<LocationRelationship> locationRelationships = locationRelationshipRepository.findLocationRelationshipsByLocation_IdentifierAndLocationHierarchy_Identifier(
+        locationId, locationHierarchyId);
+
+    if (locationRelationships != null && !locationRelationships.isEmpty()) {
+      LocationRelationship locationRelationship = locationRelationships.get(0);
+      if (locationRelationship.getAncestry() != null) {
+        return locationRelationship.getAncestry();
+      }
+    }
+    throw new NotFoundException("No Ancestry for location id " + locationId + " hierarchy " +
+        locationHierarchyId);
   }
 
   public List<UUID> getChildrenLocationIdentifiersGivenParentIdentifiers(
