@@ -66,8 +66,7 @@ public class TaskListener extends Listener {
     List<TaskBusinessStateTracker> trackers = new ArrayList<>();
     try {
       List<UUID> ancestry = locationRelationshipService.getAncestryForLocation(
-          message.getAction().getGoal().getPlan().getLocationHierarchy().getIdentifier(),
-          UUID.fromString(message.getLocationId()));
+          UUID.fromString(message.getLocationId()),message.getAction().getGoal().getPlan().getLocationHierarchy().getIdentifier());
 
       String locationGeographicLevelName;
       String locationName;
