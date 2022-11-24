@@ -266,17 +266,6 @@ public class LocationRelationshipService {
     return ancestry;
   }
 
-  public Long getNumberOfChildrenByGeoLevelNameWithinLocationAndHierarchy(
-      String geographicLevelName
-      , UUID locationIdentifier,
-      UUID locationHierarchyIdentifier) {
-
-    return locationRelationshipRepository.getNumberOfChildrenByGeoLevelNameWithinLocationAndHierarchy(
-        geographicLevelName
-        , locationIdentifier.toString(), locationHierarchyIdentifier);
-
-  }
-
   public List<LocationRelationship> getLocationRelationshipsForLocationHierarchy(
       LocationHierarchy locationHierarchy) {
     return locationRelationshipRepository.findByLocationHierarchyIdentifier(
@@ -314,11 +303,6 @@ public class LocationRelationshipService {
     return 0;
   }
 
-  public List<Location> getLocationChildrenByLocationParentIdentifierAndHierarchyIdentifier(
-      List<UUID> parentLocationIdentifiers, UUID hierarchyIdentifier) {
-    return locationRelationshipRepository.findLocationRelationshipUuidsByParentLocation_IdentifierAndHierarchyIdentifier(
-        parentLocationIdentifiers, hierarchyIdentifier);
-  }
 
   public List<PlanLocationDetails> getLocationChildrenByLocationParentIdentifierAndPlanIdentifier(
       UUID parentLocationIdentifiers, UUID planIdentifier) {
@@ -532,7 +516,8 @@ public class LocationRelationshipService {
         levelName);
   }
 
-  public List<UUID> getAncestryForLocation(UUID locationId, UUID locationHierarchyId) throws NotFoundException{
+  public List<UUID> getAncestryForLocation(UUID locationId, UUID locationHierarchyId)
+      throws NotFoundException {
 
     List<LocationRelationship> locationRelationships = locationRelationshipRepository.findLocationRelationshipsByLocation_IdentifierAndLocationHierarchy_Identifier(
         locationId, locationHierarchyId);
