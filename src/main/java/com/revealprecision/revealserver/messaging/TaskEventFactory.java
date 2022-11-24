@@ -66,7 +66,7 @@ public class TaskEventFactory {
         .description(taskSaved.getDescription())
         .serverVersion(taskSaved.getServerVersion())
         .lookupTaskStatus(getLookupTaskStatusEventFromLookupTaskStatus(lookupTaskStatus))
-        .lastModified(taskSaved.getLastModified())
+        .lastModified(taskSaved.getModifiedDatetime())
         .identifier(taskSaved.getIdentifier())
         .priority(taskSaved.getPriority())
         .locationGeographicLevelName(taskSaved.getLocation().getGeographicLevel().getName())

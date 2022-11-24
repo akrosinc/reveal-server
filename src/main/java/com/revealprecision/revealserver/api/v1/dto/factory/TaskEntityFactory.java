@@ -15,7 +15,7 @@ public class TaskEntityFactory {
     return Task.builder()
         .lookupTaskStatus(lookupTaskStatus)
         .priority(taskRequest.getPriority()).authoredOn(LocalDateTime.now())
-        .description(taskRequest.getDescription()).lastModified(LocalDateTime.now())
+        .description(taskRequest.getDescription())
         .action(action)
         .executionPeriodStart(
             taskRequest.getExecutionPeriodStart())

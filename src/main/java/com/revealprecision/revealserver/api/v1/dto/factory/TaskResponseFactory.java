@@ -19,7 +19,7 @@ public class TaskResponseFactory {
             .build())
         .priority(task.getPriority())
         .authoredOn(task.getAuthoredOn()).description(task.getDescription())
-        .lastModified(task.getLastModified())
+        .lastModified(task.getModifiedDatetime())
         .executionPeriodStart(
             task.getExecutionPeriodStart())
         .executionPeriodEnd(

@@ -184,7 +184,7 @@ public class TaskFacadeService {
 
         task.setTaskFacade(taskEvent);
 
-        Task savedTask = taskService.saveTask(task);
+        taskService.saveTask(task);
 
         kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.TASK), taskEvent);
 
@@ -226,9 +226,7 @@ public class TaskFacadeService {
     Optional<LookupTaskStatus> taskStatus = lookupTaskStatuses.stream().filter(
             lookupTaskStatus -> lookupTaskStatus.getCode().equalsIgnoreCase(taskDto.getStatus().name()))
         .findFirst();
-
-    Task task = saveTask(taskDto, plan, action, taskStatus,owner);
-
+    saveTask(taskDto, plan, action, taskStatus,owner);
   }
 
   private Task saveTask(TaskDto taskDto, Plan plan, Action action,
@@ -240,9 +238,6 @@ public class TaskFacadeService {
       task = new Task();
       task.setIdentifier(UUID.fromString(taskDto.getIdentifier()));
     }
-
-    LocalDateTime LastModifierFromAndroid = DateTimeFormatter.getLocalDateTimeFromAndroidFacadeString(
-        taskDto.getLastModified());
 
     if (taskStatus.isPresent()) {
       task.setLookupTaskStatus(taskStatus.get());
@@ -258,7 +253,6 @@ public class TaskFacadeService {
           taskDto.getExecutionPeriod().getEnd()).toLocalDate() : action.getTimingPeriodEnd());
       task.setExecutionPeriodStart(DateTimeFormatter.getLocalDateTimeFromAndroidFacadeString(
           taskDto.getExecutionPeriod().getStart()).toLocalDate());
-      task.setLastModified(LastModifierFromAndroid);
       task.setBaseEntityIdentifier(UUID.fromString(taskDto.getForEntity()));
       task.setBusinessStatus(taskDto.getBusinessStatus());
 
