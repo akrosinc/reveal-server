@@ -135,7 +135,6 @@ public class TaskService {
   }
 
   public Task saveTask(Task task) {
-    task.setLastModified(LocalDateTime.now());
     return taskRepository.save(task);
   }
 
@@ -191,7 +190,6 @@ public class TaskService {
         taskUpdateRequest.getLookupTaskStatus());
 
     taskToUpdate.setLookupTaskStatus(lookupTaskStatus);
-    taskToUpdate.setLastModified(LocalDateTime.now());
     taskToUpdate.setDescription(taskUpdateRequest.getDescription());
     taskToUpdate.setExecutionPeriodStart(taskUpdateRequest.getExecutionPeriodStart());
     taskToUpdate.setExecutionPeriodEnd(taskUpdateRequest.getExecutionPeriodEnd());
@@ -615,7 +613,7 @@ public class TaskService {
             lookupTaskStatusRepository.findByCode(TASK_STATUS_READY).orElseThrow(
                 () -> new NotFoundException(Pair.of(LookupTaskStatus.Fields.code, TASK_STATUS_READY),
                     LookupTaskStatus.class))).priority(TaskPriorityEnum.ROUTINE)
-        .description(action.getDescription()).lastModified(LocalDateTime.now())
+        .description(action.getDescription())
         .authoredOn(LocalDateTime.now()).baseEntityIdentifier(entityUUID).action(action)
         .executionPeriodStart(action.getTimingPeriodStart())
         //TODO how to get this before save unless we do it on save of the task with kafka

@@ -76,9 +76,6 @@ public class Task extends AbstractAuditableEntity {
 
   private String description;
 
-  @NotNull(message = "lastModified can not be null")
-  @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS[X]", timezone = "${spring.jackson.time-zone}")
-  private LocalDateTime lastModified;
 
   @NotNull(message = "executionPeriodStart can not be null")
   @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
@@ -137,7 +134,8 @@ public class Task extends AbstractAuditableEntity {
   @Column(columnDefinition = "jsonb")
   private TaskEvent taskFacade;
 
-  public Task(UUID identifier, UUID planIdentifier, long serverVersion, Object taskFacade, UUID parentLocation) {
+  public Task(UUID identifier, UUID planIdentifier, long serverVersion, Object taskFacade,
+      UUID parentLocation) {
     this.identifier = identifier;
     this.plan = Plan.builder().identifier(planIdentifier).build();
     this.serverVersion = serverVersion;

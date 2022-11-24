@@ -239,9 +239,6 @@ public class TaskFacadeService {
       task.setIdentifier(UUID.fromString(taskDto.getIdentifier()));
     }
 
-    LocalDateTime LastModifierFromAndroid = DateTimeFormatter.getLocalDateTimeFromAndroidFacadeString(
-        taskDto.getLastModified());
-
     if (taskStatus.isPresent()) {
       task.setLookupTaskStatus(taskStatus.get());
       task.setAction(action);
@@ -256,7 +253,6 @@ public class TaskFacadeService {
           taskDto.getExecutionPeriod().getEnd()).toLocalDate() : action.getTimingPeriodEnd());
       task.setExecutionPeriodStart(DateTimeFormatter.getLocalDateTimeFromAndroidFacadeString(
           taskDto.getExecutionPeriod().getStart()).toLocalDate());
-      task.setLastModified(LastModifierFromAndroid);
       task.setBaseEntityIdentifier(UUID.fromString(taskDto.getForEntity()));
       task.setBusinessStatus(taskDto.getBusinessStatus());
 
