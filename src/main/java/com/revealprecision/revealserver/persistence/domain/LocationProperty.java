@@ -1,5 +1,7 @@
 package com.revealprecision.revealserver.persistence.domain;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.revealprecision.revealserver.enums.LocationStatus;
 import java.util.UUID;
 import javax.validation.constraints.NotBlank;
@@ -15,6 +17,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonInclude(value = Include.NON_NULL)
 public class LocationProperty {
 
 
@@ -31,7 +34,7 @@ public class LocationProperty {
   private Long structures;
 
   private Boolean isOtherArea;
-
+  
   private String surveyLocationType;
 
   private String structureNumber;
