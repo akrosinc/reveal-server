@@ -12,7 +12,6 @@ import com.revealprecision.revealserver.exceptions.NotImplementedException;
 import com.revealprecision.revealserver.exceptions.constant.Error;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
-import com.revealprecision.revealserver.persistence.domain.Setting.Fields;
 import com.revealprecision.revealserver.persistence.projection.LocationChildrenCountProjection;
 import com.revealprecision.revealserver.persistence.projection.LocationRelationshipProjection;
 import com.revealprecision.revealserver.persistence.repository.LocationHierarchyRepository;
@@ -22,13 +21,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import javax.ws.rs.NotSupportedException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -49,9 +46,7 @@ public class LocationHierarchyService {
         .nodeOrder(locationHierarchyRequest.getNodeOrder()).name(locationHierarchyRequest.getName())
         .build();
     locationHierarchyToSave.setEntityStatus(EntityStatus.ACTIVE);
-    var savedLocationHierarchy = locationHierarchyRepository.save(locationHierarchyToSave);
-    locationRelationshipService.createLocationRelationships(savedLocationHierarchy);
-    return savedLocationHierarchy;
+    return locationHierarchyRepository.save(locationHierarchyToSave);
   }
 
   private void enforceOneHierarchyPerInstance() {
