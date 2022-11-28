@@ -3,7 +3,9 @@ package com.revealprecision.revealserver.persistence.repository;
 import com.revealprecision.revealserver.persistence.domain.metadata.LocationMetadata;
 import java.util.Optional;
 import java.util.UUID;
+import javax.transaction.Transactional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -26,4 +28,9 @@ public interface LocationMetadataRepository extends JpaRepository<LocationMetada
       @Param("value") String value,
       @Param("parentLocationIdentifier") UUID parentLocationIdentifier);
 
+
+  @Query(value = "REFRESH MATERIALIZED VIEW CONCURRENTLY location_metadata_double_aggregate", nativeQuery = true)
+  @Transactional
+  @Modifying
+  void refreshLocationMetadataDoubleAggregateMaterializedView();
 }
