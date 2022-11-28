@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.schedule;
 
+import com.revealprecision.revealserver.persistence.repository.LocationMetadataRepository;
 import com.revealprecision.revealserver.service.AssignedStructureService;
 import com.revealprecision.revealserver.service.LocationRelationshipService;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +17,7 @@ public class RefreshMaterializedViewSchedule {
 
   private final LocationRelationshipService locationRelationshipService;
   private final AssignedStructureService assignedStructureService;
+  private final LocationMetadataRepository  locationMetadataRepository;
 
   @Scheduled(cron = "#{refreshMaterializedViewProperties.assignedStructureCounts}")
   public void refreshAssignedStructureCountsMaterializedView() {
@@ -42,6 +44,13 @@ public class RefreshMaterializedViewSchedule {
   public void refreshLocationRelationshipMaterializedView() {
     log.debug("schedule start");
     locationRelationshipService.refreshLocationRelationshipMaterializedView();
+    log.debug("schedule end");
+  }
+
+  @Scheduled(cron = "#{refreshMaterializedViewProperties.locationMetadataDoubleAggregate}")
+  public void refreshLocationMetadataDoubleAggregateMaterializedView() {
+    log.debug("schedule start");
+    locationMetadataRepository.refreshLocationMetadataDoubleAggregateMaterializedView();
     log.debug("schedule end");
   }
 

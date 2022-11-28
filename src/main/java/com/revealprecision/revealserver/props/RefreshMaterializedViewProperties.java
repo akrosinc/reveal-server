@@ -15,5 +15,6 @@ public class RefreshMaterializedViewProperties {
   private String liteStructureCounts = "0 0/5 * * * *";
   private String locationRelationships = "0 0/5 * * * *";
   private String assignedStructureCounts = "0 0/5 * * * *";
+  private String locationMetadataDoubleAggregate = "0 0 0/1 * * *";
 
 }
