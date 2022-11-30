@@ -21,9 +21,8 @@ public  class EventTrackerFactory {
 
   public static EventTracker updateEntity(EventTracker eventTracker, EventTrackerMessage eventTrackerMessage){
 
-    eventTracker.contributingEvents().add(eventTrackerMessage.getIdentifier());
 
-    return eventTracker
+    EventTracker eventTracker1 = eventTracker
         .aggregationKey(eventTrackerMessage.getAggregationKey())
         .eventType(eventTrackerMessage.getEventType())
         .contributingEvents(eventTrackerMessage.getContributingEvents())
@@ -34,6 +33,10 @@ public  class EventTrackerFactory {
         .operationDatetime(eventTrackerMessage.getOperationDatetime())
         .planIdentifier(eventTrackerMessage.getPlanIdentifier())
         .taskIdentifier(eventTrackerMessage.getTaskIdentifier());
+
+    eventTracker1.contributingEvents().addAll(eventTrackerMessage.getContributingEvents());
+
+    return eventTracker1;
 
   }
 }
