@@ -37,7 +37,12 @@
     source="reveal.logging.http-data-file-name"/>
   <springProperty scope="context" name="loggingHttpDataRollingFileName"
     source="reveal.logging.http-data-rolling-file-name"/>
+  <springProperty scope="context" name="loggingHttpDataRollingFileName"
+    source="reveal.logging.http-data-rolling-file-name"/>
+  <springProperty scope="context" name="loggingNode"
+    source="reveal.logging.node"/>
 
+  <contextName>${loggingNode}</contextName>
   <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
     <encoder>
       <pattern>${loggingPattern}</pattern>
