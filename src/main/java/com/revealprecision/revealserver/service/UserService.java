@@ -1,6 +1,5 @@
 package com.revealprecision.revealserver.service;
 
-import com.cosium.spring.data.jpa.entity.graph.domain.EntityGraphUtils;
 import com.revealprecision.revealserver.api.v1.dto.factory.UserEntityFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.UserPasswordRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.UserRequest;
@@ -69,8 +68,7 @@ public class UserService {
   }
 
   public Page<User> searchUsers(String searchParam, Pageable pageable) {
-    return userRepository.searchByParameter(searchParam, pageable,
-        EntityGraphUtils.fromAttributePaths(Fields.organizations));
+    return userRepository.searchByParameter(searchParam, pageable);
   }
 
   public long getUsersNumber() {
