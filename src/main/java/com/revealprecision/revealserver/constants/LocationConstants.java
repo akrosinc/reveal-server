@@ -7,4 +7,5 @@ public interface LocationConstants {
   String DISTRICT = "district";
 
   String WATERBODY = "waterbody";
+  String BODY_OF_WATER = "Body of Water";
 }

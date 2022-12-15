@@ -2,6 +2,7 @@ package com.revealprecision.revealserver.api.v1.facade.factory;
 
 import com.revealprecision.revealserver.api.v1.dto.request.LocationRequest;
 import com.revealprecision.revealserver.api.v1.facade.models.CreateLocationRequest;
+import com.revealprecision.revealserver.constants.LocationConstants;
 import com.revealprecision.revealserver.persistence.domain.LocationProperty;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +30,13 @@ public class LocationRequestFactory {
     if (physicalLocation.getProperties().getStructureNumber() != null) {
       locationPropertyRequest.setStructureNumber(physicalLocation.getProperties().getStructureNumber());
     }
+
+    if (physicalLocation.getProperties().getType() != null) {
+      if (physicalLocation.getProperties().getType().equals(LocationConstants.BODY_OF_WATER)) {
+        locationPropertyRequest.setSurveyLocationType(LocationConstants.WATERBODY);
+      }
+    }
+
     LocationRequest locationRequest = LocationRequest.builder()
         .geometry(physicalLocation.getGeometry())
         .type(physicalLocation.getType())
