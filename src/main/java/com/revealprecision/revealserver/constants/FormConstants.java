@@ -12,6 +12,29 @@ public interface FormConstants {
   String CDD_SUPERVISOR_DAILY_SUMMARY_DRUGS_FIELD = "drugs";
   String CDD_SUPERVISOR_DAILY_SUMMARY_NTD_TREATED_FIELD = "ntd_treated";
 
+  String MDA_ONCHOCERCIASIS_SURVEY_HEALTH_WORKER_SUPERVISOR_FIELD = "health_worker_supervisor";
+  String MDA_ONCHOCERCIASIS_SURVEY_CDD_NAME_FIELD = "cdd_name";
+  String MDA_ONCHOCERCIASIS_SURVEY_FORM = "mda_onchocerciasis_survey";
+  String MDA_ONCHOCERCIASIS_SURVEY_DATE_FIELD = "date";
+
+  String MDA_TREATMENT_OUTSIDE_HOUSEHOLD_HEALTH_WORKER_SUPERVISOR_FIELD = "health_worker_supervisor";
+  String MDA_TREATMENT_OUTSIDE_HOUSEHOLD_CDD_NAME_FIELD = "cdd_name";
+  String MDA_TREATMENT_OUTSIDE_HOUSEHOLD_FORM = "treatment_outside_household";
+  String MDA_TREATMENT_OUTSIDE_HOUSEHOLD_DATE_FIELD = "date";
+
+  String MDA_ADVERSE_EVENTS_RECORD_HEALTH_WORKER_SUPERVISOR_FIELD = "adverse_events_record";
+  String MDA_ADVERSE_EVENTS_RECORD_CDD_NAME_FIELD = "cdd_name";
+  String MDA_ADVERSE_EVENTS_RECORD_FORM = "adverse_events_record";
+  String MDA_ADVERSE_EVENTS_RECORD_FORM_DATE_FIELD = "date";
+
+  String MDA_DRUG_ACCOUNTABILITY_HEALTH_WORKER_SUPERVISOR_FIELD = "adverse_events_record";
+  String MDA_DRUG_ACCOUNTABILITY_CDD_NAME_FIELD = "cdd_name";
+  String MDA_DRUG_ACCOUNTABILITY_FORM = "cdd_drug_received";
+  String MDA_DRUG_ACCOUNTABILITY_DATE_FIELD = "date";
+
+
+
+
   String TABLET_ACCOUNTABILITY_FORM = "tablet_accountability";
   String TABLET_ACCOUNTABILITY_LOCATION_FIELD = "location";
   String TABLET_ACCOUNTABILITY_HEALTH_WORKER_SUPERVISOR_FIELD = "health_worker_supervisor";
@@ -67,6 +90,7 @@ public interface FormConstants {
   String IRS_LITE_DAILY_SUMMARY_MOPUP_MAIN= "mopup_main";
   String IRS_NOT_SPRAYED_REFUSED = "NOT_SPRAYED_REFUSED";
   String IRS_NOT_SPRAYED_OTHER = "NOT_SPRAYED_OTHER";
+
 
   String SPRAYED_PREGWOMEN = "sprayed_pregwomen";
   String SPRAYED_MALES = "sprayed_males";

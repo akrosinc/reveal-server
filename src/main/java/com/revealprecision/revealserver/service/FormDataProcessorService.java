@@ -43,6 +43,10 @@ import static com.revealprecision.revealserver.constants.FormConstants.IRS_SACHE
 import static com.revealprecision.revealserver.constants.FormConstants.IRS_SPRAYED;
 import static com.revealprecision.revealserver.constants.FormConstants.IRS_SPRAYED_FROM_SUMMARY;
 import static com.revealprecision.revealserver.constants.FormConstants.LOCATION_ID;
+import static com.revealprecision.revealserver.constants.FormConstants.MDA_ONCHOCERCIASIS_SURVEY_CDD_NAME_FIELD;
+import static com.revealprecision.revealserver.constants.FormConstants.MDA_ONCHOCERCIASIS_SURVEY_DATE_FIELD;
+import static com.revealprecision.revealserver.constants.FormConstants.MDA_ONCHOCERCIASIS_SURVEY_FORM;
+import static com.revealprecision.revealserver.constants.FormConstants.MDA_ONCHOCERCIASIS_SURVEY_HEALTH_WORKER_SUPERVISOR_FIELD;
 import static com.revealprecision.revealserver.constants.FormConstants.NOTSPRAYED_REASON;
 import static com.revealprecision.revealserver.constants.FormConstants.SPRAYED;
 import static com.revealprecision.revealserver.constants.FormConstants.SPRAY_FORM;
@@ -67,6 +71,7 @@ import com.revealprecision.revealserver.api.v1.facade.models.EventFacade;
 import com.revealprecision.revealserver.api.v1.facade.models.Obs;
 import com.revealprecision.revealserver.constants.KafkaConstants;
 import com.revealprecision.revealserver.constants.LocationConstants;
+import com.revealprecision.revealserver.enums.ActionTitleEnum;
 import com.revealprecision.revealserver.enums.PlanInterventionTypeEnum;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.messaging.message.DeviceUser;
@@ -344,6 +349,32 @@ public class FormDataProcessorService {
 
           }
         }
+        if (plan.getInterventionType().getCode().equals(PlanInterventionTypeEnum.MDA.name())) {
+
+          if (plan.getGoals().stream().flatMap(goal -> goal.getActions()
+              .stream()).anyMatch(action -> action.getTitle()
+              .equals(ActionTitleEnum.MDA_ONCHOCERCIASIS_SURVEY.getActionTitle()))) {
+
+            dateString = getFormValue(obsJavaList, MDA_ONCHOCERCIASIS_SURVEY_DATE_FIELD);
+
+            supervisorName = getFormValue(obsJavaList,
+                MDA_ONCHOCERCIASIS_SURVEY_HEALTH_WORKER_SUPERVISOR_FIELD);
+
+            cdd = getFormValue(obsJavaList, MDA_ONCHOCERCIASIS_SURVEY_CDD_NAME_FIELD);
+
+            if (!savedEvent.getEventType().equals(MDA_ONCHOCERCIASIS_SURVEY_FORM)) {
+              baseEntityIdentifier = savedEvent.getLocationIdentifier();
+            }
+
+            eventTrackerKafkaTemplate.send(kafkaProperties.getTopicMap().get(EVENT_TRACKER),
+                EventTrackerMessageFactory.getEntity(savedEvent, eventFacade, plan, dateString,
+                    supervisorName,
+                    cdd,
+                    baseEntityIdentifier,
+                    formSubmissionIdString));
+          }
+        }
+
         List<FormDataEntityTagValueEvent> formDataEntityTagValueEvents = obsJavaList.stream()
             .flatMap(obs -> {
               Object value = FormDataUtil.extractData(obs).get(obs.getFieldCode());
