@@ -32,13 +32,13 @@ public class FormulaResponse {
       new FormulaResponse("Is the number of days of the campaign fixed?", "choice_days", new FieldType(
           InputTypeEnum.DROPDOWN, List.of(new String[]{"Yes", "No"}), null, null), null),
       new FormulaResponse("How many days will this campaign run?", "mda_days", new FieldType(
-          InputTypeEnum.INTEGER, null, 1, 90), new SkipPattern("Yes", "choice_days")),
+          InputTypeEnum.INTEGER, null, 1, 90), new SkipPattern("No", "choice_days")),
       new FormulaResponse("Is the number of CDDs per location fixed?", "choice_cdd", new FieldType(
           InputTypeEnum.DROPDOWN, List.of(new String[]{"Yes", "No"}), null, null), null),
       new FormulaResponse("What is the average number of CDDs per location selected on the map?", "cdd_number", new FieldType(
-          InputTypeEnum.INTEGER, null, null, null), null),
+          InputTypeEnum.INTEGER, null, null, null), new SkipPattern("No", "choice_cdd")),
       new FormulaResponse("Are you planning your CDDs based on the campaign target population for the campaign? (The campaign target population is a sub-set of the total population) If no, then the total population with growth rate will be used to calculate CDD requirements on the dashboard.", "cdd_denom", new FieldType(
-          InputTypeEnum.DROPDOWN, List.of(new String[]{"Yes", "No"}), null, null), new SkipPattern("Yes", "choice_cdd")),
+          InputTypeEnum.DROPDOWN, List.of(new String[]{"Yes", "No"}), null, null), null),
       new FormulaResponse("On average, how many people can you estimate that 1 CDD can treat in 1 campaign day?", "cdd_target", new FieldType(
           InputTypeEnum.INTEGER, null, null, null), null),
       new FormulaResponse("On average, how many structures (or households) can be visited on 1 campaign day by 1 CDD?", "structure_day", new FieldType(

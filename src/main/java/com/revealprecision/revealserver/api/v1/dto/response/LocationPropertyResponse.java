@@ -39,4 +39,5 @@ public class LocationPropertyResponse {
   private List<EntityMetadataResponse> metadata;
   private String businessStatus;
   private String statusColor;
+  private boolean isSimulationSearchResult = false;
 }

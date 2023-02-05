@@ -13,6 +13,7 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
@@ -23,6 +24,9 @@ import org.springframework.stereotype.Service;
 public class LocationImportListener extends Listener{
 
   private final RestHighLevelClient client;
+
+  @Value("${reveal.elastic.index-name}")
+  String elasticIndex;
 
   @KafkaListener(topics = "#{kafkaConfigProperties.topicMap.get('LOCATIONS_IMPORTED')}", groupId = "reveal_server_group")
   public void locationImport(LocationRelationshipMessage message) throws IOException {
@@ -37,7 +41,7 @@ public class LocationImportListener extends Listener{
     Script inline = new Script(ScriptType.INLINE, "painless",
         "ctx._source.ancestry.add(params.object);",parameters);
     UpdateRequest request = new UpdateRequest(
-        "location",
+        elasticIndex,
         message.getLocationIdentifier().toString());
     request.script(inline);
     client.update(request, RequestOptions.DEFAULT);

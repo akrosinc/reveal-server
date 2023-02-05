@@ -23,6 +23,7 @@ import org.springframework.batch.item.file.transform.DelimitedLineAggregator;
 import org.springframework.batch.item.file.transform.LineAggregator;
 import org.springframework.batch.item.support.AbstractFileItemWriter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.util.Assert;
@@ -35,6 +36,9 @@ public class LocationValidationWriter extends AbstractFileItemWriter<LocationVal
   protected LineAggregator<LocationValidationDTO> lineAggregator;
   @Autowired
   private RestHighLevelClient client;
+
+  @Value("${reveal.elastic.index-name}")
+  String elasticIndex;
 
   private SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
   private ObjectMapper mapper = new ObjectMapper();
@@ -59,7 +63,7 @@ public class LocationValidationWriter extends AbstractFileItemWriter<LocationVal
     boolQuery.must(QueryBuilders.termsQuery("hashValue", hashes));
     sourceBuilder.query(boolQuery);
     sourceBuilder.size(100);
-    SearchRequest searchRequest = new SearchRequest("location");
+    SearchRequest searchRequest = new SearchRequest(elasticIndex);
     searchRequest.source(sourceBuilder);
     try {
       SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);

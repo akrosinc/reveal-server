@@ -74,6 +74,7 @@ import org.elasticsearch.index.reindex.UpdateByQueryRequest;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
 import org.keycloak.KeycloakPrincipal;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
@@ -98,6 +99,9 @@ public class MetadataService {
   private final MetaFieldSetMapper metaFieldSetMapper;
 
   private final RestHighLevelClient client;
+
+  @Value("${reveal.elastic.index-name}")
+  String elasticIndex;
 
   public LocationMetadata getLocationMetadataByLocation(UUID locationIdentifier) {
     //TODO fix this
@@ -658,7 +662,7 @@ public class MetadataService {
     Map<String, Object> parameters = new HashMap<>();
     parameters.put("person", ElasticModelUtil.toMapFromPersonElastic(personElastic));
     parameters.put("personId", personElastic.getIdentifier());
-    UpdateByQueryRequest request = new UpdateByQueryRequest("location");
+    UpdateByQueryRequest request = new UpdateByQueryRequest(elasticIndex);
     List<String> locationIds = person.getLocations().stream()
         .map(loc -> loc.getIdentifier().toString()).collect(
             Collectors.toList());

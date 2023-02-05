@@ -64,6 +64,7 @@ import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.util.Pair;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -81,6 +82,9 @@ public class EntityFilterService {
   private final EntityTagService entityTagService;
   private final CoreFieldService coreFieldService;
   private final RestHighLevelClient client;
+
+  @Value("${reveal.elastic.index-name}")
+  String elasticIndex;
 
   private final static String WHERE = " WHERE ";
 
@@ -505,26 +509,45 @@ public class EntityFilterService {
               request.getLocationIdentifier().toString()));
     }
 
+
+
     SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
     sourceBuilder.size(10000);
     sourceBuilder.query(boolQuery);
-    SearchRequest searchRequest = new SearchRequest("location");
+    SearchRequest searchRequest = new SearchRequest(elasticIndex);
     searchRequest.source(sourceBuilder);
     SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
 
     List<LocationResponse> locationResponses = new ArrayList<>();
     List<String> parentLocations = new ArrayList<>();
+    List<LocationResponse> parentLocationResponses = new ArrayList<>();
 
     for (SearchHit hit : searchResponse.getHits().getHits()) {
       LocationResponse locToAdd = LocationResponseFactory.fromSearchHit(hit, parentLocations,
           request.getHierarchyIdentifier().toString());
 
       addPersonsToLocationProperties(hit.getInnerHits(), locToAdd.getProperties());
+      locToAdd.getProperties().setSimulationSearchResult(true);
 
       locationResponses.add(locToAdd);
     }
-    if (!parentLocations.isEmpty()) {
-      response.setParents(retrieveParentLocations(parentLocations));
+
+    SearchSourceBuilder sourceBuilderAll = new SearchSourceBuilder();
+    sourceBuilderAll.size(10000);
+
+    SearchRequest searchRequestAll = new SearchRequest(elasticIndex);
+    searchRequestAll.source(sourceBuilderAll);
+    SearchResponse searchResponseAll = client.search(searchRequestAll, RequestOptions.DEFAULT);
+
+    for (SearchHit hit : searchResponseAll.getHits().getHits()) {
+      LocationResponse locToAdd = LocationResponseFactory.fromSearchHit(hit, parentLocations,
+          request.getHierarchyIdentifier().toString());
+
+      parentLocationResponses.add(locToAdd);
+    }
+
+    if (!parentLocationResponses.isEmpty()) {
+      response.setParents(parentLocationResponses);
     }
 
     response.setType("FeatureCollection");
@@ -537,7 +560,7 @@ public class EntityFilterService {
     List<LocationResponse> responses = new ArrayList<>();
     SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
     sourceBuilder.query(QueryBuilders.termsQuery("_id", parentIds));
-    SearchRequest searchRequest = new SearchRequest("location");
+    SearchRequest searchRequest = new SearchRequest(elasticIndex);
     searchRequest.source(sourceBuilder);
     SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
     ObjectMapper mapper = new ObjectMapper();
@@ -785,7 +808,7 @@ public class EntityFilterService {
     sourceBuilder.query(QueryBuilders.nestedQuery("person",
             QueryBuilders.termQuery("person.identifier", personIdentifier.toString()), ScoreMode.None)
         .innerHit(new InnerHitBuilder()));
-    SearchRequest searchRequest = new SearchRequest("location");
+    SearchRequest searchRequest = new SearchRequest(elasticIndex);
     searchRequest.source(sourceBuilder);
     SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
     if (Arrays.stream(searchResponse.getHits().getHits()).findFirst().isPresent()) {

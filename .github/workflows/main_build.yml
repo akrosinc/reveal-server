@@ -5,7 +5,7 @@ name: Reveal Server test, build and deploy
 
 on:
   push:
-    branches: [ main , zambia_2022 , db-connection-actuator]
+    branches: [ main , zambia_2022 , resource-planning-changes]
   pull_request:
     branches: [none]
 
