@@ -542,7 +542,7 @@ public class EntityFilterService {
     for (SearchHit hit : searchResponseAll.getHits().getHits()) {
       LocationResponse locToAdd = LocationResponseFactory.fromSearchHit(hit, parentLocations,
           request.getHierarchyIdentifier().toString());
-
+      locToAdd.getProperties().setLevelColor(getGeoLevelColor(locToAdd.getProperties().getGeographicLevel()));
       parentLocationResponses.add(locToAdd);
     }
 
@@ -553,6 +553,25 @@ public class EntityFilterService {
     response.setType("FeatureCollection");
     response.setFeatures(locationResponses);
     return response;
+  }
+
+  private String getGeoLevelColor(String geolevel){
+
+    switch (geolevel){
+      case "country":
+        return "#ABABAB";
+      case "province":
+        return "#ABABAB";
+      case "county":
+        return "#ABABAB";
+      case "subcounty":
+        return "#ABABAB";
+      case "ward":
+        return "#ABABAB";
+      case "catchment":
+        return "#ABABAB";
+      default:return "#ABABAB";
+    }
   }
 
   private List<LocationResponse> retrieveParentLocations(List<String> parentIds)

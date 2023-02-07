@@ -40,4 +40,5 @@ public class LocationPropertyResponse {
   private String businessStatus;
   private String statusColor;
   private boolean isSimulationSearchResult = false;
+  private String levelColor;
 }
