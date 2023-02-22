@@ -41,4 +41,6 @@ public class LocationPropertyResponse {
   private String statusColor;
   private boolean isSimulationSearchResult = false;
   private String levelColor;
+  private Integer geographicLevelNodeNumber;
+  private UUID parent;
 }

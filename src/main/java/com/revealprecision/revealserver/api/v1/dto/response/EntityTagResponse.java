@@ -42,4 +42,6 @@ public class EntityTagResponse {
   private boolean addToMetadata;
 
   private boolean isAggregate;
+
+  private boolean simulationDisplay;
 }

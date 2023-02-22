@@ -4,6 +4,7 @@ import com.revealprecision.revealserver.api.v1.dto.factory.EntityTagResponseFact
 import com.revealprecision.revealserver.api.v1.dto.factory.LookupEntityTagResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.DataFilterRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.EntityTagRequest;
+import com.revealprecision.revealserver.api.v1.dto.request.UpdateEntityTagRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.EntityTagResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.FeatureSetResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LookupEntityTypeResponse;
@@ -30,6 +31,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -142,5 +144,12 @@ public class EntityTagController {
   public ResponseEntity<PersonMainData> getPersonDetails(@PathVariable UUID personIdentifier)
       throws IOException {
     return ResponseEntity.ok().body(entityFilterService.getPersonsDetails(personIdentifier));
+  }
+
+  @PutMapping
+  public ResponseEntity<Void> updateTag(
+      @RequestBody UpdateEntityTagRequest request) {
+    entityTagService.updateEntityTag(request);
+    return ResponseEntity.status(HttpStatus.OK).build();
   }
 }

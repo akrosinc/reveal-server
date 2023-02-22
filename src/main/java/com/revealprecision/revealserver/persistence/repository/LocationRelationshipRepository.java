@@ -11,7 +11,6 @@ import com.revealprecision.revealserver.persistence.projection.LocationWithParen
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import javax.transaction.Transactional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -142,7 +141,12 @@ public interface LocationRelationshipRepository extends JpaRepository<LocationRe
   LocationRelationship getFirstLocationRelationshipByLocation_IdentifierAndLocationHierarchy_Identifier(
       UUID locationIdentifier, UUID hierarchyIdentifier);
 
+  List<LocationRelationship> getLocationRelationshipByLocation_IdentifierInAndLocationHierarchy_Identifier(
+      List<UUID> locationIdentifiers, UUID hierarchyIdentifier);
+
+
   List<LocationRelationship> findLocationRelationshipsByLocation_IdentifierAndLocationHierarchy_Identifier(UUID locationIdentifier, UUID hierarchyIdentifier);
+
 
   @Query(value =
       "select new com.revealprecision.revealserver.persistence.projection.LocationMainData(l.identifier, l.name) from LocationRelationship lr "

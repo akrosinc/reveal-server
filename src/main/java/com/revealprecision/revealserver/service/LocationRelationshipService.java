@@ -448,6 +448,17 @@ public class LocationRelationshipService {
         locationIdentifier, locationHierarchyIdentifier);
   }
 
+  public Map<UUID, Location> getLocationRelationshipsForLocations(
+      UUID locationHierarchyIdentifier, List<UUID> locationIdentifiers) {
+    return locationRelationshipRepository.getLocationRelationshipByLocation_IdentifierInAndLocationHierarchy_Identifier(
+        locationIdentifiers, locationHierarchyIdentifier).stream().collect(
+        Collectors.toMap(locationRelationship -> locationRelationship.getLocation().getIdentifier(),
+            locationRelationship ->
+                locationRelationship.getParentLocation() == null ? new Location()
+                    : locationRelationship.getParentLocation(), (a, b) -> b));
+
+  }
+
   @Async
   public void refreshLocationCountsView() {
     locationCountsRepository.refreshLocationCountsMaterializedView();

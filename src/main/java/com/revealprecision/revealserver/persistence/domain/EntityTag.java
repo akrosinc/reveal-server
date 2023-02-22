@@ -74,4 +74,6 @@ public class EntityTag extends AbstractAuditableEntity {
 
   private boolean isAggregate;
 
+  private boolean simulationDisplay;
+
 }

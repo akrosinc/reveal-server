@@ -18,6 +18,7 @@ public class EntityTagResponseFactory {
         .collect(Collectors.toList()), pageable, entityTagPages.getTotalElements());
   }
 
+
   public static EntityTagResponse fromEntity(EntityTag entityTag) {
 
     return EntityTagResponse.builder()
@@ -35,6 +36,7 @@ public class EntityTagResponseFactory {
         .addToMetadata(entityTag.isAddToMetadata())
         .isAggregate(entityTag.isAggregate())
         .fieldType("tag")
+        .simulationDisplay(entityTag.isSimulationDisplay())
         .build();
   }
 

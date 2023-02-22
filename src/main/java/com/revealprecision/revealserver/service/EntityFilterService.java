@@ -101,7 +101,8 @@ public class EntityFilterService {
       LookupEntityTypeService lookupEntityTypeService,
       EntityTagService entityTagService,
       CoreFieldService coreFieldService,
-      RestHighLevelClient client) {
+      RestHighLevelClient client,
+      LocationService locationService) {
     this.conditionQueryProperties = conditionQueryProperties;
     this.jdbcTemplate = jdbcTemplate;
     this.locationRelationshipService = locationRelationshipService;
@@ -509,8 +510,6 @@ public class EntityFilterService {
               request.getLocationIdentifier().toString()));
     }
 
-
-
     SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
     sourceBuilder.size(10000);
     sourceBuilder.query(boolQuery);
@@ -521,6 +520,7 @@ public class EntityFilterService {
     List<LocationResponse> locationResponses = new ArrayList<>();
     List<String> parentLocations = new ArrayList<>();
     List<LocationResponse> parentLocationResponses = new ArrayList<>();
+    List<LocationHierarchy> all = locationHierarchyService.getAll();
 
     for (SearchHit hit : searchResponse.getHits().getHits()) {
       LocationResponse locToAdd = LocationResponseFactory.fromSearchHit(hit, parentLocations,
@@ -528,8 +528,29 @@ public class EntityFilterService {
 
       addPersonsToLocationProperties(hit.getInnerHits(), locToAdd.getProperties());
       locToAdd.getProperties().setSimulationSearchResult(true);
+      locToAdd.getProperties()
+          .setLevelColor(getGeoLevelColor(locToAdd.getProperties().getGeographicLevel()));
+
+      if (all.size() > 0 && all.get(0) != null) {
+        locToAdd.getProperties().setGeographicLevelNodeNumber(
+            all.get(0).getNodeOrder().indexOf(locToAdd.getProperties().getGeographicLevel()));
+      }
 
       locationResponses.add(locToAdd);
+    }
+
+    if (all.size() > 0 && all.get(0) != null) {
+
+      Map<UUID, Location> locationRelationshipsForLocations = locationRelationshipService
+          .getLocationRelationshipsForLocations(all.get(0).getIdentifier(),
+              locationResponses.stream().map(LocationResponse::getIdentifier).collect(
+                  Collectors.toList()));
+
+      locationResponses = locationResponses.stream()
+          .peek(locationResponse -> locationResponse.getProperties().setParent(
+              locationRelationshipsForLocations.get(locationResponse.getIdentifier())
+                  .getIdentifier())).collect(
+              Collectors.toList());
     }
 
     SearchSourceBuilder sourceBuilderAll = new SearchSourceBuilder();
@@ -542,8 +563,29 @@ public class EntityFilterService {
     for (SearchHit hit : searchResponseAll.getHits().getHits()) {
       LocationResponse locToAdd = LocationResponseFactory.fromSearchHit(hit, parentLocations,
           request.getHierarchyIdentifier().toString());
-      locToAdd.getProperties().setLevelColor(getGeoLevelColor(locToAdd.getProperties().getGeographicLevel()));
+
+      if (all.size() > 0 && all.get(0) != null) {
+        locToAdd.getProperties().setGeographicLevelNodeNumber(
+            all.get(0).getNodeOrder().indexOf(locToAdd.getProperties().getGeographicLevel()));
+      }
+
+      locToAdd.getProperties()
+          .setLevelColor(getGeoLevelColor(locToAdd.getProperties().getGeographicLevel()));
+
       parentLocationResponses.add(locToAdd);
+    }
+
+    if (all.size() > 0 && all.get(0) != null) {
+
+      Map<UUID, Location> locationRelationshipsForLocations = locationRelationshipService
+          .getLocationRelationshipsForLocations(all.get(0).getIdentifier(),
+              parentLocationResponses.stream().map(LocationResponse::getIdentifier).collect(
+                  Collectors.toList()));
+      parentLocationResponses = parentLocationResponses.stream()
+          .peek(locationResponse -> locationResponse.getProperties().setParent(
+              locationRelationshipsForLocations.get(locationResponse.getIdentifier())
+                  .getIdentifier())).collect(
+              Collectors.toList());
     }
 
     if (!parentLocationResponses.isEmpty()) {
@@ -555,22 +597,23 @@ public class EntityFilterService {
     return response;
   }
 
-  private String getGeoLevelColor(String geolevel){
+  private String getGeoLevelColor(String geolevel) {
 
-    switch (geolevel){
+    switch (geolevel) {
       case "country":
-        return "#ABABAB";
+        return "#EFEFEF";
       case "province":
-        return "#ABABAB";
+        return "#CDCDCD";
       case "county":
         return "#ABABAB";
       case "subcounty":
-        return "#ABABAB";
+        return "#9A9A9A";
       case "ward":
-        return "#ABABAB";
+        return "#898989";
       case "catchment":
-        return "#ABABAB";
-      default:return "#ABABAB";
+        return "#787878";
+      default:
+        return "#898989";
     }
   }
 
