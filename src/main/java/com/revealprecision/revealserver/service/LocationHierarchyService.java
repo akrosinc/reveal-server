@@ -16,6 +16,7 @@ import com.revealprecision.revealserver.persistence.projection.LocationChildrenC
 import com.revealprecision.revealserver.persistence.projection.LocationRelationshipProjection;
 import com.revealprecision.revealserver.persistence.repository.LocationHierarchyRepository;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -98,6 +99,11 @@ public class LocationHierarchyService {
     return locationHierarchyRepository.findById(identifier).orElseThrow(
         () -> new NotFoundException(Pair.of(LocationHierarchy.Fields.identifier, identifier),
             LocationHierarchy.class));
+  }
+
+  public List<String> findNodeOrderByIdentifier(UUID identifier){
+    return Arrays.asList(
+        locationHierarchyRepository.findNodeOrderByIdentifier(identifier).split(","));
   }
 
   public UUID findNativeByName(String hierarchyName) {

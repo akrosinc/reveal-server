@@ -2,6 +2,7 @@ package com.revealprecision.revealserver.api.v1.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.revealprecision.revealserver.api.v1.dto.models.ColumnData;
+import java.math.BigDecimal;
 import java.util.List;
 import com.revealprecision.revealserver.enums.LocationStatus;
 import java.util.Map;
@@ -43,4 +44,6 @@ public class LocationPropertyResponse {
   private String levelColor;
   private Integer geographicLevelNodeNumber;
   private UUID parent;
+  private BigDecimal xCentroid;
+  private BigDecimal yCentroid;
 }

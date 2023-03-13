@@ -7,20 +7,23 @@ import com.revealprecision.revealserver.api.v1.dto.response.LocationPropertyResp
 import com.revealprecision.revealserver.api.v1.dto.response.LocationResponse;
 import com.revealprecision.revealserver.enums.SummaryEnum;
 import com.revealprecision.revealserver.persistence.domain.Location;
+import com.revealprecision.revealserver.persistence.es.HierarchyDetailsElastic;
 import com.revealprecision.revealserver.persistence.es.LocationElastic;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.search.SearchHit;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 
+@Slf4j
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class LocationResponseFactory {
 
@@ -86,13 +89,14 @@ public class LocationResponseFactory {
         .build();
   }
 
-  public static LocationResponse fromElasticModel(LocationElastic locationElastic) {
+  public static LocationResponse fromElasticModel(LocationElastic locationElastic,  HierarchyDetailsElastic hierarchyDetailsElastic) {
     List<EntityMetadataResponse> metadata = locationElastic.getMetadata()
         .stream()
         .map(meta -> new EntityMetadataResponse(
             meta.getValue() != null ? meta.getValue() : meta.getValueNumber(), meta.getTag()))
         .collect(Collectors.toList());
-    return LocationResponse.builder()
+
+    LocationResponse feature = LocationResponse.builder()
         .geometry(locationElastic.getGeometry())
         .identifier(UUID.fromString(locationElastic.getId()))
         .type("Feature")
@@ -101,19 +105,46 @@ public class LocationResponseFactory {
             .metadata(metadata)
             .geographicLevel(locationElastic.getLevel())
             .build())
+
         .build();
+
+    if (hierarchyDetailsElastic!=null){
+      try{
+        if (hierarchyDetailsElastic.getParent() != null){
+          feature.getProperties().setParent(UUID.fromString(hierarchyDetailsElastic.getParent()));
+        }
+        if (hierarchyDetailsElastic.getAncestry() != null && !hierarchyDetailsElastic.getAncestry().isEmpty()){
+         List<String> newAncestry =  new ArrayList<>();
+          newAncestry.add(locationElastic.getId());
+          newAncestry.addAll(hierarchyDetailsElastic.getAncestry());
+           feature.setAncestry(newAncestry);
+        }
+
+        feature.getProperties().setGeographicLevelNodeNumber(hierarchyDetailsElastic.getGeographicLevelNumber());
+
+      }catch (IllegalArgumentException e){
+        log.error("Cannot set parent Id of location {}", feature.getIdentifier(),e);
+      }
+    }
+
+    return feature;
   }
 
-  public static LocationResponse fromSearchHit(SearchHit hit, List<String> parents,
+  public static LocationResponse fromSearchHit(SearchHit hit, Set<String> parents,
       String hierarchyId) throws JsonProcessingException {
     ObjectMapper mapper = new ObjectMapper();
     String source = hit.getSourceAsString();
     LocationElastic locationElastic = mapper.readValue(source, LocationElastic.class);
-    Optional<Map<String, List<String>>> ancestry = locationElastic.getAncestry().stream()
-        .filter(anc -> anc.containsKey(hierarchyId)).findFirst();
-    if (ancestry.isPresent()) {
-      parents.addAll(ancestry.get().get(hierarchyId));
+
+    if (locationElastic.getHierarchyDetailsElastic() != null){
+      List<String> id = new java.util.ArrayList<>(List.of(locationElastic.getId()));
+      if (locationElastic.getHierarchyDetailsElastic().get(hierarchyId).getAncestry() != null) {
+        id.addAll(locationElastic.getHierarchyDetailsElastic().get(hierarchyId).getAncestry());
+      }
+      parents.addAll(id);
+      return fromElasticModel(locationElastic,locationElastic.getHierarchyDetailsElastic().get(hierarchyId));
+    }else{
+      return fromElasticModel(locationElastic,null);
     }
-    return fromElasticModel(locationElastic);
   }
 }

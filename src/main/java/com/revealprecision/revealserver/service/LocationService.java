@@ -113,8 +113,19 @@ public class LocationService {
     return locationRepository.findById(identifier);
   }
 
-  public Map<UUID,Location> getLocationsByIdentifierList(List<UUID> locationList){
-    return locationRepository.findLocationsByIdentifierIn(locationList).stream().collect(Collectors.toMap(Location::getIdentifier,a->a));
+  public Map<UUID, Location> getLocationsByIdentifierList(List<UUID> locationList) {
+    return locationRepository.findLocationsByIdentifierIn(locationList).stream()
+        .collect(Collectors.toMap(Location::getIdentifier, a -> a));
+  }
+
+  public Map<String, LocationCoordinatesProjection> getLocationCentroidCoordinatesMap(
+      List<UUID> locationList) {
+    List<LocationCoordinatesProjection> locationCentroidCoordinatesByIdentifierList = locationRepository.getLocationCentroidCoordinatesByIdentifierList(
+        locationList);
+    return locationCentroidCoordinatesByIdentifierList.stream()
+        .collect(Collectors.toMap(
+            LocationCoordinatesProjection::getIdentifier,
+            locationCoordinatesProjection -> locationCoordinatesProjection, (a,b)->a));
   }
 
   public Location findByIdentifierWithoutGeoJson(UUID identifier) {
@@ -149,15 +160,18 @@ public class LocationService {
     return locationRepository.save(location.update(locationRequest, geographicLevel));
   }
 
-  public List<LocationWithParentProjection> getAllNotStructuresByIdentifiersAndServerVersion(List<UUID> identifiers, long serverVersion) {
-    return locationRepository.getAllNotStructuresByIdentifiersAndServerVersion(identifiers, serverVersion);
+  public List<LocationWithParentProjection> getAllNotStructuresByIdentifiersAndServerVersion(
+      List<UUID> identifiers, long serverVersion) {
+    return locationRepository.getAllNotStructuresByIdentifiersAndServerVersion(identifiers,
+        serverVersion);
   }
 
   public List<Location> getAllByNames(List<String> names) {
     return locationRepository.getAllByNames(names);
   }
 
-  public List<LocationWithParentProjection> getAllNotStructureByNamesAndServerVersion(List<String> names, Long serverVersion) {
+  public List<LocationWithParentProjection> getAllNotStructureByNamesAndServerVersion(
+      List<String> names, Long serverVersion) {
     return locationRepository.getAllNotStructureByNamesAndServerVersion(names, serverVersion);
   }
 

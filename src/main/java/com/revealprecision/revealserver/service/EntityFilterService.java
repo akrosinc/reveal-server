@@ -13,9 +13,11 @@ import com.revealprecision.revealserver.api.v1.dto.request.DataFilterRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.EntityFilterRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.SearchValue;
 import com.revealprecision.revealserver.api.v1.dto.response.FeatureSetResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.FeatureSetResponseContainer;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationPropertyResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.PersonMainData;
+import com.revealprecision.revealserver.api.v1.dto.response.SimulationCountResponse;
 import com.revealprecision.revealserver.constants.EntityTagDataTypes;
 import com.revealprecision.revealserver.constants.LocationConstants;
 import com.revealprecision.revealserver.enums.SignEntity;
@@ -30,21 +32,27 @@ import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.LookupEntityType;
 import com.revealprecision.revealserver.persistence.domain.Person;
 import com.revealprecision.revealserver.persistence.domain.Plan;
+import com.revealprecision.revealserver.persistence.domain.SimulationRequest;
 import com.revealprecision.revealserver.persistence.domain.actioncondition.Condition;
 import com.revealprecision.revealserver.persistence.domain.actioncondition.Query;
 import com.revealprecision.revealserver.persistence.es.LocationElastic;
 import com.revealprecision.revealserver.persistence.es.PersonElastic;
+import com.revealprecision.revealserver.persistence.projection.LocationCoordinatesProjection;
+import com.revealprecision.revealserver.persistence.repository.SimulationRequestRepository;
 import com.revealprecision.revealserver.props.ConditionQueryProperties;
 import com.revealprecision.revealserver.util.ActionUtils;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -54,15 +62,21 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.core.CountRequest;
+import org.elasticsearch.client.core.CountResponse;
 import org.elasticsearch.index.query.AbstractQueryBuilder;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.InnerHitBuilder;
 import org.elasticsearch.index.query.NestedQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.search.sort.SortBuilder;
+import org.elasticsearch.search.sort.SortBuilders;
+import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.util.Pair;
@@ -82,6 +96,8 @@ public class EntityFilterService {
   private final EntityTagService entityTagService;
   private final CoreFieldService coreFieldService;
   private final RestHighLevelClient client;
+  private final SimulationRequestRepository simulationRequestRepository;
+  private final LocationService locationService;
 
   @Value("${reveal.elastic.index-name}")
   String elasticIndex;
@@ -102,7 +118,8 @@ public class EntityFilterService {
       EntityTagService entityTagService,
       CoreFieldService coreFieldService,
       RestHighLevelClient client,
-      LocationService locationService) {
+      LocationService locationService,
+      SimulationRequestRepository simulationRequestRepository) {
     this.conditionQueryProperties = conditionQueryProperties;
     this.jdbcTemplate = jdbcTemplate;
     this.locationRelationshipService = locationRelationshipService;
@@ -112,6 +129,13 @@ public class EntityFilterService {
     this.entityTagService = entityTagService;
     this.coreFieldService = coreFieldService;
     this.client = client;
+    this.simulationRequestRepository = simulationRequestRepository;
+    this.locationService = locationService;
+  }
+
+
+  public Optional<SimulationRequest> getSimulationRequestById(String simulationRequestId) {
+    return simulationRequestRepository.findById(UUID.fromString(simulationRequestId));
   }
 
   public List<UUID> filterEntities(Query query, Plan plan,
@@ -474,22 +498,142 @@ public class EntityFilterService {
     return conditionList;
   }
 
-  public FeatureSetResponse filterEntites(DataFilterRequest request)
+  public SimulationCountResponse saveRequestAndCountResults(DataFilterRequest request) {
+
+    List<String> geographicLevelList = new ArrayList<>();
+    List<String> inactiveGeographicLevelList = new ArrayList<>();
+
+    List<String> nodeOrder = locationHierarchyService.findByIdentifier(
+            request.getHierarchyIdentifier())
+        .getNodeOrder();
+
+    if (request.getFilterGeographicLevelList() != null
+        && request.getFilterGeographicLevelList().size() > 0) {
+      geographicLevelList.addAll(request.getFilterGeographicLevelList());
+    } else {
+      geographicLevelList.addAll(nodeOrder);
+    }
+    if (request.getInactiveGeographicLevelList() != null
+        && request.getInactiveGeographicLevelList().size() > 0) {
+      inactiveGeographicLevelList.addAll(request.getInactiveGeographicLevelList());
+    } else {
+      inactiveGeographicLevelList.addAll(nodeOrder);
+    }
+
+    Map<String, Long> collect = geographicLevelList.stream().map(geographicLevel -> {
+      try {
+        List<EntityFilterRequest> personFilters = new ArrayList<>();
+        List<EntityFilterRequest> locationFilters = new ArrayList<>();
+
+        BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
+
+        boolQuery.must(
+            QueryBuilders.matchPhraseQuery("level", geographicLevel));
+
+        for (EntityFilterRequest req : request.getEntityFilters()) {
+          LookupEntityType lookupEntityType = lookupEntityTypeService.getLookUpEntityTypeById(
+              req.getEntityIdentifier());
+          if (lookupEntityType.getTableName().equals("person")) {
+            personFilters.add(req);
+            boolQuery.must(nestedPersonQuery(personFilters));
+          } else {
+            locationFilters.add(req);
+          }
+        }
+
+        for (EntityFilterRequest req : locationFilters) {
+          if (req.getRange() == null && req.getValues() == null) {
+            boolQuery.must(mustStatement(req));
+          } else if (req.getSearchValue() == null && req.getValues() == null) {
+            boolQuery.must(rangeStatement(req));
+          } else if (req.getSearchValue() == null && req.getRange() == null) {
+            boolQuery.must(shouldStatement(req));
+          } else {
+            throw new ConflictException("Request object bad formatted.");
+          }
+        }
+
+        if (request.getHierarchyIdentifier() != null && request.getLocationIdentifier() != null) {
+          boolQuery.must(QueryBuilders.nestedQuery("hierarchyDetailsElastic",
+              QueryBuilders.matchQuery("hierarchyDetailsElastic".concat(".")
+                      .concat(request.getHierarchyIdentifier().toString()).concat(".")
+                      .concat("ancestry"),
+                  request.getLocationIdentifier().toString()
+              ), ScoreMode.None));
+        }
+
+        List<String> strings = List.of(elasticIndex);
+
+        String[] myArray = new String[strings.size()];
+        strings.toArray(myArray);
+        CountRequest countRequest = new CountRequest(myArray, boolQuery);
+        CountResponse searchResponse = client.count(countRequest, RequestOptions.DEFAULT);
+        return new SimpleEntry<>(geographicLevel, searchResponse.getCount());
+      } catch (ParseException | IOException e) {
+        return new SimpleEntry<>(geographicLevel, 0L);
+      }
+    }).collect(Collectors.toMap(SimpleEntry::getKey, SimpleEntry::getValue));
+
+    SimulationRequest simulationRequest = new SimulationRequest();
+    simulationRequest.setRequest(request);
+
+    SimulationRequest simulationRequestSaved = simulationRequestRepository.save(simulationRequest);
+    SimulationCountResponse simulationCountResponse = new SimulationCountResponse();
+    simulationCountResponse.setCountResponse(collect);
+
+    if (request.isIncludeInactive()) {
+      Map<String, Long> inactive = inactiveGeographicLevelList.stream().map(geographicLevel -> {
+        try {
+          BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
+
+          boolQuery.must(
+              QueryBuilders.matchPhraseQuery("level", geographicLevel));
+
+          List<String> strings = List.of(elasticIndex);
+          String[] myArray = new String[strings.size()];
+          strings.toArray(myArray);
+          CountRequest countRequest = new CountRequest(myArray, boolQuery);
+          CountResponse searchResponse = client.count(countRequest, RequestOptions.DEFAULT);
+          return new SimpleEntry<>(geographicLevel, searchResponse.getCount());
+        } catch (IOException e) {
+          return new SimpleEntry<>(geographicLevel, 0L);
+        }
+      }).collect(Collectors.toMap(SimpleEntry::getKey, SimpleEntry::getValue));
+      simulationCountResponse.setInactiveCountResponse(inactive);
+    }
+
+    simulationCountResponse.setSearchRequestId(simulationRequestSaved.getIdentifier());
+
+    return simulationCountResponse;
+  }
+
+
+  public FeatureSetResponseContainer filterEntites(DataFilterRequest request, int batchSize)
       throws IOException, ParseException {
     FeatureSetResponse response = new FeatureSetResponse();
     BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
+    QueryBuilder matchAllQuery = QueryBuilders.matchAllQuery();
     List<EntityFilterRequest> personFilters = new ArrayList<>();
     List<EntityFilterRequest> locationFilters = new ArrayList<>();
 
-    for (EntityFilterRequest req : request.getEntityFilters()) {
-      LookupEntityType lookupEntityType = lookupEntityTypeService.getLookUpEntityTypeById(
-          req.getEntityIdentifier());
-      if (lookupEntityType.getTableName().equals("person")) {
-        personFilters.add(req);
-        boolQuery.must(nestedPersonQuery(personFilters));
-      } else {
-        locationFilters.add(req);
+    if (request.getFilterGeographicLevelList() != null) {
+
+      request.getFilterGeographicLevelList().stream().forEach(geoList ->
+          boolQuery.should().add(QueryBuilders.termQuery("level", geoList)));
+    }
+
+    if ( request.getEntityFilters() != null){
+      for (EntityFilterRequest req : request.getEntityFilters()) {
+        LookupEntityType lookupEntityType = lookupEntityTypeService.getLookUpEntityTypeById(
+            req.getEntityIdentifier());
+        if (lookupEntityType.getTableName().equals("person")) {
+          personFilters.add(req);
+          boolQuery.must(nestedPersonQuery(personFilters));
+        } else {
+          locationFilters.add(req);
+        }
       }
+
     }
 
     for (EntityFilterRequest req : locationFilters) {
@@ -505,22 +649,43 @@ public class EntityFilterService {
     }
 
     if (request.getHierarchyIdentifier() != null && request.getLocationIdentifier() != null) {
-      boolQuery.filter(
-          QueryBuilders.matchQuery("ancestry.".concat(request.getHierarchyIdentifier().toString()),
-              request.getLocationIdentifier().toString()));
+      boolQuery.must(QueryBuilders.nestedQuery("hierarchyDetailsElastic",
+          QueryBuilders.matchQuery("hierarchyDetailsElastic".concat(".")
+                  .concat(request.getHierarchyIdentifier().toString()).concat(".").concat("ancestry"),
+              request.getLocationIdentifier().toString()
+          ), ScoreMode.None));
     }
 
     SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
-    sourceBuilder.size(10000);
-    sourceBuilder.query(boolQuery);
+    sourceBuilder.size(batchSize);
+
+    if (request.getFilterGeographicLevelList() != null || request.getLocationIdentifier() != null
+        || (request.getEntityFilters() != null && request.getEntityFilters().size() > 0)) {
+      sourceBuilder.query(boolQuery);
+    } else {
+      sourceBuilder.query(matchAllQuery);
+    }
+
     SearchRequest searchRequest = new SearchRequest(elasticIndex);
     searchRequest.source(sourceBuilder);
+    List<SortBuilder<?>> sortBuilders = List.of(SortBuilders.fieldSort("name").order(
+            SortOrder.DESC),
+        SortBuilders.fieldSort("hashValue").order(
+            SortOrder.DESC));
+
+    sourceBuilder.sort(sortBuilders);
+
+    if (request.getLastHit() != null) {
+      sourceBuilder.searchAfter(request.getLastHit().getSortValues());
+    }
+
     SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
 
+
     List<LocationResponse> locationResponses = new ArrayList<>();
-    List<String> parentLocations = new ArrayList<>();
-    List<LocationResponse> parentLocationResponses = new ArrayList<>();
-    List<LocationHierarchy> all = locationHierarchyService.getAll();
+    Set<String> parentLocations = new HashSet<>();
+
+    SearchHit lastHit = null;
 
     for (SearchHit hit : searchResponse.getHits().getHits()) {
       LocationResponse locToAdd = LocationResponseFactory.fromSearchHit(hit, parentLocations,
@@ -531,70 +696,42 @@ public class EntityFilterService {
       locToAdd.getProperties()
           .setLevelColor(getGeoLevelColor(locToAdd.getProperties().getGeographicLevel()));
 
-      if (all.size() > 0 && all.get(0) != null) {
-        locToAdd.getProperties().setGeographicLevelNodeNumber(
-            all.get(0).getNodeOrder().indexOf(locToAdd.getProperties().getGeographicLevel()));
-      }
-
       locationResponses.add(locToAdd);
     }
 
-    if (all.size() > 0 && all.get(0) != null) {
+    response.setParents(parentLocations);
 
-      Map<UUID, Location> locationRelationshipsForLocations = locationRelationshipService
-          .getLocationRelationshipsForLocations(all.get(0).getIdentifier(),
-              locationResponses.stream().map(LocationResponse::getIdentifier).collect(
-                  Collectors.toList()));
+    locationResponses = getLocationCenters(locationResponses);
+    response.setFeatures(locationResponses);
 
-      locationResponses = locationResponses.stream()
-          .peek(locationResponse -> locationResponse.getProperties().setParent(
-              locationRelationshipsForLocations.get(locationResponse.getIdentifier())
-                  .getIdentifier())).collect(
-              Collectors.toList());
-    }
-
-    SearchSourceBuilder sourceBuilderAll = new SearchSourceBuilder();
-    sourceBuilderAll.size(10000);
-
-    SearchRequest searchRequestAll = new SearchRequest(elasticIndex);
-    searchRequestAll.source(sourceBuilderAll);
-    SearchResponse searchResponseAll = client.search(searchRequestAll, RequestOptions.DEFAULT);
-
-    for (SearchHit hit : searchResponseAll.getHits().getHits()) {
-      LocationResponse locToAdd = LocationResponseFactory.fromSearchHit(hit, parentLocations,
-          request.getHierarchyIdentifier().toString());
-
-      if (all.size() > 0 && all.get(0) != null) {
-        locToAdd.getProperties().setGeographicLevelNodeNumber(
-            all.get(0).getNodeOrder().indexOf(locToAdd.getProperties().getGeographicLevel()));
-      }
-
-      locToAdd.getProperties()
-          .setLevelColor(getGeoLevelColor(locToAdd.getProperties().getGeographicLevel()));
-
-      parentLocationResponses.add(locToAdd);
-    }
-
-    if (all.size() > 0 && all.get(0) != null) {
-
-      Map<UUID, Location> locationRelationshipsForLocations = locationRelationshipService
-          .getLocationRelationshipsForLocations(all.get(0).getIdentifier(),
-              parentLocationResponses.stream().map(LocationResponse::getIdentifier).collect(
-                  Collectors.toList()));
-      parentLocationResponses = parentLocationResponses.stream()
-          .peek(locationResponse -> locationResponse.getProperties().setParent(
-              locationRelationshipsForLocations.get(locationResponse.getIdentifier())
-                  .getIdentifier())).collect(
-              Collectors.toList());
-    }
-
-    if (!parentLocationResponses.isEmpty()) {
-      response.setParents(parentLocationResponses);
+    if (searchResponse.getHits().getHits().length > 0) {
+      lastHit =
+          searchResponse.getHits().getHits()[searchResponse.getHits().getHits().length - 1];
     }
 
     response.setType("FeatureCollection");
-    response.setFeatures(locationResponses);
-    return response;
+
+    return new FeatureSetResponseContainer(response, lastHit);
+
+  }
+
+  private List<LocationResponse> getLocationCenters(List<LocationResponse> locationResponses){
+    List<UUID> collect = locationResponses.stream().map(LocationResponse::getIdentifier)
+        .collect(Collectors.toList());
+
+    Map<String, LocationCoordinatesProjection> locationCentroidCoordinatesMap = locationService.getLocationCentroidCoordinatesMap(
+        collect);
+
+    return locationResponses.stream().map(locationResponse -> {
+      LocationCoordinatesProjection locationCoordinatesProjection = locationCentroidCoordinatesMap.get(
+          locationResponse.getIdentifier().toString());
+      if (locationCoordinatesProjection != null){
+        locationResponse.getProperties().setXCentroid(locationCoordinatesProjection.getLongitude());
+        locationResponse.getProperties().setYCentroid(locationCoordinatesProjection.getLatitude());
+      }
+
+      return locationResponse;
+    }).collect(Collectors.toList());
   }
 
   private String getGeoLevelColor(String geolevel) {
@@ -617,18 +754,24 @@ public class EntityFilterService {
     }
   }
 
-  private List<LocationResponse> retrieveParentLocations(List<String> parentIds)
+  public List<LocationResponse> retrieveParentLocations(Set<String> parentIds, String hierarchyId)
       throws IOException {
     List<LocationResponse> responses = new ArrayList<>();
     SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
     sourceBuilder.query(QueryBuilders.termsQuery("_id", parentIds));
     SearchRequest searchRequest = new SearchRequest(elasticIndex);
     searchRequest.source(sourceBuilder);
+    sourceBuilder.size(10000);
     SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+
     ObjectMapper mapper = new ObjectMapper();
     for (SearchHit hit : searchResponse.getHits().getHits()) {
       LocationElastic parent = mapper.readValue(hit.getSourceAsString(), LocationElastic.class);
-      responses.add(LocationResponseFactory.fromElasticModel(parent));
+      LocationResponse locationResponse = LocationResponseFactory.fromElasticModel(parent,
+          parent.getHierarchyDetailsElastic().get(hierarchyId));
+      locationResponse.getProperties()
+          .setLevelColor(getGeoLevelColor(locationResponse.getProperties().getGeographicLevel()));
+      responses.add(locationResponse);
     }
     return responses;
   }

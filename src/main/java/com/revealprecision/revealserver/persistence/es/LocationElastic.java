@@ -26,14 +26,17 @@ public class LocationElastic {
   @Id
   private String id;
 
-  @Field(type = FieldType.Text)
+  @Field(type = FieldType.Keyword)
   private String level;
 
-  @Field(type = FieldType.Text)
+  @Field(type = FieldType.Keyword)
   private String name;
 
-  @Field(type = FieldType.Text)
+  @Field(type = FieldType.Keyword)
   private String externalId;
+
+  @Field(type = FieldType.Nested)
+  private Map<String,HierarchyDetailsElastic> hierarchyDetailsElastic;
 
   @Field(type = FieldType.Nested)
   private List<PersonElastic> person = new ArrayList<>();

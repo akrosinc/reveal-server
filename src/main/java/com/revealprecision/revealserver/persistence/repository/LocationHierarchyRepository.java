@@ -29,4 +29,7 @@ LocationHierarchyRepository extends JpaRepository<LocationHierarchy, UUID> {
 
   @Query(value = "SELECT count(*) FROM location_hierarchy lh WHERE entity_status = 'ACTIVE'",nativeQuery = true)
   Long activeHierarchyCount();
+
+  @Query(value = "SELECT  lh.nodeOrder  FROM LocationHierarchy lh where lh.identifier = :identifier")
+  String findNodeOrderByIdentifier(UUID identifier);
 }
