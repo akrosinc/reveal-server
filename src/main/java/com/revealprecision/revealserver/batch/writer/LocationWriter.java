@@ -62,8 +62,14 @@ public class LocationWriter implements ItemWriter<Location> {
           .toString()
           .getBytes(StandardCharsets.UTF_8)));
       hashes.add(hash);
-      location.setIdentifier(UUID.randomUUID());
+      UUID identifier = UUID.randomUUID();
+      location.setIdentifier(identifier);
       location.setHashValue(hash);
+
+      if (location.getExternalId() == null){
+        location.setExternalId(identifier);
+      }
+
       LocationElastic loc = new LocationElastic();
       loc.setHashValue(hash);
       loc.setId(location.getIdentifier().toString());
