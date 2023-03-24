@@ -288,6 +288,12 @@ public class LocationRelationshipService {
         Collectors.toList());
   }
 
+  public List<LocationRelationshipProjection> getLocationRelationshipsForLocationHierarchyId(
+      String locationHierarchy) {
+    return locationRelationshipRepository.findByLocationHierarchyIdentifier(
+        UUID.fromString(locationHierarchy));
+  }
+
   public List<LocationRelationshipProjection> getLocationRelationshipsNotLike(
       LocationHierarchy locationHierarchy, List<String> notLike) {
     return locationRelationshipRepository.findByLocationHierarchyWithoutStructuresNotLike(notLike);

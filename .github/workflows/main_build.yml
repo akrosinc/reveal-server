@@ -5,72 +5,72 @@ name: Reveal Server test, build and deploy
 
 on:
   push:
-    branches: [ main , zambia_2022 , simulation-for-kenya-demo]
+    branches: [ main, zambia_2022, simulation-for-kenya-demo, simulation-result-table ]
   pull_request:
-    branches: [none]
+    branches: [ none ]
 
 jobs:
-#  dependancy:
-#
-#    runs-on: ubuntu-latest
-#
-#    steps:
-#
-#      - name: Checkout reveal-server
-#        uses: actions/checkout@v2
-#        with:
-#          repository: akrosinc/reveal-server
-#
-#      - name: Set up JDK 11
-#        uses: actions/setup-java@v2
-#        with:
-#          java-version: '11'
-#          distribution: 'adopt'
-#          cache: gradle
-#
-#      - name: Grant execute permission for gradlew
-#        run: chmod +x gradlew
-#
-#      - name: Build with Gradle
-#        run: ./gradlew dependencyCheckAnalyze --info
+  #  dependancy:
+  #
+  #    runs-on: ubuntu-latest
+  #
+  #    steps:
+  #
+  #      - name: Checkout reveal-server
+  #        uses: actions/checkout@v2
+  #        with:
+  #          repository: akrosinc/reveal-server
+  #
+  #      - name: Set up JDK 11
+  #        uses: actions/setup-java@v2
+  #        with:
+  #          java-version: '11'
+  #          distribution: 'adopt'
+  #          cache: gradle
+  #
+  #      - name: Grant execute permission for gradlew
+  #        run: chmod +x gradlew
+  #
+  #      - name: Build with Gradle
+  #        run: ./gradlew dependencyCheckAnalyze --info
 
-#  code-quality:
-#
-#    runs-on: ubuntu-latest
-#
-#    steps:
-#
-#      - name: Checkout reveal-server
-#        uses: actions/checkout@v2
-#        with:
-#          repository: akrosinc/reveal-server
-#
-#      - name: Set up JDK 11
-#        uses: actions/setup-java@v2
-#        with:
-#          java-version: '11'
-#          distribution: 'adopt'
-#          cache: gradle
-#
-#      - name: Grant execute permission for gradlew
-#        run: chmod +x gradlew
-#
-#      - name: Build with Gradle
-#        env:
-#          SONAR_SECRET: ${{ secrets.SONAR_TOKEN }}
-#        run: ./gradlew --stacktrace sonarqube -Dsonar.login="$SONAR_SECRET" -Dsonar.host.url=https://sonar-ops.akros.online -Dsonar.dependencyCheck.htmlReportPath=build/reports/dependency-check-report.html
+  #  code-quality:
+  #
+  #    runs-on: ubuntu-latest
+  #
+  #    steps:
+  #
+  #      - name: Checkout reveal-server
+  #        uses: actions/checkout@v2
+  #        with:
+  #          repository: akrosinc/reveal-server
+  #
+  #      - name: Set up JDK 11
+  #        uses: actions/setup-java@v2
+  #        with:
+  #          java-version: '11'
+  #          distribution: 'adopt'
+  #          cache: gradle
+  #
+  #      - name: Grant execute permission for gradlew
+  #        run: chmod +x gradlew
+  #
+  #      - name: Build with Gradle
+  #        env:
+  #          SONAR_SECRET: ${{ secrets.SONAR_TOKEN }}
+  #        run: ./gradlew --stacktrace sonarqube -Dsonar.login="$SONAR_SECRET" -Dsonar.host.url=https://sonar-ops.akros.online -Dsonar.dependencyCheck.htmlReportPath=build/reports/dependency-check-report.html
 
-    # unit-tests:
+  # unit-tests:
 
-    #   runs-on: ubuntu-latest
+  #   runs-on: ubuntu-latest
 
-    #   steps:
+  #   steps:
 
-    # - name: Checkout reveal-server
-    #   uses: actions/checkout@v2
-    #   with:
-    #     repository: akrosinc/reveal-server
-    #     path: reveal-server
+  # - name: Checkout reveal-server
+  #   uses: actions/checkout@v2
+  #   with:
+  #     repository: akrosinc/reveal-server
+  #     path: reveal-server
 
   #   - name: Set up JDK 11
   #     uses: actions/setup-java@v2
@@ -89,7 +89,7 @@ jobs:
 
     runs-on: ubuntu-latest
     # needs: [dependancy, code-quality, unit-tests]
-    needs: []
+    needs: [ ]
 
     steps:
 
@@ -121,7 +121,7 @@ jobs:
   container:
 
     runs-on: ubuntu-latest
-    needs: [build]
+    needs: [ build ]
 
     steps:
 

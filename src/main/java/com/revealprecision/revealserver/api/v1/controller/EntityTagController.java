@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.api.v1.controller;
 
+import com.revealprecision.revealserver.api.v1.dto.csv.LocationCSVRecord;
 import com.revealprecision.revealserver.api.v1.dto.factory.EntityTagResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.LookupEntityTagResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.DataFilterRequest;
@@ -14,15 +15,20 @@ import com.revealprecision.revealserver.api.v1.dto.response.LocationResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LookupEntityTypeResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.PersonMainData;
 import com.revealprecision.revealserver.api.v1.dto.response.SimulationCountResponse;
+import com.revealprecision.revealserver.api.v1.facade.factory.LocationCSVRecordFactory;
 import com.revealprecision.revealserver.persistence.domain.LookupEntityType;
 import com.revealprecision.revealserver.persistence.domain.SimulationRequest;
 import com.revealprecision.revealserver.persistence.repository.LocationElasticRepository;
 import com.revealprecision.revealserver.service.EntityFilterService;
 import com.revealprecision.revealserver.service.EntityTagService;
 import com.revealprecision.revealserver.service.LocationHierarchyService;
+import com.revealprecision.revealserver.service.LocationRelationshipService;
 import com.revealprecision.revealserver.service.LookupEntityTypeService;
 import io.swagger.v3.oas.annotations.Operation;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringWriter;
 import java.text.ParseException;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
@@ -43,8 +49,16 @@ import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.csveed.api.CsvClient;
+import org.csveed.api.CsvClientImpl;
+import org.csveed.bean.BeanInstructions;
+import org.csveed.bean.BeanInstructionsImpl;
+import org.csveed.row.RowWriter;
+import org.csveed.row.RowWriterImpl;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.search.SearchHit;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -73,6 +87,7 @@ public class EntityTagController {
   private final LocationElasticRepository locationElasticRepository;
   private final RestHighLevelClient client;
   private final LocationHierarchyService locationHierarchyService;
+  private final LocationRelationshipService locationRelationshipService;
 
   @Operation(summary = "Create Tag", description = "Create Tag", tags = {"Entity Tags"})
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -201,7 +216,7 @@ public class EntityTagController {
         try {
           do {
             FeatureSetResponseContainer featureSetResponse1 = entityFilterService.filterEntites(
-                request,7000);
+                request, 7000,false,null);
 
             parents.addAll(featureSetResponse1.getFeatureSetResponse().getParents());
 
@@ -228,7 +243,6 @@ public class EntityTagController {
             lastResponse = featureSetResponse1.getSearchHit();
 
             request.setLastHit(lastResponse);
-
 
             emitter.send(event);
 
@@ -314,7 +328,7 @@ public class EntityTagController {
         try {
           do {
             FeatureSetResponseContainer featureSetResponse1 = entityFilterService.filterEntites(
-                request,7000);
+                request, 7000, false,null);
 
             SseEventBuilder event = SseEmitter.event()
                 .data(featureSetResponse1.getFeatureSetResponse())
@@ -324,7 +338,6 @@ public class EntityTagController {
             lastResponse = featureSetResponse1.getSearchHit();
 
             request.setLastHit(lastResponse);
-
 
             emitter.send(event);
 
@@ -363,7 +376,7 @@ public class EntityTagController {
       try {
 
         FeatureSetResponseContainer featureSetResponse1 = entityFilterService.filterEntites(
-            request,10000);
+            request, 10000, false, null);
 
         featureSetResponse.getFeatures()
             .addAll(featureSetResponse1.getFeatureSetResponse().getFeatures());
@@ -381,6 +394,108 @@ public class EntityTagController {
 
     return featureSetResponse;
   }
+
+  @GetMapping("/fullHierarchyCSV")
+  public ResponseEntity<Resource> fullHierarchyCSV(
+      @RequestParam("hierarchyIdentifier") String hierarchyIdentifier,
+      @RequestParam("fileName") String fileName, @RequestParam("delimiter") char delimiter)
+      throws IOException, ParseException {
+
+    StringWriter stringWriter = new StringWriter();
+
+    BeanInstructions instructions = new BeanInstructionsImpl(LocationCSVRecord.class);
+    instructions.setSeparator(delimiter);
+    instructions.setUseHeader(false);
+
+    CsvClient<LocationCSVRecord> client = new CsvClientImpl<>(stringWriter, instructions);
+
+    DataFilterRequest request = new DataFilterRequest();
+    request.setHierarchyIdentifier(UUID.fromString(hierarchyIdentifier));
+    FeatureSetResponse featureSetResponse = new FeatureSetResponse();
+    featureSetResponse.setFeatures(new ArrayList<>());
+    featureSetResponse.setParents(new HashSet<>());
+    featureSetResponse.setType("FeatureCollection");
+
+    SearchHit lastResponse = null;
+    do {
+      try {
+
+        log.info("calling filterEntites");
+        FeatureSetResponseContainer featureSetResponse1 = entityFilterService.filterEntites(
+            request, 10000,true,List.of("geometry"));
+        log.info("called filterEntites");
+
+        featureSetResponse.getFeatures()
+            .addAll(featureSetResponse1.getFeatureSetResponse().getFeatures());
+        featureSetResponse.getParents().addAll(featureSetResponse1.getFeatureSetResponse()
+            .getParents());
+        lastResponse = featureSetResponse1.getSearchHit();
+        request.setLastHit(lastResponse);
+
+      } catch (Exception ex) {
+        log.error("Error getting page");
+        throw ex;
+      }
+    } while (lastResponse != null );
+
+    Map<String, Map<String, Object>> featureMap = featureSetResponse.getFeatures().stream()
+        .map(featureSet -> new SimpleEntry<>(featureSet.getIdentifier().toString(),
+            featureSet.getProperties().getMetadata().stream()
+                .collect(Collectors.toMap(EntityMetadataResponse::getType,
+                    EntityMetadataResponse::getValue, (a, b) -> b))))
+        .collect(Collectors.toMap(SimpleEntry::getKey, SimpleEntry::getValue, (a, b) -> b));
+
+    Set<String> tags = featureSetResponse.getFeatures().stream().flatMap(
+            feature -> feature.getProperties().getMetadata().stream()
+                .map(EntityMetadataResponse::getType))
+        .collect(Collectors.toSet());
+
+    List<LocationCSVRecord> locationList = featureSetResponse.getFeatures().stream()
+        .map(feature -> LocationCSVRecordFactory.getLocationCSVRecordFromLocationResponse(
+            feature, tags.stream()
+            .map(tag -> new SimpleEntry<>(tag,
+                featureMap.get(feature.getIdentifier().toString()).getOrDefault(tag, "")))
+            .collect(Collectors.toSet()))).collect(Collectors.toList());
+
+    RowWriter  rowWriter = new RowWriterImpl(stringWriter);
+
+    List<String> headerArr = new ArrayList<>();
+    headerArr.add("Identifier");
+    headerArr.add("Name");
+    headerArr.add("GeographicLevel");
+    headerArr.addAll(tags);
+    rowWriter.writeHeader(headerArr.toArray(new String[0]));
+
+    locationList.stream().forEach(location -> {
+      List<String> strArr = new ArrayList<>();
+     strArr.add(location.getIdentifier());
+     strArr.add(location.getName());
+     strArr.add(location.getGeographicLevel());
+
+      List<String> collect = location.getMeta().stream().map(SimpleEntry::getValue).map(val ->
+      {
+        if (val instanceof Double){
+          return ((Double)val).toString();
+        } else {
+          return (String) val;
+        }
+      }).collect(Collectors.toList());
+
+      strArr.addAll(collect);
+
+      rowWriter.writeRow(strArr.toArray(new String[0]));
+    });
+
+    stringWriter.close();
+    InputStream targetStream = new ByteArrayInputStream(stringWriter.toString().getBytes());
+    InputStreamResource resource = new InputStreamResource(targetStream);
+
+    return ResponseEntity.status(HttpStatus.OK)
+        .contentType(MediaType.APPLICATION_OCTET_STREAM)
+        .header("Content-disposition", "attachment;filename=" + fileName)
+        .body(resource);
+  }
+
 
   @GetMapping("/person/{personIdentifier}")
   public ResponseEntity<PersonMainData> getPersonDetails(@PathVariable UUID personIdentifier)

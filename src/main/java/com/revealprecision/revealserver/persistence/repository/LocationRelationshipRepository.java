@@ -26,7 +26,11 @@ public interface LocationRelationshipRepository extends JpaRepository<LocationRe
       UUID locationHierarchyIdentifier, UUID locationIdentifier);
 
   @Query(value =
-      "SELECT cast(lr.identifier as varchar) identifier, l.name locationName, cast(l.identifier as varchar) locationIdentifier, cast(lr.parent_identifier as varchar) parentIdentifier, gl.name geographicLevelName FROM location_relationship lr "
+      "SELECT cast(lr.identifier as varchar) identifier"
+          + ", l.name locationName"
+          + ", cast(l.identifier as varchar) locationIdentifier"
+          + ", cast(lr.parent_identifier as varchar) parentIdentifier"
+          + ", gl.name geographicLevelName FROM location_relationship lr "
           + "LEFT JOIN location l ON lr.location_identifier = l.identifier "
           + "LEFT JOIN geographic_level gl ON l.geographic_level_identifier = gl.identifier ", nativeQuery = true)
   List<LocationRelationshipProjection> findByLocationHierarchyIdentifier(

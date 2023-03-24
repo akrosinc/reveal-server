@@ -608,7 +608,8 @@ public class EntityFilterService {
   }
 
 
-  public FeatureSetResponseContainer filterEntites(DataFilterRequest request, int batchSize)
+  public FeatureSetResponseContainer filterEntites(DataFilterRequest request, int batchSize,
+      boolean excludeFields, List<String> exclusionList)
       throws IOException, ParseException {
     FeatureSetResponse response = new FeatureSetResponse();
     BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
@@ -622,7 +623,7 @@ public class EntityFilterService {
           boolQuery.should().add(QueryBuilders.termQuery("level", geoList)));
     }
 
-    if ( request.getEntityFilters() != null){
+    if (request.getEntityFilters() != null) {
       for (EntityFilterRequest req : request.getEntityFilters()) {
         LookupEntityType lookupEntityType = lookupEntityTypeService.getLookUpEntityTypeById(
             req.getEntityIdentifier());
@@ -666,8 +667,12 @@ public class EntityFilterService {
       sourceBuilder.query(matchAllQuery);
     }
 
+    if (excludeFields) {
+      sourceBuilder.fetchSource(null, exclusionList.toArray(new String[0]));
+    }
     SearchRequest searchRequest = new SearchRequest(elasticIndex);
     searchRequest.source(sourceBuilder);
+
     List<SortBuilder<?>> sortBuilders = List.of(SortBuilders.fieldSort("name").order(
             SortOrder.DESC),
         SortBuilders.fieldSort("hashValue").order(
@@ -678,26 +683,49 @@ public class EntityFilterService {
     if (request.getLastHit() != null) {
       sourceBuilder.searchAfter(request.getLastHit().getSortValues());
     }
+    log.info("calling search");
+    SearchResponse searchResponse = client
+        .search(searchRequest, RequestOptions.DEFAULT);
+    log.info("called search");
 
-    SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
-
-
-    List<LocationResponse> locationResponses = new ArrayList<>();
     Set<String> parentLocations = new HashSet<>();
 
     SearchHit lastHit = null;
 
-    for (SearchHit hit : searchResponse.getHits().getHits()) {
-      LocationResponse locToAdd = LocationResponseFactory.fromSearchHit(hit, parentLocations,
-          request.getHierarchyIdentifier().toString());
+//    log.info("processing search results");
+//    for (SearchHit hit : searchResponse.getHits().getHits()) {
+//      LocationResponse locToAdd = LocationResponseFactory.fromSearchHit(hit, parentLocations,
+//          request.getHierarchyIdentifier().toString());
+//
+////      addPersonsToLocationProperties(hit.getInnerHits(), locToAdd.getProperties());
+//      locToAdd.getProperties().setSimulationSearchResult(true);
+//      locToAdd.getProperties()
+//          .setLevelColor(getGeoLevelColor(locToAdd.getProperties().getGeographicLevel()));
+//
+//      locationResponses.add(locToAdd);
+//    }
+//    log.info("processed search results");
 
-      addPersonsToLocationProperties(hit.getInnerHits(), locToAdd.getProperties());
-      locToAdd.getProperties().setSimulationSearchResult(true);
-      locToAdd.getProperties()
-          .setLevelColor(getGeoLevelColor(locToAdd.getProperties().getGeographicLevel()));
+//    Arrays.stream(searchResponse.getHits().getHits()).peek(hit -> )
+    log.info("processing search results");
 
-      locationResponses.add(locToAdd);
-    }
+    List<LocationResponse> locationResponses = Arrays.stream(searchResponse.getHits().getHits())
+        .parallel()
+        .map(hit -> {
+          try {
+            LocationResponse locToAdd = LocationResponseFactory.fromSearchHit(hit, parentLocations,
+                request.getHierarchyIdentifier().toString());
+            locToAdd.getProperties().setSimulationSearchResult(true);
+            locToAdd.getProperties()
+                .setLevelColor(getGeoLevelColor(locToAdd.getProperties().getGeographicLevel()));
+
+            return locToAdd;
+          } catch (JsonProcessingException e) {
+            e.printStackTrace();
+          }
+          return null;
+        }).collect(Collectors.toList());
+    log.info("processed search results");
 
     response.setParents(parentLocations);
 
@@ -715,7 +743,7 @@ public class EntityFilterService {
 
   }
 
-  private List<LocationResponse> getLocationCenters(List<LocationResponse> locationResponses){
+  private List<LocationResponse> getLocationCenters(List<LocationResponse> locationResponses) {
     List<UUID> collect = locationResponses.stream().map(LocationResponse::getIdentifier)
         .collect(Collectors.toList());
 
@@ -725,7 +753,7 @@ public class EntityFilterService {
     return locationResponses.stream().map(locationResponse -> {
       LocationCoordinatesProjection locationCoordinatesProjection = locationCentroidCoordinatesMap.get(
           locationResponse.getIdentifier().toString());
-      if (locationCoordinatesProjection != null){
+      if (locationCoordinatesProjection != null) {
         locationResponse.getProperties().setXCentroid(locationCoordinatesProjection.getLongitude());
         locationResponse.getProperties().setYCentroid(locationCoordinatesProjection.getLatitude());
       }
