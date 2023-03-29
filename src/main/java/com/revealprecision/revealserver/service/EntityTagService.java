@@ -12,6 +12,7 @@ import com.revealprecision.revealserver.api.v1.dto.factory.EntityTagFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.EntityTagRequestFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.EntityTagResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.EntityTagRequest;
+import com.revealprecision.revealserver.api.v1.dto.request.UpdateEntityTagRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.EntityTagResponse;
 import com.revealprecision.revealserver.constants.EntityTagScopes;
 import com.revealprecision.revealserver.enums.LookupEntityTypeCodeEnum;
@@ -21,6 +22,7 @@ import com.revealprecision.revealserver.messaging.message.EntityTagEvent;
 import com.revealprecision.revealserver.persistence.domain.EntityTag;
 import com.revealprecision.revealserver.persistence.domain.FormField;
 import com.revealprecision.revealserver.persistence.domain.LookupEntityType;
+import com.revealprecision.revealserver.persistence.domain.User.Fields;
 import com.revealprecision.revealserver.persistence.repository.EntityTagRepository;
 import java.util.ArrayList;
 import java.util.List;
@@ -166,6 +168,16 @@ public class EntityTagService {
 
   public Set<EntityTag> findEntityTagsByReferencedTags(String name) {
     return entityTagRepository.findEntityTagByReferencedFields(name);
+  }
+
+  public EntityTag updateEntityTag(UpdateEntityTagRequest tag) {
+
+    EntityTag tag1 = entityTagRepository.findById(tag.getIdentifier())
+        .orElseThrow( () -> new NotFoundException(Pair.of(Fields.identifier, tag.getIdentifier()), EntityTag.class));
+
+    tag1.setSimulationDisplay(tag.isSimulationDisplay());
+
+    return entityTagRepository.save(tag1);
   }
 
   public List<EntityTagResponse> getTagsAndCoreFields(UUID lookupEntityTypeIdentifier) {

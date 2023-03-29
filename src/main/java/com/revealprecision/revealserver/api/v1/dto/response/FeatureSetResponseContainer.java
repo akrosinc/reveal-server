@@ -1,14 +1,12 @@
 package com.revealprecision.revealserver.api.v1.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.elasticsearch.search.SearchHit;
 
 @Getter
 @Setter
@@ -16,11 +14,8 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class FeatureSetResponse {
+public class FeatureSetResponseContainer {
 
-  private UUID identifier;
-  private String type;
-  private String defaultDisplayColumn;
-  private List<LocationResponse> features;
-  private Set<String> parents;
+  private FeatureSetResponse featureSetResponse;
+  private SearchHit searchHit;
 }

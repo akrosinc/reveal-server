@@ -2,6 +2,7 @@ package com.revealprecision.revealserver.util;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.revealprecision.revealserver.persistence.es.HierarchyDetailsElastic;
 import com.revealprecision.revealserver.persistence.es.PersonElastic;
 import com.revealprecision.revealserver.persistence.es.EntityMetadataElastic;
 import java.time.Instant;
@@ -19,6 +20,11 @@ public class ElasticModelUtil {
   public static Map<String, Object> toMapFromPersonElastic(PersonElastic personElastic) {
     ObjectMapper mapper = new ObjectMapper();
     return mapper.convertValue(personElastic, new TypeReference<Map<String, Object>>() {});
+  }
+
+  public static Map<String, Object> toMapFromHierarchyDetailsElastic(HierarchyDetailsElastic hierarchyDetailsElastic) {
+    ObjectMapper mapper = new ObjectMapper();
+    return mapper.convertValue(hierarchyDetailsElastic, new TypeReference<Map<String, Object>>() {});
   }
 
   public static Map<String, Object> toMapFromPersonMetadata(

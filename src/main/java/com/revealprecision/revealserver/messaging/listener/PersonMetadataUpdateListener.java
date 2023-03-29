@@ -19,6 +19,7 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.reindex.UpdateByQueryRequest;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
@@ -30,6 +31,9 @@ import org.springframework.stereotype.Service;
 public class PersonMetadataUpdateListener extends Listener {
 
   private final RestHighLevelClient client;
+
+  @Value("${reveal.elastic.index-name}")
+  String elasticIndex;
 
   @KafkaListener(topics = "#{kafkaConfigProperties.topicMap.get('PERSON_METADATA_UPDATE')}", groupId = "reveal_server_group")
   public void updatePersonMetadata(PersonMetadataEvent event) throws IOException {
@@ -54,7 +58,7 @@ public class PersonMetadataUpdateListener extends Listener {
 
       List<String> locationIds = event.getLocationIdList().stream().map(UUID::toString).collect(
           Collectors.toList());
-      UpdateByQueryRequest request = new UpdateByQueryRequest("location");
+      UpdateByQueryRequest request = new UpdateByQueryRequest(elasticIndex);
       request.setQuery(QueryBuilders.termsQuery("_id", locationIds));
       request.setScript(inline);
       client.updateByQuery(request, RequestOptions.DEFAULT);

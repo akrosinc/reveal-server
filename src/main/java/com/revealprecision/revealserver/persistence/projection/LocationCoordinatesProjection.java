@@ -1,10 +1,14 @@
 package com.revealprecision.revealserver.persistence.projection;
 
+import java.math.BigDecimal;
+
 public interface LocationCoordinatesProjection {
 
-  Long getLongitude();
+  BigDecimal getLongitude();
 
-  Long getLatitude();
+  BigDecimal getLatitude();
 
   String getName();
+
+  String getIdentifier();
 }

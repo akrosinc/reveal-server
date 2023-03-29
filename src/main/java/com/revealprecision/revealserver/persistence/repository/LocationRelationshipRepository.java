@@ -11,7 +11,6 @@ import com.revealprecision.revealserver.persistence.projection.LocationWithParen
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import javax.transaction.Transactional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -27,7 +26,11 @@ public interface LocationRelationshipRepository extends JpaRepository<LocationRe
       UUID locationHierarchyIdentifier, UUID locationIdentifier);
 
   @Query(value =
-      "SELECT cast(lr.identifier as varchar) identifier, l.name locationName, cast(l.identifier as varchar) locationIdentifier, cast(lr.parent_identifier as varchar) parentIdentifier, gl.name geographicLevelName FROM location_relationship lr "
+      "SELECT cast(lr.identifier as varchar) identifier"
+          + ", l.name locationName"
+          + ", cast(l.identifier as varchar) locationIdentifier"
+          + ", cast(lr.parent_identifier as varchar) parentIdentifier"
+          + ", gl.name geographicLevelName FROM location_relationship lr "
           + "LEFT JOIN location l ON lr.location_identifier = l.identifier "
           + "LEFT JOIN geographic_level gl ON l.geographic_level_identifier = gl.identifier ", nativeQuery = true)
   List<LocationRelationshipProjection> findByLocationHierarchyIdentifier(
@@ -142,7 +145,12 @@ public interface LocationRelationshipRepository extends JpaRepository<LocationRe
   LocationRelationship getFirstLocationRelationshipByLocation_IdentifierAndLocationHierarchy_Identifier(
       UUID locationIdentifier, UUID hierarchyIdentifier);
 
+  List<LocationRelationship> getLocationRelationshipByLocation_IdentifierInAndLocationHierarchy_Identifier(
+      List<UUID> locationIdentifiers, UUID hierarchyIdentifier);
+
+
   List<LocationRelationship> findLocationRelationshipsByLocation_IdentifierAndLocationHierarchy_Identifier(UUID locationIdentifier, UUID hierarchyIdentifier);
+
 
   @Query(value =
       "select new com.revealprecision.revealserver.persistence.projection.LocationMainData(l.identifier, l.name) from LocationRelationship lr "

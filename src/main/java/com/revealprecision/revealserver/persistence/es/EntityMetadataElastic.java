@@ -22,7 +22,8 @@ import org.springframework.data.elasticsearch.annotations.FieldType;
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class EntityMetadataElastic {
-
+//  @Field(type = FieldType.Keyword)
+//  private String id;
   @Field(type = FieldType.Keyword)
   private String type;
   @Field(type = FieldType.Keyword)
@@ -36,6 +37,7 @@ public class EntityMetadataElastic {
   private boolean isActive = true;
 
   public EntityMetadataElastic(MetaDataEvent metadataObj) {
+//    this.id = metadataObj.getEntityTagId().toString();
     this.type = metadataObj.getType();
     this.tag = metadataObj.getTag();
     this.isActive = metadataObj.isActive();

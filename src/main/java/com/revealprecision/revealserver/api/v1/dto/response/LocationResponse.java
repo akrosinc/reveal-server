@@ -3,6 +3,8 @@ package com.revealprecision.revealserver.api.v1.dto.response;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.revealprecision.revealserver.persistence.domain.Geometry;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -24,4 +26,6 @@ public class LocationResponse {
   private Geometry geometry;
   private Boolean isActive;
   private LocationPropertyResponse properties;
+  List<String> ancestry;
+  Map<String,Object> aggregates;
 }

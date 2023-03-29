@@ -73,8 +73,16 @@ public interface LocationRepository extends JpaRepository<Location, UUID> {
           + " WHERE identifier = :locationIdentifier", nativeQuery = true)
   LocationCoordinatesProjection getLocationCentroidCoordinatesByIdentifier(UUID locationIdentifier);
 
+  @Query(value =
+      "SELECT  CAST(identifier as varchar) as identifier, name as name, ST_X(ST_Centroid(ST_GeomFromGeoJSON(geometry))) as longitude,ST_Y(ST_Centroid(ST_GeomFromGeoJSON(geometry))) as  latitude from location"
+          + " WHERE identifier in :locationIdentifierList", nativeQuery = true)
+  List<LocationCoordinatesProjection> getLocationCentroidCoordinatesByIdentifierList(List<UUID> locationIdentifierList);
+
   @Query(value = "select ST_AsText(ST_Centroid(st_geomfromgeojson(l.geometry))) from location l where l.identifier = :identifier", nativeQuery = true)
   String getCentroid(@Param("identifier") UUID identifier);
+
+  @Query(value = "select ST_AsText(ST_Centroid(st_geomfromgeojson(l.geometry))) from location l where l.identifier in :identifierList", nativeQuery = true)
+  List<String> getCentroidList(@Param("identifierList") List<UUID> identifierList);
 
   List<Location> findLocationsByIdentifierIn(List<UUID> uuids);
 

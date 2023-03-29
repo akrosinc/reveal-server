@@ -247,6 +247,21 @@ public class LocationRelationshipService {
         .build();
     locationRelationship.setEntityStatus(EntityStatus.ACTIVE);
     locationRelationshipRepository.save(locationRelationship);
+
+    LocationRelationshipMessage locationRelationshipMessage = new LocationRelationshipMessage();
+    locationRelationshipMessage.setGeoNameLevelNumber(
+        locationHierarchy.getNodeOrder().indexOf(
+            location.getGeographicLevel().getName()));
+    locationRelationshipMessage.setLocationIdentifier(
+        location.getIdentifier());
+    locationRelationshipMessage.setGeoName(
+        location.getGeographicLevel().getName());
+    locationRelationshipMessage.setLocationName(location.getName());
+    locationRelationshipMessage.setLocationHierarchyIdentifier(
+        locationHierarchy.getIdentifier());
+    kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.LOCATIONS_IMPORTED),
+        locationRelationshipMessage);
+
   }
 
 
@@ -271,6 +286,12 @@ public class LocationRelationshipService {
     return locationRelationshipRepository.findByLocationHierarchyIdentifier(
         locationHierarchy.getIdentifier()).stream().map((LocationRelationship::new)).collect(
         Collectors.toList());
+  }
+
+  public List<LocationRelationshipProjection> getLocationRelationshipsForLocationHierarchyId(
+      String locationHierarchy) {
+    return locationRelationshipRepository.findByLocationHierarchyIdentifier(
+        UUID.fromString(locationHierarchy));
   }
 
   public List<LocationRelationshipProjection> getLocationRelationshipsNotLike(
@@ -402,6 +423,15 @@ public class LocationRelationshipService {
               .filter(hit -> hit.getSourceAsMap().get("level").equals(parentGeographicLevelName))
               .findFirst();
 
+          LocationRelationshipMessage locationRelationshipMessage = new LocationRelationshipMessage();
+          locationRelationshipMessage.setGeoNameLevelNumber(
+              locationHierarchy.getNodeOrder().indexOf(
+                  location.getGeographicLevel().getName()));
+          locationRelationshipMessage.setLocationIdentifier(
+              location.getIdentifier());
+          locationRelationshipMessage.setGeoName(
+              location.getGeographicLevel().getName());
+
           if (immediateParent.isPresent()) {
             Location parentLoc = Location.builder()
                 .identifier(UUID.fromString(immediateParent.get().getId())).build();
@@ -413,22 +443,18 @@ public class LocationRelationshipService {
                 .build();
             locationRelationshipToSave.setEntityStatus(EntityStatus.ACTIVE);
             locationRelationshipRepository.save(locationRelationshipToSave);
-
-            LocationRelationshipMessage locationRelationshipMessage = new LocationRelationshipMessage();
-            locationRelationshipMessage.setLocationIdentifier(
-                locationRelationshipToSave.getLocation().getIdentifier());
-            locationRelationshipMessage.setGeoName(
-                locationRelationshipToSave.getLocation().getGeographicLevel().getName());
             locationRelationshipMessage.setParentLocationIdentifier(
                 locationRelationshipToSave.getParentLocation().getIdentifier());
             locationRelationshipMessage.setAncestry(locationRelationshipToSave.getAncestry());
-            locationRelationshipMessage.setLocationName(location.getName());
-            locationRelationshipMessage.setLocationHierarchyIdentifier(
-                locationHierarchy.getIdentifier());
-            kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.LOCATIONS_IMPORTED),
-                locationRelationshipMessage);
-
           }
+
+          locationRelationshipMessage.setLocationName(location.getName());
+          locationRelationshipMessage.setLocationHierarchyIdentifier(
+              locationHierarchy.getIdentifier());
+          kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.LOCATIONS_IMPORTED),
+              locationRelationshipMessage);
+
+
         }
       } else if (nodePosition == -1) {
         createRelationshipForRoot(location, locationHierarchy);
@@ -446,6 +472,17 @@ public class LocationRelationshipService {
       UUID locationHierarchyIdentifier, UUID locationIdentifier) {
     return locationRelationshipRepository.getFirstLocationRelationshipByLocation_IdentifierAndLocationHierarchy_Identifier(
         locationIdentifier, locationHierarchyIdentifier);
+  }
+
+  public Map<UUID, Location> getLocationRelationshipsForLocations(
+      UUID locationHierarchyIdentifier, List<UUID> locationIdentifiers) {
+    return locationRelationshipRepository.getLocationRelationshipByLocation_IdentifierInAndLocationHierarchy_Identifier(
+        locationIdentifiers, locationHierarchyIdentifier).stream().collect(
+        Collectors.toMap(locationRelationship -> locationRelationship.getLocation().getIdentifier(),
+            locationRelationship ->
+                locationRelationship.getParentLocation() == null ? new Location()
+                    : locationRelationship.getParentLocation(), (a, b) -> b));
+
   }
 
   @Async

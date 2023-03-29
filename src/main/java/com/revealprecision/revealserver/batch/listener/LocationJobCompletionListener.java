@@ -14,7 +14,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobExecutionListener;
-import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -61,11 +60,11 @@ public class LocationJobCompletionListener implements JobExecutionListener {
       locationBulkRepository.save(locationBulk);
     }
 
-    try {
-      storageService.deleteFile(filePath);
-    } catch (IOException e) {
-      e.printStackTrace();
-      log.error("Error deleting storage file at path {}",filePath,e);
-    }
+//    try {
+//      storageService.deleteFile(filePath);
+//    } catch (IOException e) {
+//      e.printStackTrace();
+//      log.error("Error deleting storage file at path {}",filePath,e);
+//    }
   }
 }

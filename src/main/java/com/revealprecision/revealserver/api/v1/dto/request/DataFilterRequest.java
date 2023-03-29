@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.elasticsearch.search.SearchHit;
 
 @Getter
 @Setter
@@ -18,4 +19,9 @@ public class DataFilterRequest {
   private UUID hierarchyIdentifier;
   private UUID locationIdentifier;
   private List<EntityFilterRequest> entityFilters;
+  private SearchHit lastHit;
+  private List<String> filterGeographicLevelList;
+  private List<String> inactiveGeographicLevelList;
+  private boolean includeInactive;
+
 }

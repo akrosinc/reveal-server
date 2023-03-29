@@ -25,6 +25,8 @@ public class LocationRelationshipMessage extends Message {
 
   private String geoName;
 
+  private int geoNameLevelNumber;
+
   private List<UUID> ancestry;
 
   private UUID ancestor;
