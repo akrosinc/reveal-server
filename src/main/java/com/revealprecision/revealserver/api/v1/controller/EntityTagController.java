@@ -18,11 +18,9 @@ import com.revealprecision.revealserver.api.v1.dto.response.SimulationCountRespo
 import com.revealprecision.revealserver.api.v1.facade.factory.LocationCSVRecordFactory;
 import com.revealprecision.revealserver.persistence.domain.LookupEntityType;
 import com.revealprecision.revealserver.persistence.domain.SimulationRequest;
-import com.revealprecision.revealserver.persistence.repository.LocationElasticRepository;
 import com.revealprecision.revealserver.service.EntityFilterService;
 import com.revealprecision.revealserver.service.EntityTagService;
-import com.revealprecision.revealserver.service.LocationHierarchyService;
-import com.revealprecision.revealserver.service.LocationRelationshipService;
+import com.revealprecision.revealserver.service.EventAggregationService;
 import com.revealprecision.revealserver.service.LookupEntityTypeService;
 import io.swagger.v3.oas.annotations.Operation;
 import java.io.ByteArrayInputStream;
@@ -32,6 +30,7 @@ import java.io.StringWriter;
 import java.text.ParseException;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -49,13 +48,10 @@ import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.csveed.api.CsvClient;
-import org.csveed.api.CsvClientImpl;
 import org.csveed.bean.BeanInstructions;
 import org.csveed.bean.BeanInstructionsImpl;
 import org.csveed.row.RowWriter;
 import org.csveed.row.RowWriterImpl;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.search.SearchHit;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
@@ -84,10 +80,7 @@ public class EntityTagController {
   private final EntityTagService entityTagService;
   private final EntityFilterService entityFilterService;
   private final LookupEntityTypeService lookupEntityTypeService;
-  private final LocationElasticRepository locationElasticRepository;
-  private final RestHighLevelClient client;
-  private final LocationHierarchyService locationHierarchyService;
-  private final LocationRelationshipService locationRelationshipService;
+  private final EventAggregationService eventAggregationService;
 
   @Operation(summary = "Create Tag", description = "Create Tag", tags = {"Entity Tags"})
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -169,19 +162,20 @@ public class EntityTagController {
             coreFields);
   }
 
+  @GetMapping("/eventBasedTags/{entityTypeIdentifier}")
+  public ResponseEntity<List<EntityTagResponse>> getEventBasedTags(@PathVariable UUID entityTypeIdentifier) {
+
+    return ResponseEntity.status(HttpStatus.OK)
+        .body(
+            eventAggregationService.getEventBasedTags(entityTypeIdentifier));
+  }
+
   @GetMapping("/entityType")
   public ResponseEntity<List<LookupEntityTypeResponse>> getEntityTypes() {
     return ResponseEntity.status(HttpStatus.OK)
         .body(lookupEntityTypeService.getAllLookUpEntityTypes().stream().map(
             LookupEntityTagResponseFactory::fromEntity).collect(Collectors.toList()));
   }
-
-//  @PostMapping("/filter")
-//  public ResponseEntity<FeatureSetResponse> filterEntities(
-//      @Valid @RequestBody DataFilterRequest request)
-//      throws IOException, ParseException {
-//    return ResponseEntity.ok().body(entityFilterService.filterEntites(request));
-//  }
 
   @PostMapping("/submitSearchRequest")
   public ResponseEntity<SimulationCountResponse> submitSearchRequest(
@@ -192,17 +186,13 @@ public class EntityTagController {
 
 
   @GetMapping("/filter-sse")
-  public SseEmitter filterEntities(@RequestParam("simulationRequestId") String simulationRequestId)
-      throws IOException, ParseException {
+  public SseEmitter filterEntities(@RequestParam("simulationRequestId") String simulationRequestId) {
 
     Optional<SimulationRequest> simulationRequestById = entityFilterService.getSimulationRequestById(
         simulationRequestId);
 
     if (simulationRequestById.isPresent()) {
       DataFilterRequest request = simulationRequestById.get().getRequest();
-
-      List<String> nodeOrder = locationHierarchyService.findNodeOrderByIdentifier(
-          request.getHierarchyIdentifier());
 
       SseEmitter emitter = new SseEmitter(180000L);
       ExecutorService sseMvcExecutor = Executors.newScheduledThreadPool(2);
@@ -211,7 +201,7 @@ public class EntityTagController {
       List<AggregateHelper> aggregateHelpers = new ArrayList<>();
 
       sseMvcExecutor.execute(() -> {
-        SearchHit lastResponse = null;
+        SearchHit lastResponse;
 
         try {
           do {
@@ -257,19 +247,19 @@ public class EntityTagController {
                       aggregateHelper.getEntityMetadataResponses()))).collect(Collectors.toList());
 
           Map<String, List<List<EntityMetadataResponse>>> collect1 = collect.stream().collect(
-              Collectors.groupingBy(simpleEntry -> simpleEntry.getKey(),
-                  Collectors.mapping(simpleEntry -> simpleEntry.getValue(), Collectors.toList())));
+              Collectors.groupingBy(SimpleEntry::getKey,
+                  Collectors.mapping(SimpleEntry::getValue, Collectors.toList())));
 
           Map<String, Map<String, Object>> collect2 = collect1.entrySet().stream().map(
               locationEntry -> {
 
                 List<EntityMetadataResponse> collect5 = locationEntry.getValue().stream()
-                    .flatMap(metaList -> metaList.stream()).collect(
+                    .flatMap(Collection::stream).collect(
                         Collectors.toList());
 
                 Map<String, List<Object>> collect6 = collect5.stream().collect(
-                    Collectors.groupingBy(meta -> meta.getType(),
-                        Collectors.mapping(meta -> meta.getValue(), Collectors.toList())));
+                    Collectors.groupingBy(EntityMetadataResponse::getType,
+                        Collectors.mapping(EntityMetadataResponse::getValue, Collectors.toList())));
 
                 Map<String, Object> collect3 = collect6.entrySet().stream().map(entry -> {
 
@@ -306,8 +296,7 @@ public class EntityTagController {
 
   @GetMapping("/inactive-locations")
   public SseEmitter inactiveLocations(
-      @RequestParam("simulationRequestId") String simulationRequestId)
-      throws IOException, ParseException {
+      @RequestParam("simulationRequestId") String simulationRequestId) {
 
     Optional<SimulationRequest> simulationRequestById = entityFilterService.getSimulationRequestById(
         simulationRequestId);
@@ -324,7 +313,7 @@ public class EntityTagController {
       ExecutorService sseMvcExecutor = Executors.newScheduledThreadPool(2);
 
       sseMvcExecutor.execute(() -> {
-        SearchHit lastResponse = null;
+        SearchHit lastResponse;
         try {
           do {
             FeatureSetResponseContainer featureSetResponse1 = entityFilterService.filterEntites(
@@ -371,7 +360,7 @@ public class EntityTagController {
     featureSetResponse.setParents(new HashSet<>());
     featureSetResponse.setType("FeatureCollection");
 
-    SearchHit lastResponse = null;
+    SearchHit lastResponse;
     do {
       try {
 
@@ -407,8 +396,6 @@ public class EntityTagController {
     instructions.setSeparator(delimiter);
     instructions.setUseHeader(false);
 
-    CsvClient<LocationCSVRecord> client = new CsvClientImpl<>(stringWriter, instructions);
-
     DataFilterRequest request = new DataFilterRequest();
     request.setHierarchyIdentifier(UUID.fromString(hierarchyIdentifier));
     FeatureSetResponse featureSetResponse = new FeatureSetResponse();
@@ -416,7 +403,7 @@ public class EntityTagController {
     featureSetResponse.setParents(new HashSet<>());
     featureSetResponse.setType("FeatureCollection");
 
-    SearchHit lastResponse = null;
+    SearchHit lastResponse;
     do {
       try {
 

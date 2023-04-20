@@ -20,5 +20,7 @@ public class EntityFilterRequest {
   private UUID entityIdentifier;
   private RangeFilter range;
   private SearchValue searchValue;
+  private String valueType;
+  private String tag;
   private List<SearchValue> values;
 }

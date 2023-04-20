@@ -23,6 +23,7 @@ public class KafkaProperties {
   private Map<String, String> topicMap = new HashMap<>();
   private Map<String, Boolean> resetTopicMap = new HashMap<>();
   private Map<String, String> topicConfigRetention = new HashMap<>();
+  private Map<String, Integer> topicPartitions = new HashMap<>();
 
   private List<String> storeNames = new ArrayList<>();
 

@@ -46,15 +46,27 @@ public class KafkaConfig {
 
     List<NewTopic> topicsThatExpireMessages = kafkaProperties.getTopicNames().stream()
         .filter(topic -> kafkaProperties.getTopicConfigRetention().containsKey(topic))
-        .map(topic -> TopicBuilder.name(topic).config(TopicConfig.RETENTION_MS_CONFIG,
-            String.valueOf(kafkaProperties.getTopicConfigRetention().get(topic))).build())
+        .map(topic -> {
+          TopicBuilder topicBuilder = TopicBuilder.name(topic)
+              .config(TopicConfig.RETENTION_MS_CONFIG,
+                  String.valueOf(kafkaProperties.getTopicConfigRetention().get(topic)));
+          if (kafkaProperties.getTopicPartitions().containsKey(topic)) {
+            topicBuilder.partitions(kafkaProperties.getTopicPartitions().get(topic));
+          }
+          return topicBuilder.build();
+        })
         .collect(Collectors.toList());
 
-    List<NewTopic> topicsThatDoNotExpireMessages = kafkaProperties.getTopicNames().stream()
-        .filter(topic -> !kafkaProperties.getTopicConfigRetention().containsKey(topic))
-        .map(topic -> TopicBuilder.name(topic)
-            .build()
-        ).collect(Collectors.toList());
+    List<NewTopic> topicsThatDoNotExpireMessages = kafkaProperties.getTopicMap().entrySet().stream()
+        .filter(topic -> !kafkaProperties.getTopicConfigRetention().containsKey(topic.getKey()))
+        .map(topic -> {
+          TopicBuilder topicBuilder = TopicBuilder.name(topic.getValue());
+          if (kafkaProperties.getTopicPartitions().containsKey(topic.getKey())) {
+            topicBuilder.partitions(kafkaProperties.getTopicPartitions().get(topic.getKey()));
+          }
+          return topicBuilder.build();
+        })
+        .collect(Collectors.toList());
 
     List<NewTopic> newTopics = new ArrayList<>();
     newTopics.addAll(topicsThatExpireMessages);
@@ -62,9 +74,6 @@ public class KafkaConfig {
 
     return new NewTopics(newTopics.toArray(NewTopic[]::new));
   }
-
-
-
 
 
   @Bean

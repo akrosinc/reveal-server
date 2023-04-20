@@ -19,7 +19,6 @@ public class EntityTagRequestFactory {
         .isResultLiteral(entityTag.isResultLiteral())
         .entityType(
             entityTag.getEntityType())
-        .addToMetadata(entityTag.isAddToMetadata())
         .isAggregate(entityTag.isAggregate())
         .build();
   }

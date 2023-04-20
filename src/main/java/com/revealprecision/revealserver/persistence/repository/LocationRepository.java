@@ -18,6 +18,9 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface LocationRepository extends JpaRepository<Location, UUID> {
 
+  @Query("SELECT l.identifier from Location l")
+  Page<UUID> getAllLocationIdentifiers(Pageable pageable);
+
   @Query(value = "select l from Location l where l.geographicLevel.identifier = :identifier")
   List<Location> findByGeographicLevelIdentifier(@Param("identifier") UUID identifier);
 
@@ -144,4 +147,5 @@ public interface LocationRepository extends JpaRepository<Location, UUID> {
 
   @Query(value = "select l.name from Location l where l.hashValue in :hashes")
   List<String> findAllByHashes(Set<String> hashes);
+
 }

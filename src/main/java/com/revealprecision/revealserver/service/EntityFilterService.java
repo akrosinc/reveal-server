@@ -26,7 +26,6 @@ import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.exceptions.QueryGenerationException;
 import com.revealprecision.revealserver.persistence.domain.Action;
 import com.revealprecision.revealserver.persistence.domain.CoreField;
-import com.revealprecision.revealserver.persistence.domain.EntityTag;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.LookupEntityType;
@@ -620,7 +619,7 @@ public class EntityFilterService {
     if (request.getFilterGeographicLevelList() != null) {
 
       request.getFilterGeographicLevelList().stream().forEach(geoList ->
-          boolQuery.should().add(QueryBuilders.termQuery("level", geoList)));
+          boolQuery.must().add(QueryBuilders.matchPhraseQuery("level", geoList)));
     }
 
     if (request.getEntityFilters() != null) {
@@ -683,31 +682,16 @@ public class EntityFilterService {
     if (request.getLastHit() != null) {
       sourceBuilder.searchAfter(request.getLastHit().getSortValues());
     }
-    log.info("calling search");
+    log.trace("calling search {}", searchRequest.source().toString());
     SearchResponse searchResponse = client
         .search(searchRequest, RequestOptions.DEFAULT);
-    log.info("called search");
+    log.trace("called search");
 
     Set<String> parentLocations = new HashSet<>();
 
     SearchHit lastHit = null;
 
-//    log.info("processing search results");
-//    for (SearchHit hit : searchResponse.getHits().getHits()) {
-//      LocationResponse locToAdd = LocationResponseFactory.fromSearchHit(hit, parentLocations,
-//          request.getHierarchyIdentifier().toString());
-//
-////      addPersonsToLocationProperties(hit.getInnerHits(), locToAdd.getProperties());
-//      locToAdd.getProperties().setSimulationSearchResult(true);
-//      locToAdd.getProperties()
-//          .setLevelColor(getGeoLevelColor(locToAdd.getProperties().getGeographicLevel()));
-//
-//      locationResponses.add(locToAdd);
-//    }
-//    log.info("processed search results");
-
-//    Arrays.stream(searchResponse.getHits().getHits()).peek(hit -> )
-    log.info("processing search results");
+   log.trace("processing search results");
 
     List<LocationResponse> locationResponses = Arrays.stream(searchResponse.getHits().getHits())
         .parallel()
@@ -847,8 +831,7 @@ public class EntityFilterService {
 
     String searchField;
     if (request.getFieldType().equals("tag")) {
-      EntityTag entityTag = entityTagService.getEntityTagByIdentifier(request.getFieldIdentifier());
-      if (entityTag.getValueType().equals("date")) {
+      if (request.getValueType().equals("date")) {
         prepareDate(request);
       }
       if (lookupEntityType.getTableName().equals("location")) {
@@ -857,12 +840,12 @@ public class EntityFilterService {
         searchField = lookupEntityType.getTableName().concat(".metadata.");
       }
       andStatement.must(
-          QueryBuilders.matchPhraseQuery(searchField.concat("tag"), entityTag.getTag()));
+          QueryBuilders.matchPhraseQuery(searchField.concat("tag"), request.getTag()));
 
-      if (entityTag.getValueType().equals(STRING)) {
+      if (request.getValueType().equals(STRING)) {
         andStatement.must(QueryBuilders.matchPhraseQuery(searchField.concat("value"),
             request.getSearchValue().getValue()));
-      } else if (entityTag.getValueType().equals(INTEGER) || entityTag.getValueType()
+      } else if (request.getValueType().equals(INTEGER) || request.getValueType()
           .equals(DOUBLE)) {
         if (request.getSearchValue().getSign().equals(SignEntity.EQ)) {
           andStatement.must(QueryBuilders.matchQuery(searchField.concat("valueNumber"),
@@ -905,8 +888,7 @@ public class EntityFilterService {
     BoolQueryBuilder shouldStatement = QueryBuilders.boolQuery();
     String searchField;
     if (request.getFieldType().equals("tag")) {
-      EntityTag entityTag = entityTagService.getEntityTagByIdentifier(request.getFieldIdentifier());
-      if (entityTag.getValueType().equals(EntityTagDataTypes.DATE)) {
+      if (request.getValueType().equals(EntityTagDataTypes.DATE)) {
         prepareDate(request);
       }
       if (lookupEntityType.getTableName().equals("location")) {
@@ -915,13 +897,13 @@ public class EntityFilterService {
         searchField = lookupEntityType.getTableName().concat(".metadata.");
       }
       shouldStatement.must(
-          QueryBuilders.matchPhraseQuery(searchField.concat("tag"), entityTag.getTag()));
+          QueryBuilders.matchPhraseQuery(searchField.concat("tag"), request.getTag()));
       BoolQueryBuilder orStatement = QueryBuilders.boolQuery();
       for (SearchValue value : request.getValues()) {
-        if (entityTag.getValueType().equals(STRING)) {
+        if (request.getValueType().equals(STRING)) {
           orStatement.should(
               QueryBuilders.matchPhraseQuery(searchField.concat("value"), value.getValue()));
-        } else if (entityTag.getValueType().equals(INTEGER) || entityTag.getValueType()
+        } else if (request.getValueType().equals(INTEGER) || request.getValueType()
             .equals(DOUBLE)) {
           if (value.getSign().equals(SignEntity.EQ)) {
             orStatement.should(QueryBuilders.matchQuery(searchField.concat("valueNumber"),
@@ -961,9 +943,7 @@ public class EntityFilterService {
     String searchField;
     if (request.getRange().getMaxValue() != null && request.getRange().getMinValue() != null) {
       if (request.getFieldType().equals("tag")) {
-        EntityTag entityTag = entityTagService.getEntityTagByIdentifier(
-            request.getFieldIdentifier());
-        if (entityTag.getValueType().equals(DATE)) {
+        if (request.getValueType().equals(DATE)) {
           prepareDate(request);
         }
 
@@ -973,9 +953,9 @@ public class EntityFilterService {
           searchField = lookupEntityType.getTableName().concat(".metadata.");
         }
         boolQuery.must(
-            QueryBuilders.matchPhraseQuery(searchField.concat("tag"), entityTag.getTag()));
+            QueryBuilders.matchPhraseQuery(searchField.concat("tag"), request.getTag()));
         String searchFieldName = "value";
-        if (entityTag.getValueType().equals(INTEGER) || entityTag.getValueType().equals(DOUBLE)) {
+        if (request.getValueType().equals(INTEGER) || request.getValueType().equals(DOUBLE)) {
           searchFieldName = "valueNumber";
         }
         boolQuery.must(QueryBuilders.rangeQuery(searchField.concat(searchFieldName))
