@@ -61,12 +61,14 @@ public class ElasticController {
               .nodeOrder(nodeOrder)
               .uuids(locationIdsPage.getContent()).build());
 
-      log.debug("sent item {}",locationIdsPage.getContent().size());
       pageNumber++;
+      log.info("sent item {}",pageNumber);
       locationIdsPage = locationRepository.getAllLocationIdentifiers(
           PageRequest.of(pageNumber, pageSize));
 
     } while (locationIdsPage.hasContent());
+
+    log.info("done");
   }
 
 

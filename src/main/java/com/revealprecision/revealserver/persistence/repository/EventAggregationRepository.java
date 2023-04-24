@@ -34,31 +34,29 @@ public interface EventAggregationRepository extends JpaRepository<EventAggregati
 
 
   @Query(value = "SELECT ean2.name as name,\n"
-      + "       cast(ean2.ancestor as varchar) as locationIdentifier,\n"
-      + "       cast(ean2.plan_identifier as varchar) as planIdentifier,\n"
-      + "       ean2.event_type as eventType,\n"
+      + "       cast(ean2.locationIdentifier as varchar) as locationIdentifier,\n"
+      + "       cast(ean2.planIdentifier as varchar) as planIdentifier,\n"
+      + "       ean2.eventType as eventType,\n"
       + "       ean2.fieldcode as fieldCode,\n"
-      + "       sum(cast(ean2.val as float8)) as sum,\n"
-      + "       avg(cast(ean2.val as float8)) as avg,\n"
-      + "       percentile_cont(0.5) WITHIN GROUP ( ORDER BY cast(ean2.val as float8) ) as median\n"
-      + "from event_aggregation_numeric ean2\n"
+      + "       ean2.sum as sum,\n"
+      + "       ean2.avg as avg,\n"
+      + "       ean2.median as median\n"
+      + "from event_aggregate_numeric ean2\n"
       + "\n"
-      + "WHERE cast(ean2.ancestor as varchar) in :locationIdentifiers\n"
-      + "group by ean2.name,ean2.ancestor, ean2.plan_identifier, ean2.event_type, ean2.fieldcode\n", nativeQuery = true)
+      + "WHERE cast(ean2.locationIdentifier as varchar) in :locationIdentifiers", nativeQuery = true)
   List<EventAggregationNumericProjection> getAggregationValuesByLocationList(
       @Param("locationIdentifiers") List<String> locationIdentifiers);
 
 
   @Query(value = "SELECT ean2.name as name,\n"
-      + "       cast(ean2.ancestor as varchar) as locationIdentifier,\n"
-      + "       cast(ean2.plan_identifier as varchar) as planIdentifier,\n"
-      + "       ean2.event_type as eventType,\n"
-      + "       ean2.fieldcode as fieldCode,\n"
-      + "       cast(ean2.val as varchar) as fieldVal,\n"
-      + "       count(*) as count\n"
-      + "from event_aggregation_string_count ean2\n"
-      + "WHERE cast(ean2.ancestor as varchar) in :locationIdentifiers\n"
-      + "group by ean2.name,ean2.ancestor, ean2.plan_identifier, ean2.event_type, ean2.fieldcode,ean2.val", nativeQuery = true)
+      + "       cast(ean2.locationIdentifier as varchar) as locationIdentifier,\n"
+      + "       cast(ean2.planIdentifier as varchar) as planIdentifier,\n"
+      + "       ean2.eventType as eventType,\n"
+      + "       ean2.fieldCode as fieldCode,\n"
+      + "       ean2.fieldVal as fieldVal,\n"
+      + "       ean2.count as count\n"
+      + "from event_aggregate_string_count ean2\n"
+      + "WHERE cast(ean2.locationIdentifier as varchar) in :locationIdentifiers\n", nativeQuery = true)
   List<EventAggregationStringCountProjection> getAggregationCountValuesByLocationList(
       @Param("locationIdentifiers") List<String> locationIdentifiers);
 

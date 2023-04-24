@@ -163,7 +163,8 @@ public class EntityTagController {
   }
 
   @GetMapping("/eventBasedTags/{entityTypeIdentifier}")
-  public ResponseEntity<List<EntityTagResponse>> getEventBasedTags(@PathVariable UUID entityTypeIdentifier) {
+  public ResponseEntity<List<EntityTagResponse>> getEventBasedTags(
+      @PathVariable UUID entityTypeIdentifier) {
 
     return ResponseEntity.status(HttpStatus.OK)
         .body(
@@ -186,7 +187,8 @@ public class EntityTagController {
 
 
   @GetMapping("/filter-sse")
-  public SseEmitter filterEntities(@RequestParam("simulationRequestId") String simulationRequestId) {
+  public SseEmitter filterEntities(
+      @RequestParam("simulationRequestId") String simulationRequestId) {
 
     Optional<SimulationRequest> simulationRequestById = entityFilterService.getSimulationRequestById(
         simulationRequestId);
@@ -206,7 +208,7 @@ public class EntityTagController {
         try {
           do {
             FeatureSetResponseContainer featureSetResponse1 = entityFilterService.filterEntites(
-                request, 7000,false,null);
+                request, 1000, false, null);
 
             parents.addAll(featureSetResponse1.getFeatureSetResponse().getParents());
 
@@ -264,7 +266,21 @@ public class EntityTagController {
                 Map<String, Object> collect3 = collect6.entrySet().stream().map(entry -> {
 
                   Object reduce = entry.getValue().stream()
-                      .reduce(0d, (subtotal, newVal) -> (Double) newVal + (Double) subtotal);
+                      .reduce(0d, (subtotal, newVal) -> {
+                        log.trace("Meta Value: {}", newVal);
+                        if (newVal instanceof String) {
+
+                          double v = 0;
+                          try {
+                            v = Double.parseDouble((String) newVal);
+                          } catch (ClassCastException e) {
+                            log.error("Cannot cast value: {} to Double", newVal);
+                          }
+                          return v + (Double) subtotal;
+                        } else {
+                          return (Double) newVal + (Double) subtotal;
+                        }
+                      });
 
                   return new SimpleEntry<>(entry.getKey(), reduce);
                 }).collect(Collectors.toMap(SimpleEntry::getKey, SimpleEntry::getValue));
@@ -317,7 +333,7 @@ public class EntityTagController {
         try {
           do {
             FeatureSetResponseContainer featureSetResponse1 = entityFilterService.filterEntites(
-                request, 7000, false,null);
+                request, 7000, false, null);
 
             SseEventBuilder event = SseEmitter.event()
                 .data(featureSetResponse1.getFeatureSetResponse())
@@ -409,7 +425,7 @@ public class EntityTagController {
 
         log.info("calling filterEntites");
         FeatureSetResponseContainer featureSetResponse1 = entityFilterService.filterEntites(
-            request, 10000,true,List.of("geometry"));
+            request, 10000, true, List.of("geometry"));
         log.info("called filterEntites");
 
         featureSetResponse.getFeatures()
@@ -423,7 +439,7 @@ public class EntityTagController {
         log.error("Error getting page");
         throw ex;
       }
-    } while (lastResponse != null );
+    } while (lastResponse != null);
 
     Map<String, Map<String, Object>> featureMap = featureSetResponse.getFeatures().stream()
         .map(featureSet -> new SimpleEntry<>(featureSet.getIdentifier().toString(),
@@ -440,11 +456,11 @@ public class EntityTagController {
     List<LocationCSVRecord> locationList = featureSetResponse.getFeatures().stream()
         .map(feature -> LocationCSVRecordFactory.getLocationCSVRecordFromLocationResponse(
             feature, tags.stream()
-            .map(tag -> new SimpleEntry<>(tag,
-                featureMap.get(feature.getIdentifier().toString()).getOrDefault(tag, "")))
-            .collect(Collectors.toSet()))).collect(Collectors.toList());
+                .map(tag -> new SimpleEntry<>(tag,
+                    featureMap.get(feature.getIdentifier().toString()).getOrDefault(tag, "")))
+                .collect(Collectors.toSet()))).collect(Collectors.toList());
 
-    RowWriter  rowWriter = new RowWriterImpl(stringWriter);
+    RowWriter rowWriter = new RowWriterImpl(stringWriter);
 
     List<String> headerArr = new ArrayList<>();
     headerArr.add("Identifier");
@@ -455,14 +471,14 @@ public class EntityTagController {
 
     locationList.stream().forEach(location -> {
       List<String> strArr = new ArrayList<>();
-     strArr.add(location.getIdentifier());
-     strArr.add(location.getName());
-     strArr.add(location.getGeographicLevel());
+      strArr.add(location.getIdentifier());
+      strArr.add(location.getName());
+      strArr.add(location.getGeographicLevel());
 
       List<String> collect = location.getMeta().stream().map(SimpleEntry::getValue).map(val ->
       {
-        if (val instanceof Double){
-          return ((Double)val).toString();
+        if (val instanceof Double) {
+          return ((Double) val).toString();
         } else {
           return (String) val;
         }

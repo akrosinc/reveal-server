@@ -45,7 +45,7 @@ public class LocationIdListener extends Listener {
   public void processMessage(LocationIdEvent message) {
     log.debug("Received message {}",message);
     List<Location> locationsPage = locationRepository.findAllById(message.getUuids());
-    locationsPage.forEach(location -> log.info(location.getName()));
+//    locationsPage.forEach(location -> log.info(location.getName()));
     List<LocationRelationship> locationRelationships = locationRelationshipRepository.getLocationRelationshipByLocation_IdentifierInAndLocationHierarchy_Identifier(
         new ArrayList<>(message.getUuids()), message.getHierarchyIdentifier());
 
@@ -225,7 +225,11 @@ public class LocationIdListener extends Listener {
     });
 
     if (elastics.size() > 0) {
+
       locationElasticRepository.saveAll(elastics);
+      log.info("saved");
+    } else {
+      log.info("not saved");
     }
   }
 
