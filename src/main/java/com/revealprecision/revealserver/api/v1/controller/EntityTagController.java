@@ -273,7 +273,7 @@ public class EntityTagController {
                           double v = 0;
                           try {
                             v = Double.parseDouble((String) newVal);
-                          } catch (ClassCastException e) {
+                          } catch (NumberFormatException | ClassCastException e) {
                             log.error("Cannot cast value: {} to Double", newVal);
                           }
                           return v + (Double) subtotal;
