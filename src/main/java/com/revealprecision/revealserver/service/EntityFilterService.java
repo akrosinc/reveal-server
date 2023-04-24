@@ -617,9 +617,11 @@ public class EntityFilterService {
     List<EntityFilterRequest> locationFilters = new ArrayList<>();
 
     if (request.getFilterGeographicLevelList() != null) {
-
+      BoolQueryBuilder geoBoolQuery = QueryBuilders.boolQuery();
       request.getFilterGeographicLevelList().stream().forEach(geoList ->
-          boolQuery.should().add(QueryBuilders.matchPhraseQuery("level", geoList)));
+          geoBoolQuery.should().add(QueryBuilders.matchPhraseQuery("level", geoList)));
+
+      boolQuery.must(geoBoolQuery);
     }
 
     if (request.getEntityFilters() != null) {
