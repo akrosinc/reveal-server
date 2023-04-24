@@ -11,6 +11,7 @@ import com.revealprecision.revealserver.persistence.es.HierarchyDetailsElastic;
 import com.revealprecision.revealserver.persistence.es.LocationElastic;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -137,7 +138,7 @@ public class LocationResponseFactory {
     LocationElastic locationElastic = mapper.readValue(source, LocationElastic.class);
 
     if (locationElastic.getHierarchyDetailsElastic() != null){
-      List<String> id = new java.util.ArrayList<>(List.of(locationElastic.getId()));
+      Set<String> id = new HashSet<>(List.of(locationElastic.getId()));
       if (locationElastic.getHierarchyDetailsElastic().get(hierarchyId).getAncestry() != null) {
         id.addAll(locationElastic.getHierarchyDetailsElastic().get(hierarchyId).getAncestry());
       }
