@@ -208,7 +208,7 @@ public class EntityTagController {
         try {
           do {
             FeatureSetResponseContainer featureSetResponse1 = entityFilterService.filterEntites(
-                request, 1000, false, null);
+                request, 7000, false, null);
 
             parents.addAll(featureSetResponse1.getFeatureSetResponse().getParents());
 

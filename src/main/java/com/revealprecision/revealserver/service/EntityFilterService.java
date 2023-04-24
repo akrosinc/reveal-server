@@ -694,7 +694,7 @@ public class EntityFilterService {
    log.trace("processing search results");
 
     List<LocationResponse> locationResponses = Arrays.stream(searchResponse.getHits().getHits())
-        .parallel()
+
         .map(hit -> {
           try {
             LocationResponse locToAdd = LocationResponseFactory.fromSearchHit(hit, parentLocations,
