@@ -6,6 +6,7 @@ import com.revealprecision.revealserver.constants.EntityTagDataTypes;
 import com.revealprecision.revealserver.persistence.projection.EventAggregationNumericTagProjection;
 import com.revealprecision.revealserver.persistence.repository.EventAggregationRepository;
 import com.revealprecision.revealserver.props.EventAggregationProperties;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -23,8 +24,8 @@ public class EventAggregationService {
   private final EventAggregationRepository eventAggregationRepository;
   private final EventAggregationProperties eventAggregationProperties;
 
-  List<EventAggregationNumericTagProjection> uniqueTagsFromEventAggregationNumeric;
-  List<String> uniqueTagsFromEventAggregationStringCount;
+  List<EventAggregationNumericTagProjection> uniqueTagsFromEventAggregationNumeric = new ArrayList<>();
+  List<String> uniqueTagsFromEventAggregationStringCount = new ArrayList<>();
 
   public List<EntityTagResponse> getEventBasedTags(UUID entityTypeIdentifier) {
 
