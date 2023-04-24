@@ -4,10 +4,8 @@ import com.revealprecision.revealserver.constants.KafkaConstants;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.messaging.message.LocationIdEvent;
 import com.revealprecision.revealserver.persistence.es.LocationElastic;
-import com.revealprecision.revealserver.persistence.repository.EventAggregationRepository;
 import com.revealprecision.revealserver.persistence.repository.LocationElasticRepository;
 import com.revealprecision.revealserver.persistence.repository.LocationHierarchyRepository;
-import com.revealprecision.revealserver.persistence.repository.LocationRelationshipRepository;
 import com.revealprecision.revealserver.persistence.repository.LocationRepository;
 import com.revealprecision.revealserver.props.EventAggregationProperties;
 import com.revealprecision.revealserver.props.KafkaProperties;
@@ -32,9 +30,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class ElasticController {
 
   private final LocationElasticRepository locationElasticRepository;
-  private final EventAggregationRepository eventAggregationRepository;
   private final LocationRepository locationRepository;
-  private final LocationRelationshipRepository locationRelationshipRepository;
   private final LocationHierarchyRepository locationHierarchyRepository;
   private final EventAggregationProperties eventAggregationProperties;
   private final KafkaTemplate<String, LocationIdEvent> stringListKafkaTemplate;
@@ -62,13 +58,13 @@ public class ElasticController {
               .uuids(locationIdsPage.getContent()).build());
 
       pageNumber++;
-      log.info("sent item {}",pageNumber);
+      log.debug("sent item {}",pageNumber);
       locationIdsPage = locationRepository.getAllLocationIdentifiers(
           PageRequest.of(pageNumber, pageSize));
 
     } while (locationIdsPage.hasContent());
 
-    log.info("done");
+    log.debug("done");
   }
 
 
