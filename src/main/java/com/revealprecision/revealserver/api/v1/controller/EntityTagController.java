@@ -277,7 +277,10 @@ public class EntityTagController {
                             log.error("Cannot cast value: {} to Double", newVal);
                           }
                           return v + (Double) subtotal;
-                        } else {
+                        } else if (newVal instanceof Integer){
+                          return  Double.valueOf(((Integer)newVal)) + (Double) subtotal;
+                        }
+                        else {
                           return (Double) newVal + (Double) subtotal;
                         }
                       });
