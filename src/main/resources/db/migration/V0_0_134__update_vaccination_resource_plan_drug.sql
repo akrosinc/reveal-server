@@ -1,5 +1,5 @@
 update campaign_drug
-    set drugs = '[
+set drugs = '[
   {
     "name": "Vaccine",
     "min": 0.1,
@@ -9,4 +9,5 @@ update campaign_drug
     "millis": true,
     "key": "vc"
   }
-]' WHERE name = 'Vaccination';
+]'
+WHERE name = 'Vaccination';

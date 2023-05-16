@@ -17,6 +17,7 @@ import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
 import com.revealprecision.revealserver.persistence.projection.LocationAndHigherParentProjection;
 import com.revealprecision.revealserver.persistence.projection.LocationChildrenCountProjection;
 import com.revealprecision.revealserver.persistence.projection.LocationMainData;
+import com.revealprecision.revealserver.persistence.projection.LocationRelationshipAncestryProjection;
 import com.revealprecision.revealserver.persistence.projection.LocationRelationshipProjection;
 import com.revealprecision.revealserver.persistence.projection.LocationWithParentProjection;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
@@ -106,6 +107,22 @@ public class LocationRelationshipService {
   }
 
 
+  public Map<String, List<String>> getAncestryMap(List<String> locationIds){
+
+    List<LocationRelationshipAncestryProjection> locationAncestryListsFromLocationIds = locationRelationshipRepository
+        .getLocationAncestryListsFromLocationIds(
+            locationIds.stream().map(UUID::fromString).collect(Collectors.toList()));
+
+    Map<String, List<String>> collect = locationAncestryListsFromLocationIds
+        .stream().collect(
+            Collectors.groupingBy(LocationRelationshipAncestryProjection::getLocationIdentifier,
+                Collectors.mapping(LocationRelationshipAncestryProjection::getAncestor,
+                    Collectors.toList())));
+
+    return collect;
+    
+  }
+  
   @Async
   public void createLocationRelationships(LocationHierarchy locationHierarchy) {
 

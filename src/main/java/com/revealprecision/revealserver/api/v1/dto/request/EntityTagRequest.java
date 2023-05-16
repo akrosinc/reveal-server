@@ -3,7 +3,6 @@ package com.revealprecision.revealserver.api.v1.dto.request;
 import com.revealprecision.revealserver.enums.LookupEntityTypeCodeEnum;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -18,6 +17,8 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 public class EntityTagRequest {
+
+  private String identifier;
 
   @NotBlank(message = "must not be blank")
   private String tag;

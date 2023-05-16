@@ -14,6 +14,7 @@ import com.revealprecision.revealserver.persistence.domain.EntityTag;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.metadata.metadataImport.MetaImportDTO;
+import com.revealprecision.revealserver.persistence.domain.metadata.metadataImport.SheetData;
 import com.revealprecision.revealserver.service.EntityTagService;
 import com.revealprecision.revealserver.service.LocationHierarchyService;
 import com.revealprecision.revealserver.service.LocationService;
@@ -41,30 +42,185 @@ public class MetaFieldSetMapper {
   private final LocationService locationService;
   private final LocationHierarchyService locationHierarchyService;
 
-  public List<MetaImportDTO> mapMetaFields(XSSFSheet sheet) throws FileFormatException {
+  public List<MetaImportDTO> mapMetaFieldsDB(XSSFSheet sheet) throws FileFormatException {
     //starting from 1st
-    int fileRowsCount = sheet.getPhysicalNumberOfRows();
-    if (fileRowsCount > 1) {
-      log.info("Import file has records {}",fileRowsCount);
-    } else {
-      throw new FileFormatException(
-          "File is empty or not valid.");
-    }
+    int fileRowsCount = getFileRowsCount(sheet);
+
     XSSFRow headerRow = sheet.getRow(0);
 
-    int physicalNumberOfCells = headerRow.getPhysicalNumberOfCells();
-    if (physicalNumberOfCells > 4) {
-      log.info("Import file has metadata columns");
-    } else {
-      throw new FileFormatException(
-          "File is does not have any metadata columns.");
-    }
+    int physicalNumberOfCells = getPhysicalNumberOfCells(headerRow);
 
     Set<String> metadataTagNames = IntStream.range(4, physicalNumberOfCells)
         .mapToObj(i -> headerRow.getCell(i).getStringCellValue())
         .takeWhile(Objects::nonNull)
         .collect(Collectors.toSet());
 
+    Map<String, EntityTagEvent> entityTagMap = validateTagNamesAndReturnMap(
+        metadataTagNames);
+
+    Set<UUID> locationList = extractIdsFor(sheet, fileRowsCount, 1, "Location");
+    Set<UUID> hierarchyList = extractIdsFor(sheet, fileRowsCount, 0, "Hierarchy");
+
+    int rowCount = getRowCount(sheet, fileRowsCount);
+
+    Map<UUID, Location> locationMap = validateLocationsAndReturnLocationMap(
+        locationList);
+
+    Map<UUID, LocationHierarchy> hierarchyMap = validateHierarchiesAndReturnHierarchyMap(
+        hierarchyList);
+
+    return extractMetadata(
+        sheet, headerRow, entityTagMap, rowCount, locationMap, hierarchyMap);
+  }
+
+  private List<MetaImportDTO> extractMetadata(XSSFSheet sheet, XSSFRow headerRow,
+      Map<String, EntityTagEvent> entityTagMap, int rowCount,
+      Map<UUID, Location> locationMap, Map<UUID, LocationHierarchy> hierarchyMap) {
+    List<MetaImportDTO> metaImportDTOS = new ArrayList<>();
+    boolean searchedLocationHierarchy = false;
+
+    LocationHierarchy locationHierarchy = null;
+
+    for (int i = 1; i < rowCount + 1; i++) {
+      XSSFRow dataRow = sheet.getRow(i);
+      MetaImportDTO metaImportDTO = new MetaImportDTO();
+
+      if (dataRow != null) {
+        if (!searchedLocationHierarchy) {
+          locationHierarchy = getLocationHierarchy(
+              hierarchyMap, i, dataRow, 0);
+          searchedLocationHierarchy = true;
+        }
+
+        metaImportDTO.setLocationHierarchy(locationHierarchy);
+
+        metaImportDTO.setLocation(getLocation(locationMap, i,
+            dataRow, 1));
+
+        SheetData sheetData = setMetadata(headerRow, entityTagMap, dataRow);
+        metaImportDTO.setSheetData(sheetData);
+
+      } else {
+        log.info("Exiting file processing loop...empty dataRow encountered!!");
+        break;
+      }
+      metaImportDTOS.add(metaImportDTO);
+    }
+    return metaImportDTOS;
+  }
+
+  private SheetData setMetadata(XSSFRow headerRow, Map<String, EntityTagEvent> entityTagMap,
+      XSSFRow dataRow) {
+    EntityTagEvent entityTag;
+    SheetData sheetData = new SheetData();
+
+    for (int j = 4; j < 4+entityTagMap.size(); j++) {
+      Object value = null;
+      Object sheetValue;
+      if (dataRow.getCell(j).getRawValue() == null) {
+        log.warn("Empty cell encountered: coord: {},{}",dataRow.getRowNum(), j);
+      } else {
+        entityTag = entityTagMap.get(
+            headerRow.getCell(j).getStringCellValue());
+        sheetValue = getSheetValue(dataRow, j);
+        log.trace("sheet data type = {}", dataRow.getCell(j).getCellType());
+        log.trace("sheet value = {}", sheetValue);
+        log.trace("entity type= {}", entityTag.getValueType());
+        try {
+          value = getEntityValueFromSheetValues(entityTag, sheetValue);
+        } catch (IllegalArgumentException | ClassCastException e) {
+          sheetData.getErrors().put(entityTag, e.getMessage());
+        }
+
+        sheetData.getRawEntityData()
+            .put(entityTag, sheetValue);
+        sheetData.getConvertedEntityData()
+            .put(entityTag, value);
+      }
+
+    }
+    return sheetData;
+  }
+
+  private Location getLocation(Map<UUID, Location> locationMap, int i, XSSFRow dataRow, int j) {
+    Location loc = null;
+    try {
+      loc = locationMap.get(
+          UUID.fromString(dataRow.getCell(j).toString()));
+    } catch (NotFoundException notFoundException) {
+      log.warn("location not  not found or not uuid coord: {},{}", i, j);
+    }
+    return loc;
+  }
+
+  private LocationHierarchy getLocationHierarchy(Map<UUID, LocationHierarchy> hierarchyMap, int i,
+      XSSFRow dataRow, int j) {
+    LocationHierarchy locationHierarchy = null;
+    try {
+      locationHierarchy = hierarchyMap.get(
+          UUID.fromString(dataRow.getCell(j).toString()));
+
+    } catch (NotFoundException | IllegalArgumentException exception) {
+      log.warn("locationHierarchy not found or not uuid coord: {},{}", i, j);
+    }
+    return locationHierarchy;
+  }
+
+  private Object getEntityValueFromSheetValues(EntityTagEvent entityTag, Object sheetValue) {
+    Object value;
+    switch (entityTag.getValueType()) {
+      case INTEGER:
+        value = Double.valueOf((double) sheetValue).intValue();
+        break;
+      case DOUBLE:
+        value = (double) sheetValue;
+        break;
+      case BOOLEAN:
+        value = String.valueOf(sheetValue);
+        break;
+      case STRING:
+      default:
+        value = String.valueOf(sheetValue);
+        break;
+    }
+    return value;
+  }
+
+  private Object getSheetValue(XSSFRow dataRow, int j) {
+    Object sheetValue;
+    switch (dataRow.getCell(j).getCellType()) {
+      case STRING:
+        sheetValue = dataRow.getCell(j).getStringCellValue();
+        break;
+      case NUMERIC:
+        sheetValue = dataRow.getCell(j).getNumericCellValue();
+        break;
+      case BOOLEAN:
+        sheetValue = String.valueOf(dataRow.getCell(j).getBooleanCellValue());
+        break;
+      case FORMULA:
+        try{
+          sheetValue = dataRow.getCell(j).getNumericCellValue();
+        } catch (IllegalArgumentException e){
+          try{
+            sheetValue = dataRow.getCell(j).getStringCellValue();
+          } catch (IllegalArgumentException e2){
+            try{
+              sheetValue = String.valueOf(dataRow.getCell(j).getBooleanCellValue());
+            } catch (IllegalArgumentException e3){
+              throw new FileFormatException("File contains formular at pos [" +dataRow.getCell(j).getReference()+"] which cannot be resolved to a string, numeric or boolean");
+            }
+          }
+        }
+        break;
+      default:
+        sheetValue = dataRow.getCell(j).getRawValue();
+
+    }
+    return sheetValue;
+  }
+
+  private Map<String, EntityTagEvent> validateTagNamesAndReturnMap(Set<String> metadataTagNames) {
     Set<EntityTag> entityTagsByTagNames = entityTagService.getEntityTagsByTagNames(
         metadataTagNames);
 
@@ -78,155 +234,91 @@ public class MetaFieldSetMapper {
     Map<String, EntityTagEvent> entityTagMap = entityTagsByTagNames.stream()
         .map(EntityTagEventFactory::getEntityTagEvent)
         .collect(Collectors.toMap(EntityTagEvent::getTag, a -> a));
+    return entityTagMap;
+  }
 
-    Set<UUID> locationList = new HashSet<>();
-    Set<UUID> hierarchyList = new HashSet<>();
+  private Set<UUID> extractIdsFor(XSSFSheet sheet, int fileRowsCount, int cellPosition,
+      String type) {
+    Set<UUID> list = new HashSet<>();
     int rowCount = 0;
     for (int i = 1; i < fileRowsCount; i++) {
 
       XSSFRow dataRow = sheet.getRow(i);
-      if (dataRow != null && dataRow.getCell(0)!=null) {
+      if (dataRow != null && dataRow.getCell(cellPosition) != null) {
         rowCount++;
         try {
-          log.trace("dataRow.getCell(0) {}",dataRow.getCell(0));
-          hierarchyList.add(UUID.fromString(dataRow.getCell(0).toString()));
+          log.trace("dataRow.getCell({}) {}", cellPosition, dataRow.getCell(cellPosition));
+          list.add(UUID.fromString(dataRow.getCell(cellPosition).toString()));
         } catch (IllegalArgumentException e) {
-          log.warn("Hierarchy Id is not a uuid in row: {}", i);
-          throw new FileFormatException("Hierarchy Id is not a uuid in row: " + i);
-
-        }
-        try {
-          log.trace("dataRow.getCell(1) {}",dataRow.getCell(1));
-          locationList.add(UUID.fromString(dataRow.getCell(1).toString()));
-        } catch (IllegalArgumentException e) {
-          log.warn("Location Id is not a uuid in row: {}", i);
-          throw new FileFormatException("Location Id is not a uuid in row: " + i);
-        }
-      } else{
-        log.info("Exiting file processing loop...empty dataRow encountered!!");
-        break;
-      }
-    }
-
-    Set<Location> locations = locationService.findLocationsWithoutGeoJsonByIdentifierIn(locationList);
-    Set<LocationHierarchy> locationHierarchies = locationHierarchyService.getLocationHierarchiesIn(
-        hierarchyList);
-
-    if (locationList.size() > locations.size()) {
-      throw new FileFormatException("Not all locations passed found in Reveal");
-    }
-
-    if (hierarchyList.size() > locationHierarchies.size()) {
-      throw new FileFormatException("Not all hierarchies passed found in Reveal");
-    }
-
-    Map<UUID, Location> locationMap = locations.stream()
-        .collect(Collectors.toMap(Location::getIdentifier, location -> location));
-
-    Map<UUID, LocationHierarchy> hierarchyMap = locationHierarchies.stream()
-        .collect(Collectors.toMap(LocationHierarchy::getIdentifier, hierarchy -> hierarchy));
-
-    List<MetaImportDTO> metaImportDTOS = new ArrayList<>();
-    boolean searchedLocationHierarchy = false;
-    LocationHierarchy locationHierarchy = null;
-    for (int i = 1; i < rowCount+1; i++) {
-      XSSFRow dataRow = sheet.getRow(i);
-      MetaImportDTO metaImportDTO = new MetaImportDTO();
-      if (dataRow != null) {
-        for (int j = 0; j < 4 + metadataTagNames.size(); j++) {
-          if (dataRow.getCell(j).getRawValue() == null) {
-            log.warn("Empty cell encountered: coord: {},{}", i, j);
-          } else {
-            switch (j) {
-              case 0:
-                if (!searchedLocationHierarchy) {
-                  try {
-                    locationHierarchy = hierarchyMap.get(
-                        UUID.fromString(dataRow.getCell(j).toString()));
-                    searchedLocationHierarchy = true;
-                  } catch (NotFoundException | IllegalArgumentException exception) {
-                    log.warn("locationHierarchy not found or not uuid coord: {},{}", i, j);
-                  }
-                }
-                metaImportDTO.setLocationHierarchy(locationHierarchy);
-                break;
-              case 1:
-                try {
-                  Location loc = locationMap.get(
-                      UUID.fromString(dataRow.getCell(j).toString()));
-                  metaImportDTO.setLocation(loc);
-                } catch (NotFoundException notFoundException) {
-                  log.warn("location not  not found or not uuid coord: {},{}", i, j);
-                }
-                break;
-              case 2:
-                break;
-              case 3:
-                break;
-              default:
-
-                EntityTagEvent entityTag = entityTagMap.get(
-                    headerRow.getCell(j).getStringCellValue());
-
-                Object sheetValue;
-                switch (dataRow.getCell(j).getCellType()) {
-                  case STRING:
-                    sheetValue = dataRow.getCell(j).getStringCellValue();
-                    break;
-                  case NUMERIC:
-                    sheetValue = dataRow.getCell(j).getNumericCellValue();
-                    break;
-                  case BOOLEAN:
-                    sheetValue = dataRow.getCell(j).getBooleanCellValue();
-                    break;
-                  default:
-                    sheetValue = dataRow.getCell(j).getRawValue();
-
-                }
-
-                log.trace("sheet data type = {}",dataRow.getCell(j).getCellType());
-                log.trace("sheet value = {}",sheetValue);
-                metaImportDTO.getRawEntityData()
-                    .put(entityTag, sheetValue);
-
-                Object value;
-
-                log.trace("entity type= {}",entityTag.getValueType());
-                try {
-                  switch (entityTag.getValueType()) {
-                    case INTEGER:
-                      value = Double.valueOf((double)sheetValue).intValue();
-                      break;
-                    case DOUBLE:
-                      value = (double) sheetValue;
-                      break;
-                    case BOOLEAN:
-                      value = Boolean.valueOf((boolean) sheetValue);
-                      break;
-                    case STRING:
-                    default:
-                      value = String.valueOf(sheetValue);
-                      break;
-                  }
-                  metaImportDTO.getConvertedEntityData()
-                      .put(entityTag, value);
-
-                } catch (IllegalArgumentException | ClassCastException e) {
-                  metaImportDTO.getErrors().put(entityTag, e.getMessage());
-                }
-                break;
-            }
-          }
+          log.warn("{} Id is not a uuid in row: {}", type, i);
+          throw new FileFormatException(type + " Id is not a uuid in row: " + i);
         }
       } else {
         log.info("Exiting file processing loop...empty dataRow encountered!!");
         break;
       }
-      metaImportDTOS.add(metaImportDTO);
     }
-
-    return metaImportDTOS;
+    return list;
   }
 
+  private int getRowCount(XSSFSheet sheet, int fileRowsCount) {
+    int rowCount = 0;
+    for (int i = 1; i < fileRowsCount; i++) {
+
+      XSSFRow dataRow = sheet.getRow(i);
+      if (dataRow != null && dataRow.getCell(0) != null) {
+        rowCount++;
+      } else {
+        log.info("Exiting file processing loop...empty dataRow encountered!!");
+        break;
+      }
+    }
+    return rowCount;
+  }
+
+  private Map<UUID, LocationHierarchy> validateHierarchiesAndReturnHierarchyMap(
+      Set<UUID> hierarchyList) {
+    Set<LocationHierarchy> locationHierarchies = locationHierarchyService.getLocationHierarchiesIn(
+        hierarchyList);
+    if (hierarchyList.size() > locationHierarchies.size()) {
+      throw new FileFormatException("Not all hierarchies passed found in Reveal");
+    }
+    return locationHierarchies.stream()
+        .collect(Collectors.toMap(LocationHierarchy::getIdentifier, hierarchy -> hierarchy));
+  }
+
+  private Map<UUID, Location> validateLocationsAndReturnLocationMap(Set<UUID> locationList) {
+
+    Set<Location> locations = locationService.findLocationsWithoutGeoJsonByIdentifierIn(
+        locationList);
+    if (locationList.size() > locations.size()) {
+      throw new FileFormatException("Not all locations passed found in Reveal");
+    }
+
+    return locations.stream()
+        .collect(Collectors.toMap(Location::getIdentifier, location -> location));
+  }
+
+  private int getPhysicalNumberOfCells(XSSFRow headerRow) {
+    int physicalNumberOfCells = headerRow.getPhysicalNumberOfCells();
+    if (physicalNumberOfCells > 4) {
+      log.info("Import file has metadata columns");
+    } else {
+      throw new FileFormatException(
+          "File is does not have any metadata columns.");
+    }
+    return physicalNumberOfCells;
+  }
+
+  private int getFileRowsCount(XSSFSheet sheet) {
+    int fileRowsCount = sheet.getPhysicalNumberOfRows();
+    if (fileRowsCount > 1) {
+      log.info("Import file has records {}", fileRowsCount);
+    } else {
+      throw new FileFormatException(
+          "File is empty or not valid.");
+    }
+    return fileRowsCount;
+  }
 
 }

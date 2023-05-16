@@ -1,11 +1,10 @@
-CREATE
-MATERIALIZED VIEW lite_structure_count
+CREATE MATERIALIZED VIEW IF NOT EXISTS lite_structure_count
 AS
 
 SELECT t.location_hierarchy_identifier as location_hierarchy_identifier,
-       t.parent_location_identifier as parent_location_identifier,
-       t.parent_location_name as parent_location_name,
-       sum(t.structure_counts) as structure_counts
+       t.parent_location_identifier    as parent_location_identifier,
+       t.parent_location_name          as parent_location_name,
+       sum(t.structure_counts)         as structure_counts
 from (
          SELECT parents.location_hierarchy_identifier,
                 parents.parent                                            AS parent_location_identifier,
@@ -25,7 +24,8 @@ from (
                   LEFT JOIN geographic_level gl ON gl.identifier = l.geographic_level_identifier
      ) as t
 group by t.location_hierarchy_identifier, t.parent_location_identifier,
-         t.parent_location_name WITH DATA;
+         t.parent_location_name
+WITH DATA;
 
 
 CREATE UNIQUE INDEX ON lite_structure_count (location_hierarchy_identifier, parent_location_identifier);

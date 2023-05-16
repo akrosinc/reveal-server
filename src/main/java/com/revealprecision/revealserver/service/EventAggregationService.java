@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import javax.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -24,30 +24,18 @@ public class EventAggregationService {
   private final EventAggregationRepository eventAggregationRepository;
   private final EventAggregationProperties eventAggregationProperties;
 
-  List<EventAggregationNumericTagProjection> uniqueTagsFromEventAggregationNumeric = new ArrayList<>();
+  List<String> uniqueTagsFromEventAggregationNumeric = new ArrayList<>();
   List<String> uniqueTagsFromEventAggregationStringCount = new ArrayList<>();
 
   public List<EntityTagResponse> getEventBasedTags(UUID entityTypeIdentifier) {
 
-    List<EntityTagResponse> entityTagResponses = uniqueTagsFromEventAggregationNumeric.stream()
+    List<EntityTagResponse> entityTagResponses = uniqueTagsFromEventAggregationNumeric.stream().map(s ->
+            getEntityTagResponse(
+                s, entityTypeIdentifier,
+                EntityTagDataTypes.DOUBLE))
+            .collect(Collectors.toList());
 
-        .flatMap(
-            eventAggregationNumericTagProjection ->
-                Stream.of(getEntityTagResponse(
-                        eventAggregationNumericTagProjection.getEventTagSum(), entityTypeIdentifier,
-                        EntityTagDataTypes.DOUBLE),
-                    getEntityTagResponse(
-                        eventAggregationNumericTagProjection.getEventTagAverage(),
-                        entityTypeIdentifier,
-                        EntityTagDataTypes.DOUBLE),
-                    getEntityTagResponse(
-                        eventAggregationNumericTagProjection.getEventTagMedian(),
-                        entityTypeIdentifier,
-                        EntityTagDataTypes.DOUBLE))
-        )
-
-        .collect(Collectors.toList());
-    entityTagResponses.addAll(uniqueTagsFromEventAggregationStringCount.stream().map(s ->
+        entityTagResponses.addAll(uniqueTagsFromEventAggregationStringCount.stream().map(s ->
         getEntityTagResponse(
             s, entityTypeIdentifier,
             EntityTagDataTypes.DOUBLE)
@@ -61,10 +49,53 @@ public class EventAggregationService {
   }
 
 
+
+  public List<String> getUniqueTagsFromEventAggregationNumeric(){
+   return eventAggregationRepository.getUniqueTagsFromEventAggregationNumeric()
+        .stream().flatMap(eventAggregationNumericTagProjection -> {
+      List<String> tags = new ArrayList<>();
+      tags.add(getTagString(eventAggregationNumericTagProjection,"sum"));
+      tags.add(getTagString(eventAggregationNumericTagProjection,"average"));
+      tags.add(getTagString(eventAggregationNumericTagProjection,"median"));
+
+      return tags.stream();
+
+    }).collect(Collectors.toList());
+  }
+
+  public List<String> getUniqueTagsFromEventAggregationStringCount(){
+    return eventAggregationRepository.getUniqueTagsFromEventAggregationStringCount()
+        .stream().flatMap(eventAggregationNumericTagProjection -> {
+          List<String> tags = new ArrayList<>();
+          tags.add(getTagString(eventAggregationNumericTagProjection,"count"));
+          return tags.stream();
+
+        }).collect(Collectors.toList());
+  }
+
+  private String getTagString(EventAggregationNumericTagProjection eventAggregationNumericTagProjection, String agg) {
+    return eventAggregationNumericTagProjection.getEventType().concat(
+        eventAggregationProperties.getDelim()).concat(
+        eventAggregationNumericTagProjection.getFieldCode()).concat(
+        eventAggregationProperties.getDelim()).concat(agg);
+  }
+
   @Async
   public void syncTags() {
-    uniqueTagsFromEventAggregationNumeric = eventAggregationRepository.getUniqueTagsFromEventAggregationNumeric();
-    uniqueTagsFromEventAggregationStringCount = eventAggregationRepository.getUniqueTagsFromEventAggregationStringCount();
+    sync();
+  }
+
+  private void sync() {
+    log.info("Syncing tags - Start");
+    uniqueTagsFromEventAggregationNumeric = getUniqueTagsFromEventAggregationNumeric();
+    uniqueTagsFromEventAggregationStringCount = getUniqueTagsFromEventAggregationStringCount();
+    log.info("Syncing tags - Complete");
+  }
+
+
+  @PostConstruct
+  void init(){
+    new Thread(this::sync).start();
   }
 
 

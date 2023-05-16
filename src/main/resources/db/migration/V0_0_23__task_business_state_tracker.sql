@@ -1,4 +1,4 @@
-CREATE TABLE task_business_state_tracker
+CREATE TABLE IF NOT EXISTS task_business_state_tracker
 (
     identifier uuid NOT NULL,
     parent_location_identifier uuid NOT NULL,

@@ -11,6 +11,7 @@ import com.revealprecision.revealserver.api.v1.dto.factory.LocationResponseFacto
 import com.revealprecision.revealserver.api.v1.dto.factory.PersonMainDataResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.DataFilterRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.EntityFilterRequest;
+import com.revealprecision.revealserver.api.v1.dto.request.EntityTagRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.SearchValue;
 import com.revealprecision.revealserver.api.v1.dto.response.FeatureSetResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.FeatureSetResponseContainer;
@@ -70,6 +71,8 @@ import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
+import org.elasticsearch.script.Script;
+import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -497,6 +500,26 @@ public class EntityFilterService {
     return conditionList;
   }
 
+  public void updateRequestWithEntityTags(String simulationRequestId,
+      List<EntityTagRequest> entityTagRequests) {
+
+    log.trace(simulationRequestId, entityTagRequests);
+    if (simulationRequestId != null) {
+      Optional<SimulationRequest> simulationRequestOptional = simulationRequestRepository.findById(
+          UUID.fromString(simulationRequestId));
+      if (simulationRequestOptional.isPresent()) {
+        SimulationRequest simulationRequest = simulationRequestOptional.get();
+        simulationRequest.getRequest().setResultTags(entityTagRequests);
+        SimulationRequest save = simulationRequestRepository.save(simulationRequest);
+        log.trace("Simulation request {}", save);
+      } else {
+        throw new NotFoundException(simulationRequestId + " not found");
+      }
+    } else {
+      throw new IllegalArgumentException(simulationRequestId + " is null !");
+    }
+  }
+
   public SimulationCountResponse saveRequestAndCountResults(DataFilterRequest request) {
 
     List<String> geographicLevelList = new ArrayList<>();
@@ -668,22 +691,38 @@ public class EntityFilterService {
       sourceBuilder.query(matchAllQuery);
     }
 
+
+    String collect = request.getResultTags().stream()
+        .map(entityFilterRequest -> "n.add('" + entityFilterRequest.getTag() + "');")
+        .collect(Collectors.joining(""));
+    Script inline = new Script(ScriptType.INLINE, "painless",
+        "List a = params['_source']['metadata']; List n = new ArrayList(); "+collect+"  return a.stream().filter(val->n.contains(val.tag)).collect(Collectors.toList());", new HashMap<>());
+
+    sourceBuilder.scriptField("meta",inline);
+
+    String[] val = new String[0];
+
     if (excludeFields) {
-      sourceBuilder.fetchSource(null, exclusionList.toArray(new String[0]));
+      sourceBuilder.fetchSource(new ArrayList<String>().toArray(val), exclusionList.toArray(val));
+    } else {
+      sourceBuilder.fetchSource(new ArrayList<String>().toArray(val), new ArrayList<String>().toArray(val));
     }
     SearchRequest searchRequest = new SearchRequest(elasticIndex);
-    searchRequest.source(sourceBuilder);
 
     List<SortBuilder<?>> sortBuilders = List.of(SortBuilders.fieldSort("name").order(
             SortOrder.DESC),
         SortBuilders.fieldSort("hashValue").order(
             SortOrder.DESC));
 
+
     sourceBuilder.sort(sortBuilders);
 
     if (request.getLastHit() != null) {
       sourceBuilder.searchAfter(request.getLastHit().getSortValues());
     }
+
+    searchRequest.source(sourceBuilder);
+
     log.trace("calling search {}", searchRequest.source().toString());
     SearchResponse searchResponse = client
         .search(searchRequest, RequestOptions.DEFAULT);
@@ -693,7 +732,7 @@ public class EntityFilterService {
 
     SearchHit lastHit = null;
 
-   log.trace("processing search results");
+    log.trace("processing search results");
 
     List<LocationResponse> locationResponses = Arrays.stream(searchResponse.getHits().getHits())
 
@@ -782,7 +821,7 @@ public class EntityFilterService {
     for (SearchHit hit : searchResponse.getHits().getHits()) {
       LocationElastic parent = mapper.readValue(hit.getSourceAsString(), LocationElastic.class);
       LocationResponse locationResponse = LocationResponseFactory.fromElasticModel(parent,
-          parent.getHierarchyDetailsElastic().get(hierarchyId));
+          parent.getHierarchyDetailsElastic()!=null?parent.getHierarchyDetailsElastic().get(hierarchyId):null, null);
       locationResponse.getProperties()
           .setLevelColor(getGeoLevelColor(locationResponse.getProperties().getGeographicLevel()));
       responses.add(locationResponse);

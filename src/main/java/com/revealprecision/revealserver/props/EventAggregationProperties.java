@@ -24,4 +24,6 @@ public class EventAggregationProperties {
   }
 
   Integer pageSize = 200;
+
+  String delim = "-";
 }

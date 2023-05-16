@@ -185,6 +185,13 @@ public class EntityTagController {
     return ResponseEntity.ok().body(entityFilterService.saveRequestAndCountResults(request));
   }
 
+  @PostMapping("/updateSimulationRequest")
+  public ResponseEntity<SimulationCountResponse> updateSimulationRequest(@RequestParam("simulationRequestId") String simulationRequestId,
+      @RequestBody List<EntityTagRequest> request) {
+      entityFilterService.updateRequestWithEntityTags(simulationRequestId,request);
+      return ResponseEntity.status(HttpStatus.OK).build();
+  }
+
 
   @GetMapping("/filter-sse")
   public SseEmitter filterEntities(
@@ -208,7 +215,7 @@ public class EntityTagController {
         try {
           do {
             FeatureSetResponseContainer featureSetResponse1 = entityFilterService.filterEntites(
-                request, 7000, false, null);
+                request, 1000, false, null);
 
             parents.addAll(featureSetResponse1.getFeatureSetResponse().getParents());
 

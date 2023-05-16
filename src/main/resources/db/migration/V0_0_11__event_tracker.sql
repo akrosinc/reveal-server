@@ -1,4 +1,4 @@
-CREATE TABLE event_tracker
+CREATE TABLE  IF NOT EXISTS  event_tracker
 (
     identifier uuid NOT NULL,
     event_identifier uuid NOT NULL,
@@ -13,7 +13,7 @@ CREATE TABLE event_tracker
     PRIMARY KEY (identifier)
 );
 
-CREATE TABLE event_tracker_aud
+CREATE TABLE  IF NOT EXISTS event_tracker_aud
 (
     identifier uuid NOT NULL,
     REV                        INT                      NOT NULL,

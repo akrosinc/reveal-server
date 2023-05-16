@@ -23,5 +23,6 @@ public class DataFilterRequest {
   private List<String> filterGeographicLevelList;
   private List<String> inactiveGeographicLevelList;
   private boolean includeInactive;
+  private List<EntityTagRequest> resultTags;
 
 }

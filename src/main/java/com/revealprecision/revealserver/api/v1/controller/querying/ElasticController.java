@@ -9,6 +9,7 @@ import com.revealprecision.revealserver.persistence.repository.LocationHierarchy
 import com.revealprecision.revealserver.persistence.repository.LocationRepository;
 import com.revealprecision.revealserver.props.EventAggregationProperties;
 import com.revealprecision.revealserver.props.KafkaProperties;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +37,22 @@ public class ElasticController {
   private final KafkaTemplate<String, LocationIdEvent> stringListKafkaTemplate;
   private final KafkaProperties kafkaProperties;
 
+
+  @GetMapping("/generate-elastic-events/{locationIdentifier}")
+  private void generateEventAggregateEvents(@PathVariable("locationIdentifier") UUID locationIdentifier) {
+    UUID aDefault = locationHierarchyRepository.findLocationHierarchyByName("default");
+    String nodeOrder = locationHierarchyRepository.findNodeOrderByIdentifier(aDefault);
+
+      stringListKafkaTemplate.send(kafkaProperties.getTopicMap().get(
+              KafkaConstants.EVENT_AGGREGATION_LOCATION),
+          LocationIdEvent.builder()
+              .hierarchyIdentifier(aDefault)
+              .nodeOrder(nodeOrder)
+              .uuids(List.of(locationIdentifier)).build());
+
+
+    log.debug("done");
+  }
 
 
   @GetMapping("/generate-elastic-events")

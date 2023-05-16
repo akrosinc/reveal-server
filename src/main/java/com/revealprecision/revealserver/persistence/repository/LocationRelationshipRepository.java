@@ -5,6 +5,7 @@ import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
 import com.revealprecision.revealserver.persistence.projection.LocationAndHigherParentProjection;
 import com.revealprecision.revealserver.persistence.projection.LocationChildrenCountProjection;
 import com.revealprecision.revealserver.persistence.projection.LocationMainData;
+import com.revealprecision.revealserver.persistence.projection.LocationRelationshipAncestryProjection;
 import com.revealprecision.revealserver.persistence.projection.LocationRelationshipProjection;
 import com.revealprecision.revealserver.persistence.projection.LocationStructureCount;
 import com.revealprecision.revealserver.persistence.projection.LocationWithParentProjection;
@@ -169,6 +170,9 @@ public interface LocationRelationshipRepository extends JpaRepository<LocationRe
         + "left join geographic_level gl on gl.identifier = l.geographic_level_identifier "
         + "where gl.name = :geographicLevel and lr.location_hierarchy_identifier = :hierarchyIdentifier", nativeQuery = true)
   List<LocationStructureCount> getNumberOfStructures(UUID hierarchyIdentifier, String geographicLevel);
+
+  @Query(value = "SELECT cast(lr.location_identifier as varchar) as locationIdentifier, cast(unnest(array_append(lr.ancestry,lr.location_identifier)) as varchar) as ancestor from location_relationship lr WHERE lr.location_identifier in :ids",nativeQuery = true)
+  List<LocationRelationshipAncestryProjection> getLocationAncestryListsFromLocationIds(List<UUID> ids);
 
   @Query(value = "select distinct lr.location.identifier from LocationRelationship  lr where lr.parentLocation.identifier in (:parentIdentifiers)")
   List<UUID> getDistinctChildrenLocationsGivenParentIds(

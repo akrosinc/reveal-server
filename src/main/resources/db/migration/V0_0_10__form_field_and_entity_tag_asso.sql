@@ -1,4 +1,4 @@
-CREATE TABLE form_field
+CREATE TABLE  IF NOT EXISTS  form_field
 (
     identifier uuid NOT NULL,
     name character varying NOT NULL,
@@ -14,7 +14,7 @@ CREATE TABLE form_field
     unique (name,form_title)
 );
 
-CREATE TABLE form_field_aud
+CREATE TABLE  IF NOT EXISTS  form_field_aud
 (
     identifier uuid NOT NULL,
     REV                        INT                      NOT NULL,
@@ -31,7 +31,7 @@ CREATE TABLE form_field_aud
     PRIMARY KEY (identifier, REV)
 );
 
-CREATE TABLE form_field_entity_tag
+CREATE TABLE  IF NOT EXISTS  form_field_entity_tag
 (
     form_field_identifier uuid NOT NULL,
     entity_tag_identifier uuid NOT NULL,
@@ -40,7 +40,7 @@ CREATE TABLE form_field_entity_tag
     FOREIGN KEY (entity_tag_identifier) REFERENCES entity_tag (identifier)
 );
 
-CREATE TABLE form_field_entity_tag_aud
+CREATE TABLE  IF NOT EXISTS  form_field_entity_tag_aud
 (
     rev               integer NOT NULL,
     revtype           integer,
@@ -50,49 +50,49 @@ CREATE TABLE form_field_entity_tag_aud
 );
 
 ALTER TABLE IF EXISTS entity_tag
-    ADD COLUMN generated boolean NOT NULL DEFAULT false;
+    ADD COLUMN IF NOT EXISTS generated boolean NOT NULL DEFAULT false;
 
 ALTER TABLE IF EXISTS entity_tag
-    ADD COLUMN generation_formula character varying;
+    ADD COLUMN IF NOT EXISTS generation_formula character varying;
 
 ALTER TABLE IF EXISTS entity_tag
-    ADD COLUMN referenced_fields character varying[];
+    ADD COLUMN IF NOT EXISTS referenced_fields character varying[];
 
 ALTER TABLE IF EXISTS entity_tag
-    ADD COLUMN aggregation_method character varying[];
+    ADD COLUMN IF NOT EXISTS aggregation_method character varying[];
 
 ALTER TABLE IF EXISTS entity_tag
-    ADD COLUMN scope character varying NOT NULL DEFAULT 'Plan';
+    ADD COLUMN IF NOT EXISTS scope character varying NOT NULL DEFAULT 'Plan';
 
 ALTER TABLE IF EXISTS entity_tag_aud
-    ADD COLUMN generated boolean NOT NULL DEFAULT false;
+    ADD COLUMN IF NOT EXISTS generated boolean NOT NULL DEFAULT false;
 
 ALTER TABLE IF EXISTS entity_tag_aud
-    ADD COLUMN generation_formula character varying;
+    ADD COLUMN IF NOT EXISTS generation_formula character varying;
 
 ALTER TABLE IF EXISTS entity_tag_aud
-    ADD COLUMN referenced_fields character varying[];
+    ADD COLUMN IF NOT EXISTS referenced_fields character varying[];
 
 ALTER TABLE IF EXISTS entity_tag_aud
-    ADD COLUMN aggregation_method character varying[];
+    ADD COLUMN IF NOT EXISTS aggregation_method character varying[];
 
 ALTER TABLE IF EXISTS entity_tag_aud
-    ADD COLUMN scope character varying NOT NULL DEFAULT 'Plan';
+    ADD COLUMN IF NOT EXISTS scope character varying NOT NULL DEFAULT 'Plan';
 
 ALTER TABLE IF EXISTS entity_tag
-    ADD COLUMN result_expression character varying;
+    ADD COLUMN IF NOT EXISTS result_expression character varying;
 
 ALTER TABLE IF EXISTS entity_tag_aud
-    ADD COLUMN result_expression character varying;
+    ADD COLUMN IF NOT EXISTS result_expression character varying;
 
 ALTER TABLE IF EXISTS entity_tag
-    ADD COLUMN is_result_literal boolean NOT NULL DEFAULT false;
+    ADD COLUMN IF NOT EXISTS is_result_literal boolean NOT NULL DEFAULT false;
 
 ALTER TABLE IF EXISTS entity_tag_aud
-    ADD COLUMN is_result_literal boolean NOT NULL DEFAULT false;
+    ADD COLUMN IF NOT EXISTS is_result_literal boolean NOT NULL DEFAULT false;
 
 ALTER TABLE IF EXISTS entity_tag
-    ADD COLUMN add_to_metadata boolean NOT NULL DEFAULT false;
+    ADD COLUMN IF NOT EXISTS add_to_metadata boolean NOT NULL DEFAULT false;
 
 ALTER TABLE IF EXISTS entity_tag_aud
-    ADD COLUMN add_to_metadata boolean NOT NULL DEFAULT false;
+    ADD COLUMN IF NOT EXISTS add_to_metadata boolean NOT NULL DEFAULT false;

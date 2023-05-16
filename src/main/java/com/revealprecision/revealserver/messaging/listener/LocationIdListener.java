@@ -217,9 +217,7 @@ public class LocationIdListener extends Listener {
         }
       }
 
-      if (locationElastic.getHierarchyDetailsElastic() != null) {
         elastics.add(locationElastic);
-      }
 
     });
 

@@ -31,6 +31,8 @@ import com.revealprecision.revealserver.persistence.domain.MetadataImport;
 import com.revealprecision.revealserver.persistence.domain.Person;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.User;
+import com.revealprecision.revealserver.persistence.domain.aggregation.ImportAggregationNumeric;
+import com.revealprecision.revealserver.persistence.domain.aggregation.ImportAggregationString;
 import com.revealprecision.revealserver.persistence.domain.metadata.LocationMetadata;
 import com.revealprecision.revealserver.persistence.domain.metadata.PersonMetadata;
 import com.revealprecision.revealserver.persistence.domain.metadata.infra.Metadata;
@@ -41,6 +43,8 @@ import com.revealprecision.revealserver.persistence.domain.metadata.infra.TagVal
 import com.revealprecision.revealserver.persistence.domain.metadata.metadataImport.MetaImportDTO;
 import com.revealprecision.revealserver.persistence.domain.metadata.metadataImport.fieldMapper.MetaFieldSetMapper;
 import com.revealprecision.revealserver.persistence.es.PersonElastic;
+import com.revealprecision.revealserver.persistence.repository.ImportAggregationNumericRepository;
+import com.revealprecision.revealserver.persistence.repository.ImportAggregationStringRepository;
 import com.revealprecision.revealserver.persistence.repository.LocationMetadataRepository;
 import com.revealprecision.revealserver.persistence.repository.MetadataImportRepository;
 import com.revealprecision.revealserver.persistence.repository.PersonMetadataRepository;
@@ -79,6 +83,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -97,8 +102,12 @@ public class MetadataService {
   private final StorageService storageService;
   private final KafkaTemplate<String, Message> kafkaTemplate;
   private final MetaFieldSetMapper metaFieldSetMapper;
+  private final LocationRelationshipService locationRelationshipService;
 
   private final RestHighLevelClient client;
+
+  private final ImportAggregationNumericRepository importAggregationNumericRepository;
+  private final ImportAggregationStringRepository importAggregationStringRepository;
 
   @Value("${reveal.elastic.index-name}")
   String elasticIndex;
@@ -114,8 +123,7 @@ public class MetadataService {
         .orElse(null);
   }
 
-  public Object updateMetaData(UUID identifier, Object tagValue,
-      Plan plan, UUID taskIdentifier,
+  public Object updateMetaData(UUID identifier, Object tagValue, Plan plan, UUID taskIdentifier,
       String user, String dataType, EntityTagEvent tag, String type, Object entity, String taskType,
       Class<?> aClass, String tagKey, String finalDateForScopeDateFields1) {
     if (aClass == Person.class) {
@@ -129,10 +137,9 @@ public class MetadataService {
   }
 
   @Transactional
-  public PersonMetadata updatePersonMetadata(UUID personIdentifier, Object tagValue,
-      Plan plan, UUID taskIdentifier,
-      String user, String dataType, EntityTagEvent tag, String type, Person person, String taskType,
-      String tagKey, String dateForScopeDateFields) {
+  public PersonMetadata updatePersonMetadata(UUID personIdentifier, Object tagValue, Plan plan,
+      UUID taskIdentifier, String user, String dataType, EntityTagEvent tag, String type,
+      Person person, String taskType, String tagKey, String dateForScopeDateFields) {
 
     PersonMetadata personMetadata;
 
@@ -141,10 +148,9 @@ public class MetadataService {
     if (optionalPersonMetadata.isPresent()) {
 
       OptionalInt optionalArrIndex = IntStream.range(0,
-          optionalPersonMetadata.get().getEntityValue().getMetadataObjs().size()).filter(i ->
-          optionalPersonMetadata.get().getEntityValue().getMetadataObjs().get(i).getTag()
-              .equals(tag.getTag())
-      ).findFirst();
+          optionalPersonMetadata.get().getEntityValue().getMetadataObjs().size()).filter(
+          i -> optionalPersonMetadata.get().getEntityValue().getMetadataObjs().get(i).getTag()
+              .equals(tag.getTag())).findFirst();
 
       if (optionalArrIndex.isPresent()) {
         personMetadata = optionalPersonMetadata.get();
@@ -168,8 +174,8 @@ public class MetadataService {
       } else {
         // tag does not exist in list
         MetadataObj metadataObj = getMetadataObj(tagValue,
-            plan == null ? null : plan.getIdentifier(), taskIdentifier,
-            user, dataType, tag, type, taskType, tagKey, dateForScopeDateFields);
+            plan == null ? null : plan.getIdentifier(), taskIdentifier, user, dataType, tag, type,
+            taskType, tagKey, dateForScopeDateFields);
 
         personMetadata = optionalPersonMetadata.get();
         List<MetadataObj> metadataObjs = new ArrayList<>(
@@ -185,8 +191,7 @@ public class MetadataService {
       personMetadata.setPerson(person);
 
       MetadataObj metadataObj = getMetadataObj(tagValue, plan == null ? null : plan.getIdentifier(),
-          taskIdentifier, user,
-          dataType, tag, type, taskType, tagKey, dateForScopeDateFields);
+          taskIdentifier, user, dataType, tag, type, taskType, tagKey, dateForScopeDateFields);
 
       MetadataList metadataList = new MetadataList();
       metadataList.setMetadataObjs(List.of(metadataObj));
@@ -196,8 +201,7 @@ public class MetadataService {
 
     PersonMetadata savedPersonMetadata = personMetadataRepository.save(personMetadata);
 
-    List<UUID> locationList = locationService.getLocationsByPeople(person.getIdentifier())
-        .stream()
+    List<UUID> locationList = locationService.getLocationsByPeople(person.getIdentifier()).stream()
         .map(Location::getIdentifier).collect(Collectors.toList());
 
     PersonMetadataEvent personMetadataEvent = PersonMetadataEventFactory.getPersonMetadataEvent(
@@ -212,10 +216,9 @@ public class MetadataService {
 
 
   public LocationMetadata updateLocationMetadata(UUID locationIdentifier, Object tagValue,
-      Plan plan, UUID taskIdentifier,
-      String user, String dataType, EntityTagEvent locationEntityTag, String type,
-      Location location,
-      String taskType, String tagKey, String dateForScopeDateFields) {
+      Plan plan, UUID taskIdentifier, String user, String dataType,
+      EntityTagEvent locationEntityTag, String type, Location location, String taskType,
+      String tagKey, String dateForScopeDateFields) {
 
     LocationMetadata locationMetadata;
 
@@ -227,23 +230,17 @@ public class MetadataService {
       if (locationEntityTag.getScope() == null || (locationEntityTag.getScope() != null
           && !locationEntityTag.getScope().equals("Date"))) {
         optionalArrIndex = IntStream.range(0,
-                locationMetadataOptional.get().getEntityValue().getMetadataObjs().size())
-            .filter(
-                i -> locationMetadataOptional.get().getEntityValue().getMetadataObjs().get(i)
-                    .getTag()
-                    .equals(locationEntityTag.getTag()))
-            .findFirst();
+            locationMetadataOptional.get().getEntityValue().getMetadataObjs().size()).filter(
+            i -> locationMetadataOptional.get().getEntityValue().getMetadataObjs().get(i).getTag()
+                .equals(locationEntityTag.getTag())).findFirst();
       } else {
         optionalArrIndex = IntStream.range(0,
-                locationMetadataOptional.get().getEntityValue().getMetadataObjs().size())
-            .filter(
-                i -> locationMetadataOptional.get().getEntityValue().getMetadataObjs().get(i)
-                    .getTag()
-                    .equals(locationEntityTag.getTag())
-                    && (!locationMetadataOptional.get().getEntityValue().getMetadataObjs().get(i)
-                    .isDateScope() ||
-                    locationMetadataOptional.get().getEntityValue().getMetadataObjs().get(i)
-                        .getDateForDateScope().equals(dateForScopeDateFields)))
+                locationMetadataOptional.get().getEntityValue().getMetadataObjs().size()).filter(i ->
+                locationMetadataOptional.get().getEntityValue().getMetadataObjs().get(i).getTag()
+                    .equals(locationEntityTag.getTag()) && (
+                    !locationMetadataOptional.get().getEntityValue().getMetadataObjs().get(i)
+                        .isDateScope() || locationMetadataOptional.get().getEntityValue()
+                        .getMetadataObjs().get(i).getDateForDateScope().equals(dateForScopeDateFields)))
             .findFirst();
       }
       if (optionalArrIndex.isPresent()) {
@@ -281,9 +278,8 @@ public class MetadataService {
       } else {
         // tag does not exist in list
         MetadataObj metadataObj = getMetadataObj(tagValue,
-            plan == null ? null : plan.getIdentifier(), taskIdentifier,
-            user,
-            dataType, locationEntityTag, type, taskType, tagKey, dateForScopeDateFields);
+            plan == null ? null : plan.getIdentifier(), taskIdentifier, user, dataType,
+            locationEntityTag, type, taskType, tagKey, dateForScopeDateFields);
 
         locationMetadata = locationMetadataOptional.get();
         List<MetadataObj> temp = new ArrayList<>(
@@ -301,8 +297,8 @@ public class MetadataService {
       locationMetadata.setLocation(location);
 
       MetadataObj metadataObj = getMetadataObj(tagValue, plan == null ? null : plan.getIdentifier(),
-          taskIdentifier, user,
-          dataType, locationEntityTag, type, taskType, tagKey, dateForScopeDateFields);
+          taskIdentifier, user, dataType, locationEntityTag, type, taskType, tagKey,
+          dateForScopeDateFields);
 
       MetadataList metadataList = new MetadataList();
       metadataList.setMetadataObjs(List.of(metadataObj));
@@ -312,9 +308,8 @@ public class MetadataService {
     }
     LocationMetadata savedLocationMetadata = locationMetadataRepository.save(locationMetadata);
 
-    LocationMetadataEvent locationMetadataEvent = LocationMetadataEventFactory.
-        getLocationMetadataEvent(
-            plan, location, savedLocationMetadata);
+    LocationMetadataEvent locationMetadataEvent = LocationMetadataEventFactory.getLocationMetadataEvent(
+        plan, location, savedLocationMetadata);
 
     locationMetadataKafkaTemplate.send(
         kafkaProperties.getTopicMap().get(KafkaConstants.LOCATION_METADATA_UPDATE),
@@ -322,8 +317,8 @@ public class MetadataService {
     return savedLocationMetadata;
   }
 
-  public LocationMetadata activateOrDeactivateLocationMetadata(UUID locationIdentifier, EntityTag tag,
-      Plan plan,boolean activate) {
+  public LocationMetadata activateOrDeactivateLocationMetadata(UUID locationIdentifier,
+      EntityTag tag, Plan plan, boolean activate) {
 
     LocationMetadata locationMetadata;
 
@@ -332,11 +327,9 @@ public class MetadataService {
     if (locationMetadataOptional.isPresent()) {
 
       OptionalInt optionalArrIndex = IntStream.range(0,
-              locationMetadataOptional.get().getEntityValue().getMetadataObjs().size())
-          .filter(
-              i -> locationMetadataOptional.get().getEntityValue().getMetadataObjs().get(i).getTag()
-                  .equals(tag.getTag()))
-          .findFirst();
+          locationMetadataOptional.get().getEntityValue().getMetadataObjs().size()).filter(
+          i -> locationMetadataOptional.get().getEntityValue().getMetadataObjs().get(i).getTag()
+              .equals(tag.getTag())).findFirst();
 
       if (optionalArrIndex.isPresent()) {
         //tag exists
@@ -360,9 +353,8 @@ public class MetadataService {
 
         LocationMetadata savedLocationMetadata = locationMetadataRepository.save(locationMetadata);
 
-        LocationMetadataEvent locationMetadataEvent = LocationMetadataEventFactory.
-            getLocationMetadataEvent(
-                plan, null, savedLocationMetadata);
+        LocationMetadataEvent locationMetadataEvent = LocationMetadataEventFactory.getLocationMetadataEvent(
+            plan, null, savedLocationMetadata);
 
         locationMetadataKafkaTemplate.send(
             kafkaProperties.getTopicMap().get(KafkaConstants.LOCATION_METADATA_UPDATE),
@@ -391,11 +383,9 @@ public class MetadataService {
     if (personMetadataOptional.isPresent()) {
 
       OptionalInt optionalArrIndex = IntStream.range(0,
-              personMetadataOptional.get().getEntityValue().getMetadataObjs().size())
-          .filter(
-              i -> personMetadataOptional.get().getEntityValue().getMetadataObjs().get(i).getTag()
-                  .equals(tag.getTag()))
-          .findFirst();
+          personMetadataOptional.get().getEntityValue().getMetadataObjs().size()).filter(
+          i -> personMetadataOptional.get().getEntityValue().getMetadataObjs().get(i).getTag()
+              .equals(tag.getTag())).findFirst();
 
       if (optionalArrIndex.isPresent()) {
         //tag exists
@@ -408,10 +398,8 @@ public class MetadataService {
 
         personMetadata.getEntityValue().getMetadataObjs().get(arrIndex).setActive(activate);
 
-        if (personMetadata.getEntityValue().getMetadataObjs().get(arrIndex).getHistory()
-            != null) {
-          personMetadata.getEntityValue().getMetadataObjs().get(arrIndex).getHistory()
-              .add(oldObj);
+        if (personMetadata.getEntityValue().getMetadataObjs().get(arrIndex).getHistory() != null) {
+          personMetadata.getEntityValue().getMetadataObjs().get(arrIndex).getHistory().add(oldObj);
         } else {
           personMetadata.getEntityValue().getMetadataObjs().get(arrIndex)
               .setHistory(List.of(oldObj));
@@ -444,8 +432,7 @@ public class MetadataService {
   }
 
   private MetadataObj getMetadataObj(Object tagValue, UUID planIdentifier, UUID taskIdentifier,
-      String user,
-      String dataType, EntityTagEvent tag, String type, String taskType, String tagKey,
+      String user, String dataType, EntityTagEvent tag, String type, String taskType, String tagKey,
       String dateForScopeDateFields) {
     Metadata metadata = new Metadata();
     metadata.setPlanId(planIdentifier);
@@ -553,33 +540,32 @@ public class MetadataService {
 
     try (XSSFWorkbook workbook = new XSSFWorkbook(file)) {
       XSSFSheet sheet = workbook.getSheetAt(0);
-      List<MetaImportDTO> metaImportDTOS = metaFieldSetMapper.mapMetaFields(sheet);
 
-      if (metaImportDTOS.stream().map(MetaImportDTO::getErrors).map(Map::size).reduce(0,
-          Integer::sum) > 1) {
-        throw new FileFormatException("Invalid file errors with: " +
-            metaImportDTOS.stream().map(MetaImportDTO::getErrors)
-                .flatMap(error -> error.entrySet().stream()).map(entry ->
-                    "tag: " + entry.getKey().getTag() + "value: " + entry.getValue()
-                ).collect(Collectors.joining("\r\n"))
-        );
+      List<MetaImportDTO> metaImportDTOS = metaFieldSetMapper.mapMetaFieldsDB(sheet);
+
+      if (metaImportDTOS.stream().map(metaImportDTO -> metaImportDTO.getSheetData().getErrors())
+          .map(Map::size).reduce(0, Integer::sum) > 1) {
+        throw new FileFormatException("Invalid file errors with: " + metaImportDTOS.stream()
+            .map(metaImportDTO -> metaImportDTO.getSheetData().getErrors())
+            .flatMap(error -> error.entrySet().stream())
+            .map(entry -> "tag: " + entry.getKey().getTag() + "value: " + entry.getValue())
+            .collect(Collectors.joining("\r\n")));
       }
+      Map<String, List<String>> ancestryMap = locationRelationshipService.getAncestryMap(
+          metaImportDTOS.stream()
+              .map(metaImportDTO -> metaImportDTO.getLocation().getIdentifier().toString())
+              .collect(Collectors.toList()));
 
+      currentMetaImport.setStatus(BulkEntryStatus.BUSY);
+      UUID identifier = metadataImportRepository.save(currentMetaImport).getIdentifier();
       //send data to kafka listener
       if (!metaImportDTOS.isEmpty()) {
-
-        metaImportDTOS.forEach(metaImportDTO ->
-            metaImportDTO.getConvertedEntityData().forEach(
-                (key, value) -> update(user, currentMetaImport, metaImportDTO,
-                    metaImportDTO.getLocation(),
-                    value, key)));
+        saveToDB(metaImportDTOS, ancestryMap, currentMetaImport);
       }
-      storageService.deleteFile(file);
-      currentMetaImport.setStatus(BulkEntryStatus.SUCCESSFUL);
-      return metadataImportRepository.save(currentMetaImport).getIdentifier();
+
+      return identifier;
     } catch (Exception e) {
       log.error(e.getMessage(), e);
-      storageService.deleteFile(file);
       currentMetaImport.setStatus(BulkEntryStatus.FAILED);
       metadataImportRepository.save(currentMetaImport);
       throw new FileFormatException(e.getMessage());
@@ -587,32 +573,37 @@ public class MetadataService {
 
   }
 
+  @Async
+  void saveToDB(List<MetaImportDTO> metaImportDTOS,
+      Map<String, List<String>> ancestryMap, MetadataImport currentMetaImport) {
+    currentMetaImport.setStatus(BulkEntryStatus.BUSY);
+    metadataImportRepository.save(currentMetaImport);
+    metaImportDTOS.forEach(metaImportDTO ->
+      ancestryMap.get(metaImportDTO.getLocation().getIdentifier().toString())
+          .forEach(ancestor ->
+              metaImportDTO.getSheetData().getConvertedEntityData().forEach(
+                  (key, value) -> updateDB(metaImportDTO.getLocation().getName(),ancestor, value, key.getTag(), key.getValueType()))));
+    currentMetaImport.setStatus(BulkEntryStatus.SUCCESSFUL);
+    metadataImportRepository.save(currentMetaImport);
+  }
+
   private void update(User user, MetadataImport currentMetaImport, MetaImportDTO metaImportDTO,
       Location loc, Object importEntityTagValue, EntityTagEvent entityTagEvent) {
     try {
 
       LocationMetadata locationMetadata = (LocationMetadata) updateMetaData(
-          metaImportDTO.getLocation().getIdentifier(), importEntityTagValue,
-          null,
-          null, user.getIdentifier().toString(), entityTagEvent.getValueType(),
-          entityTagEvent, "ImportData",
-          loc,
-          "File import", Location.class,
-          entityTagEvent.getTag(), null);
+          metaImportDTO.getLocation().getIdentifier(), importEntityTagValue, null, null,
+          user.getIdentifier().toString(), entityTagEvent.getValueType(), entityTagEvent,
+          "ImportData", loc, "File import", Location.class, entityTagEvent.getTag(), null);
 
-      LocationMetadataEvent locationMetadataEvent =
-          LocationMetadataEventFactory.getLocationMetadataEvent(null,
-              locationMetadata.getLocation(),
-              locationMetadata);
+      LocationMetadataEvent locationMetadataEvent = LocationMetadataEventFactory.getLocationMetadataEvent(
+          null, locationMetadata.getLocation(), locationMetadata);
 
       FormDataEntityTagValueEvent entity = FormDataEntityTagValueEventFactory.getEntity(null,
-          metaImportDTO.getLocationHierarchy().getIdentifier(),
-          loc.getGeographicLevel().getName(),
+          metaImportDTO.getLocationHierarchy().getIdentifier(), loc.getGeographicLevel().getName(),
           null, null, null, loc, entityTagEvent, importEntityTagValue, null);
 
-      kafkaTemplate.send(
-          kafkaProperties.getTopicMap()
-              .get(KafkaConstants.FORM_EVENT_CONSUMPTION),
+      kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.FORM_EVENT_CONSUMPTION),
           entity);
 
       // check if there is an existing metadata event already created
@@ -630,6 +621,49 @@ public class MetadataService {
       }
 
       metadataImportRepository.save(currentMetaImport);
+    } catch (Exception e) {
+      //TODO: Need to handle import exceptions here and save them to the table
+      log.error(e.getMessage(), e);
+    }
+  }
+
+  private void updateDB(String name,String locId, Object importEntityTagValue, String tag, String type) {
+    try {
+      switch (type) {
+        case STRING:
+        case BOOLEAN:
+          Optional<ImportAggregationString> importAggregationStringOptional = importAggregationStringRepository.findByNameAndAncestorAndFieldCode(
+              name,locId, tag);
+          ImportAggregationString importAggregationString;
+          if (importAggregationStringOptional.isPresent()) {
+            importAggregationString = importAggregationStringOptional.get();
+            importAggregationString.setVal((String) importEntityTagValue);
+          } else {
+            importAggregationString = ImportAggregationString.builder()
+                .val((String) importEntityTagValue).ancestor(locId).eventType("Import")
+                .fieldCode(tag)
+                .name(name).planIdentifier(null).build();
+          }
+          importAggregationStringRepository.save(importAggregationString);
+
+          break;
+        case DOUBLE:
+        case INTEGER:
+          Optional<ImportAggregationNumeric> importAggregationNumericOptional = importAggregationNumericRepository.findByNameAndAncestorAndFieldCode(
+              name,locId, tag);
+          ImportAggregationNumeric importAggregationNumeric;
+          if (importAggregationNumericOptional.isPresent()) {
+            importAggregationNumeric = importAggregationNumericOptional.get();
+            importAggregationNumeric.setVal((Double) importEntityTagValue);
+          } else {
+            importAggregationNumeric = ImportAggregationNumeric.builder()
+                .val((Double) importEntityTagValue).ancestor(locId)
+                .eventType("Import").fieldCode(tag).name(name).planIdentifier(null).build();
+          }
+
+          importAggregationNumericRepository.save(importAggregationNumeric);
+          break;
+      }
     } catch (Exception e) {
       //TODO: Need to handle import exceptions here and save them to the table
       log.error(e.getMessage(), e);
@@ -664,16 +698,12 @@ public class MetadataService {
     parameters.put("personId", personElastic.getIdentifier());
     UpdateByQueryRequest request = new UpdateByQueryRequest(elasticIndex);
     List<String> locationIds = person.getLocations().stream()
-        .map(loc -> loc.getIdentifier().toString()).collect(
-            Collectors.toList());
+        .map(loc -> loc.getIdentifier().toString()).collect(Collectors.toList());
 
     request.setQuery(QueryBuilders.termsQuery("_id", locationIds));
-    request.setScript(new Script(
-        ScriptType.INLINE, "painless",
+    request.setScript(new Script(ScriptType.INLINE, "painless",
         "def foundPerson = ctx._source.person.find(attr-> attr.identifier == params.personId);"
-            + " if(foundPerson == null) {ctx._source.person.add(params.person);}",
-        parameters
-    ));
+            + " if(foundPerson == null) {ctx._source.person.add(params.person);}", parameters));
     client.updateByQuery(request, RequestOptions.DEFAULT);
   }
 }

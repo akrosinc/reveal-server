@@ -1,4 +1,4 @@
-CREATE TABLE raw_event
+CREATE TABLE IF NOT EXISTS  raw_event
 (
     identifier uuid NOT NULL,
     created_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,

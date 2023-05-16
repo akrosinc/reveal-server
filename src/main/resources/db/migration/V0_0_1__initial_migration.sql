@@ -5,7 +5,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;
 CREATE EXTENSION IF NOT EXISTS pg_stat_statements WITH SCHEMA public;
 CREATE EXTENSION IF NOT EXISTS btree_gist WITH SCHEMA public;
 
-CREATE TABLE revinfo
+CREATE TABLE IF NOT EXISTS revinfo
 (
     rev       INTEGER PRIMARY KEY DEFAULT 1,
     revtstmp  BIGINT    NOT NULL,
@@ -304,7 +304,7 @@ CREATE TABLE IF NOT EXISTS condition_aud
     PRIMARY KEY (identifier, REV)
 );
 
-CREATE TABLE lookup_task_status
+CREATE TABLE IF NOT EXISTS lookup_task_status
 (
     identifier        uuid                     NOT NULL DEFAULT uuid_generate_v4(),
     name              character varying        NOT NULL,
@@ -317,7 +317,7 @@ CREATE TABLE lookup_task_status
     PRIMARY KEY (identifier)
 );
 
-CREATE TABLE lookup_task_status_aud
+CREATE TABLE IF NOT EXISTS lookup_task_status_aud
 (
     identifier        uuid                     NOT NULL DEFAULT uuid_generate_v4(),
     REV               INT                      NOT NULL,
@@ -855,7 +855,7 @@ CREATE SEQUENCE IF NOT EXISTS hibernate_sequence
     MAXVALUE 9223372036854775807;
 
 CREATE INDEX IF NOT EXISTS raster_store_idx ON raster_store (id);
-CREATE INDEX raster_store_rast_st_convexhull_idx ON raster_store USING gist (public.ST_ConvexHull(rast));
+CREATE INDEX IF NOT EXISTS raster_store_rast_st_convexhull_idx ON raster_store USING gist (public.ST_ConvexHull(rast));
 
 CREATE SEQUENCE IF NOT EXISTS task_server_version_seq
     START WITH 1
@@ -1028,7 +1028,7 @@ CREATE TABLE IF NOT EXISTS entity_tag_aud
     PRIMARY KEY (identifier, rev)
 );
 
-CREATE TABLE person_location
+CREATE TABLE IF NOT EXISTS person_location
 (
     identifier          uuid NOT NULL DEFAULT uuid_generate_v4(),
     person_identifier   uuid NOT NULL,
@@ -1038,7 +1038,7 @@ CREATE TABLE person_location
     FOREIGN KEY (location_identifier) REFERENCES location (identifier)
 );
 
-CREATE TABLE person_location_aud
+CREATE TABLE IF NOT EXISTS person_location_aud
 (
     identifier          uuid    NOT NULL DEFAULT uuid_generate_v4(),
     person_identifier   uuid    NOT NULL,
@@ -1260,7 +1260,7 @@ CREATE TABLE IF NOT EXISTS event_aud
     PRIMARY KEY (identifier, REV)
 );
 
-CREATE TABLE http_logging
+CREATE TABLE IF NOT EXISTS http_logging
 (
     identifier uuid NOT NULL,
     trace_id character varying,

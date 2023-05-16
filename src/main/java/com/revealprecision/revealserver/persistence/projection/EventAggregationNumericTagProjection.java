@@ -2,9 +2,7 @@ package com.revealprecision.revealserver.persistence.projection;
 
 public interface EventAggregationNumericTagProjection {
 
-  String getEventTagSum();
+  String getEventType();
 
-  String getEventTagAverage();
-
-  String getEventTagMedian();
+  String getFieldCode();
 }

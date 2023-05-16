@@ -1,4 +1,4 @@
-DROP TABLE event_tracker ;
+DROP TABLE event_tracker;
 
 CREATE TABLE IF NOT EXISTS event_tracker
 (
@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS event_tracker
     aggregation_key     character varying NOT NULL,
     location_identifier uuid,
     plan_identifier     uuid              NOT NULL,
-    event_type   character varying            NOT NULL,
+    event_type          character varying NOT NULL,
     task_identifier     uuid,
     observations        jsonb             not null,
     supervisor          character varying,
@@ -14,6 +14,6 @@ CREATE TABLE IF NOT EXISTS event_tracker
     operation_datetime  character varying,
     contributing_events uuid[],
     PRIMARY KEY (identifier),
-    unique(aggregation_key)
-    );
+    unique (aggregation_key)
+);
 

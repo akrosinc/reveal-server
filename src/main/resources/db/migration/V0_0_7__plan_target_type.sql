@@ -1,4 +1,4 @@
-CREATE TABLE plan_target_type
+CREATE TABLE IF NOT EXISTS plan_target_type
 (
     identifier                  uuid                     NOT NULL,
     plan_identifier             uuid                     NOT NULL,
@@ -15,7 +15,7 @@ CREATE TABLE plan_target_type
     FOREIGN KEY (geographic_level_identifier)
         REFERENCES geographic_level (identifier)
 );
-CREATE TABLE plan_target_type_aud
+CREATE TABLE IF NOT EXISTS  plan_target_type_aud
 (
     identifier                  uuid                     NOT NULL,
     REV                        INT                      NOT NULL,
@@ -31,12 +31,12 @@ CREATE TABLE plan_target_type_aud
 );
 INSERT INTO lookup_intervention_type(identifier, name, code, entity_status, created_by,
                                      created_datetime, modified_by, modified_datetime)
-VALUES (uuid_generate_v4(), 'MDA Lite', 'MDA Lite',
+VALUES ('b5c71358-bda3-414c-88e9-0ceacdb736d0', 'MDA Lite', 'MDA Lite',
         'ACTIVE', '71fca736-c156-40bc-9de5-3ae04981fbc9', '2022-01-12 13:54:22.106221+00',
-        '71fca736-c156-40bc-9de5-3ae04981fbc9', '2022-01-12 13:54:22.106221+00');
+        '71fca736-c156-40bc-9de5-3ae04981fbc9', '2022-01-12 13:54:22.106221+00')  ON CONFLICT DO NOTHING ;
 
 INSERT INTO lookup_intervention_type(identifier, name, code, entity_status, created_by,
                                      created_datetime, modified_by, modified_datetime)
-VALUES (uuid_generate_v4(), 'IRS Lite', 'IRS Lite',
+VALUES ('e6d7f598-ce98-43ec-9612-0fd82ccf651c', 'IRS Lite', 'IRS Lite',
         'ACTIVE', '71fca736-c156-40bc-9de5-3ae04981fbc9', '2022-01-12 13:54:22.106221+00',
-        '71fca736-c156-40bc-9de5-3ae04981fbc9', '2022-01-12 13:54:22.106221+00');
+        '71fca736-c156-40bc-9de5-3ae04981fbc9', '2022-01-12 13:54:22.106221+00')  ON CONFLICT DO NOTHING ;

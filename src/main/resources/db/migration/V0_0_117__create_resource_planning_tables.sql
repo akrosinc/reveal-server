@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS resource_planning_history_aud
 
 insert into campaign_drug (identifier, name, drugs, entity_status, created_by, created_datetime,
                            modified_by, modified_datetime)
-VALUES (uuid_generate_v4(), 'STH', '[
+VALUES ('e723eeca-b282-4953-ae34-56c914f4f956', 'STH', '[
   {
     "name": "Albendazole (ALB)",
     "min": 0.5,
@@ -63,11 +63,12 @@ VALUES (uuid_generate_v4(), 'STH', '[
   }
 ]', 'ACTIVE',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
-        '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00');
+        '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00')
+ON CONFLICT DO NOTHING;
 
 insert into campaign_drug (identifier, name, drugs, entity_status, created_by, created_datetime,
                            modified_by, modified_datetime)
-VALUES (uuid_generate_v4(), 'SCH', '[
+VALUES ('a0e7a5b1-5e58-4b87-aa9b-d6497ea0cebb', 'SCH', '[
   {
     "name": "Praziquantel (PZQ)",
     "min": 0.5,
@@ -79,11 +80,12 @@ VALUES (uuid_generate_v4(), 'SCH', '[
   }
 ]', 'ACTIVE',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
-        '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00');
+        '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00')
+ON CONFLICT DO NOTHING;
 
 insert into campaign_drug (identifier, name, drugs, entity_status, created_by, created_datetime,
                            modified_by, modified_datetime)
-VALUES (uuid_generate_v4(), 'Lymphatic filariasis (LF)', '[
+VALUES ('f7a834ce-5e39-42a4-a3fd-01de492c5fcf', 'Lymphatic filariasis (LF)', '[
   {
     "name": "Albendazole (ALB)",
     "min": 0.5,
@@ -104,11 +106,12 @@ VALUES (uuid_generate_v4(), 'Lymphatic filariasis (LF)', '[
   }
 ]', 'ACTIVE',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
-        '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00');
+        '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00')
+ON CONFLICT DO NOTHING;
 
 insert into campaign_drug (identifier, name, drugs, entity_status, created_by, created_datetime,
                            modified_by, modified_datetime)
-VALUES (uuid_generate_v4(), 'Onchocerciasis', '[
+VALUES ('a0a97945-64fa-4800-b8cc-6d798045848b', 'Onchocerciasis', '[
   {
     "name": "Moxidectin",
     "min": 0.5,
@@ -129,11 +132,12 @@ VALUES (uuid_generate_v4(), 'Onchocerciasis', '[
   }
 ]', 'ACTIVE',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
-        '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00');
+        '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00')
+ON CONFLICT DO NOTHING;
 
 insert into campaign_drug (identifier, name, drugs, entity_status, created_by, created_datetime,
                            modified_by, modified_datetime)
-VALUES (uuid_generate_v4(), 'Trachoma', '[
+VALUES ('e98965f8-05a2-4178-844b-e899f9cb4128', 'Trachoma', '[
   {
     "name": "Azithromycin",
     "min": 0.5,
@@ -145,11 +149,12 @@ VALUES (uuid_generate_v4(), 'Trachoma', '[
   }
 ]', 'ACTIVE',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
-        '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00');
+        '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00')
+ON CONFLICT DO NOTHING;
 
 insert into campaign_drug (identifier, name, drugs, entity_status, created_by, created_datetime,
                            modified_by, modified_datetime)
-VALUES (uuid_generate_v4(), 'Vitamin A', '[
+VALUES ('6d1bd727-a172-464b-8168-02f1555ea23b', 'Vitamin A', '[
   {
     "name": "Vitamin A",
     "min": 1,
@@ -161,11 +166,12 @@ VALUES (uuid_generate_v4(), 'Vitamin A', '[
   }
 ]', 'ACTIVE',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
-        '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00');
+        '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00')
+ON CONFLICT DO NOTHING;
 
 insert into campaign_drug (identifier, name, drugs, entity_status, created_by, created_datetime,
                            modified_by, modified_datetime)
-VALUES (uuid_generate_v4(), 'Seasonal Malaria Chemoprevention', '[
+VALUES ('f366fd29-23a8-4f68-973d-37ef00040559', 'Seasonal Malaria Chemoprevention', '[
   {
     "name": "Amodiaquine (AQ)",
     "min": 0.5,
@@ -186,4 +192,5 @@ VALUES (uuid_generate_v4(), 'Seasonal Malaria Chemoprevention', '[
   }
 ]', 'ACTIVE',
         '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00',
-        '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00');
+        '649f338b-eb53-4832-9562-f695e9cc44e7', '2022-01-12 13:54:22.106221+00')
+ON CONFLICT DO NOTHING;

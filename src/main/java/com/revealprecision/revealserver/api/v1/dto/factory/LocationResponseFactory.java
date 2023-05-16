@@ -11,6 +11,7 @@ import com.revealprecision.revealserver.persistence.es.HierarchyDetailsElastic;
 import com.revealprecision.revealserver.persistence.es.LocationElastic;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -19,6 +20,7 @@ import java.util.stream.Collectors;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.elasticsearch.common.document.DocumentField;
 import org.elasticsearch.search.SearchHit;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -90,42 +92,42 @@ public class LocationResponseFactory {
         .build();
   }
 
-  public static LocationResponse fromElasticModel(LocationElastic locationElastic,  HierarchyDetailsElastic hierarchyDetailsElastic) {
-    List<EntityMetadataResponse> metadata = locationElastic.getMetadata()
-        .stream()
-        .map(meta -> new EntityMetadataResponse(
-            meta.getValue() != null ? meta.getValue() : meta.getValueNumber(), meta.getTag()))
-        .collect(Collectors.toList());
-
+  public static LocationResponse fromElasticModel(LocationElastic locationElastic,
+      HierarchyDetailsElastic hierarchyDetailsElastic, List<EntityMetadataResponse> entityMetadataResponses) {
     LocationResponse feature = LocationResponse.builder()
         .geometry(locationElastic.getGeometry())
         .identifier(UUID.fromString(locationElastic.getId()))
         .type("Feature")
         .properties(LocationPropertyResponse.builder()
             .name(locationElastic.getName())
-            .metadata(metadata)
+            .metadata(entityMetadataResponses)
             .geographicLevel(locationElastic.getLevel())
             .build())
 
         .build();
 
-    if (hierarchyDetailsElastic!=null){
-      try{
-        if (hierarchyDetailsElastic.getParent() != null){
+    if (hierarchyDetailsElastic != null) {
+      try {
+        if (hierarchyDetailsElastic.getParent() != null) {
           feature.getProperties().setParent(UUID.fromString(hierarchyDetailsElastic.getParent()));
         }
-        if (hierarchyDetailsElastic.getAncestry() != null && !hierarchyDetailsElastic.getAncestry().isEmpty()){
-         List<String> newAncestry =  new ArrayList<>();
+        if (hierarchyDetailsElastic.getAncestry() != null && !hierarchyDetailsElastic.getAncestry()
+            .isEmpty()) {
+          List<String> newAncestry = new ArrayList<>();
           newAncestry.add(locationElastic.getId());
           newAncestry.addAll(hierarchyDetailsElastic.getAncestry());
-           feature.setAncestry(newAncestry);
+          feature.setAncestry(newAncestry);
         }
 
-        feature.getProperties().setGeographicLevelNodeNumber(hierarchyDetailsElastic.getGeographicLevelNumber());
+        feature.getProperties()
+            .setGeographicLevelNodeNumber(hierarchyDetailsElastic.getGeographicLevelNumber());
 
-      }catch (IllegalArgumentException e){
-        log.error("Cannot set parent Id of location {}", feature.getIdentifier(),e);
+      } catch (IllegalArgumentException e) {
+        log.error("Cannot set parent Id of location {}", feature.getIdentifier(), e);
       }
+    } else {
+      feature.getProperties()
+          .setGeographicLevelNodeNumber(0);
     }
 
     return feature;
@@ -135,17 +137,39 @@ public class LocationResponseFactory {
       String hierarchyId) throws JsonProcessingException {
     ObjectMapper mapper = new ObjectMapper();
     String source = hit.getSourceAsString();
+
+    hit.getFields().get("meta");
+    List<EntityMetadataResponse> collect = new ArrayList<>();
+    if (hit.getFields().size() > 0) {
+      log.info("{}", hit.getFields());
+      if (hit.getFields().containsKey("meta")) {
+
+        DocumentField meta = hit.getFields().get("meta");
+
+        collect = meta.getValues().stream().map(val -> {
+          Double valueNumber1 = (Double) ((HashMap<?, ?>) val).get("valueNumber");
+          return EntityMetadataResponse.builder()
+              .value(valueNumber1 != null ? valueNumber1 : ((HashMap<?, ?>) val).get("value"))
+              .type((String) ((HashMap<?, ?>) val).get("tag"))
+              .build();
+        }).collect(Collectors.toList());
+
+      }
+
+    }
+
     LocationElastic locationElastic = mapper.readValue(source, LocationElastic.class);
 
-    if (locationElastic.getHierarchyDetailsElastic() != null){
+    if (locationElastic.getHierarchyDetailsElastic() != null) {
       Set<String> id = new HashSet<>(List.of(locationElastic.getId()));
       if (locationElastic.getHierarchyDetailsElastic().get(hierarchyId).getAncestry() != null) {
         id.addAll(locationElastic.getHierarchyDetailsElastic().get(hierarchyId).getAncestry());
       }
       parents.addAll(id);
-      return fromElasticModel(locationElastic,locationElastic.getHierarchyDetailsElastic().get(hierarchyId));
-    }else{
-      return fromElasticModel(locationElastic,null);
+      return fromElasticModel(locationElastic,
+          locationElastic.getHierarchyDetailsElastic().get(hierarchyId),collect);
+    } else {
+      return fromElasticModel(locationElastic, null,collect);
     }
   }
 }

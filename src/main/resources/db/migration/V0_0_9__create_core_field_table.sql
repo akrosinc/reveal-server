@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS core_field_aud
 
 INSERT INTO core_field(identifier, field, value_type, lookup_entity_type_identifier, entity_status,
                        created_by, created_datetime, modified_by, modified_datetime)
-select uuid_generate_v4(),
+select 'f7a834ce-5e39-42a4-a3fd-01de492c5fcf',
        'nameFamily',
        'string',
        identifier,
@@ -43,11 +43,12 @@ select uuid_generate_v4(),
        '649f338b-eb53-4832-9562-f695e9cc44e7',
        '2022-01-12 13:54:22.106221+00'
 from lookup_entity_type
-where code = 'Person';
+where code = 'Person'
+ON CONFLICT DO NOTHING;
 
 INSERT INTO core_field(identifier, field, value_type, lookup_entity_type_identifier, entity_status,
                        created_by, created_datetime, modified_by, modified_datetime)
-select uuid_generate_v4(),
+select 'a0e7a5b1-5e58-4b87-aa9b-d6497ea0cebb',
        'nameText',
        'string',
        identifier,
@@ -57,11 +58,12 @@ select uuid_generate_v4(),
        '649f338b-eb53-4832-9562-f695e9cc44e7',
        '2022-01-12 13:54:22.106221+00'
 from lookup_entity_type
-where code = 'Person';
+where code = 'Person'
+ON CONFLICT DO NOTHING;
 
 INSERT INTO core_field(identifier, field, value_type, lookup_entity_type_identifier, entity_status,
                        created_by, created_datetime, modified_by, modified_datetime)
-select uuid_generate_v4(),
+select 'e723eeca-b282-4953-ae34-56c914f4f956',
        'birthDate',
        'date',
        identifier,
@@ -71,4 +73,5 @@ select uuid_generate_v4(),
        '649f338b-eb53-4832-9562-f695e9cc44e7',
        '2022-01-12 13:54:22.106221+00'
 from lookup_entity_type
-where code = 'Person';
+where code = 'Person'
+ON CONFLICT DO NOTHING;

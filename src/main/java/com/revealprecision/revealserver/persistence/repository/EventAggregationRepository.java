@@ -66,25 +66,15 @@ public interface EventAggregationRepository extends JpaRepository<EventAggregati
   @Query("SELECT DISTINCT l.identifier from Location l INNER JOIN EventAggregationStringCount ean on l.identifier = ean.ancestor")
   Page<UUID> getLocationsWithStringMetadata(Pageable pageable);
 
-//  @Query(value = "SELECT distinct\n"
-//      + "    concat(ean.event_type,'_',ean.fieldcode,'_sum') as eventTagSum,\n"
-//      + "    concat(ean.event_type,'_',ean.fieldcode,'_average') as eventTagAverage,\n"
-//      + "                concat(ean.event_type,'_',ean.fieldcode,'_median') as eventTagMedian from event_aggregation_numeric_2 ean",nativeQuery = true)
-//  List<EventAggregationNumericTagProjection> getUniqueTagsFromEventAggregationNumeric();
-//
-//  @Query(value = "SELECT distinct\n"
-//      + "    concat(ean.event_type,'_',ean.fieldcode,'_',ean.val,'_count') as eventTagCount\n"
-//      + "  from event_aggregation_string_count_2 ean",nativeQuery = true)
-//  List<String> getUniqueTagsFromEventAggregationStringCount();
-
   @Query(value = "SELECT distinct\n"
-      + "    concat(ean.event_type,'-',ean.fieldcode,'-sum') as eventTagSum,\n"
-      + "    concat(ean.event_type,'-',ean.fieldcode,'-average') as eventTagAverage,\n"
-      + "                concat(ean.event_type,'-',ean.fieldcode,'-median') as eventTagMedian from event_aggregation_numeric ean", nativeQuery = true)
+      + "   ean.event_type as eventType,\n"
+      + "    ean.fieldcode as fieldcode \n"
+      + "                 from event_aggregation_numeric ean", nativeQuery = true)
   List<EventAggregationNumericTagProjection> getUniqueTagsFromEventAggregationNumeric();
 
   @Query(value = "SELECT distinct\n"
-      + "    concat(ean.event_type,'-',ean.fieldcode,'-',ean.val,'-count') as eventTagCount\n"
+      + "   ean.event_type as eventType,\n"
+      + "    ean.fieldcode as fieldcode \n"
       + "  from event_aggregation_string_count ean", nativeQuery = true)
-  List<String> getUniqueTagsFromEventAggregationStringCount();
+  List<EventAggregationNumericTagProjection> getUniqueTagsFromEventAggregationStringCount();
 }
