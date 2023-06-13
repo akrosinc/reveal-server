@@ -1,6 +1,6 @@
 package com.revealprecision.revealserver.persistence.projection;
 
-public interface EventAggregationNumericProjection {
+public interface ImportAggregateStringCountProjection {
 
   String getName();
 
@@ -12,10 +12,7 @@ public interface EventAggregationNumericProjection {
 
   String getFieldCode();
 
-  Double getSum();
+  String getFieldVal();
 
-  Double getAvg();
-
-  Double getMedian();
-
+  Double getCount();
 }

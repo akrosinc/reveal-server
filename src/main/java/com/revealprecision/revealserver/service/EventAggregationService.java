@@ -4,7 +4,7 @@ import com.revealprecision.revealserver.api.v1.dto.response.EntityTagResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LookupEntityTypeResponse;
 import com.revealprecision.revealserver.constants.EntityTagDataTypes;
 import com.revealprecision.revealserver.persistence.projection.EventAggregationNumericTagProjection;
-import com.revealprecision.revealserver.persistence.repository.EventAggregationRepository;
+import com.revealprecision.revealserver.persistence.repository.EventAggregateRepository;
 import com.revealprecision.revealserver.props.EventAggregationProperties;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,7 +21,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class EventAggregationService {
 
-  private final EventAggregationRepository eventAggregationRepository;
+  private final EventAggregateRepository eventAggregateRepository;
   private final EventAggregationProperties eventAggregationProperties;
 
   List<String> uniqueTagsFromEventAggregationNumeric = new ArrayList<>();
@@ -51,7 +51,7 @@ public class EventAggregationService {
 
 
   public List<String> getUniqueTagsFromEventAggregationNumeric(){
-   return eventAggregationRepository.getUniqueTagsFromEventAggregationNumeric()
+   return eventAggregateRepository.getUniqueTagsFromEventAggregationNumeric()
         .stream().flatMap(eventAggregationNumericTagProjection -> {
       List<String> tags = new ArrayList<>();
       tags.add(getTagString(eventAggregationNumericTagProjection,"sum"));
@@ -64,7 +64,7 @@ public class EventAggregationService {
   }
 
   public List<String> getUniqueTagsFromEventAggregationStringCount(){
-    return eventAggregationRepository.getUniqueTagsFromEventAggregationStringCount()
+    return eventAggregateRepository.getUniqueTagsFromEventAggregationStringCount()
         .stream().flatMap(eventAggregationNumericTagProjection -> {
           List<String> tags = new ArrayList<>();
           tags.add(getTagString(eventAggregationNumericTagProjection,"count"));

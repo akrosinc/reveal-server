@@ -36,17 +36,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import javax.validation.Valid;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.csveed.bean.BeanInstructions;
 import org.csveed.bean.BeanInstructionsImpl;
@@ -187,7 +182,7 @@ public class EntityTagController {
 
   @PostMapping("/updateSimulationRequest")
   public ResponseEntity<SimulationCountResponse> updateSimulationRequest(@RequestParam("simulationRequestId") String simulationRequestId,
-      @RequestBody List<EntityTagRequest> request) {
+       @RequestBody List<EntityTagRequest> request) {
       entityFilterService.updateRequestWithEntityTags(simulationRequestId,request);
       return ResponseEntity.status(HttpStatus.OK).build();
   }
@@ -523,58 +518,3 @@ public class EntityTagController {
     return ResponseEntity.status(HttpStatus.OK).build();
   }
 }
-
-@Setter
-@Getter
-@AllArgsConstructor
-@NoArgsConstructor
-class Ancestor {
-
-  String identifier;
-  String level;
-}
-
-@Setter
-@Getter
-@AllArgsConstructor
-@NoArgsConstructor
-class LocationAncestorContainer {
-
-  String identifier;
-  String level;
-  List<Ancestor> ancestors;
-}
-
-@Setter
-@Getter
-@AllArgsConstructor
-@NoArgsConstructor
-class AncestorList {
-
-  String level;
-  TreeSet<Ancestor> ancestors;
-}
-
-
-@Setter
-@Getter
-@AllArgsConstructor
-@NoArgsConstructor
-class LocationAncestorContainerMega {
-
-  String identifier;
-  String level;
-  List<LocationAncestorContainerLevel> ancestors;
-}
-
-
-@Setter
-@Getter
-@AllArgsConstructor
-@NoArgsConstructor
-class LocationAncestorContainerLevel {
-
-  Ancestor level;
-  List<List<Ancestor>> ancestors;
-}
-

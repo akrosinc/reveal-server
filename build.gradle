@@ -1,5 +1,6 @@
 buildscript {
     repositories {
+        mavenLocal()
         mavenCentral()
     }
     dependencies {
@@ -7,6 +8,7 @@ buildscript {
         classpath "io.spring.gradle:dependency-management-plugin:1.0.10.RELEASE"
     }
 }
+
 
 plugins {
     id "org.sonarqube" version "3.3"
@@ -17,7 +19,6 @@ plugins {
     id 'java'
     id "org.flywaydb.flyway" version "8.5.9"
 }
-
 apply plugin: 'jacoco'
 
 group = 'com.revealprecision'
@@ -25,6 +26,7 @@ version = '0.0.1-SNAPSHOT'
 sourceCompatibility = '11'
 
 repositories {
+    mavenLocal()
     maven {
         url "https://repo.osgeo.org/repository/release/"
     }
@@ -85,6 +87,7 @@ dependencies {
     implementation 'org.locationtech.spatial4j:spatial4j:0.8'
     implementation 'io.micrometer:micrometer-registry-prometheus'
     implementation 'org.csveed:csveed:0.7.4'
+    implementation 'com.revealuser:besd-spring-boot-starter:1.0.0'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.batch:spring-batch-test'

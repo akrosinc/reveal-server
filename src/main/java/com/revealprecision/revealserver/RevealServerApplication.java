@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.n52.jackson.datatype.jts.JtsModule;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.web.servlet.ServletComponentScan;
 import org.springframework.context.annotation.Bean;
@@ -20,6 +21,7 @@ import org.springframework.validation.beanvalidation.MethodValidationPostProcess
 @EnableConfigurationProperties
 @ServletComponentScan
 @EnableScheduling
+@EntityScan
 public class RevealServerApplication {
 
   public static void main(String[] args) {

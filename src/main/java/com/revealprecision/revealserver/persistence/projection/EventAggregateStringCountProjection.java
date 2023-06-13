@@ -1,6 +1,6 @@
 package com.revealprecision.revealserver.persistence.projection;
 
-public interface EventAggregationStringCountProjection {
+public interface EventAggregateStringCountProjection {
 
   String getName();
 

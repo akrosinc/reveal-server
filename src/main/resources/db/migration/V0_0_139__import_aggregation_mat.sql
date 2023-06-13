@@ -14,7 +14,7 @@ CREATE SEQUENCE IF NOT EXISTS import_aggregate_string_seq
 
 CREATE TABLE IF NOT EXISTS import_aggregation_numeric
 (
-    id              integer                                        NOT NULL DEFAULT nextval('import_aggregation_numeric_id_seq'::regclass),
+    id              SERIAL,
     name            character varying COLLATE pg_catalog."default",
     plan_identifier character varying COLLATE pg_catalog."default",
     event_type      character varying COLLATE pg_catalog."default",
@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS import_aggregation_numeric
 
 CREATE TABLE IF NOT EXISTS import_aggregation_string
 (
-    id              integer                                        NOT NULL DEFAULT nextval('import_aggregation_string_id_seq'::regclass),
+    id              SERIAL,
     name            character varying COLLATE pg_catalog."default",
     plan_identifier character varying COLLATE pg_catalog."default",
     event_type      character varying COLLATE pg_catalog."default",

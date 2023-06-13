@@ -8,9 +8,10 @@ import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
 import com.revealprecision.revealserver.persistence.es.EntityMetadataElastic;
 import com.revealprecision.revealserver.persistence.es.HierarchyDetailsElastic;
 import com.revealprecision.revealserver.persistence.es.LocationElastic;
-import com.revealprecision.revealserver.persistence.projection.EventAggregationNumericProjection;
-import com.revealprecision.revealserver.persistence.projection.EventAggregationStringCountProjection;
-import com.revealprecision.revealserver.persistence.repository.EventAggregationRepository;
+import com.revealprecision.revealserver.persistence.projection.EventAggregateNumericProjection;
+import com.revealprecision.revealserver.persistence.projection.EventAggregateStringCountProjection;
+import com.revealprecision.revealserver.persistence.repository.EventAggregateRepository;
+import com.revealprecision.revealserver.persistence.repository.ImportAggregateRepository;
 import com.revealprecision.revealserver.persistence.repository.LocationElasticRepository;
 import com.revealprecision.revealserver.persistence.repository.LocationRelationshipRepository;
 import com.revealprecision.revealserver.persistence.repository.LocationRepository;
@@ -35,10 +36,11 @@ import org.springframework.stereotype.Service;
 public class LocationIdListener extends Listener {
 
   private final LocationElasticRepository locationElasticRepository;
-  private final EventAggregationRepository eventAggregationRepository;
+  private final EventAggregateRepository eventAggregateRepository;
   private final LocationRepository locationRepository;
   private final LocationRelationshipRepository locationRelationshipRepository;
   private final EventAggregationProperties eventAggregationProperties;
+  private final ImportAggregateRepository importAggregateRepository;
 
 
   @KafkaListener(topics = "#{kafkaConfigProperties.topicMap.get('EVENT_AGGREGATION_LOCATION')}", groupId = "reveal_server_group" )
@@ -54,19 +56,19 @@ public class LocationIdListener extends Listener {
                 locationRelationship -> locationRelationship.getLocation().getIdentifier(),
                 locationRelationship -> locationRelationship, (a, b) -> b));
 
-    List<EventAggregationNumericProjection> aggregationValuesByLocations = eventAggregationRepository.getAggregationValuesByLocationList(
+    List<EventAggregateNumericProjection> aggregationValuesByLocations = eventAggregateRepository.getAggregationValuesByLocationList(
         message.getUuids().stream().map(UUID::toString).collect(Collectors.toList()));
 
-    Map<String, List<EventAggregationNumericProjection>> aggregateListPerLocation = aggregationValuesByLocations.stream()
+    Map<String, List<EventAggregateNumericProjection>> aggregateListPerLocation = aggregationValuesByLocations.stream()
         .collect(Collectors.groupingBy(
-            EventAggregationNumericProjection::getLocationIdentifier));
+            EventAggregateNumericProjection::getLocationIdentifier));
 
-    List<EventAggregationStringCountProjection> aggregationCountsByLocations = eventAggregationRepository.getAggregationCountValuesByLocationList(
+    List<EventAggregateStringCountProjection> aggregationCountsByLocations = eventAggregateRepository.getAggregationCountValuesByLocationList(
         message.getUuids().stream().map(UUID::toString).collect(Collectors.toList()));
 
-    Map<String, List<EventAggregationStringCountProjection>> aggregateCountMap = aggregationCountsByLocations.stream()
+    Map<String, List<EventAggregateStringCountProjection>> aggregateCountMap = aggregationCountsByLocations.stream()
         .collect(Collectors.groupingBy(
-            EventAggregationStringCountProjection::getLocationIdentifier));
+            EventAggregateStringCountProjection::getLocationIdentifier));
 
     List<LocationElastic> allById = locationElasticRepository.findAllByIdIn(
         message.getUuids().stream().map(UUID::toString).collect(
@@ -122,36 +124,36 @@ public class LocationIdListener extends Listener {
 
 
       if (aggregateListPerLocation.containsKey(location.getIdentifier().toString())) {
-        List<EventAggregationNumericProjection> eventAggregationNumericProjections = aggregateListPerLocation.get(
+        List<EventAggregateNumericProjection> eventAggregateNumericProjections = aggregateListPerLocation.get(
             location.getIdentifier().toString());
 
-        if (eventAggregationNumericProjections.size() > 0) {
-          List<EntityMetadataElastic> anImport = eventAggregationNumericProjections.stream()
+        if (eventAggregateNumericProjections.size() > 0) {
+          List<EntityMetadataElastic> anImport = eventAggregateNumericProjections.stream()
               .filter(
                   aggregationStringCountProjection -> !aggregationStringCountProjection.getFieldCode()
                       .matches(eventAggregationProperties.getExclusionListRegex()))
-              .flatMap(eventAggregationNumericProjection -> {
+              .flatMap(eventAggregateNumericProjection -> {
                 List<EntityMetadataElastic> entityMetadataElastics = new ArrayList<>();
 
                 EntityMetadataElastic entityMetadataElasticSum = getEntityMetadataElastic(
-                    eventAggregationNumericProjection.getPlanIdentifier(),
-                    eventAggregationNumericProjection.getEventType() + "_" +
-                        eventAggregationNumericProjection.getFieldCode() + "_sum",
-                    eventAggregationNumericProjection.getSum());
+                    eventAggregateNumericProjection.getPlanIdentifier(),
+                    eventAggregateNumericProjection.getEventType() + "_" +
+                        eventAggregateNumericProjection.getFieldCode() + "_sum",
+                    eventAggregateNumericProjection.getSum());
                 entityMetadataElastics.add(entityMetadataElasticSum);
 
                 EntityMetadataElastic entityMetadataElasticsAverage = getEntityMetadataElastic(
-                    eventAggregationNumericProjection.getPlanIdentifier(),
-                    eventAggregationNumericProjection.getEventType() + "_" +
-                        eventAggregationNumericProjection.getFieldCode() + "_average",
-                    eventAggregationNumericProjection.getAvg());
+                    eventAggregateNumericProjection.getPlanIdentifier(),
+                    eventAggregateNumericProjection.getEventType() + "_" +
+                        eventAggregateNumericProjection.getFieldCode() + "_average",
+                    eventAggregateNumericProjection.getAvg());
                 entityMetadataElastics.add(entityMetadataElasticsAverage);
 
                 EntityMetadataElastic entityMetadataElasticsMedian = getEntityMetadataElastic(
-                    eventAggregationNumericProjection.getPlanIdentifier(),
-                    eventAggregationNumericProjection.getEventType() + "_" +
-                        eventAggregationNumericProjection.getFieldCode() + "_median",
-                    eventAggregationNumericProjection.getAvg());
+                    eventAggregateNumericProjection.getPlanIdentifier(),
+                    eventAggregateNumericProjection.getEventType() + "_" +
+                        eventAggregateNumericProjection.getFieldCode() + "_median",
+                    eventAggregateNumericProjection.getAvg());
                 entityMetadataElastics.add(entityMetadataElasticsMedian);
 
                 return entityMetadataElastics.stream();
@@ -180,7 +182,7 @@ public class LocationIdListener extends Listener {
 
       if (aggregateCountMap
           .containsKey(location.getIdentifier().toString())) {
-        List<EventAggregationStringCountProjection> aggregationStringCountProjections = aggregateCountMap.get(
+        List<EventAggregateStringCountProjection> aggregationStringCountProjections = aggregateCountMap.get(
             location.getIdentifier().toString());
 
         if (aggregationStringCountProjections.size() > 0) {

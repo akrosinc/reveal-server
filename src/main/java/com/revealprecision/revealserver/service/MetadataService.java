@@ -22,6 +22,7 @@ import com.revealprecision.revealserver.exceptions.FileFormatException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.messaging.message.EntityTagEvent;
 import com.revealprecision.revealserver.messaging.message.FormDataEntityTagValueEvent;
+import com.revealprecision.revealserver.messaging.message.LocationIdEvent;
 import com.revealprecision.revealserver.messaging.message.LocationMetadataEvent;
 import com.revealprecision.revealserver.messaging.message.Message;
 import com.revealprecision.revealserver.messaging.message.PersonMetadataEvent;
@@ -561,6 +562,7 @@ public class MetadataService {
       //send data to kafka listener
       if (!metaImportDTOS.isEmpty()) {
         saveToDB(metaImportDTOS, ancestryMap, currentMetaImport);
+        publishToMessaging(metaImportDTOS, ancestryMap);
       }
 
       return identifier;
@@ -573,16 +575,32 @@ public class MetadataService {
 
   }
 
+  private void publishToMessaging(List<MetaImportDTO> metaImportDTOS,
+      Map<String, List<String>> ancestryMap) {
+    metaImportDTOS.forEach(metaImportDTO ->
+        ancestryMap.get(metaImportDTO.getLocation().getIdentifier().toString())
+            .forEach(ancestor -> kafkaTemplate.send(
+                kafkaProperties.getTopicMap().get(KafkaConstants.EVENT_AGGREGATION_LOCATION),
+                LocationIdEvent.builder()
+                    .hierarchyIdentifier(metaImportDTO.getLocationHierarchy().getIdentifier())
+                    .nodeOrder(metaImportDTO.getLocationHierarchy().getNodeOrder().stream().collect(
+                        Collectors.joining(",")))
+                    .uuids(List.of(UUID.fromString(ancestor)))
+                    .build())
+            ));
+  }
+
   @Async
   void saveToDB(List<MetaImportDTO> metaImportDTOS,
       Map<String, List<String>> ancestryMap, MetadataImport currentMetaImport) {
     currentMetaImport.setStatus(BulkEntryStatus.BUSY);
     metadataImportRepository.save(currentMetaImport);
     metaImportDTOS.forEach(metaImportDTO ->
-      ancestryMap.get(metaImportDTO.getLocation().getIdentifier().toString())
-          .forEach(ancestor ->
-              metaImportDTO.getSheetData().getConvertedEntityData().forEach(
-                  (key, value) -> updateDB(metaImportDTO.getLocation().getName(),ancestor, value, key.getTag(), key.getValueType()))));
+        ancestryMap.get(metaImportDTO.getLocation().getIdentifier().toString())
+            .forEach(ancestor ->
+                metaImportDTO.getSheetData().getConvertedEntityData().forEach(
+                    (key, value) -> updateDB(metaImportDTO.getLocation().getName(), ancestor, value,
+                        key.getTag(), key.getValueType()))));
     currentMetaImport.setStatus(BulkEntryStatus.SUCCESSFUL);
     metadataImportRepository.save(currentMetaImport);
   }
@@ -627,13 +645,14 @@ public class MetadataService {
     }
   }
 
-  private void updateDB(String name,String locId, Object importEntityTagValue, String tag, String type) {
+  private void updateDB(String name, String locId, Object importEntityTagValue, String tag,
+      String type) {
     try {
       switch (type) {
         case STRING:
         case BOOLEAN:
           Optional<ImportAggregationString> importAggregationStringOptional = importAggregationStringRepository.findByNameAndAncestorAndFieldCode(
-              name,locId, tag);
+              name, locId, tag);
           ImportAggregationString importAggregationString;
           if (importAggregationStringOptional.isPresent()) {
             importAggregationString = importAggregationStringOptional.get();
@@ -650,7 +669,7 @@ public class MetadataService {
         case DOUBLE:
         case INTEGER:
           Optional<ImportAggregationNumeric> importAggregationNumericOptional = importAggregationNumericRepository.findByNameAndAncestorAndFieldCode(
-              name,locId, tag);
+              name, locId, tag);
           ImportAggregationNumeric importAggregationNumeric;
           if (importAggregationNumericOptional.isPresent()) {
             importAggregationNumeric = importAggregationNumericOptional.get();
