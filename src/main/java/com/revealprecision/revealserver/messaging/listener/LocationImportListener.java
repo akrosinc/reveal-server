@@ -23,7 +23,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 @Profile("Simulation & (Listening | location-import-listener))")
-public class LocationImportListener extends Listener{
+public class LocationImportListener extends Listener {
 
   private final RestHighLevelClient client;
 
@@ -34,7 +34,7 @@ public class LocationImportListener extends Listener{
   public void locationImport(LocationRelationshipMessage message) throws IOException {
     Map<String, Object> parameters = new HashMap<>();
     Map<String, List<String>> object = new HashMap<>();
-    if (message.getAncestry()!=null) {
+    if (message.getAncestry() != null) {
       object.put(message.getLocationHierarchyIdentifier().toString(),
           message.getAncestry().stream()
               .map(UUID::toString)
@@ -44,27 +44,23 @@ public class LocationImportListener extends Listener{
     parameters.put("key", message.getLocationHierarchyIdentifier().toString());
 
     HierarchyDetailsElastic hierarchyDetailsElastic = new HierarchyDetailsElastic();
-    if (message.getAncestry()!=null) {
+    if (message.getAncestry() != null) {
       hierarchyDetailsElastic.setAncestry(message.getAncestry().stream()
           .map(UUID::toString)
           .collect(Collectors.toList()));
     }
-    if (message.getParentLocationIdentifier()!=null){
+    if (message.getParentLocationIdentifier() != null) {
       hierarchyDetailsElastic.setParent(message.getParentLocationIdentifier().toString());
     }
     hierarchyDetailsElastic.setGeographicLevelNumber(message.getGeoNameLevelNumber());
 
-    parameters.put("hierarchyDetailsElastic",Map.of(message.getLocationHierarchyIdentifier().toString(),
-        ElasticModelUtil.toMapFromHierarchyDetailsElastic(hierarchyDetailsElastic)));
+    parameters.put("hierarchyDetailsElastic",
+        Map.of(message.getLocationHierarchyIdentifier().toString(),
+            ElasticModelUtil.toMapFromHierarchyDetailsElastic(hierarchyDetailsElastic)));
 
-        Script inline = null;
-//    if (message.getParentLocationIdentifier()!=null){
-      inline = new Script(ScriptType.INLINE, "painless",
-          "ctx._source.ancestry.add(params.object);  ctx._source.hierarchyDetailsElastic = params.hierarchyDetailsElastic;",parameters);
-//    } else {
-//      inline = new Script(ScriptType.INLINE, "painless",
-//          "ctx._source.ancestry.add(params.object); ctx._source.geographicLevelNumber = params.geoNumber;",parameters);
-//    }
+    Script inline = new Script(ScriptType.INLINE, "painless",
+        "ctx._source.ancestry.add(params.object);  ctx._source.hierarchyDetailsElastic = params.hierarchyDetailsElastic;",
+        parameters);
 
     UpdateRequest request = new UpdateRequest(
         elasticIndex,

@@ -6,7 +6,6 @@ import com.revealprecision.revealserver.persistence.domain.LocationBulk;
 import com.revealprecision.revealserver.persistence.repository.LocationBulkRepository;
 import com.revealprecision.revealserver.service.LocationBulkService;
 import com.revealprecision.revealserver.service.LocationRelationshipService;
-import com.revealprecision.revealserver.service.StorageService;
 import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
@@ -23,7 +22,6 @@ public class LocationJobCompletionListener implements JobExecutionListener {
 
   private final LocationBulkService locationBulkService;
   private final LocationBulkRepository locationBulkRepository;
-  private final StorageService storageService;
   private final LocationRelationshipService locationRelationshipService;
 
 
@@ -60,11 +58,5 @@ public class LocationJobCompletionListener implements JobExecutionListener {
       locationBulkRepository.save(locationBulk);
     }
 
-//    try {
-//      storageService.deleteFile(filePath);
-//    } catch (IOException e) {
-//      e.printStackTrace();
-//      log.error("Error deleting storage file at path {}",filePath,e);
-//    }
   }
 }
