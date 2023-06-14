@@ -3,6 +3,12 @@
 
 name: Reveal Server test, build and deploy
 
+on:
+  push:
+    branches: [ main, zambia_2022, restructure-services ]
+  pull_request:
+    branches: [ none ]
+
 jobs:
 
   build:
