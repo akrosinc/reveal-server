@@ -34,7 +34,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: Build with Gradle
-        run: ./gradlew clean build -p besd -x test
+        run: ./gradlew clean build -Pbesd -x test
 
       - name: Archive jar files
         uses: actions/upload-artifact@v2
