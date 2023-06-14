@@ -38,9 +38,11 @@ repositories {
     maven {
         url "https://repo.osgeo.org/repository/release/"
     }
-    maven {
-        url 'https://pkgs.dev.azure.com/AkrosRevealPrecision/Reveal/_packaging/Reveal/maven/v1'
-        name 'Reveal'
+    if (project.hasProperty("besd")){
+        maven {
+            url 'https://pkgs.dev.azure.com/AkrosRevealPrecision/Reveal/_packaging/Reveal/maven/v1'
+            name 'Reveal'
+        }
     }
     mavenCentral()
 }
@@ -99,8 +101,9 @@ dependencies {
     implementation 'org.locationtech.spatial4j:spatial4j:0.8'
     implementation 'io.micrometer:micrometer-registry-prometheus'
     implementation 'org.csveed:csveed:0.7.4'
-    implementation 'com.revealprecision:besd-spring-boot-starter:1.0.0'
-
+    if (project.hasProperty("besd")) {
+        implementation 'com.revealprecision:besd-spring-boot-starter:1.0.0'
+    }
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.batch:spring-batch-test'
     testImplementation 'org.springframework.kafka:spring-kafka-test'
