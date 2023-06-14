@@ -39,11 +39,8 @@ repositories {
         url "https://repo.osgeo.org/repository/release/"
     }
     maven {
-        url 'https://pkgs.dev.azure.com/AkrosRevealPrecision/_packaging/AkrosRevealPrecision/maven/v1'
-        name 'AkrosRevealPrecision'
-//        authentication {
-//            basic(BasicAuthentication)
-//        }
+        url 'https://pkgs.dev.azure.com/AkrosRevealPrecision/Reveal/_packaging/Reveal/maven/v1'
+        name 'Reveal'
     }
     mavenCentral()
 }
