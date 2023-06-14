@@ -27,7 +27,6 @@ import com.revealprecision.revealserver.persistence.repository.EntityTagReposito
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -46,7 +45,6 @@ public class EntityTagService {
 
   private final EntityTagRepository entityTagRepository;
   private final LookupEntityTypeService lookupEntityTypeService;
-  private final FormFieldService formFieldService;
 
   private static final Map<String, List<String>> aggregationMethods = Map.of(
       INTEGER, List.of(SUM_, MAX_, MIN_, AVERAGE_),
@@ -109,13 +107,6 @@ public class EntityTagService {
 
     LookupEntityType lookupEntityType = lookupEntityTypeService.getLookupEntityTypeByCode(
         entityTagRequest.getEntityType().getLookupEntityType());
-    Set<FormField> formFields = null;
-    if (entityTagRequest.getFormFieldNames() != null) {
-      formFields = entityTagRequest.getFormFieldNames().entrySet().stream()
-          .map(entry -> formFieldService.findByNameAndFormTitle(
-              entry.getValue(), entry.getKey()))
-          .filter(Objects::nonNull).collect(Collectors.toSet());
-    }
     Optional<EntityTag> entityTagsByTagAndLookupEntityType_code = getEntityTagByTagNameAndLookupEntityType(
         entityTagRequest.getTag(), LookupEntityTypeCodeEnum.lookup(lookupEntityType.getCode()));
     if (entityTagsByTagAndLookupEntityType_code.isPresent()) {
@@ -124,9 +115,8 @@ public class EntityTagService {
               + lookupEntityType.getCode() + " already exists");
     }
     EntityTag save = entityTagRepository.save(
-        EntityTagFactory.toEntity(entityTagRequest, lookupEntityType, formFields));
+        EntityTagFactory.toEntity(entityTagRequest, lookupEntityType));
 
-    Set<FormField> finalFormFields = formFields;
     if (createAggregateTags) {
       List<EntityTagEvent> entityTagEvents =
           aggregationMethods.get(save.getValueType()) == null ? null
@@ -134,7 +124,7 @@ public class EntityTagService {
                   .map(aggregationMethod ->
                       createAggregateEntityTag(entityTagRequest, aggregationMethod,
                           lookupEntityType,
-                          finalFormFields, true)).map(EntityTagEventFactory::getEntityTagEvent)
+                           true)).map(EntityTagEventFactory::getEntityTagEvent)
                   .collect(Collectors.toList());
 
       log.debug("Automatically Created {} for requested tag creation: {}", entityTagEvents,
@@ -144,12 +134,12 @@ public class EntityTagService {
   }
 
   private EntityTag createAggregateEntityTag(EntityTagRequest entityTagRequest, String str,
-      LookupEntityType lookupEntityType, Set<FormField> formFields, boolean isAggregate) {
+      LookupEntityType lookupEntityType, boolean isAggregate) {
     EntityTagRequest entityTagSum = EntityTagRequestFactory.getCopy(entityTagRequest);
     entityTagSum.setTag(entityTagSum.getTag().concat(str));
     entityTagSum.setAggregate(isAggregate);
     return entityTagRepository.save(
-        EntityTagFactory.toEntity(entityTagSum, lookupEntityType, formFields));
+        EntityTagFactory.toEntity(entityTagSum, lookupEntityType));
   }
 
   public Set<EntityTag> findEntityTagsByFormField(FormField formField) {

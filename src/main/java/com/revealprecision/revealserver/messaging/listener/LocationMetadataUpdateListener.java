@@ -29,7 +29,7 @@ import org.springframework.stereotype.Service;
 
 @RequiredArgsConstructor
 @Service
-@Profile("Simulation & (Listening | location-metadata-update-listener))")
+@Profile("KafkaMessaging & Simulation & (Listening | location-metadata-update-listener))")
 @Slf4j
 public class LocationMetadataUpdateListener extends Listener {
 

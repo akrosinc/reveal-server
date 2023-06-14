@@ -32,7 +32,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-@Profile("Simulation & (Listening | location-id-listener))")
+@Profile("KafkaMessaging & Simulation & (Listening | location-id-listener))")
 public class LocationIdListener extends Listener {
 
   private final LocationElasticRepository locationElasticRepository;

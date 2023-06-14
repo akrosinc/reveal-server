@@ -20,7 +20,6 @@ import com.revealprecision.revealserver.messaging.TaskEventFactory;
 import com.revealprecision.revealserver.messaging.dto.TaskGen;
 import com.revealprecision.revealserver.messaging.message.ActionEvent;
 import com.revealprecision.revealserver.messaging.message.LookupEntityTypeEvent;
-import com.revealprecision.revealserver.messaging.message.Message;
 import com.revealprecision.revealserver.messaging.message.PlanEvent;
 import com.revealprecision.revealserver.messaging.message.ProcessTrackerEvent;
 import com.revealprecision.revealserver.messaging.message.TaskEvent;
@@ -68,7 +67,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 
@@ -94,7 +92,7 @@ public class TaskService {
   private final EntityFilterService entityFilterService;
   private final BusinessStatusProperties businessStatusProperties;
   private final BusinessStatusService businessStatusService;
-  private final KafkaTemplate<String, Message> kafkaTemplate;
+  private final PublisherService publisherService;
   private final KafkaProperties kafkaProperties;
   private final TaskProcessStageRepository taskProcessStageRepository;
   private final ProcessTrackerService processTrackerService;
@@ -418,17 +416,17 @@ public class TaskService {
 
           switch (taskProcessStage.getTaskProcess()) {
             case CANCEL:
-              kafkaTemplate.send(
+              publisherService.send(
                   kafkaProperties.getTopicMap().get(KafkaConstants.TASK_CANDIDATE_CANCEL),
                   taskProcessEvent);
               break;
             case GENERATE:
-              kafkaTemplate.send(
+              publisherService.send(
                   kafkaProperties.getTopicMap().get(KafkaConstants.TASK_CANDIDATE_GENERATE),
                   taskProcessEvent);
               break;
             case REACTIVATE:
-              kafkaTemplate.send(
+              publisherService.send(
                   kafkaProperties.getTopicMap().get(KafkaConstants.TASK_CANDIDATE_REACTIVATE),
                   taskProcessEvent);
               break;
@@ -692,7 +690,7 @@ public class TaskService {
       businessStatusService.activateBusinessStatus(savedTask);
     }
 
-    kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.TASK), taskEvent);
+    publisherService.send(kafkaProperties.getTopicMap().get(KafkaConstants.TASK), taskEvent);
 
     return savedTask;
   }

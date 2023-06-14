@@ -63,10 +63,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
-import com.revealprecision.revealserver.api.v1.dto.factory.EntityTagEventFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.EventTrackerMessageFactory;
-import com.revealprecision.revealserver.api.v1.dto.factory.FormDataEntityTagEventFactory;
-import com.revealprecision.revealserver.api.v1.dto.factory.FormDataEntityTagValueEventFactory;
 import com.revealprecision.revealserver.api.v1.facade.models.EventFacade;
 import com.revealprecision.revealserver.api.v1.facade.models.Obs;
 import com.revealprecision.revealserver.constants.KafkaConstants;
@@ -75,16 +72,11 @@ import com.revealprecision.revealserver.enums.ActionTitleEnum;
 import com.revealprecision.revealserver.enums.PlanInterventionTypeEnum;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.messaging.message.DeviceUser;
-import com.revealprecision.revealserver.messaging.message.EventTrackerMessage;
 import com.revealprecision.revealserver.messaging.message.FormCaptureEvent;
-import com.revealprecision.revealserver.messaging.message.FormDataEntityTagEvent;
-import com.revealprecision.revealserver.messaging.message.FormDataEntityTagValueEvent;
 import com.revealprecision.revealserver.messaging.message.OrgLevel;
 import com.revealprecision.revealserver.messaging.message.UserData;
 import com.revealprecision.revealserver.messaging.message.mdalite.MDALiteLocationSupervisorCddEvent;
-import com.revealprecision.revealserver.persistence.domain.EntityTag;
 import com.revealprecision.revealserver.persistence.domain.Event;
-import com.revealprecision.revealserver.persistence.domain.FormField;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.Organization;
 import com.revealprecision.revealserver.persistence.domain.Plan;
@@ -103,14 +95,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.util.Pair;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -124,18 +114,14 @@ public class FormDataProcessorService {
   private final KafkaProperties kafkaProperties;
   private final PlanService planService;
   private final UserService userService;
-  private final KafkaTemplate<String, FormDataEntityTagEvent> eventConsumptionTemplate;
+  private final PublisherService publisherService;
 
 
   private final FormFieldService formFieldService;
   private final EntityTagService entityTagService;
   private final LocationService locationService;
 
-  private final KafkaTemplate<String, UserData> userDataTemplate;
-  private final KafkaTemplate<String, MDALiteLocationSupervisorCddEvent> mdaliteSupervisorTemplate;
 
-  private final KafkaTemplate<String, FormCaptureEvent> formSubmissionKafkaTemplate;
-  private final KafkaTemplate<String, EventTrackerMessage> eventTrackerKafkaTemplate;
   private final LocationRelationshipService locationRelationshipService;
 
   @Async
@@ -212,7 +198,7 @@ public class FormDataProcessorService {
             if (!areAnyEmptyOrNull(dateString, supervisorName, cdd, baseEntityIdentifier,
                 formSubmissionIdString)) {
 
-              eventTrackerKafkaTemplate.send(kafkaProperties.getTopicMap().get(EVENT_TRACKER),
+              publisherService.send(kafkaProperties.getTopicMap().get(EVENT_TRACKER),
                   EventTrackerMessageFactory.getEntity(savedEvent, eventFacade, plan, dateString,
                       supervisorName,
                       cdd,
@@ -242,7 +228,7 @@ public class FormDataProcessorService {
               String aggregationKey =
                   baseEntityIdentifier + "-" + supervisorName + "-" + cdd + "-" + drugDistributed;
 
-              eventTrackerKafkaTemplate.send(kafkaProperties.getTopicMap().get(EVENT_TRACKER),
+              publisherService.send(kafkaProperties.getTopicMap().get(EVENT_TRACKER),
                   EventTrackerMessageFactory.getEntity(savedEvent, eventFacade, plan, dateString,
                       supervisorName,
                       cdd,
@@ -268,7 +254,7 @@ public class FormDataProcessorService {
             if (!areAnyEmptyOrNull(dateString, baseEntityIdentifier, supervisorName, cdd,
                 formSubmissionIdString)) {
 
-              eventTrackerKafkaTemplate.send(kafkaProperties.getTopicMap().get(EVENT_TRACKER),
+              publisherService.send(kafkaProperties.getTopicMap().get(EVENT_TRACKER),
                   EventTrackerMessageFactory.getEntity(savedEvent, eventFacade, plan, dateString,
                       supervisorName,
                       cdd,
@@ -311,7 +297,7 @@ public class FormDataProcessorService {
                     formSubmissionIdString;
               }
 
-              eventTrackerKafkaTemplate.send(kafkaProperties.getTopicMap().get(EVENT_TRACKER),
+              publisherService.send(kafkaProperties.getTopicMap().get(EVENT_TRACKER),
                   EventTrackerMessageFactory.getEntity(savedEvent, eventFacade, plan, dateString,
                       supervisorName,
                       cdd,
@@ -366,7 +352,7 @@ public class FormDataProcessorService {
               baseEntityIdentifier = savedEvent.getLocationIdentifier();
             }
 
-            eventTrackerKafkaTemplate.send(kafkaProperties.getTopicMap().get(EVENT_TRACKER),
+            publisherService.send(kafkaProperties.getTopicMap().get(EVENT_TRACKER),
                 EventTrackerMessageFactory.getEntity(savedEvent, eventFacade, plan, dateString,
                     supervisorName,
                     cdd,
@@ -374,29 +360,6 @@ public class FormDataProcessorService {
                     formSubmissionIdString));
           }
         }
-
-        List<FormDataEntityTagValueEvent> formDataEntityTagValueEvents = obsJavaList.stream()
-            .flatMap(obs -> {
-              Object value = FormDataUtil.extractData(obs).get(obs.getFieldCode());
-              FormField formField = formFieldService.findByNameAndFormTitle(obs.getFieldCode(),
-                  savedEvent.getEventType());
-              if (formField != null) {
-                Set<EntityTag> entityTagsByFieldName = entityTagService.findEntityTagsByFormField(
-                    formField);
-                return entityTagsByFieldName.stream().map(EntityTagEventFactory::getEntityTagEvent)
-                    .map(entityTagEvent -> FormDataEntityTagValueEventFactory.getEntity(value,
-                        formField, entityTagEvent));
-              } else {
-                return null;
-              }
-            }).filter(Objects::nonNull).collect(Collectors.toList());
-
-        FormDataEntityTagEvent entityTagEvent = FormDataEntityTagEventFactory.getEntity(savedEvent,
-            formDataEntityTagValueEvents, plan, baseEntityIdentifier, dateString, cdd,
-            supervisorName, additionalKey);
-
-        eventConsumptionTemplate.send(
-            kafkaProperties.getTopicMap().get(KafkaConstants.EVENT_CONSUMPTION), entityTagEvent);
 
         User deviceUser = savedEvent.getUser();
         String fieldWorker = null;
@@ -571,7 +534,7 @@ public class FormDataProcessorService {
 
         }
 
-        userDataTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.USER_DATA),
+        publisherService.send(kafkaProperties.getTopicMap().get(KafkaConstants.USER_DATA),
             new UserData(submissionId, savedEvent.getPlanIdentifier(),
                 new DeviceUser(deviceUser.getIdentifier(), deviceUser.getUsername()), userLabel,
                 fieldWorker, fieldWorkerLabel, district, districtLabel, captureDatetime, collect,
@@ -585,7 +548,7 @@ public class FormDataProcessorService {
 
 
   private void publishFormObservations(FormCaptureEvent event) {
-    formSubmissionKafkaTemplate.send(
+    publisherService.send(
         kafkaProperties.getTopicMap().get(KafkaConstants.FORM_SUBMISSIONS),
         event.getPlanId().toString(),
         event);
@@ -611,7 +574,7 @@ public class FormDataProcessorService {
   private void submitSupervisorCddToMessaging(String supervisorName, String cdd,
       UUID baseEntityIdentifier, Plan plan) {
     if (supervisorName != null && cdd != null) {
-      mdaliteSupervisorTemplate.send(
+      publisherService.send(
           kafkaProperties.getTopicMap().get(KafkaConstants.LOCATION_SUPERVISOR_CDD),
           MDALiteLocationSupervisorCddEvent.builder().cddName(cdd).supervisorName(supervisorName)
               .locationIdentifier(baseEntityIdentifier)

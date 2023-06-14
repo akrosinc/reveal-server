@@ -14,7 +14,6 @@ import com.revealprecision.revealserver.messaging.message.EntityTagEvent;
 import com.revealprecision.revealserver.messaging.message.FormDataEntityTagEvent;
 import com.revealprecision.revealserver.messaging.message.FormDataEntityTagValueEvent;
 import com.revealprecision.revealserver.messaging.message.FormFieldEvent;
-import com.revealprecision.revealserver.messaging.message.Message;
 import com.revealprecision.revealserver.persistence.domain.EntityTag;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.Person;
@@ -29,6 +28,7 @@ import com.revealprecision.revealserver.service.MetadataExpressionEvaluationServ
 import com.revealprecision.revealserver.service.MetadataService;
 import com.revealprecision.revealserver.service.PersonService;
 import com.revealprecision.revealserver.service.PlanService;
+import com.revealprecision.revealserver.service.PublisherService;
 import com.revealprecision.revealserver.service.TaskService;
 import com.revealprecision.revealserver.util.ActionUtils;
 import java.util.AbstractMap.SimpleEntry;
@@ -44,13 +44,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
 import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 @RequiredArgsConstructor
 @Service
 @Slf4j
-@Profile("Listening | event-consumption")
+@Profile("KafkaMessaging & (Listening | event-consumption)")
 public class EventConsumptionListener extends Listener {
 
 
@@ -59,7 +58,7 @@ public class EventConsumptionListener extends Listener {
   private final EntityTagService entityTagService;
   private final LocationService locationService;
   private final MetadataExpressionEvaluationService metadataExpressionEvaluationService;
-  private final KafkaTemplate<String, Message> kafkaTemplate;
+  private final PublisherService publisherService;
   private final KafkaProperties kafkaProperties;
   private final TaskService taskService;
   private final PersonService personService;
@@ -171,7 +170,7 @@ public class EventConsumptionListener extends Listener {
             formDataEntityTagValueEvent1.setSelectedformField(formFieldEvent);
             formDataEntityTagValueEvents1.add(formDataEntityTagValueEvent1);
 
-            kafkaTemplate.send(
+            publisherService.send(
                 kafkaProperties.getTopicMap()
                     .get(KafkaConstants.FORM_EVENT_CONSUMPTION),
                 formDataEntityTagValueEvent1);

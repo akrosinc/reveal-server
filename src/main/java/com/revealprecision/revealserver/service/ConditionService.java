@@ -6,8 +6,6 @@ import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.Action;
 import com.revealprecision.revealserver.persistence.domain.Condition;
 import com.revealprecision.revealserver.persistence.domain.Condition.Fields;
-import com.revealprecision.revealserver.persistence.domain.Goal;
-import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.repository.ConditionRepository;
 import java.util.List;
 import java.util.UUID;
@@ -22,16 +20,10 @@ import org.springframework.stereotype.Service;
 public class ConditionService {
 
   private final ConditionRepository conditionRepository;
-  private final PlanService planService;
-  private final GoalService goalService;
   private final ActionService actionService;
 
-  public Page<Condition> getConditions(UUID planIdentifier, UUID goalIdentifier,
+  public Page<Condition> getConditions(
       UUID actionIdentifier, Pageable pageable) {
-    Plan plan = planService.findPlanByIdentifier(planIdentifier);
-    Goal goal = goalService.findByIdentifier(goalIdentifier);
-    Action action = actionService.getByIdentifier(actionIdentifier);
-
     return conditionRepository.getAllByPlanId(actionIdentifier, pageable);
   }
 
@@ -40,21 +32,15 @@ public class ConditionService {
         Fields.identifier, identifier), Condition.class));
   }
 
-  public void createCondition(UUID planIdentifier, UUID goalIdentifier,
+  public void createCondition(
       UUID actionIdentifier, ConditionRequest request) {
-    Plan plan = planService.findPlanByIdentifier(planIdentifier);
-    Goal goal = goalService.findByIdentifier(goalIdentifier);
     Action action = actionService.getByIdentifier(actionIdentifier);
 
     Condition condition = ConditionEntityFactory.toEntity(request, action);
     conditionRepository.save(condition);
   }
 
-  public void deleteCondition(UUID planIdentifier, UUID goalIdentifier,
-      UUID actionIdentifier, UUID conditionIdentifier) {
-    Plan plan = planService.findPlanByIdentifier(planIdentifier);
-    Goal goal = goalService.findByIdentifier(goalIdentifier);
-    Action action = actionService.getByIdentifier(actionIdentifier);
+  public void deleteCondition(UUID conditionIdentifier) {
     Condition condition = getCondition(conditionIdentifier);
 
     conditionRepository.delete(condition);

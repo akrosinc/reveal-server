@@ -5,12 +5,12 @@ import com.revealprecision.revealserver.api.v1.facade.service.EventClientFacadeS
 import com.revealprecision.revealserver.api.v1.facade.service.TaskFacadeService;
 import com.revealprecision.revealserver.constants.KafkaConstants;
 import com.revealprecision.revealserver.messaging.TaskEventFactory;
-import com.revealprecision.revealserver.messaging.message.Message;
 import com.revealprecision.revealserver.persistence.projection.TaskDataFromEventProjection;
 import com.revealprecision.revealserver.persistence.repository.CleanupRepository;
 import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.service.EventService;
 import com.revealprecision.revealserver.service.FormDataProcessorService;
+import com.revealprecision.revealserver.service.PublisherService;
 import com.revealprecision.revealserver.service.TaskService;
 import java.util.ArrayList;
 import java.util.List;
@@ -20,7 +20,6 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -37,7 +36,7 @@ public class KafkaEventManipulateController {
   private final EventService eventService;
   private final TaskService taskService;
   private final FormDataProcessorService formDataProcessorService;
-  private final KafkaTemplate<String, Message> kafkaTemplate;
+  private final PublisherService publisherService;
   private final CleanupRepository cleanupRepository;
   private final TaskFacadeService taskFacadeService;
   private final EventClientFacadeService eventClientFacadeService;
@@ -83,7 +82,7 @@ public class KafkaEventManipulateController {
 
     allTasks.stream().map(UUID::fromString).map(taskService::getTaskByIdentifier).map(TaskEventFactory::getTaskEventFromTask)
         .forEach(taskEvent ->
-            kafkaTemplate.send(kafkaProperties.getTopicMap().get(
+            publisherService.send(kafkaProperties.getTopicMap().get(
                 KafkaConstants.TASK), taskEvent));
 
     log.info("Completed sending tasks");
@@ -95,7 +94,7 @@ public class KafkaEventManipulateController {
 
     allTasks.stream().map(UUID::fromString).map(taskService::getTaskByIdentifier).map(TaskEventFactory::getTaskEventFromTask)
         .forEach(taskEvent ->
-            kafkaTemplate.send(kafkaProperties.getTopicMap().get(
+            publisherService.send(kafkaProperties.getTopicMap().get(
                 KafkaConstants.TASK), taskEvent));
 
     log.info("Completed sending tasks");

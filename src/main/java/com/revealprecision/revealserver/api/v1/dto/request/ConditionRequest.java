@@ -1,7 +1,6 @@
 package com.revealprecision.revealserver.api.v1.dto.request;
 
 import java.util.Set;
-import javax.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -17,6 +16,6 @@ public class ConditionRequest {
 
   private String query;
 
-  @Valid
+//  @Valid
   private Set<TargetRequest> targets;
 }

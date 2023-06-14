@@ -22,7 +22,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-@Profile("Simulation & (Listening | location-import-listener))")
+@Profile("KafkaMessaging & Simulation & (Listening | location-import-listener))")
 public class LocationImportListener extends Listener {
 
   private final RestHighLevelClient client;

@@ -5,9 +5,7 @@ import static com.revealprecision.revealserver.constants.EntityTagScopes.GLOBAL;
 import com.revealprecision.revealserver.api.v1.dto.request.EntityTagRequest;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.persistence.domain.EntityTag;
-import com.revealprecision.revealserver.persistence.domain.FormField;
 import com.revealprecision.revealserver.persistence.domain.LookupEntityType;
-import java.util.Set;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
@@ -15,7 +13,7 @@ import lombok.NoArgsConstructor;
 public class EntityTagFactory {
 
   public static EntityTag toEntity(EntityTagRequest entityTagRequest,
-      LookupEntityType lookupEntityType, Set<FormField> formFields) {
+      LookupEntityType lookupEntityType) {
 
     EntityTag entityTag = EntityTag.builder()
         .tag(entityTagRequest.getTag())
@@ -32,10 +30,6 @@ public class EntityTagFactory {
         .addToMetadata(entityTagRequest.isAddToMetadata())
         .isAggregate(entityTagRequest.isAggregate())
         .build();
-
-    if (formFields != null) {
-      entityTag.setFormFields(formFields);
-    }
 
     entityTag.setEntityStatus(EntityStatus.ACTIVE);
     return entityTag;

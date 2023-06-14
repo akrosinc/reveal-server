@@ -37,6 +37,7 @@ public class PlanResponseFactory {
             LookupInterventionTypeResponseFactory.fromEntity(plan.getInterventionType()))
         .goals(goals)
         .planTargetType(plan.getPlanTargetType().getGeographicLevel().getName())
+        .date(plan.getDate())
         .build();
   }
 
@@ -47,6 +48,7 @@ public class PlanResponseFactory {
             .start(plan.getEffectivePeriodStart())
             .end(plan.getEffectivePeriodEnd()).build())
         .name(plan.getName())
+        .date(plan.getDate())
         .title(plan.getTitle())
         .locationHierarchy(
             LocationHierarchyResponse.builder()

@@ -60,7 +60,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.data.util.Pair;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -73,7 +72,7 @@ public class LocationRelationshipService {
   private final LocationRepository locationRepository;
   private final LocationHierarchyRepository locationHierarchyRepository;
   private final RestHighLevelClient client;
-  private final KafkaTemplate<String, LocationRelationshipMessage> kafkaTemplate;
+  private final PublisherService publisherService;
   private final KafkaProperties kafkaProperties;
   private final LocationBulkRepository locationBulkRepository;
   private final Logger importLog = LoggerFactory.getLogger("location-import-file");
@@ -89,7 +88,7 @@ public class LocationRelationshipService {
   public LocationRelationshipService(LocationRelationshipRepository locationRelationshipRepository,
       GeographicLevelRepository geographicLevelRepository, LocationRepository locationRepository,
       LocationHierarchyRepository locationHierarchyRepository, RestHighLevelClient client,
-      KafkaTemplate<String, LocationRelationshipMessage> kafkaTemplate,
+      PublisherService publisherService,
       KafkaProperties kafkaProperties, LocationBulkRepository locationBulkRepository,
       Environment env, LocationCountsRepository locationCountsRepository,
       LiteStructureCountRepository liteStructureCountRepository) {
@@ -98,7 +97,7 @@ public class LocationRelationshipService {
     this.locationRepository = locationRepository;
     this.locationHierarchyRepository = locationHierarchyRepository;
     this.client = client;
-    this.kafkaTemplate = kafkaTemplate;
+    this.publisherService = publisherService;
     this.kafkaProperties = kafkaProperties;
     this.locationBulkRepository = locationBulkRepository;
     this.env = env;
@@ -276,7 +275,7 @@ public class LocationRelationshipService {
     locationRelationshipMessage.setLocationName(location.getName());
     locationRelationshipMessage.setLocationHierarchyIdentifier(
         locationHierarchy.getIdentifier());
-    kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.LOCATIONS_IMPORTED),
+    publisherService.send(kafkaProperties.getTopicMap().get(KafkaConstants.LOCATIONS_IMPORTED),
         locationRelationshipMessage);
 
   }
@@ -468,7 +467,7 @@ public class LocationRelationshipService {
           locationRelationshipMessage.setLocationName(location.getName());
           locationRelationshipMessage.setLocationHierarchyIdentifier(
               locationHierarchy.getIdentifier());
-          kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.LOCATIONS_IMPORTED),
+          publisherService.send(kafkaProperties.getTopicMap().get(KafkaConstants.LOCATIONS_IMPORTED),
               locationRelationshipMessage);
 
 

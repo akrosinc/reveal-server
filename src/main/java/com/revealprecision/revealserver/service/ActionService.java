@@ -35,32 +35,26 @@ public class ActionService {
         Fields.identifier, identifier), Action.class));
   }
 
-  public void createAction(UUID planIdentifier, UUID goalIdentifier,
+  public void createAction( UUID goalIdentifier,
       ActionRequest actionRequest) {
-    Plan plan = planService.findPlanByIdentifier(planIdentifier);
     Goal goal = goalService.findByIdentifier(goalIdentifier);
     Form form = actionRequest.getFormIdentifier() != null ? formService.findById(actionRequest.getFormIdentifier()) : null;
     LookupEntityType lookupEntityTypeByCode = lookupEntityTypeService.getLookupEntityTypeByCode(
         ActionTitleEnum.lookup(actionRequest.getTitle()).getEntityType().getLookupEntityType());
 
     Action action = ActionEntityFactory.toEntity(actionRequest, goal, form, lookupEntityTypeByCode);
-
     actionRepository.save(action);
   }
 
   public void updateAction(UUID planIdentifier, UUID goalIdentifier,
       ActionRequest actionRequest, UUID actionIdentifier) {
-    Plan plan = planService.findPlanByIdentifier(planIdentifier);
-    Goal goal = goalService.findByIdentifier(goalIdentifier);
     Form form = actionRequest.getFormIdentifier() != null ? formService.findById(actionRequest.getFormIdentifier()) : null;
     Action action = getByIdentifier(actionIdentifier);
     action.update(actionRequest, form);
     actionRepository.save(action);
   }
 
-  public void deleteAction(UUID planIdentifier, UUID goalIdentifier, UUID actionIdentifier) {
-    Plan plan = planService.findPlanByIdentifier(planIdentifier);
-    Goal goal = goalService.findByIdentifier(goalIdentifier);
+  public void deleteAction(UUID actionIdentifier) {
     Action action = getByIdentifier(actionIdentifier);
 
     actionRepository.delete(action);

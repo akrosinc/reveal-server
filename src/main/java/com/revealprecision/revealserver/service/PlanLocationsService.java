@@ -7,6 +7,7 @@ import com.revealprecision.revealserver.api.v1.dto.response.OrganizationResponse
 import com.revealprecision.revealserver.constants.KafkaConstants;
 import com.revealprecision.revealserver.constants.LocationConstants;
 import com.revealprecision.revealserver.enums.PlanInterventionTypeEnum;
+import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.messaging.message.PlanLocationAssignMessage;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
@@ -14,7 +15,10 @@ import com.revealprecision.revealserver.persistence.domain.Organization;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.PlanAssignment;
 import com.revealprecision.revealserver.persistence.domain.PlanLocations;
+import com.revealprecision.revealserver.persistence.projection.LocationChildrenCountProjection;
+import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationsAssigned;
+import com.revealprecision.revealserver.persistence.repository.LocationRepository;
 import com.revealprecision.revealserver.persistence.repository.PlanAssignmentRepository;
 import com.revealprecision.revealserver.persistence.repository.PlanLocationsRepository;
 import com.revealprecision.revealserver.props.KafkaProperties;
@@ -31,7 +35,6 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,28 +49,34 @@ public class PlanLocationsService {
   private final LocationHierarchyService locationHierarchyService;
   private final PlanAssignmentService planAssignmentService;
   private final PlanAssignmentRepository planAssignmentRepository;
-  private final KafkaTemplate<String, PlanLocationAssignMessage> kafkaTemplate;
+  private final PublisherService publisherService;
   private final KafkaProperties kafkaProperties;
   private final OrganizationService organizationService;
+  private final LocationRelationshipService locationRelationshipService;
+  private final LocationRepository locationRepository;
 
   @Autowired
   public PlanLocationsService(PlanLocationsRepository planLocationsRepository,
       @Lazy PlanService planService, LocationService locationService,
       LocationHierarchyService locationHierarchyService,
       @Lazy PlanAssignmentService planAssignmentService,
-      KafkaTemplate<String, PlanLocationAssignMessage> kafkaTemplate,
+      PublisherService publisherService,
       KafkaProperties kafkaProperties,
       OrganizationService organizationService,
-      PlanAssignmentRepository planAssignmentRepository) {
+      PlanAssignmentRepository planAssignmentRepository,
+      LocationRelationshipService locationRelationshipService,
+      LocationRepository locationRepository){
     this.planLocationsRepository = planLocationsRepository;
     this.planService = planService;
     this.locationService = locationService;
     this.locationHierarchyService = locationHierarchyService;
     this.planAssignmentService = planAssignmentService;
-    this.kafkaTemplate = kafkaTemplate;
+    this.publisherService = publisherService;
     this.kafkaProperties = kafkaProperties;
     this.organizationService = organizationService;
     this.planAssignmentRepository = planAssignmentRepository;
+    this.locationRelationshipService = locationRelationshipService;
+    this.locationRepository = locationRepository;
   }
 
 
@@ -135,7 +144,7 @@ public class PlanLocationsService {
     planLocationAssignMessage.setOwnerId(UserUtils.getCurrentPrincipleName());
     planLocationAssignMessage.setLocationsRemoved(new ArrayList<>());
 
-    kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_LOCATION_ASSIGNED),
+    publisherService.send(kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_LOCATION_ASSIGNED),
         planLocationAssignMessage);
     log.info("sent plan location");
 
@@ -169,7 +178,7 @@ public class PlanLocationsService {
       planLocationAssignMessage.setDeleteByPlan(deleteByPlan);
       planLocationAssignMessage.setDeleteByPlanAndLocation(deleteByPlanAndLocation);
       planLocationAssignMessage.setSaveAll(saveAll);
-      kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_LOCATION_ASSIGNED),
+      publisherService.send(kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_LOCATION_ASSIGNED),
           planLocationAssignMessage);
     } else {
       Set<UUID> currentLocation = planLocationsRepository.findByPlan_Identifier(planIdentifier)
@@ -196,7 +205,7 @@ public class PlanLocationsService {
       planLocationAssignMessage.setDeleteByPlan(deleteByPlan);
       planLocationAssignMessage.setDeleteByPlanAndLocation(deleteByPlanAndLocation);
       planLocationAssignMessage.setSaveAll(saveAll);
-      kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_LOCATION_ASSIGNED),
+      publisherService.send(kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_LOCATION_ASSIGNED),
           planLocationAssignMessage);
       log.info("sent plan location");
     }
@@ -278,12 +287,61 @@ public class PlanLocationsService {
     return planLocationsRepository.getPlanLocationByPlanIdentifierAndSearch(planIdentifier, search);
   }
 
+  public PlanLocationDetails getLocationDetailsByIdentifierAndPlanIdentifier(
+      UUID locationIdentifier, UUID planIdentifier) {
+    Plan plan = planService.findPlanByIdentifier(planIdentifier);
+    PlanLocationDetails details = locationRepository.getLocationDetailsByIdentifierAndPlanIdentifier(
+        locationIdentifier, plan.getIdentifier());
+
+    details.setParentLocation(
+        locationRelationshipService.findParentLocationByLocationIdAndHierarchyId(locationIdentifier,
+            plan.getLocationHierarchy().getIdentifier()));
+    return details;
+  }
+
   public List<PlanLocationsAssigned> getAssignedLocationsToTeam(UUID planIdentifier,
       UUID organizationIdentifier) {
     planService.findPlanByIdentifier(planIdentifier);
     organizationService.findById(organizationIdentifier, true);
     return planLocationsRepository.getAssignedLocationsToTeam(planIdentifier,
         organizationIdentifier);
+  }
+  public List<PlanLocationDetails> getLocationsByParentIdentifierAndPlanIdentifier(
+      UUID parentIdentifier,
+      UUID planIdentifier) {
+    Plan plan = planService.findPlanByIdentifier(planIdentifier);
+    Location location = locationService.findByIdentifier(parentIdentifier);
+
+    // if location is at plan target level do not load child location
+    if (plan.getInterventionType().getCode().equals(PlanInterventionTypeEnum.MDA_LITE.name())) {
+      PlanLocationDetails planLocationDetails = new PlanLocationDetails();
+      planLocationDetails.setLocation(location);
+
+      return List.of(planLocationDetails);
+    } else {
+      if (Objects.equals(plan.getPlanTargetType().getGeographicLevel().getName(),
+          location.getGeographicLevel().getName())) {
+        throw new NotFoundException("Child location is not in plan target level");
+      }
+    }
+
+    Map<UUID, Long> childrenCount = locationRelationshipService.getLocationChildrenCount(
+            plan.getLocationHierarchy().getIdentifier())
+        .stream().filter(loc -> loc.getParentIdentifier() != null)
+        .collect(Collectors.toMap(loc -> UUID.fromString(loc.getParentIdentifier()),
+            LocationChildrenCountProjection::getChildrenCount));
+    List<PlanLocationDetails> response = locationRelationshipService
+        .getLocationChildrenByLocationParentIdentifierAndPlanIdentifier(
+            parentIdentifier, planIdentifier);
+    response.forEach(resp -> resp.setChildrenNumber(
+        childrenCount.containsKey(resp.getLocation().getIdentifier()) ? childrenCount.get(
+            resp.getLocation().getIdentifier()) : 0));
+    if (location != null) {
+      response = response.stream()
+          .peek(planLocationDetail -> planLocationDetail.setParentLocation(location))
+          .collect(Collectors.toList());
+    }
+    return response;
   }
 
   @Transactional

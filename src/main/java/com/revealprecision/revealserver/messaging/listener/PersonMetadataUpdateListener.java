@@ -26,7 +26,7 @@ import org.springframework.stereotype.Service;
 
 @RequiredArgsConstructor
 @Service
-@Profile("Simulation & (Listening | person-metadata-update-listener))")
+@Profile("KafkaMessaging & Simulation & (Listening | person-metadata-update-listener))")
 @Slf4j
 public class PersonMetadataUpdateListener extends Listener {
 

@@ -6,7 +6,6 @@ import static java.util.stream.Collectors.toSet;
 
 import com.revealprecision.revealserver.api.v1.dto.request.LocationRequest;
 import com.revealprecision.revealserver.enums.EntityStatus;
-import com.revealprecision.revealserver.enums.PlanInterventionTypeEnum;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.EntityTag;
 import com.revealprecision.revealserver.persistence.domain.GeographicLevel;
@@ -15,10 +14,8 @@ import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.PlanAssignment;
 import com.revealprecision.revealserver.persistence.domain.PlanLocations;
-import com.revealprecision.revealserver.persistence.projection.LocationChildrenCountProjection;
 import com.revealprecision.revealserver.persistence.projection.LocationCoordinatesProjection;
 import com.revealprecision.revealserver.persistence.projection.LocationWithParentProjection;
-import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import com.revealprecision.revealserver.persistence.repository.LocationRepository;
 import com.revealprecision.revealserver.util.ElasticModelUtil;
 import java.io.File;
@@ -32,7 +29,6 @@ import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -59,11 +55,9 @@ public class LocationService {
   private final LocationRepository locationRepository;
   private final GeographicLevelService geographicLevelService;
   private final LocationRelationshipService locationRelationshipService;
-  private final PlanService planService;
   private final StorageService storageService;
   private final EntityTagService entityTagService;
   private final LocationHierarchyService locationHierarchyService;
-  private final AssignedStructureService assignedStructureService;
 
   public Location createLocation(LocationRequest locationRequest, UUID parentLocationId)
       throws Exception {
@@ -175,93 +169,6 @@ public class LocationService {
     return locationRepository.getAllNotStructureByNamesAndServerVersion(names, serverVersion);
   }
 
-  public List<PlanLocationDetails> getLocationsByParentIdentifierAndPlanIdentifier(
-      UUID parentIdentifier,
-      UUID planIdentifier) {
-    Plan plan = planService.findPlanByIdentifier(planIdentifier);
-    Location location = findByIdentifier(parentIdentifier);
-
-    // if location is at plan target level do not load child location
-    if (plan.getInterventionType().getCode().equals(PlanInterventionTypeEnum.MDA_LITE.name())) {
-      PlanLocationDetails planLocationDetails = new PlanLocationDetails();
-      planLocationDetails.setLocation(location);
-
-      return List.of(planLocationDetails);
-    } else {
-      if (Objects.equals(plan.getPlanTargetType().getGeographicLevel().getName(),
-          location.getGeographicLevel().getName())) {
-        throw new NotFoundException("Child location is not in plan target level");
-      }
-    }
-
-    Map<UUID, Long> childrenCount = locationRelationshipService.getLocationChildrenCount(
-            plan.getLocationHierarchy().getIdentifier())
-        .stream().filter(loc -> loc.getParentIdentifier() != null)
-        .collect(Collectors.toMap(loc -> UUID.fromString(loc.getParentIdentifier()),
-            LocationChildrenCountProjection::getChildrenCount));
-    List<PlanLocationDetails> response = locationRelationshipService
-        .getLocationChildrenByLocationParentIdentifierAndPlanIdentifier(
-            parentIdentifier, planIdentifier);
-    response.forEach(resp -> resp.setChildrenNumber(
-        childrenCount.containsKey(resp.getLocation().getIdentifier()) ? childrenCount.get(
-            resp.getLocation().getIdentifier()) : 0));
-    if (location != null) {
-      response = response.stream()
-          .peek(planLocationDetail -> planLocationDetail.setParentLocation(location))
-          .collect(Collectors.toList());
-    }
-    return response;
-  }
-
-  public List<PlanLocationDetails> getAssignedLocationsByParentIdentifierAndPlanIdentifier(
-      UUID parentIdentifier,
-      UUID planIdentifier,
-      boolean isBeforeStructure) {
-    Plan plan = planService.findPlanByIdentifier(planIdentifier);
-    Location location = findByIdentifier(parentIdentifier);
-    Map<UUID, Long> childrenCount;
-    if (!isBeforeStructure) {
-      childrenCount = locationRelationshipService.getLocationAssignedChildrenCount(
-              plan.getLocationHierarchy().getIdentifier(), planIdentifier)
-          .stream().filter(loc -> loc.getParentIdentifier() != null)
-          .collect(Collectors.toMap(loc -> UUID.fromString(loc.getParentIdentifier()),
-              LocationChildrenCountProjection::getChildrenCount));
-    } else {
-      childrenCount = locationRelationshipService.getLocationChildrenCount(
-              plan.getLocationHierarchy().getIdentifier())
-          .stream().filter(loc -> loc.getParentIdentifier() != null)
-          .collect(Collectors.toMap(loc -> UUID.fromString(loc.getParentIdentifier()),
-              LocationChildrenCountProjection::getChildrenCount));
-    }
-    List<PlanLocationDetails> response = locationRelationshipService
-        .getAssignedLocationChildrenByLocationParentIdentifierAndPlanIdentifier(
-            parentIdentifier, planIdentifier);
-    response.forEach(resp -> resp.setChildrenNumber(
-        childrenCount.containsKey(resp.getLocation().getIdentifier()) ? childrenCount.get(
-            resp.getLocation().getIdentifier()) : 0));
-    if (location != null) {
-      response = response.stream()
-          .peek(planLocationDetail -> planLocationDetail.setParentLocation(location))
-          .collect(Collectors.toList());
-    }
-    return response;
-  }
-
-  public PlanLocationDetails getRootLocationByPlanIdentifier(UUID planIdentifier) {
-    Plan plan = planService.findPlanByIdentifier(planIdentifier);
-    Map<UUID, Long> childrenCount = locationRelationshipService.getLocationChildrenCount(
-            plan.getLocationHierarchy().getIdentifier())
-        .stream().filter(loc -> loc.getParentIdentifier() != null)
-        .collect(Collectors.toMap(loc -> UUID.fromString(loc.getParentIdentifier()),
-            LocationChildrenCountProjection::getChildrenCount));
-    PlanLocationDetails response = locationRelationshipService.getRootLocationDetailsByPlanId(
-        planIdentifier);
-    response.setChildrenNumber(
-        childrenCount.containsKey(response.getLocation().getIdentifier()) ? childrenCount.get(
-            response.getLocation().getIdentifier()) : 0);
-    return response;
-  }
-
   public Map<Plan, Set<Location>> getAssignedLocationsFromPlanAssignments(
       Set<PlanAssignment> planAssignments) {
     return planAssignments.stream().map(PlanAssignment::getPlanLocations)
@@ -271,18 +178,6 @@ public class LocationService {
   public LocationCoordinatesProjection getLocationCentroidCoordinatesByIdentifier(
       UUID locationIdentifier) {
     return locationRepository.getLocationCentroidCoordinatesByIdentifier(locationIdentifier);
-  }
-
-  public PlanLocationDetails getLocationDetailsByIdentifierAndPlanIdentifier(
-      UUID locationIdentifier, UUID planIdentifier) {
-    Plan plan = planService.findPlanByIdentifier(planIdentifier);
-    PlanLocationDetails details = locationRepository.getLocationDetailsByIdentifierAndPlanIdentifier(
-        locationIdentifier, plan.getIdentifier());
-
-    details.setParentLocation(
-        locationRelationshipService.findParentLocationByLocationIdAndHierarchyId(locationIdentifier,
-            plan.getLocationHierarchy().getIdentifier()));
-    return details;
   }
 
   public Location getLocationParent(UUID locationIdentifier, UUID locationHierarchyIdentifier) {

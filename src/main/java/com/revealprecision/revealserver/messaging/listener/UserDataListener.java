@@ -13,6 +13,7 @@ import com.revealprecision.revealserver.persistence.repository.PerformanceEventT
 import com.revealprecision.revealserver.persistence.repository.PerformanceUserTypeRepository;
 import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.service.PlanService;
+import com.revealprecision.revealserver.service.PublisherService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -23,13 +24,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
 import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
-@Profile("Listening | user-data-listener")
+@Profile("KafkaMessaging & (Listening | user-data-listener)")
 public class UserDataListener extends Listener {
 
   private final KafkaProperties kafkaProperties;
@@ -37,9 +37,7 @@ public class UserDataListener extends Listener {
   private final PerformanceEventTrackerRepository performanceEventTrackerRepository;
   private final PerformanceUserTypeRepository performanceUserTypeRepository;
 
-  private final KafkaTemplate<String, UserPerformanceData> performanceDataKafkaTemplate;
-
-  private final KafkaTemplate<String, UserDataParentChild> userDataParentChildKafkaTemplate;
+  private final PublisherService publisherService;
 
   @KafkaListener(topics = "#{kafkaConfigProperties.topicMap.get('USER_DATA')}", groupId = "reveal_server_group")
   public void listenGroupFoo(UserData message) {
@@ -129,7 +127,7 @@ public class UserDataListener extends Listener {
       }
 
       Map<String, Object> fields = message.getFields();
-      performanceDataKafkaTemplate.send(
+      publisherService.send(
           kafkaProperties.getTopicMap().get(KafkaConstants.USER_PERFORMANCE_DATA),
           new UserPerformanceData(message.getSubmissionId(), message.getPlanIdentifier(),
               stringList, message.getCaptureTime(), fields, isUndo));
@@ -137,7 +135,7 @@ public class UserDataListener extends Listener {
       IntStream.range(0, stringList.size() - 1).forEach(i -> {
         if (i + 1 <= stringList.size() - 1) {
 
-          userDataParentChildKafkaTemplate.send(
+          publisherService.send(
               kafkaProperties.getTopicMap().get(KafkaConstants.USER_PARENT_CHILD),
               new UserDataParentChild(message.getPlanIdentifier(), stringList.get(i + 1),
                   stringList.get(i)));
@@ -147,7 +145,7 @@ public class UserDataListener extends Listener {
       });
     }
     if (stringList.get(stringList.size() - 1).getType().equals("district")) {
-      userDataParentChildKafkaTemplate.send(
+      publisherService.send(
           kafkaProperties.getTopicMap().get(KafkaConstants.USER_PARENT_CHILD),
           new UserDataParentChild(message.getPlanIdentifier(),
               new UserLevel("highest", "highest", 0, "highest", "highest"),

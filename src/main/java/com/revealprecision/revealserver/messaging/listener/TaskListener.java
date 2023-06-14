@@ -31,7 +31,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-@Profile("Listening | task-listener")
+@Profile("KafkaMessaging & (Listening | task-listener)")
 public class TaskListener extends Listener {
 
   private final TaskBusinessStateTrackerRepository taskBusinessStateTrackerRepository;

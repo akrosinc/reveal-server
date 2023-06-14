@@ -9,6 +9,7 @@ import com.revealprecision.revealserver.persistence.repository.LocationHierarchy
 import com.revealprecision.revealserver.persistence.repository.LocationRepository;
 import com.revealprecision.revealserver.props.EventAggregationProperties;
 import com.revealprecision.revealserver.props.KafkaProperties;
+import com.revealprecision.revealserver.service.PublisherService;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -16,7 +17,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -34,7 +34,8 @@ public class ElasticController {
   private final LocationRepository locationRepository;
   private final LocationHierarchyRepository locationHierarchyRepository;
   private final EventAggregationProperties eventAggregationProperties;
-  private final KafkaTemplate<String, LocationIdEvent> stringListKafkaTemplate;
+  private final PublisherService publisherService;
+
   private final KafkaProperties kafkaProperties;
 
 
@@ -43,7 +44,7 @@ public class ElasticController {
     UUID aDefault = locationHierarchyRepository.findLocationHierarchyByName("default");
     String nodeOrder = locationHierarchyRepository.findNodeOrderByIdentifier(aDefault);
 
-      stringListKafkaTemplate.send(kafkaProperties.getTopicMap().get(
+    publisherService.send(kafkaProperties.getTopicMap().get(
               KafkaConstants.EVENT_AGGREGATION_LOCATION),
           LocationIdEvent.builder()
               .hierarchyIdentifier(aDefault)
@@ -67,7 +68,7 @@ public class ElasticController {
         PageRequest.of(pageNumber, pageSize));
 
     do {
-      stringListKafkaTemplate.send(kafkaProperties.getTopicMap().get(
+      publisherService.send(kafkaProperties.getTopicMap().get(
               KafkaConstants.EVENT_AGGREGATION_LOCATION),
           LocationIdEvent.builder()
               .hierarchyIdentifier(aDefault)

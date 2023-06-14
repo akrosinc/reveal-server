@@ -42,6 +42,7 @@ import com.revealprecision.revealserver.persistence.repository.ReportRepository;
 import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.service.LocationService;
 import com.revealprecision.revealserver.service.PlanService;
+import com.revealprecision.revealserver.service.PublisherService;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -51,13 +52,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.annotation.Profile;
 import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
-@Profile("Listening | raw-form-submission-listener")
+@Profile("KafkaMessaging & (Listening | raw-form-submission-listener)")
 public class RawFormSubmissionListener extends Listener {
 
 
@@ -65,7 +65,7 @@ public class RawFormSubmissionListener extends Listener {
   private final PlanService planService;
   private final LocationService locationService;
 
-  private final KafkaTemplate<String, FormCaptureEvent> formCaptureEventKafkaTemplate;
+  private final PublisherService publisherService;
 
   private final KafkaProperties kafkaProperties;
 
@@ -200,7 +200,7 @@ public class RawFormSubmissionListener extends Listener {
         .locationId(parentLocation.getIdentifier())
         .savedEventId(formCaptureEvent.getSavedEventId()).planId(formCaptureEvent.getPlanId())
         .taskId(formCaptureEvent.getTaskId()).build();
-    formCaptureEventKafkaTemplate.send(
+    publisherService.send(
         kafkaProperties.getTopicMap().get(KafkaConstants.FORM_SUBMISSIONS_PARENT),
         plan.getIdentifier().toString(), parentEvent);
   }

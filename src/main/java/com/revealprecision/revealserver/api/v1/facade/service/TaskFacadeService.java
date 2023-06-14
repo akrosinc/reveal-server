@@ -12,7 +12,6 @@ import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.enums.TaskPriorityEnum;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.messaging.TaskEventFactory;
-import com.revealprecision.revealserver.messaging.message.Message;
 import com.revealprecision.revealserver.messaging.message.TaskEvent;
 import com.revealprecision.revealserver.persistence.domain.Action;
 import com.revealprecision.revealserver.persistence.domain.Location;
@@ -29,11 +28,11 @@ import com.revealprecision.revealserver.service.LocationService;
 import com.revealprecision.revealserver.service.MetadataService;
 import com.revealprecision.revealserver.service.PersonService;
 import com.revealprecision.revealserver.service.PlanService;
+import com.revealprecision.revealserver.service.PublisherService;
 import com.revealprecision.revealserver.service.TaskService;
 import com.revealprecision.revealserver.service.UserService;
 import com.revealprecision.revealserver.util.ActionUtils;
 import com.revealprecision.revealserver.util.UserUtils;
-import java.time.LocalDateTime;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -49,7 +48,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.env.Environment;
 import org.springframework.data.util.Pair;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -63,7 +61,7 @@ public class TaskFacadeService {
   private final PersonService personService;
   private final LocationService locationService;
   private final BusinessStatusService businessStatusService;
-  private final KafkaTemplate<String, Message> kafkaTemplate;
+  private final PublisherService publisherService;
   private final KafkaProperties kafkaProperties;
   private final MetadataService metadataService;
   private final Environment env;
@@ -186,7 +184,7 @@ public class TaskFacadeService {
 
         taskService.saveTask(task);
 
-        kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.TASK), taskEvent);
+        publisherService.send(kafkaProperties.getTopicMap().get(KafkaConstants.TASK), taskEvent);
 
       } else {
         log.error("Unknown task state in task update: {}", updateFacade.getStatus());
@@ -312,7 +310,7 @@ public class TaskFacadeService {
       Task taskSaved = taskService.saveTask(task);
       businessStatusService.setBusinessStatus(taskSaved, taskDto.getBusinessStatus());
 
-      kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.TASK), taskEvent);
+      publisherService.send(kafkaProperties.getTopicMap().get(KafkaConstants.TASK), taskEvent);
       return taskSaved;
     } else {
       log.error("Unknown task state in sync: {}", taskDto.getStatus().name());

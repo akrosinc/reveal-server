@@ -241,7 +241,7 @@ public class PlanController {
       @Parameter(description = "Plan identifier") @PathVariable("planIdentifier") UUID planIdentifier,
       @Parameter(description = "Goal identifier") @PathVariable("goalIdentifier") UUID goalIdentifier,
       @Valid @RequestBody ActionRequest actionRequest) {
-    actionService.createAction(planIdentifier, goalIdentifier, actionRequest);
+    actionService.createAction(goalIdentifier, actionRequest);
     return ResponseEntity.status(HttpStatus.CREATED).build();
   }
 
@@ -260,7 +260,7 @@ public class PlanController {
       @Parameter(description = "Plan identifier") @PathVariable("planIdentifier") UUID planIdentifier,
       @Parameter(description = "Goal identifier") @PathVariable("goalIdentifier") UUID goalIdentifier,
       @Parameter(description = "Action identifier") @PathVariable("actionIdentifier") UUID actionIdentifier) {
-    actionService.deleteAction(planIdentifier, goalIdentifier, actionIdentifier);
+    actionService.deleteAction(actionIdentifier);
     return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
   }
 
@@ -272,7 +272,7 @@ public class PlanController {
       Pageable pageable) {
     return ResponseEntity.status(HttpStatus.OK)
         .body(ConditionResponseFactory.fromEntityPage(
-            conditionService.getConditions(planIdentifier, goalIdentifier, actionIdentifier,
+            conditionService.getConditions( actionIdentifier,
                 pageable), pageable));
   }
 
@@ -282,7 +282,7 @@ public class PlanController {
       @Parameter(description = "Goal identifier") @PathVariable("goalIdentifier") UUID goalIdentifier,
       @Parameter(description = "Action identifier") @PathVariable("actionIdentifier") UUID actionIdentifier,
       @RequestBody ConditionRequest request) {
-    conditionService.createCondition(planIdentifier, goalIdentifier, actionIdentifier, request);
+    conditionService.createCondition(actionIdentifier, request);
     return ResponseEntity.status(HttpStatus.CREATED).build();
   }
 
@@ -292,7 +292,7 @@ public class PlanController {
       @Parameter(description = "Goal identifier") @PathVariable("goalIdentifier") UUID goalIdentifier,
       @Parameter(description = "Action identifier") @PathVariable("actionIdentifier") UUID actionIdentifier,
       @Parameter(description = "Condition identifier") @PathVariable("conditionIdentifier") UUID conditionIdentifier) {
-    conditionService.deleteCondition(planIdentifier, goalIdentifier, actionIdentifier,
+    conditionService.deleteCondition(
         conditionIdentifier);
     return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
   }

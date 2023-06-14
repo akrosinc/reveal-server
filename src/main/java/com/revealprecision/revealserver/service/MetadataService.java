@@ -24,7 +24,6 @@ import com.revealprecision.revealserver.messaging.message.EntityTagEvent;
 import com.revealprecision.revealserver.messaging.message.FormDataEntityTagValueEvent;
 import com.revealprecision.revealserver.messaging.message.LocationIdEvent;
 import com.revealprecision.revealserver.messaging.message.LocationMetadataEvent;
-import com.revealprecision.revealserver.messaging.message.Message;
 import com.revealprecision.revealserver.messaging.message.PersonMetadataEvent;
 import com.revealprecision.revealserver.persistence.domain.EntityTag;
 import com.revealprecision.revealserver.persistence.domain.Location;
@@ -83,7 +82,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -94,14 +92,13 @@ public class MetadataService {
 
   private final LocationMetadataRepository locationMetadataRepository;
   private final PersonMetadataRepository personMetadataRepository;
-  private final KafkaTemplate<String, LocationMetadataEvent> locationMetadataKafkaTemplate;
-  private final KafkaTemplate<String, PersonMetadataEvent> personMetadataKafkaTemplate;
+  private final PublisherService publisherService;
   private final KafkaProperties kafkaProperties;
   private final LocationService locationService;
   private final MetadataImportRepository metadataImportRepository;
   private final UserService userService;
   private final StorageService storageService;
-  private final KafkaTemplate<String, Message> kafkaTemplate;
+
   private final MetaFieldSetMapper metaFieldSetMapper;
   private final LocationRelationshipService locationRelationshipService;
 
@@ -208,7 +205,7 @@ public class MetadataService {
     PersonMetadataEvent personMetadataEvent = PersonMetadataEventFactory.getPersonMetadataEvent(
         plan, locationList, savedPersonMetadata);
 
-    personMetadataKafkaTemplate.send(
+    publisherService.send(
         kafkaProperties.getTopicMap().get(KafkaConstants.PERSON_METADATA_UPDATE),
         personMetadataEvent);
 
@@ -312,7 +309,7 @@ public class MetadataService {
     LocationMetadataEvent locationMetadataEvent = LocationMetadataEventFactory.getLocationMetadataEvent(
         plan, location, savedLocationMetadata);
 
-    locationMetadataKafkaTemplate.send(
+    publisherService.send(
         kafkaProperties.getTopicMap().get(KafkaConstants.LOCATION_METADATA_UPDATE),
         locationMetadataEvent);
     return savedLocationMetadata;
@@ -357,7 +354,7 @@ public class MetadataService {
         LocationMetadataEvent locationMetadataEvent = LocationMetadataEventFactory.getLocationMetadataEvent(
             plan, null, savedLocationMetadata);
 
-        locationMetadataKafkaTemplate.send(
+        publisherService.send(
             kafkaProperties.getTopicMap().get(KafkaConstants.LOCATION_METADATA_UPDATE),
             locationMetadataEvent);
         return savedLocationMetadata;
@@ -416,7 +413,7 @@ public class MetadataService {
             locationsByPeople.stream().map(Location::getIdentifier).collect(Collectors.toList()),
             savedPersonMetadata);
 
-        personMetadataKafkaTemplate.send(
+        publisherService.send(
             kafkaProperties.getTopicMap().get(KafkaConstants.PERSON_METADATA_UPDATE),
             personMetadataEvent);
         return savedPersonMetadata;
@@ -579,7 +576,7 @@ public class MetadataService {
       Map<String, List<String>> ancestryMap) {
     metaImportDTOS.forEach(metaImportDTO ->
         ancestryMap.get(metaImportDTO.getLocation().getIdentifier().toString())
-            .forEach(ancestor -> kafkaTemplate.send(
+            .forEach(ancestor -> publisherService.send(
                 kafkaProperties.getTopicMap().get(KafkaConstants.EVENT_AGGREGATION_LOCATION),
                 LocationIdEvent.builder()
                     .hierarchyIdentifier(metaImportDTO.getLocationHierarchy().getIdentifier())
@@ -621,7 +618,7 @@ public class MetadataService {
           metaImportDTO.getLocationHierarchy().getIdentifier(), loc.getGeographicLevel().getName(),
           null, null, null, loc, entityTagEvent, importEntityTagValue, null);
 
-      kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.FORM_EVENT_CONSUMPTION),
+      publisherService.send(kafkaProperties.getTopicMap().get(KafkaConstants.FORM_EVENT_CONSUMPTION),
           entity);
 
       // check if there is an existing metadata event already created

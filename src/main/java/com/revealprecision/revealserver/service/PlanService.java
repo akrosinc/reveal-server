@@ -11,7 +11,6 @@ import com.revealprecision.revealserver.enums.PlanInterventionTypeEnum;
 import com.revealprecision.revealserver.enums.PlanStatusEnum;
 import com.revealprecision.revealserver.exceptions.ConflictException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
-import com.revealprecision.revealserver.messaging.message.Message;
 import com.revealprecision.revealserver.messaging.message.PlanUpdateMessage;
 import com.revealprecision.revealserver.messaging.message.PlanUpdateType;
 import com.revealprecision.revealserver.persistence.domain.Action;
@@ -41,7 +40,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -55,7 +53,7 @@ public class PlanService {
   private final LocationHierarchyService locationHierarchyService;
   private final LookupInterventionTypeService lookupInterventionTypeService;
   private final LookupEntityTypeService lookupEntityTypeService;
-  private final KafkaTemplate<String, Message> kafkaTemplate;
+  private final PublisherService publisherService;
   private final KafkaProperties kafkaProperties;
   private final GeographicLevelService geographicLevelService;
 
@@ -159,7 +157,7 @@ public class PlanService {
       planUpdateMessage.setPlanUpdateType(PlanUpdateType.ACTIVATE);
       planUpdateMessage.setOwnerId(UserUtils.getCurrentPrincipleName());
 
-      kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_UPDATE),
+      publisherService.send(kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_UPDATE),
           planUpdateMessage);
     } else {
       throw new ConflictException("Relationships still generating for this plan.");

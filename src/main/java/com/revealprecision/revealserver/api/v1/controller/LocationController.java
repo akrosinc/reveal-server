@@ -9,6 +9,7 @@ import com.revealprecision.revealserver.enums.SummaryEnum;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import com.revealprecision.revealserver.service.LocationRelationshipService;
 import com.revealprecision.revealserver.service.LocationService;
+import com.revealprecision.revealserver.service.PlanLocationsService;
 import com.revealprecision.revealserver.util.UserUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -40,6 +41,7 @@ public class LocationController {
 
   private final LocationService locationService;
   private final LocationRelationshipService locationRelationshipService;
+  private final PlanLocationsService planLocationsService;
 
   @Operation(summary = "Create a Location",
       description = "Create a Location",
@@ -109,7 +111,7 @@ public class LocationController {
   @GetMapping("/{parentLocationIdentifier}/children/{planIdentifier}")
   public ResponseEntity<List<LocationResponse>> getLocationByParentIdentifier(
       @PathVariable UUID parentLocationIdentifier, @PathVariable UUID planIdentifier) {
-    return ResponseEntity.ok(locationService.getLocationsByParentIdentifierAndPlanIdentifier(
+    return ResponseEntity.ok(planLocationsService.getLocationsByParentIdentifierAndPlanIdentifier(
         parentLocationIdentifier, planIdentifier).stream().map(
         planLocationDetails -> LocationResponseFactory.fromPlanLocationDetails(planLocationDetails,
             parentLocationIdentifier)
@@ -119,7 +121,7 @@ public class LocationController {
   @GetMapping("/{locationIdentifier}/{planIdentifier}")
   public ResponseEntity<LocationResponse> getLocationDetailsByIdentifierAndPlanIdentifier(
       @PathVariable UUID locationIdentifier, @PathVariable UUID planIdentifier) {
-    PlanLocationDetails planLocationDetails = locationService.getLocationDetailsByIdentifierAndPlanIdentifier(
+    PlanLocationDetails planLocationDetails = planLocationsService.getLocationDetailsByIdentifierAndPlanIdentifier(
         locationIdentifier, planIdentifier);
     planLocationDetails.setChildrenNumber(
         locationRelationshipService.getNumberOfChildren(locationIdentifier));
