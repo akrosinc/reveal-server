@@ -81,4 +81,4 @@ jobs:
         with:
           context: docker-build-openjdk/
           push: true
-          tags: akrosinc/reveal-server:v3.0.${{ github.run_number }}
+          tags: akrosinc/reveal-server-besd:v3.0.${{ github.run_number }}
