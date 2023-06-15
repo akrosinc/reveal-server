@@ -4,8 +4,8 @@ import com.revealprecision.revealserver.enums.BulkStatusEnum;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationBulk;
 import com.revealprecision.revealserver.persistence.repository.LocationBulkRepository;
+import com.revealprecision.revealserver.service.CreateLocationRelationshipService;
 import com.revealprecision.revealserver.service.LocationBulkService;
-import com.revealprecision.revealserver.service.LocationRelationshipService;
 import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
@@ -13,17 +13,18 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobExecutionListener;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
 @Slf4j
+@Profile("Elastic")
 public class LocationJobCompletionListener implements JobExecutionListener {
 
   private final LocationBulkService locationBulkService;
   private final LocationBulkRepository locationBulkRepository;
-  private final LocationRelationshipService locationRelationshipService;
-
+  private final CreateLocationRelationshipService createLocationRelationshipService;
 
   @Override
   public void beforeJob(JobExecution jobExecution) {
@@ -45,7 +46,7 @@ public class LocationJobCompletionListener implements JobExecutionListener {
     int index = 0;
     for (Location location : addedLocations) {
       try {
-        locationRelationshipService.createRelationshipForImportedLocation(location, index,
+        createLocationRelationshipService.createRelationshipForImportedLocation(location, index,
             addedLocations.size(), locationBulk);
       } catch (IOException e) {
         e.printStackTrace();

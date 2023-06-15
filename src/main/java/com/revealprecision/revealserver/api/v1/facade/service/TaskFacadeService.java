@@ -25,7 +25,7 @@ import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.service.ActionService;
 import com.revealprecision.revealserver.service.BusinessStatusService;
 import com.revealprecision.revealserver.service.LocationService;
-import com.revealprecision.revealserver.service.MetadataService;
+import com.revealprecision.revealserver.service.MetadataEsService;
 import com.revealprecision.revealserver.service.PersonService;
 import com.revealprecision.revealserver.service.PlanService;
 import com.revealprecision.revealserver.service.PublisherService;
@@ -63,9 +63,9 @@ public class TaskFacadeService {
   private final BusinessStatusService businessStatusService;
   private final PublisherService publisherService;
   private final KafkaProperties kafkaProperties;
-  private final MetadataService metadataService;
   private final Environment env;
   private final UserService userService;
+  private final MetadataEsService metadataEsService;
 
 
   public List<TaskFacade> syncTasks(List<String> planIdentifiers,
@@ -298,7 +298,7 @@ public class TaskFacadeService {
           }
 
           if (Arrays.asList(env.getActiveProfiles()).contains("Simulation")) {
-            metadataService.updatePersonDetailsOnElasticSearch(person);
+            metadataEsService.updatePersonDetailsOnElasticSearch(person);
           }
         }
         task.setPerson(person);

@@ -27,7 +27,7 @@ import com.revealprecision.revealserver.service.EventService;
 import com.revealprecision.revealserver.service.FormDataProcessorService;
 import com.revealprecision.revealserver.service.GroupService;
 import com.revealprecision.revealserver.service.LocationService;
-import com.revealprecision.revealserver.service.MetadataService;
+import com.revealprecision.revealserver.service.MetadataEsService;
 import com.revealprecision.revealserver.service.OrganizationService;
 import com.revealprecision.revealserver.service.PersonService;
 import com.revealprecision.revealserver.service.TaskService;
@@ -73,11 +73,11 @@ public class EventClientFacadeService {
   private final GroupService groupService;
   private final ObjectMapper objectMapper;
   private final FormDataProcessorService formDataProcessorService;
-  private final MetadataService metadataService;
   private final Environment env;
   private final TaskFacadeService taskFacadeService;
   private final TaskService taskService;
   private final SystemOverrideProperties systemOverrideProperties;
+  private final MetadataEsService metadataEsService;
 
 
   public Pair<List<EventFacade>, List<ClientFacade>> processEventsClientsRequest(
@@ -191,7 +191,7 @@ public class EventClientFacadeService {
     person = personService.savePerson(person);
 
     if (Arrays.asList(env.getActiveProfiles()).contains("Simulation")) { //TODO: remove when needed
-      metadataService.updatePersonDetailsOnElasticSearch(person);
+      metadataEsService.updatePersonDetailsOnElasticSearch(person);
     }
   }
 

@@ -18,7 +18,7 @@ import com.revealprecision.revealserver.api.v1.dto.response.SimulationCountRespo
 import com.revealprecision.revealserver.api.v1.facade.factory.LocationCSVRecordFactory;
 import com.revealprecision.revealserver.persistence.domain.LookupEntityType;
 import com.revealprecision.revealserver.persistence.domain.SimulationRequest;
-import com.revealprecision.revealserver.service.EntityFilterService;
+import com.revealprecision.revealserver.service.EntityFilterEsService;
 import com.revealprecision.revealserver.service.EntityTagService;
 import com.revealprecision.revealserver.service.EventAggregationService;
 import com.revealprecision.revealserver.service.LookupEntityTypeService;
@@ -48,6 +48,7 @@ import org.csveed.bean.BeanInstructionsImpl;
 import org.csveed.row.RowWriter;
 import org.csveed.row.RowWriterImpl;
 import org.elasticsearch.search.SearchHit;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
@@ -70,10 +71,11 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter.SseEvent
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/v1/entityTag")
+@Profile("Elastic")
 public class EntityTagController {
 
   private final EntityTagService entityTagService;
-  private final EntityFilterService entityFilterService;
+  private final EntityFilterEsService entityFilterService;
   private final LookupEntityTypeService lookupEntityTypeService;
   private final EventAggregationService eventAggregationService;
 

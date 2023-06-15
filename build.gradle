@@ -1,13 +1,5 @@
 buildscript {
     repositories {
-//        mavenLocal()
-//        maven {
-//            url 'https://pkgs.dev.azure.com/AkrosRevealPrecision/_packaging/AkrosRevealPrecision/maven/v1'
-//            name 'AkrosRevealPrecision'
-//            authentication {
-//                basic(BasicAuthentication)
-//            }
-//        }
         mavenCentral()
     }
     dependencies {

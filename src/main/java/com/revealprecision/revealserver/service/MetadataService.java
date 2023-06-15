@@ -42,14 +42,12 @@ import com.revealprecision.revealserver.persistence.domain.metadata.infra.TagDat
 import com.revealprecision.revealserver.persistence.domain.metadata.infra.TagValue;
 import com.revealprecision.revealserver.persistence.domain.metadata.metadataImport.MetaImportDTO;
 import com.revealprecision.revealserver.persistence.domain.metadata.metadataImport.fieldMapper.MetaFieldSetMapper;
-import com.revealprecision.revealserver.persistence.es.PersonElastic;
 import com.revealprecision.revealserver.persistence.repository.ImportAggregationNumericRepository;
 import com.revealprecision.revealserver.persistence.repository.ImportAggregationStringRepository;
 import com.revealprecision.revealserver.persistence.repository.LocationMetadataRepository;
 import com.revealprecision.revealserver.persistence.repository.MetadataImportRepository;
 import com.revealprecision.revealserver.persistence.repository.PersonMetadataRepository;
 import com.revealprecision.revealserver.props.KafkaProperties;
-import com.revealprecision.revealserver.util.ElasticModelUtil;
 import com.revealprecision.revealserver.util.UserUtils;
 import java.io.IOException;
 import java.security.Principal;
@@ -57,7 +55,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -71,14 +68,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.SerializationUtils;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.reindex.UpdateByQueryRequest;
-import org.elasticsearch.script.Script;
-import org.elasticsearch.script.ScriptType;
 import org.keycloak.KeycloakPrincipal;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
@@ -97,18 +87,12 @@ public class MetadataService {
   private final LocationService locationService;
   private final MetadataImportRepository metadataImportRepository;
   private final UserService userService;
-  private final StorageService storageService;
 
   private final MetaFieldSetMapper metaFieldSetMapper;
   private final LocationRelationshipService locationRelationshipService;
 
-  private final RestHighLevelClient client;
-
   private final ImportAggregationNumericRepository importAggregationNumericRepository;
   private final ImportAggregationStringRepository importAggregationStringRepository;
-
-  @Value("${reveal.elastic.index-name}")
-  String elasticIndex;
 
   public LocationMetadata getLocationMetadataByLocation(UUID locationIdentifier) {
     //TODO fix this
@@ -706,20 +690,4 @@ public class MetadataService {
     }
   }
 
-
-  public void updatePersonDetailsOnElasticSearch(Person person) throws IOException {
-    PersonElastic personElastic = new PersonElastic(person);
-    Map<String, Object> parameters = new HashMap<>();
-    parameters.put("person", ElasticModelUtil.toMapFromPersonElastic(personElastic));
-    parameters.put("personId", personElastic.getIdentifier());
-    UpdateByQueryRequest request = new UpdateByQueryRequest(elasticIndex);
-    List<String> locationIds = person.getLocations().stream()
-        .map(loc -> loc.getIdentifier().toString()).collect(Collectors.toList());
-
-    request.setQuery(QueryBuilders.termsQuery("_id", locationIds));
-    request.setScript(new Script(ScriptType.INLINE, "painless",
-        "def foundPerson = ctx._source.person.find(attr-> attr.identifier == params.personId);"
-            + " if(foundPerson == null) {ctx._source.person.add(params.person);}", parameters));
-    client.updateByQuery(request, RequestOptions.DEFAULT);
-  }
 }

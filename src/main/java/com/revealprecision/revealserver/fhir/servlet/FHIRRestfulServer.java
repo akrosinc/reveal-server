@@ -10,13 +10,14 @@ import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.support.SpringBeanAutowiringSupport;
 
 @WebServlet(name = "fhir-facade", urlPatterns = {"/fhir/*"})
 @Component
 @RequiredArgsConstructor
+@Profile("FHIR")
 public class FHIRRestfulServer extends RestfulServer {
 
   private final PlanResourceProvider planResourceProvider;
