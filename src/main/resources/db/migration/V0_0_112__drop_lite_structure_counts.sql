@@ -1,4 +1,4 @@
-DROP MATERIALIZED VIEW lite_structure_count;
+DROP MATERIALIZED VIEW lite_structure_count CASCADE;
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS lite_structure_count
 AS

@@ -1,4 +1,4 @@
-DROP MATERIALIZED VIEW IF EXISTS location_relationships;
+DROP MATERIALIZED VIEW IF EXISTS location_relationships CASCADE;
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS location_relationships AS
 SELECT DISTINCT parents.location_hierarchy_identifier,

@@ -1,4 +1,4 @@
-DROP MATERIALIZED VIEW location_counts;
+DROP MATERIALIZED VIEW location_counts CASCADE;
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS location_counts
     TABLESPACE pg_default
