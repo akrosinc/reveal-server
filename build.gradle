@@ -1,5 +1,6 @@
 buildscript {
     repositories {
+        mavenLocal()
         mavenCentral()
     }
     dependencies {
@@ -26,7 +27,7 @@ version = '0.0.1-SNAPSHOT'
 sourceCompatibility = '11'
 
 repositories {
-//    mavenLocal()
+    mavenLocal()
     maven {
         url "https://repo.osgeo.org/repository/release/"
     }
