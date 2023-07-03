@@ -27,6 +27,7 @@ import com.revealprecision.revealserver.messaging.message.LocationMetadataEvent;
 import com.revealprecision.revealserver.messaging.message.PersonMetadataEvent;
 import com.revealprecision.revealserver.persistence.domain.EntityTag;
 import com.revealprecision.revealserver.persistence.domain.Location;
+import com.revealprecision.revealserver.persistence.domain.LookupEntityType;
 import com.revealprecision.revealserver.persistence.domain.MetadataImport;
 import com.revealprecision.revealserver.persistence.domain.Person;
 import com.revealprecision.revealserver.persistence.domain.Plan;
@@ -47,6 +48,7 @@ import com.revealprecision.revealserver.persistence.repository.ImportAggregation
 import com.revealprecision.revealserver.persistence.repository.LocationMetadataRepository;
 import com.revealprecision.revealserver.persistence.repository.MetadataImportRepository;
 import com.revealprecision.revealserver.persistence.repository.PersonMetadataRepository;
+import com.revealprecision.revealserver.props.ImportAggregationProperties;
 import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.util.UserUtils;
 import java.io.IOException;
@@ -55,10 +57,14 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -93,6 +99,11 @@ public class MetadataService {
 
   private final ImportAggregationNumericRepository importAggregationNumericRepository;
   private final ImportAggregationStringRepository importAggregationStringRepository;
+
+  private final EntityTagService entityTagService;
+  private final ImportAggregationProperties importAggregationProperties;
+
+  private final LookupEntityTypeService lookupEntityTypeService;
 
   public LocationMetadata getLocationMetadataByLocation(UUID locationIdentifier) {
     //TODO fix this
@@ -561,7 +572,7 @@ public class MetadataService {
     metaImportDTOS.forEach(metaImportDTO ->
         ancestryMap.get(metaImportDTO.getLocation().getIdentifier().toString())
             .forEach(ancestor -> publisherService.send(
-                kafkaProperties.getTopicMap().get(KafkaConstants.EVENT_AGGREGATION_LOCATION),
+                kafkaProperties.getTopicMap().get(KafkaConstants.AGGREGATION_STAGING),
                 LocationIdEvent.builder()
                     .hierarchyIdentifier(metaImportDTO.getLocationHierarchy().getIdentifier())
                     .nodeOrder(metaImportDTO.getLocationHierarchy().getNodeOrder().stream().collect(
@@ -576,14 +587,70 @@ public class MetadataService {
       Map<String, List<String>> ancestryMap, MetadataImport currentMetaImport) {
     currentMetaImport.setStatus(BulkEntryStatus.BUSY);
     metadataImportRepository.save(currentMetaImport);
+
     metaImportDTOS.forEach(metaImportDTO ->
         ancestryMap.get(metaImportDTO.getLocation().getIdentifier().toString())
             .forEach(ancestor ->
                 metaImportDTO.getSheetData().getConvertedEntityData().forEach(
-                    (key, value) -> updateDB(metaImportDTO.getLocation().getName(), ancestor, value,
-                        key.getTag(), key.getValueType()))));
+                    (key, value) ->
+                        updateDB(metaImportDTO.getLocation().getName(), ancestor, value,
+                            key.getTag(), key.getValueType())
+                )));
+
+    List<Entry<EntityTagEvent, Object>> string = metaImportDTOS.stream().flatMap(
+            metaImportDTO -> metaImportDTO.getSheetData().getConvertedEntityData().entrySet().stream()
+                .filter(entry -> entry.getKey().getValueType().equals("string") || entry.getKey()
+                    .getValueType().equals("boolean")))
+        .collect(Collectors.toList());
+
+    Set<EntityTag> collect1 = getStringOrBooleanTagsGeneratedFromImportData(
+        string);
+
+    entityTagService.saveEntityTags(collect1);
+
     currentMetaImport.setStatus(BulkEntryStatus.SUCCESSFUL);
     metadataImportRepository.save(currentMetaImport);
+  }
+
+  private Set<EntityTag> getStringOrBooleanTagsGeneratedFromImportData(List<Entry<EntityTagEvent, Object>> string) {
+    Map<LookupEntityType, List<String>> collect = string.stream()
+        .flatMap(entityTagEventObjectEntry ->
+            entityTagEventObjectEntry.getKey().getAggregationMethod().stream().map(method ->
+                Pair.of(entityTagEventObjectEntry.getKey().getTag()
+                        .concat(importAggregationProperties.getDelim())
+                        .concat(String.valueOf(entityTagEventObjectEntry.getValue()))
+                        .concat(importAggregationProperties.getDelim())
+                        .concat(method),
+                    lookupEntityTypeService.getAllLookupEntities()
+                        .get(entityTagEventObjectEntry.getKey().getLookupEntityType().getCode()))
+            ))
+        .collect(Collectors.groupingBy(Pair::getSecond,
+            Collectors.mapping(Pair::getFirst, Collectors.toList())));
+
+    Set<EntityTag> collect1 = collect.entrySet().stream().flatMap(
+        entry -> {
+
+          List<String> entityTagsByTagNameAndLookupEntityType = entityTagService.getEntityTagsByTagNameAndLookupEntityType(
+              entry.getValue(),
+              entry.getKey()).stream().map(EntityTag::getTag).collect(Collectors.toList());
+          return entry.getValue().stream()
+              .filter(tag -> !entityTagsByTagNameAndLookupEntityType.contains(tag))
+              .map(s -> {
+                EntityTag number = EntityTag.builder()
+                    .addToMetadata(true)
+                    .isAggregate(true)
+                    .scope(EntityTagScopes.GLOBAL)
+                    .simulationDisplay(false)
+                    .valueType(DOUBLE)
+                    .lookupEntityType(entry.getKey())
+                    .tag(s)
+                    .build();
+                number.setEntityStatus(EntityStatus.ACTIVE);
+                return number;
+              });
+        }).collect(
+        Collectors.toCollection(() -> new TreeSet<>(Comparator.comparing(EntityTag::getTag))));
+    return collect1;
   }
 
   private void update(User user, MetadataImport currentMetaImport, MetaImportDTO metaImportDTO,
@@ -602,7 +669,8 @@ public class MetadataService {
           metaImportDTO.getLocationHierarchy().getIdentifier(), loc.getGeographicLevel().getName(),
           null, null, null, loc, entityTagEvent, importEntityTagValue, null);
 
-      publisherService.send(kafkaProperties.getTopicMap().get(KafkaConstants.FORM_EVENT_CONSUMPTION),
+      publisherService.send(
+          kafkaProperties.getTopicMap().get(KafkaConstants.FORM_EVENT_CONSUMPTION),
           entity);
 
       // check if there is an existing metadata event already created
@@ -689,5 +757,6 @@ public class MetadataService {
       throw new NotFoundException("MetaImport not found.");
     }
   }
+
 
 }

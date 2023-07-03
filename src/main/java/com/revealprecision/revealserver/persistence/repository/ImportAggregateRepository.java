@@ -5,7 +5,9 @@ import com.revealprecision.revealserver.persistence.projection.ImportAggregateNu
 import com.revealprecision.revealserver.persistence.projection.ImportAggregateStringCountProjection;
 import java.util.List;
 import java.util.UUID;
+import javax.transaction.Transactional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -41,5 +43,14 @@ public interface ImportAggregateRepository extends JpaRepository<ImportAggregati
   List<ImportAggregateStringCountProjection> getAggregationCountValuesByLocationList(
       @Param("locationIdentifiers") List<String> locationIdentifiers);
 
+  @Query(value = "REFRESH MATERIALIZED VIEW CONCURRENTLY import_aggregate_string_count", nativeQuery = true)
+  @Transactional
+  @Modifying
+  void refreshImportAggregateStringCountMaterializedView();
+
+  @Query(value = "REFRESH MATERIALIZED VIEW CONCURRENTLY import_aggregate_numeric", nativeQuery = true)
+  @Transactional
+  @Modifying
+  void refreshImportAggregateNumericMaterializedView();
 
 }

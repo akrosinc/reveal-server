@@ -98,6 +98,12 @@ public class EntityTagService {
         typeCodeEnum.getLookupEntityType());
   }
 
+  public List<EntityTag> getEntityTagsByTagNameAndLookupEntityType(List<String> names,
+      LookupEntityType lookupEntityType) {
+
+    return entityTagRepository.findEntityTagsByLookupEntityTypeAndTagIn(lookupEntityType, names);
+  }
+
   public EntityTag getEntityTagByIdentifier(UUID identifier) {
     return entityTagRepository.findById(identifier).orElseThrow(() -> new NotFoundException(
         Pair.of(EntityTag.Fields.identifier, identifier), EntityTag.class));
@@ -133,7 +139,7 @@ public class EntityTagService {
     return save;
   }
 
-  private EntityTag createAggregateEntityTag(EntityTagRequest entityTagRequest, String str,
+  public EntityTag createAggregateEntityTag(EntityTagRequest entityTagRequest, String str,
       LookupEntityType lookupEntityType, boolean isAggregate) {
     EntityTagRequest entityTagSum = EntityTagRequestFactory.getCopy(entityTagRequest);
     entityTagSum.setTag(entityTagSum.getTag().concat(str));
@@ -183,6 +189,10 @@ public class EntityTagService {
         lookupEntityType.getCoreFields().stream().map(EntityTagResponseFactory::fromCoreField)
             .collect(Collectors.toList()));
     return response;
+  }
+
+  public void saveEntityTags(Set<EntityTag> entityTags){
+      entityTagRepository.saveAll(entityTags);
   }
 
 }

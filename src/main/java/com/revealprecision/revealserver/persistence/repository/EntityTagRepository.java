@@ -2,6 +2,7 @@ package com.revealprecision.revealserver.persistence.repository;
 
 import com.revealprecision.revealserver.persistence.domain.EntityTag;
 import com.revealprecision.revealserver.persistence.domain.FormField;
+import com.revealprecision.revealserver.persistence.domain.LookupEntityType;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -53,5 +54,7 @@ public interface EntityTagRepository extends JpaRepository<EntityTag, UUID> {
 
 
   Set<EntityTag> findEntityTagsByTagIn(Set<String> tags);
+
+  List<EntityTag> findEntityTagsByLookupEntityTypeAndTagIn(LookupEntityType lookupEntityType, List<String> tags);
 
 }

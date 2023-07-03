@@ -6,7 +6,9 @@ import com.revealprecision.revealserver.persistence.projection.EventAggregateStr
 import com.revealprecision.revealserver.persistence.projection.EventAggregationNumericTagProjection;
 import java.util.List;
 import java.util.UUID;
+import javax.transaction.Transactional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -54,4 +56,16 @@ public interface EventAggregateRepository extends JpaRepository<EventAggregation
       + "    ean.fieldcode as fieldcode \n"
       + "  from event_aggregation_string_count ean", nativeQuery = true)
   List<EventAggregationNumericTagProjection> getUniqueTagsFromEventAggregationStringCount();
+
+
+  @Query(value = "REFRESH MATERIALIZED VIEW CONCURRENTLY event_aggregate_string_count", nativeQuery = true)
+  @Transactional
+  @Modifying
+  void refreshImportAggregateStringCountMaterializedView();
+
+  @Query(value = "REFRESH MATERIALIZED VIEW CONCURRENTLY event_aggregate_numeric", nativeQuery = true)
+  @Transactional
+  @Modifying
+  void refreshImportAggregateNumericMaterializedView();
+
 }
