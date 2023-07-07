@@ -1,6 +1,5 @@
-package com.revealprecision.revealserver.api.v1.dto.request;
+package com.revealprecision.revealserver.api.v1.dto.response;
 
-import com.revealprecision.revealserver.enums.SignEntity;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -12,10 +11,12 @@ import lombok.ToString;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 @ToString
-public class SearchValue {
+@Builder
+public class SaveHierarchyResponse {
 
-  private Object value;
-  private SignEntity sign;
-}
+    private int identifier;
+
+    private String name;
+
+ }

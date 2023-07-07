@@ -13,6 +13,7 @@ import com.revealprecision.revealserver.api.v1.dto.request.DataFilterRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.EntityFilterRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.EntityTagRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.SearchValue;
+import com.revealprecision.revealserver.api.v1.dto.response.EntityMetadataResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.FeatureSetResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.FeatureSetResponseContainer;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationResponse;
@@ -289,21 +290,23 @@ public class EntityFilterEsService {
       sourceBuilder.query(matchAllQuery);
     }
 
-
     String collect = request.getResultTags().stream()
         .map(entityFilterRequest -> "n.add('" + entityFilterRequest.getTag() + "');")
         .collect(Collectors.joining(""));
     Script inline = new Script(ScriptType.INLINE, "painless",
-        "List a = params['_source']['metadata']; List n = new ArrayList(); "+collect+"  return a.stream().filter(val->n.contains(val.tag)).collect(Collectors.toList());", new HashMap<>());
+        "List a = params['_source']['metadata']; List n = new ArrayList(); " + collect
+            + "  return a.stream().filter(val->n.contains(val.tag)).collect(Collectors.toList());",
+        new HashMap<>());
 
-    sourceBuilder.scriptField("meta",inline);
+    sourceBuilder.scriptField("meta", inline);
 
     String[] val = new String[0];
 
     if (excludeFields) {
       sourceBuilder.fetchSource(new ArrayList<String>().toArray(val), exclusionList.toArray(val));
     } else {
-      sourceBuilder.fetchSource(new ArrayList<String>().toArray(val), new ArrayList<String>().toArray(val));
+      sourceBuilder.fetchSource(new ArrayList<String>().toArray(val),
+          new ArrayList<String>().toArray(val));
     }
     SearchRequest searchRequest = new SearchRequest(elasticIndex);
 
@@ -311,7 +314,6 @@ public class EntityFilterEsService {
             SortOrder.DESC),
         SortBuilders.fieldSort("hashValue").order(
             SortOrder.DESC));
-
 
     sourceBuilder.sort(sortBuilders);
 
@@ -405,28 +407,52 @@ public class EntityFilterEsService {
     }
   }
 
-  public List<LocationResponse> retrieveParentLocations(Set<String> parentIds, String hierarchyId)
+  public FeatureSetResponseContainer retrieveParentLocations(Set<String> parentIds,
+      String hierarchyId, SearchHit lastHit)
       throws IOException {
+
     List<LocationResponse> responses = new ArrayList<>();
     SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
     sourceBuilder.query(QueryBuilders.termsQuery("_id", parentIds));
     SearchRequest searchRequest = new SearchRequest(elasticIndex);
     searchRequest.source(sourceBuilder);
     sourceBuilder.size(10000);
+
+    List<SortBuilder<?>> sortBuilders = List.of(SortBuilders.fieldSort("name").order(
+            SortOrder.DESC),
+        SortBuilders.fieldSort("hashValue").order(
+            SortOrder.DESC));
+
+    sourceBuilder.sort(sortBuilders);
+
+    if (lastHit != null) {
+      sourceBuilder.searchAfter(lastHit.getSortValues());
+    }
+
     SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
 
     ObjectMapper mapper = new ObjectMapper();
     for (SearchHit hit : searchResponse.getHits().getHits()) {
       LocationElastic parent = mapper.readValue(hit.getSourceAsString(), LocationElastic.class);
       LocationResponse locationResponse = LocationResponseFactory.fromElasticModel(parent,
-          parent.getHierarchyDetailsElastic()!=null?parent.getHierarchyDetailsElastic().get(hierarchyId):null, null);
+          parent.getHierarchyDetailsElastic() != null ? parent.getHierarchyDetailsElastic()
+              .get(hierarchyId) : null, parent.getMetadata().stream().map(meta ->
+                  EntityMetadataResponse.builder().type(meta.getTag()).value(meta.getValueNumber()).build())
+              .collect(Collectors.toList()));
       locationResponse.getProperties()
           .setLevelColor(getGeoLevelColor(locationResponse.getProperties().getGeographicLevel()));
       responses.add(locationResponse);
     }
-    return responses;
-  }
+    FeatureSetResponse response = new FeatureSetResponse();
+    response.setType("FeatureCollection");
+    response.setFeatures(responses);
 
+    if (searchResponse.getHits().getHits().length > 0) {
+      lastHit =
+          searchResponse.getHits().getHits()[searchResponse.getHits().getHits().length - 1];
+    }
+    return new FeatureSetResponseContainer(response, lastHit);
+  }
 
 
   public NestedQueryBuilder nestedPersonQuery(List<EntityFilterRequest> requests)

@@ -1,2 +1,2 @@
-ALTER TABLE IF EXISTS public.action
+ALTER TABLE IF EXISTS action
 ALTER COLUMN description DROP NOT NULL;
