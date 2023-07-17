@@ -4,6 +4,8 @@ public interface ImportAggregateStringCountProjection {
 
   String getName();
 
+  String getHierarchyIdentifier();
+
   String getLocationIdentifier();
 
   String getPlanIdentifier();

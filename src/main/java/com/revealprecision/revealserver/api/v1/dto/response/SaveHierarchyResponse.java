@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.api.v1.dto.response;
 
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -18,5 +19,7 @@ public class SaveHierarchyResponse {
     private int identifier;
 
     private String name;
+
+    private List<String> nodeOrder;
 
  }

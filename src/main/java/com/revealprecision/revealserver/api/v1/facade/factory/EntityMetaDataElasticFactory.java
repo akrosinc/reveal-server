@@ -5,7 +5,7 @@ import com.revealprecision.revealserver.persistence.es.MetadataElastic;
 
 public class EntityMetaDataElasticFactory {
   public static EntityMetadataElastic getEntityMetadataElastic(String eventAggregationNumericProjection,
-      String eventAggregationNumericProjection1, Double eventAggregationNumericProjection2) {
+      String eventAggregationNumericProjection1, Double eventAggregationNumericProjection2,String hierarchyIdentifier) {
     EntityMetadataElastic entityMetadataElasticSum = new EntityMetadataElastic();
     MetadataElastic metadataElasticSum = new MetadataElastic();
     metadataElasticSum.setPlanId(
@@ -17,6 +17,7 @@ public class EntityMetaDataElasticFactory {
     entityMetadataElasticSum.setValueNumber(
         eventAggregationNumericProjection2);
     entityMetadataElasticSum.setMeta(metadataElasticSum);
+    entityMetadataElasticSum.setHierarchyIdentifier(hierarchyIdentifier);
     return entityMetadataElasticSum;
   }
 }

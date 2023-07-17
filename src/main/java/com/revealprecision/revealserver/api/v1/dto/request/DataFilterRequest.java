@@ -18,7 +18,8 @@ import org.elasticsearch.search.SearchHit;
 public class DataFilterRequest {
 
   @NotNull
-  private UUID hierarchyIdentifier;
+  private String hierarchyIdentifier;
+  private String hierarchyType;
   private UUID locationIdentifier;
   private List<EntityFilterRequest> entityFilters;
   private SearchHit lastHit;

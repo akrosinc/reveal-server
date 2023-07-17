@@ -52,7 +52,7 @@ public class LocationIdListener extends Listener {
     log.debug("Received message {}", message);
     List<Location> locationsPage = locationRepository.findAllById(message.getUuids());
     List<LocationRelationship> locationRelationships = locationRelationshipRepository.getLocationRelationshipByLocation_IdentifierInAndLocationHierarchy_Identifier(
-        new ArrayList<>(message.getUuids()), message.getHierarchyIdentifier());
+        new ArrayList<>(message.getUuids()), UUID.fromString(message.getHierarchyIdentifier()));
 
     Map<UUID, LocationRelationship> locationRelationshipMap = locationRelationships.stream()
         .collect(
@@ -79,7 +79,7 @@ public class LocationIdListener extends Listener {
             AggregateNumeric::getLocationIdentifier));
 
     List<ImportAggregateNumericProjection> aggregationValuesByLocationList = importAggregateRepository.getAggregationValuesByLocationList(
-        message.getUuids().stream().map(UUID::toString).collect(Collectors.toList()));
+        message.getUuids().stream().map(UUID::toString).collect(Collectors.toList()),message.getHierarchyIdentifier());
 
     Map<String, List<AggregateNumeric>> importAggregatePerLocation = aggregationValuesByLocationList.stream()
         .map(importAggregateNumericProjection -> AggregateNumeric.builder()
@@ -123,7 +123,7 @@ public class LocationIdListener extends Listener {
         .collect(Collectors.groupingBy(AggregateStringCount::getLocationIdentifier));
 
     List<ImportAggregateStringCountProjection> aggregationCountValuesByLocationList = importAggregateRepository.getAggregationCountValuesByLocationList(
-        message.getUuids().stream().map(UUID::toString).collect(Collectors.toList()));
+        message.getUuids().stream().map(UUID::toString).collect(Collectors.toList()),message.getHierarchyIdentifier());
 
     Map<String, List<AggregateStringCount>> importAggregateStringCountListPerLocation = aggregationCountValuesByLocationList.stream()
         .map(eventAggregateStringCountProjection -> AggregateStringCount.builder()
@@ -180,7 +180,6 @@ public class LocationIdListener extends Listener {
           stringListMap.put(message.getHierarchyIdentifier().toString(),
               relationship.getAncestry().stream().map(UUID::toString).collect(
                   Collectors.toList()));
-          locationElastic.setAncestry(List.of(stringListMap));
 
           HierarchyDetailsElastic hierarchyDetailsElastic = new HierarchyDetailsElastic();
           hierarchyDetailsElastic.setAncestry(
@@ -230,19 +229,19 @@ public class LocationIdListener extends Listener {
                 EntityMetadataElastic entityMetadataElasticSum = getEntityMetadataElastic(
                     eventAggregateNumericProjection.getPlanIdentifier(),
                     s + "sum",
-                    eventAggregateNumericProjection.getSum());
+                    eventAggregateNumericProjection.getSum(),message.getHierarchyIdentifier());
                 entityMetadataElastics.add(entityMetadataElasticSum);
 
                 EntityMetadataElastic entityMetadataElasticsAverage = getEntityMetadataElastic(
                     eventAggregateNumericProjection.getPlanIdentifier(),
                     s + "average",
-                    eventAggregateNumericProjection.getAvg());
+                    eventAggregateNumericProjection.getAvg(),message.getHierarchyIdentifier());
                 entityMetadataElastics.add(entityMetadataElasticsAverage);
 
                 EntityMetadataElastic entityMetadataElasticsMedian = getEntityMetadataElastic(
                     eventAggregateNumericProjection.getPlanIdentifier(),
                     s + "median",
-                    eventAggregateNumericProjection.getAvg());
+                    eventAggregateNumericProjection.getMedian(),message.getHierarchyIdentifier());
                 entityMetadataElastics.add(entityMetadataElasticsMedian);
 
                 return entityMetadataElastics.stream();
@@ -252,16 +251,16 @@ public class LocationIdListener extends Listener {
 
           List<EntityMetadataElastic> metadata = locationElastic.getMetadata();
 
-          List<EntityMetadataElastic> existingTags = metadata.stream()
-              .filter(
-                  metadataItem -> !anImport.stream().map(EntityMetadataElastic::getTag).collect(
-                      Collectors.toList()).contains(metadataItem.getTag()))
-              .collect(Collectors.toList());
+          if (metadata != null) {
+            List<EntityMetadataElastic> existingTags = metadata.stream()
+                .filter(
+                    metadataItem -> !anImport.stream().map(EntityMetadataElastic::getTag).collect(
+                        Collectors.toList()).contains(metadataItem.getTag()))
+                .collect(Collectors.toList());
 
-          existingTags.addAll(anImport);
-
-          locationElastic.setMetadata(existingTags);
-
+            existingTags.addAll(anImport);
+            locationElastic.setMetadata(existingTags);
+          }
         } else {
           log.trace("NO METADATA----------------------");
         }
@@ -299,7 +298,7 @@ public class LocationIdListener extends Listener {
                 EntityMetadataElastic entityMetadataElastic = getEntityMetadataElastic(
                     aggregationStringCountProjection.getPlanIdentifier(),
                     eventAggregationNumericProjection1,
-                    aggregationStringCountProjection.getCount());
+                    aggregationStringCountProjection.getCount(),message.getHierarchyIdentifier());
                 return entityMetadataElastic;
               }).collect(Collectors.toList());
 
@@ -307,16 +306,16 @@ public class LocationIdListener extends Listener {
 
           List<EntityMetadataElastic> metadata = locationElastic.getMetadata();
 
-          List<EntityMetadataElastic> existingTags = metadata.stream()
-              .filter(
-                  metadataItem -> !anImport.stream().map(EntityMetadataElastic::getTag).collect(
-                      Collectors.toList()).contains(metadataItem.getTag()))
-              .collect(Collectors.toList());
+          if (metadata != null) {
+            List<EntityMetadataElastic> existingTags = metadata.stream()
+                .filter(
+                    metadataItem -> !anImport.stream().map(EntityMetadataElastic::getTag).collect(
+                        Collectors.toList()).contains(metadataItem.getTag()))
+                .collect(Collectors.toList());
 
-          existingTags.addAll(anImport);
-
-          locationElastic.setMetadata(existingTags);
-
+            existingTags.addAll(anImport);
+            locationElastic.setMetadata(existingTags);
+          }
         } else {
           log.trace("NO METADATA----------------------");
         }

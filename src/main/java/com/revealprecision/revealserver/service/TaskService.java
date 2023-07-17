@@ -684,12 +684,6 @@ public class TaskService {
     taskEvent.setIdentifier(savedTask.getIdentifier());
     taskEvent.setServerVersion(savedTask.getServerVersion());
 
-    if (savedTask.getLookupTaskStatus().getCode().equals(TASK_STATUS_CANCELLED)) {
-      businessStatusService.deactivateBusinessStatus(savedTask);
-    } else {
-      businessStatusService.activateBusinessStatus(savedTask);
-    }
-
     publisherService.send(kafkaProperties.getTopicMap().get(KafkaConstants.TASK), taskEvent);
 
     return savedTask;

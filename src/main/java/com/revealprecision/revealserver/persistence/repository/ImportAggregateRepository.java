@@ -15,7 +15,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ImportAggregateRepository extends JpaRepository<ImportAggregationNumeric, UUID> {
 
-  @Query(value = "SELECT ean2.name as name,\n"
+  @Query(value = "SELECT ean2.hierarchyidentifier as hierarchyIdentifier, ean2.name as name,\n"
       + "       cast(ean2.locationIdentifier as varchar) as locationIdentifier,\n"
       + "       cast(ean2.planIdentifier as varchar) as planIdentifier,\n"
       + "       ean2.eventType as eventType,\n"
@@ -25,12 +25,13 @@ public interface ImportAggregateRepository extends JpaRepository<ImportAggregati
       + "       ean2.median as median\n"
       + "from import_aggregate_numeric ean2\n"
       + "\n"
-      + "WHERE cast(ean2.locationIdentifier as varchar) in :locationIdentifiers", nativeQuery = true)
+      + "WHERE cast(ean2.locationIdentifier as varchar) in :locationIdentifiers "
+      + "and ean2.hierarchyIdentifier = :hierarchyIdentifier", nativeQuery = true)
   List<ImportAggregateNumericProjection> getAggregationValuesByLocationList(
-      @Param("locationIdentifiers") List<String> locationIdentifiers);
+      @Param("locationIdentifiers") List<String> locationIdentifiers, String hierarchyIdentifier);
 
 
-  @Query(value = "SELECT ean2.name as name,\n"
+  @Query(value = "SELECT ean2.hierarchyidentifier as hierarchyIdentifier,  ean2.name as name,\n"
       + "       cast(ean2.locationIdentifier as varchar) as locationIdentifier,\n"
       + "       cast(ean2.planIdentifier as varchar) as planIdentifier,\n"
       + "       ean2.eventType as eventType,\n"
@@ -38,10 +39,10 @@ public interface ImportAggregateRepository extends JpaRepository<ImportAggregati
       + "       ean2.fieldVal as fieldVal,\n"
       + "       ean2.count as count\n"
       + "from import_aggregate_string_count ean2\n"
-      + "WHERE cast(ean2.locationIdentifier as varchar) in :locationIdentifiers\n", nativeQuery = true)
-
+      + "WHERE cast(ean2.locationIdentifier as varchar) in :locationIdentifiers  "
+      + "and ean2.hierarchyIdentifier = :hierarchyIdentifier\n", nativeQuery = true)
   List<ImportAggregateStringCountProjection> getAggregationCountValuesByLocationList(
-      @Param("locationIdentifiers") List<String> locationIdentifiers);
+      @Param("locationIdentifiers") List<String> locationIdentifiers, String hierarchyIdentifier);
 
   @Query(value = "REFRESH MATERIALIZED VIEW CONCURRENTLY import_aggregate_string_count", nativeQuery = true)
   @Transactional

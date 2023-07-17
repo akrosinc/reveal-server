@@ -29,7 +29,7 @@ public class PlanResponseFactory {
         .title(plan.getTitle())
         .locationHierarchy(
             LocationHierarchyResponse.builder()
-                .identifier(plan.getLocationHierarchy().getIdentifier())
+                .identifier(plan.getLocationHierarchy().getIdentifier().toString())
                 .name(plan.getLocationHierarchy().getName())
                 .build())
         .status(plan.getStatus())
@@ -52,7 +52,7 @@ public class PlanResponseFactory {
         .title(plan.getTitle())
         .locationHierarchy(
             LocationHierarchyResponse.builder()
-                .identifier(plan.getLocationHierarchy().getIdentifier())
+                .identifier(plan.getLocationHierarchy().getIdentifier().toString())
                 .name(plan.getLocationHierarchy().getName())
                 .build())
         .status(plan.getStatus())

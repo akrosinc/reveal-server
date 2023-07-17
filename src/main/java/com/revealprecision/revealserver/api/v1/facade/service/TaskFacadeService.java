@@ -171,7 +171,6 @@ public class TaskFacadeService {
       if (taskStatus.isPresent()) {
         task.setLookupTaskStatus(taskStatus.get());
         task.setBusinessStatus(updateFacade.getBusinessStatus());
-        businessStatusService.setBusinessStatus(task, updateFacade.getBusinessStatus());
 
         identifierUuid = task.getIdentifier();
         identifier = identifierUuid.toString();
@@ -308,7 +307,6 @@ public class TaskFacadeService {
       taskEvent.setOwner(owner);
       task.setTaskFacade(taskEvent);
       Task taskSaved = taskService.saveTask(task);
-      businessStatusService.setBusinessStatus(taskSaved, taskDto.getBusinessStatus());
 
       publisherService.send(kafkaProperties.getTopicMap().get(KafkaConstants.TASK), taskEvent);
       return taskSaved;

@@ -6,6 +6,7 @@ import com.revealprecision.revealserver.persistence.domain.AggregationStaging;
 import com.revealprecision.revealserver.persistence.repository.AggregationStagingRepository;
 import com.revealprecision.revealserver.persistence.repository.EventAggregateRepository;
 import com.revealprecision.revealserver.persistence.repository.ImportAggregateRepository;
+import com.revealprecision.revealserver.props.ImportAggregationProperties;
 import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.service.PublisherService;
 import java.util.List;
@@ -26,28 +27,31 @@ public class RefreshAggregationDataSchedule {
   private final AggregationStagingRepository aggregationStagingRepository;
   private final PublisherService publisherService;
   private final KafkaProperties kafkaProperties;
+  private final ImportAggregationProperties importAggregationProperties;
 
   @Scheduled(cron = "#{importAggregationProperties.cron}")
   public void refreshImportAggregateMaterializedView() {
     log.debug("refreshing import and event aggregations");
-    importAggregateRepository.refreshImportAggregateNumericMaterializedView();
-    importAggregateRepository.refreshImportAggregateStringCountMaterializedView();
-    eventAggregateRepository.refreshImportAggregateNumericMaterializedView();
-    eventAggregateRepository.refreshImportAggregateStringCountMaterializedView();
+    if (importAggregationProperties.isScheduleEnabled()) {
+      importAggregateRepository.refreshImportAggregateNumericMaterializedView();
+      importAggregateRepository.refreshImportAggregateStringCountMaterializedView();
+      eventAggregateRepository.refreshImportAggregateNumericMaterializedView();
+      eventAggregateRepository.refreshImportAggregateStringCountMaterializedView();
 
-    List<AggregationStaging> aggregateStagingList = aggregationStagingRepository.findAll();
+      List<AggregationStaging> aggregateStagingList = aggregationStagingRepository.findAll();
 
-    aggregateStagingList.forEach(aggregationStaging -> publisherService.send(
-        kafkaProperties.getTopicMap().get(KafkaConstants.EVENT_AGGREGATION_LOCATION),
-        LocationIdEvent.builder()
-            .uuids(List.of(aggregationStaging.getLocationIdentifier()))
-            .hierarchyIdentifier(aggregationStaging.getHierarchyIdentifier())
-            .nodeOrder(aggregationStaging.getNodeOrder())
-            .build()));
+      aggregateStagingList.forEach(aggregationStaging -> publisherService.send(
+          kafkaProperties.getTopicMap().get(KafkaConstants.EVENT_AGGREGATION_LOCATION),
+          LocationIdEvent.builder()
+              .uuids(List.of(aggregationStaging.getLocationIdentifier()))
+              .hierarchyIdentifier(aggregationStaging.getHierarchyIdentifier())
+              .nodeOrder(aggregationStaging.getNodeOrder())
+              .build()));
 
-    aggregationStagingRepository.deleteAll(aggregateStagingList);
+      aggregationStagingRepository.deleteAll(aggregateStagingList);
 
-    log.debug("refreshed import and event aggregations");
+      log.debug("refreshed import and event aggregations");
+    }
   }
 
 }

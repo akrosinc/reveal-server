@@ -2,21 +2,30 @@ package com.revealprecision.revealserver.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.revealprecision.revealserver.api.v1.dto.models.ColumnData;
+import com.revealprecision.revealserver.api.v1.dto.request.EntityTagItem;
+import com.revealprecision.revealserver.api.v1.dto.request.EntityTagRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.ResourcePlanningDashboardRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.ResourcePlanningRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.FieldType;
 import com.revealprecision.revealserver.api.v1.dto.response.FormulaResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.ResourcePlanningHistoryResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.SecondStepQuestionsResponse;
+import com.revealprecision.revealserver.constants.EntityTagDataAggregationMethods;
+import com.revealprecision.revealserver.constants.EntityTagDataTypes;
+import com.revealprecision.revealserver.constants.EntityTagScopes;
+import com.revealprecision.revealserver.constants.KafkaConstants;
 import com.revealprecision.revealserver.enums.InputTypeEnum;
+import com.revealprecision.revealserver.enums.LookupEntityTypeCodeEnum;
 import com.revealprecision.revealserver.exceptions.ConflictException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
+import com.revealprecision.revealserver.messaging.message.GeneratedHierarchyEvent;
+import com.revealprecision.revealserver.messaging.message.GeneratedHierarchyMetadataEvent;
+import com.revealprecision.revealserver.model.GenericHierarchy;
 import com.revealprecision.revealserver.persistence.domain.AgeGroup;
 import com.revealprecision.revealserver.persistence.domain.CampaignDrug;
 import com.revealprecision.revealserver.persistence.domain.CampaignDrug.Fields;
 import com.revealprecision.revealserver.persistence.domain.Drug;
 import com.revealprecision.revealserver.persistence.domain.EntityTag;
-import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.ResourcePlanningHistory;
 import com.revealprecision.revealserver.persistence.es.EntityMetadataElastic;
 import com.revealprecision.revealserver.persistence.es.LocationElastic;
@@ -25,6 +34,7 @@ import com.revealprecision.revealserver.persistence.repository.CampaignDrugRepos
 import com.revealprecision.revealserver.persistence.repository.LocationRelationshipRepository;
 import com.revealprecision.revealserver.persistence.repository.ResourcePlanningHistoryRepository;
 import com.revealprecision.revealserver.props.CountryCampaign;
+import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.service.models.LocationResourcePlanning;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -34,16 +44,20 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.lucene.search.join.ScoreMode;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.ExistsQueryBuilder;
+import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -60,6 +74,31 @@ import org.springframework.stereotype.Service;
 @Profile("Elastic")
 public class ResourcePlanningService {
 
+
+  public static final String TOTAL_POPULATION_WITH_GROWTH_RATE_APPLIED = "Total population with growth rate applied";
+  public static final String TOTAL_TARGET_POPULATION = "Total target population";
+  public static final String CDDS_PLANNED = "CDDs planned";
+  public static final String DAYS_PLANNED = "Days planned";
+  public static final String ANTICIPATED_CAMPAIGN_POPULATION_COVERAGE_BASED_ON_CDDS = "Anticipated campaign population coverage based on CDDs";
+  public static final String NUMBER_OF_STRUCTURES_IN_THE_CAMPAIGN_LOCATION = "Number of structures in the campaign location";
+  public static final String ANTICIPATED_NUMBER_OF_STRUCTURES_THAT_CAN_BE_VISITED = "Anticipated number of structures that can be visited";
+  public static final String ANTICIPATED_CAMPAIGN_COVERAGE_OF_STRUCTURES_BASED_ON_NUMBER_OF_STRUCTURES_IN_THE_LOCATION = "Anticipated campaign coverage of structures based on number of structures in the location";
+  public static final String CDD_SUPERVISORS_PLANNED = "CDD Supervisors planned";
+
+  private final Map<String, String> columnKeyMap = Map.of(
+      TOTAL_POPULATION_WITH_GROWTH_RATE_APPLIED, "population-with-growth",
+      TOTAL_TARGET_POPULATION, "target-population",
+      CDDS_PLANNED, "cdds-planned",
+      DAYS_PLANNED, "days-planned",
+      ANTICIPATED_CAMPAIGN_POPULATION_COVERAGE_BASED_ON_CDDS,
+      "anticipated-population-coverage-based-cdds",
+      ANTICIPATED_NUMBER_OF_STRUCTURES_THAT_CAN_BE_VISITED, "anticipated-structures",
+      ANTICIPATED_CAMPAIGN_COVERAGE_OF_STRUCTURES_BASED_ON_NUMBER_OF_STRUCTURES_IN_THE_LOCATION,
+      "anticipated-structures-based-on-structures",
+      CDD_SUPERVISORS_PLANNED, "cdd-supervisors-planned"
+  );
+
+
   private final CampaignDrugRepository campaignDrugRepository;
   private final LocationHierarchyService locationHierarchyService;
   private final LocationRelationshipRepository locationRelationshipRepository;
@@ -67,6 +106,9 @@ public class ResourcePlanningService {
   private final RestHighLevelClient client;
   private final EntityTagService entityTagService;
   private final CountryCampaign countryCampaign;
+  private final PublisherService publisherService;
+  private final KafkaProperties kafkaProperties;
+  private final LookupEntityTypeService lookupEntityTypeService;
   @Value("${reveal.elastic.index-name}")
   String elasticIndex;
 
@@ -188,16 +230,82 @@ public class ResourcePlanningService {
     return response;
   }
 
+  public void submitDashboard(ResourcePlanningDashboardRequest request,
+      boolean saveData) throws IOException {
+    List<LocationResourcePlanning> dashboardData = getDashboardData(request,
+        saveData);
+
+    Set<String> collect = dashboardData.stream().flatMap(locationResourcePlanning ->
+        locationResourcePlanning.getColumnDataMap().values().stream()
+            .filter(columnData -> columnData.getKey() != null)
+            .map(columnData -> request.getName().concat(EntityTagDataAggregationMethods.DELIMITER)
+                .concat(columnData.getKey()).concat(EntityTagDataAggregationMethods.DELIMITER)
+                .concat(EntityTagDataAggregationMethods.SUM))
+    ).collect(Collectors.toSet());
+
+    List<GeneratedHierarchyMetadataEvent> collect1 = dashboardData.stream()
+        .flatMap(locationResourcePlanning ->
+            locationResourcePlanning.getColumnDataMap().values().stream()
+                .filter(columnData -> columnData.getKey() != null)
+                .map(columnData ->
+
+                    GeneratedHierarchyMetadataEvent.builder()
+                        .generatedHierarchy(GeneratedHierarchyEvent.builder()
+                            .id(request.getLocationHierarchy().getIdentifier())
+                            .nodeOrder(request.getLocationHierarchy().getNodeOrder())
+                            .name(request.getLocationHierarchy().getName())
+                            .build())
+                        .value((columnData.getValue() instanceof Integer
+                            ? (Integer) columnData.getValue() : (double) columnData.getValue()))
+                        .locationIdentifier(locationResourcePlanning.getIdentifier().toString())
+                        .tag(request.getName().concat("-").concat(columnData.getKey()))
+                        .build()
+                )
+        ).collect(Collectors.toList());
+
+    EntityTagRequest entityTagRequest = new EntityTagRequest();
+    entityTagRequest.setTags(collect.stream().map(EntityTagItem::new).collect(Collectors.toList()));
+    entityTagRequest.setEntityType(LookupEntityTypeCodeEnum.LOCATION_CODE);
+    entityTagRequest.setAggregate(false);
+    entityTagRequest.setAggregationMethod(EntityTagService.aggregationMethods.get(
+        EntityTagDataTypes.DOUBLE).stream().filter(aggMethod -> aggMethod.equals(
+        EntityTagDataAggregationMethods.SUM)).collect(Collectors.toList()));
+    entityTagRequest.setAddToMetadata(true);
+    entityTagRequest.setScope(EntityTagScopes.GLOBAL);
+    entityTagRequest.setValueType(EntityTagDataTypes.DOUBLE);
+
+    entityTagService.createEntityTagsSkipExisting(entityTagRequest, true);
+
+    submitToMessaging(collect1);
+
+  }
+
+  private void submitToMessaging(
+      List<GeneratedHierarchyMetadataEvent> generatedHierarchyMetadataList) {
+
+    generatedHierarchyMetadataList.forEach(generatedHierarchyMetadata ->
+        publisherService.send(
+            kafkaProperties.getTopicMap().get(KafkaConstants.LOCATION_METADATA_UPDATE),
+            generatedHierarchyMetadata
+        )
+    );
+  }
+
   public List<LocationResourcePlanning> getDashboardData(ResourcePlanningDashboardRequest request,
       boolean saveData) throws IOException {
     CampaignDrug campaign = getCampaignByIdentifier(request.getCampaign());
-    LocationHierarchy locationHierarchy = locationHierarchyService.findByIdentifier(
-        request.getLocationHierarchy());
+    GenericHierarchy locationHierarchy = GenericHierarchy.builder()
+        .name(request.getLocationHierarchy().getName())
+        .identifier(request.getLocationHierarchy().getIdentifier())
+        .nodeOrder(request.getLocationHierarchy().getNodeOrder())
+        .build();
     CountryCampaign countryCampaign = getCountryCampaignByIdentifier(request.getCountry());
     String minAgeGroup = (String) request.getStepTwoAnswers().get("ageGroup");
     List<AgeGroup> targetedAgeGroups;
-    if (!locationHierarchy.getNodeOrder().contains(request.getLowestGeography())) {
-      throw new ConflictException("Geography level does not exist in Location hierarch.");
+    if (request.getLowestGeography() != null) {
+      if (!locationHierarchy.getNodeOrder().contains(request.getLowestGeography())) {
+        throw new ConflictException("Geography level does not exist in Location hierarch.");
+      }
     }
     List<LocationResourcePlanning> response = getDataFromElastic(request);
 
@@ -260,24 +368,32 @@ public class ResourcePlanningService {
           .getTag();
     } else {
       structureCounts = locationRelationshipRepository.getNumberOfStructures(
-          request.getLocationHierarchy(), request.getLowestGeography());
+          UUID.fromString(request.getLocationHierarchy().getIdentifier()),
+          request.getLowestGeography());
       mapStructureCount = structureCounts.stream()
-          .collect(Collectors.toMap(el -> el.getIdentifier(),
+          .collect(Collectors.toMap(LocationStructureCount::getIdentifier,
               LocationStructureCount::getStructureCount));
     }
 
     List<LocationResourcePlanning> response = new ArrayList<>();
     BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
 
-//    if (!request.getLowestGeography().equals("country")) {
-//      boolQuery.must(
-//          QueryBuilders.existsQuery("ancestry.".concat(request.getLocationHierarchy().toString())));
-//    }
-    boolQuery.must(QueryBuilders.termQuery("level", request.getLowestGeography()));
+    if (request.getLowestGeography() != null) {
+      boolQuery.must(QueryBuilders.termQuery("level", request.getLowestGeography()));
+    }
+
+    ExistsQueryBuilder existsQueryBuilder = QueryBuilders.existsQuery(
+        "hierarchyDetailsElastic." + request.getLocationHierarchy().getIdentifier());
+    NestedQueryBuilder nestedQueryBuilder = QueryBuilders.nestedQuery(
+        "hierarchyDetailsElastic", existsQueryBuilder, ScoreMode.None);
+
+    boolQuery.must(nestedQueryBuilder);
 
     SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
     sourceBuilder.size(10000);
-    sourceBuilder.fetchSource(new String[]{"id", "name", "metadata.tag", "metadata.valueNumber"},
+    sourceBuilder.fetchSource(
+        new String[]{"id", "name", "level", "metadata.tag", "metadata.valueNumber",
+            "metadata.hierarchyIdentifier"},
         null);
 
     sourceBuilder.query(boolQuery);
@@ -291,7 +407,8 @@ public class ResourcePlanningService {
 
     for (LocationElastic loc : foundLocations) {
       Optional<EntityMetadataElastic> entityMetadataElastic = loc.getMetadata().stream()
-          .filter(el -> el.getTag().equals(popTag.getTag())).findFirst();
+          .filter(el -> el.getTag().equals(popTag.getTag()) && el.getHierarchyIdentifier()
+              .equals(request.getLocationHierarchy().getIdentifier())).findFirst();
       Object total_population = null;
       if (entityMetadataElastic.isPresent()) {
         total_population = entityMetadataElastic.get().getValueNumber();
@@ -302,7 +419,8 @@ public class ResourcePlanningService {
         String finalStructureCountTag = structureCountTag;
         entityMetadataElastic = loc.getMetadata().stream()
             .filter(el -> el.getTag().equals(
-                finalStructureCountTag)).findFirst();
+                finalStructureCountTag) && el.getHierarchyIdentifier()
+                .equals(request.getLocationHierarchy().getIdentifier())).findFirst();
         if (entityMetadataElastic.isPresent()) {
           total_structure = entityMetadataElastic.get().getValueNumber();
         }
@@ -331,8 +449,9 @@ public class ResourcePlanningService {
       double val = official_population * (
           Math.pow(((100 + popGrowth) / 100), (mdaYear - popYear)));
 
-      el.getColumnDataMap().put("Total population with growth rate applied",
-          ColumnData.builder().isPercentage(false).dataType("double").value(val).build());
+      el.getColumnDataMap().put(TOTAL_POPULATION_WITH_GROWTH_RATE_APPLIED,
+          ColumnData.builder().isPercentage(false).dataType("double")
+              .key(columnKeyMap.get(TOTAL_POPULATION_WITH_GROWTH_RATE_APPLIED)).value(val).build());
     });
   }
 
@@ -343,7 +462,7 @@ public class ResourcePlanningService {
     for (LocationResourcePlanning el : data) {
       total = 0;
       double pop_adjust = (double) el.getColumnDataMap()
-          .get("Total population with growth rate applied").getValue();
+          .get(TOTAL_POPULATION_WITH_GROWTH_RATE_APPLIED).getValue();
       for (AgeGroup ageGroup : targetedAgeGroups) {
         double ageGroupPercent = Double.parseDouble((String) request.getStepTwoAnswers()
             .get(ageGroup.getKey().concat("_percent_").concat(countryKey)));
@@ -354,8 +473,9 @@ public class ResourcePlanningService {
         el.getColumnDataMap().put(ageGroup.getName(),
             ColumnData.builder().isPercentage(false).dataType("double").value(value).build());
       }
-      el.getColumnDataMap().put("Total target population",
-          ColumnData.builder().isPercentage(false).dataType("double").value(total).build());
+      el.getColumnDataMap().put(TOTAL_TARGET_POPULATION,
+          ColumnData.builder().isPercentage(false).key(columnKeyMap.get(TOTAL_TARGET_POPULATION))
+              .dataType("double").value(total).build());
     }
   }
 
@@ -378,13 +498,12 @@ public class ResourcePlanningService {
       isCddDenomYes = false;
     }
 
-
     boolean isCddNumberFixedVar = false;
-    if (request.getStepOneAnswers().get("choice_cdd").equals("Yes")){
+    if (request.getStepOneAnswers().get("choice_cdd").equals("Yes")) {
       isCddNumberFixedVar = true;
     }
     boolean isMdaDaysFixedVar = false;
-    if (request.getStepOneAnswers().get("choice_days").equals("Yes")){
+    if (request.getStepOneAnswers().get("choice_days").equals("Yes")) {
       isMdaDaysFixedVar = true;
     }
 
@@ -397,8 +516,8 @@ public class ResourcePlanningService {
       mda_days = Integer.parseInt((String) request.getStepOneAnswers().get("mda_days"));
     }
 
-    int cdd_numberVar ;
-    if (request.getStepOneAnswers().get("cdd_number").equals("")){
+    int cdd_numberVar;
+    if (request.getStepOneAnswers().get("cdd_number").equals("")) {
       cdd_numberVar = 1;
     } else {
       cdd_numberVar = Integer.parseInt((String) request.getStepOneAnswers().get("cdd_number"));
@@ -416,49 +535,68 @@ public class ResourcePlanningService {
       double totalStructure = 0;
       double cddSuper = 0;
       if (isCddDenomYes) {
-        target_pop = (double) el.getColumnDataMap().get("Total target population").getValue();
+        target_pop = (double) el.getColumnDataMap().get(TOTAL_TARGET_POPULATION).getValue();
         cdd_total = isCddNumberFixed ? cdd_number : (target_pop / mda_days) / cdd_target;
         days_total = isMdaDaysFixed ? mda_days : target_pop / (cdd_number * cdd_target);
-        el.getColumnDataMap().put("CDDs planned",
-            ColumnData.builder().isPercentage(false).dataType("double").value(cdd_total).build());
-        el.getColumnDataMap().put("Days planned",
-            ColumnData.builder().isPercentage(false).dataType("double").value(days_total).build());
-        el.getColumnDataMap().put("Anticipated campaign population coverage based on CDDs",
-            ColumnData.builder().isPercentage(true).dataType("double")
-                .value(target_pop > 0 ? ((cdd_total * days_total * cdd_target) / target_pop) * 100 : 0).build());
+        el.getColumnDataMap().put(CDDS_PLANNED,
+            ColumnData.builder().isPercentage(false).key(columnKeyMap.get(CDDS_PLANNED))
+                .dataType("double").value(cdd_total).build());
+        el.getColumnDataMap().put(DAYS_PLANNED,
+            ColumnData.builder().isPercentage(false).key(columnKeyMap.get(DAYS_PLANNED))
+                .dataType("double").value(days_total).build());
+        el.getColumnDataMap().put(ANTICIPATED_CAMPAIGN_POPULATION_COVERAGE_BASED_ON_CDDS,
+            ColumnData.builder()
+                .key(columnKeyMap.get(ANTICIPATED_CAMPAIGN_POPULATION_COVERAGE_BASED_ON_CDDS))
+                .isPercentage(true).dataType("double")
+                .value(
+                    target_pop > 0 ? ((cdd_total * days_total * cdd_target) / target_pop) * 100 : 0)
+                .build());
       } else {
-        target_pop = (double) el.getColumnDataMap().get("Total population with growth rate applied")
+        target_pop = (double) el.getColumnDataMap().get(TOTAL_POPULATION_WITH_GROWTH_RATE_APPLIED)
             .getValue();
         cdd_total = isCddNumberFixed ? cdd_number : (target_pop / mda_days) / cdd_target;
         days_total = isMdaDaysFixed ? mda_days : target_pop / (cdd_number * cdd_target);
-        el.getColumnDataMap().put("CDDs planned",
-            ColumnData.builder().isPercentage(false).dataType("double").value(cdd_total).build());
-        el.getColumnDataMap().put("Days planned",
-            ColumnData.builder().isPercentage(false).dataType("double").value(days_total).build());
+        el.getColumnDataMap().put(CDDS_PLANNED,
+            ColumnData.builder().isPercentage(false).key(columnKeyMap.get(CDDS_PLANNED))
+                .dataType("double").value(cdd_total).build());
+        el.getColumnDataMap().put(DAYS_PLANNED,
+            ColumnData.builder().isPercentage(false).key(columnKeyMap.get(DAYS_PLANNED))
+                .dataType("double").value(days_total).build());
         log.trace("cddResult {} - daysResult {} - cdd_target {} - val {}", cdd_total, days_total,
             cdd_target, target_pop);
-        el.getColumnDataMap().put("Anticipated campaign population coverage based on CDDs",
-            ColumnData.builder().isPercentage(true).dataType("double")
-                .value(target_pop > 0 ? ((cdd_total * days_total * cdd_target) / target_pop) * 100 : 0).build());
+        el.getColumnDataMap().put(ANTICIPATED_CAMPAIGN_POPULATION_COVERAGE_BASED_ON_CDDS,
+            ColumnData.builder()
+                .key(columnKeyMap.get(ANTICIPATED_CAMPAIGN_POPULATION_COVERAGE_BASED_ON_CDDS))
+                .isPercentage(true).dataType("double")
+                .value(
+                    target_pop > 0 ? ((cdd_total * days_total * cdd_target) / target_pop) * 100 : 0)
+                .build());
       }
       campPopCove = days_total * structure_day * cdd_total;
       if (request.isCountBasedOnImportedLocations()) {
         long structureCountValue = (long) el.getColumnDataMap()
-            .get("Number of structures in the campaign location").getValue();
+            .get(NUMBER_OF_STRUCTURES_IN_THE_CAMPAIGN_LOCATION).getValue();
         totalStructure = (double) structureCountValue;
       } else {
         totalStructure = (double) el.getColumnDataMap()
-            .get("Number of structures in the campaign location").getValue();
+            .get(NUMBER_OF_STRUCTURES_IN_THE_CAMPAIGN_LOCATION).getValue();
       }
       cddSuper = Double.parseDouble((String) request.getStepOneAnswers().get("cdd_super"));
-      el.getColumnDataMap().put("Anticipated number of structures that can be visited",
-          ColumnData.builder().isPercentage(true).dataType("double").value(campPopCove).build());
+      el.getColumnDataMap().put(ANTICIPATED_NUMBER_OF_STRUCTURES_THAT_CAN_BE_VISITED,
+          ColumnData.builder().isPercentage(true)
+              .key(columnKeyMap.get(ANTICIPATED_NUMBER_OF_STRUCTURES_THAT_CAN_BE_VISITED))
+              .dataType("double").value(campPopCove).build());
       el.getColumnDataMap().put(
-          "Anticipated campaign coverage of structures based on number of structures in the location",
-          ColumnData.builder().isPercentage(true).dataType("double")
+          ANTICIPATED_CAMPAIGN_COVERAGE_OF_STRUCTURES_BASED_ON_NUMBER_OF_STRUCTURES_IN_THE_LOCATION,
+          ColumnData.builder()
+              .key(columnKeyMap.get(
+                  ANTICIPATED_CAMPAIGN_COVERAGE_OF_STRUCTURES_BASED_ON_NUMBER_OF_STRUCTURES_IN_THE_LOCATION))
+              .isPercentage(true).dataType("double")
               .value(totalStructure > 0 ? campPopCove / totalStructure : 0).build());
-      el.getColumnDataMap().put("CDD Supervisors planned",
-          ColumnData.builder().isPercentage(true).dataType("double").value(cdd_total / cddSuper)
+      el.getColumnDataMap().put(CDD_SUPERVISORS_PLANNED,
+          ColumnData.builder()
+              .key(columnKeyMap.get(CDD_SUPERVISORS_PLANNED))
+              .isPercentage(true).dataType("double").value(cdd_total / cddSuper)
               .build());
     });
   }

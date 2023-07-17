@@ -30,6 +30,8 @@ public class EntityMetadataElastic {
   private Object value;
   @Field(type = FieldType.Double)
   private Object valueNumber;
+  @Field(type = FieldType.Keyword)
+  private String hierarchyIdentifier;
   @Field(type = FieldType.Flattened)
   private MetadataElastic meta;
   private boolean isActive = true;

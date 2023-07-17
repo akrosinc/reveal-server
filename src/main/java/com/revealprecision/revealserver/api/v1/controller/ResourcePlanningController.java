@@ -76,6 +76,14 @@ public class ResourcePlanningController {
         .body(resourcePlanningService.getDashboardData(request, saveData));
   }
 
+  @PostMapping("submitDashboard")
+  public ResponseEntity<?> submitDashboard(@Valid @RequestBody
+      ResourcePlanningDashboardRequest request) throws IOException {
+    resourcePlanningService.submitDashboard(request, false);
+    return ResponseEntity.ok()
+        .build();
+  }
+
   @GetMapping("history")
   public ResponseEntity<Page<ResourcePlanningHistoryResponse>> getHistory(Pageable pageable) {
     return ResponseEntity.ok()

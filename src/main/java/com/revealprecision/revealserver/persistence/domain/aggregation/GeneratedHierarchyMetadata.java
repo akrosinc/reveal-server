@@ -1,9 +1,10 @@
-package com.revealprecision.revealserver.persistence.domain;
+package com.revealprecision.revealserver.persistence.domain.aggregation;
 
-import java.util.UUID;
+
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.ManyToOne;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -18,16 +19,18 @@ import lombok.experimental.FieldNameConstants;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class AggregationStaging {
+
+public class GeneratedHierarchyMetadata {
 
   @Id
   @GeneratedValue
-  private Integer id;
+  private int id;
 
-  private UUID locationIdentifier;
+  private String locationIdentifier;
+  private String tag;
+  private Double value;
 
-  private String hierarchyIdentifier;
-
-  private String nodeOrder;
+  @ManyToOne
+  private GeneratedHierarchy generatedHierarchy;
 
 }

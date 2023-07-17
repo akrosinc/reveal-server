@@ -31,7 +31,7 @@ public class AggregationStagingListener extends Listener {
 
   }
 
-  private AggregationStaging getAggregationStaging(UUID hierarchyIdentifier, UUID identifier, String nodeOrder) {
+  private AggregationStaging getAggregationStaging(String hierarchyIdentifier, UUID identifier, String nodeOrder) {
     return AggregationStaging.builder()
         .locationIdentifier(identifier)
         .hierarchyIdentifier(hierarchyIdentifier)

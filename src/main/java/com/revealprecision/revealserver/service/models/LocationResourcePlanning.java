@@ -18,11 +18,13 @@ public class LocationResourcePlanning {
 
   private UUID identifier;
   private String name;
+  private String geographicLevel;
   private Map<String, ColumnData> columnDataMap = new LinkedHashMap<>();
 
   public LocationResourcePlanning(LocationElastic locationElastic, Object populationCount, Object structureCount) {
     this.identifier = UUID.fromString(locationElastic.getId());
     this.name = locationElastic.getName();
+    this.geographicLevel = locationElastic.getLevel();
     if(populationCount != null) {
       columnDataMap.put("Official population", ColumnData.builder().isPercentage(false).dataType("integer").value(populationCount).build());
     }else {

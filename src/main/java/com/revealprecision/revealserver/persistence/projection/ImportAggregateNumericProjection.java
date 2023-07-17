@@ -4,6 +4,8 @@ public interface ImportAggregateNumericProjection {
 
   String getName();
 
+  String getHierarchyIdentifier();
+
   String getLocationIdentifier();
 
   String getPlanIdentifier();

@@ -9,7 +9,6 @@ import ca.uhn.fhir.rest.server.IResourceProvider;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.fhir.properties.FhirServerProperties;
 import com.revealprecision.revealserver.persistence.domain.Location;
-import com.revealprecision.revealserver.persistence.domain.metadata.infra.MetadataObj;
 import com.revealprecision.revealserver.persistence.projection.LocationCoordinatesProjection;
 import com.revealprecision.revealserver.service.LocationService;
 import com.revealprecision.revealserver.service.MetadataService;
@@ -17,7 +16,6 @@ import com.revealprecision.revealserver.service.PersonService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +23,6 @@ import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.r4.model.Address;
 import org.hl7.fhir.r4.model.Attachment;
 import org.hl7.fhir.r4.model.BooleanType;
-import org.hl7.fhir.r4.model.CodeableConcept;
 import org.hl7.fhir.r4.model.DecimalType;
 import org.hl7.fhir.r4.model.Enumerations.AdministrativeGender;
 import org.hl7.fhir.r4.model.Extension;
@@ -132,11 +129,11 @@ public class PersonResourceProvider implements IResourceProvider {
     Extension extension = person.addExtension().setUrl(
         fhirServerProperties.getBaseURL() + fhirServerProperties.getFhirPath()
             + "/CodeSystem/person-metadata");
-
-    extension.setExtension(
-        metadataService.getPersonMetadataByPerson(revealPerson.getIdentifier())
-            .getEntityValue().getMetadataObjs().stream()
-            .map(this::metadataExtension).collect(Collectors.toList()));
+//
+//    extension.setExtension(
+//        metadataService.getPersonMetadataByPerson(revealPerson.getIdentifier())
+//            .getEntityValue().getMetadataObjs().stream()
+//            .map(this::metadataExtension).collect(Collectors.toList()));
 
     revealPerson.getLocations().stream().map(this::getAddress).forEach(person::addAddress);
 
@@ -166,16 +163,16 @@ public class PersonResourceProvider implements IResourceProvider {
     return address;
   }
 
-  private Extension metadataExtension(MetadataObj metadataObj) {
-
-    CodeableConcept codeableConcept = new CodeableConcept();
-    codeableConcept.setText(String.valueOf(MetadataService.getValueFromValueObject(metadataObj).getSecond()));
-    codeableConcept.setId(metadataObj.getTag());
-
-    Extension extension = new Extension();
-    extension.setUrl(metadataObj.getTag());
-    extension.setValue(codeableConcept);
-
-    return extension;
-  }
+//  private Extension metadataExtension(MetadataObj metadataObj) {
+//
+//    CodeableConcept codeableConcept = new CodeableConcept();
+//    codeableConcept.setText(String.valueOf(MetadataService.getValueFromValueObject(metadataObj).getSecond()));
+//    codeableConcept.setId(metadataObj.getTag());
+//
+//    Extension extension = new Extension();
+//    extension.setUrl(metadataObj.getTag());
+//    extension.setValue(codeableConcept);
+//
+//    return extension;
+//  }
 }

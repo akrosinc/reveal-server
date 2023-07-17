@@ -20,7 +20,7 @@ public class EntityTagRequest {
 
   private String identifier;
 
-  @NotBlank(message = "must not be blank")
+
   private String tag;
 
   @NotBlank(message = "must not be blank")
@@ -43,5 +43,8 @@ public class EntityTagRequest {
   private boolean addToMetadata;
 
   private boolean isAggregate;
+
+  private List<EntityTagItem> tags;
+
 
 }

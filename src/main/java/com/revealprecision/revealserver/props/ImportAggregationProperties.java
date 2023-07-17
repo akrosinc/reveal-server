@@ -22,6 +22,7 @@ public class ImportAggregationProperties {
     return exclude.stream().map(item -> ".*".concat(item).concat(".*"))
         .collect(Collectors.joining("|"));
   }
+  private boolean scheduleEnabled = true;
 
   Integer pageSize = 200;
 

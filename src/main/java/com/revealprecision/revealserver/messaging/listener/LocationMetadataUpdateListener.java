@@ -1,27 +1,34 @@
 package com.revealprecision.revealserver.messaging.listener;
 
-import com.revealprecision.revealserver.messaging.message.LocationMetadataEvent;
-import com.revealprecision.revealserver.messaging.message.Message;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.revealprecision.revealserver.messaging.message.GeneratedHierarchyMetadataEvent;
 import com.revealprecision.revealserver.persistence.es.EntityMetadataElastic;
-import com.revealprecision.revealserver.util.ElasticModelUtil;
+import com.revealprecision.revealserver.persistence.es.HierarchyDetailsElastic;
+import com.revealprecision.revealserver.persistence.es.LocationElastic;
+import com.revealprecision.revealserver.persistence.repository.LocationElasticRepository;
 import java.io.IOException;
 import java.util.AbstractMap.SimpleEntry;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
-import org.elasticsearch.ElasticsearchException;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.reindex.BulkByScrollResponse;
-import org.elasticsearch.index.reindex.UpdateByQueryRequest;
-import org.elasticsearch.script.Script;
-import org.elasticsearch.script.ScriptType;
+import org.elasticsearch.index.query.TermsQueryBuilder;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -38,59 +45,178 @@ public class LocationMetadataUpdateListener extends Listener {
   @Value("${reveal.elastic.index-name}")
   String elasticIndex;
 
+  private final LocationElasticRepository locationElasticRepository;
+
 
   @KafkaListener(topics = "#{kafkaConfigProperties.topicMap.get('LOCATION_METADATA_UPDATE')}", groupId = "reveal_server_group", containerFactory = "kafkaBatchListenerContainerFactory")
-  public void updateLocationMetadata(List<Message> message) throws IOException {
-    log.info("Received Message in group foo: {}", message.toString());
+  public void updateLocationMetadata(
+      List<GeneratedHierarchyMetadataEvent> generatedHierarchyMetadatas) throws IOException {
+    log.debug("Received Message in group foo: {}", generatedHierarchyMetadatas.toString());
     init();
 
-    List<LocationMetadataEvent> locationMetadataEventList = message.stream()
-        .map(message1 -> (LocationMetadataEvent) message1).collect(Collectors.toList());
+    Map<String, List<GeneratedHierarchyMetadataEvent>> incomingMetadataByLocation = generatedHierarchyMetadatas.stream()
+        .collect(Collectors.groupingBy(GeneratedHierarchyMetadataEvent::getLocationIdentifier));
 
-    Map<String, List<LocationMetadataEvent>> metadatasById = locationMetadataEventList.stream()
-        .collect(Collectors.groupingBy(
-            locationMetadataEvent -> locationMetadataEvent.getEntityId().toString(),
-            Collectors.mapping(locationMetadataEvent -> locationMetadataEvent,
-                Collectors.toList())));
+    SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+    TermsQueryBuilder termsQueryBuilder = QueryBuilders.termsQuery("_id",
+        generatedHierarchyMetadatas.stream()
+            .map(GeneratedHierarchyMetadataEvent::getLocationIdentifier)
+            .collect(Collectors.toList()));
 
-    Map<String, List<EntityMetadataElastic>> collect1 = metadatasById.entrySet().stream()
-        .map((entry) -> {
-          List<EntityMetadataElastic> collect = entry.getValue().stream().flatMap(
-              locationMetadataEvent -> locationMetadataEvent.getMetaDataEvents().stream()
-                  .map(EntityMetadataElastic::new)).collect(Collectors.toList());
-          return new SimpleEntry<>(entry.getKey(), collect);
+    sourceBuilder.query(termsQueryBuilder);
+
+    SearchRequest searchRequest = new SearchRequest(elasticIndex);
+    searchRequest.source(sourceBuilder);
+    sourceBuilder.size(10000);
+
+    SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+
+    ObjectMapper mapper = new ObjectMapper();
+
+    Map<String, LocationElastic> existingLocationElasticMap = Arrays.stream(
+            searchResponse.getHits().getHits()).map(hit -> {
+          try {
+            return mapper.readValue(hit.getSourceAsString(), LocationElastic.class);
+          } catch (JsonProcessingException e) {
+            e.printStackTrace();
+          }
+          return null;
+        }).filter(Objects::nonNull)
+        .collect(Collectors.toMap(LocationElastic::getId, a -> a, (a, b) -> b));
+
+    Map<String, Map<String, Optional<GeneratedHierarchyMetadataEvent>>> incomingLocationDetailsByLocationByHierarchy = generatedHierarchyMetadatas.stream()
+        .collect(Collectors.groupingBy(GeneratedHierarchyMetadataEvent::getLocationIdentifier,
+            Collectors.groupingBy(generatedHierarchyMetadata -> String.valueOf(
+                generatedHierarchyMetadata.getGeneratedHierarchy().getId()), Collectors.reducing(
+                (generatedHierarchyMetadata1, generatedHierarchyMetadata2) -> generatedHierarchyMetadata1))));
+
+    Map<String, Map<String, HierarchyDetailsElastic>> updatedHierarchyElasticMapByLocation = existingLocationElasticMap.entrySet()
+        .stream().map(existingLocationElasticEntry -> {
+
+          LocationElastic locationElastic = existingLocationElasticEntry.getValue();
+
+          Map<String, HierarchyDetailsElastic> existingHierarchyDetailsElastic = locationElastic.getHierarchyDetailsElastic();
+
+          Map<String, HierarchyDetailsElastic> mergedHierarchyDetailsElastic = new HashMap<>(
+              existingHierarchyDetailsElastic);
+
+          Map<String, Optional<GeneratedHierarchyMetadataEvent>> stringOptionalMap = incomingLocationDetailsByLocationByHierarchy.get(
+              existingLocationElasticEntry.getKey());
+
+          if (stringOptionalMap != null) {
+            Map<String, HierarchyDetailsElastic> incomingHierarchyElasticMap = stringOptionalMap.entrySet()
+                .stream().filter(hierarchyMetadataEntry -> {
+                  if (!existingHierarchyDetailsElastic.containsKey(
+                      hierarchyMetadataEntry.getKey())) {
+                    return true;
+                  }
+                  return false;
+                }).filter(hierarchyMetadataEntry -> hierarchyMetadataEntry.getValue().isPresent())
+                .map(hierarchyMetadataEntry -> {
+                  HierarchyDetailsElastic hierarchyDetailsElastic = new HierarchyDetailsElastic();
+                  hierarchyDetailsElastic.setGeographicLevelNumber(0);
+                  hierarchyDetailsElastic.setAncestry(
+                      hierarchyMetadataEntry.getValue().get().getAncestry());
+                  hierarchyDetailsElastic.setParent(
+                      hierarchyMetadataEntry.getValue().get().getParent());
+                  hierarchyDetailsElastic.setGeographicLevelNumber(
+                      hierarchyMetadataEntry.getValue().get().getGeographicLevelNumber());
+                  return new SimpleEntry<>(hierarchyMetadataEntry.getKey(),
+                      hierarchyDetailsElastic);
+                }).collect(Collectors.toMap(SimpleEntry::getKey, SimpleEntry::getValue));
+
+            incomingHierarchyElasticMap.forEach(
+                (k, v) -> mergedHierarchyDetailsElastic.merge(k, v, (k1, v1) -> v1));
+
+          }
+          return new SimpleEntry<>(existingLocationElasticEntry.getKey(),
+              mergedHierarchyDetailsElastic);
         }).collect(Collectors.toMap(SimpleEntry::getKey, SimpleEntry::getValue));
 
-    for (Entry<String, List<EntityMetadataElastic>> entry : collect1.entrySet()) {
+    Map<String, List<EntityMetadataElastic>> entityMetadataToSave = incomingMetadataByLocation.entrySet()
+        .stream().filter(incomingMetadataByLocationEntry -> existingLocationElasticMap.containsKey(
+            incomingMetadataByLocationEntry.getKey())).map(
+            metadataByHierarchyByLocationEntry -> updateMetadataWithIncomingGeneratedData(
+                existingLocationElasticMap, metadataByHierarchyByLocationEntry))
+        .collect(Collectors.toMap(SimpleEntry::getKey, SimpleEntry::getValue));
 
-      Map<String, Object> parameters = new HashMap<>();
+    existingLocationElasticMap.entrySet().stream().forEach(existingLocationElasticEntry -> {
+          existingLocationElasticEntry.getValue()
+              .setMetadata(entityMetadataToSave.get(existingLocationElasticEntry.getKey()));
+          existingLocationElasticEntry.getValue().setHierarchyDetailsElastic(
+              updatedHierarchyElasticMapByLocation.get(existingLocationElasticEntry.getKey()));
+          locationElasticRepository.save(existingLocationElasticEntry.getValue());
 
-      List<Map<String, Object>> metadata = new ArrayList<>();
-      for (EntityMetadataElastic entityMetadataElastic : entry.getValue()) {
-        metadata.add(ElasticModelUtil.toMapFromPersonMetadata(entityMetadataElastic));
-      }
+        }
 
-      parameters.put("new_metadata", metadata);
-      Script inline = new Script(ScriptType.INLINE, "painless",
-          "ctx._source.metadata = params.new_metadata;", parameters);
+    );
 
-      UpdateByQueryRequest request = new UpdateByQueryRequest(elasticIndex);
-      request.setQuery(QueryBuilders.termQuery("_id", entry.getKey()));
-      request.setConflicts("proceed");
-      request.setScript(inline);
-
-      log.debug("requesting elastic update location id {} with request {}", entry.getKey(),
-          request);
-      BulkByScrollResponse bulkByScrollResponse = null;
-
-      bulkByScrollResponse = client.updateByQuery(request, RequestOptions.DEFAULT);
-
-      if (bulkByScrollResponse.getVersionConflicts() > 0) {
-        log.error("elastic update failed");
-        throw new ElasticsearchException("Version conflict exception");
-      }
-      log.debug("Updated location id {} with response {}", entry.getKey(),
-          bulkByScrollResponse.toString());
-    }
   }
+
+  private SimpleEntry<String, List<EntityMetadataElastic>> updateMetadataWithIncomingGeneratedData(
+      Map<String, LocationElastic> existingLocationElasticMap,
+      Entry<String, List<GeneratedHierarchyMetadataEvent>> metadataByHierarchyByLocationEntry) {
+    List<EntityMetadataElastic> existingMetadataList = existingLocationElasticMap.get(
+        metadataByHierarchyByLocationEntry.getKey()).getMetadata();
+    List<GeneratedHierarchyMetadataEvent> incomingMetadataList = metadataByHierarchyByLocationEntry.getValue();
+
+    List<EntityMetadataElastic> updatedExistingMetadataList = existingMetadataList.stream()
+        .peek(existingMetadata -> {
+          Optional<GeneratedHierarchyMetadataEvent> matchingIncomingMetadataOptional = incomingMetadataList.stream()
+              .filter(incomingMetadata ->
+                  String.valueOf(incomingMetadata.getGeneratedHierarchy().getId())
+                      .equals(existingMetadata.getHierarchyIdentifier())
+                      && incomingMetadata.getTag().equals(existingMetadata.getTag())).findFirst();
+
+          matchingIncomingMetadataOptional.ifPresent(
+              generatedHierarchyMetadata -> existingMetadata.setValueNumber(
+                  generatedHierarchyMetadata.getValue()));
+
+        }).collect(Collectors.toList());
+
+    List<GeneratedHierarchyMetadataEvent> incomingMetadataListNotInExistingList = incomingMetadataList.stream()
+        .filter(incomingMetadata -> {
+
+          List<EntityMetadataElastic> existingMetadataMatchingIncomingMetadata = updatedExistingMetadataList.stream()
+              .filter(updatedExistingMetadata -> {
+                if (updatedExistingMetadata.getTag().equals(incomingMetadata.getTag())
+                    && updatedExistingMetadata.getHierarchyIdentifier()
+                    .equals(String.valueOf(incomingMetadata.getGeneratedHierarchy().getId()))) {
+                  return true;
+                }
+
+                return false;
+              }).collect(Collectors.toList());
+
+          if (existingMetadataMatchingIncomingMetadata.size() > 0) {
+            return false;
+          }
+          return true;
+        }).collect(Collectors.toList());
+
+    List<EntityMetadataElastic> incomingMetadataNotInExistingListTransformed = incomingMetadataListNotInExistingList.stream()
+        .map(incomingMetadataNotInExistingList -> {
+          EntityMetadataElastic entityMetadataElastic = new EntityMetadataElastic();
+          entityMetadataElastic.setTag(incomingMetadataNotInExistingList.getTag());
+          entityMetadataElastic.setValueNumber(incomingMetadataNotInExistingList.getValue());
+          entityMetadataElastic.setHierarchyIdentifier(
+              String.valueOf(incomingMetadataNotInExistingList.getGeneratedHierarchy().getId()));
+          return entityMetadataElastic;
+        }).collect(Collectors.toList());
+
+    updatedExistingMetadataList.addAll(incomingMetadataNotInExistingListTransformed);
+
+    return new SimpleEntry<>(metadataByHierarchyByLocationEntry.getKey(),
+        updatedExistingMetadataList);
+  }
+}
+
+@Setter
+@Getter
+@ToString
+class LocationDetails {
+
+  private List<String> ancestry;
+  private String parent;
+  private Integer geographicLevelNumber;
 }

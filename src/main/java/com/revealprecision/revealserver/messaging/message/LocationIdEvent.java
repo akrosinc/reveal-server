@@ -20,7 +20,7 @@ import lombok.ToString;
 public class LocationIdEvent extends Message {
 
   private List<UUID> uuids;
-  private UUID hierarchyIdentifier;
+  private String hierarchyIdentifier;
   private String nodeOrder;
 }
 

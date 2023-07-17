@@ -11,4 +11,7 @@ public interface ImportAggregationNumericRepository extends
 
   Optional<ImportAggregationNumeric> findByNameAndAncestorAndFieldCode(String name, String ancestor,
       String fieldCode);
+
+  Optional<ImportAggregationNumeric> findByNameAndAncestorAndFieldCodeAndHierarchyIdentifier(String name, String ancestor,
+      String fieldCode, String hierarchIdentifier);
 }

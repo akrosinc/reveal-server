@@ -26,9 +26,11 @@ import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.CoreField;
 import com.revealprecision.revealserver.persistence.domain.LookupEntityType;
 import com.revealprecision.revealserver.persistence.domain.SimulationRequest;
+import com.revealprecision.revealserver.persistence.domain.aggregation.GeneratedHierarchy;
 import com.revealprecision.revealserver.persistence.es.LocationElastic;
 import com.revealprecision.revealserver.persistence.es.PersonElastic;
 import com.revealprecision.revealserver.persistence.projection.LocationCoordinatesProjection;
+import com.revealprecision.revealserver.persistence.repository.GeneratedHierarchyRepository;
 import com.revealprecision.revealserver.persistence.repository.SimulationRequestRepository;
 import com.revealprecision.revealserver.props.ConditionQueryProperties;
 import java.io.IOException;
@@ -57,6 +59,7 @@ import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.client.core.CountResponse;
 import org.elasticsearch.index.query.AbstractQueryBuilder;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.ExistsQueryBuilder;
 import org.elasticsearch.index.query.InnerHitBuilder;
 import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -91,6 +94,7 @@ public class EntityFilterEsService {
   private final RestHighLevelClient client;
   private final SimulationRequestRepository simulationRequestRepository;
   private final LocationService locationService;
+  private final GeneratedHierarchyRepository generatedHierarchyRepository;
 
   @Value("${reveal.elastic.index-name}")
   String elasticIndex;
@@ -124,9 +128,22 @@ public class EntityFilterEsService {
     List<String> geographicLevelList = new ArrayList<>();
     List<String> inactiveGeographicLevelList = new ArrayList<>();
 
-    List<String> nodeOrder = locationHierarchyService.findByIdentifier(
-            request.getHierarchyIdentifier())
-        .getNodeOrder();
+    List<String> nodeOrder = null;
+
+    if (request.getHierarchyType().equals("saved")) {
+      nodeOrder = locationHierarchyService.findByIdentifier(
+              UUID.fromString(request.getHierarchyIdentifier()))
+          .getNodeOrder();
+    } else {
+
+      Optional<GeneratedHierarchy> generatedHierarchyOptional = generatedHierarchyRepository.findById(
+          Integer.valueOf(request.getHierarchyIdentifier()));
+
+      if (generatedHierarchyOptional.isPresent()) {
+        nodeOrder = generatedHierarchyOptional.get().getNodeOrder();
+      }
+
+    }
 
     if (request.getFilterGeographicLevelList() != null
         && request.getFilterGeographicLevelList().size() > 0) {
@@ -141,6 +158,11 @@ public class EntityFilterEsService {
       inactiveGeographicLevelList.addAll(nodeOrder);
     }
 
+    ExistsQueryBuilder existsQueryBuilder = QueryBuilders.existsQuery(
+        "hierarchyDetailsElastic." + request.getHierarchyIdentifier());
+    NestedQueryBuilder nestedQueryBuilder = QueryBuilders.nestedQuery(
+        "hierarchyDetailsElastic", existsQueryBuilder, ScoreMode.None);
+
     Map<String, Long> collect = geographicLevelList.stream().map(geographicLevel -> {
       try {
         List<EntityFilterRequest> personFilters = new ArrayList<>();
@@ -151,12 +173,15 @@ public class EntityFilterEsService {
         boolQuery.must(
             QueryBuilders.matchPhraseQuery("level", geographicLevel));
 
+        boolQuery.must(nestedQueryBuilder);
+
         for (EntityFilterRequest req : request.getEntityFilters()) {
           LookupEntityType lookupEntityType = lookupEntityTypeService.getLookUpEntityTypeById(
               req.getEntityIdentifier());
           if (lookupEntityType.getTableName().equals("person")) {
             personFilters.add(req);
-            boolQuery.must(nestedPersonQuery(personFilters));
+            boolQuery.must(
+                nestedPersonQuery(personFilters, request.getHierarchyIdentifier().toString()));
           } else {
             locationFilters.add(req);
           }
@@ -164,11 +189,11 @@ public class EntityFilterEsService {
 
         for (EntityFilterRequest req : locationFilters) {
           if (req.getRange() == null && req.getValues() == null) {
-            boolQuery.must(mustStatement(req));
+            boolQuery.must(mustStatement(req, request.getHierarchyIdentifier().toString()));
           } else if (req.getSearchValue() == null && req.getValues() == null) {
-            boolQuery.must(rangeStatement(req));
+            boolQuery.must(rangeStatement(req, request.getHierarchyIdentifier().toString()));
           } else if (req.getSearchValue() == null && req.getRange() == null) {
-            boolQuery.must(shouldStatement(req));
+            boolQuery.must(shouldStatement(req, request.getHierarchyIdentifier().toString()));
           } else {
             throw new ConflictException("Request object bad formatted.");
           }
@@ -209,6 +234,7 @@ public class EntityFilterEsService {
 
           boolQuery.must(
               QueryBuilders.matchPhraseQuery("level", geographicLevel));
+          boolQuery.must(nestedQueryBuilder);
 
           List<String> strings = List.of(elasticIndex);
           String[] myArray = new String[strings.size()];
@@ -238,13 +264,22 @@ public class EntityFilterEsService {
     List<EntityFilterRequest> personFilters = new ArrayList<>();
     List<EntityFilterRequest> locationFilters = new ArrayList<>();
 
+    ExistsQueryBuilder existsQueryBuilder = QueryBuilders.existsQuery(
+        "hierarchyDetailsElastic." + request.getHierarchyIdentifier());
+    NestedQueryBuilder nestedQueryBuilder = QueryBuilders.nestedQuery(
+        "hierarchyDetailsElastic", existsQueryBuilder, ScoreMode.None);
+
+
     if (request.getFilterGeographicLevelList() != null) {
       BoolQueryBuilder geoBoolQuery = QueryBuilders.boolQuery();
       request.getFilterGeographicLevelList().stream().forEach(geoList ->
           geoBoolQuery.should().add(QueryBuilders.matchPhraseQuery("level", geoList)));
 
       boolQuery.must(geoBoolQuery);
+
     }
+
+    boolQuery.must(nestedQueryBuilder);
 
     if (request.getEntityFilters() != null) {
       for (EntityFilterRequest req : request.getEntityFilters()) {
@@ -252,7 +287,8 @@ public class EntityFilterEsService {
             req.getEntityIdentifier());
         if (lookupEntityType.getTableName().equals("person")) {
           personFilters.add(req);
-          boolQuery.must(nestedPersonQuery(personFilters));
+          boolQuery.must(
+              nestedPersonQuery(personFilters, request.getHierarchyIdentifier().toString()));
         } else {
           locationFilters.add(req);
         }
@@ -262,11 +298,11 @@ public class EntityFilterEsService {
 
     for (EntityFilterRequest req : locationFilters) {
       if (req.getRange() == null && req.getValues() == null) {
-        boolQuery.must(mustStatement(req));
+        boolQuery.must(mustStatement(req, request.getHierarchyIdentifier()));
       } else if (req.getSearchValue() == null && req.getValues() == null) {
-        boolQuery.must(rangeStatement(req));
+        boolQuery.must(rangeStatement(req, request.getHierarchyIdentifier()));
       } else if (req.getSearchValue() == null && req.getRange() == null) {
-        boolQuery.must(shouldStatement(req));
+        boolQuery.must(shouldStatement(req, request.getHierarchyIdentifier()));
       } else {
         throw new ConflictException("Request object bad formatted.");
       }
@@ -283,19 +319,15 @@ public class EntityFilterEsService {
     SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
     sourceBuilder.size(batchSize);
 
-    if (request.getFilterGeographicLevelList() != null || request.getLocationIdentifier() != null
-        || (request.getEntityFilters() != null && request.getEntityFilters().size() > 0)) {
-      sourceBuilder.query(boolQuery);
-    } else {
-      sourceBuilder.query(matchAllQuery);
-    }
+    sourceBuilder.query(boolQuery);
 
     String collect = request.getResultTags().stream()
         .map(entityFilterRequest -> "n.add('" + entityFilterRequest.getTag() + "');")
         .collect(Collectors.joining(""));
     Script inline = new Script(ScriptType.INLINE, "painless",
         "List a = params['_source']['metadata']; List n = new ArrayList(); " + collect
-            + "  return a.stream().filter(val->n.contains(val.tag)).collect(Collectors.toList());",
+            + "  return a.stream().filter(val->n.contains(val.tag) && val.hierarchyIdentifier.equals('"
+            + request.getHierarchyIdentifier() + "')).collect(Collectors.toList());",
         new HashMap<>());
 
     sourceBuilder.scriptField("meta", inline);
@@ -342,7 +374,7 @@ public class EntityFilterEsService {
                 request.getHierarchyIdentifier().toString());
             locToAdd.getProperties().setSimulationSearchResult(true);
             locToAdd.getProperties()
-                .setLevelColor(getGeoLevelColor(locToAdd.getProperties().getGeographicLevel()));
+                .setLevelColor(getGeoLevelColor(locToAdd.getProperties().getGeographicLevelNodeNumber()));
 
             return locToAdd;
           } catch (JsonProcessingException e) {
@@ -387,28 +419,15 @@ public class EntityFilterEsService {
     }).collect(Collectors.toList());
   }
 
-  private String getGeoLevelColor(String geolevel) {
+  private String getGeoLevelColor(Integer geolevel) {
 
-    switch (geolevel) {
-      case "country":
-        return "#EFEFEF";
-      case "province":
-        return "#CDCDCD";
-      case "county":
-        return "#ABABAB";
-      case "subcounty":
-        return "#9A9A9A";
-      case "ward":
-        return "#898989";
-      case "catchment":
-        return "#787878";
-      default:
-        return "#898989";
-    }
+    int end = 145 + geolevel * 35;
+
+    return  "#".concat(Integer.toHexString(end)).concat(Integer.toHexString(end)).concat(Integer.toHexString(end));
   }
 
   public FeatureSetResponseContainer retrieveParentLocations(Set<String> parentIds,
-      String hierarchyId, SearchHit lastHit)
+      String hierarchyId)
       throws IOException {
 
     List<LocationResponse> responses = new ArrayList<>();
@@ -418,17 +437,6 @@ public class EntityFilterEsService {
     searchRequest.source(sourceBuilder);
     sourceBuilder.size(10000);
 
-    List<SortBuilder<?>> sortBuilders = List.of(SortBuilders.fieldSort("name").order(
-            SortOrder.DESC),
-        SortBuilders.fieldSort("hashValue").order(
-            SortOrder.DESC));
-
-    sourceBuilder.sort(sortBuilders);
-
-    if (lastHit != null) {
-      sourceBuilder.searchAfter(lastHit.getSortValues());
-    }
-
     SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
 
     ObjectMapper mapper = new ObjectMapper();
@@ -436,35 +444,34 @@ public class EntityFilterEsService {
       LocationElastic parent = mapper.readValue(hit.getSourceAsString(), LocationElastic.class);
       LocationResponse locationResponse = LocationResponseFactory.fromElasticModel(parent,
           parent.getHierarchyDetailsElastic() != null ? parent.getHierarchyDetailsElastic()
-              .get(hierarchyId) : null, parent.getMetadata().stream().map(meta ->
-                  EntityMetadataResponse.builder().type(meta.getTag()).value(meta.getValueNumber()).build())
+              .get(hierarchyId) : null, parent.getMetadata().stream()
+              .filter(meta -> meta.getHierarchyIdentifier().equals(hierarchyId)).map(meta ->
+                  EntityMetadataResponse.builder().type(meta.getTag()).value(meta.getValueNumber())
+                      .build())
               .collect(Collectors.toList()));
       locationResponse.getProperties()
-          .setLevelColor(getGeoLevelColor(locationResponse.getProperties().getGeographicLevel()));
+          .setLevelColor(getGeoLevelColor(locationResponse.getProperties().getGeographicLevelNodeNumber()));
       responses.add(locationResponse);
     }
     FeatureSetResponse response = new FeatureSetResponse();
     response.setType("FeatureCollection");
     response.setFeatures(responses);
 
-    if (searchResponse.getHits().getHits().length > 0) {
-      lastHit =
-          searchResponse.getHits().getHits()[searchResponse.getHits().getHits().length - 1];
-    }
-    return new FeatureSetResponseContainer(response, lastHit);
+    return new FeatureSetResponseContainer(response, null);
   }
 
 
-  public NestedQueryBuilder nestedPersonQuery(List<EntityFilterRequest> requests)
+  public NestedQueryBuilder nestedPersonQuery(List<EntityFilterRequest> requests,
+      String hierarchyId)
       throws ParseException {
     BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
     for (EntityFilterRequest req : requests) {
       if (req.getRange() == null && req.getValues() == null) {
-        boolQueryBuilder.must(mustStatement(req));
+        boolQueryBuilder.must(mustStatement(req, hierarchyId));
       } else if (req.getSearchValue() == null && req.getValues() == null) {
-        boolQueryBuilder.must(rangeStatement(req));
+        boolQueryBuilder.must(rangeStatement(req, hierarchyId));
       } else if (req.getSearchValue() == null && req.getRange() == null) {
-        boolQueryBuilder.must(shouldStatement(req));
+        boolQueryBuilder.must(shouldStatement(req, hierarchyId));
       } else {
         throw new ConflictException("Request object bad formatted.");
       }
@@ -473,7 +480,8 @@ public class EntityFilterEsService {
         new InnerHitBuilder());
   }
 
-  private AbstractQueryBuilder<?> mustStatement(EntityFilterRequest request) throws ParseException {
+  private AbstractQueryBuilder<?> mustStatement(EntityFilterRequest request, String hierarchyId)
+      throws ParseException {
     LookupEntityType lookupEntityType = lookupEntityTypeService.getLookUpEntityTypeById(
         request.getEntityIdentifier());
     BoolQueryBuilder andStatement = QueryBuilders.boolQuery();
@@ -489,7 +497,7 @@ public class EntityFilterEsService {
         searchField = lookupEntityType.getTableName().concat(".metadata.");
       }
       andStatement.must(
-          QueryBuilders.matchPhraseQuery(searchField.concat("tag"), request.getTag()));
+          QueryBuilders.matchQuery(searchField.concat("tag"), request.getTag()));
 
       if (request.getValueType().equals(STRING)) {
         andStatement.must(QueryBuilders.matchPhraseQuery(searchField.concat("value"),
@@ -508,6 +516,10 @@ public class EntityFilterEsService {
         andStatement.must(QueryBuilders.matchQuery(searchField.concat("value"),
             request.getSearchValue().getValue()));
       }
+
+      andStatement.must(
+          QueryBuilders.matchQuery(searchField.concat("hierarchyIdentifier"), hierarchyId));
+
       return QueryBuilders.nestedQuery("metadata", andStatement,
           ScoreMode.None);
     } else if (request.getFieldType().equals("core")) {
@@ -529,7 +541,7 @@ public class EntityFilterEsService {
     return andStatement;
   }
 
-  private AbstractQueryBuilder<?> shouldStatement(EntityFilterRequest request)
+  private AbstractQueryBuilder<?> shouldStatement(EntityFilterRequest request, String hierarchyId)
       throws ParseException {
     LookupEntityType lookupEntityType = lookupEntityTypeService.getLookUpEntityTypeById(
         request.getEntityIdentifier());
@@ -546,12 +558,12 @@ public class EntityFilterEsService {
         searchField = lookupEntityType.getTableName().concat(".metadata.");
       }
       shouldStatement.must(
-          QueryBuilders.matchPhraseQuery(searchField.concat("tag"), request.getTag()));
+          QueryBuilders.matchQuery(searchField.concat("tag"), request.getTag()));
       BoolQueryBuilder orStatement = QueryBuilders.boolQuery();
       for (SearchValue value : request.getValues()) {
         if (request.getValueType().equals(STRING)) {
           orStatement.should(
-              QueryBuilders.matchPhraseQuery(searchField.concat("value"), value.getValue()));
+              QueryBuilders.matchQuery(searchField.concat("value"), value.getValue()));
         } else if (request.getValueType().equals(INTEGER) || request.getValueType()
             .equals(DOUBLE)) {
           if (value.getSign().equals(SignEntity.EQ)) {
@@ -584,7 +596,7 @@ public class EntityFilterEsService {
     }
   }
 
-  private AbstractQueryBuilder<?> rangeStatement(EntityFilterRequest request)
+  private AbstractQueryBuilder<?> rangeStatement(EntityFilterRequest request, String hierarchyId)
       throws ParseException {
     BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
     LookupEntityType lookupEntityType = lookupEntityTypeService.getLookUpEntityTypeById(
@@ -602,7 +614,7 @@ public class EntityFilterEsService {
           searchField = lookupEntityType.getTableName().concat(".metadata.");
         }
         boolQuery.must(
-            QueryBuilders.matchPhraseQuery(searchField.concat("tag"), request.getTag()));
+            QueryBuilders.matchQuery(searchField.concat("tag"), request.getTag()));
         String searchFieldName = "value";
         if (request.getValueType().equals(INTEGER) || request.getValueType().equals(DOUBLE)) {
           searchFieldName = "valueNumber";

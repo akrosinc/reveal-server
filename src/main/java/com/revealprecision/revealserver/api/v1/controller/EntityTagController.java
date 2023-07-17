@@ -5,7 +5,6 @@ import com.revealprecision.revealserver.api.v1.dto.factory.EntityTagResponseFact
 import com.revealprecision.revealserver.api.v1.dto.factory.LookupEntityTagResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.DataFilterRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.EntityTagRequest;
-import com.revealprecision.revealserver.api.v1.dto.request.SaveHierarchyRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.UpdateEntityTagRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.AggregateHelper;
 import com.revealprecision.revealserver.api.v1.dto.response.EntityMetadataResponse;
@@ -14,12 +13,14 @@ import com.revealprecision.revealserver.api.v1.dto.response.FeatureSetResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.FeatureSetResponseContainer;
 import com.revealprecision.revealserver.api.v1.dto.response.LookupEntityTypeResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.PersonMainData;
-import com.revealprecision.revealserver.api.v1.dto.response.SaveHierarchyResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.SimulationCountResponse;
 import com.revealprecision.revealserver.api.v1.facade.factory.LocationCSVRecordFactory;
+import com.revealprecision.revealserver.model.GenericHierarchy;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.LookupEntityType;
 import com.revealprecision.revealserver.persistence.domain.SimulationRequest;
+import com.revealprecision.revealserver.persistence.domain.aggregation.GeneratedHierarchy;
+import com.revealprecision.revealserver.persistence.repository.GeneratedHierarchyRepository;
 import com.revealprecision.revealserver.service.EntityFilterEsService;
 import com.revealprecision.revealserver.service.EntityTagService;
 import com.revealprecision.revealserver.service.EventAggregationService;
@@ -66,7 +67,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -91,14 +91,28 @@ public class EntityTagController {
   private final LookupEntityTypeService lookupEntityTypeService;
   private final EventAggregationService eventAggregationService;
   private final LocationHierarchyService locationHierarchyService;
+  private final GeneratedHierarchyRepository generatedHierarchyRepository;
 
   @Operation(summary = "Create Tag", description = "Create Tag", tags = {"Entity Tags"})
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<EntityTagResponse> createTag(
       @Valid @RequestBody EntityTagRequest entityTagRequest) {
     entityTagRequest.setAddToMetadata(true); //TODO set this value on the frontend and remove this
-    return ResponseEntity.status(HttpStatus.CREATED).body(EntityTagResponseFactory.fromEntity(
-        entityTagService.createEntityTag(entityTagRequest, true)));
+
+    if (entityTagRequest.getTags() != null && entityTagRequest.getTags().size() > 0) {
+
+      if (entityTagRequest.getTags().size() == 1) {
+        entityTagRequest.setTag(entityTagRequest.getTags().get(0).getName());
+        return ResponseEntity.status(HttpStatus.CREATED).body(EntityTagResponseFactory.fromEntity(
+            entityTagService.createEntityTag(entityTagRequest, true)));
+      } else {
+            entityTagService.createEntityTags(entityTagRequest, true);
+            return ResponseEntity.accepted().build();
+      }
+
+    }
+    return ResponseEntity.badRequest().build();
+
   }
 
 
@@ -197,8 +211,27 @@ public class EntityTagController {
 
     if (simulationRequestById.isPresent()) {
       DataFilterRequest request = simulationRequestById.get().getRequest();
-      LocationHierarchy locationHierarchy = locationHierarchyService.findByIdentifier(
-          request.getHierarchyIdentifier());
+      GenericHierarchy locationHierarchy = new GenericHierarchy();
+      if (request.getHierarchyType().equals("saved")){
+        LocationHierarchy locationHierarchyDB = locationHierarchyService.findByIdentifier(
+            UUID.fromString(request.getHierarchyIdentifier()));
+
+          locationHierarchy.setIdentifier(locationHierarchyDB.getIdentifier().toString());
+          locationHierarchy.setName(locationHierarchyDB.getName());
+          locationHierarchy.setNodeOrder(locationHierarchyDB.getNodeOrder());
+
+      } else {
+
+        Optional<GeneratedHierarchy> generatedHierarchyOptional = generatedHierarchyRepository.findById(
+            Integer.valueOf(request.getHierarchyIdentifier()));
+
+        if (generatedHierarchyOptional.isPresent()){
+          locationHierarchy.setIdentifier(String.valueOf(generatedHierarchyOptional.get().getId()));
+          locationHierarchy.setName(generatedHierarchyOptional.get().getName());
+          locationHierarchy.setNodeOrder(generatedHierarchyOptional.get().getNodeOrder());
+        }
+
+      }
 
       SseEmitter emitter = new SseEmitter(180000L);
       ExecutorService sseMvcExecutor = Executors.newScheduledThreadPool(2);
@@ -206,6 +239,7 @@ public class EntityTagController {
 
       List<AggregateHelper> aggregateHelpers = new ArrayList<>();
 
+      GenericHierarchy finalLocationHierarchy = locationHierarchy;
       sseMvcExecutor.execute(() -> {
         SearchHit lastResponse;
 
@@ -242,19 +276,17 @@ public class EntityTagController {
 
           List<Set<String>> parentBatches = splitArray(parents, parentBatch);
 
-          SearchHit searchHit = null;
           for (Set<String> batch : parentBatches) {
             FeatureSetResponseContainer featureSetResponseContainer = entityFilterService.retrieveParentLocations(
-                batch, request.getHierarchyIdentifier().toString(), searchHit);
-            searchHit = featureSetResponseContainer.getSearchHit();
-            emitter.send(SseEmitter.event().name("parent").id("")
+                batch, request.getHierarchyIdentifier());
+            emitter.send(SseEmitter.event().name("parent").id(UUID.randomUUID().toString())
                 .data(featureSetResponseContainer.getFeatureSetResponse().getFeatures()));
           }
 
           // List<NodeNumber in Level,  TagName> - list of tags with the levels they are present in
           List<IndividualAggregateHelperType> individualAggregateHelperTypeList = aggregateHelpers.stream()
               .peek(aggregateHelper -> aggregateHelper.setFilteredNodeOrder(
-                  locationHierarchy.getNodeOrder())).flatMap(
+                  finalLocationHierarchy.getNodeOrder())).flatMap(
                   aggregateHelper -> aggregateHelper.getEntityMetadataResponses().stream().map(
                       entityMetadataResponse -> new IndividualAggregateHelper(
                           aggregateHelper.getFilteredNodeOrder()
@@ -328,7 +360,6 @@ public class EntityTagController {
           //        ,Location3  metadata=[tagABC-sum=1] ancestry=Location1,LocationParent2,LocationGrandParent
           //        ,Location4  metadata=[tagABC-sum=1] ancestry=Location1,LocationParent2,LocationGrandParent
 
-
           List<AggregateHelper> listsOfLowestLocationsWithTheirTags = aggregateHelpers.stream()
               .map(aggregateHelper -> {
                 AggregateHelper helper = new AggregateHelper();
@@ -341,12 +372,11 @@ public class EntityTagController {
                             Optional<IndividualAggregateHelperType> individualAggregateHelperType = lowestLevelPerTag.get(
                                 entityMetadataResponse.getType());
 
-                            if (individualAggregateHelperType.isPresent()) {
-                              return individualAggregateHelperType.get().getIndex().equals(
-                                  aggregateHelper.getFilteredNodeOrder()
-                                      .indexOf(aggregateHelper.getGeographicLevel()));
-                            }
-                            return false;
+                            return individualAggregateHelperType.map(
+                                    aggregateHelperType -> aggregateHelperType.getIndex().equals(
+                                        aggregateHelper.getFilteredNodeOrder()
+                                            .indexOf(aggregateHelper.getGeographicLevel())))
+                                .orElse(false);
                           }
                           return false;
                         })
@@ -375,7 +405,6 @@ public class EntityTagController {
           //  Map: LocationParent1-LocationGrandParent metadataList=[metadata=[tagABC-sum=2], metadata=[tagABC-sum=3]]
           //  Map: LocationParent2-LocationGrandParent metadataList=[metadata=[tagABC-sum=1], metadata=[tagABC-sum=1]]
           //  Map: LocationGrandParent metadataList=[metadata=[tagDEF-sum=5], metadata=[tagDEF-sum=4]]
-
 
           Map<String, List<List<EntityMetadataResponse>>> collect8 = listsOfLowestLocationsWithTheirTags.stream()
               .map(lowestLocationWithTheirTags -> Pair.of(String.join(",",
@@ -448,7 +477,8 @@ public class EntityTagController {
           //Map:  LocationParent1, (Map: tagABC-sum, val=5)
           //Map:  LocationParent2, (Map: tagABC-sum, val=2)
 
-          var b = a.entrySet().stream().map(entry -> new SimpleEntry<>(entry.getKey(),
+          var b = a.entrySet().stream().filter(entry -> !entry.getKey().equals(""))
+              .map(entry -> new SimpleEntry<>(entry.getKey(),
                   entry.getValue().stream().collect(
                       Collectors.groupingBy(EntityMetadataResponse::getType,
                           Collectors.reducing(0, EntityMetadataResponse::getValue,
@@ -504,7 +534,7 @@ public class EntityTagController {
         try {
           do {
             FeatureSetResponseContainer featureSetResponse1 = entityFilterService.filterEntites(
-                request, 7000, false, null);
+                request, 2000, false, null);
 
             SseEventBuilder event = SseEmitter.event()
                 .data(featureSetResponse1.getFeatureSetResponse())
@@ -540,7 +570,7 @@ public class EntityTagController {
       throws IOException, ParseException {
 
     DataFilterRequest request = new DataFilterRequest();
-    request.setHierarchyIdentifier(UUID.fromString(hierarchyIdentifier));
+    request.setHierarchyIdentifier(hierarchyIdentifier);
     FeatureSetResponse featureSetResponse = new FeatureSetResponse();
     featureSetResponse.setFeatures(new ArrayList<>());
     featureSetResponse.setParents(new HashSet<>());
@@ -583,7 +613,7 @@ public class EntityTagController {
     instructions.setUseHeader(false);
 
     DataFilterRequest request = new DataFilterRequest();
-    request.setHierarchyIdentifier(UUID.fromString(hierarchyIdentifier));
+    request.setHierarchyIdentifier(hierarchyIdentifier);
     FeatureSetResponse featureSetResponse = new FeatureSetResponse();
     featureSetResponse.setFeatures(new ArrayList<>());
     featureSetResponse.setParents(new HashSet<>());
@@ -677,13 +707,7 @@ public class EntityTagController {
     return ResponseEntity.status(HttpStatus.OK).build();
   }
 
-  @PostMapping("/saveSimulationHierarchy")
-  public ResponseEntity<SaveHierarchyResponse> saveSimulationHierarchy(RequestEntity<SaveHierarchyRequest> saveHierarchyRequest){
 
-    log.info("{}",saveHierarchyRequest);
-
-    return ResponseEntity.ok(SaveHierarchyResponse.builder().identifier(1).name("test").build());
-  }
 }
 
 @Setter
@@ -712,7 +736,6 @@ class IndividualAggregateHelper {
 @Getter
 @AllArgsConstructor
 class IndividualAggregateHelperType {
-
 
   private Integer index;
   private String type;

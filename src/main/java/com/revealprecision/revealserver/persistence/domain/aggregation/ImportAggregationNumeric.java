@@ -26,6 +26,8 @@ public class ImportAggregationNumeric  {
 
   private String name;
 
+  private String hierarchyIdentifier;
+
   private String ancestor;
 
   private String planIdentifier;

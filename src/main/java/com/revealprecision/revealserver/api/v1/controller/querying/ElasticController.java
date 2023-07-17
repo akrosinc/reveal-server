@@ -49,7 +49,7 @@ public class ElasticController {
     publisherService.send(kafkaProperties.getTopicMap().get(
               KafkaConstants.EVENT_AGGREGATION_LOCATION),
           LocationIdEvent.builder()
-              .hierarchyIdentifier(aDefault)
+              .hierarchyIdentifier(aDefault.toString())
               .nodeOrder(nodeOrder)
               .uuids(List.of(locationIdentifier)).build());
 
@@ -73,7 +73,7 @@ public class ElasticController {
       publisherService.send(kafkaProperties.getTopicMap().get(
               KafkaConstants.EVENT_AGGREGATION_LOCATION),
           LocationIdEvent.builder()
-              .hierarchyIdentifier(aDefault)
+              .hierarchyIdentifier(aDefault.toString())
               .nodeOrder(nodeOrder)
               .uuids(locationIdsPage.getContent()).build());
 
