@@ -95,7 +95,7 @@ dependencies {
     implementation 'io.micrometer:micrometer-registry-prometheus'
     implementation 'org.csveed:csveed:0.7.4'
     if (project.hasProperty("besd")) {
-        implementation 'com.revealprecision:besd-spring-boot-starter:1.0.3'
+        implementation 'com.revealprecision:besd-spring-boot-starter:1.0.4'
     }
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.batch:spring-batch-test'
