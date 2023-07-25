@@ -19,4 +19,5 @@ public class EntityMetadataResponse {
 
   private Object value;
   private String type;
+  private String fieldType;
 }

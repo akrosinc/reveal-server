@@ -5,13 +5,14 @@ import com.revealprecision.revealserver.persistence.es.MetadataElastic;
 
 public class EntityMetaDataElasticFactory {
   public static EntityMetadataElastic getEntityMetadataElastic(String eventAggregationNumericProjection,
-      String eventAggregationNumericProjection1, Double eventAggregationNumericProjection2,String hierarchyIdentifier) {
+      String eventAggregationNumericProjection1, Double eventAggregationNumericProjection2,String hierarchyIdentifier, String fieldType) {
     EntityMetadataElastic entityMetadataElasticSum = new EntityMetadataElastic();
     MetadataElastic metadataElasticSum = new MetadataElastic();
     metadataElasticSum.setPlanId(
         eventAggregationNumericProjection);
     entityMetadataElasticSum.setTag(
         eventAggregationNumericProjection1);
+    entityMetadataElasticSum.setFieldType(fieldType);
     entityMetadataElasticSum.setActive(true);
     entityMetadataElasticSum.setType("import");
     entityMetadataElasticSum.setValueNumber(

@@ -25,8 +25,6 @@ import org.springframework.stereotype.Component;
 @Profile("FHIR")
 public class CodeSystemResourceProvider implements IResourceProvider {
 
-  private final EntityTagService entityTagService;
-
   private final LookupEntityTypeService lookupEntityTypeService;
 
   private final FhirServerProperties fhirServerProperties;
@@ -56,9 +54,9 @@ public class CodeSystemResourceProvider implements IResourceProvider {
     CodeSystem codeSystem = new CodeSystem();
     codeSystem.setId(lookupEntityType.getTableName() + "-metadata");
     codeSystem.setUrl(fhirServerProperties.getBaseURL());
-    codeSystem.setConcept(
-        entityTagService.getEntityTagsByLookupEntityTypeIdentifier(lookupEntityType.getIdentifier())
-            .stream().map(this::getConceptDefinitionComponent).collect(Collectors.toList()));
+//    codeSystem.setConcept(
+//        entityTagService.getEntityTagsByLookupEntityTypeIdentifier(lookupEntityType.getIdentifier())
+//            .stream().map(this::getConceptDefinitionComponent).collect(Collectors.toList()));
     codeSystem.setDescription("Reveal Codes - " + lookupEntityType.getCode());
 
     return codeSystem;

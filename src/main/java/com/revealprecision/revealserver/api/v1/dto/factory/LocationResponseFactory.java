@@ -151,6 +151,7 @@ public class LocationResponseFactory {
           return EntityMetadataResponse.builder()
               .value(valueNumber1 != null ? valueNumber1 : ((HashMap<?, ?>) val).get("value"))
               .type((String) ((HashMap<?, ?>) val).get("tag"))
+              .fieldType((String) ((HashMap<?, ?>) val).get("fieldType"))
               .build();
         }).collect(Collectors.toList());
 

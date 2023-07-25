@@ -6,6 +6,7 @@ import com.revealprecision.revealserver.persistence.domain.AggregationStaging;
 import com.revealprecision.revealserver.persistence.repository.AggregationStagingRepository;
 import com.revealprecision.revealserver.persistence.repository.EventAggregateRepository;
 import com.revealprecision.revealserver.persistence.repository.ImportAggregateRepository;
+import com.revealprecision.revealserver.persistence.repository.ResourceAggregateRepository;
 import com.revealprecision.revealserver.props.ImportAggregationProperties;
 import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.service.PublisherService;
@@ -28,15 +29,17 @@ public class RefreshAggregationDataSchedule {
   private final PublisherService publisherService;
   private final KafkaProperties kafkaProperties;
   private final ImportAggregationProperties importAggregationProperties;
+  private final ResourceAggregateRepository resourceAggregateRepository;
 
   @Scheduled(cron = "#{importAggregationProperties.cron}")
   public void refreshImportAggregateMaterializedView() {
-    log.debug("refreshing import and event aggregations");
+    log.debug("refreshing import, event and resource aggregations");
     if (importAggregationProperties.isScheduleEnabled()) {
       importAggregateRepository.refreshImportAggregateNumericMaterializedView();
       importAggregateRepository.refreshImportAggregateStringCountMaterializedView();
       eventAggregateRepository.refreshImportAggregateNumericMaterializedView();
       eventAggregateRepository.refreshImportAggregateStringCountMaterializedView();
+      resourceAggregateRepository.refreshResourceAggregateNumericMaterializedView();
 
       List<AggregationStaging> aggregateStagingList = aggregationStagingRepository.findAll();
 
@@ -50,7 +53,7 @@ public class RefreshAggregationDataSchedule {
 
       aggregationStagingRepository.deleteAll(aggregateStagingList);
 
-      log.debug("refreshed import and event aggregations");
+      log.debug("refreshed import, event and resource aggregations");
     }
   }
 

@@ -1,8 +1,5 @@
 package com.revealprecision.revealserver.persistence.domain;
 
-import java.util.List;
-import java.util.UUID;
-import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
@@ -12,7 +9,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.FieldNameConstants;
-import org.hibernate.annotations.Type;
 
 @FieldNameConstants
 @Entity
@@ -21,24 +17,17 @@ import org.hibernate.annotations.Type;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class EntityTag {
+public class ResourcePlanningMetadata {
 
   @Id
   @GeneratedValue
-  private UUID identifier;
+  private int identifier;
 
-  @Column(unique = true)
+  private String locationIdentifier;
+
   private String tag;
 
-  private String valueType;
+  private Double value;
 
-  private String definition;
-
-  @Type(type = "list-array")
-  private List<String> aggregationMethod;
-
-  private boolean isAggregate;
-
-  private boolean simulationDisplay;
-
+  private String resourcePlan;
 }

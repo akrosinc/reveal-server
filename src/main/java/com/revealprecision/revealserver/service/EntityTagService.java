@@ -2,6 +2,7 @@ package com.revealprecision.revealserver.service;
 
 import static com.revealprecision.revealserver.constants.EntityTagDataAggregationMethods.AVERAGE_;
 import static com.revealprecision.revealserver.constants.EntityTagDataAggregationMethods.MAX_;
+import static com.revealprecision.revealserver.constants.EntityTagDataAggregationMethods.MEDIAN_;
 import static com.revealprecision.revealserver.constants.EntityTagDataAggregationMethods.MIN_;
 import static com.revealprecision.revealserver.constants.EntityTagDataAggregationMethods.SUM_;
 import static com.revealprecision.revealserver.constants.EntityTagDataTypes.DOUBLE;
@@ -10,21 +11,20 @@ import static com.revealprecision.revealserver.constants.EntityTagDataTypes.INTE
 import com.revealprecision.revealserver.api.v1.dto.factory.EntityTagEventFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.EntityTagFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.EntityTagRequestFactory;
-import com.revealprecision.revealserver.api.v1.dto.factory.EntityTagResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.EntityTagItem;
 import com.revealprecision.revealserver.api.v1.dto.request.EntityTagRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.UpdateEntityTagRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.EntityTagResponse;
-import com.revealprecision.revealserver.constants.EntityTagScopes;
-import com.revealprecision.revealserver.enums.LookupEntityTypeCodeEnum;
+import com.revealprecision.revealserver.constants.EntityTagFieldTypes;
 import com.revealprecision.revealserver.exceptions.DuplicateCreationException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.messaging.message.EntityTagEvent;
 import com.revealprecision.revealserver.persistence.domain.EntityTag;
-import com.revealprecision.revealserver.persistence.domain.FormField;
-import com.revealprecision.revealserver.persistence.domain.LookupEntityType;
 import com.revealprecision.revealserver.persistence.domain.User.Fields;
 import com.revealprecision.revealserver.persistence.repository.EntityTagRepository;
+import com.revealprecision.revealserver.persistence.repository.GeneratedHierarchyMetadataRepository;
+import com.revealprecision.revealserver.persistence.repository.ImportAggregateRepository;
+import com.revealprecision.revealserver.persistence.repository.ResourceAggregateRepository;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -45,44 +45,104 @@ import org.springframework.stereotype.Service;
 public class EntityTagService {
 
   private final EntityTagRepository entityTagRepository;
-  private final LookupEntityTypeService lookupEntityTypeService;
+
+  private final ImportAggregateRepository importAggregateRepository;
+  private final ResourceAggregateRepository resourceAggregateRepository;
+  private final GeneratedHierarchyMetadataRepository generatedHierarchyMetadataRepository;
+
 
   public static final Map<String, List<String>> aggregationMethods = Map.of(
-      INTEGER, List.of(SUM_, MAX_, MIN_, AVERAGE_),
-      DOUBLE, List.of(SUM_, MAX_, MIN_, AVERAGE_));
+      INTEGER, List.of(SUM_, MAX_, MIN_, AVERAGE_,MEDIAN_),
+      DOUBLE, List.of(SUM_, MAX_, MIN_, AVERAGE_,MEDIAN_));
 
-  public Page<EntityTag> getAllPagedEntityTags(Pageable pageable, String search) {
-    return entityTagRepository.findAllWithSearch(pageable, search);
+  public List<EntityTag> getAllEntityTags() {
+    return entityTagRepository.findAll();
   }
 
-  public Page<EntityTag> getAllPagedGlobalNonAggregateEntityTags(Pageable pageable, String search) {
-    return entityTagRepository.findEntityTagsByScopeAndIsAggregate(EntityTagScopes.GLOBAL, false,
+
+  public Page<EntityTag> getOrSearchAllEntityTagsPaged(Pageable pageable, String search) {
+    return entityTagRepository.findOrSearchEntityTags(pageable, search);
+  }
+
+  public Page<EntityTag> getAllPagedNonAggregateEntityTags(Pageable pageable, String search) {
+    return entityTagRepository.findEntityTagsIsAggregate(false,
         pageable, search);
   }
 
-  public Page<EntityTag> getAllPagedGlobalEntityTags(Pageable pageable, String search) {
-    return entityTagRepository.findEntityTagsByScope(EntityTagScopes.GLOBAL, pageable, search);
+  public List<EntityTag> getAllAggregateEntityTags() {
+    return entityTagRepository.findEntityTagsByIsAggregate(
+        true);
   }
 
-
-  public List<EntityTag> getAllGlobalEntityTagsByLookupEntityTypeIdentifier(
-      UUID identifier) {
-    return entityTagRepository.findEntityTagsByScopeAndLookupEntityType_Identifier(
-        EntityTagScopes.GLOBAL, identifier);
+  public List<EntityTag> getAllNonAggregateEntityTags() {
+    return entityTagRepository.findEntityTagsByIsAggregate(
+        false);
   }
 
-  public List<EntityTag> getAllGlobalNonAggregateEntityTagsByLookupEntityTypeIdentifier(
-      UUID identifier) {
-    return entityTagRepository.findEntityTagsByScopeAndIsAggregateAndLookupEntityType_Identifier(
-        EntityTagScopes.GLOBAL, false, identifier);
+  public List<EntityTagResponse> getAllAggregateEntityTagsAssociatedToData(String hierarchyIdentifier) {
+
+    List<EntityTagResponse> resourceTags = resourceAggregateRepository.getUniqueDataTagsAssociatedWithData(
+        hierarchyIdentifier).stream().map(tagProjection ->{
+      EntityTagResponse resource_planning = EntityTagResponse.builder()
+              .fieldType(EntityTagFieldTypes.RESOURCE_PLANNING)
+              .isAggregate(true)
+              .tag(tagProjection.getTag())
+              .subType(tagProjection.getEventType())
+              .valueType(DOUBLE)
+              .build();
+      return resource_planning;
+        }
+
+
+    ).collect(Collectors.toList());
+
+    List<EntityTagResponse> importTags = importAggregateRepository.getUniqueDataTagsAssociatedWithData(
+        hierarchyIdentifier).stream().map(tag ->
+        EntityTagResponse.builder()
+            .fieldType(EntityTagFieldTypes.IMPORT)
+            .subType("Import")
+            .isAggregate(true)
+            .tag(tag)
+            .valueType(DOUBLE)
+            .build()
+
+    ).collect(Collectors.toList());
+
+    List<EntityTagResponse> generated = generatedHierarchyMetadataRepository.getUniqueDataTagsAssociatedWithData(
+        hierarchyIdentifier).stream().map(tagProjection ->
+        EntityTagResponse.builder()
+            .fieldType(tagProjection.getEventType())
+            .subType("generated")
+            .isAggregate(true)
+            .tag(tagProjection.getTag())
+            .valueType(DOUBLE)
+            .build()
+
+    ).collect(Collectors.toList());
+
+    List<EntityTagResponse> allTags = new ArrayList<>();
+    allTags.addAll(resourceTags);
+    allTags.addAll(importTags);
+    allTags.addAll(generated);
+
+
+
+    Map<String, EntityTag> collect = entityTagRepository.findEntityTagsByTagIn(
+            allTags.stream().map(EntityTagResponse::getTag).collect(Collectors.toSet())).stream()
+        .collect(Collectors.toMap(EntityTag::getTag, a -> a, (a, b) -> b));
+
+    List<EntityTagResponse> peek = allTags.stream()
+        .peek(allTag -> allTag.setIdentifier(collect.get(allTag.getTag()).getIdentifier())).collect(
+            Collectors.toList());
+
+    return peek;
+
   }
 
-  public List<EntityTag> getEntityTagsByLookupEntityTypeIdentifier(
-      UUID lookupEntityTypeIdentifierUuid) {
-    return new ArrayList<>(
-        entityTagRepository.findByLookupEntityType_Identifier(lookupEntityTypeIdentifierUuid));
+  public Page<EntityTag> getAllNonAggregateEntityTagsPaged(Pageable pageable) {
+    return entityTagRepository.findEntityTagsByIsAggregate(
+        false, pageable);
   }
-
 
   public Optional<EntityTag> getEntityTagByTagName(String name) {
     return entityTagRepository.getFirstByTag(name);
@@ -92,41 +152,17 @@ public class EntityTagService {
     return entityTagRepository.findEntityTagsByTagIn(names);
   }
 
-  public Optional<EntityTag> getEntityTagByTagNameAndLookupEntityType(String name,
-      LookupEntityTypeCodeEnum typeCodeEnum) {
-
-    return entityTagRepository.findEntityTagsByTagAndLookupEntityType_Code(name,
-        typeCodeEnum.getLookupEntityType());
-  }
-
-  public List<EntityTag> getEntityTagsByTagNamesAndLookupEntityType(List<String> names,
-      LookupEntityTypeCodeEnum typeCodeEnum) {
-
-    return entityTagRepository.findEntityTagsByTagInAndLookupEntityType_Code(names,
-        typeCodeEnum.getLookupEntityType());
-  }
-
-  public List<EntityTag> getEntityTagsByTagNameAndLookupEntityType(List<String> names,
-      LookupEntityType lookupEntityType) {
-
-    return entityTagRepository.findEntityTagsByLookupEntityTypeAndTagIn(lookupEntityType, names);
-  }
-
   public EntityTag getEntityTagByIdentifier(UUID identifier) {
     return entityTagRepository.findById(identifier).orElseThrow(() -> new NotFoundException(
         Pair.of(EntityTag.Fields.identifier, identifier), EntityTag.class));
   }
 
-  public void createEntityTagsSkipExisting(EntityTagRequest entityTagRequest,
+  public List<EntityTag> createEntityTagsSkipExisting(EntityTagRequest entityTagRequest,
       boolean createAggregateTags) {
 
-    LookupEntityType lookupEntityType = lookupEntityTypeService.getLookupEntityTypeByCode(
-        entityTagRequest.getEntityType().getLookupEntityType());
-
-    List<EntityTag> entityTagsByTagNamesAndLookupEntityType = getEntityTagsByTagNamesAndLookupEntityType(
+    Set<EntityTag> entityTagsByTagNamesAndLookupEntityType = getEntityTagsByTagNames(
         entityTagRequest.getTags().stream().map(EntityTagItem::getName)
-            .collect(Collectors.toList()),
-        LookupEntityTypeCodeEnum.lookup(lookupEntityType.getCode()));
+            .collect(Collectors.toSet()));
 
     List<EntityTagRequest> tagsToSave = entityTagRequest.getTags().stream().filter(
             entityTagRequestItem -> !entityTagsByTagNamesAndLookupEntityType.stream()
@@ -143,134 +179,65 @@ public class EntityTagService {
         collect(Collectors.toMap(EntityTagRequest::getTag, a -> a, (a, b) -> b));
 
     List<EntityTag> tags = tagsToSave.stream().map(
-        generatedEntityTagRequest -> EntityTagFactory.toEntity(generatedEntityTagRequest,
-            lookupEntityType)
+        generatedEntityTagRequest -> EntityTagFactory.toEntity(generatedEntityTagRequest)
     ).collect(Collectors.toList());
 
     List<EntityTag> entityTags = entityTagRepository.saveAll(tags);
 
-    entityTags.forEach(save -> {
-      if (createAggregateTags) {
-        List<EntityTagEvent> entityTagEvents =
+    if (createAggregateTags) {
+      List<EntityTag> autoCreatedTags = entityTags.stream().flatMap(save ->
             aggregationMethods.get(save.getValueType()) == null ? null
                 : aggregationMethods.get(save.getValueType()).stream()
                     .map(aggregationMethod ->
                         createAggregateEntityTag(stringEntityTagRequestMap.get(save.getTag()),
                             aggregationMethod,
-                            lookupEntityType,
-                            true)).map(EntityTagEventFactory::getEntityTagEvent)
-                    .collect(Collectors.toList());
+                            true))
 
-        log.debug("Automatically Created {} for requested tag creation: {}", entityTagEvents,
-            entityTagRequest);
-      }
-    });
-  }
+      ).collect(Collectors.toList());
 
-  public void createEntityTags(EntityTagRequest entityTagRequest, boolean createAggregateTags) {
-
-    LookupEntityType lookupEntityType = lookupEntityTypeService.getLookupEntityTypeByCode(
-        entityTagRequest.getEntityType().getLookupEntityType());
-
-    Optional<EntityTag> entityTagsByTagAndLookupEntityType_code = getEntityTagByTagNameAndLookupEntityType(
-        entityTagRequest.getTag(), LookupEntityTypeCodeEnum.lookup(lookupEntityType.getCode()));
-
-    if (entityTagsByTagAndLookupEntityType_code.isPresent()) {
-      throw new DuplicateCreationException(
-          "Entity tag with name " + entityTagRequest.getTag() + " for entity type "
-              + lookupEntityType.getCode() + " already exists");
+      entityTags.addAll(autoCreatedTags);
     }
-
-    List<EntityTagRequest> entityTagRequests = entityTagRequest.getTags().stream().map(entity -> {
-      EntityTagRequest entityTagRequest1 = EntityTagRequestFactory.getCopy(entityTagRequest);
-      entityTagRequest1.setTag(entity.getName());
-      return entityTagRequest1;
-    }).collect(Collectors.toList());
-
-    Map<String, EntityTagRequest> stringEntityTagRequestMap = entityTagRequests.stream().
-        collect(Collectors.toMap(EntityTagRequest::getTag, a -> a, (a, b) -> b));
-
-    List<EntityTag> tags = entityTagRequests.stream().map(
-        generatedEntityTagRequest -> EntityTagFactory.toEntity(generatedEntityTagRequest,
-            lookupEntityType)
-    ).collect(Collectors.toList());
-
-    List<EntityTag> entityTags = entityTagRepository.saveAll(tags);
-
-    entityTags.forEach(save -> {
-      if (createAggregateTags) {
-        List<EntityTagEvent> entityTagEvents =
-            aggregationMethods.get(save.getValueType()) == null ? null
-                : aggregationMethods.get(save.getValueType()).stream()
-                    .map(aggregationMethod ->
-                        createAggregateEntityTag(stringEntityTagRequestMap.get(save.getTag()),
-                            aggregationMethod,
-                            lookupEntityType,
-                            true)).map(EntityTagEventFactory::getEntityTagEvent)
-                    .collect(Collectors.toList());
-
-        log.debug("Automatically Created {} for requested tag creation: {}", entityTagEvents,
-            entityTagRequest);
-      }
-    });
+    return entityTags;
   }
+
 
   public EntityTag createEntityTag(EntityTagRequest entityTagRequest, boolean createAggregateTags) {
 
-    LookupEntityType lookupEntityType = lookupEntityTypeService.getLookupEntityTypeByCode(
-        entityTagRequest.getEntityType().getLookupEntityType());
-    Optional<EntityTag> entityTagsByTagAndLookupEntityType_code = getEntityTagByTagNameAndLookupEntityType(
-        entityTagRequest.getTag(), LookupEntityTypeCodeEnum.lookup(lookupEntityType.getCode()));
-    if (entityTagsByTagAndLookupEntityType_code.isPresent()) {
-      throw new DuplicateCreationException(
-          "Entity tag with name " + entityTagRequest.getTag() + " for entity type "
-              + lookupEntityType.getCode() + " already exists");
-    }
-    EntityTag save = entityTagRepository.save(
-        EntityTagFactory.toEntity(entityTagRequest, lookupEntityType));
+    Optional<EntityTag> entityTagByTagName = getEntityTagByTagName(
+        entityTagRequest.getTag());
 
-    if (createAggregateTags) {
-      List<EntityTagEvent> entityTagEvents =
-          aggregationMethods.get(save.getValueType()) == null ? null
-              : aggregationMethods.get(save.getValueType()).stream()
-                  .map(aggregationMethod ->
-                      createAggregateEntityTag(entityTagRequest, aggregationMethod,
-                          lookupEntityType,
-                          true)).map(EntityTagEventFactory::getEntityTagEvent)
-                  .collect(Collectors.toList());
+    if (entityTagByTagName.isEmpty()) {
+      EntityTag save = entityTagRepository.save(
+          EntityTagFactory.toEntity(entityTagRequest));
 
-      log.debug("Automatically Created {} for requested tag creation: {}", entityTagEvents,
-          entityTagRequest);
+      if (createAggregateTags) {
+        List<EntityTagEvent> entityTagEvents =
+            aggregationMethods.get(save.getValueType()) == null ? null
+                : aggregationMethods.get(save.getValueType()).stream()
+                    .map(aggregationMethod ->
+                        createAggregateEntityTag(entityTagRequest, aggregationMethod,
+                            true)).map(EntityTagEventFactory::getEntityTagEvent)
+                    .collect(Collectors.toList());
+
+        log.debug("Automatically Created {} for requested tag creation: {}", entityTagEvents,
+            entityTagRequest);
+      }
+
+      return save;
+    } else {
+      throw new DuplicateCreationException(entityTagRequest.getTag() + " already exists");
     }
-    return save;
   }
 
   public EntityTag createAggregateEntityTag(EntityTagRequest entityTagRequest, String str,
-      LookupEntityType lookupEntityType, boolean isAggregate) {
+      boolean isAggregate) {
     EntityTagRequest entityTagSum = EntityTagRequestFactory.getCopy(entityTagRequest);
     entityTagSum.setTag(entityTagSum.getTag().concat(str));
     entityTagSum.setAggregate(isAggregate);
     return entityTagRepository.save(
-        EntityTagFactory.toEntity(entityTagSum, lookupEntityType));
+        EntityTagFactory.toEntity(entityTagSum));
   }
 
-  public Set<EntityTag> findEntityTagsByFormField(FormField formField) {
-
-    return entityTagRepository.findEntityTagsByFormFields(formField);
-  }
-
-  public Optional<EntityTag> findEntityTagById(UUID entityTagIdentifier) {
-    return entityTagRepository.findById(entityTagIdentifier);
-  }
-
-
-  public List<EntityTag> findEntityTagsByIdList(Set<UUID> entityTagIdentifiers) {
-    return entityTagRepository.findEntityTagsByIdentifierIn(entityTagIdentifiers);
-  }
-
-  public Set<EntityTag> findEntityTagsByReferencedTags(String name) {
-    return entityTagRepository.findEntityTagByReferencedFields(name);
-  }
 
   public EntityTag updateEntityTag(UpdateEntityTagRequest tag) {
 
@@ -281,21 +248,6 @@ public class EntityTagService {
     tag1.setSimulationDisplay(tag.isSimulationDisplay());
 
     return entityTagRepository.save(tag1);
-  }
-
-  public List<EntityTagResponse> getTagsAndCoreFields(UUID lookupEntityTypeIdentifier) {
-
-    LookupEntityType lookupEntityType = lookupEntityTypeService.getLookUpEntityTypeById(
-        lookupEntityTypeIdentifier);
-
-    List<EntityTagResponse> response = lookupEntityType.getEntityTags().stream()
-        .filter(EntityTag::isAddToMetadata)
-        .map(EntityTagResponseFactory::fromEntity).collect(Collectors.toList());
-
-    response.addAll(
-        lookupEntityType.getCoreFields().stream().map(EntityTagResponseFactory::fromCoreField)
-            .collect(Collectors.toList()));
-    return response;
   }
 
   public void saveEntityTags(Set<EntityTag> entityTags) {

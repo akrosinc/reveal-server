@@ -20,6 +20,8 @@ public class AggregateNumeric implements Serializable {
 
   private String eventType;
 
+  private String fieldType;
+
   private String fieldCode;
 
   private Double sum;
@@ -27,5 +29,9 @@ public class AggregateNumeric implements Serializable {
   private Double avg;
 
   private Double median;
+
+  private Double min;
+
+  private Double max;
 
 }

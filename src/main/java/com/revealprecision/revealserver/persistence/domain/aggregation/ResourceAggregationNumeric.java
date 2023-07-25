@@ -1,18 +1,15 @@
 package com.revealprecision.revealserver.persistence.domain.aggregation;
 
 
-import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
-import javax.persistence.ManyToOne;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.FieldNameConstants;
-import org.hibernate.annotations.TypeDef;
 
 @FieldNameConstants
 @Entity
@@ -21,20 +18,25 @@ import org.hibernate.annotations.TypeDef;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
-public class GeneratedHierarchyMetadata {
+public class ResourceAggregationNumeric {
 
   @Id
   @GeneratedValue
   private int id;
 
-  private String locationIdentifier;
-  private String tag;
-  private Double value;
+  private String locationName;
 
-  private String fieldType;
+  private String hierarchyIdentifier;
 
-  @ManyToOne
-  private GeneratedHierarchy generatedHierarchy;
+  private String ancestor;
+
+  private String planIdentifier;
+
+  private String resourcePlanName;
+
+  private String fieldCode;
+
+  private Double val;
+
 
 }

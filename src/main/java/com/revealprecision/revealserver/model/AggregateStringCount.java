@@ -20,6 +20,8 @@ public class AggregateStringCount implements Serializable {
 
   private String eventType;
 
+  private String fieldType;
+
   private String fieldCode;
 
   private String fieldVal;

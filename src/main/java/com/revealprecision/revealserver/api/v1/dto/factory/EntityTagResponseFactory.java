@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.api.v1.dto.factory;
 
 import com.revealprecision.revealserver.api.v1.dto.response.EntityTagResponse;
+import com.revealprecision.revealserver.constants.EntityTagFieldTypes;
 import com.revealprecision.revealserver.persistence.domain.CoreField;
 import com.revealprecision.revealserver.persistence.domain.EntityTag;
 import java.util.stream.Collectors;
@@ -26,16 +27,8 @@ public class EntityTagResponseFactory {
         .tag(entityTag.getTag())
         .definition(entityTag.getDefinition())
         .valueType(entityTag.getValueType())
-        .generationFormula(entityTag.getGenerationFormula())
-        .isGenerated(entityTag.isGenerated())
-        .resultExpression(entityTag.getResultExpression())
-        .referenceFields(entityTag.getReferencedFields())
-        .isResultLiteral(entityTag.isResultLiteral())
-        .lookupEntityType(
-            LookupEntityTagResponseFactory.fromEntity(entityTag.getLookupEntityType()))
-        .addToMetadata(entityTag.isAddToMetadata())
         .isAggregate(entityTag.isAggregate())
-        .fieldType("tag")
+        .fieldType(EntityTagFieldTypes.IMPORT)
         .simulationDisplay(entityTag.isSimulationDisplay())
         .build();
   }
@@ -47,9 +40,7 @@ public class EntityTagResponseFactory {
         .tag(coreField.getField())
         .definition(coreField.getDefinition())
         .valueType(coreField.getValueType())
-        .fieldType("core")
-        .lookupEntityType(
-            LookupEntityTagResponseFactory.fromEntity(coreField.getLookupEntityType())).build();
+        .fieldType(EntityTagFieldTypes.IMPORT).build();
   }
 
 }

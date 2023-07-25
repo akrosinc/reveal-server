@@ -51,7 +51,9 @@ SELECT nextval('import_aggregate_numeric_seq'::regclass)    AS id,
        sum(ean2.val::double precision)                      AS sum,
        avg(ean2.val::double precision)                      AS avg,
        percentile_cont(0.5::double precision)
-       WITHIN GROUP (ORDER BY (ean2.val::double precision)) AS median
+       WITHIN GROUP (ORDER BY (ean2.val::double precision)) AS median,
+       min(ean2.val::double precision)                      as min,
+       max(ean2.val::double precision)                      as max
 FROM import_aggregation_numeric ean2
 GROUP BY ean2.hierarchy_identifier, ean2.ancestor, ean2.ancestor, ean2.plan_identifier,
          ean2.event_type, ean2.field_code

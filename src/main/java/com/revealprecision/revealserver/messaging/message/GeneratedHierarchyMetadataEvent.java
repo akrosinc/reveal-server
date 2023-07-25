@@ -22,6 +22,7 @@ public class GeneratedHierarchyMetadataEvent extends Message  {
   private String locationIdentifier;
   private String tag;
   private Double value;
+  private String fieldType;
   private List<String> ancestry;
   private String parent;
   private Integer geographicLevelNumber;

@@ -22,7 +22,9 @@ public interface ImportAggregateRepository extends JpaRepository<ImportAggregati
       + "       ean2.fieldcode as fieldCode,\n"
       + "       ean2.sum as sum,\n"
       + "       ean2.avg as avg,\n"
-      + "       ean2.median as median\n"
+      + "       ean2.median as median,\n"
+      + "       ean2.min as min,\n"
+      + "       ean2.max as max\n"
       + "from import_aggregate_numeric ean2\n"
       + "\n"
       + "WHERE cast(ean2.locationIdentifier as varchar) in :locationIdentifiers "
@@ -53,5 +55,18 @@ public interface ImportAggregateRepository extends JpaRepository<ImportAggregati
   @Transactional
   @Modifying
   void refreshImportAggregateNumericMaterializedView();
+
+  @Query(value = "SELECT DISTINCT concat(fieldcode,'-sum') from import_aggregate_numeric ian WHERE  ian.hierarchyIdentifier =:hierarchyIdentifier\n"
+      + "UNION ALL \n"
+      + "SELECT DISTINCT concat(fieldcode,'-median') from import_aggregate_numeric ian WHERE  ian.hierarchyIdentifier =:hierarchyIdentifier\n"
+      + "UNION ALL\n"
+      + "SELECT DISTINCT concat(fieldcode,'-average') from import_aggregate_numeric ian WHERE ian.hierarchyIdentifier =:hierarchyIdentifier\n"
+      + "UNION ALL\n"
+      + "SELECT DISTINCT concat(fieldcode,'-min') from import_aggregate_numeric ian WHERE ian.hierarchyIdentifier =:hierarchyIdentifier\n"
+      + "UNION ALL\n"
+      + "SELECT DISTINCT concat(fieldcode,'-max') from import_aggregate_numeric ian WHERE ian.hierarchyIdentifier =:hierarchyIdentifier\n"
+      + "UNION ALL\n"
+      + "SELECT DISTINCT concat(fieldcode,'-count') from import_aggregate_string_count iasc WHERE iasc.hierarchyIdentifier =:hierarchyIdentifier\n",nativeQuery = true)
+  List<String> getUniqueDataTagsAssociatedWithData(String hierarchyIdentifier);
 
 }

@@ -201,6 +201,7 @@ public class LocationMetadataUpdateListener extends Listener {
           entityMetadataElastic.setValueNumber(incomingMetadataNotInExistingList.getValue());
           entityMetadataElastic.setHierarchyIdentifier(
               String.valueOf(incomingMetadataNotInExistingList.getGeneratedHierarchy().getId()));
+          entityMetadataElastic.setFieldType(incomingMetadataNotInExistingList.getFieldType());
           return entityMetadataElastic;
         }).collect(Collectors.toList());
 

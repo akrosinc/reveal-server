@@ -2,26 +2,28 @@ package com.revealprecision.revealserver.messaging.listener;
 
 import static com.revealprecision.revealserver.api.v1.facade.factory.EntityMetaDataElasticFactory.getEntityMetadataElastic;
 
+import com.revealprecision.revealserver.constants.EntityTagDataAggregationMethods;
+import com.revealprecision.revealserver.constants.EntityTagFieldTypes;
 import com.revealprecision.revealserver.messaging.message.LocationIdEvent;
 import com.revealprecision.revealserver.model.AggregateNumeric;
 import com.revealprecision.revealserver.model.AggregateStringCount;
 import com.revealprecision.revealserver.persistence.domain.Location;
-import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
 import com.revealprecision.revealserver.persistence.es.EntityMetadataElastic;
-import com.revealprecision.revealserver.persistence.es.HierarchyDetailsElastic;
 import com.revealprecision.revealserver.persistence.es.LocationElastic;
+import com.revealprecision.revealserver.persistence.projection.AggregateNumericProjection;
+import com.revealprecision.revealserver.persistence.projection.AggregateStringProjection;
 import com.revealprecision.revealserver.persistence.projection.EventAggregateNumericProjection;
 import com.revealprecision.revealserver.persistence.projection.EventAggregateStringCountProjection;
 import com.revealprecision.revealserver.persistence.projection.ImportAggregateNumericProjection;
 import com.revealprecision.revealserver.persistence.projection.ImportAggregateStringCountProjection;
+import com.revealprecision.revealserver.persistence.projection.ResourceAggregateNumericProjection;
 import com.revealprecision.revealserver.persistence.repository.EventAggregateRepository;
 import com.revealprecision.revealserver.persistence.repository.ImportAggregateRepository;
 import com.revealprecision.revealserver.persistence.repository.LocationElasticRepository;
-import com.revealprecision.revealserver.persistence.repository.LocationRelationshipRepository;
 import com.revealprecision.revealserver.persistence.repository.LocationRepository;
+import com.revealprecision.revealserver.persistence.repository.ResourceAggregateRepository;
 import com.revealprecision.revealserver.props.EventAggregationProperties;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,56 +44,43 @@ public class LocationIdListener extends Listener {
   private final LocationElasticRepository locationElasticRepository;
   private final EventAggregateRepository eventAggregateRepository;
   private final LocationRepository locationRepository;
-  private final LocationRelationshipRepository locationRelationshipRepository;
   private final EventAggregationProperties eventAggregationProperties;
   private final ImportAggregateRepository importAggregateRepository;
+  private final ResourceAggregateRepository resourceAggregateRepository;
 
 
   @KafkaListener(topics = "#{kafkaConfigProperties.topicMap.get('EVENT_AGGREGATION_LOCATION')}", groupId = "reveal_server_group")
   public void processMessage(LocationIdEvent message) {
     log.debug("Received message {}", message);
     List<Location> locationsPage = locationRepository.findAllById(message.getUuids());
-    List<LocationRelationship> locationRelationships = locationRelationshipRepository.getLocationRelationshipByLocation_IdentifierInAndLocationHierarchy_Identifier(
-        new ArrayList<>(message.getUuids()), UUID.fromString(message.getHierarchyIdentifier()));
 
-    Map<UUID, LocationRelationship> locationRelationshipMap = locationRelationships.stream()
-        .collect(
-            Collectors.toMap(
-                locationRelationship -> locationRelationship.getLocation().getIdentifier(),
-                locationRelationship -> locationRelationship, (a, b) -> b));
-
-    List<EventAggregateNumericProjection> aggregationValuesByLocations = eventAggregateRepository.getAggregationValuesByLocationList(
+    List<EventAggregateNumericProjection> eventAggregationValuesByLocations = eventAggregateRepository.getAggregationValuesByLocationList(
         message.getUuids().stream().map(UUID::toString).collect(Collectors.toList()));
 
-    Map<String, List<AggregateNumeric>> eventAggregateListPerLocation = aggregationValuesByLocations.stream()
-        .map(eventAggregateNumericProjection -> AggregateNumeric.builder()
-            .avg(eventAggregateNumericProjection.getAvg())
-            .locationIdentifier(eventAggregateNumericProjection.getLocationIdentifier())
-            .fieldCode(eventAggregateNumericProjection.getFieldCode())
-            .median(eventAggregateNumericProjection.getMedian())
-            .sum(eventAggregateNumericProjection.getSum())
-            .eventType(eventAggregateNumericProjection.getEventType())
-            .planIdentifier(eventAggregateNumericProjection.getPlanIdentifier())
-            .name(eventAggregateNumericProjection.getName())
-            .build()
-        )
+    Map<String, List<AggregateNumeric>> eventAggregateListPerLocation = eventAggregationValuesByLocations.stream()
+        .map(aggregateNumeric -> getBuild(aggregateNumeric,
+            EntityTagFieldTypes.EVENT.concat("-")
+                .concat(aggregateNumeric.getEventType())))
         .collect(Collectors.groupingBy(
             AggregateNumeric::getLocationIdentifier));
 
-    List<ImportAggregateNumericProjection> aggregationValuesByLocationList = importAggregateRepository.getAggregationValuesByLocationList(
-        message.getUuids().stream().map(UUID::toString).collect(Collectors.toList()),message.getHierarchyIdentifier());
+    List<ImportAggregateNumericProjection> importAggregationValuesByLocationList = importAggregateRepository.getAggregationValuesByLocationList(
+        message.getUuids().stream().map(UUID::toString).collect(Collectors.toList()),
+        message.getHierarchyIdentifier());
 
-    Map<String, List<AggregateNumeric>> importAggregatePerLocation = aggregationValuesByLocationList.stream()
-        .map(importAggregateNumericProjection -> AggregateNumeric.builder()
-            .avg(importAggregateNumericProjection.getAvg())
-            .locationIdentifier(importAggregateNumericProjection.getLocationIdentifier())
-            .fieldCode(importAggregateNumericProjection.getFieldCode())
-            .median(importAggregateNumericProjection.getMedian())
-            .sum(importAggregateNumericProjection.getSum())
-            .eventType(importAggregateNumericProjection.getEventType())
-            .planIdentifier(importAggregateNumericProjection.getPlanIdentifier())
-            .name(importAggregateNumericProjection.getName())
-            .build()).collect(Collectors.groupingBy(
+    Map<String, List<AggregateNumeric>> importAggregatePerLocation = importAggregationValuesByLocationList.stream()
+        .map(aggregateNumeric -> getBuild(aggregateNumeric, EntityTagFieldTypes.IMPORT))
+        .collect(Collectors.groupingBy(
+            AggregateNumeric::getLocationIdentifier));
+
+    List<ResourceAggregateNumericProjection> resourceAggregationValuesByLocation = resourceAggregateRepository.getAggregationValuesByLocationList(
+        message.getUuids().stream().map(UUID::toString).collect(Collectors.toList()),
+        message.getHierarchyIdentifier());
+
+    Map<String, List<AggregateNumeric>> resourceAggregatePerLocation = resourceAggregationValuesByLocation.stream()
+        .map(aggregateNumeric -> getBuild(aggregateNumeric,
+            EntityTagFieldTypes.RESOURCE_PLANNING.concat("-").concat(aggregateNumeric.getEventType())))
+        .collect(Collectors.groupingBy(
             AggregateNumeric::getLocationIdentifier));
 
     Map<String, List<AggregateNumeric>> numericAggregatePerLocation = new HashMap<>(
@@ -106,36 +95,29 @@ public class LocationIdListener extends Listener {
       });
     });
 
+    resourceAggregatePerLocation.forEach((key, value) -> {
+      numericAggregatePerLocation.merge(key, value, (v1, v2) -> {
+        List<AggregateNumeric> aggregateNumerics = new ArrayList<>();
+        aggregateNumerics.addAll(v1);
+        aggregateNumerics.addAll(v2);
+        return aggregateNumerics;
+      });
+    });
+
     List<EventAggregateStringCountProjection> eventAggregationCountsByLocations = eventAggregateRepository.getAggregationCountValuesByLocationList(
         message.getUuids().stream().map(UUID::toString).collect(Collectors.toList()));
 
     Map<String, List<AggregateStringCount>> eventAggregateStringCountListPerLocation = eventAggregationCountsByLocations.stream()
-        .map(eventAggregateStringCountProjection -> AggregateStringCount.builder()
-            .locationIdentifier(eventAggregateStringCountProjection.getLocationIdentifier())
-            .fieldCode(eventAggregateStringCountProjection.getFieldCode())
-            .fieldVal(eventAggregateStringCountProjection.getFieldVal())
-            .eventType(eventAggregateStringCountProjection.getEventType())
-            .planIdentifier(eventAggregateStringCountProjection.getPlanIdentifier())
-            .name(eventAggregateStringCountProjection.getName())
-            .count(eventAggregateStringCountProjection.getCount())
-            .build()
-        )
+        .map(aggregateNumeric -> getBuild(aggregateNumeric,
+            EntityTagFieldTypes.EVENT.concat("-").concat(aggregateNumeric.getEventType())))
         .collect(Collectors.groupingBy(AggregateStringCount::getLocationIdentifier));
 
     List<ImportAggregateStringCountProjection> aggregationCountValuesByLocationList = importAggregateRepository.getAggregationCountValuesByLocationList(
-        message.getUuids().stream().map(UUID::toString).collect(Collectors.toList()),message.getHierarchyIdentifier());
+        message.getUuids().stream().map(UUID::toString).collect(Collectors.toList()),
+        message.getHierarchyIdentifier());
 
     Map<String, List<AggregateStringCount>> importAggregateStringCountListPerLocation = aggregationCountValuesByLocationList.stream()
-        .map(eventAggregateStringCountProjection -> AggregateStringCount.builder()
-            .locationIdentifier(eventAggregateStringCountProjection.getLocationIdentifier())
-            .fieldCode(eventAggregateStringCountProjection.getFieldCode())
-            .fieldVal(eventAggregateStringCountProjection.getFieldVal())
-            .eventType(eventAggregateStringCountProjection.getEventType())
-            .planIdentifier(eventAggregateStringCountProjection.getPlanIdentifier())
-            .name(eventAggregateStringCountProjection.getName())
-            .count(eventAggregateStringCountProjection.getCount())
-            .build()
-        )
+        .map(aggregateNumeric -> getBuild(aggregateNumeric, EntityTagFieldTypes.IMPORT))
         .collect(Collectors.groupingBy(AggregateStringCount::getLocationIdentifier));
 
     Map<String, List<AggregateStringCount>> stringAggregatePerLocation = new HashMap<>(
@@ -171,38 +153,6 @@ public class LocationIdListener extends Listener {
       locationElastic.setGeometry(location.getGeometry());
       locationElastic.setLevel(location.getGeographicLevel().getName());
 
-      LocationRelationship relationship = locationRelationshipMap.get(
-          location.getIdentifier());
-
-      if (relationship != null) {
-        Map<String, List<String>> stringListMap = new HashMap<>();
-        if (relationship.getAncestry() != null) {
-          stringListMap.put(message.getHierarchyIdentifier().toString(),
-              relationship.getAncestry().stream().map(UUID::toString).collect(
-                  Collectors.toList()));
-
-          HierarchyDetailsElastic hierarchyDetailsElastic = new HierarchyDetailsElastic();
-          hierarchyDetailsElastic.setAncestry(
-              relationship.getAncestry().stream().map(UUID::toString).collect(
-                  Collectors.toList()));
-
-          hierarchyDetailsElastic.setParent(
-              relationship.getParentLocation().getIdentifier().toString());
-          List<String> strings = Arrays.asList(message.getNodeOrder().split(","));
-          hierarchyDetailsElastic.setGeographicLevelNumber(
-              strings.indexOf(location.getGeographicLevel().getName()));
-
-          Map<String, HierarchyDetailsElastic> hierarchyDetailsElasticMap = new HashMap<>();
-          hierarchyDetailsElasticMap.put(message.getHierarchyIdentifier().toString(),
-              hierarchyDetailsElastic);
-
-          locationElastic.setHierarchyDetailsElastic(hierarchyDetailsElasticMap);
-          log.trace("SAVED----------------------{}", location.getName());
-        } else {
-          log.trace("NOT SAVED----------------------");
-        }
-      }
-
       if (numericAggregatePerLocation.containsKey(location.getIdentifier().toString())) {
         List<AggregateNumeric> eventAggregateNumericProjections = numericAggregatePerLocation.get(
             location.getIdentifier().toString());
@@ -216,7 +166,8 @@ public class LocationIdListener extends Listener {
                 List<EntityMetadataElastic> entityMetadataElastics = new ArrayList<>();
 
                 String s;
-                if (eventAggregateNumericProjection.getEventType().equals("Import")) {
+                if (eventAggregateNumericProjection.getEventType()
+                    .equals(EntityTagFieldTypes.IMPORT)) {
                   s = eventAggregateNumericProjection.getFieldCode()
                       + eventAggregationProperties.getDelim();
                 } else {
@@ -228,21 +179,38 @@ public class LocationIdListener extends Listener {
 
                 EntityMetadataElastic entityMetadataElasticSum = getEntityMetadataElastic(
                     eventAggregateNumericProjection.getPlanIdentifier(),
-                    s + "sum",
-                    eventAggregateNumericProjection.getSum(),message.getHierarchyIdentifier());
+                    s + EntityTagDataAggregationMethods.SUM,
+                    eventAggregateNumericProjection.getSum(), message.getHierarchyIdentifier(),
+                    eventAggregateNumericProjection.getFieldType());
                 entityMetadataElastics.add(entityMetadataElasticSum);
 
                 EntityMetadataElastic entityMetadataElasticsAverage = getEntityMetadataElastic(
                     eventAggregateNumericProjection.getPlanIdentifier(),
-                    s + "average",
-                    eventAggregateNumericProjection.getAvg(),message.getHierarchyIdentifier());
+                    s + EntityTagDataAggregationMethods.AVERAGE,
+                    eventAggregateNumericProjection.getAvg(), message.getHierarchyIdentifier(),
+                    eventAggregateNumericProjection.getFieldType());
                 entityMetadataElastics.add(entityMetadataElasticsAverage);
 
                 EntityMetadataElastic entityMetadataElasticsMedian = getEntityMetadataElastic(
                     eventAggregateNumericProjection.getPlanIdentifier(),
-                    s + "median",
-                    eventAggregateNumericProjection.getMedian(),message.getHierarchyIdentifier());
+                    s + EntityTagDataAggregationMethods.MEDIAN,
+                    eventAggregateNumericProjection.getMedian(), message.getHierarchyIdentifier(),
+                    eventAggregateNumericProjection.getFieldType());
                 entityMetadataElastics.add(entityMetadataElasticsMedian);
+
+                EntityMetadataElastic entityMetadataElasticsMax = getEntityMetadataElastic(
+                    eventAggregateNumericProjection.getPlanIdentifier(),
+                    s + EntityTagDataAggregationMethods.MAX,
+                    eventAggregateNumericProjection.getMax(), message.getHierarchyIdentifier(),
+                    eventAggregateNumericProjection.getFieldType());
+                entityMetadataElastics.add(entityMetadataElasticsMax);
+
+                EntityMetadataElastic entityMetadataElasticsMin = getEntityMetadataElastic(
+                    eventAggregateNumericProjection.getPlanIdentifier(),
+                    s + EntityTagDataAggregationMethods.MIN,
+                    eventAggregateNumericProjection.getMin(), message.getHierarchyIdentifier(),
+                    eventAggregateNumericProjection.getFieldType());
+                entityMetadataElastics.add(entityMetadataElasticsMin);
 
                 return entityMetadataElastics.stream();
               }).collect(Collectors.toList());
@@ -279,7 +247,8 @@ public class LocationIdListener extends Listener {
                       .matches(eventAggregationProperties.getExclusionListRegex()))
               .map(aggregationStringCountProjection -> {
                 String s;
-                if (aggregationStringCountProjection.getEventType().equals("Import")) {
+                if (aggregationStringCountProjection.getEventType()
+                    .equals(EntityTagFieldTypes.IMPORT)) {
                   s = aggregationStringCountProjection.getFieldCode()
                       + eventAggregationProperties.getDelim()
                       + aggregationStringCountProjection.getFieldVal()
@@ -298,7 +267,8 @@ public class LocationIdListener extends Listener {
                 EntityMetadataElastic entityMetadataElastic = getEntityMetadataElastic(
                     aggregationStringCountProjection.getPlanIdentifier(),
                     eventAggregationNumericProjection1,
-                    aggregationStringCountProjection.getCount(),message.getHierarchyIdentifier());
+                    aggregationStringCountProjection.getCount(), message.getHierarchyIdentifier(),
+                    aggregationStringCountProjection.getFieldType());
                 return entityMetadataElastic;
               }).collect(Collectors.toList());
 
@@ -332,6 +302,38 @@ public class LocationIdListener extends Listener {
     } else {
       log.info("not saved");
     }
+  }
+
+  private <T extends AggregateStringProjection> AggregateStringCount getBuild(
+      T eventAggregateStringCountProjection, String fieldType) {
+    return AggregateStringCount.builder()
+        .locationIdentifier(eventAggregateStringCountProjection.getLocationIdentifier())
+        .fieldCode(eventAggregateStringCountProjection.getFieldCode())
+        .fieldVal(eventAggregateStringCountProjection.getFieldVal())
+        .fieldType(fieldType)
+        .eventType(eventAggregateStringCountProjection.getEventType())
+        .planIdentifier(eventAggregateStringCountProjection.getPlanIdentifier())
+        .name(eventAggregateStringCountProjection.getName())
+        .count(eventAggregateStringCountProjection.getCount())
+        .build();
+  }
+
+  private <T extends AggregateNumericProjection> AggregateNumeric getBuild(
+      T aggregateNumericProjection, String fieldType) {
+
+    return AggregateNumeric.builder()
+        .avg(aggregateNumericProjection.getAvg())
+        .locationIdentifier(aggregateNumericProjection.getLocationIdentifier())
+        .fieldCode(aggregateNumericProjection.getFieldCode())
+        .median(aggregateNumericProjection.getMedian())
+        .sum(aggregateNumericProjection.getSum())
+        .fieldType(fieldType)
+        .eventType(aggregateNumericProjection.getEventType())
+        .planIdentifier(aggregateNumericProjection.getPlanIdentifier())
+        .name(aggregateNumericProjection.getName())
+        .min(aggregateNumericProjection.getMin())
+        .max(aggregateNumericProjection.getMax())
+        .build();
   }
 
 

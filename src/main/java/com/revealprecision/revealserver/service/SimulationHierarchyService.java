@@ -139,6 +139,7 @@ public class SimulationHierarchyService {
                     .nodeOrder(generatedHierarchyMetadata.getGeneratedHierarchy().getNodeOrder())
                     .name(generatedHierarchyMetadata.getGeneratedHierarchy().getName())
                     .build())
+                .fieldType(generatedHierarchyMetadata.getFieldType())
                 .value(generatedHierarchyMetadata.getValue())
                 .locationIdentifier(generatedHierarchyMetadata.getLocationIdentifier())
                 .tag(generatedHierarchyMetadata.getTag())
@@ -165,6 +166,7 @@ public class SimulationHierarchyService {
                         : metadata.getValue() instanceof Integer
                             ? ((Integer) metadata.getValue()).doubleValue()
                             : (Double) metadata.getValue())
+                    .fieldType(metadata.getFieldType())
                     .generatedHierarchy(generatedHierarchySaved)
                     .locationIdentifier(saveHierarchyLocationRequest.getIdentifier())
                     .build()

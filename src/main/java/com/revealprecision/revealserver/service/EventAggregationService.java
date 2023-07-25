@@ -1,7 +1,7 @@
 package com.revealprecision.revealserver.service;
 
 import com.revealprecision.revealserver.api.v1.dto.response.EntityTagResponse;
-import com.revealprecision.revealserver.api.v1.dto.response.LookupEntityTypeResponse;
+import com.revealprecision.revealserver.constants.EntityTagDataAggregationMethods;
 import com.revealprecision.revealserver.constants.EntityTagDataTypes;
 import com.revealprecision.revealserver.persistence.projection.EventAggregationNumericTagProjection;
 import com.revealprecision.revealserver.persistence.repository.EventAggregateRepository;
@@ -26,17 +26,17 @@ public class EventAggregationService {
   List<String> uniqueTagsFromEventAggregationNumeric = new ArrayList<>();
   List<String> uniqueTagsFromEventAggregationStringCount = new ArrayList<>();
 
-  public List<EntityTagResponse> getEventBasedTags(UUID entityTypeIdentifier) {
+  public List<EntityTagResponse> getEventBasedTags() {
 
     List<EntityTagResponse> entityTagResponses = uniqueTagsFromEventAggregationNumeric.stream().map(s ->
             getEntityTagResponse(
-                s, entityTypeIdentifier,
+                s,
                 EntityTagDataTypes.DOUBLE))
             .collect(Collectors.toList());
 
         entityTagResponses.addAll(uniqueTagsFromEventAggregationStringCount.stream().map(s ->
         getEntityTagResponse(
-            s, entityTypeIdentifier,
+            s,
             EntityTagDataTypes.DOUBLE)
     ).collect(Collectors.toList()));
 
@@ -53,9 +53,9 @@ public class EventAggregationService {
    return eventAggregateRepository.getUniqueTagsFromEventAggregationNumeric()
         .stream().flatMap(eventAggregationNumericTagProjection -> {
       List<String> tags = new ArrayList<>();
-      tags.add(getTagString(eventAggregationNumericTagProjection,"sum"));
-      tags.add(getTagString(eventAggregationNumericTagProjection,"average"));
-      tags.add(getTagString(eventAggregationNumericTagProjection,"median"));
+      tags.add(getTagString(eventAggregationNumericTagProjection, EntityTagDataAggregationMethods.SUM));
+      tags.add(getTagString(eventAggregationNumericTagProjection,EntityTagDataAggregationMethods.AVERAGE));
+      tags.add(getTagString(eventAggregationNumericTagProjection,EntityTagDataAggregationMethods.MEDIAN));
 
       return tags.stream();
 
@@ -66,7 +66,7 @@ public class EventAggregationService {
     return eventAggregateRepository.getUniqueTagsFromEventAggregationStringCount()
         .stream().flatMap(eventAggregationNumericTagProjection -> {
           List<String> tags = new ArrayList<>();
-          tags.add(getTagString(eventAggregationNumericTagProjection,"count"));
+          tags.add(getTagString(eventAggregationNumericTagProjection,EntityTagDataAggregationMethods.COUNT));
           return tags.stream();
 
         }).collect(Collectors.toList());
@@ -91,29 +91,13 @@ public class EventAggregationService {
     log.info("Syncing tags - Complete");
   }
 
-
-//  @PostConstruct
-//  void init(){
-//    new Thread(this::sync).start();
-//  }
-
-
   private EntityTagResponse getEntityTagResponse(
-      String tagName, UUID entityTypeIdentifier, String dataTypes) {
+      String tagName, String dataTypes) {
     return EntityTagResponse.builder()
         .simulationDisplay(false)
         .isAggregate(true)
         .fieldType("tag")
-        .addToMetadata(true)
-        .isResultLiteral(true)
-        .isGenerated(false)
-        .resultExpression(null)
-        .generationFormula(null)
-        .lookupEntityType(
-            LookupEntityTypeResponse.builder().identifier(entityTypeIdentifier).code("Location")
-                .tableName("location").build())
         .valueType(dataTypes)
-        .referenceFields(null)
         .identifier(UUID.randomUUID())
         .tag(tagName)
         .build();

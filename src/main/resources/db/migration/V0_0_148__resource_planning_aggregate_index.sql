@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX ON resource_aggregate_numeric(id);

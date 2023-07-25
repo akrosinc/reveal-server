@@ -1,7 +1,6 @@
 package com.revealprecision.revealserver.api.v1.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import java.util.List;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -27,19 +26,7 @@ public class EntityTagResponse {
 
   private String fieldType;
 
-  private LookupEntityTypeResponse lookupEntityType;
-
-  private String resultExpression;
-
-  private String generationFormula;
-
-  private List<String> referenceFields;
-
-  private boolean isResultLiteral;
-
-  private boolean isGenerated;
-
-  private boolean addToMetadata;
+  private String subType;
 
   private boolean isAggregate;
 

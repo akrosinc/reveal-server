@@ -25,7 +25,9 @@ public interface EventAggregateRepository extends JpaRepository<EventAggregation
       + "       ean2.fieldcode as fieldCode,\n"
       + "       ean2.sum as sum,\n"
       + "       ean2.avg as avg,\n"
-      + "       ean2.median as median\n"
+      + "       ean2.median as median,\n"
+      + "       ean2.min as min,\n"
+      + "       ean2.max as max\n"
       + "from event_aggregate_numeric ean2\n"
       + "\n"
       + "WHERE cast(ean2.locationIdentifier as varchar) in :locationIdentifiers", nativeQuery = true)

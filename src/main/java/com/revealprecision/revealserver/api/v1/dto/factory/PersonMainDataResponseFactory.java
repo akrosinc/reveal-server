@@ -25,7 +25,7 @@ public class PersonMainDataResponseFactory {
   public static PersonMainData fromPersonElastic(PersonElastic personElastic) {
     List<EntityMetadataResponse> personMetadata = personElastic.getMetadata()
         .stream()
-        .map(pm -> new EntityMetadataResponse(pm.getValue(), pm.getType()))
+        .map(pm -> new EntityMetadataResponse(pm.getValue(), pm.getType(),null))
         .collect( Collectors.toList());
     return PersonMainData.builder()
         .coreFields(PersonCoreFields.builder()
