@@ -418,16 +418,16 @@ public class EntityFilterEsService {
     searchRequest.source(sourceBuilder);
     sourceBuilder.size(10000);
 
-    List<SortBuilder<?>> sortBuilders = List.of(SortBuilders.fieldSort("name").order(
-            SortOrder.DESC),
-        SortBuilders.fieldSort("hashValue").order(
-            SortOrder.DESC));
+//    List<SortBuilder<?>> sortBuilders = List.of(SortBuilders.fieldSort("name").order(
+//            SortOrder.DESC),
+//        SortBuilders.fieldSort("hashValue").order(
+//            SortOrder.DESC));
+//
+//    sourceBuilder.sort(sortBuilders);
 
-    sourceBuilder.sort(sortBuilders);
-
-    if (lastHit != null) {
-      sourceBuilder.searchAfter(lastHit.getSortValues());
-    }
+//    if (lastHit != null) {
+//      sourceBuilder.searchAfter(lastHit.getSortValues());
+//    }
 
     SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
 
@@ -447,10 +447,10 @@ public class EntityFilterEsService {
     response.setType("FeatureCollection");
     response.setFeatures(responses);
 
-    if (searchResponse.getHits().getHits().length > 0) {
-      lastHit =
-          searchResponse.getHits().getHits()[searchResponse.getHits().getHits().length - 1];
-    }
+//    if (searchResponse.getHits().getHits().length > 0) {
+//      lastHit =
+//          searchResponse.getHits().getHits()[searchResponse.getHits().getHits().length - 1];
+//    }
     return new FeatureSetResponseContainer(response, lastHit);
   }
 

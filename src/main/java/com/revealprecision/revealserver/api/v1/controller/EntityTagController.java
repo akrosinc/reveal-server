@@ -242,6 +242,8 @@ public class EntityTagController {
 
           List<Set<String>> parentBatches = splitArray(parents, parentBatch);
 
+          log.debug("parents {}",parentBatches);
+
           SearchHit searchHit = null;
           for (Set<String> batch : parentBatches) {
             FeatureSetResponseContainer featureSetResponseContainer = entityFilterService.retrieveParentLocations(
