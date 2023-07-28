@@ -40,10 +40,12 @@ public class ResourcePlanningHistory extends AbstractAuditableEntity{
   private ResourcePlanningDashboardRequest history;
 
   private String name;
+  private  String baseName;
 
-  public ResourcePlanningHistory(ResourcePlanningDashboardRequest history, String name){
+  public ResourcePlanningHistory(ResourcePlanningDashboardRequest history, String name, String baseName){
     this.history = history;
     this.name = name;
+    this.baseName = baseName;
     this.setEntityStatus(EntityStatus.ACTIVE);
   }
 }

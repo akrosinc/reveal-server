@@ -16,4 +16,6 @@ public interface ResourcePlanningHistoryRepository extends JpaRepository<Resourc
   @Query(value = "select new com.revealprecision.revealserver.api.v1.dto.response.ResourcePlanningHistoryResponse(rh.identifier, rh.name, u.username, rh.createdDatetime) from ResourcePlanningHistory rh "
       + "left join User u on CAST(u.sid as string) = rh.createdBy ")
   Page<ResourcePlanningHistoryResponse> getHistory(Pageable pageable);
+
+  int countByBaseName(String name);
 }

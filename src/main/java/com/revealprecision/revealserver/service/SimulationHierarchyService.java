@@ -10,6 +10,7 @@ import com.revealprecision.revealserver.messaging.message.GeneratedHierarchyMeta
 import com.revealprecision.revealserver.persistence.domain.aggregation.GeneratedHierarchy;
 import com.revealprecision.revealserver.persistence.domain.aggregation.GeneratedHierarchyMetadata;
 import com.revealprecision.revealserver.persistence.domain.aggregation.GeneratedLocationRelationship;
+import com.revealprecision.revealserver.persistence.projection.LocationMainData;
 import com.revealprecision.revealserver.persistence.repository.GeneratedHierarchyMetadataRepository;
 import com.revealprecision.revealserver.persistence.repository.GeneratedHierarchyRepository;
 import com.revealprecision.revealserver.persistence.repository.GeneratedLocationRelationshipRepository;
@@ -17,6 +18,7 @@ import com.revealprecision.revealserver.props.KafkaProperties;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.transaction.Transactional;
 import lombok.Builder;
@@ -150,6 +152,11 @@ public class SimulationHierarchyService {
         )
     );
 
+  }
+  public List<LocationMainData> getLocationIdByHierarchyIdAndLevelName(String hierarchyId, String level){
+   return generatedLocationRelationshipRepository.getLocationIdsByGeneratedHierarchyIdAndGeographicLevelName(
+        hierarchyId, level).stream().map(projection-> new LocationMainData(UUID.fromString(projection.getIdentifier()),
+        projection.getName())).collect(Collectors.toList());
   }
 
 
