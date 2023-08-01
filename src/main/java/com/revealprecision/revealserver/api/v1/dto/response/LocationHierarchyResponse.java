@@ -20,6 +20,8 @@ public class LocationHierarchyResponse {
 
   private String name;
 
+  private String type;
+
   private List<String> nodeOrder;
 
   private List<GeoTreeResponse> geoTree;

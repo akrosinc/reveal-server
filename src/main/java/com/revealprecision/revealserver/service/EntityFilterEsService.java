@@ -4,6 +4,8 @@ import static com.revealprecision.revealserver.constants.EntityTagDataTypes.DATE
 import static com.revealprecision.revealserver.constants.EntityTagDataTypes.DOUBLE;
 import static com.revealprecision.revealserver.constants.EntityTagDataTypes.INTEGER;
 import static com.revealprecision.revealserver.constants.EntityTagDataTypes.STRING;
+import static com.revealprecision.revealserver.service.SimulationHierarchyService.GENERATED;
+import static com.revealprecision.revealserver.service.SimulationHierarchyService.SAVED;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -285,8 +287,7 @@ public class EntityFilterEsService {
 
     stringWriter.close();
     InputStream targetStream = new ByteArrayInputStream(stringWriter.toString().getBytes());
-    InputStreamResource resource = new InputStreamResource(targetStream);
-    return resource;
+    return new InputStreamResource(targetStream);
   }
 
   public SseEmitter getSseEmitter(String simulationRequestId) {
@@ -296,13 +297,14 @@ public class EntityFilterEsService {
     if (simulationRequestById.isPresent()) {
       DataFilterRequest request = simulationRequestById.get().getRequest();
       GenericHierarchy locationHierarchy = new GenericHierarchy();
-      if (request.getHierarchyType().equals("saved")) {
+      if (request.getHierarchyType().equals(SAVED)) {
         LocationHierarchy locationHierarchyDB = locationHierarchyService.findByIdentifier(
             UUID.fromString(request.getHierarchyIdentifier()));
 
         locationHierarchy.setIdentifier(locationHierarchyDB.getIdentifier().toString());
         locationHierarchy.setName(locationHierarchyDB.getName());
         locationHierarchy.setNodeOrder(locationHierarchyDB.getNodeOrder());
+        locationHierarchy.setType(SAVED);
 
       } else {
 
@@ -312,6 +314,7 @@ public class EntityFilterEsService {
         if (generatedHierarchyOptional.isPresent()) {
           locationHierarchy.setIdentifier(String.valueOf(generatedHierarchyOptional.get().getId()));
           locationHierarchy.setName(generatedHierarchyOptional.get().getName());
+          locationHierarchy.setType(GENERATED);
           locationHierarchy.setNodeOrder(generatedHierarchyOptional.get().getNodeOrder());
         }
 
@@ -700,7 +703,7 @@ public class EntityFilterEsService {
 
     List<String> nodeOrder = null;
 
-    if (request.getHierarchyType().equals("saved")) {
+    if (request.getHierarchyType().equals(SAVED)) {
       nodeOrder = locationHierarchyService.findByIdentifier(
               UUID.fromString(request.getHierarchyIdentifier()))
           .getNodeOrder();

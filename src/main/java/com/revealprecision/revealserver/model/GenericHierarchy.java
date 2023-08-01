@@ -15,5 +15,6 @@ import lombok.Setter;
 public class GenericHierarchy{
   String identifier;
   String name;
+  String type;
   List<String> nodeOrder;
 }

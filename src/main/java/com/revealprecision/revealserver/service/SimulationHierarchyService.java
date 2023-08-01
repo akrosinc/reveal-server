@@ -5,6 +5,7 @@ import com.revealprecision.revealserver.api.v1.dto.request.SaveHierarchyLocation
 import com.revealprecision.revealserver.api.v1.dto.request.SaveHierarchyRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.SaveHierarchyResponse;
 import com.revealprecision.revealserver.constants.KafkaConstants;
+import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.messaging.message.GeneratedHierarchyEvent;
 import com.revealprecision.revealserver.messaging.message.GeneratedHierarchyMetadataEvent;
 import com.revealprecision.revealserver.persistence.domain.aggregation.GeneratedHierarchy;
@@ -36,6 +37,8 @@ import org.springframework.stereotype.Service;
 @Transactional
 public class SimulationHierarchyService {
 
+  public static final String GENERATED = "generated";
+  public static final String SAVED = "saved";
   private final GeneratedHierarchyRepository generatedHierarchyRepository;
 
   private final GeneratedLocationRelationshipRepository generatedLocationRelationshipRepository;
@@ -115,7 +118,8 @@ public class SimulationHierarchyService {
 
     return SaveHierarchyResponse.builder().name(generatedHierarchySaved.getName())
         .nodeOrder(generatedHierarchySaved.getNodeOrder())
-        .identifier(generatedHierarchy.getId()).build();
+        .identifier(generatedHierarchy.getId())
+        .type(GENERATED).build();
   }
 
 
@@ -188,6 +192,10 @@ public class SimulationHierarchyService {
 
     return generatedHierarchyRepository.findAll();
   }
+  public GeneratedHierarchy getGeneratedHierarchyById(Integer id){
+    return generatedHierarchyRepository.findById(id).orElseThrow(()->new NotFoundException("not found"));
+  }
+
 }
 
 @Setter @Getter

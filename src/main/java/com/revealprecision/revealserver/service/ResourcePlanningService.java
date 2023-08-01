@@ -701,6 +701,6 @@ public class ResourcePlanningService {
     int count = resourcePlanningHistoryRepository.countByBaseName(history.getBaseName());
     count++;
     history.getHistory().setName(history.getBaseName().concat("-".concat(String.valueOf(count))));
-    return history.getHistory();
+     return history.getHistory();
   }
 }

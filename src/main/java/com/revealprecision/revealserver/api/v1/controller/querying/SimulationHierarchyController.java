@@ -1,9 +1,15 @@
 package com.revealprecision.revealserver.api.v1.controller.querying;
 
+import static com.revealprecision.revealserver.service.SimulationHierarchyService.GENERATED;
+import static com.revealprecision.revealserver.service.SimulationHierarchyService.SAVED;
+
+import com.revealprecision.revealserver.api.v1.dto.factory.LocationHierarchyResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.SaveHierarchyRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationHierarchyResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.SaveHierarchyResponse;
+import com.revealprecision.revealserver.persistence.domain.aggregation.GeneratedHierarchy;
 import com.revealprecision.revealserver.persistence.projection.LocationMainData;
+import com.revealprecision.revealserver.service.LocationHierarchyService;
 import com.revealprecision.revealserver.service.LocationRelationshipService;
 import com.revealprecision.revealserver.service.SimulationHierarchyService;
 import java.util.List;
@@ -30,6 +36,7 @@ public class SimulationHierarchyController {
   private final SimulationHierarchyService saveSimulationHierarchy;
   private final LocationRelationshipService locationRelationshipService;
 
+  private final LocationHierarchyService locationHierarchyService;
 
   @PostMapping("/saveSimulationHierarchy")
   public SaveHierarchyResponse saveSimulationHierarchy(
@@ -47,6 +54,7 @@ public class SimulationHierarchyController {
         .map(generatedHierarchy -> LocationHierarchyResponse.builder()
             .identifier(String.valueOf(generatedHierarchy.getId()))
             .name(generatedHierarchy.getName())
+            .type(GENERATED)
             .nodeOrder(generatedHierarchy.getNodeOrder())
             .build()).collect(Collectors.toList());
   }
@@ -57,7 +65,7 @@ public class SimulationHierarchyController {
       @PathVariable String geographicLevel) {
 
     List<LocationMainData> locationMainData;
-    if (type.equals("saved")) {
+    if (type.equals(SAVED)) {
 
       locationMainData = locationRelationshipService.getLocationsByHierarchyIdAndLevelName(
           UUID.fromString(hierarchyId), geographicLevel);
@@ -70,5 +78,20 @@ public class SimulationHierarchyController {
     return ResponseEntity.ok(locationMainData);
   }
 
+  @GetMapping("/simulationHierarchy/{hierarchyId}/{type}")
+  public LocationHierarchyResponse getSimulationHierarchyById(
+      @PathVariable String hierarchyId, @PathVariable String type) {
+
+    if (type.equals(SAVED)) {
+
+      return LocationHierarchyResponseFactory.fromEntityWithoutTree(locationHierarchyService.findByIdentifier(UUID.fromString(hierarchyId)));
+    } else {
+      GeneratedHierarchy generatedHierarchyById = saveSimulationHierarchy.getGeneratedHierarchyById(
+          Integer.valueOf(hierarchyId));
+      return LocationHierarchyResponse.builder().nodeOrder(generatedHierarchyById.getNodeOrder())
+          .name(generatedHierarchyById.getName())
+          .identifier(String.valueOf(generatedHierarchyById.getId())).build();
+    }
+  }
 
 }

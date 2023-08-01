@@ -7,6 +7,7 @@ import static com.revealprecision.revealserver.constants.EntityTagDataAggregatio
 import static com.revealprecision.revealserver.constants.EntityTagDataAggregationMethods.SUM_;
 import static com.revealprecision.revealserver.constants.EntityTagDataTypes.DOUBLE;
 import static com.revealprecision.revealserver.constants.EntityTagDataTypes.INTEGER;
+import static com.revealprecision.revealserver.service.SimulationHierarchyService.GENERATED;
 
 import com.revealprecision.revealserver.api.v1.dto.factory.EntityTagEventFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.EntityTagFactory;
@@ -82,16 +83,13 @@ public class EntityTagService {
   public List<EntityTagResponse> getAllAggregateEntityTagsAssociatedToData(String hierarchyIdentifier) {
 
     List<EntityTagResponse> resourceTags = resourceAggregateRepository.getUniqueDataTagsAssociatedWithData(
-        hierarchyIdentifier).stream().map(tagProjection ->{
-      EntityTagResponse resource_planning = EntityTagResponse.builder()
-              .fieldType(EntityTagFieldTypes.RESOURCE_PLANNING)
-              .isAggregate(true)
-              .tag(tagProjection.getTag())
-              .subType(tagProjection.getEventType())
-              .valueType(DOUBLE)
-              .build();
-      return resource_planning;
-        }
+        hierarchyIdentifier).stream().map(tagProjection -> EntityTagResponse.builder()
+                .fieldType(EntityTagFieldTypes.RESOURCE_PLANNING)
+                .isAggregate(true)
+                .tag(tagProjection.getTag())
+                .subType(tagProjection.getEventType())
+                .valueType(DOUBLE)
+                .build()
 
 
     ).collect(Collectors.toList());
@@ -112,7 +110,7 @@ public class EntityTagService {
         hierarchyIdentifier).stream().map(tagProjection ->
         EntityTagResponse.builder()
             .fieldType(tagProjection.getEventType())
-            .subType("generated")
+            .subType(GENERATED)
             .isAggregate(true)
             .tag(tagProjection.getTag())
             .valueType(DOUBLE)
@@ -131,11 +129,9 @@ public class EntityTagService {
             allTags.stream().map(EntityTagResponse::getTag).collect(Collectors.toSet())).stream()
         .collect(Collectors.toMap(EntityTag::getTag, a -> a, (a, b) -> b));
 
-    List<EntityTagResponse> peek = allTags.stream()
+    return allTags.stream()
         .peek(allTag -> allTag.setIdentifier(collect.get(allTag.getTag()).getIdentifier())).collect(
             Collectors.toList());
-
-    return peek;
 
   }
 
@@ -179,7 +175,7 @@ public class EntityTagService {
         collect(Collectors.toMap(EntityTagRequest::getTag, a -> a, (a, b) -> b));
 
     List<EntityTag> tags = tagsToSave.stream().map(
-        generatedEntityTagRequest -> EntityTagFactory.toEntity(generatedEntityTagRequest)
+        EntityTagFactory::toEntity
     ).collect(Collectors.toList());
 
     List<EntityTag> entityTags = entityTagRepository.saveAll(tags);

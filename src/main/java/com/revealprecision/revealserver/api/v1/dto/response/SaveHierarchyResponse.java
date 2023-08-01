@@ -22,4 +22,6 @@ public class SaveHierarchyResponse {
 
     private List<String> nodeOrder;
 
+    private String type;
+
  }
