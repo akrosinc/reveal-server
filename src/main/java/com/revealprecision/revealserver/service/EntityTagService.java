@@ -123,14 +123,16 @@ public class EntityTagService {
     allTags.addAll(importTags);
     allTags.addAll(generated);
 
-
-
     Map<String, EntityTag> collect = entityTagRepository.findEntityTagsByTagIn(
             allTags.stream().map(EntityTagResponse::getTag).collect(Collectors.toSet())).stream()
         .collect(Collectors.toMap(EntityTag::getTag, a -> a, (a, b) -> b));
 
     return allTags.stream()
-        .peek(allTag -> allTag.setIdentifier(collect.get(allTag.getTag()).getIdentifier())).collect(
+        .peek(allTag -> {
+          allTag.setIdentifier(collect.get(allTag.getTag()).getIdentifier());
+          allTag.setAggregate(collect.get(allTag.getTag()).isAggregate());
+          allTag.setSimulationDisplay(collect.get(allTag.getTag()).isSimulationDisplay());
+        }).collect(
             Collectors.toList());
 
   }
