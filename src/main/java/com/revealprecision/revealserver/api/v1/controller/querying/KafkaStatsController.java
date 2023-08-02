@@ -115,25 +115,29 @@ public class KafkaStatsController {
             Entry::getKey));
     Map<String, Long> collect1 = collect.entrySet().stream().map(entry -> {
           log.debug("entry: {}", entry);
-          String s = inverse.get(entry.getKey());
-          switch (s) {
-            case KafkaConstants.TASK_CANDIDATE_GENERATE: {
-              return new SimpleEntry<>("Task Generate", entry.getValue());
+          if (inverse.containsKey(entry.getKey())){
+            String s = inverse.get(entry.getKey());
+            switch (s) {
+              case KafkaConstants.TASK_CANDIDATE_GENERATE: {
+                return new SimpleEntry<>("Task Generate", entry.getValue());
+              }
+              case KafkaConstants.TASK: {
+                return new SimpleEntry<>("Task Processing", entry.getValue());
+              }
+              case KafkaConstants.LOCATIONS_IMPORTED: {
+                return new SimpleEntry<>("Location Import", entry.getValue());
+              }
+              case KafkaConstants.LOCATION_METADATA_UPDATE: {
+                return new SimpleEntry<>("Generate Hierarchy", entry.getValue());
+              }
+              case KafkaConstants.EVENT_AGGREGATION_LOCATION: {
+                return new SimpleEntry<>("Metadata Import", entry.getValue());
+              }
+              default:
+                return null;
             }
-            case KafkaConstants.TASK: {
-              return new SimpleEntry<>("Task Processing", entry.getValue());
-            }
-            case KafkaConstants.LOCATIONS_IMPORTED: {
-              return new SimpleEntry<>("Location Import", entry.getValue());
-            }
-            case KafkaConstants.LOCATION_METADATA_UPDATE: {
-              return new SimpleEntry<>("Generate Hierarchy", entry.getValue());
-            }
-            case KafkaConstants.EVENT_AGGREGATION_LOCATION: {
-              return new SimpleEntry<>("Metadata Import", entry.getValue());
-            }
-            default:
-              return null;
+          } else {
+            return null;
           }
         }).filter(Objects::nonNull)
         .collect(Collectors.toMap(SimpleEntry::getKey, SimpleEntry::getValue));
