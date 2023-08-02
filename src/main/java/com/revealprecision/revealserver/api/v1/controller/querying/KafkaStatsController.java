@@ -51,14 +51,15 @@ public class KafkaStatsController {
   private final AdminClient adminClient;
 
   @GetMapping("stats")
-  private  Map<String, Long> test() throws ExecutionException, InterruptedException {
-   return analyzeLag();
+  private Map<String, Long> test() throws ExecutionException, InterruptedException {
+    return analyzeLag();
   }
 
   private Map<TopicPartition, Long> getConsumerGrpOffsets()
       throws ExecutionException, InterruptedException {
     ListConsumerGroupOffsetsResult info = adminClient.listConsumerGroupOffsets(groupId);
-    Map<TopicPartition, OffsetAndMetadata> topicPartitionOffsetAndMetadataMap = info.partitionsToOffsetAndMetadata().get();
+    Map<TopicPartition, OffsetAndMetadata> topicPartitionOffsetAndMetadataMap = info.partitionsToOffsetAndMetadata()
+        .get();
 
     Map<TopicPartition, Long> groupOffset = new HashMap<>();
     for (Map.Entry<TopicPartition, OffsetAndMetadata> entry : topicPartitionOffsetAndMetadataMap.entrySet()) {
@@ -68,15 +69,19 @@ public class KafkaStatsController {
     }
     return groupOffset;
   }
+
   private KafkaConsumer<String, String> getKafkaConsumer() {
     Properties properties = new Properties();
     properties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapAddress);
-    properties.setProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
-    properties.setProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+    properties.setProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
+        StringDeserializer.class.getName());
+    properties.setProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
+        StringDeserializer.class.getName());
     return new KafkaConsumer<>(properties);
   }
 
-  private Map<TopicPartition, Long> getProducerOffsets(Map<TopicPartition, Long> consumerGrpOffset) {
+  private Map<TopicPartition, Long> getProducerOffsets(
+      Map<TopicPartition, Long> consumerGrpOffset) {
     List<TopicPartition> topicPartitions = new LinkedList<>();
     for (Map.Entry<TopicPartition, Long> entry : consumerGrpOffset.entrySet()) {
       TopicPartition key = entry.getKey();
@@ -98,7 +103,7 @@ public class KafkaStatsController {
     return lags;
   }
 
-  public  Map<String, Long> analyzeLag() throws ExecutionException, InterruptedException {
+  public Map<String, Long> analyzeLag() throws ExecutionException, InterruptedException {
     Map<TopicPartition, Long> consumerGrpOffsets = getConsumerGrpOffsets();
     Map<TopicPartition, Long> producerOffsets = getProducerOffsets(consumerGrpOffsets);
     Map<TopicPartition, Long> lags = computeLags(consumerGrpOffsets, producerOffsets);
@@ -109,6 +114,7 @@ public class KafkaStatsController {
         .collect(Collectors.toMap(Entry::getValue,
             Entry::getKey));
     Map<String, Long> collect1 = collect.entrySet().stream().map(entry -> {
+          log.debug("entry: {}", entry);
           String s = inverse.get(entry.getKey());
           switch (s) {
             case KafkaConstants.TASK_CANDIDATE_GENERATE: {
@@ -132,7 +138,7 @@ public class KafkaStatsController {
         }).filter(Objects::nonNull)
         .collect(Collectors.toMap(SimpleEntry::getKey, SimpleEntry::getValue));
 
-    log.info("vals: {}",collect);
+    log.info("vals: {}", collect);
 
     for (Map.Entry<TopicPartition, Long> lagEntry : lags.entrySet()) {
       String topic = lagEntry.getKey().topic();
