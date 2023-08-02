@@ -236,10 +236,12 @@ public class ResourcePlanningService {
     return response;
   }
 
-  public void submitDashboard(ResourcePlanningDashboardRequest request,
-      boolean saveData) throws IOException {
+  public void submitDashboard(ResourcePlanningDashboardRequest request) throws IOException {
+    Optional<ResourcePlanningHistory> resourcePlanningHistoryByName = resourcePlanningHistoryRepository.getResourcePlanningHistoryByName(
+        request.getName());
+
     List<LocationResourcePlanning> dashboardData = getDashboardData(request,
-        saveData);
+        resourcePlanningHistoryByName.isEmpty());
 
     Set<String> collect = dashboardData.stream().flatMap(locationResourcePlanning ->
         locationResourcePlanning.getColumnDataMap().values().stream()
@@ -348,7 +350,7 @@ public class ResourcePlanningService {
         .identifier(request.getLocationHierarchy().getIdentifier())
         .nodeOrder(request.getLocationHierarchy().getNodeOrder())
         .build();
-    CountryCampaign countryCampaign = getCountryCampaignByIdentifier(request.getCountry());
+    CountryCampaign countryCampaign = getCountryCampaignByIdentifier(request.getCountry().getIdentifier());
     String minAgeGroup = (String) request.getStepTwoAnswers().get("ageGroup");
     List<AgeGroup> targetedAgeGroups;
     if (request.getLowestGeography() != null) {
@@ -381,19 +383,13 @@ public class ResourcePlanningService {
       if (request.getName().isBlank()) {
         throw new ConflictException("Name cannot be blank");
       }
-      int count = resourcePlanningHistoryRepository.countByBaseName(request.getBaseName());
-      if (count > 0) {
-        if (request.getBaseName() == null) {
-          request.setBaseName(request.getName());
-        }
-        count++;
-        request.setName(request.getBaseName().concat("-".concat(String.valueOf(count))));
-      }
 
       ResourcePlanningHistory resourcePlanningHistory = new ResourcePlanningHistory(request,
           request.getName(), request.getBaseName());
+
       resourcePlanningHistoryRepository.save(resourcePlanningHistory);
     }
+
     return response;
   }
 
@@ -417,13 +413,13 @@ public class ResourcePlanningService {
   private List<LocationResourcePlanning> getDataFromElastic(
       ResourcePlanningDashboardRequest request) throws IOException {
     List<LocationElastic> foundLocations = new ArrayList<>();
-    EntityTag popTag = entityTagService.getEntityTagByIdentifier(request.getPopulationTag());
+    EntityTag popTag = entityTagService.getEntityTagByIdentifier(request.getPopulationTag().getIdentifier());
     String structureCountTag = null;
     List<LocationStructureCount> structureCounts;
     Map<String, Long> mapStructureCount = new HashMap<>();
     if (!request.isCountBasedOnImportedLocations()) {
       structureCountTag = entityTagService.getEntityTagByIdentifier(
-              request.getStructureCountTag())
+              request.getStructureCountTag().getIdentifier())
           .getTag();
     } else {
       structureCounts = locationRelationshipRepository.getNumberOfStructures(
@@ -698,9 +694,16 @@ public class ResourcePlanningService {
     ResourcePlanningHistory history = resourcePlanningHistoryRepository.findById(identifier)
         .orElseThrow(() -> new NotFoundException(Pair.of(
             Fields.identifier, identifier), ResourcePlanningHistory.class));
+     return history.getHistory();
+  }
+
+
+  public ResourcePlanningDashboardRequest getIncrementedCopyOfHistory(UUID identifier) {
+    ResourcePlanningDashboardRequest history = getHistoryByIdentifier(identifier);
     int count = resourcePlanningHistoryRepository.countByBaseName(history.getBaseName());
     count++;
-    history.getHistory().setName(history.getBaseName().concat("-".concat(String.valueOf(count))));
-     return history.getHistory();
+    history.setName(history.getBaseName().concat("-".concat(String.valueOf(count))));
+    history.setDataSubmittedToSimulation(false);
+    return history;
   }
 }

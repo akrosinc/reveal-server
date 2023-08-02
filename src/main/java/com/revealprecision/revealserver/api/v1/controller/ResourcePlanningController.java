@@ -79,7 +79,7 @@ public class ResourcePlanningController {
   @PostMapping("submitDashboard")
   public ResponseEntity<?> submitDashboard(@Valid @RequestBody
       ResourcePlanningDashboardRequest request) throws IOException {
-    resourcePlanningService.submitDashboard(request, false);
+    resourcePlanningService.submitDashboard(request);
     return ResponseEntity.ok()
         .build();
   }
@@ -96,4 +96,12 @@ public class ResourcePlanningController {
     return ResponseEntity.ok()
         .body(resourcePlanningService.getHistoryByIdentifier(identifier));
   }
+
+  @GetMapping("historyIncrementedCopy/{identifier}")
+  public ResponseEntity<ResourcePlanningDashboardRequest> getIncrementedCopyOfHistory(@PathVariable
+      UUID identifier) {
+    return ResponseEntity.ok()
+        .body(resourcePlanningService.getIncrementedCopyOfHistory(identifier));
+  }
+
 }

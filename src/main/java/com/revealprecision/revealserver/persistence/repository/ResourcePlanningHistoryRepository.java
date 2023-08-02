@@ -2,7 +2,7 @@ package com.revealprecision.revealserver.persistence.repository;
 
 import com.revealprecision.revealserver.api.v1.dto.response.ResourcePlanningHistoryResponse;
 import com.revealprecision.revealserver.persistence.domain.ResourcePlanningHistory;
-import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -16,6 +16,9 @@ public interface ResourcePlanningHistoryRepository extends JpaRepository<Resourc
   @Query(value = "select new com.revealprecision.revealserver.api.v1.dto.response.ResourcePlanningHistoryResponse(rh.identifier, rh.name, u.username, rh.createdDatetime) from ResourcePlanningHistory rh "
       + "left join User u on CAST(u.sid as string) = rh.createdBy ")
   Page<ResourcePlanningHistoryResponse> getHistory(Pageable pageable);
-
+//
   int countByBaseName(String name);
+
+  Optional<ResourcePlanningHistory> getResourcePlanningHistoryByName(String name);
+
 }
