@@ -1,0 +1,11 @@
+create index IF NOT EXISTS resource_aggregation_numeric_eventtype_fieldcode_idx on resource_aggregate_numeric (eventType, fieldcode);
+
+create index IF NOT EXISTS resource_aggregation_numeric_eventtype_fieldcode_hierarchyIdentifier_idx on resource_aggregate_numeric (eventType, fieldcode,hierarchyIdentifier);
+
+create index IF NOT EXISTS import_aggregate_numeric_fieldcode_idx on import_aggregate_string_count ( fieldcode);
+create index IF NOT EXISTS import_aggregate_string_count_fieldcode_idx on import_aggregate_string_count ( fieldcode);
+
+create index IF NOT EXISTS import_aggregate_numeric_fieldcode_hierarchyIdentifier_idx on import_aggregate_string_count ( fieldcode,hierarchyIdentifier);
+create index IF NOT EXISTS import_aggregate_string_count_fieldcode_hierarchyIdentifier_idx on import_aggregate_string_count ( fieldcode,hierarchyIdentifier);
+
+create index IF NOT EXISTS generated_hierarchy_metadata_field_type_tag_hierarchyIdentifier_idx on generated_hierarchy_metadata ( field_type,tag,generated_hierarchy_id);

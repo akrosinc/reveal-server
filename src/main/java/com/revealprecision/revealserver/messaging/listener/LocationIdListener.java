@@ -298,9 +298,9 @@ public class LocationIdListener extends Listener {
     if (elastics.size() > 0) {
 
       locationElasticRepository.saveAll(elastics);
-      log.info("saved");
+      log.debug("saved");
     } else {
-      log.info("not saved");
+      log.debug("not saved");
     }
   }
 
