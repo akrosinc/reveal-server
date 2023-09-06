@@ -1,2 +1,2 @@
 ALTER TABLE IF EXISTS generated_hierarchy_metadata
-    ADD COLUMN field_type character varying;
+    ADD COLUMN IF NOT EXISTS field_type character varying;

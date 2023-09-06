@@ -5,11 +5,13 @@ import com.revealprecision.revealserver.api.v1.dto.factory.LookupEntityTagRespon
 import com.revealprecision.revealserver.api.v1.dto.request.DataFilterRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.EntityTagRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.UpdateEntityTagRequest;
+import com.revealprecision.revealserver.api.v1.dto.response.ComplexTagDto;
 import com.revealprecision.revealserver.api.v1.dto.response.EntityTagResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.FeatureSetResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LookupEntityTypeResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.PersonMainData;
 import com.revealprecision.revealserver.api.v1.dto.response.SimulationCountResponse;
+import com.revealprecision.revealserver.persistence.domain.ComplexTag;
 import com.revealprecision.revealserver.persistence.repository.GeneratedHierarchyRepository;
 import com.revealprecision.revealserver.service.EntityFilterEsService;
 import com.revealprecision.revealserver.service.EntityTagService;
@@ -212,6 +214,40 @@ public class EntityTagController {
   public ResponseEntity<Void> updateTag(@RequestBody UpdateEntityTagRequest request) {
     entityTagService.updateEntityTag(request);
     return ResponseEntity.status(HttpStatus.OK).build();
+  }
+
+  @GetMapping("/complex")
+  public ResponseEntity<List<ComplexTagDto>> getComplexTag(){
+    return ResponseEntity.ok(entityTagService.getAllComplexTags().stream().map(complexTag -> ComplexTagDto.builder()
+        .hierarchyId(complexTag.getHierarchyId())
+        .formula(complexTag.getFormula())
+        .tags(complexTag.getTags())
+        .hierarchyType(complexTag.getHierarchyType())
+        .tagName(complexTag.getTagName())
+        .id(String.valueOf(complexTag.getId()))
+        .build())
+        .collect(Collectors.toList()));
+  }
+
+  @PostMapping("/complex")
+  public ResponseEntity<ComplexTagDto> getComplexTag(@RequestBody ComplexTagDto request){
+    ComplexTag complexTag = entityTagService.saveComplexTag(ComplexTag.builder()
+        .formula(request.getFormula())
+        .hierarchyId(request.getHierarchyId())
+        .hierarchyType(request.getHierarchyType())
+        .tagName(request.getTagName())
+        .tags(request.getTags())
+        .build());
+    return ResponseEntity.ok(
+        ComplexTagDto.builder()
+            .id(String.valueOf(complexTag.getId()))
+            .formula(complexTag.getFormula())
+            .hierarchyId(complexTag.getHierarchyId())
+            .hierarchyType(complexTag.getHierarchyType())
+            .tags(complexTag.getTags())
+            .tagName(complexTag.getTagName())
+            .build()
+    );
   }
 
 

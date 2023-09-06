@@ -1,4 +1,4 @@
-CREATE TABLE resource_planning_metadata
+CREATE TABLE IF NOT EXISTS resource_planning_metadata
 (
     identifier          SERIAL,
     location_identifier character varying,

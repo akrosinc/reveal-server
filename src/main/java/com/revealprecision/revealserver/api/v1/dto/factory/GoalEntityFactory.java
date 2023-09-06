@@ -2,6 +2,7 @@ package com.revealprecision.revealserver.api.v1.dto.factory;
 
 import com.revealprecision.revealserver.api.v1.dto.request.GoalRequest;
 import com.revealprecision.revealserver.enums.EntityStatus;
+import com.revealprecision.revealserver.enums.PriorityEnum;
 import com.revealprecision.revealserver.persistence.domain.Form;
 import com.revealprecision.revealserver.persistence.domain.Goal;
 import com.revealprecision.revealserver.persistence.domain.LookupEntityType;
@@ -20,7 +21,7 @@ public class GoalEntityFactory {
       List<LookupEntityType> lookupEntityTypes) {
     Goal goal = Goal.builder()
         .description(request.getDescription())
-        .priority(request.getPriority())
+        .priority(PriorityEnum.MEDIUM_PRIORITY)
         .plan(plan)
         .build();
 

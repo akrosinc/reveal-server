@@ -98,7 +98,7 @@ public class EventAggregationService {
         .isAggregate(true)
         .fieldType("tag")
         .valueType(dataTypes)
-        .identifier(UUID.randomUUID())
+        .identifier(UUID.randomUUID().toString())
         .tag(tagName)
         .build();
   }

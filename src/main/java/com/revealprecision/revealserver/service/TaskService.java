@@ -680,6 +680,10 @@ public class TaskService {
     taskEvent.setOwner(owner);
     task.setTaskFacade(taskEvent);
 
+    if (task.getDescription()==null){
+      task.setDescription(task.getAction().getTitle());
+    }
+
     Task savedTask = taskRepository.save(task);
     taskEvent.setIdentifier(savedTask.getIdentifier());
     taskEvent.setServerVersion(savedTask.getServerVersion());

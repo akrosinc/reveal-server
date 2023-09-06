@@ -2,7 +2,6 @@ package com.revealprecision.revealserver.api.v1.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.util.Map;
-import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -17,7 +16,7 @@ import lombok.Setter;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class SimulationCountResponse {
 
-  private UUID searchRequestId;
+  private String searchRequestId;
   private Map<String, Long> countResponse;
   private Map<String, Long> inactiveCountResponse;
 }

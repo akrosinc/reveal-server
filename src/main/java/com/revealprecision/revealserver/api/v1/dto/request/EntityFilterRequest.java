@@ -1,7 +1,6 @@
 package com.revealprecision.revealserver.api.v1.dto.request;
 
 import java.util.List;
-import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -17,7 +16,7 @@ import lombok.ToString;
 @ToString
 public class EntityFilterRequest {
 
-  private UUID fieldIdentifier;
+  private String fieldIdentifier;
   private String fieldType;
   private RangeFilter range;
   private SearchValue searchValue;

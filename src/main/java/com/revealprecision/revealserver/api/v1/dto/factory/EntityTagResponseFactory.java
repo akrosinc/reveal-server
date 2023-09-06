@@ -23,7 +23,7 @@ public class EntityTagResponseFactory {
   public static EntityTagResponse fromEntity(EntityTag entityTag) {
 
     return EntityTagResponse.builder()
-        .identifier(entityTag.getIdentifier())
+        .identifier(entityTag.getIdentifier().toString())
         .tag(entityTag.getTag())
         .definition(entityTag.getDefinition())
         .valueType(entityTag.getValueType())
@@ -36,7 +36,7 @@ public class EntityTagResponseFactory {
   public static EntityTagResponse fromCoreField(CoreField coreField) {
 
     return EntityTagResponse.builder()
-        .identifier(coreField.getIdentifier())
+        .identifier(coreField.getIdentifier().toString())
         .tag(coreField.getField())
         .definition(coreField.getDefinition())
         .valueType(coreField.getValueType())

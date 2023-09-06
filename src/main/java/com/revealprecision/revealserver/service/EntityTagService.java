@@ -20,8 +20,10 @@ import com.revealprecision.revealserver.constants.EntityTagFieldTypes;
 import com.revealprecision.revealserver.exceptions.DuplicateCreationException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.messaging.message.EntityTagEvent;
+import com.revealprecision.revealserver.persistence.domain.ComplexTag;
 import com.revealprecision.revealserver.persistence.domain.EntityTag;
 import com.revealprecision.revealserver.persistence.domain.User.Fields;
+import com.revealprecision.revealserver.persistence.repository.ComplexTagRepository;
 import com.revealprecision.revealserver.persistence.repository.EntityTagRepository;
 import com.revealprecision.revealserver.persistence.repository.GeneratedHierarchyMetadataRepository;
 import com.revealprecision.revealserver.persistence.repository.ImportAggregateRepository;
@@ -50,7 +52,7 @@ public class EntityTagService {
   private final ImportAggregateRepository importAggregateRepository;
   private final ResourceAggregateRepository resourceAggregateRepository;
   private final GeneratedHierarchyMetadataRepository generatedHierarchyMetadataRepository;
-
+  private final ComplexTagRepository complexTagRepository;
 
   public static final Map<String, List<String>> aggregationMethods = Map.of(
       INTEGER, List.of(SUM_, MAX_, MIN_, AVERAGE_,MEDIAN_),
@@ -123,17 +125,37 @@ public class EntityTagService {
     allTags.addAll(importTags);
     allTags.addAll(generated);
 
-    Map<String, EntityTag> collect = entityTagRepository.findEntityTagsByTagIn(
+    Map<String, EntityTagResponse> collect = entityTagRepository.findEntityTagsByTagIn(
             allTags.stream().map(EntityTagResponse::getTag).collect(Collectors.toSet())).stream()
-        .collect(Collectors.toMap(EntityTag::getTag, a -> a, (a, b) -> b));
+        .map(entityTag -> EntityTagResponse.builder()
+            .identifier(String.valueOf(entityTag.getIdentifier()))
+            .isAggregate(entityTag.isAggregate())
+            .simulationDisplay(entityTag.isSimulationDisplay())
+            .tag(entityTag.getTag())
+            .build())
+        .collect(Collectors.toMap(EntityTagResponse::getTag, a -> a, (a, b) -> b));
 
-    return allTags.stream()
+    Map<String, EntityTagResponse> collect2 = complexTagRepository.findComplexTagsByTagNameIn(
+            allTags.stream().map(EntityTagResponse::getTag).collect(Collectors.toSet())).stream()
+        .map(entityTag -> EntityTagResponse.builder()
+            .identifier(String.valueOf(entityTag.getId()))
+            .isAggregate(false)
+            .simulationDisplay(false)
+            .tag(entityTag.getTagName())
+            .build()
+        )
+        .collect(Collectors.toMap(EntityTagResponse::getTag, a -> a, (a, b) -> b));
+
+    collect.putAll(collect2);
+
+    List<EntityTagResponse> collect1 = allTags.stream()
         .peek(allTag -> {
           allTag.setIdentifier(collect.get(allTag.getTag()).getIdentifier());
           allTag.setAggregate(collect.get(allTag.getTag()).isAggregate());
           allTag.setSimulationDisplay(collect.get(allTag.getTag()).isSimulationDisplay());
         }).collect(
             Collectors.toList());
+    return collect1;
 
   }
 
@@ -250,6 +272,14 @@ public class EntityTagService {
 
   public void saveEntityTags(Set<EntityTag> entityTags) {
     entityTagRepository.saveAll(entityTags);
+  }
+
+  public List<ComplexTag> getAllComplexTags(){
+    return complexTagRepository.findAll();
+  }
+
+  public ComplexTag saveComplexTag(ComplexTag complexTag){
+    return complexTagRepository.save(complexTag);
   }
 
 }

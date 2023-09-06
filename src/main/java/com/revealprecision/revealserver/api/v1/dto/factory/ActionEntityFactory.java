@@ -23,7 +23,7 @@ public class ActionEntityFactory {
 
     Action action = Action.builder()
         .title(actionRequest.getTitle())
-        .description(actionRequest.getDescription())
+        .description(actionRequest.getTitle())
         .timingPeriodStart(actionRequest.getTimingPeriod().getStart())
         .timingPeriodEnd(actionRequest.getTimingPeriod().getEnd())
         .goal(goal)

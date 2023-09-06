@@ -489,7 +489,8 @@ public class EntityFilterEsService {
             entry.getValue()
                 .stream().filter(
                     entityMetadataResponse -> entityMetadataResponse.getType().endsWith("-sum")
-                        || entityMetadataResponse.getType().endsWith("-count"))
+                        || entityMetadataResponse.getType().endsWith("-count") || entityMetadataResponse.getFieldType().equals("generated"))
+
                 .collect(
                     Collectors.groupingBy(EntityMetadataResponse::getType,
                         Collectors.reducing(0, EntityMetadataResponse::getValue,
@@ -809,7 +810,7 @@ public class EntityFilterEsService {
       simulationCountResponse.setInactiveCountResponse(inactive);
     }
 
-    simulationCountResponse.setSearchRequestId(simulationRequestSaved.getIdentifier());
+    simulationCountResponse.setSearchRequestId(simulationRequestSaved.getIdentifier().toString());
 
     return simulationCountResponse;
   }
