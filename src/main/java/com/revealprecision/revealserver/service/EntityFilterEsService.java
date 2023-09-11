@@ -37,6 +37,7 @@ import com.revealprecision.revealserver.persistence.es.PersonElastic;
 import com.revealprecision.revealserver.persistence.projection.LocationCoordinatesProjection;
 import com.revealprecision.revealserver.persistence.repository.GeneratedHierarchyRepository;
 import com.revealprecision.revealserver.persistence.repository.SimulationRequestRepository;
+import com.revealprecision.revealserver.props.SimulationProperties;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -111,6 +112,8 @@ public class EntityFilterEsService {
   private final SimulationRequestRepository simulationRequestRepository;
   private final LocationService locationService;
   private final GeneratedHierarchyRepository generatedHierarchyRepository;
+
+  private final SimulationProperties simulationProperties;
 
   @Value("${reveal.elastic.index-name}")
   String elasticIndex;
@@ -333,7 +336,7 @@ public class EntityFilterEsService {
         try {
           do {
             FeatureSetResponseContainer featureSetResponse1 = filterEntites(
-                request, 1000, false, null);
+                request, simulationProperties.getFetchLocationPageSize(), false, null);
 
             parents.addAll(featureSetResponse1.getFeatureSetResponse().getParents());
 
@@ -385,7 +388,7 @@ public class EntityFilterEsService {
   private void processParentData(DataFilterRequest request, SseEmitter emitter, Set<String> parents,
       List<AggregateHelper> aggregateHelpers, GenericHierarchy finalLocationHierarchy)
       throws IOException {
-    int parentBatch = 3;
+    int parentBatch = simulationProperties.getFetchParentPageSize();
 
     List<Set<String>> parentBatches = splitArray(parents, parentBatch);
 
