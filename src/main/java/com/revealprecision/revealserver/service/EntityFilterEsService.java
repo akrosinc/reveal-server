@@ -335,23 +335,27 @@ public class EntityFilterEsService {
 
         try {
           do {
+            log.trace("fetching in try loop");
             FeatureSetResponseContainer featureSetResponse1 = filterEntites(
                 request, simulationProperties.getFetchLocationPageSize(), false, null);
 
+            log.trace("got results");
             parents.addAll(featureSetResponse1.getFeatureSetResponse().getParents());
 
             aggregateHelpers.addAll(getAggregateHelpers(featureSetResponse1));
+            log.trace("got getAggregateHelpers");
 
             SseEventBuilder event = SseEmitter.event().data(buildSseEventObject(featureSetResponse1))
                 .id(String.valueOf(UUID.randomUUID())).name("message");
-
+            log.trace("build event");
             lastResponse = featureSetResponse1.getSearchHit();
 
             request.setLastHit(lastResponse);
 
             emitter.send(event);
-
+            log.trace("should have returned to browser");
           } while (lastResponse != null);
+          log.trace("done with children processing parent");
 
           processParentData(request, emitter, parents, aggregateHelpers, finalLocationHierarchy);
 
@@ -392,48 +396,64 @@ public class EntityFilterEsService {
 
     List<Set<String>> parentBatches = splitArray(parents, parentBatch);
 
+    int count =0;
     for (Set<String> batch : parentBatches) {
       FeatureSetResponseContainer featureSetResponseContainer = retrieveParentLocations(
           batch, request.getHierarchyIdentifier());
       emitter.send(SseEmitter.event().name("parent").id(UUID.randomUUID().toString())
           .data(featureSetResponseContainer.getFeatureSetResponse().getFeatures()));
+      count++;
+      log.trace("processed parent batched: {}",count);
     }
 
     List<IndividualAggregateHelperType> individualAggregateHelperTypeList = processAggregateHelpers(
         aggregateHelpers, finalLocationHierarchy);
+    log.trace("processed parent batched - processAggregateHelpers");
 
     Map<String, Optional<IndividualAggregateHelperType>> lowestLevelPerTag = getTagsAndLowestLevelsTheyPresentIn(
         individualAggregateHelperTypeList);
+    log.trace("processed parent batched - getTagsAndLowestLevelsTheyPresentIn");
 
     Map<String, List<EntityMetadataResponse>> collect4 = getMetadataOfLowestLevels(
         aggregateHelpers,
         lowestLevelPerTag);
+    log.trace("processed parent batched - getMetadataOfLowestLevels");
 
     Map<String, Double> summationOfTagsOfLowestLevels = getSummationOfTagsOfLowestLevels(
         collect4);
+    log.trace("processed parent batched - getSummationOfTagsOfLowestLevels");
 
     emitter.send(SseEmitter.event().name("stats").id("").data(summationOfTagsOfLowestLevels));
+    log.trace("processed parent batched - sent stats");
 
     List<AggregateHelper> incorporateLowestLevelTagsIntoParents = incorporateLowestLevelTagsIntoParents(
         aggregateHelpers,
         lowestLevelPerTag);
+    log.trace("processed parent batched - incorporateLowestLevelTagsIntoParents");
 
     Map<String, List<List<EntityMetadataResponse>>> distributeTagDataOfLowestLevelsToParents = distributeTagDataOfLowestLevelsToParents(
         incorporateLowestLevelTagsIntoParents);
+    log.trace("processed parent batched - distributeTagDataOfLowestLevelsToParents");
 
     Map<String, List<EntityMetadataResponse>> processDistributedData = processDistributedData(
         distributeTagDataOfLowestLevelsToParents);
+    log.trace("processed parent batched - processDistributedData");
 
     Map<String, Map<String, Object>> summationByLocationByTag = getSummationByLocationByTag(
         processDistributedData);
+    log.trace("processed parent batched - getSummationByLocationByTag");
 
     emitter.send(SseEmitter.event().name("aggregations").id("").data(summationByLocationByTag));
+    log.trace("processed parent batched - sent aggregations to browser");
 
     Map<String, String> collect = getTagDefinitions(processDistributedData);
+    log.trace("processed parent batched - getTagDefinitions");
 
     emitter.send(SseEmitter.event().name("aggregationDefinitions").id("").data(collect));
+    log.trace("processed parent batched - send aggregation definitions");
 
     emitter.send(SseEmitter.event().name("close").id("").data("close"));
+    log.trace("processed parent batched - send close");
   }
 
   // List<NodeNumber in Level,  TagName> - list of tags with the levels they are present in
@@ -935,7 +955,7 @@ public class EntityFilterEsService {
           }
           return null;
         }).collect(Collectors.toList());
-    log.info("processed search results");
+    log.trace("processed search results");
 
     response.setParents(parentLocations);
 
@@ -948,7 +968,7 @@ public class EntityFilterEsService {
     }
 
     response.setType("FeatureCollection");
-
+    log.trace("returning results");
     return new FeatureSetResponseContainer(response, lastHit);
 
   }
