@@ -371,6 +371,12 @@ public class EntityFilterEsService {
       return null;
     }
   }
+//  private GZIPOutputStream compressObject() throws IOException {
+//    FeatureSetResponse featureSetResponse = new FeatureSetResponse();
+//    ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+//    GZIPOutputStream zipStream = new GZIPOutputStream(byteStream);
+//    zipStream.write(featureSetResponse);
+//  }
 
   private FeatureSetResponse buildSseEventObject(FeatureSetResponseContainer featureSetResponse1) {
     return FeatureSetResponse.builder()
