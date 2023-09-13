@@ -140,8 +140,8 @@ public class LocationResponseFactory {
 
     hit.getFields().get("meta");
     List<EntityMetadataResponse> collect = new ArrayList<>();
+    log.trace("fromSearchHit processing meta");
     if (hit.getFields().size() > 0) {
-      log.info("{}", hit.getFields());
       if (hit.getFields().containsKey("meta")) {
 
         DocumentField meta = hit.getFields().get("meta");
@@ -158,8 +158,11 @@ public class LocationResponseFactory {
       }
 
     }
+    log.trace("fromSearchHit processed meta");
 
     LocationElastic locationElastic = mapper.readValue(source, LocationElastic.class);
+
+    log.trace("fromSearchHit unmarshalling location response");
 
     if (locationElastic.getHierarchyDetailsElastic() != null) {
       Set<String> id = new HashSet<>(List.of(locationElastic.getId()));
@@ -167,9 +170,11 @@ public class LocationResponseFactory {
         id.addAll(locationElastic.getHierarchyDetailsElastic().get(hierarchyId).getAncestry());
       }
       parents.addAll(id);
+      log.trace("fromSearchHit returning response");
       return fromElasticModel(locationElastic,
           locationElastic.getHierarchyDetailsElastic().get(hierarchyId),collect);
     } else {
+      log.trace("fromSearchHit returning response");
       return fromElasticModel(locationElastic, null,collect);
     }
   }
