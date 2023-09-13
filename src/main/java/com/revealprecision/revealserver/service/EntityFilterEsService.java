@@ -942,14 +942,14 @@ public class EntityFilterEsService {
 
         .map(hit -> {
           try {
-            log.trace("getting location response object");
+
             LocationResponse locToAdd = LocationResponseFactory.fromSearchHit(hit, parentLocations,
                 request.getHierarchyIdentifier());
             locToAdd.getProperties().setSimulationSearchResult(true);
             locToAdd.getProperties()
                 .setLevelColor(
                     getGeoLevelColor(locToAdd.getProperties().getGeographicLevelNodeNumber()));
-            log.trace("got location response object");
+
             return locToAdd;
           } catch (JsonProcessingException e) {
             e.printStackTrace();
