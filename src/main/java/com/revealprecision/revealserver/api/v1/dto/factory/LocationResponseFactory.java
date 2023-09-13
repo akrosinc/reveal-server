@@ -169,7 +169,9 @@ public class LocationResponseFactory {
       if (locationElastic.getHierarchyDetailsElastic().get(hierarchyId).getAncestry() != null) {
         id.addAll(locationElastic.getHierarchyDetailsElastic().get(hierarchyId).getAncestry());
       }
-      parents.addAll(id);
+      if (parents != null){
+        parents.addAll(id);
+      }
       log.trace("fromSearchHit returning response");
       return fromElasticModel(locationElastic,
           locationElastic.getHierarchyDetailsElastic().get(hierarchyId),collect);
