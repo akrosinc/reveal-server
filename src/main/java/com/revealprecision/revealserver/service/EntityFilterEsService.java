@@ -32,7 +32,6 @@ import com.revealprecision.revealserver.model.GenericHierarchy;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.SimulationRequest;
 import com.revealprecision.revealserver.persistence.domain.aggregation.GeneratedHierarchy;
-import com.revealprecision.revealserver.persistence.es.LocationElastic;
 import com.revealprecision.revealserver.persistence.es.PersonElastic;
 import com.revealprecision.revealserver.persistence.projection.LocationCoordinatesProjection;
 import com.revealprecision.revealserver.persistence.repository.GeneratedHierarchyRepository;
@@ -54,6 +53,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -405,7 +405,7 @@ public class EntityFilterEsService {
     int count =0;
     for (Set<String> batch : parentBatches) {
       FeatureSetResponseContainer featureSetResponseContainer = retrieveParentLocations(
-          batch, request.getHierarchyIdentifier());
+          batch, request.getHierarchyIdentifier(),request);
       emitter.send(SseEmitter.event().name("parent").id(UUID.randomUUID().toString())
           .data(featureSetResponseContainer.getFeatureSetResponse().getFeatures()));
       count++;
@@ -1008,34 +1008,59 @@ public class EntityFilterEsService {
   }
 
   public FeatureSetResponseContainer retrieveParentLocations(Set<String> parentIds,
-      String hierarchyId)
+      String hierarchyId,DataFilterRequest request)
       throws IOException {
 
-    List<LocationResponse> responses = new ArrayList<>();
+//    List<LocationResponse> responses = new ArrayList<>();
     SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
     sourceBuilder.query(QueryBuilders.termsQuery("_id", parentIds));
     SearchRequest searchRequest = new SearchRequest(elasticIndex);
-    searchRequest.source(sourceBuilder);
+
     sourceBuilder.size(10000);
+
+
+    String collect = request.getResultTags().stream()
+        .map(entityFilterRequest -> "n.add('" + entityFilterRequest.getTag() + "');")
+        .collect(Collectors.joining(""));
+    Script inline = new Script(ScriptType.INLINE, "painless",
+        "List a = params['_source']['metadata']; List n = new ArrayList(); " + collect
+            + "  return a.stream().filter(val->n.contains(val.tag) && val.hierarchyIdentifier.equals('"
+            + request.getHierarchyIdentifier() + "')).collect(Collectors.toList());",
+        new HashMap<>());
+
+    sourceBuilder.scriptField("meta", inline);
+    searchRequest.source(sourceBuilder);
 
     SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
 
-    ObjectMapper mapper = new ObjectMapper();
-    for (SearchHit hit : searchResponse.getHits().getHits()) {
-      LocationElastic parent = mapper.readValue(hit.getSourceAsString(), LocationElastic.class);
-      LocationResponse locationResponse = LocationResponseFactory.fromElasticModel(parent,
-          parent.getHierarchyDetailsElastic() != null ? parent.getHierarchyDetailsElastic()
-              .get(hierarchyId) : null, parent.getMetadata().stream()
-              .filter(meta -> meta.getHierarchyIdentifier().equals(hierarchyId)).map(meta ->
-                  EntityMetadataResponse.builder().type(meta.getTag()).value(meta.getValueNumber())
-                      .fieldType(meta.getFieldType())
-                      .build())
-              .collect(Collectors.toList()));
-      locationResponse.getProperties()
-          .setLevelColor(
-              getGeoLevelColor(locationResponse.getProperties().getGeographicLevelNodeNumber()));
-      responses.add(locationResponse);
-    }
+//    ObjectMapper mapper = new ObjectMapper();
+    List<LocationResponse> responses = Arrays.stream(searchResponse.getHits().getHits()).map(hit -> {
+      LocationResponse locationResponse = null;
+      try {
+        locationResponse = LocationResponseFactory.fromSearchHit(hit,null,request.getHierarchyIdentifier());
+        locationResponse.getProperties()
+            .setLevelColor(
+                getGeoLevelColor(locationResponse.getProperties().getGeographicLevelNodeNumber()));
+      } catch (JsonProcessingException e) {
+        e.printStackTrace();
+      }
+
+//      LocationResponse locationResponse = LocationResponseFactory.fromElasticModel(parent,
+//          parent.getHierarchyDetailsElastic() != null ? parent.getHierarchyDetailsElastic()
+//              .get(hierarchyId) : null, parent.getMetadata().stream()
+//              .filter(meta -> meta.getHierarchyIdentifier().equals(hierarchyId)).map(meta ->
+//                  EntityMetadataResponse.builder().type(meta.getTag()).value(meta.getValueNumber())
+//                      .fieldType(meta.getFieldType())
+//                      .build())
+//              .collect(Collectors.toList()));
+
+//      responses.add(locationResponse);
+      return locationResponse;
+    }).filter(Objects::nonNull).collect(Collectors.toList());
+//      LocationElastic parent = mapper.readValue(hit.getSourceAsString(), LocationElastic.class);
+
+
+//    }
     FeatureSetResponse response = new FeatureSetResponse();
     response.setType("FeatureCollection");
     response.setFeatures(responses);
