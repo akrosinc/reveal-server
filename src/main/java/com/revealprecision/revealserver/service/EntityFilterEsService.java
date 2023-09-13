@@ -345,7 +345,8 @@ public class EntityFilterEsService {
             aggregateHelpers.addAll(getAggregateHelpers(featureSetResponse1));
             log.trace("got getAggregateHelpers");
 
-            SseEventBuilder event = SseEmitter.event().data(buildSseEventObject(featureSetResponse1))
+            SseEventBuilder event = SseEmitter.event()
+                .data(buildSseEventObject(featureSetResponse1))
                 .id(String.valueOf(UUID.randomUUID())).name("message");
             log.trace("build event");
             lastResponse = featureSetResponse1.getSearchHit();
@@ -402,14 +403,14 @@ public class EntityFilterEsService {
 
     List<Set<String>> parentBatches = splitArray(parents, parentBatch);
 
-    int count =0;
+    int count = 0;
     for (Set<String> batch : parentBatches) {
       FeatureSetResponseContainer featureSetResponseContainer = retrieveParentLocations(
-          batch, request.getHierarchyIdentifier(),request);
+          batch, request.getHierarchyIdentifier(), request);
       emitter.send(SseEmitter.event().name("parent").id(UUID.randomUUID().toString())
           .data(featureSetResponseContainer.getFeatureSetResponse().getFeatures()));
       count++;
-      log.trace("processed parent batched: {}",count);
+      log.trace("processed parent batched: {}", count);
     }
 
     List<IndividualAggregateHelperType> individualAggregateHelperTypeList = processAggregateHelpers(
@@ -518,7 +519,8 @@ public class EntityFilterEsService {
             entry.getValue()
                 .stream().filter(
                     entityMetadataResponse -> entityMetadataResponse.getType().endsWith("-sum")
-                        || entityMetadataResponse.getType().endsWith("-count") || entityMetadataResponse.getFieldType().equals("generated"))
+                        || entityMetadataResponse.getType().endsWith("-count")
+                        || entityMetadataResponse.getFieldType().equals("generated"))
 
                 .collect(
                     Collectors.groupingBy(EntityMetadataResponse::getType,
@@ -1008,7 +1010,7 @@ public class EntityFilterEsService {
   }
 
   public FeatureSetResponseContainer retrieveParentLocations(Set<String> parentIds,
-      String hierarchyId,DataFilterRequest request)
+      String hierarchyId, DataFilterRequest request)
       throws IOException {
 
 //    List<LocationResponse> responses = new ArrayList<>();
@@ -1017,7 +1019,6 @@ public class EntityFilterEsService {
     SearchRequest searchRequest = new SearchRequest(elasticIndex);
 
     sourceBuilder.size(10000);
-
 
     String collect = request.getResultTags().stream()
         .map(entityFilterRequest -> "n.add('" + entityFilterRequest.getTag() + "');")
@@ -1031,19 +1032,24 @@ public class EntityFilterEsService {
     sourceBuilder.scriptField("meta", inline);
     searchRequest.source(sourceBuilder);
 
+    log.trace("parent query {}",searchRequest);
+
     SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
 
 //    ObjectMapper mapper = new ObjectMapper();
-    List<LocationResponse> responses = Arrays.stream(searchResponse.getHits().getHits()).map(hit -> {
-      LocationResponse locationResponse = null;
-      try {
-        locationResponse = LocationResponseFactory.fromSearchHit(hit,null,request.getHierarchyIdentifier());
-        locationResponse.getProperties()
-            .setLevelColor(
-                getGeoLevelColor(locationResponse.getProperties().getGeographicLevelNodeNumber()));
-      } catch (JsonProcessingException e) {
-        e.printStackTrace();
-      }
+    List<LocationResponse> responses = Arrays.stream(searchResponse.getHits().getHits())
+        .filter(Objects::nonNull).map(hit -> {
+          LocationResponse locationResponse = null;
+          try {
+            locationResponse = LocationResponseFactory.fromSearchHit(hit, null,
+                request.getHierarchyIdentifier());
+            locationResponse.getProperties()
+                .setLevelColor(
+                    getGeoLevelColor(
+                        locationResponse.getProperties().getGeographicLevelNodeNumber()));
+          } catch (JsonProcessingException e) {
+            e.printStackTrace();
+          }
 
 //      LocationResponse locationResponse = LocationResponseFactory.fromElasticModel(parent,
 //          parent.getHierarchyDetailsElastic() != null ? parent.getHierarchyDetailsElastic()
@@ -1055,10 +1061,9 @@ public class EntityFilterEsService {
 //              .collect(Collectors.toList()));
 
 //      responses.add(locationResponse);
-      return locationResponse;
-    }).filter(Objects::nonNull).collect(Collectors.toList());
+          return locationResponse;
+        }).filter(Objects::nonNull).collect(Collectors.toList());
 //      LocationElastic parent = mapper.readValue(hit.getSourceAsString(), LocationElastic.class);
-
 
 //    }
     FeatureSetResponse response = new FeatureSetResponse();
