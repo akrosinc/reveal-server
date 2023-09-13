@@ -95,7 +95,7 @@ public class LocationResponseFactory {
   public static LocationResponse fromElasticModel(LocationElastic locationElastic,
       HierarchyDetailsElastic hierarchyDetailsElastic, List<EntityMetadataResponse> entityMetadataResponses) {
     LocationResponse feature = LocationResponse.builder()
-        .geometry(locationElastic.getGeometry())
+//        .geometry(locationElastic.getGeometry())
         .identifier(UUID.fromString(locationElastic.getId()))
         .type("Feature")
         .properties(LocationPropertyResponse.builder()
