@@ -1030,6 +1030,10 @@ public class EntityFilterEsService {
         new HashMap<>());
 
     sourceBuilder.scriptField("meta", inline);
+
+    String[] val = new String[0];
+    sourceBuilder.fetchSource(new ArrayList<String>().toArray(val), new ArrayList<String>().toArray(val));
+
     searchRequest.source(sourceBuilder);
 
     log.trace("parent query {}",searchRequest);
