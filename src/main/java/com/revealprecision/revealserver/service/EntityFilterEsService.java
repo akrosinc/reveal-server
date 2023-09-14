@@ -1032,7 +1032,8 @@ public class EntityFilterEsService {
     sourceBuilder.scriptField("meta", inline);
 
     String[] val = new String[0];
-    sourceBuilder.fetchSource(new ArrayList<String>().toArray(val), new ArrayList<String>().toArray(val));
+
+    sourceBuilder.fetchSource(new ArrayList<String>().toArray(val), List.of("metadata","geometry").toArray(val));
 
     searchRequest.source(sourceBuilder);
 
