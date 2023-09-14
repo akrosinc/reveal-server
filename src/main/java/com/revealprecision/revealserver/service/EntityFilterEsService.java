@@ -372,12 +372,6 @@ public class EntityFilterEsService {
       return null;
     }
   }
-//  private GZIPOutputStream compressObject() throws IOException {
-//    FeatureSetResponse featureSetResponse = new FeatureSetResponse();
-//    ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
-//    GZIPOutputStream zipStream = new GZIPOutputStream(byteStream);
-//    zipStream.write(featureSetResponse);
-//  }
 
   private FeatureSetResponse buildSseEventObject(FeatureSetResponseContainer featureSetResponse1) {
     return FeatureSetResponse.builder()
@@ -1041,7 +1035,6 @@ public class EntityFilterEsService {
 
     SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
 
-//    ObjectMapper mapper = new ObjectMapper();
     List<LocationResponse> responses = Arrays.stream(searchResponse.getHits().getHits())
         .filter(Objects::nonNull).map(hit -> {
           LocationResponse locationResponse = null;
@@ -1056,21 +1049,9 @@ public class EntityFilterEsService {
             e.printStackTrace();
           }
 
-//      LocationResponse locationResponse = LocationResponseFactory.fromElasticModel(parent,
-//          parent.getHierarchyDetailsElastic() != null ? parent.getHierarchyDetailsElastic()
-//              .get(hierarchyId) : null, parent.getMetadata().stream()
-//              .filter(meta -> meta.getHierarchyIdentifier().equals(hierarchyId)).map(meta ->
-//                  EntityMetadataResponse.builder().type(meta.getTag()).value(meta.getValueNumber())
-//                      .fieldType(meta.getFieldType())
-//                      .build())
-//              .collect(Collectors.toList()));
-
-//      responses.add(locationResponse);
           return locationResponse;
         }).filter(Objects::nonNull).collect(Collectors.toList());
-//      LocationElastic parent = mapper.readValue(hit.getSourceAsString(), LocationElastic.class);
 
-//    }
     FeatureSetResponse response = new FeatureSetResponse();
     response.setType("FeatureCollection");
     response.setFeatures(responses);
