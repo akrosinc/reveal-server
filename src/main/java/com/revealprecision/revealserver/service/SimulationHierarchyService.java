@@ -75,7 +75,8 @@ public class SimulationHierarchyService {
         .map(SaveHierarchyLocationRequest::getIdentifier).collect(
             Collectors.toList());
 
-    deleteExistingLocationRelationshipsForIncomingGeneratedHierarchy(generatedHierarchySaved, locationsRequested);
+    deleteExistingLocationRelationshipsForIncomingGeneratedHierarchy(generatedHierarchySaved,
+        locationsRequested);
 
     List<GeneratedLocationRelationship> generatedLocationRelationships = saveHierarchyRequest.getMapdata()
         .stream()
@@ -96,7 +97,8 @@ public class SimulationHierarchyService {
                 .locationIdentifier(saveHierarchyLocationRequest.getIdentifier())
                 .parentIdentifier(saveHierarchyLocationRequest.getProperties().getParent())
                 .ancestry(saveHierarchyLocationRequest.getProperties().getAncestry())
-                .geographicLevelNumber(saveHierarchyLocationRequest.getProperties().getGeographicLevelNumber())
+                .geographicLevelNumber(
+                    saveHierarchyLocationRequest.getProperties().getGeographicLevelNumber())
                 .build()
         ).collect(Collectors.toList());
 
@@ -111,10 +113,10 @@ public class SimulationHierarchyService {
         .collect(Collectors.toMap(GeneratedLocationRelationshipEvent::getLocationIdentifier, a -> a,
             (a, b) -> b));
 
-    List<GeneratedHierarchyMetadata> generatedHierarchyMetadata = saveMetadata(saveHierarchyRequest,
+    List<GeneratedHierarchyMetadata> generatedHierarchyMetadata = saveMetadataWithOrWithoutMetadata(saveHierarchyRequest,
         generatedHierarchySaved);
 
-    submitToMessaging(generatedHierarchyMetadata,relationshipsByLocationEventsMap);
+    submitToMessaging(generatedHierarchyMetadata, relationshipsByLocationEventsMap);
 
     return SaveHierarchyResponse.builder().name(generatedHierarchySaved.getName())
         .nodeOrder(generatedHierarchySaved.getNodeOrder())
@@ -149,18 +151,63 @@ public class SimulationHierarchyService {
                 .value(generatedHierarchyMetadata.getValue())
                 .locationIdentifier(generatedHierarchyMetadata.getLocationIdentifier())
                 .tag(generatedHierarchyMetadata.getTag())
-                .ancestry(relationshipsByLocationEventsMap.get(generatedHierarchyMetadata.getLocationIdentifier()).getAncestry())
-                .geographicLevelNumber(relationshipsByLocationEventsMap.get(generatedHierarchyMetadata.getLocationIdentifier()).getGeographicLevelNumber())
-                .parent(relationshipsByLocationEventsMap.get(generatedHierarchyMetadata.getLocationIdentifier()).getParentIdentifier())
+                .ancestry(relationshipsByLocationEventsMap.get(
+                    generatedHierarchyMetadata.getLocationIdentifier()).getAncestry())
+                .geographicLevelNumber(relationshipsByLocationEventsMap.get(
+                    generatedHierarchyMetadata.getLocationIdentifier()).getGeographicLevelNumber())
+                .parent(relationshipsByLocationEventsMap.get(
+                    generatedHierarchyMetadata.getLocationIdentifier()).getParentIdentifier())
                 .build()
         )
     );
 
   }
-  public List<LocationMainData> getLocationIdByHierarchyIdAndLevelName(String hierarchyId, String level){
-   return generatedLocationRelationshipRepository.getLocationIdsByGeneratedHierarchyIdAndGeographicLevelName(
-        hierarchyId, level).stream().map(projection-> new LocationMainData(UUID.fromString(projection.getIdentifier()),
-        projection.getName())).collect(Collectors.toList());
+
+  public List<LocationMainData> getLocationIdByHierarchyIdAndLevelName(String hierarchyId,
+      String level) {
+    return generatedLocationRelationshipRepository.getLocationIdsByGeneratedHierarchyIdAndGeographicLevelName(
+            hierarchyId, level).stream()
+        .map(projection -> new LocationMainData(UUID.fromString(projection.getIdentifier()),
+            projection.getName())).collect(Collectors.toList());
+  }
+
+  private List<GeneratedHierarchyMetadata> saveMetadataWithOrWithoutMetadata(SaveHierarchyRequest saveHierarchyRequest,
+      GeneratedHierarchy generatedHierarchySaved) {
+    List<GeneratedHierarchyMetadata> generatedHierarchyMetadata = saveHierarchyRequest.getMapdata()
+        .stream()
+        .flatMap(saveHierarchyLocationRequest -> {
+              if (saveHierarchyLocationRequest.getProperties().getMetadata() != null) {
+                return saveHierarchyLocationRequest.getProperties().getMetadata().stream()
+                    .map(metadata ->
+                        GeneratedHierarchyMetadata.builder()
+                            .generatedHierarchy(generatedHierarchySaved)
+                            .locationIdentifier(saveHierarchyLocationRequest.getIdentifier())
+                            .build()
+
+                    );
+              } else {
+                return saveHierarchyLocationRequest.getProperties().getMetadata().stream()
+                    .map(metadata ->
+                        GeneratedHierarchyMetadata.builder()
+                            .tag(metadata.getType())
+                            .value(metadata.getValue() instanceof String ? Double.parseDouble(
+                                (String) metadata.getValue())
+                                : metadata.getValue() instanceof Integer
+                                    ? ((Integer) metadata.getValue()).doubleValue()
+                                    : (Double) metadata.getValue())
+                            .fieldType(metadata.getFieldType())
+                            .generatedHierarchy(generatedHierarchySaved)
+                            .locationIdentifier(saveHierarchyLocationRequest.getIdentifier())
+                            .build()
+
+                    );
+              }
+
+            }
+
+        ).collect(Collectors.toList());
+
+    return generatedHierarchyMetadataRepository.saveAll(generatedHierarchyMetadata);
   }
 
 
@@ -188,17 +235,20 @@ public class SimulationHierarchyService {
     return generatedHierarchyMetadataRepository.saveAll(generatedHierarchyMetadata);
   }
 
-  public List<GeneratedHierarchy> generatedHierarchies(){
+  public List<GeneratedHierarchy> generatedHierarchies() {
 
     return generatedHierarchyRepository.findAll();
   }
-  public GeneratedHierarchy getGeneratedHierarchyById(Integer id){
-    return generatedHierarchyRepository.findById(id).orElseThrow(()->new NotFoundException("not found"));
+
+  public GeneratedHierarchy getGeneratedHierarchyById(Integer id) {
+    return generatedHierarchyRepository.findById(id)
+        .orElseThrow(() -> new NotFoundException("not found"));
   }
 
 }
 
-@Setter @Getter
+@Setter
+@Getter
 @Builder
 class GeneratedLocationRelationshipEvent {
 

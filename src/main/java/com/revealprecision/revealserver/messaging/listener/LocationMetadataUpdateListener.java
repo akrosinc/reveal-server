@@ -141,8 +141,12 @@ public class LocationMetadataUpdateListener extends Listener {
         .collect(Collectors.toMap(SimpleEntry::getKey, SimpleEntry::getValue));
 
     existingLocationElasticMap.entrySet().stream().forEach(existingLocationElasticEntry -> {
-          existingLocationElasticEntry.getValue()
-              .setMetadata(entityMetadataToSave.get(existingLocationElasticEntry.getKey()));
+
+          if (entityMetadataToSave.containsKey(existingLocationElasticEntry.getKey())) {
+            existingLocationElasticEntry.getValue()
+                .setMetadata(entityMetadataToSave.get(existingLocationElasticEntry.getKey()));
+          }
+
           existingLocationElasticEntry.getValue().setHierarchyDetailsElastic(
               updatedHierarchyElasticMapByLocation.get(existingLocationElasticEntry.getKey()));
           locationElasticRepository.save(existingLocationElasticEntry.getValue());
@@ -195,6 +199,8 @@ public class LocationMetadataUpdateListener extends Listener {
         }).collect(Collectors.toList());
 
     List<EntityMetadataElastic> incomingMetadataNotInExistingListTransformed = incomingMetadataListNotInExistingList.stream()
+        .filter(
+            incomingMetadataNotInExistingList -> incomingMetadataNotInExistingList.getTag() != null)
         .map(incomingMetadataNotInExistingList -> {
           EntityMetadataElastic entityMetadataElastic = new EntityMetadataElastic();
           entityMetadataElastic.setTag(incomingMetadataNotInExistingList.getTag());
