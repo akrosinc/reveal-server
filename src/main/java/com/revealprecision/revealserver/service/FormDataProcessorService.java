@@ -57,6 +57,10 @@ import static com.revealprecision.revealserver.constants.FormConstants.TABLET_AC
 import static com.revealprecision.revealserver.constants.FormConstants.TABLET_ACCOUNTABILITY_FORM;
 import static com.revealprecision.revealserver.constants.FormConstants.TABLET_ACCOUNTABILITY_HEALTH_WORKER_SUPERVISOR_FIELD;
 import static com.revealprecision.revealserver.constants.FormConstants.TABLET_ACCOUNTABILITY_LOCATION_FIELD;
+import static com.revealprecision.revealserver.constants.FormConstants.ZAMBIA_SPRAY_FORM;
+import static com.revealprecision.revealserver.constants.FormConstants.ZAMBIA_SPRAY_FORM_DATE_FIELD;
+import static com.revealprecision.revealserver.constants.FormConstants.ZAMBIA_SPRAY_FORM_SPRAY_OPERATOR;
+import static com.revealprecision.revealserver.constants.FormConstants.ZAMBIA_SPRAY_FORM_SUPERVISOR_FIELD;
 import static com.revealprecision.revealserver.constants.KafkaConstants.EVENT_TRACKER;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -349,6 +353,31 @@ public class FormDataProcessorService {
             cdd = getFormValue(obsJavaList, MDA_ONCHOCERCIASIS_SURVEY_CDD_NAME_FIELD);
 
             if (!savedEvent.getEventType().equals(MDA_ONCHOCERCIASIS_SURVEY_FORM)) {
+              baseEntityIdentifier = savedEvent.getLocationIdentifier();
+            }
+
+            publisherService.send(kafkaProperties.getTopicMap().get(EVENT_TRACKER),
+                EventTrackerMessageFactory.getEntity(savedEvent, eventFacade, plan, dateString,
+                    supervisorName,
+                    cdd,
+                    baseEntityIdentifier,
+                    formSubmissionIdString));
+          }
+        }
+        if (plan.getInterventionType().getCode().equals(PlanInterventionTypeEnum.IRS.name())) {
+
+          if (plan.getGoals().stream().flatMap(goal -> goal.getActions()
+              .stream()).anyMatch(action -> action.getTitle()
+              .equals(ActionTitleEnum.IRS.getActionTitle()))) {
+
+            dateString = getFormValue(obsJavaList, ZAMBIA_SPRAY_FORM_DATE_FIELD);
+
+            supervisorName = getFormValue(obsJavaList,
+                ZAMBIA_SPRAY_FORM_SUPERVISOR_FIELD);
+
+            cdd = getFormValue(obsJavaList, ZAMBIA_SPRAY_FORM_SPRAY_OPERATOR);
+
+            if (!savedEvent.getEventType().equals(ZAMBIA_SPRAY_FORM)) {
               baseEntityIdentifier = savedEvent.getLocationIdentifier();
             }
 
