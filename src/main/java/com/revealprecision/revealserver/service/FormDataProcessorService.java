@@ -119,13 +119,9 @@ public class FormDataProcessorService {
   private final PlanService planService;
   private final UserService userService;
   private final PublisherService publisherService;
-
-
   private final FormFieldService formFieldService;
   private final EntityTagService entityTagService;
   private final LocationService locationService;
-
-
   private final LocationRelationshipService locationRelationshipService;
 
   @Async
