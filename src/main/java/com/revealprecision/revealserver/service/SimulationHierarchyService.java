@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.transaction.Transactional;
 import lombok.Builder;
 import lombok.Getter;
@@ -176,15 +177,11 @@ public class SimulationHierarchyService {
     List<GeneratedHierarchyMetadata> generatedHierarchyMetadata = saveHierarchyRequest.getMapdata()
         .stream()
         .flatMap(saveHierarchyLocationRequest -> {
-              if (saveHierarchyLocationRequest.getProperties().getMetadata() != null) {
-                return saveHierarchyLocationRequest.getProperties().getMetadata().stream()
-                    .map(metadata ->
-                        GeneratedHierarchyMetadata.builder()
+              if (saveHierarchyLocationRequest.getProperties().getMetadata() == null || saveHierarchyLocationRequest.getProperties().getMetadata().size() == 0) {
+                return Stream.of(GeneratedHierarchyMetadata.builder()
                             .generatedHierarchy(generatedHierarchySaved)
                             .locationIdentifier(saveHierarchyLocationRequest.getIdentifier())
-                            .build()
-
-                    );
+                            .build());
               } else {
                 return saveHierarchyLocationRequest.getProperties().getMetadata().stream()
                     .map(metadata ->
@@ -207,7 +204,10 @@ public class SimulationHierarchyService {
 
         ).collect(Collectors.toList());
 
-    return generatedHierarchyMetadataRepository.saveAll(generatedHierarchyMetadata);
+    generatedHierarchyMetadataRepository.saveAll(generatedHierarchyMetadata.stream().filter(generatedHierarchyMetadata1 -> generatedHierarchyMetadata1.getTag()!=null).collect(
+        Collectors.toList()));
+
+    return generatedHierarchyMetadata;
   }
 
 

@@ -151,7 +151,9 @@ public class MetadataService {
     currentMetaImport.setStatus(BulkEntryStatus.BUSY);
     metadataImportRepository.save(currentMetaImport);
 
-    metaImportDTOS.forEach(metaImportDTO ->
+    metaImportDTOS
+        .stream().filter(metaImportDTO -> ancestryMap.containsKey(metaImportDTO.getLocation().getIdentifier().toString()))
+        .forEach(metaImportDTO ->
         ancestryMap.get(metaImportDTO.getLocation().getIdentifier().toString())
             .forEach(ancestor ->
                 metaImportDTO.getSheetData().getConvertedEntityData().forEach(

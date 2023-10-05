@@ -20,6 +20,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class StorageService {
 
 
+  public static final String TEMP = "batch.location";
   public static final String BATCH_LOCATION_PATH = "batch.location";
   public static final String BATCH_TEMPLATE_PATH = "batch.template";
   public static final String MATADATA_IMPORT_PATH = "batch.metaImport";
@@ -65,6 +66,19 @@ public class StorageService {
       throw new FileFormatException("Wrong file format. You can upload only .json file!");
     }
     String path = environment.getProperty(BATCH_LOCATION_PATH) + file.getOriginalFilename();
+    Path filePath = Paths.get(path);
+    try {
+      file.transferTo(filePath);
+    } catch (IOException e) {
+      e.printStackTrace();
+      log.error("Error transferring storage file at path {}",filePath,e);
+    }
+    return path;
+  }
+
+  public String saveBlob(MultipartFile file, String filename) {
+
+    String path = environment.getProperty(TEMP) + filename;
     Path filePath = Paths.get(path);
     try {
       file.transferTo(filePath);
