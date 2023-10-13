@@ -55,7 +55,7 @@ public class LocationJobCompletionListener implements JobExecutionListener {
       index++;
     }
     if (addedLocations.isEmpty()) {
-      locationBulk.setStatus(BulkStatusEnum.COMPLETE);
+      locationBulk.setStatus(BulkStatusEnum.EMPTY);
       locationBulkRepository.save(locationBulk);
     }
 

@@ -56,26 +56,33 @@ public class LocationWriter implements ItemWriter<Location> {
     List<LocationElastic> locations = new ArrayList<>();
     Set<UUID> failedLocationIds = new HashSet<>();
     MessageDigest digest = MessageDigest.getInstance("SHA-256");
+
+    long count = itemsToSave.stream().takeWhile(location -> location.getIdentifier() != null)
+        .count();
+
+    if (count < itemsToSave.size()){
+      throw new Exception("External Id or Identifier not provided for one or more locations");
+    }
+
     itemsToSave.forEach(location -> {
       String hash = ElasticModelUtil.bytesToHex(digest.digest(location
           .getGeometry()
           .toString()
           .getBytes(StandardCharsets.UTF_8)));
       hashes.add(hash);
-      UUID identifier = UUID.randomUUID();
-      location.setIdentifier(identifier);
+
+      location.setIdentifier(location.getIdentifier());
       location.setHashValue(hash);
+      location.setLocationProperty(location.getLocationProperty());
 
-      if (location.getExternalId() == null){
-        location.setExternalId(identifier);
+      if (location.getExternalId()!=null) {
+        location.setExternalId(location.getExternalId());
       }
-
       LocationElastic loc = new LocationElastic();
       loc.setHashValue(hash);
       loc.setId(location.getIdentifier().toString());
       loc.setLevel(location.getGeographicLevel().getName());
       loc.setName(location.getName());
-      loc.setExternalId(location.getExternalId().toString());
       loc.setGeometry(location.getGeometry());
       locations.add(loc);
     });
