@@ -11,7 +11,6 @@ import com.revealprecision.revealserver.persistence.es.HierarchyDetailsElastic;
 import com.revealprecision.revealserver.persistence.es.LocationElastic;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -20,7 +19,6 @@ import java.util.stream.Collectors;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.elasticsearch.common.document.DocumentField;
 import org.elasticsearch.search.SearchHit;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -137,31 +135,14 @@ public class LocationResponseFactory {
       String hierarchyId) throws JsonProcessingException {
     ObjectMapper mapper = new ObjectMapper();
     String source = hit.getSourceAsString();
-
-    hit.getFields().get("meta");
-    List<EntityMetadataResponse> collect = new ArrayList<>();
-    log.trace("fromSearchHit processing meta");
-    if (hit.getFields().size() > 0) {
-      if (hit.getFields().containsKey("meta")) {
-
-        DocumentField meta = hit.getFields().get("meta");
-
-        collect = meta.getValues().stream().map(val -> {
-          Double valueNumber1 = (Double) ((HashMap<?, ?>) val).get("valueNumber");
-          return EntityMetadataResponse.builder()
-              .value(valueNumber1 != null ? valueNumber1 : ((HashMap<?, ?>) val).get("value"))
-              .type((String) ((HashMap<?, ?>) val).get("tag"))
-              .fieldType((String) ((HashMap<?, ?>) val).get("fieldType"))
-              .build();
-        }).collect(Collectors.toList());
-
-      }
-
-    }
-    log.trace("fromSearchHit processed meta");
-
     LocationElastic locationElastic = mapper.readValue(source, LocationElastic.class);
 
+    List<EntityMetadataResponse>  collect = locationElastic.getMetadata().stream().map(meta->
+      EntityMetadataResponse.builder().fieldType(meta.getFieldType()).type(meta.getTag()).value(
+          meta.getValueNumber() != null ? meta.getValueNumber() : meta.getValue()
+      ).build()
+    ).collect(Collectors.toList());
+    
     log.trace("fromSearchHit unmarshalling location response");
 
     if (locationElastic.getHierarchyDetailsElastic() != null) {
