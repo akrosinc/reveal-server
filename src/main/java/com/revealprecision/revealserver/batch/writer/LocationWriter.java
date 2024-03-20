@@ -9,6 +9,7 @@ import com.revealprecision.revealserver.persistence.repository.LocationBulkExcep
 import com.revealprecision.revealserver.persistence.repository.LocationBulkRepository;
 import com.revealprecision.revealserver.persistence.repository.LocationElasticRepository;
 import com.revealprecision.revealserver.persistence.repository.LocationRepository;
+import com.revealprecision.revealserver.props.LocationImportProperties;
 import com.revealprecision.revealserver.util.ElasticModelUtil;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -39,6 +40,8 @@ public class LocationWriter implements ItemWriter<Location> {
   private LocationBulkRepository locationBulkRepository;
   @Autowired
   private LocationBulkExceptionRepository locationBulkExceptionRepository;
+  @Autowired
+  private LocationImportProperties locationImportProperties;
 
   @Value("#{jobParameters['locationBulkId']}")
   private String locationBulkId;
@@ -60,7 +63,7 @@ public class LocationWriter implements ItemWriter<Location> {
     long count = itemsToSave.stream().takeWhile(location -> location.getIdentifier() != null)
         .count();
 
-    if (count < itemsToSave.size()){
+    if (count < itemsToSave.size()) {
       throw new Exception("External Id or Identifier not provided for one or more locations");
     }
 
@@ -75,7 +78,7 @@ public class LocationWriter implements ItemWriter<Location> {
       location.setHashValue(hash);
       location.setLocationProperty(location.getLocationProperty());
 
-      if (location.getExternalId()!=null) {
+      if (location.getExternalId() != null) {
         location.setExternalId(location.getExternalId());
       }
       LocationElastic loc = new LocationElastic();
@@ -87,34 +90,41 @@ public class LocationWriter implements ItemWriter<Location> {
       locations.add(loc);
     });
 
-    List<String> existingNames = locationRepository.findAllByHashes(hashes);
-    if(!existingNames.isEmpty()){
-      List<LocationBulkException> duplicates = new ArrayList<>();
-      existingNames.forEach(el -> {
-        LocationBulkException duplicate = LocationBulkException.builder()
-            .message("Already exist")
-            .locationBulk(locationBulk)
-            .name(el)
-            .build();
-        duplicate.setEntityStatus(EntityStatus.ACTIVE);
-        duplicates.add(duplicate);
-      });
-      locationBulkExceptionRepository.saveAll(duplicates);
+    List<String> existingNames = new ArrayList<>();
+    if (locationImportProperties.isAllowDuplicates()){
+      existingNames = locationRepository.findAllByHashes(hashes);
+      if (!existingNames.isEmpty()) {
+        List<LocationBulkException> duplicates = new ArrayList<>();
+        existingNames.forEach(el -> {
+          LocationBulkException duplicate = LocationBulkException.builder()
+              .message("Already exist")
+              .locationBulk(locationBulk)
+              .name(el)
+              .build();
+          duplicate.setEntityStatus(EntityStatus.ACTIVE);
+          duplicates.add(duplicate);
+        });
+        locationBulkExceptionRepository.saveAll(duplicates);
+      }
+      List<String> finalExistingNames = existingNames;
+      locations.removeIf(el -> finalExistingNames.contains(el.getName()));
     }
-    locations.removeIf(el-> existingNames.contains(el.getName()));
+
     try {
       locationElasticRepository.saveAll(locations);
     } catch (BulkFailureException e) {
-      Map<UUID, String> locNames = itemsToSave.stream().collect(Collectors.toMap(Location::getIdentifier, Location::getName));
+      Map<UUID, String> locNames = itemsToSave.stream()
+          .collect(Collectors.toMap(Location::getIdentifier, Location::getName));
 
       List<LocationBulkException> exceptions = new ArrayList<>();
-      for(Map.Entry<String, String> entry : e.getFailedDocuments().entrySet()) {
+      for (Map.Entry<String, String> entry : e.getFailedDocuments().entrySet()) {
         failedLocationIds.add(UUID.fromString(entry.getKey()));
         String errorMessage;
-        if(entry.getValue().split("reason")[2].replace("=","").length() > 251) {
-          errorMessage = entry.getValue().split("reason")[2].replace("=","").substring(0, 251).concat("...");
-        }else {
-          errorMessage = entry.getValue().split("reason")[2].replace("=","");
+        if (entry.getValue().split("reason")[2].replace("=", "").length() > 251) {
+          errorMessage = entry.getValue().split("reason")[2].replace("=", "").substring(0, 251)
+              .concat("...");
+        } else {
+          errorMessage = entry.getValue().split("reason")[2].replace("=", "");
         }
         LocationBulkException locationBulkException = LocationBulkException.builder()
             .message(errorMessage)
@@ -127,7 +137,10 @@ public class LocationWriter implements ItemWriter<Location> {
 
       locationBulkExceptionRepository.saveAll(exceptions);
     }
-    itemsToSave.removeIf(el -> failedLocationIds.contains(el.getIdentifier()) || existingNames.contains(el.getName()));
+    List<String> finalExistingNames1 = existingNames;
+    itemsToSave.removeIf(
+        el -> failedLocationIds.contains(el.getIdentifier()) || finalExistingNames1.contains(
+            el.getName()));
     locationRepository.saveAll(itemsToSave);
   }
 }
