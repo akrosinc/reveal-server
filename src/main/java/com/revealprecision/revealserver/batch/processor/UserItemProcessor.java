@@ -24,6 +24,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.UsersResource;
@@ -38,6 +39,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 @StepScope
 @Component
+@Slf4j
 public class UserItemProcessor implements ItemProcessor<UserBatchDTO, User> {
 
   private final UserBulkRepository userBulkRepository;
@@ -128,7 +130,7 @@ public class UserItemProcessor implements ItemProcessor<UserBatchDTO, User> {
   public void setOrganizations(User user, Set<String> ids) {
     var uuids = ids.stream()
         .filter(s -> s.matches(Constraint.UUID_REGEX))
-        .map(s -> UUID.fromString(s))
+        .map(UUID::fromString)
         .collect(Collectors.toSet());
     Set<Organization> userOrgs = new HashSet<>();
     uuids.forEach(id -> {
