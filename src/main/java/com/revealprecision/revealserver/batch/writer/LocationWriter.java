@@ -126,6 +126,7 @@ public class LocationWriter implements ItemWriter<Location> {
         } else {
           errorMessage = entry.getValue().split("reason")[2].replace("=", "");
         }
+        log.error("Error: {}",entry.getValue());
         LocationBulkException locationBulkException = LocationBulkException.builder()
             .message(errorMessage)
             .locationBulk(locationBulk)
