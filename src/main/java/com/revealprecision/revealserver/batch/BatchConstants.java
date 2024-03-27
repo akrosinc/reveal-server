@@ -18,7 +18,8 @@ public class BatchConstants {
   @UtilityClass
   public static class Constraint {
 
-    public final String USERNAME_REGEX = "^[a-z]+([-][a-z]+)?([-][a-z]+)?([-][a-z]+)?([.-_]?[a-z]+){4,}$";
+    public final String USERNAME_REGEX = "^[a-z]+([-][a-z]*)*([._]?[a-z]+){4,}$";
     public final String UUID_REGEX = "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$";
   }
+
 }
