@@ -15,12 +15,15 @@ import com.revealprecision.revealserver.persistence.domain.User;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
+@Slf4j
 public class LoginResponseFactory {
 
   public static LoginResponse fromEntities(User user, Organization organization,
@@ -54,11 +57,25 @@ public class LoginResponseFactory {
       locationTree = new LocationTree();
       locationTree.buildTreeFromList(locationFacades);
 
-      Location defaultLocation = locationRelationships.stream()
-          .filter(locationRelationship -> locationRelationship.getParentLocation() == null)
-          .map(LocationRelationship::getLocation).findFirst().get();
+      String highestGeoLevelInPlanAssignment = locationHierarchy.getNodeOrder().get(0);
 
-      teamMember.getTeam().setLocation(TeamLocationResponseFactory.fromEntity(defaultLocation));
+      Optional<Location> defaultLocationFromPlanAssignment = assignedLocations.stream().filter(
+          assignedLocation -> assignedLocation.getGeographicLevel().getName()
+              .equals(highestGeoLevelInPlanAssignment)).findFirst();
+      if (defaultLocationFromPlanAssignment.isPresent()) {
+        log.info("default location for team {} is {}", teamMember.getTeam().getTeamName(),
+            defaultLocationFromPlanAssignment.get().getName());
+        teamMember.getTeam().setLocation(
+            TeamLocationResponseFactory.fromEntity(defaultLocationFromPlanAssignment.get()));
+      } else {
+        Location defaultLocation = locationRelationships.stream()
+            .filter(locationRelationship -> locationRelationship.getParentLocation() == null)
+            .map(LocationRelationship::getLocation).findFirst().get();
+        log.info("using default location for team from relationship {} is {}",
+            teamMember.getTeam().getTeamName(), defaultLocation.getName());
+
+        teamMember.getTeam().setLocation(TeamLocationResponseFactory.fromEntity(defaultLocation));
+      }
     }
 
     LoginResponse loginResponse = LoginResponse.builder().user(userFacadeResponse).team(teamMember)
