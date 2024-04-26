@@ -19,6 +19,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.UsersResource;
+import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -116,6 +117,13 @@ public class UserService {
     List<User> users = userRepository.findAll();
     UsersResource userResource = keycloak.realm(realm).users();
     keycloakService.deleteAll(users, userResource);
+  }
+
+  public void deleteAllInKeycloak() {
+    UsersResource userResource = keycloak.realm(realm).users();
+    List<UserRepresentation> userRepresentations = userResource.list();
+
+    keycloakService.deleteAllInKeycloak(userRepresentations, userResource);
   }
 
   public User getCurrentUser() {

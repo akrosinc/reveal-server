@@ -12,7 +12,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
@@ -172,4 +171,16 @@ public class KeycloakService {
       }
     }
   }
+
+  @Async
+  public void deleteAllInKeycloak(List<UserRepresentation> users, UsersResource resource) {
+    int i = 0;
+    for (UserRepresentation u : users) {
+      if (u.getId() != null) {
+        resource.delete(u.getId());
+        System.out.println(++i);
+      }
+    }
+  }
+
 }

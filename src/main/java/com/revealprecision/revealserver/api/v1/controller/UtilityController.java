@@ -24,4 +24,12 @@ public class UtilityController {
     userService.deleteAll();
     return ResponseEntity.ok().build();
   }
+
+
+  @DeleteMapping("/user/deleteAllInKeycloak")
+  public ResponseEntity<Void> deleteAllInKeycloak() { //only for testing purposes
+    userService.deleteAllInKeycloak();
+    return ResponseEntity.ok().build();
+  }
+
 }
