@@ -34,4 +34,10 @@ public interface EntityTagRepository extends JpaRepository<EntityTag, UUID> {
 
   Set<EntityTag> findEntityTagsByTagIn(Set<String> tags);
 
+  Set<EntityTag> findEntityTagsByReferencedTagIn(List<UUID> id);
+
+  List<EntityTag> findEntityTagsByMetadataImport_Identifier(UUID id);
+
+  List<EntityTag> findEntityTagsByIdentifierIn(List<UUID> ids);
+
 }

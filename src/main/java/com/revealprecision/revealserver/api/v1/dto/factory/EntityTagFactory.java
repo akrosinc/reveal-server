@@ -11,12 +11,18 @@ public class EntityTagFactory {
 
   public static EntityTag toEntity(EntityTagRequest entityTagRequest) {
 
-    return EntityTag.builder()
+    EntityTag entityTag = EntityTag.builder()
         .tag(entityTagRequest.getTag())
         .definition(entityTagRequest.getDefinition())
-        .valueType(entityTagRequest.getValueType().equals("number")? EntityTagDataTypes.DOUBLE :entityTagRequest.getValueType())
+        .valueType(entityTagRequest.getValueType().equals("number") ? EntityTagDataTypes.DOUBLE
+            : entityTagRequest.getValueType())
         .aggregationMethod(entityTagRequest.getAggregationMethod())
         .isAggregate(entityTagRequest.isAggregate())
+        .referencedTag(entityTagRequest.getReferencedTag())
         .build();
+    if (entityTagRequest.getMetadataImport() != null){
+      entityTag.setMetadataImport(entityTagRequest.getMetadataImport());
+    }
+    return entityTag;
   }
 }

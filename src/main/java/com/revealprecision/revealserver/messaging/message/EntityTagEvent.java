@@ -1,7 +1,6 @@
 package com.revealprecision.revealserver.messaging.message;
 
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -20,7 +19,6 @@ import lombok.experimental.FieldNameConstants;
 @Data
 public class EntityTagEvent extends Message {
 
-
   private UUID identifier;
 
   private String tag;
@@ -29,26 +27,32 @@ public class EntityTagEvent extends Message {
 
   private String definition;
 
-  private LookupEntityTypeEvent lookupEntityType;
-
-  private Set<FormFieldEvent> formFields;
-
-  private boolean generated;
-
-  private List<String> referencedFields;
-
   private List<String> aggregationMethod;
-
-  private String generationFormula;
-
-  private String scope;
-
-  private String resultExpression;
-
-  private boolean isResultLiteral;
-
-  private boolean addToMetadata;
 
   private boolean isAggregate;
 
+  private UUID metadataImportId;
+
+  private UUID referencedTag;
+
+  private boolean isCreated;
+
+  private List<OrgGrant> tagAccGrantsOrganization;
+
+  private List<UserGrant> tagAccGrantsUser;
+
+  private boolean isPublic;
+
+  @Setter @Getter
+  @AllArgsConstructor
+  public static class OrgGrant{
+    private UUID id;
+    private String name;
+  }
+  @Setter @Getter
+  @AllArgsConstructor
+  public static class UserGrant{
+    private UUID id;
+    private String username;
+  }
 }

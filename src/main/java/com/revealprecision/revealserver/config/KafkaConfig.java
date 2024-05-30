@@ -66,6 +66,7 @@ public class KafkaConfig {
           if (kafkaProperties.getTopicPartitions().containsKey(topic)) {
             topicBuilder.partitions(kafkaProperties.getTopicPartitions().get(topic));
           }
+          topicBuilder.replicas(1);
           return topicBuilder.build();
         })
         .collect(Collectors.toList());
@@ -77,6 +78,7 @@ public class KafkaConfig {
           if (kafkaProperties.getTopicPartitions().containsKey(topic.getKey())) {
             topicBuilder.partitions(kafkaProperties.getTopicPartitions().get(topic.getKey()));
           }
+          topicBuilder.replicas(1);
           return topicBuilder.build();
         })
         .collect(Collectors.toList());

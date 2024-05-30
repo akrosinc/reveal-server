@@ -2,10 +2,14 @@ package com.revealprecision.revealserver.persistence.domain;
 
 import java.util.List;
 import java.util.UUID;
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -40,5 +44,21 @@ public class EntityTag {
   private boolean isAggregate;
 
   private boolean simulationDisplay;
+
+  @ManyToOne
+  @JoinColumn(name = "metadata_import_id", referencedColumnName = "identifier")
+  private MetadataImport metadataImport;
+
+  private UUID referencedTag;
+
+  private boolean isPublic;
+
+
+  @OneToMany(mappedBy = "entityTag",cascade = CascadeType.ALL)
+  private List<EntityTagAccGrantsOrganization> entityTagAccGrantsOrganizations;
+
+
+  @OneToMany(mappedBy = "entityTag",cascade = CascadeType.ALL)
+  private List<EntityTagAccGrantsUser> entityTagAccGrantsUsers;
 
 }

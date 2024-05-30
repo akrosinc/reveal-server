@@ -3,6 +3,7 @@ package com.revealprecision.revealserver.persistence.repository;
 import com.revealprecision.revealserver.persistence.domain.User;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import javax.transaction.Transactional;
 import org.springframework.data.domain.Page;
@@ -53,6 +54,8 @@ public interface UserRepository extends JpaRepository<User, UUID> {
   Optional<User> findByIdentifier(UUID identifier);
 
   Optional<User> findBySid(UUID sid);
+
+  Set<User> findBySidIn(List<UUID> sid);
 
   @Transactional
   @Modifying

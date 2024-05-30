@@ -7,28 +7,39 @@ import static com.revealprecision.revealserver.constants.EntityTagDataTypes.INTE
 import static com.revealprecision.revealserver.constants.EntityTagDataTypes.STRING;
 
 import com.revealprecision.revealserver.api.v1.dto.factory.EntityTagEventFactory;
+import com.revealprecision.revealserver.api.v1.dto.request.EntityTagItem;
+import com.revealprecision.revealserver.api.v1.dto.request.EntityTagRequest;
 import com.revealprecision.revealserver.exceptions.FileFormatException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.messaging.message.EntityTagEvent;
 import com.revealprecision.revealserver.persistence.domain.EntityTag;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
+import com.revealprecision.revealserver.persistence.domain.MetadataImport;
 import com.revealprecision.revealserver.persistence.domain.metadata.metadataImport.MetaImportDTO;
 import com.revealprecision.revealserver.persistence.domain.metadata.metadataImport.SheetData;
 import com.revealprecision.revealserver.service.EntityTagService;
 import com.revealprecision.revealserver.service.LocationHierarchyService;
 import com.revealprecision.revealserver.service.LocationService;
+import com.revealprecision.revealserver.util.UserUtils;
+import java.security.Principal;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.springframework.stereotype.Component;
@@ -42,21 +53,11 @@ public class MetaFieldSetMapper {
   private final LocationService locationService;
   private final LocationHierarchyService locationHierarchyService;
 
-  public List<MetaImportDTO> mapMetaFieldsDB(XSSFSheet sheet) throws FileFormatException {
+  public List<MetaImportDTO> mapMetaFieldsDB( Map<String,EntityTagEvent>   entityTagMap,XSSFSheet sheet, MetadataImport currentMetaImport ) throws FileFormatException {
     //starting from 1st
     int fileRowsCount = getFileRowsCount(sheet);
 
-    XSSFRow headerRow = sheet.getRow(0);
-
-    int physicalNumberOfCells = getPhysicalNumberOfCells(headerRow);
-
-    Set<String> metadataTagNames = IntStream.range(4, physicalNumberOfCells)
-        .mapToObj(i -> headerRow.getCell(i).getStringCellValue())
-        .takeWhile(Objects::nonNull)
-        .collect(Collectors.toSet());
-
-    Map<String, EntityTagEvent> entityTagMap = validateTagNamesAndReturnMap(
-        metadataTagNames);
+    XSSFRow tagNameRow = sheet.getRow(0);
 
     Set<UUID> locationList = extractIdsFor(sheet, fileRowsCount, 1, "Location");
     Set<UUID> hierarchyList = extractIdsFor(sheet, fileRowsCount, 0, "Hierarchy");
@@ -70,18 +71,36 @@ public class MetaFieldSetMapper {
         hierarchyList);
 
     return extractMetadata(
-        sheet, headerRow, entityTagMap, rowCount, locationMap, hierarchyMap);
+        sheet, tagNameRow, entityTagMap, rowCount, locationMap, hierarchyMap);
   }
 
-  private List<MetaImportDTO> extractMetadata(XSSFSheet sheet, XSSFRow headerRow,
-      Map<String, EntityTagEvent> entityTagMap, int rowCount,
+  public   Map<String,EntityTagEvent>   getTagsMap(XSSFSheet sheet,
+      MetadataImport currentMetaImport, XSSFRow tagNameRow, int physicalNumberOfCells) {
+    XSSFRow tagDataTypeRow = sheet.getRow(1);
+
+    XSSFRow headerRow = sheet.getRow(2);
+
+    Map<String, TagHelper> metadataTagNames = IntStream.range(4, physicalNumberOfCells)
+        .mapToObj(i -> new TagHelper(tagNameRow.getCell(i).getStringCellValue(),
+            tagDataTypeRow.getCell(i).getStringCellValue(),
+            UserUtils.getCurrentPrinciple())
+        )
+        .takeWhile(Objects::nonNull)
+        .collect(Collectors.toMap(TagHelper::getTagName, i -> i, (v, v1) -> v1));
+
+    return validateTagNamesAndReturnMap(
+        metadataTagNames, currentMetaImport);
+  }
+
+  private List<MetaImportDTO> extractMetadata(XSSFSheet sheet, XSSFRow tagNameRow,
+      Map<String,EntityTagEvent>  entityTagMap, int rowCount,
       Map<UUID, Location> locationMap, Map<UUID, LocationHierarchy> hierarchyMap) {
     List<MetaImportDTO> metaImportDTOS = new ArrayList<>();
     boolean searchedLocationHierarchy = false;
 
     LocationHierarchy locationHierarchy = null;
 
-    for (int i = 1; i < rowCount + 1; i++) {
+    for (int i = 3; i < rowCount + 1; i++) {
       XSSFRow dataRow = sheet.getRow(i);
       MetaImportDTO metaImportDTO = new MetaImportDTO();
 
@@ -97,7 +116,7 @@ public class MetaFieldSetMapper {
         metaImportDTO.setLocation(getLocation(locationMap, i,
             dataRow, 1));
 
-        SheetData sheetData = setMetadata(headerRow, entityTagMap, dataRow);
+        SheetData sheetData = setMetadata(tagNameRow, entityTagMap, dataRow);
         metaImportDTO.setSheetData(sheetData);
 
       } else {
@@ -109,19 +128,22 @@ public class MetaFieldSetMapper {
     return metaImportDTOS;
   }
 
-  private SheetData setMetadata(XSSFRow headerRow, Map<String, EntityTagEvent> entityTagMap,
+  private SheetData setMetadata(XSSFRow tagNameRow,  Map<String,EntityTagEvent>   entityTagMap,
       XSSFRow dataRow) {
     EntityTagEvent entityTag;
     SheetData sheetData = new SheetData();
 
-    for (int j = 4; j < 4+entityTagMap.size(); j++) {
+    Map<String, EntityTagEvent> onlyNonAggregateTags = entityTagMap.entrySet().stream()
+        .filter(entry -> !entry.getValue().isAggregate()).collect(
+            Collectors.toMap(Entry::getKey, Entry::getValue));
+    for (int j = 4; j < 4 + onlyNonAggregateTags.size(); j++) {
       Object value = null;
       Object sheetValue;
       if (dataRow.getCell(j).getRawValue() == null) {
-        log.warn("Empty cell encountered: coord: {},{}",dataRow.getRowNum(), j);
+        log.warn("Empty cell encountered: coord: {},{}", dataRow.getRowNum(), j);
       } else {
-        entityTag = entityTagMap.get(
-            headerRow.getCell(j).getStringCellValue());
+        entityTag = onlyNonAggregateTags.get(
+            tagNameRow.getCell(j).getStringCellValue());
         sheetValue = getSheetValue(dataRow, j);
         log.trace("sheet data type = {}", dataRow.getCell(j).getCellType());
         log.trace("sheet value = {}", sheetValue);
@@ -199,16 +221,18 @@ public class MetaFieldSetMapper {
         sheetValue = String.valueOf(dataRow.getCell(j).getBooleanCellValue());
         break;
       case FORMULA:
-        try{
+        try {
           sheetValue = dataRow.getCell(j).getNumericCellValue();
-        } catch (IllegalArgumentException e){
-          try{
+        } catch (IllegalArgumentException e) {
+          try {
             sheetValue = dataRow.getCell(j).getStringCellValue();
-          } catch (IllegalArgumentException e2){
-            try{
+          } catch (IllegalArgumentException e2) {
+            try {
               sheetValue = String.valueOf(dataRow.getCell(j).getBooleanCellValue());
-            } catch (IllegalArgumentException e3){
-              throw new FileFormatException("File contains formular at pos [" +dataRow.getCell(j).getReference()+"] which cannot be resolved to a string, numeric or boolean");
+            } catch (IllegalArgumentException e3) {
+              throw new FileFormatException(
+                  "File contains formular at pos [" + dataRow.getCell(j).getReference()
+                      + "] which cannot be resolved to a string, numeric or boolean");
             }
           }
         }
@@ -220,28 +244,79 @@ public class MetaFieldSetMapper {
     return sheetValue;
   }
 
-  private Map<String, EntityTagEvent> validateTagNamesAndReturnMap(Set<String> metadataTagNames) {
-    Set<EntityTag> entityTagsByTagNames = entityTagService.getEntityTagsByTagNames(
-        metadataTagNames);
+  private   Map<String,EntityTagEvent>  validateTagNamesAndReturnMap(
+      Map<String, TagHelper> metadataTagNames, MetadataImport currentMetaImport ) {
 
-    if (metadataTagNames.size() > entityTagsByTagNames.size()) {
-      throw new FileFormatException(
-          "File metadata columns are not entity tags on reveal server or column names are invalid.");
-    } else {
-      log.info("Import file has metadata columns that are valid");
-    }
+    Set<EntityTag> entityTagsByTags = entityTagService.getEntityTagsByTagNames(
+        metadataTagNames.keySet());
 
-    Map<String, EntityTagEvent> entityTagMap = entityTagsByTagNames.stream()
-        .map(EntityTagEventFactory::getEntityTagEvent)
-        .collect(Collectors.toMap(EntityTagEvent::getTag, a -> a));
-    return entityTagMap;
+    Set<EntityTag> entityTagsByTagsReferringTo = entityTagService.findEntityTagsByReferencedTagIn(
+        entityTagsByTags.stream().map(EntityTag::getIdentifier).collect(Collectors.toList()));
+
+    entityTagsByTags.addAll(entityTagsByTagsReferringTo);
+
+    Set<String> entityTagsByTagNames = entityTagsByTags.stream().map(EntityTag::getTag)
+        .collect(Collectors.toSet());
+
+    Map<String, TagHelper> toCreate = metadataTagNames.entrySet().stream()
+        .filter(entityTagEntry -> !entityTagsByTagNames.contains(entityTagEntry.getKey()))
+        .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+
+    List<EntityTag> createdTags = toCreate.entrySet().stream().flatMap(tag -> {
+
+      String valueType = "";
+      switch (tag.getValue().getDataType()) {
+        case "string": {
+          valueType = STRING;
+          break;
+        }
+        case "number": {
+          valueType = DOUBLE;
+          break;
+        }
+        case "boolean": {
+          valueType = BOOLEAN;
+          break;
+        }
+        default:
+      }
+
+      EntityTagRequest entityTagRequest = EntityTagRequest.builder()
+          .valueType(valueType)
+          .isAggregate(false)
+          .tags(List.of(new EntityTagItem (tag .getKey())))
+          .definition(tag.getKey())
+          .metadataImport(currentMetaImport)
+          .build();
+
+      return entityTagService.createEntityTagsSkipExisting(entityTagRequest, true).stream();
+    }).collect(Collectors.toList());
+
+    Map<String,EntityTagEvent> createdEntityTagEvents = createdTags.stream().map(entityTag -> {
+      EntityTagEvent entityTagEvent = EntityTagEventFactory.getEntityTagEvent(entityTag);
+      entityTagEvent.setCreated(true);
+      return entityTagEvent;
+    }).collect(Collectors.toMap(EntityTagEvent::getTag,v->v));
+
+    Map<String,EntityTagEvent> existingEntityTagEvents = entityTagsByTags.stream().map(entityTag -> {
+      EntityTagEvent entityTagEvent = EntityTagEventFactory.getEntityTagEvent(entityTag);
+      entityTagEvent.setCreated(false);
+      return entityTagEvent;
+    }).collect(Collectors.toMap(EntityTagEvent::getTag,v->v));
+
+
+    Map<String,EntityTagEvent> allEntityTagEvents = new HashMap<>();
+    allEntityTagEvents.putAll(existingEntityTagEvents);
+    allEntityTagEvents.putAll(createdEntityTagEvents);
+
+    return allEntityTagEvents;
   }
 
   private Set<UUID> extractIdsFor(XSSFSheet sheet, int fileRowsCount, int cellPosition,
       String type) {
     Set<UUID> list = new HashSet<>();
     int rowCount = 0;
-    for (int i = 1; i < fileRowsCount; i++) {
+    for (int i = 3; i < fileRowsCount; i++) {
 
       XSSFRow dataRow = sheet.getRow(i);
       if (dataRow != null && dataRow.getCell(cellPosition) != null) {
@@ -299,18 +374,25 @@ public class MetaFieldSetMapper {
         .collect(Collectors.toMap(Location::getIdentifier, location -> location));
   }
 
-  private int getPhysicalNumberOfCells(XSSFRow headerRow) {
+  public int getPhysicalNumberOfCells(XSSFRow headerRow) {
     int physicalNumberOfCells = headerRow.getPhysicalNumberOfCells();
-    if (physicalNumberOfCells > 4) {
+    if (physicalNumberOfCells > 1) {
       log.info("Import file has metadata columns");
     } else {
       throw new FileFormatException(
           "File is does not have any metadata columns.");
     }
-    return physicalNumberOfCells;
+    int cellCount = 0;
+    XSSFCell cell = headerRow.getCell(cellCount);
+    while (cell != null || cellCount < 4) {
+      cellCount++;
+      cell = headerRow.getCell(cellCount);
+    }
+
+    return cellCount;
   }
 
-  private int getFileRowsCount(XSSFSheet sheet) {
+  public int getFileRowsCount(XSSFSheet sheet) {
     int fileRowsCount = sheet.getPhysicalNumberOfRows();
     if (fileRowsCount > 1) {
       log.info("Import file has records {}", fileRowsCount);
@@ -321,4 +403,14 @@ public class MetaFieldSetMapper {
     return fileRowsCount;
   }
 
+}
+
+@Setter
+@Getter
+@AllArgsConstructor
+class TagHelper {
+
+  private String tagName;
+  private String dataType;
+  private Principal owner;
 }

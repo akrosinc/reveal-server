@@ -3,10 +3,12 @@ package com.revealprecision.revealserver.persistence.domain;
 import com.revealprecision.revealserver.api.v1.dto.response.ComplexTagDto.TagWithFormulaSymbol;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import java.util.List;
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.OneToMany;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -42,4 +44,11 @@ public class ComplexTag {
 
   private String formula;
 
+  private boolean isPublic;
+
+  @OneToMany(mappedBy = "complexTag",cascade = CascadeType.ALL)
+  private List<ComplexTagAccGrantsOrganization> complexTagAccGrantsOrganizations;
+
+  @OneToMany(mappedBy = "complexTag",cascade = CascadeType.ALL)
+  private List<ComplexTagAccGrantsUser> complexTagAccGrantsUsers;
 }

@@ -18,6 +18,7 @@ import lombok.Setter;
 public class UserResponse {
 
   private UUID identifier;
+  private UUID sid;
   private String username;
   private String firstName;
   private String lastName;

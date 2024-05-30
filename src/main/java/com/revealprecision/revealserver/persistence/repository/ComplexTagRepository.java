@@ -8,5 +8,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ComplexTagRepository extends JpaRepository<ComplexTag, Integer> {
 
-  Set<ComplexTag> findComplexTagsByTagNameIn(Set<String> tags);
+
+  Set<ComplexTag> findComplexTagsByIdIn(Set<Integer> ids);
 }

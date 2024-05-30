@@ -29,11 +29,15 @@ import com.revealprecision.revealserver.enums.SignEntity;
 import com.revealprecision.revealserver.exceptions.ConflictException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.model.GenericHierarchy;
+import com.revealprecision.revealserver.persistence.domain.EntityTag;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
+import com.revealprecision.revealserver.persistence.domain.Organization;
 import com.revealprecision.revealserver.persistence.domain.SimulationRequest;
+import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.persistence.domain.aggregation.GeneratedHierarchy;
 import com.revealprecision.revealserver.persistence.es.PersonElastic;
 import com.revealprecision.revealserver.persistence.projection.LocationCoordinatesProjection;
+import com.revealprecision.revealserver.persistence.repository.EntityTagRepository;
 import com.revealprecision.revealserver.persistence.repository.GeneratedHierarchyRepository;
 import com.revealprecision.revealserver.persistence.repository.SimulationRequestRepository;
 import com.revealprecision.revealserver.props.SimulationProperties;
@@ -93,6 +97,7 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
+import org.keycloak.authorization.client.AuthorizationDeniedException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.io.InputStreamResource;
@@ -114,6 +119,13 @@ public class EntityFilterEsService {
   private final GeneratedHierarchyRepository generatedHierarchyRepository;
 
   private final SimulationProperties simulationProperties;
+
+  private final EntityTagRepository entityTagRepository;
+
+  private final UserService userService;
+
+  private final EntityTagService entityTagService;
+
 
   @Value("${reveal.elastic.index-name}")
   String elasticIndex;
@@ -712,6 +724,25 @@ public class EntityFilterEsService {
       if (simulationRequestOptional.isPresent()) {
         SimulationRequest simulationRequest = simulationRequestOptional.get();
         simulationRequest.getRequest().setResultTags(entityTagRequests);
+
+        User currentUser = userService.getCurrentUser();
+
+        Set<UUID> currentUserOrgs = currentUser.getOrganizations().stream()
+            .map(Organization::getIdentifier)
+            .collect(Collectors.toSet());
+
+        List<EntityTag> entityTagsByIdentifierIn = entityTagRepository.findEntityTagsByIdentifierIn(
+            entityTagRequests.stream().map(EntityTagRequest::getIdentifier).map(UUID::fromString)
+                .collect(Collectors.toList()));
+
+        Set<UUID> tagsWithAccess = entityTagsByIdentifierIn.stream()
+            .filter(entityTag -> entityTagService.checkAccess(entityTag,currentUserOrgs,currentUser))
+            .map(EntityTag::getIdentifier).collect(Collectors.toSet());
+
+        if (tagsWithAccess.size() < entityTagRequests.stream().map(EntityTagRequest::getIdentifier).collect(Collectors.toSet()).size()){
+          throw new AuthorizationDeniedException("You do not have access to the requested tag",null);
+        }
+
         SimulationRequest save = simulationRequestRepository.save(simulationRequest);
         log.trace("Simulation request {}", save);
       } else {

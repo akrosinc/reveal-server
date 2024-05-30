@@ -60,7 +60,7 @@ public class CustomResponseBodyAdviceAdapter implements ResponseBodyAdvice<Objec
           Instant.ofEpochMilli(servletRequest.getSession().getCreationTime()),
           TimeZone.getDefault().toZoneId());
       try {
-        String jwtKid = null;
+        String jwtKid;
         try {
           jwtKid = UserUtils.getJwtKid();
         } catch (ClassCastException | NullPointerException e) {

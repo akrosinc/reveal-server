@@ -2,8 +2,9 @@ package com.revealprecision.revealserver.api.v1.dto.response;
 
 
 import com.revealprecision.revealserver.enums.BulkEntryStatus;
-import com.revealprecision.revealserver.enums.BulkStatusEnum;
+import com.revealprecision.revealserver.messaging.message.EntityTagEvent;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -24,4 +25,5 @@ public class MetadataFileImportResponse {
   private BulkEntryStatus status;
   private String uploadedBy;
 
+  private List<EntityTagEvent> entityTagEvents;
 }

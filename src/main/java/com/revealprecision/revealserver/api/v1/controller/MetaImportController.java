@@ -2,10 +2,12 @@ package com.revealprecision.revealserver.api.v1.controller;
 
 import com.revealprecision.revealserver.api.v1.dto.response.MetadataFileImportResponse;
 import com.revealprecision.revealserver.exceptions.FileFormatException;
+import com.revealprecision.revealserver.messaging.message.EntityTagEvent;
 import com.revealprecision.revealserver.service.MetadataService;
 import com.revealprecision.revealserver.service.StorageService;
 import io.swagger.v3.oas.annotations.Operation;
 import java.io.IOException;
+import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
@@ -39,9 +41,9 @@ public class MetaImportController {
   public ResponseEntity<?> importMetaData(
       @RequestParam("file") MultipartFile file) throws FileFormatException, IOException {
     String path = storageService.saveXlsx(file);
-    UUID importIdentifier = metadataService.saveImportFile(path, file.getOriginalFilename());
+    Map<String,EntityTagEvent> booleanMapMap = metadataService.saveImportFile(path, file.getOriginalFilename());
     return ResponseEntity.status(HttpStatus.CREATED)
-        .body("Meta data uploaded successfully with identifier: " + importIdentifier);
+        .body(booleanMapMap);
   }
 
   @Operation(summary = "Get List of Metadata Import files uploaded",

@@ -36,10 +36,14 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.DataValidation;
+import org.apache.poi.ss.usermodel.DataValidationConstraint;
+import org.apache.poi.ss.usermodel.DataValidationHelper;
 import org.apache.poi.ss.usermodel.FillPatternType;
 import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.util.CellRangeAddressList;
 import org.apache.poi.xssf.usermodel.XSSFFont;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.core.io.ByteArrayResource;
@@ -119,7 +123,7 @@ public class LocationService {
     return locationCentroidCoordinatesByIdentifierList.stream()
         .collect(Collectors.toMap(
             LocationCoordinatesProjection::getIdentifier,
-            locationCoordinatesProjection -> locationCoordinatesProjection, (a,b)->a));
+            locationCoordinatesProjection -> locationCoordinatesProjection, (a, b) -> a));
   }
 
   public Location findByIdentifierWithoutGeoJson(UUID identifier) {
@@ -221,12 +225,33 @@ public class LocationService {
       sheet.setColumnWidth(1, 6000);
       sheet.setColumnWidth(2, 6400);
 
-      Row header = sheet.createRow(0);
-
       CellStyle headerStyle = workbook.createCellStyle();
       headerStyle.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
       headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 
+      int rowIndex = 0;
+
+      Row tagNameRow = sheet.createRow(rowIndex++);
+      Cell tagNameRowLabelCell = tagNameRow.createCell(0);
+      tagNameRowLabelCell.setCellValue("Tag Name");
+      tagNameRowLabelCell.setCellStyle(headerStyle);
+
+      Row tagDataTypeRow = sheet.createRow(rowIndex++);
+      Cell tagDataTypeLabelCell = tagDataTypeRow.createCell(0);
+      tagDataTypeLabelCell.setCellValue("Data Type");
+      tagDataTypeLabelCell.setCellStyle(headerStyle);
+
+      Cell tagDataTypeDropDownCell = tagDataTypeRow.createCell(4);
+
+      DataValidationHelper dvHelper = sheet.getDataValidationHelper();
+      CellRangeAddressList addressList = new CellRangeAddressList(1, 1, 4, 4);
+      DataValidationConstraint dvConstraint = dvHelper.createFormulaListConstraint("DATA_TYPES");
+      dvConstraint.setExplicitListValues(
+          List.of("string", "number", "boolean").toArray(String[]::new));
+      DataValidation dataValidation = dvHelper.createValidation(dvConstraint, addressList);
+      sheet.addValidationData(dataValidation);
+
+      Row header = sheet.createRow(rowIndex++);
       XSSFFont font = workbook.createFont();
       font.setFontName("Arial");
       font.setFontHeightInPoints((short) 16);
@@ -252,9 +277,9 @@ public class LocationService {
       CellStyle style = workbook.createCellStyle();
       style.setWrapText(true);
 
-      int index = 1;
+//      int index = 1;
       for (Location location : locationList) {
-        Row row = sheet.createRow(index);
+        Row row = sheet.createRow(rowIndex++);
         Cell cell = row.createCell(0);
         cell.setCellValue(locationHierarchy.getIdentifier().toString());
         cell.setCellStyle(style);
@@ -270,7 +295,7 @@ public class LocationService {
         cell = row.createCell(3);
         cell.setCellValue(location.getGeographicLevel().getName());
         cell.setCellStyle(style);
-        index++;
+//        index++;
 
         int entityTagIndex = 4;
         for (UUID el : entityTags) {

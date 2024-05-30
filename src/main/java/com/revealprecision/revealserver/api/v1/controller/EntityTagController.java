@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.api.v1.controller;
 
+import com.revealprecision.revealserver.api.v1.dto.factory.EntityTagEventFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.EntityTagResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.LookupEntityTagResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.DataFilterRequest;
@@ -11,27 +12,40 @@ import com.revealprecision.revealserver.api.v1.dto.response.FeatureSetResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LookupEntityTypeResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.PersonMainData;
 import com.revealprecision.revealserver.api.v1.dto.response.SimulationCountResponse;
+import com.revealprecision.revealserver.messaging.message.EntityTagEvent;
+import com.revealprecision.revealserver.messaging.message.EntityTagEvent.OrgGrant;
+import com.revealprecision.revealserver.messaging.message.EntityTagEvent.UserGrant;
 import com.revealprecision.revealserver.persistence.domain.ComplexTag;
-import com.revealprecision.revealserver.persistence.repository.GeneratedHierarchyRepository;
+import com.revealprecision.revealserver.persistence.domain.ComplexTagAccGrantsOrganization;
+import com.revealprecision.revealserver.persistence.domain.ComplexTagAccGrantsUser;
+import com.revealprecision.revealserver.persistence.domain.EntityTag;
+import com.revealprecision.revealserver.persistence.domain.EntityTagAccGrantsOrganization;
+import com.revealprecision.revealserver.persistence.domain.EntityTagAccGrantsUser;
+import com.revealprecision.revealserver.persistence.domain.Organization;
+import com.revealprecision.revealserver.persistence.domain.User;
+import com.revealprecision.revealserver.persistence.repository.OrganizationRepository;
+import com.revealprecision.revealserver.persistence.repository.UserRepository;
 import com.revealprecision.revealserver.service.EntityFilterEsService;
 import com.revealprecision.revealserver.service.EntityTagService;
 import com.revealprecision.revealserver.service.EventAggregationService;
-import com.revealprecision.revealserver.service.LocationHierarchyService;
 import com.revealprecision.revealserver.service.LookupEntityTypeService;
 import io.swagger.v3.oas.annotations.Operation;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.keycloak.authorization.client.AuthorizationDeniedException;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -57,8 +71,9 @@ public class EntityTagController {
   private final EntityFilterEsService entityFilterService;
   private final LookupEntityTypeService lookupEntityTypeService;
   private final EventAggregationService eventAggregationService;
-  private final LocationHierarchyService locationHierarchyService;
-  private final GeneratedHierarchyRepository generatedHierarchyRepository;
+  private final OrganizationRepository organizationRepository;
+  private final UserRepository userRepository;
+
 
   @Operation(summary = "Create Tag", description = "Create Tag", tags = {"Entity Tags"})
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -85,21 +100,56 @@ public class EntityTagController {
   @Operation(summary = "Get All Entity Tags", description = "Get All Entity Tags", tags = {
       "Entity Tags"})
   @GetMapping(value = "/page", produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<Page<EntityTagResponse>> getAll(Pageable pageable,
+  public ResponseEntity<Page<EntityTagEvent>> getAll(Pageable pageable,
       @RequestParam(name = "filter", defaultValue = "all") String filter,
       @RequestParam(name = "search", defaultValue = "", required = false) String search) {
 
     switch (filter) {
 
       case "importable":
+        Page<EntityTag> allPagedNonAggregateEntityTags = entityTagService.getAllPagedNonAggregateEntityTags(
+            pageable, search);
+
+        List<UUID> orgIds = allPagedNonAggregateEntityTags.stream().flatMap(
+            entityTag -> entityTag.getEntityTagAccGrantsOrganizations().stream()
+                .map(EntityTagAccGrantsOrganization::getOrganizationId)).collect(
+            Collectors.toList());
+
+        List<UUID> userIds = allPagedNonAggregateEntityTags.stream().flatMap(
+            entityTag -> entityTag.getEntityTagAccGrantsUsers().stream()
+                .map(EntityTagAccGrantsUser::getUserSid)).collect(
+            Collectors.toList());
+
+        Set<Organization> orgGrants = organizationRepository.findByIdentifiers(orgIds);
+        Set<User> userGrants = userRepository.findBySidIn(userIds);
+
         return ResponseEntity.ok(
-            EntityTagResponseFactory.fromEntityPage(
-                entityTagService.getAllPagedNonAggregateEntityTags(pageable, search), pageable));
+            new PageImpl<>(allPagedNonAggregateEntityTags.stream().map(entityTag ->
+                EntityTagEventFactory.getEntityTagEventWithGrantData(entityTag, orgGrants,
+                    userGrants)
+            ).collect(Collectors.toList()), pageable,
+                allPagedNonAggregateEntityTags.getTotalElements()));
       case "all":
       default:
-        return ResponseEntity.ok(
-            EntityTagResponseFactory.fromEntityPage(
-                entityTagService.getOrSearchAllEntityTagsPaged(pageable, search), pageable));
+        Page<EntityTag> orSearchAllEntityTagsPaged = entityTagService.getOrSearchAllEntityTagsPaged(
+            pageable, search);
+
+        List<UUID> orgIds2 = orSearchAllEntityTagsPaged.stream().flatMap(
+            entityTag -> entityTag.getEntityTagAccGrantsOrganizations().stream()
+                .map(EntityTagAccGrantsOrganization::getOrganizationId)).collect(
+            Collectors.toList());
+
+        List<UUID> userIds2 = orSearchAllEntityTagsPaged.stream().flatMap(
+            entityTag -> entityTag.getEntityTagAccGrantsUsers().stream()
+                .map(EntityTagAccGrantsUser::getUserSid)).collect(
+            Collectors.toList());
+
+        Set<Organization> orgGrants2 = organizationRepository.findByIdentifiers(orgIds2);
+        Set<User> userGrants2 = userRepository.findBySidIn(userIds2);
+
+        return ResponseEntity.ok(new PageImpl<>(orSearchAllEntityTagsPaged.stream().map(entityTag ->
+            EntityTagEventFactory.getEntityTagEventWithGrantData(entityTag, orgGrants2, userGrants2)
+        ).collect(Collectors.toList()), pageable, orSearchAllEntityTagsPaged.getTotalElements()));
     }
   }
 
@@ -162,10 +212,14 @@ public class EntityTagController {
   }
 
   @PostMapping("/updateSimulationRequest")
-  public ResponseEntity<SimulationCountResponse> updateSimulationRequest(
+  public ResponseEntity<?> updateSimulationRequest(
       @RequestParam("simulationRequestId") String simulationRequestId,
       @RequestBody List<EntityTagRequest> request) {
-    entityFilterService.updateRequestWithEntityTags(simulationRequestId, request);
+    try {
+      entityFilterService.updateRequestWithEntityTags(simulationRequestId, request);
+    } catch (AuthorizationDeniedException e) {
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+    }
     return ResponseEntity.status(HttpStatus.OK).build();
   }
 
@@ -217,20 +271,60 @@ public class EntityTagController {
   }
 
   @GetMapping("/complex")
-  public ResponseEntity<List<ComplexTagDto>> getComplexTag(){
-    return ResponseEntity.ok(entityTagService.getAllComplexTags().stream().map(complexTag -> ComplexTagDto.builder()
-        .hierarchyId(complexTag.getHierarchyId())
-        .formula(complexTag.getFormula())
-        .tags(complexTag.getTags())
-        .hierarchyType(complexTag.getHierarchyType())
-        .tagName(complexTag.getTagName())
-        .id(String.valueOf(complexTag.getId()))
-        .build())
-        .collect(Collectors.toList()));
+  public ResponseEntity<List<ComplexTagDto>> getComplexTag() {
+    List<ComplexTag> allComplexTags = entityTagService.getAllComplexTags();
+
+    List<ComplexTagDto> collect = getComplexTagDtos(
+        allComplexTags);
+
+    return ResponseEntity.ok(collect);
+  }
+
+  private List<ComplexTagDto> getComplexTagDtos(List<ComplexTag> allComplexTags) {
+    List<UUID> orgIds = allComplexTags.stream()
+        .flatMap(complexTag -> complexTag.getComplexTagAccGrantsOrganizations().stream().map(
+            ComplexTagAccGrantsOrganization::getOrganizationId)).collect(Collectors.toList());
+
+    List<UUID> userIds = allComplexTags.stream()
+        .flatMap(complexTag -> complexTag.getComplexTagAccGrantsUsers().stream().map(
+            ComplexTagAccGrantsUser::getUserSid)).collect(Collectors.toList());
+
+    Set<Organization> orgGrants = organizationRepository.findByIdentifiers(orgIds);
+    Set<User> userGrants = userRepository.findBySidIn(userIds);
+
+    List<ComplexTagDto> collect = allComplexTags.stream().map(complexTag -> {
+      List<OrgGrant> orgGrantObj = orgGrants.stream().filter(
+              organization -> complexTag.getComplexTagAccGrantsOrganizations().stream().map(
+                  ComplexTagAccGrantsOrganization::getOrganizationId).collect(
+                  Collectors.toList()).contains(organization.getIdentifier()))
+          .map(organization -> new OrgGrant(organization.getIdentifier(), organization.getName()))
+          .collect(
+              Collectors.toList());
+      List<UserGrant> userGrantObj = userGrants.stream().filter(
+              user -> complexTag.getComplexTagAccGrantsUsers().stream().map(
+                  ComplexTagAccGrantsUser::getUserSid).collect(
+                  Collectors.toList()).contains(user.getSid()))
+          .map(user -> new UserGrant(user.getSid(), user.getUsername()))
+          .collect(
+              Collectors.toList());
+      return ComplexTagDto.builder()
+          .hierarchyId(complexTag.getHierarchyId())
+          .formula(complexTag.getFormula())
+          .tags(complexTag.getTags())
+          .hierarchyType(complexTag.getHierarchyType())
+          .tagName(complexTag.getTagName())
+          .id(String.valueOf(complexTag.getId()))
+          .tagAccGrantsOrganization(orgGrantObj)
+          .tagAccGrantsUser(userGrantObj)
+          .isPublic(complexTag.isPublic())
+          .build();
+
+    }).collect(Collectors.toList());
+    return collect;
   }
 
   @PostMapping("/complex")
-  public ResponseEntity<ComplexTagDto> getComplexTag(@RequestBody ComplexTagDto request){
+  public ResponseEntity<ComplexTagDto> getComplexTag(@RequestBody ComplexTagDto request) {
     ComplexTag complexTag = entityTagService.saveComplexTag(ComplexTag.builder()
         .formula(request.getFormula())
         .hierarchyId(request.getHierarchyId())
@@ -248,6 +342,27 @@ public class EntityTagController {
             .tagName(complexTag.getTagName())
             .build()
     );
+  }
+
+  @PostMapping("/updateGrants")
+  public ResponseEntity<List<EntityTagEvent>> getComplexTag(
+      @RequestBody List<EntityTagRequest> request) {
+
+    List<EntityTag> entityTags = entityTagService.updateEntityTagAccessGrants(request);
+
+    return ResponseEntity.ok(entityTags.stream().map(EntityTagEventFactory::getEntityTagEvent)
+        .collect(Collectors.toList()));
+
+  }
+
+  @PostMapping("/updateComplexTagGrants")
+  public ResponseEntity<List<ComplexTagDto>> updateComplexTag(
+      @RequestBody List<ComplexTagDto> request) {
+
+    List<ComplexTag> entityTags = entityTagService.updateComplexTagAccessGrants(request);
+
+    return ResponseEntity.ok(getComplexTagDtos(entityTags));
+
   }
 
 

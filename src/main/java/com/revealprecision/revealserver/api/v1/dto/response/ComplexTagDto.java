@@ -1,5 +1,7 @@
 package com.revealprecision.revealserver.api.v1.dto.response;
 
+import com.revealprecision.revealserver.messaging.message.EntityTagEvent.OrgGrant;
+import com.revealprecision.revealserver.messaging.message.EntityTagEvent.UserGrant;
 import java.util.List;
 import lombok.Builder;
 import lombok.Getter;
@@ -20,6 +22,16 @@ public class ComplexTagDto {
   private List<TagWithFormulaSymbol> tags;
 
   private String formula;
+
+  private List<OrgGrant> tagAccGrantsOrganization;
+
+  private List<UserGrant> tagAccGrantsUser;
+
+  private boolean isPublic;
+
+  private List<OrgGrant> resultingOrgs;
+  private List<UserGrant> resultingUsers;
+
 
   @Builder
   @Setter @Getter

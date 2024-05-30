@@ -3,17 +3,17 @@ package com.revealprecision.revealserver.batch.mapper;
 import com.revealprecision.revealserver.batch.FieldSetConverter;
 import com.revealprecision.revealserver.batch.dto.UserBatchDTO;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
 import org.springframework.batch.item.file.mapping.FieldSetMapper;
 import org.springframework.batch.item.file.transform.FieldSet;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.BindException;
 
 @Component
+@RequiredArgsConstructor
 public class UserFieldSetMapper implements FieldSetMapper<UserBatchDTO> {
 
-  @Autowired
-  FieldSetConverter converter;
+  private final FieldSetConverter converter;
 
   @Override
   public UserBatchDTO mapFieldSet(FieldSet fieldSet) throws BindException {

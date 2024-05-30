@@ -19,6 +19,7 @@ public class UserResponseFactory {
             Collectors.toSet());
     return UserResponse.builder()
         .identifier(user.getIdentifier())
+        .sid(user.getSid())
         .firstName(user.getFirstName())
         .lastName(user.getLastName())
         .username(user.getUsername())

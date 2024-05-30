@@ -18,7 +18,10 @@ import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.messaging.message.EntityTagEvent;
 import com.revealprecision.revealserver.messaging.message.LocationIdEvent;
 import com.revealprecision.revealserver.persistence.domain.EntityTag;
+import com.revealprecision.revealserver.persistence.domain.EntityTagAccGrantsOrganization;
+import com.revealprecision.revealserver.persistence.domain.EntityTagAccGrantsUser;
 import com.revealprecision.revealserver.persistence.domain.MetadataImport;
+import com.revealprecision.revealserver.persistence.domain.Organization;
 import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.persistence.domain.aggregation.ImportAggregationNumeric;
 import com.revealprecision.revealserver.persistence.domain.aggregation.ImportAggregationString;
@@ -28,6 +31,8 @@ import com.revealprecision.revealserver.persistence.domain.metadata.metadataImpo
 import com.revealprecision.revealserver.persistence.repository.ImportAggregationNumericRepository;
 import com.revealprecision.revealserver.persistence.repository.ImportAggregationStringRepository;
 import com.revealprecision.revealserver.persistence.repository.MetadataImportRepository;
+import com.revealprecision.revealserver.persistence.repository.OrganizationRepository;
+import com.revealprecision.revealserver.persistence.repository.UserRepository;
 import com.revealprecision.revealserver.props.ImportAggregationProperties;
 import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.util.UserUtils;
@@ -46,6 +51,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.keycloak.KeycloakPrincipal;
@@ -72,8 +78,11 @@ public class MetadataService {
 
   private final EntityTagService entityTagService;
   private final ImportAggregationProperties importAggregationProperties;
+  private final OrganizationRepository organizationRepository;
+  private final UserRepository userRepository;
 
-  public UUID saveImportFile(String file, String fileName) throws FileFormatException, IOException {
+  public Map<String, EntityTagEvent> saveImportFile(String file, String fileName)
+      throws FileFormatException, IOException {
 
     MetadataImport metadataImport = new MetadataImport();
     metadataImport.setFilename(fileName);
@@ -93,7 +102,17 @@ public class MetadataService {
     try (XSSFWorkbook workbook = new XSSFWorkbook(file)) {
       XSSFSheet sheet = workbook.getSheetAt(0);
 
-      List<MetaImportDTO> metaImportDTOS = metaFieldSetMapper.mapMetaFieldsDB(sheet);
+      int fileRowsCount = metaFieldSetMapper.getFileRowsCount(sheet);
+
+      XSSFRow tagNameRow = sheet.getRow(0);
+
+      int physicalNumberOfCells = metaFieldSetMapper.getPhysicalNumberOfCells(tagNameRow);
+
+      Map<String, EntityTagEvent> entityTagMap = metaFieldSetMapper.getTagsMap(
+          sheet, currentMetaImport, tagNameRow, physicalNumberOfCells);
+
+      List<MetaImportDTO> metaImportDTOS = metaFieldSetMapper.mapMetaFieldsDB(entityTagMap, sheet,
+          metadataImport);
 
       if (metaImportDTOS.stream().map(metaImportDTO -> metaImportDTO.getSheetData().getErrors())
           .map(Map::size).reduce(0, Integer::sum) > 1) {
@@ -121,7 +140,7 @@ public class MetadataService {
             ancestryMap);
       }
 
-      return identifier;
+      return entityTagMap;
     } catch (Exception e) {
       log.error(e.getMessage(), e);
       currentMetaImport.setStatus(BulkEntryStatus.FAILED);
@@ -152,16 +171,17 @@ public class MetadataService {
     metadataImportRepository.save(currentMetaImport);
 
     metaImportDTOS
-        .stream().filter(metaImportDTO -> ancestryMap.containsKey(metaImportDTO.getLocation().getIdentifier().toString()))
+        .stream().filter(metaImportDTO -> ancestryMap.containsKey(
+            metaImportDTO.getLocation().getIdentifier().toString()))
         .forEach(metaImportDTO ->
-        ancestryMap.get(metaImportDTO.getLocation().getIdentifier().toString())
-            .forEach(ancestor ->
-                metaImportDTO.getSheetData().getConvertedEntityData().forEach(
-                    (key, value) ->
-                        updateDB(metaImportDTO.getLocation().getName(), ancestor, value,
-                            key.getTag(), key.getValueType(),
-                            metaImportDTO.getLocationHierarchy().getIdentifier().toString())
-                )));
+            ancestryMap.get(metaImportDTO.getLocation().getIdentifier().toString())
+                .forEach(ancestor ->
+                    metaImportDTO.getSheetData().getConvertedEntityData().forEach(
+                        (key, value) ->
+                            updateDB(metaImportDTO.getLocation().getName(), ancestor, value,
+                                key.getTag(), key.getValueType(),
+                                metaImportDTO.getLocationHierarchy().getIdentifier().toString())
+                    )));
 
     List<Entry<EntityTagEvent, Object>> string = metaImportDTOS.stream().flatMap(
             metaImportDTO -> metaImportDTO.getSheetData().getConvertedEntityData().entrySet().stream()
@@ -191,12 +211,12 @@ public class MetadataService {
         )
         .collect(Collectors.toSet());
 
-    Map<String,EntityTag> collect2 = entityTagService.getEntityTagsByTagNames(
-        collect).stream().collect(Collectors.toMap(EntityTag::getTag,a->a,(a,b)->b));
+    Map<String, EntityTag> collect2 = entityTagService.getEntityTagsByTagNames(
+        collect).stream().collect(Collectors.toMap(EntityTag::getTag, a -> a, (a, b) -> b));
 
-   return collect.stream().map(tag -> {
+    return collect.stream().map(tag -> {
       EntityTag entityTag;
-      if (collect2.containsKey(tag)){
+      if (collect2.containsKey(tag)) {
         entityTag = collect2.get(tag);
       } else {
         entityTag = EntityTag.builder()
@@ -207,7 +227,8 @@ public class MetadataService {
             .build();
       }
       return entityTag;
-    }).collect(Collectors.toCollection(() -> new TreeSet<>(Comparator.comparing(EntityTag::getTag))));
+    }).collect(
+        Collectors.toCollection(() -> new TreeSet<>(Comparator.comparing(EntityTag::getTag))));
 
   }
 
@@ -225,7 +246,8 @@ public class MetadataService {
             importAggregationString.setVal((String) importEntityTagValue);
           } else {
             importAggregationString = ImportAggregationString.builder()
-                .val((String) importEntityTagValue).ancestor(locId).eventType(EntityTagFieldTypes.IMPORT)
+                .val((String) importEntityTagValue).ancestor(locId)
+                .eventType(EntityTagFieldTypes.IMPORT)
                 .fieldCode(tag)
                 .hierarchyIdentifier(hierarchyIdentifier)
                 .name(name).planIdentifier(null).build();
@@ -245,7 +267,8 @@ public class MetadataService {
             importAggregationNumeric = ImportAggregationNumeric.builder()
                 .val((Double) importEntityTagValue).ancestor(locId)
                 .hierarchyIdentifier(hierarchyIdentifier)
-                .eventType(EntityTagFieldTypes.IMPORT).fieldCode(tag).name(name).planIdentifier(null).build();
+                .eventType(EntityTagFieldTypes.IMPORT).fieldCode(tag).name(name)
+                .planIdentifier(null).build();
           }
 
           importAggregationNumericRepository.save(importAggregationNumeric);
@@ -258,7 +281,33 @@ public class MetadataService {
   }
 
   public Page<MetadataFileImportResponse> getMetadataImportList(Pageable pageable) {
-    return MetadataImportResponseFactory.fromEntityPage(metadataImportRepository.findAll(pageable),
+    Page<MetadataImport> all = metadataImportRepository.findAll(pageable);
+
+    Map<UUID, List<EntityTag>> collect = all.get().flatMap(
+            metadataImport -> entityTagService.findEntityTagsByMetadataImport(
+                    metadataImport.getIdentifier())
+                .stream()
+        ).filter(entityTag -> entityTag.getMetadataImport() != null)
+        .collect(Collectors.groupingBy(entityTag -> entityTag.getMetadataImport().getIdentifier()));
+
+    List<UUID> orgIds = collect.entrySet()
+        .stream().flatMap(entityTagListEntry ->
+            entityTagListEntry.getValue().stream()
+                .flatMap((entityTag -> entityTag.getEntityTagAccGrantsOrganizations().stream().map(
+                    EntityTagAccGrantsOrganization::getOrganizationId))
+                )).collect(Collectors.toList());
+
+    List<UUID> userIds = collect.entrySet()
+        .stream().flatMap(entityTagListEntry ->
+            entityTagListEntry.getValue().stream()
+                .flatMap((entityTag -> entityTag.getEntityTagAccGrantsUsers().stream().map(
+                    EntityTagAccGrantsUser::getUserSid))
+                )).collect(Collectors.toList());
+
+    Set<Organization> orgGrants = organizationRepository.findByIdentifiers(orgIds);
+    Set<User> userGrants = userRepository.findBySidIn(userIds);
+
+    return MetadataImportResponseFactory.fromEntityPage(all,collect,orgGrants,userGrants,
         pageable);
   }
 

@@ -1,6 +1,10 @@
 package com.revealprecision.revealserver.api.v1.dto.request;
 
+import com.revealprecision.revealserver.messaging.message.EntityTagEvent.OrgGrant;
+import com.revealprecision.revealserver.messaging.message.EntityTagEvent.UserGrant;
+import com.revealprecision.revealserver.persistence.domain.MetadataImport;
 import java.util.List;
+import java.util.UUID;
 import javax.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -30,5 +34,18 @@ public class EntityTagRequest {
 
   private List<EntityTagItem> tags;
 
+  private MetadataImport metadataImport;
 
+  private UUID referencedTag;
+
+  private boolean isCreated;
+
+  private boolean isPublic;
+
+  private List<UUID> tagAccGrantsOrganization;
+
+  private List<UUID> tagAccGrantsUser;
+
+  private List<OrgGrant> resultingOrgs;
+  private List<UserGrant> resultingUsers;
 }

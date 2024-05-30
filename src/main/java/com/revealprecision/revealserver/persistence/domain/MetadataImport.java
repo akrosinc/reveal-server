@@ -1,24 +1,18 @@
 package com.revealprecision.revealserver.persistence.domain;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.revealprecision.revealserver.enums.BulkEntryStatus;
 import com.revealprecision.revealserver.messaging.message.LocationMetadataEvent;
-import com.revealprecision.revealserver.persistence.domain.metadata.LocationMetadata;
-import com.revealprecision.revealserver.persistence.domain.metadata.infra.MetadataList;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
-import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
-import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
-import javax.persistence.OneToMany;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -27,10 +21,8 @@ import lombok.Setter;
 import lombok.experimental.FieldNameConstants;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.Where;
-import org.hibernate.envers.Audited;
 
 @FieldNameConstants
-@Audited
 @Getter
 @Setter
 @Builder
