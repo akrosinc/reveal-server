@@ -1,3 +1,14 @@
+CREATE TABLE IF NOT EXISTS entity_tag_ownership
+(
+    id            uuid not null,
+    entity_tag_id uuid not null,
+    user_sid      uuid not null,
+    primary key (id)
+    );
+CREATE INDEX IF NOT EXISTS idx_entity_tag_ownership_user_sid on entity_tag_ownership (user_sid);
+CREATE INDEX IF NOT EXISTS idx_entity_tag_entity_tag_id on entity_tag_ownership (entity_tag_id);
+
+
 CREATE TABLE IF NOT EXISTS entity_tag_acc_grants_organization
 (
     id            uuid not null,
