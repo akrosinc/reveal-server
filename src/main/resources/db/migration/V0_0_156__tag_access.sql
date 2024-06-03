@@ -59,5 +59,5 @@ CREATE INDEX IF NOT EXISTS idx_complex_tag_acc_usr_entity_tag_id on complex_tag_
 alter table IF EXISTS complex_tag
     add if not exists is_public boolean DEFAULT false;
 
-ALTER TABLE complex_tag_acc_grants_user ADD UNIQUE (complex_tag_id,user_sid);
-ALTER TABLE complex_tag_acc_grants_organization ADD UNIQUE (complex_tag_id,organization_id);
+ALTER TABLE IF EXISTS complex_tag_acc_grants_user ADD UNIQUE (complex_tag_id,user_sid);
+ALTER TABLE IF EXISTS complex_tag_acc_grants_organization ADD UNIQUE (complex_tag_id,organization_id);
