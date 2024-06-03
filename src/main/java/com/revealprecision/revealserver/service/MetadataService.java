@@ -152,7 +152,9 @@ public class MetadataService {
 
   public void publishToMessagingGen(List<SaveHierarchyMetadata> saveHierarchyMetadatas,
       Map<String, List<String>> ancestryMap) {
-    saveHierarchyMetadatas.forEach(saveHierarchyMetadata ->
+    saveHierarchyMetadatas.forEach(saveHierarchyMetadata ->{
+
+        log.trace("saveHierarchyMetadata: {}",saveHierarchyMetadata);
         ancestryMap.get(saveHierarchyMetadata.getLocationIdentifier())
             .forEach(ancestor -> publisherService.send(
                 kafkaProperties.getTopicMap().get(KafkaConstants.AGGREGATION_STAGING),
@@ -161,7 +163,8 @@ public class MetadataService {
                     .nodeOrder(String.join(",", saveHierarchyMetadata.getNodeOrder()))
                     .uuids(List.of(UUID.fromString(ancestor)))
                     .build())
-            ));
+            );
+    });
   }
 
   @Async
