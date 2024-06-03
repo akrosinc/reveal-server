@@ -155,15 +155,21 @@ public class MetadataService {
     saveHierarchyMetadatas.forEach(saveHierarchyMetadata ->{
 
         log.trace("saveHierarchyMetadata: {}",saveHierarchyMetadata);
-        ancestryMap.get(saveHierarchyMetadata.getLocationIdentifier())
-            .forEach(ancestor -> publisherService.send(
-                kafkaProperties.getTopicMap().get(KafkaConstants.AGGREGATION_STAGING),
-                LocationIdEvent.builder()
-                    .hierarchyIdentifier(saveHierarchyMetadata.getHierarchyIdentifier())
-                    .nodeOrder(String.join(",", saveHierarchyMetadata.getNodeOrder()))
-                    .uuids(List.of(UUID.fromString(ancestor)))
-                    .build())
-            );
+        if (ancestryMap.containsKey(saveHierarchyMetadata.getLocationIdentifier())){
+          ancestryMap.get(saveHierarchyMetadata.getLocationIdentifier())
+
+              .forEach(ancestor -> publisherService.send(
+                  kafkaProperties.getTopicMap().get(KafkaConstants.AGGREGATION_STAGING),
+                  LocationIdEvent.builder()
+                      .hierarchyIdentifier(saveHierarchyMetadata.getHierarchyIdentifier())
+                      .nodeOrder(String.join(",", saveHierarchyMetadata.getNodeOrder()))
+                      .uuids(List.of(UUID.fromString(ancestor)))
+                      .build())
+              );
+        } else {
+          log.error("location: {} does not have a location relationship",saveHierarchyMetadata );
+        }
+
     });
   }
 
