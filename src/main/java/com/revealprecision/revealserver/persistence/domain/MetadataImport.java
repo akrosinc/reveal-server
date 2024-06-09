@@ -5,14 +5,17 @@ import com.revealprecision.revealserver.enums.BulkEntryStatus;
 import com.revealprecision.revealserver.messaging.message.LocationMetadataEvent;
 import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.OneToMany;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -53,4 +56,8 @@ public class MetadataImport extends AbstractAuditableEntity {
   @Type(type = "jsonb")
   @Column(columnDefinition = "jsonb")
   private Set<LocationMetadataEvent> locationMetadataEvents = new HashSet<>();
+
+  @OneToMany(mappedBy = "metadataImport",cascade = CascadeType.ALL)
+  private List<MetadataImportOwnership> owners;
+
 }

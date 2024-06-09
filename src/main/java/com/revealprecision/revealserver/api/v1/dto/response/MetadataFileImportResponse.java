@@ -3,6 +3,7 @@ package com.revealprecision.revealserver.api.v1.dto.response;
 
 import com.revealprecision.revealserver.enums.BulkEntryStatus;
 import com.revealprecision.revealserver.messaging.message.EntityTagEvent;
+import com.revealprecision.revealserver.messaging.message.EntityTagEvent.Owner;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -26,4 +27,8 @@ public class MetadataFileImportResponse {
   private String uploadedBy;
 
   private List<EntityTagEvent> entityTagEvents;
+
+  private boolean isOwner;
+  private List<Owner> owners;
+  private boolean isAdmin;
 }

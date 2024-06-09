@@ -59,7 +59,38 @@ public interface OrganizationRepository extends EntityGraphJpaRepository<Organiz
       + "select distinct cast(a.id as varchar) as identifier, a.name as name, cast(a.parent_id as varchar) as parentId, a.type as type, a.active as active, MIN(a.lvl) as lvl from ancestors a group by a.id, a.name, a.type, a.active, a.parent_id", nativeQuery = true)
   List<OrganizationProjection> searchTreeOrganiztions(@Param("param") String param);
 
+  @Query(value = "WITH RECURSIVE ancestors(id, parent_id, name, type, active, lvl)\n"
+      + "    AS (SELECT org.identifier,\n"
+      + "               org.organization_parent_id,\n"
+      + "               org.name,\n"
+      + "               org.type,\n"
+      + "               org.active,\n"
+      + "               1 AS lvl\n"
+      + "        FROM organization org\n"
+      + "        WHERE org.identifier in :identifier\n"
+      + "          AND org.entity_status = 'ACTIVE'\n"
+      + "        UNION ALL\n"
+      + "        SELECT parent.identifier,\n"
+      + "               parent.organization_parent_id,\n"
+      + "               parent.name,\n"
+      + "               parent.type,\n"
+      + "               parent.active,\n"
+      + "               child.lvl + 1 AS lvl\n"
+      + "        FROM organization parent\n"
+      + "                 JOIN ancestors child ON parent.identifier = child.parent_id)\n"
+      + "select distinct cast(a.id as varchar)        as identifier,\n"
+      + "                a.name                       as name,\n"
+      + "                cast(a.parent_id as varchar) as parentId,\n"
+      + "                a.type                       as type,\n"
+      + "                a.active                     as active,\n"
+      + "                MIN(a.lvl)                   as lvl\n"
+      + "from ancestors a\n"
+      + "group by a.id, a.name, a.type, a.active, a.parent_id;",nativeQuery = true)
+  List<OrganizationProjection> getTreeOrganizationsByChildId(List<UUID> identifier);
+
   @Query(value = "SELECT o from Organization o where o.identifier in :identifiers")
   List<Organization> getAllByIdentifiers(@Param("identifiers") List<UUID> identifiers,
       EntityGraph graph);
+
+  List<Organization> findByNameIn(List<String> names);
 }

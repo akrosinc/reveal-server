@@ -51,4 +51,7 @@ public class ComplexTag {
 
   @OneToMany(mappedBy = "complexTag",cascade = CascadeType.ALL)
   private List<ComplexTagAccGrantsUser> complexTagAccGrantsUsers;
+
+  @OneToMany(mappedBy = "complexTag",cascade = CascadeType.ALL)
+  private List<ComplexTagOwnership> owners;
 }

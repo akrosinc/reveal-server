@@ -51,8 +51,8 @@ public class EntityTag {
 
   private UUID referencedTag;
 
+  @Column(name = "is_public")
   private boolean isPublic;
-
 
   @OneToMany(mappedBy = "entityTag",cascade = CascadeType.ALL)
   private List<EntityTagAccGrantsOrganization> entityTagAccGrantsOrganizations;
@@ -60,5 +60,10 @@ public class EntityTag {
 
   @OneToMany(mappedBy = "entityTag",cascade = CascadeType.ALL)
   private List<EntityTagAccGrantsUser> entityTagAccGrantsUsers;
+
+  @OneToMany(mappedBy = "entityTag",cascade = CascadeType.ALL)
+  private List<EntityTagOwnership> owners;
+
+  private boolean isDeleting;
 
 }

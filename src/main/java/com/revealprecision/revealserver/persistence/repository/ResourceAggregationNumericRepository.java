@@ -11,4 +11,6 @@ public interface ResourceAggregationNumericRepository extends
 
   List<ResourceAggregationNumeric> findResourceAggregationNumericByHierarchyIdentifierAndAncestorInAndResourcePlanName(
       String hierarchyIdentifier, List<String> locationIdentifier, String resourcePlanName);
+
+  void deleteAllByFieldCodeIn(List<String> fieldCodes);
 }

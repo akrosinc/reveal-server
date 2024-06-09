@@ -16,6 +16,7 @@ import com.revealprecision.revealserver.persistence.domain.EntityTag;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.MetadataImport;
+import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.persistence.domain.metadata.metadataImport.MetaImportDTO;
 import com.revealprecision.revealserver.persistence.domain.metadata.metadataImport.SheetData;
 import com.revealprecision.revealserver.service.EntityTagService;
@@ -53,7 +54,8 @@ public class MetaFieldSetMapper {
   private final LocationService locationService;
   private final LocationHierarchyService locationHierarchyService;
 
-  public List<MetaImportDTO> mapMetaFieldsDB( Map<String,EntityTagEvent>   entityTagMap,XSSFSheet sheet, MetadataImport currentMetaImport ) throws FileFormatException {
+  public List<MetaImportDTO> mapMetaFieldsDB(Map<String, EntityTagEvent> entityTagMap,
+      XSSFSheet sheet, MetadataImport currentMetaImport) throws FileFormatException {
     //starting from 1st
     int fileRowsCount = getFileRowsCount(sheet);
 
@@ -74,8 +76,9 @@ public class MetaFieldSetMapper {
         sheet, tagNameRow, entityTagMap, rowCount, locationMap, hierarchyMap);
   }
 
-  public   Map<String,EntityTagEvent>   getTagsMap(XSSFSheet sheet,
-      MetadataImport currentMetaImport, XSSFRow tagNameRow, int physicalNumberOfCells) {
+  public Map<String, EntityTagEvent> getTagsMap(XSSFSheet sheet,
+      MetadataImport currentMetaImport, XSSFRow tagNameRow, int physicalNumberOfCells,
+      User currentUser) {
     XSSFRow tagDataTypeRow = sheet.getRow(1);
 
     XSSFRow headerRow = sheet.getRow(2);
@@ -89,11 +92,11 @@ public class MetaFieldSetMapper {
         .collect(Collectors.toMap(TagHelper::getTagName, i -> i, (v, v1) -> v1));
 
     return validateTagNamesAndReturnMap(
-        metadataTagNames, currentMetaImport);
+        metadataTagNames, currentMetaImport, currentUser);
   }
 
   private List<MetaImportDTO> extractMetadata(XSSFSheet sheet, XSSFRow tagNameRow,
-      Map<String,EntityTagEvent>  entityTagMap, int rowCount,
+      Map<String, EntityTagEvent> entityTagMap, int rowCount,
       Map<UUID, Location> locationMap, Map<UUID, LocationHierarchy> hierarchyMap) {
     List<MetaImportDTO> metaImportDTOS = new ArrayList<>();
     boolean searchedLocationHierarchy = false;
@@ -128,7 +131,7 @@ public class MetaFieldSetMapper {
     return metaImportDTOS;
   }
 
-  private SheetData setMetadata(XSSFRow tagNameRow,  Map<String,EntityTagEvent>   entityTagMap,
+  private SheetData setMetadata(XSSFRow tagNameRow, Map<String, EntityTagEvent> entityTagMap,
       XSSFRow dataRow) {
     EntityTagEvent entityTag;
     SheetData sheetData = new SheetData();
@@ -244,11 +247,24 @@ public class MetaFieldSetMapper {
     return sheetValue;
   }
 
-  private   Map<String,EntityTagEvent>  validateTagNamesAndReturnMap(
-      Map<String, TagHelper> metadataTagNames, MetadataImport currentMetaImport ) {
+  private Map<String, EntityTagEvent> validateTagNamesAndReturnMap(
+      Map<String, TagHelper> metadataTagNames, MetadataImport currentMetaImport, User currentUser) {
 
     Set<EntityTag> entityTagsByTags = entityTagService.getEntityTagsByTagNames(
         metadataTagNames.keySet());
+
+    List<EntityTag> tagsNotOwnerOf = entityTagsByTags.stream().filter(
+        entityTag -> entityTag.getOwners().stream()
+            .anyMatch(owner -> owner.getUserSid().equals(currentUser.getSid()))).collect(
+        Collectors.toList());
+
+    if (tagsNotOwnerOf.size() > 0) {
+
+      throw new RuntimeException(
+          "You cannot import data to tags " + tagsNotOwnerOf.stream().map(EntityTag::getTag)
+              .collect(Collectors.joining(",")) + " as you are not the owner of it"
+          );
+    }
 
     Set<EntityTag> entityTagsByTagsReferringTo = entityTagService.findEntityTagsByReferencedTagIn(
         entityTagsByTags.stream().map(EntityTag::getIdentifier).collect(Collectors.toList()));
@@ -284,7 +300,7 @@ public class MetaFieldSetMapper {
       EntityTagRequest entityTagRequest = EntityTagRequest.builder()
           .valueType(valueType)
           .isAggregate(false)
-          .tags(List.of(new EntityTagItem (tag .getKey())))
+          .tags(List.of(new EntityTagItem(tag.getKey())))
           .definition(tag.getKey())
           .metadataImport(currentMetaImport)
           .build();
@@ -292,20 +308,20 @@ public class MetaFieldSetMapper {
       return entityTagService.createEntityTagsSkipExisting(entityTagRequest, true).stream();
     }).collect(Collectors.toList());
 
-    Map<String,EntityTagEvent> createdEntityTagEvents = createdTags.stream().map(entityTag -> {
+    Map<String, EntityTagEvent> createdEntityTagEvents = createdTags.stream().map(entityTag -> {
       EntityTagEvent entityTagEvent = EntityTagEventFactory.getEntityTagEvent(entityTag);
       entityTagEvent.setCreated(true);
       return entityTagEvent;
-    }).collect(Collectors.toMap(EntityTagEvent::getTag,v->v));
+    }).collect(Collectors.toMap(EntityTagEvent::getTag, v -> v));
 
-    Map<String,EntityTagEvent> existingEntityTagEvents = entityTagsByTags.stream().map(entityTag -> {
-      EntityTagEvent entityTagEvent = EntityTagEventFactory.getEntityTagEvent(entityTag);
-      entityTagEvent.setCreated(false);
-      return entityTagEvent;
-    }).collect(Collectors.toMap(EntityTagEvent::getTag,v->v));
+    Map<String, EntityTagEvent> existingEntityTagEvents = entityTagsByTags.stream()
+        .map(entityTag -> {
+          EntityTagEvent entityTagEvent = EntityTagEventFactory.getEntityTagEvent(entityTag);
+          entityTagEvent.setCreated(false);
+          return entityTagEvent;
+        }).collect(Collectors.toMap(EntityTagEvent::getTag, v -> v));
 
-
-    Map<String,EntityTagEvent> allEntityTagEvents = new HashMap<>();
+    Map<String, EntityTagEvent> allEntityTagEvents = new HashMap<>();
     allEntityTagEvents.putAll(existingEntityTagEvents);
     allEntityTagEvents.putAll(createdEntityTagEvents);
 

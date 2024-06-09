@@ -11,7 +11,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import java.util.UUID;
 import javax.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -28,14 +29,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/organization")
+@RequiredArgsConstructor
 public class OrganizationController {
 
   private final OrganizationService organizationService;
 
-  @Autowired
-  public OrganizationController(OrganizationService organizationService) {
-    this.organizationService = organizationService;
-  }
 
   @Operation(summary = "Create an organization",
       description = "Create an organization",
@@ -73,6 +71,16 @@ public class OrganizationController {
                 pageable, _summary));
       }
     }
+  }
+
+  @GetMapping(value = "/search",produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<Page<OrganizationResponse>> getOrgs(
+      OrganizationCriteria criteria,
+      Pageable pageable,
+      @Parameter(description = "Toggle summary data") @RequestParam(value = "_summary", defaultValue = "TRUE") SummaryEnum _summary) {
+
+      return ResponseEntity.status(HttpStatus.OK)
+          .body(organizationService.searchAllTreeView(criteria,pageable));
   }
 
   @Operation(summary = "Get an organization by identifier",

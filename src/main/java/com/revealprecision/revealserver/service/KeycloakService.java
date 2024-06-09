@@ -21,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 import org.keycloak.admin.client.Keycloak;
+import org.keycloak.admin.client.resource.RoleMappingResource;
 import org.keycloak.admin.client.resource.UserResource;
 import org.keycloak.admin.client.resource.UsersResource;
 import org.keycloak.representations.idm.CredentialRepresentation;
@@ -113,6 +114,11 @@ public class KeycloakService {
       throw new KeycloakException("Unknown error on Keycloak");
     }
   }
+  public RoleMappingResource getUserRoles(String kcId){
+    UserResource userResource = keycloak.realm(realm).users()
+        .get(kcId);
+    return userResource.roles();
+  }
 
   public Set<String> updateUser(String kcId, UserUpdateRequest userRequest) {
     UserResource userResource = keycloak.realm(realm).users()
@@ -129,6 +135,7 @@ public class KeycloakService {
       throw new KeycloakException("User not found in Keycloak");
     }
   }
+
 
   private Set<String> updateGroups(String kcId, Set<String> newGroups) {
     Set<String> response = new HashSet<>();

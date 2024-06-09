@@ -22,16 +22,16 @@ import lombok.experimental.FieldNameConstants;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(uniqueConstraints = @UniqueConstraint(columnNames = {"entity_tag_id","userSid"}))
-public class EntityTagOwnership {
+@Table(uniqueConstraints = @UniqueConstraint(columnNames = {"metadata_import_id","userSid"}))
+public class MetadataImportOwnership {
 
   @Id
   @GeneratedValue
   private UUID id;
 
   @ManyToOne
-  @JoinColumn(name = "entity_tag_id")
-  private EntityTag entityTag;
+  @JoinColumn(name = "metadata_import_id")
+  private MetadataImport metadataImport;
 
   private UUID userSid;
 

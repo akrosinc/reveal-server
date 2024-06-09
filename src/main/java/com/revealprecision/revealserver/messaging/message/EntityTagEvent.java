@@ -40,8 +40,13 @@ public class EntityTagEvent extends Message {
   private List<OrgGrant> tagAccGrantsOrganization;
 
   private List<UserGrant> tagAccGrantsUser;
+  private List<Owner> owners;
 
   private boolean isPublic;
+
+  private boolean isOwner;
+
+  private boolean isDeleting;
 
   @Setter @Getter
   @AllArgsConstructor
@@ -52,6 +57,13 @@ public class EntityTagEvent extends Message {
   @Setter @Getter
   @AllArgsConstructor
   public static class UserGrant{
+    private UUID id;
+    private String username;
+  }
+
+  @Setter @Getter
+  @AllArgsConstructor
+  public static class Owner{
     private UUID id;
     private String username;
   }

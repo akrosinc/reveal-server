@@ -22,16 +22,16 @@ import lombok.experimental.FieldNameConstants;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(uniqueConstraints = @UniqueConstraint(columnNames = {"entity_tag_id","userSid"}))
-public class EntityTagOwnership {
+@Table(uniqueConstraints = @UniqueConstraint(columnNames = {"complex_tag_id","userSid"}))
+public class ComplexTagOwnership {
 
   @Id
   @GeneratedValue
   private UUID id;
 
   @ManyToOne
-  @JoinColumn(name = "entity_tag_id")
-  private EntityTag entityTag;
+  @JoinColumn(name = "complex_tag_id")
+  private ComplexTag complexTag;
 
   private UUID userSid;
 

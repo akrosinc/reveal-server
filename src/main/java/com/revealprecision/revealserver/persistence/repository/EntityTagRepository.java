@@ -17,6 +17,11 @@ public interface EntityTagRepository extends JpaRepository<EntityTag, UUID> {
   @Query(value = "select et from EntityTag et where lower(et.tag ) like concat('%', lower(:search) , '%') ")
   Page<EntityTag> findOrSearchEntityTags(Pageable pageable, String search);
 
+  @Query(value = "select et from EntityTag et left join EntityTagOwnership eo "
+      + "on eo.entityTag.identifier = et.identifier "
+      + "where lower(et.tag ) like concat('%', lower(:search) , '%') and eo.userSid = :userSid")
+  Page<EntityTag> findOrSearchEntityTagsByOwners(Pageable pageable, String search, UUID userSid);
+
   Optional<EntityTag> getFirstByTag(String tag);
 
   @Query(value = "select et from EntityTag et where  lower(et.tag ) like concat('%', lower(:search) , '%') and et.isAggregate = :isAggregate")

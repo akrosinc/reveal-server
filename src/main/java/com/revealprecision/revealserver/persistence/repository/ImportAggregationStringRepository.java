@@ -14,4 +14,5 @@ public interface ImportAggregationStringRepository extends
 
   Optional<ImportAggregationString> findByNameAndAncestorAndFieldCodeAndHierarchyIdentifier(String name, String ancestor,
       String fieldCode, String hierarchIdentifier);
+
 }

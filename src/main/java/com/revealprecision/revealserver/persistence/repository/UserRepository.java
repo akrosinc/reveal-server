@@ -22,6 +22,8 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
   Optional<User> findByUsername(@Param("username") String username);
 
+  List<User> findByUsernameIn(@Param("username") List<String> usernames);
+
   @Query(value = "select * from users u where u.email = :email and u.entity_status != 'DELETED'", nativeQuery = true)
   Optional<User> findByEmail(@Param("email") String email);
 

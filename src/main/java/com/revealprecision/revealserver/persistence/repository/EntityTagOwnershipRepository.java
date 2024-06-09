@@ -11,5 +11,5 @@ import org.springframework.stereotype.Repository;
 public interface EntityTagOwnershipRepository extends JpaRepository<EntityTagOwnership, UUID> {
 
 
-  Optional<List<EntityTagOwnership>> getEntityTagOwnershipsByEntityTagIdInAndUserSid(List<UUID> entityTagId,UUID userSid);
+  Optional<List<EntityTagOwnership>> getEntityTagOwnershipsByEntityTag_IdentifierInAndUserSid(List<UUID> entityTagId,UUID userSid);
 }

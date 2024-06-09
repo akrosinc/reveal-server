@@ -16,9 +16,12 @@ import com.revealprecision.revealserver.util.UserUtils;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.keycloak.admin.client.Keycloak;
+import org.keycloak.admin.client.resource.RoleMappingResource;
 import org.keycloak.admin.client.resource.UsersResource;
+import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -72,6 +75,8 @@ public class UserService {
     return userRepository.searchByParameter(searchParam, pageable);
   }
 
+
+
   public long getUsersNumber() {
     return userRepository.getNumberOfUsers();
   }
@@ -82,6 +87,12 @@ public class UserService {
     user = userRepository.save(user);
     keycloakService.deleteUser(user.getSid().toString(), user.getIdentifier());
     userRepository.delete(user);
+  }
+
+  public List<String> getUserRoles(UUID userSid){
+    RoleMappingResource userRoles = keycloakService.getUserRoles(userSid.toString());
+    return userRoles.realmLevel().listAll().stream().map(RoleRepresentation::getName).collect(
+        Collectors.toList());
   }
 
   public void updateUser(UUID identifier, UserUpdateRequest userRequest) {

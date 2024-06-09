@@ -5,6 +5,7 @@ import com.revealprecision.revealserver.api.v1.dto.factory.OrganizationResponseF
 import com.revealprecision.revealserver.api.v1.dto.request.OrganizationCriteria;
 import com.revealprecision.revealserver.api.v1.dto.request.OrganizationRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.OrganizationResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.UserResponse;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.Organization;
@@ -16,6 +17,7 @@ import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.persistence.projection.OrganizationProjection;
 import com.revealprecision.revealserver.persistence.repository.OrganizationRepository;
 import com.revealprecision.revealserver.persistence.repository.UserRepository;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -25,7 +27,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import org.apache.commons.collections4.MapUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -41,6 +48,12 @@ public class OrganizationService {
 
   private final OrganizationRepository organizationRepository;
   private final UserRepository userRepository;
+
+  public Page<OrganizationResponse> searchOrgs(String searchParam, Pageable pageable){
+    return findOrgsAndUsers(searchParam,
+        pageable);
+  }
+
 
   public Organization createOrganization(OrganizationRequest organizationRequest) {
     Organization organization = Organization.builder()
@@ -77,6 +90,86 @@ public class OrganizationService {
   public Page<Organization> findAllWithoutTreeView(OrganizationCriteria criteria,
       Pageable pageable) {
     return organizationRepository.getAllByCriteriaWithoutRoot(criteria.getSearch(), pageable);
+  }
+
+  @AllArgsConstructor
+  @NoArgsConstructor
+  @Setter @Getter
+  @Builder
+  public static class OrganizationsAndUsers implements Serializable {
+    private List<OrganizationResponse> organizationResponses;
+    private List<UserResponse> users;
+  }
+
+  public Page<OrganizationResponse> findOrgsAndUsers(String searchParam, Pageable pageable){
+    Page<User> users = userRepository.searchByParameter(searchParam, pageable);
+
+    List<UUID> collect = users.getContent().stream()
+        .flatMap(user -> user.getOrganizations().stream().map(Organization::getIdentifier))
+        .collect(Collectors.toList());
+
+    List<OrganizationProjection> treeOrganizationsByChildId = organizationRepository.getTreeOrganizationsByChildId(
+        collect);
+
+    List<OrganizationResponse> collect1 = treeOrganizationsByChildId.stream()
+        .map(OrganizationResponseFactory::fromProjection)
+        .collect(Collectors.toList());
+
+    Page<OrganizationResponse> organizationPage = new PageImpl<>(collect1,pageable,collect1.size());
+
+    return organizationPage;
+  }
+
+  public Page<OrganizationResponse> searchAllTreeView(OrganizationCriteria criteria,
+      Pageable pageable) {
+
+    Page<User> users = userRepository.searchByParameter(criteria.getSearch(), pageable);
+
+    List<UUID> collect = users.getContent().stream()
+        .flatMap(user -> user.getOrganizations().stream().map(Organization::getIdentifier))
+        .collect(Collectors.toList());
+
+    List<OrganizationProjection> organizations = organizationRepository.getTreeOrganizationsByChildId(
+        collect);
+
+    List<OrganizationResponse> content = createTreeView(organizations);
+    addChildrenToFoundOrganizations(organizations, content);
+    int start = (int) pageable.getOffset();
+    int end = Math.min((start + pageable.getPageSize()), content.size());
+    if (start > content.size()) {
+      return new PageImpl<>(new ArrayList<>(), pageable, content.size());
+    }
+    if (pageable.getSort().isSorted()) {
+      for (Order order : pageable.getSort()) {
+        if (order.getProperty().equals("name")) {
+          return new PageImpl<>(content.stream().sorted(order.isAscending() ? Comparator.comparing(
+                  OrganizationResponse::getName) : Comparator.comparing(
+                  OrganizationResponse::getName).reversed()).collect(Collectors.toList())
+              .subList(start, end), pageable, content.size());
+        }
+        if (order.getProperty().equals("active")) {
+          return new PageImpl<>(content.stream().sorted(order.isAscending() ? Comparator.comparing(
+                  OrganizationResponse::isActive) : Comparator.comparing(
+                  OrganizationResponse::isActive).reversed()).collect(Collectors.toList())
+              .subList(start, end),
+              pageable, content.size());
+        }
+        if (order.getProperty().equals("type")) {
+          return new PageImpl<>(content.stream().sorted(order.isAscending() ? Comparator.comparing(
+                  OrganizationResponse::getType,
+                  (s1, s2) -> s2.getValueCodableConcept().compareTo(s1.getValueCodableConcept()))
+                  : Comparator.comparing(OrganizationResponse::getType,
+                          (s1, s2) -> s2.getValueCodableConcept().compareTo(s1.getValueCodableConcept()))
+                      .reversed()).collect(Collectors.toList())
+              .subList(start, end),
+              pageable, content.size());
+        }
+      }
+      return new PageImpl<>(content.subList(start, end), pageable, content.size());
+    }
+    return new PageImpl<>(content.stream().sorted(Comparator.comparing(
+        OrganizationResponse::getName)).collect(Collectors.toList()).subList(start, end), pageable,
+        content.size());
   }
 
   public Page<OrganizationResponse> findAllTreeView(OrganizationCriteria criteria,

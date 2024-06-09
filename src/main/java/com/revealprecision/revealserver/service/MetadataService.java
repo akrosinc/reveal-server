@@ -20,7 +20,9 @@ import com.revealprecision.revealserver.messaging.message.LocationIdEvent;
 import com.revealprecision.revealserver.persistence.domain.EntityTag;
 import com.revealprecision.revealserver.persistence.domain.EntityTagAccGrantsOrganization;
 import com.revealprecision.revealserver.persistence.domain.EntityTagAccGrantsUser;
+import com.revealprecision.revealserver.persistence.domain.EntityTagOwnership;
 import com.revealprecision.revealserver.persistence.domain.MetadataImport;
+import com.revealprecision.revealserver.persistence.domain.MetadataImportOwnership;
 import com.revealprecision.revealserver.persistence.domain.Organization;
 import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.persistence.domain.aggregation.ImportAggregationNumeric;
@@ -49,6 +51,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.xssf.usermodel.XSSFRow;
@@ -57,7 +60,6 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.keycloak.KeycloakPrincipal;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -81,13 +83,21 @@ public class MetadataService {
   private final OrganizationRepository organizationRepository;
   private final UserRepository userRepository;
 
+  @Transactional(rollbackOn = Exception.class)
   public Map<String, EntityTagEvent> saveImportFile(String file, String fileName)
       throws FileFormatException, IOException {
+
+    User currentUser = userService.getCurrentUser();
 
     MetadataImport metadataImport = new MetadataImport();
     metadataImport.setFilename(fileName);
     metadataImport.setEntityStatus(EntityStatus.ACTIVE);
     metadataImport.setUploadedDatetime(LocalDateTime.now());
+    MetadataImportOwnership metadataImportOwnership = MetadataImportOwnership.builder()
+        .metadataImport(metadataImport)
+        .userSid(currentUser.getSid())
+        .build();
+    metadataImport.setOwners(List.of(metadataImportOwnership));
 
     Principal principal = UserUtils.getCurrentPrinciple();
     User user;
@@ -109,7 +119,7 @@ public class MetadataService {
       int physicalNumberOfCells = metaFieldSetMapper.getPhysicalNumberOfCells(tagNameRow);
 
       Map<String, EntityTagEvent> entityTagMap = metaFieldSetMapper.getTagsMap(
-          sheet, currentMetaImport, tagNameRow, physicalNumberOfCells);
+          sheet, currentMetaImport, tagNameRow, physicalNumberOfCells, currentUser);
 
       List<MetaImportDTO> metaImportDTOS = metaFieldSetMapper.mapMetaFieldsDB(entityTagMap, sheet,
           metadataImport);
@@ -128,7 +138,6 @@ public class MetadataService {
               .collect(Collectors.toList()));
 
       currentMetaImport.setStatus(BulkEntryStatus.BUSY);
-      UUID identifier = metadataImportRepository.save(currentMetaImport).getIdentifier();
       //send data to kafka listener
       if (!metaImportDTOS.isEmpty()) {
         saveToDB(metaImportDTOS, ancestryMap, currentMetaImport);
@@ -173,11 +182,10 @@ public class MetadataService {
     });
   }
 
-  @Async
+
   void saveToDB(List<MetaImportDTO> metaImportDTOS,
       Map<String, List<String>> ancestryMap, MetadataImport currentMetaImport) {
     currentMetaImport.setStatus(BulkEntryStatus.BUSY);
-    metadataImportRepository.save(currentMetaImport);
 
     metaImportDTOS
         .stream().filter(metaImportDTO -> ancestryMap.containsKey(
@@ -204,7 +212,6 @@ public class MetadataService {
     entityTagService.saveEntityTags(collect1);
 
     currentMetaImport.setStatus(BulkEntryStatus.SUCCESSFUL);
-    metadataImportRepository.save(currentMetaImport);
   }
 
   private Set<EntityTag> getStringOrBooleanTagsGeneratedFromImportData(
@@ -290,6 +297,8 @@ public class MetadataService {
   }
 
   public Page<MetadataFileImportResponse> getMetadataImportList(Pageable pageable) {
+
+    User currentUser = userService.getCurrentUser();
     Page<MetadataImport> all = metadataImportRepository.findAll(pageable);
 
     Map<UUID, List<EntityTag>> collect = all.get().flatMap(
@@ -313,10 +322,22 @@ public class MetadataService {
                     EntityTagAccGrantsUser::getUserSid))
                 )).collect(Collectors.toList());
 
+    List<UUID> ownerIds = collect.entrySet()
+        .stream().flatMap(entityTagListEntry ->
+            entityTagListEntry.getValue().stream()
+                .flatMap((entityTag -> entityTag.getOwners().stream().map(
+                    EntityTagOwnership::getUserSid))
+                )).collect(Collectors.toList());
+
+    ownerIds.addAll(all.getContent().stream().flatMap(metadataImport -> metadataImport.getOwners().stream().map(
+        MetadataImportOwnership::getUserSid)).collect(
+        Collectors.toList()));
+
     Set<Organization> orgGrants = organizationRepository.findByIdentifiers(orgIds);
     Set<User> userGrants = userRepository.findBySidIn(userIds);
+    Set<User> owners = userRepository.findBySidIn(ownerIds);
 
-    return MetadataImportResponseFactory.fromEntityPage(all,collect,orgGrants,userGrants,
+    return MetadataImportResponseFactory.fromEntityPage(all,collect,orgGrants,userGrants,currentUser,owners,
         pageable);
   }
 

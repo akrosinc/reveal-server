@@ -12,12 +12,25 @@ public class UserUtils {
   public static Principal getCurrentPrinciple() {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     if (authentication != null && authentication.getPrincipal() instanceof KeycloakPrincipal) {
-      return (KeycloakPrincipal) authentication.getPrincipal();
+      KeycloakPrincipal principal = (KeycloakPrincipal) authentication.getPrincipal();
+      return principal;
     } else if (authentication != null && authentication.getPrincipal() instanceof KafkaPrincipal) {
       return (KafkaPrincipal) authentication.getPrincipal();
     } else {
       return null;
     }
+  }
+
+  public static boolean hasRole(String role){
+    Principal currentPrinciple = getCurrentPrinciple();
+
+    if (currentPrinciple instanceof KeycloakPrincipal){
+      KeycloakPrincipal keycloakPrincipal = (KeycloakPrincipal) currentPrinciple;
+
+      return keycloakPrincipal.getKeycloakSecurityContext().getToken().getRealmAccess().getRoles().contains(role);
+    }
+
+    return false;
   }
 
   public static String getCurrentPrincipleName() {

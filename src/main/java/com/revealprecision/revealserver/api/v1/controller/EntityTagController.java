@@ -16,11 +16,11 @@ import com.revealprecision.revealserver.messaging.message.EntityTagEvent;
 import com.revealprecision.revealserver.messaging.message.EntityTagEvent.OrgGrant;
 import com.revealprecision.revealserver.messaging.message.EntityTagEvent.UserGrant;
 import com.revealprecision.revealserver.persistence.domain.ComplexTag;
-import com.revealprecision.revealserver.persistence.domain.ComplexTagAccGrantsOrganization;
-import com.revealprecision.revealserver.persistence.domain.ComplexTagAccGrantsUser;
+import com.revealprecision.revealserver.persistence.domain.ComplexTagOwnership;
 import com.revealprecision.revealserver.persistence.domain.EntityTag;
 import com.revealprecision.revealserver.persistence.domain.EntityTagAccGrantsOrganization;
 import com.revealprecision.revealserver.persistence.domain.EntityTagAccGrantsUser;
+import com.revealprecision.revealserver.persistence.domain.EntityTagOwnership;
 import com.revealprecision.revealserver.persistence.domain.Organization;
 import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.persistence.repository.OrganizationRepository;
@@ -29,16 +29,23 @@ import com.revealprecision.revealserver.service.EntityFilterEsService;
 import com.revealprecision.revealserver.service.EntityTagService;
 import com.revealprecision.revealserver.service.EventAggregationService;
 import com.revealprecision.revealserver.service.LookupEntityTypeService;
+import com.revealprecision.revealserver.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import java.io.IOException;
+import java.io.Serializable;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.validation.Valid;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.keycloak.authorization.client.AuthorizationDeniedException;
 import org.springframework.context.annotation.Profile;
@@ -73,6 +80,7 @@ public class EntityTagController {
   private final EventAggregationService eventAggregationService;
   private final OrganizationRepository organizationRepository;
   private final UserRepository userRepository;
+  private final UserService userService;
 
 
   @Operation(summary = "Create Tag", description = "Create Tag", tags = {"Entity Tags"})
@@ -104,6 +112,8 @@ public class EntityTagController {
       @RequestParam(name = "filter", defaultValue = "all") String filter,
       @RequestParam(name = "search", defaultValue = "", required = false) String search) {
 
+    User currentUser = userService.getCurrentUser();
+
     switch (filter) {
 
       case "importable":
@@ -120,19 +130,33 @@ public class EntityTagController {
                 .map(EntityTagAccGrantsUser::getUserSid)).collect(
             Collectors.toList());
 
+        List<UUID> ownerIds = allPagedNonAggregateEntityTags.stream()
+            .flatMap(entityTag -> entityTag.getOwners().stream().map(
+                EntityTagOwnership::getUserSid)).collect(
+                Collectors.toList());
+
         Set<Organization> orgGrants = organizationRepository.findByIdentifiers(orgIds);
         Set<User> userGrants = userRepository.findBySidIn(userIds);
+        Set<User> owners = userRepository.findBySidIn(ownerIds);
 
         return ResponseEntity.ok(
             new PageImpl<>(allPagedNonAggregateEntityTags.stream().map(entityTag ->
                 EntityTagEventFactory.getEntityTagEventWithGrantData(entityTag, orgGrants,
-                    userGrants)
+                    userGrants, currentUser, owners)
             ).collect(Collectors.toList()), pageable,
                 allPagedNonAggregateEntityTags.getTotalElements()));
       case "all":
       default:
-        Page<EntityTag> orSearchAllEntityTagsPaged = entityTagService.getOrSearchAllEntityTagsPaged(
+        Page<EntityTag> orSearchAllEntityTagsPaged = entityTagService.getAllPagedNonAggregateEntityTags(
             pageable, search);
+
+        List<EntityTag> tags = new ArrayList<>(orSearchAllEntityTagsPaged.getContent());
+
+        Set<EntityTag> aggregateTags = entityTagService.findEntityTagsByReferencedTagIn(
+            orSearchAllEntityTagsPaged.getContent().stream().map(EntityTag::getIdentifier).collect(
+                Collectors.toList()));
+
+        tags.addAll(aggregateTags);
 
         List<UUID> orgIds2 = orSearchAllEntityTagsPaged.stream().flatMap(
             entityTag -> entityTag.getEntityTagAccGrantsOrganizations().stream()
@@ -144,21 +168,39 @@ public class EntityTagController {
                 .map(EntityTagAccGrantsUser::getUserSid)).collect(
             Collectors.toList());
 
+        List<UUID> ownerIdsFound = orSearchAllEntityTagsPaged.stream()
+            .flatMap(entityTag -> entityTag.getOwners().stream().map(
+                EntityTagOwnership::getUserSid)).collect(
+                Collectors.toList());
+
         Set<Organization> orgGrants2 = organizationRepository.findByIdentifiers(orgIds2);
         Set<User> userGrants2 = userRepository.findBySidIn(userIds2);
+        Set<User> owners2 = userRepository.findBySidIn(ownerIdsFound);
 
-        return ResponseEntity.ok(new PageImpl<>(orSearchAllEntityTagsPaged.stream().map(entityTag ->
-            EntityTagEventFactory.getEntityTagEventWithGrantData(entityTag, orgGrants2, userGrants2)
+        return ResponseEntity.ok(new PageImpl<>(tags.stream().map(entityTag ->
+            EntityTagEventFactory.getEntityTagEventWithGrantData(entityTag, orgGrants2, userGrants2,
+                currentUser, owners2)
         ).collect(Collectors.toList()), pageable, orSearchAllEntityTagsPaged.getTotalElements()));
     }
   }
 
   @GetMapping(value = "/dataAssociated/{hierarchyIdentifier}", produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<List<EntityTagResponse>> getDataAssociatedEntityTags(
+  public ResponseEntity<TagResponse> getDataAssociatedEntityTags(
       @PathVariable String hierarchyIdentifier) {
     return ResponseEntity.status(HttpStatus.OK)
         .body(entityTagService.getAllAggregateEntityTagsAssociatedToData(hierarchyIdentifier));
 
+  }
+
+  @AllArgsConstructor
+  @NoArgsConstructor
+  @Setter
+  @Getter
+  public static class TagResponse {
+
+    private List<EntityTagResponse> entityTagResponses;
+
+    private List<ComplexTagDto> complexTagDtos;
   }
 
   @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
@@ -274,64 +316,29 @@ public class EntityTagController {
   public ResponseEntity<List<ComplexTagDto>> getComplexTag() {
     List<ComplexTag> allComplexTags = entityTagService.getAllComplexTags();
 
-    List<ComplexTagDto> collect = getComplexTagDtos(
+    List<ComplexTagDto> collect = entityTagService.getComplexTagDtos(
         allComplexTags);
 
     return ResponseEntity.ok(collect);
   }
 
-  private List<ComplexTagDto> getComplexTagDtos(List<ComplexTag> allComplexTags) {
-    List<UUID> orgIds = allComplexTags.stream()
-        .flatMap(complexTag -> complexTag.getComplexTagAccGrantsOrganizations().stream().map(
-            ComplexTagAccGrantsOrganization::getOrganizationId)).collect(Collectors.toList());
-
-    List<UUID> userIds = allComplexTags.stream()
-        .flatMap(complexTag -> complexTag.getComplexTagAccGrantsUsers().stream().map(
-            ComplexTagAccGrantsUser::getUserSid)).collect(Collectors.toList());
-
-    Set<Organization> orgGrants = organizationRepository.findByIdentifiers(orgIds);
-    Set<User> userGrants = userRepository.findBySidIn(userIds);
-
-    List<ComplexTagDto> collect = allComplexTags.stream().map(complexTag -> {
-      List<OrgGrant> orgGrantObj = orgGrants.stream().filter(
-              organization -> complexTag.getComplexTagAccGrantsOrganizations().stream().map(
-                  ComplexTagAccGrantsOrganization::getOrganizationId).collect(
-                  Collectors.toList()).contains(organization.getIdentifier()))
-          .map(organization -> new OrgGrant(organization.getIdentifier(), organization.getName()))
-          .collect(
-              Collectors.toList());
-      List<UserGrant> userGrantObj = userGrants.stream().filter(
-              user -> complexTag.getComplexTagAccGrantsUsers().stream().map(
-                  ComplexTagAccGrantsUser::getUserSid).collect(
-                  Collectors.toList()).contains(user.getSid()))
-          .map(user -> new UserGrant(user.getSid(), user.getUsername()))
-          .collect(
-              Collectors.toList());
-      return ComplexTagDto.builder()
-          .hierarchyId(complexTag.getHierarchyId())
-          .formula(complexTag.getFormula())
-          .tags(complexTag.getTags())
-          .hierarchyType(complexTag.getHierarchyType())
-          .tagName(complexTag.getTagName())
-          .id(String.valueOf(complexTag.getId()))
-          .tagAccGrantsOrganization(orgGrantObj)
-          .tagAccGrantsUser(userGrantObj)
-          .isPublic(complexTag.isPublic())
-          .build();
-
-    }).collect(Collectors.toList());
-    return collect;
-  }
 
   @PostMapping("/complex")
   public ResponseEntity<ComplexTagDto> getComplexTag(@RequestBody ComplexTagDto request) {
-    ComplexTag complexTag = entityTagService.saveComplexTag(ComplexTag.builder()
+    ComplexTagOwnership complexTagOwnership = ComplexTagOwnership.builder()
+        .userSid(userService.getCurrentUser().getSid())
+        .build();
+
+    ComplexTag complexTag1 = ComplexTag.builder()
         .formula(request.getFormula())
         .hierarchyId(request.getHierarchyId())
         .hierarchyType(request.getHierarchyType())
         .tagName(request.getTagName())
         .tags(request.getTags())
-        .build());
+        .build();
+    complexTagOwnership.setComplexTag(complexTag1);
+    complexTag1.setOwners(List.of(complexTagOwnership));
+    ComplexTag complexTag = entityTagService.saveComplexTag(complexTag1);
     return ResponseEntity.ok(
         ComplexTagDto.builder()
             .id(String.valueOf(complexTag.getId()))
@@ -342,6 +349,42 @@ public class EntityTagController {
             .tagName(complexTag.getTagName())
             .build()
     );
+  }
+
+  @PostMapping("/complex/delete")
+  public ResponseEntity<?> deleteComplexTag(@RequestBody ComplexTagToDelete tagToDelete) {
+    entityTagService.deleteComplexTag(tagToDelete);
+    return ResponseEntity.accepted()
+        .body("tag id: " + tagToDelete.id + " name: " + tagToDelete.getTag() + "deleted");
+  }
+
+  @PostMapping("/delete")
+  public ResponseEntity<?> deleteSimpleTags(@RequestBody List<SimpleTagToDelete> tagsToDelete)
+      throws IOException {
+    entityTagService.deleteSimpleTags(tagsToDelete);
+    return ResponseEntity.accepted().build();
+  }
+
+  @AllArgsConstructor
+  @NoArgsConstructor
+  @Setter
+  @Getter
+  public static class ComplexTagToDelete implements Serializable {
+
+    private Integer id;
+    private String type;
+    private String tag;
+  }
+
+  @AllArgsConstructor
+  @NoArgsConstructor
+  @Setter
+  @Getter
+  public static class SimpleTagToDelete implements Serializable {
+
+    private UUID id;
+    private String type;
+    private String tag;
   }
 
   @PostMapping("/updateGrants")
@@ -361,8 +404,91 @@ public class EntityTagController {
 
     List<ComplexTag> entityTags = entityTagService.updateComplexTagAccessGrants(request);
 
-    return ResponseEntity.ok(getComplexTagDtos(entityTags));
+    return ResponseEntity.ok(entityTagService.getComplexTagDtos(entityTags));
 
+  }
+
+  @PostMapping("/removeGrants")
+  public ResponseEntity<?> removeGrants(
+      @RequestBody List<EntityTagRequest> request) {
+
+    List<String> usernames = request.stream()
+        .filter(entityTagRequest -> entityTagRequest.getResultingUsers() != null).flatMap(
+            entityTagRequest -> entityTagRequest.getResultingUsers().stream()
+                .map(UserGrant::getUsername)).collect(
+            Collectors.toList());
+
+    List<String> orgNames = request.stream()
+        .filter(entityTagRequest -> entityTagRequest.getResultingOrgs() != null).flatMap(
+            entityTagRequest -> entityTagRequest.getResultingOrgs().stream()
+                .map(OrgGrant::getName)).collect(
+            Collectors.toList());
+
+    Map<String, User> usersByUsername = userRepository.findByUsernameIn(usernames).stream()
+        .collect(Collectors.toMap(User::getUsername, user -> user, (a, b) -> b));
+
+    Map<String, Organization> orgsByName = organizationRepository.findByNameIn(orgNames).stream()
+        .collect(
+            Collectors.toMap(Organization::getName, organization -> organization, (a, b) -> b));
+
+    request.stream()
+        .filter(entityTagRequest -> entityTagRequest.getResultingUsers() != null)
+        .forEach(entityTagRequest -> entityTagService.deleteUserTagAccessGrants(
+            UUID.fromString(entityTagRequest.getIdentifier()),
+            entityTagRequest.getResultingUsers().stream()
+                .map(userGrant -> usersByUsername.get(userGrant.getUsername()).getSid()).collect(
+                    Collectors.toList())));
+
+    request.stream().filter(entityTagRequest -> entityTagRequest.getResultingOrgs() != null)
+        .forEach(entityTagRequest -> entityTagService.deleteOrgTagAccessGrants(
+            UUID.fromString(entityTagRequest.getIdentifier()),
+            entityTagRequest.getResultingOrgs().stream()
+                .map(orgGrant -> orgsByName.get(orgGrant.getName()).getIdentifier()).collect(
+                    Collectors.toList())));
+
+    return ResponseEntity.accepted().build();
+
+  }
+
+  @PostMapping("/removeComplexTagGrants")
+  public ResponseEntity<?> removeComplexTagGrants(
+      @RequestBody List<ComplexTagDto> request) {
+
+    List<String> usernames = request.stream()
+        .filter(entityTagRequest -> entityTagRequest.getResultingUsers() != null).flatMap(
+            entityTagRequest -> entityTagRequest.getResultingUsers().stream()
+                .map(UserGrant::getUsername)).collect(
+            Collectors.toList());
+
+    List<String> orgNames = request.stream()
+        .filter(entityTagRequest -> entityTagRequest.getResultingOrgs() != null).flatMap(
+            entityTagRequest -> entityTagRequest.getResultingOrgs().stream()
+                .map(OrgGrant::getName)).collect(
+            Collectors.toList());
+
+    Map<String, User> usersByUsername = userRepository.findByUsernameIn(usernames).stream()
+        .collect(Collectors.toMap(User::getUsername, user -> user, (a, b) -> b));
+
+    Map<String, Organization> orgsByName = organizationRepository.findByNameIn(orgNames).stream()
+        .collect(
+            Collectors.toMap(Organization::getName, organization -> organization, (a, b) -> b));
+
+    request.stream()
+        .filter(complexTagDto -> complexTagDto.getResultingUsers() != null)
+        .forEach(complexTagDto -> entityTagService.deleteUserComplexTagAccessGrants(
+            complexTagDto.getId(),
+            complexTagDto.getResultingUsers().stream()
+                .map(userGrant -> usersByUsername.get(userGrant.getUsername()).getSid()).collect(
+                    Collectors.toList())));
+
+    request.stream().filter(complexTagDto -> complexTagDto.getResultingOrgs() != null)
+        .forEach(complexTagDto -> entityTagService.deleteOrgComplexTagAccessGrants(
+            complexTagDto.getId(),
+            complexTagDto.getResultingOrgs().stream()
+                .map(orgGrant -> orgsByName.get(orgGrant.getName()).getIdentifier()).collect(
+                    Collectors.toList())));
+
+    return ResponseEntity.accepted().build();
   }
 
 

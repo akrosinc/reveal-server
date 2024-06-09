@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.api.v1.dto.response;
 
 import com.revealprecision.revealserver.messaging.message.EntityTagEvent.OrgGrant;
+import com.revealprecision.revealserver.messaging.message.EntityTagEvent.Owner;
 import com.revealprecision.revealserver.messaging.message.EntityTagEvent.UserGrant;
 import java.util.List;
 import lombok.Builder;
@@ -31,6 +32,10 @@ public class ComplexTagDto {
 
   private List<OrgGrant> resultingOrgs;
   private List<UserGrant> resultingUsers;
+
+  private boolean isOwner;
+
+  private List<Owner> owners;
 
 
   @Builder
