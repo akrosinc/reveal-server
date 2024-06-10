@@ -725,22 +725,27 @@ public class EntityFilterEsService {
         SimulationRequest simulationRequest = simulationRequestOptional.get();
         simulationRequest.getRequest().setResultTags(entityTagRequests);
 
-        User currentUser = userService.getCurrentUser();
+        if (entityTagRequests.size()>0 && entityTagRequests.get(0).getIdentifier() != null) {
+          User currentUser = userService.getCurrentUser();
 
-        Set<UUID> currentUserOrgs = currentUser.getOrganizations().stream()
-            .map(Organization::getIdentifier)
-            .collect(Collectors.toSet());
+          Set<UUID> currentUserOrgs = currentUser.getOrganizations().stream()
+              .map(Organization::getIdentifier)
+              .collect(Collectors.toSet());
 
-        List<EntityTag> entityTagsByIdentifierIn = entityTagRepository.findEntityTagsByIdentifierIn(
-            entityTagRequests.stream().map(EntityTagRequest::getIdentifier).map(UUID::fromString)
-                .collect(Collectors.toList()));
+          List<EntityTag> entityTagsByIdentifierIn = entityTagRepository.findEntityTagsByIdentifierIn(
+              entityTagRequests.stream().map(EntityTagRequest::getIdentifier).map(UUID::fromString)
+                  .collect(Collectors.toList()));
 
-        Set<UUID> tagsWithAccess = entityTagsByIdentifierIn.stream()
-            .filter(entityTag -> entityTagService.checkAccess(entityTag,currentUserOrgs,currentUser))
-            .map(EntityTag::getIdentifier).collect(Collectors.toSet());
+          Set<UUID> tagsWithAccess = entityTagsByIdentifierIn.stream()
+              .filter(entityTag -> entityTagService.checkAccess(entityTag, currentUserOrgs,
+                  currentUser))
+              .map(EntityTag::getIdentifier).collect(Collectors.toSet());
 
-        if (tagsWithAccess.size() < entityTagRequests.stream().map(EntityTagRequest::getIdentifier).collect(Collectors.toSet()).size()){
-          throw new AuthorizationDeniedException("You do not have access to the requested tag",null);
+          if (tagsWithAccess.size() < entityTagRequests.stream()
+              .map(EntityTagRequest::getIdentifier).collect(Collectors.toSet()).size()) {
+            throw new AuthorizationDeniedException("You do not have access to the requested tag",
+                null);
+          }
         }
 
         SimulationRequest save = simulationRequestRepository.save(simulationRequest);
