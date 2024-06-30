@@ -1,11 +1,13 @@
 package com.revealprecision.revealserver.persistence.domain;
 
 import com.revealprecision.revealserver.api.v1.dto.request.GeographicLevelRequest;
+import java.util.List;
 import java.util.UUID;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.OneToMany;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
@@ -47,4 +49,10 @@ public class GeographicLevel extends AbstractAuditableEntity {
     this.title = request.getTitle();
     return this;
   }
+
+
+  @OneToMany(mappedBy = "uploadGeographicLevel")
+  private List<EntityTag> entityTag;
+
+
 }

@@ -2,7 +2,6 @@ package com.revealprecision.revealserver.exceptions.handler;
 
 import com.revealprecision.revealserver.exceptions.ConflictException;
 import com.revealprecision.revealserver.exceptions.DuplicateTaskCreationException;
-import com.revealprecision.revealserver.exceptions.FileFormatException;
 import com.revealprecision.revealserver.exceptions.InvalidDateFormatException;
 import com.revealprecision.revealserver.exceptions.KeycloakException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
@@ -69,14 +68,14 @@ public class CustomExceptionHandler {
     return new ResponseEntity<>(response, HttpStatus.CONFLICT);
   }
 
-  @ExceptionHandler(FileFormatException.class)
-  protected ResponseEntity<ApiErrorResponse> handleFileFormatException(FileFormatException ex) {
-    ApiErrorResponse response = ApiErrorResponse.builder()
-        .statusCode(HttpStatus.BAD_REQUEST.value())
-        .timestamp(LocalDateTime.now())
-        .message(ex.getMessage()).build();
-    return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
-  }
+//  @ExceptionHandler(FileFormatException.class)
+//  protected ResponseEntity<ApiErrorResponse> handleFileFormatException(FileFormatException ex) {
+//    ApiErrorResponse response = ApiErrorResponse.builder()
+//        .statusCode(HttpStatus.BAD_REQUEST.value())
+//        .timestamp(LocalDateTime.now())
+//        .message(ex.getMessage()).build();
+//    return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+//  }
 
   @ExceptionHandler(ConstraintViolationException.class)
   protected ResponseEntity<ApiErrorResponse> handleViolationException(

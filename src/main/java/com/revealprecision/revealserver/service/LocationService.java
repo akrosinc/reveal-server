@@ -221,30 +221,61 @@ public class LocationService {
 
         FileOutputStream outputStream = new FileOutputStream(fileLocation)) {
       Sheet sheet = workbook.createSheet("Locations");
-      sheet.setColumnWidth(0, 9600);
-      sheet.setColumnWidth(1, 6000);
-      sheet.setColumnWidth(2, 6400);
+      sheet.setColumnWidth(0, 11000);
+      sheet.setColumnWidth(1, 10000);
+      sheet.setColumnWidth(2, 6500);
+      sheet.setColumnWidth(3, 8000);
 
       CellStyle headerStyle = workbook.createCellStyle();
       headerStyle.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
       headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 
+      XSSFFont font = workbook.createFont();
+      font.setFontName("Arial");
+      font.setFontHeightInPoints((short) 16);
+      font.setBold(true);
+      headerStyle.setFont(font);
+
+
+      XSSFFont headerRowFont = workbook.createFont();
+      headerRowFont.setFontName("Arial");
+      headerRowFont.setFontHeightInPoints((short) 11);
+      headerRowFont.setBold(true);
+
+      CellStyle rowHeaderStyle = workbook.createCellStyle();
+      rowHeaderStyle.setFont(headerRowFont);
+
       int rowIndex = 0;
 
       Row tagNameRow = sheet.createRow(rowIndex++);
+      tagNameRow.setRowStyle(rowHeaderStyle);
       Cell tagNameRowLabelCell = tagNameRow.createCell(0);
       tagNameRowLabelCell.setCellValue("Tag Name");
       tagNameRowLabelCell.setCellStyle(headerStyle);
+      Cell tagNameRowLabelCell1 = tagNameRow.createCell(1);
+      tagNameRowLabelCell1.setCellStyle(headerStyle);
+      Cell tagNameRowLabelCell2 = tagNameRow.createCell(2);
+      tagNameRowLabelCell2.setCellStyle(headerStyle);
+      Cell tagNameRowLabelCell3 = tagNameRow.createCell(3);
+      tagNameRowLabelCell3.setCellStyle(headerStyle);
 
       Row tagDataTypeRow = sheet.createRow(rowIndex++);
+      tagDataTypeRow.setRowStyle(rowHeaderStyle);
       Cell tagDataTypeLabelCell = tagDataTypeRow.createCell(0);
       tagDataTypeLabelCell.setCellValue("Data Type");
       tagDataTypeLabelCell.setCellStyle(headerStyle);
+      Cell tagDataTypeLabelCell1 = tagDataTypeRow.createCell(1);
+      tagDataTypeLabelCell1.setCellStyle(headerStyle);
+      Cell tagDataTypeLabelCell2 = tagDataTypeRow.createCell(2);
+      tagDataTypeLabelCell2.setCellStyle(headerStyle);
+      Cell tagDataTypeLabelCell3 = tagDataTypeRow.createCell(3);
+      tagDataTypeLabelCell3.setCellStyle(headerStyle);
 
-      Cell tagDataTypeDropDownCell = tagDataTypeRow.createCell(4);
+      CellStyle style = workbook.createCellStyle();
+      style.setWrapText(true);
 
       DataValidationHelper dvHelper = sheet.getDataValidationHelper();
-      CellRangeAddressList addressList = new CellRangeAddressList(1, 1, 4, 4);
+      CellRangeAddressList addressList = new CellRangeAddressList(1, 1, 4, 1000);
       DataValidationConstraint dvConstraint = dvHelper.createFormulaListConstraint("DATA_TYPES");
       dvConstraint.setExplicitListValues(
           List.of("string", "number", "boolean").toArray(String[]::new));
@@ -252,11 +283,7 @@ public class LocationService {
       sheet.addValidationData(dataValidation);
 
       Row header = sheet.createRow(rowIndex++);
-      XSSFFont font = workbook.createFont();
-      font.setFontName("Arial");
-      font.setFontHeightInPoints((short) 16);
-      font.setBold(true);
-      headerStyle.setFont(font);
+      header.setRowStyle(headerStyle);
 
       Cell headerCell = header.createCell(0);
       headerCell.setCellValue("Location Hierarchy Identifier");
@@ -274,10 +301,19 @@ public class LocationService {
       headerCell.setCellValue("Geographic level");
       headerCell.setCellStyle(headerStyle);
 
-      CellStyle style = workbook.createCellStyle();
-      style.setWrapText(true);
+      int entityTagIndex = 4;
+      for (UUID el : entityTags) {
+        EntityTag entityTag = entityTagService.getEntityTagByIdentifier(el);
+        sheet.setColumnWidth(entityTagIndex, 9600);
+        Cell tagNameRowCell = tagNameRow.createCell(entityTagIndex);
+        tagNameRowCell.setCellValue(entityTag.getTag());
+        tagNameRowCell.setCellStyle(rowHeaderStyle);
+        Cell tagDataTypeDropDownCell = tagDataTypeRow.createCell(entityTagIndex);
+        tagDataTypeDropDownCell.setCellStyle(rowHeaderStyle);
+        tagDataTypeDropDownCell.setCellValue(entityTag.getValueType().equals("double")?"number":entityTag.getValueType());
+        entityTagIndex++;
+      }
 
-//      int index = 1;
       for (Location location : locationList) {
         Row row = sheet.createRow(rowIndex++);
         Cell cell = row.createCell(0);
@@ -295,19 +331,7 @@ public class LocationService {
         cell = row.createCell(3);
         cell.setCellValue(location.getGeographicLevel().getName());
         cell.setCellStyle(style);
-//        index++;
 
-        int entityTagIndex = 4;
-        for (UUID el : entityTags) {
-          EntityTag entityTag = entityTagService.getEntityTagByIdentifier(el);
-          sheet.setColumnWidth(entityTagIndex, 9600);
-          headerCell = header.createCell(entityTagIndex);
-          headerCell.setCellValue(entityTag.getTag());
-          headerCell.setCellStyle(headerStyle);
-          cell = row.createCell(entityTagIndex);
-          cell.setCellStyle(style);
-          entityTagIndex++;
-        }
       }
 
       workbook.write(outputStream);

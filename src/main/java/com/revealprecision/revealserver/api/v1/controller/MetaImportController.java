@@ -2,12 +2,10 @@ package com.revealprecision.revealserver.api.v1.controller;
 
 import com.revealprecision.revealserver.api.v1.dto.response.MetadataFileImportResponse;
 import com.revealprecision.revealserver.exceptions.FileFormatException;
-import com.revealprecision.revealserver.messaging.message.EntityTagEvent;
+import com.revealprecision.revealserver.persistence.domain.metadata.metadataImport.fieldMapper.MetaFieldSetMapper.ValidatedTagMap;
 import com.revealprecision.revealserver.service.MetadataService;
 import com.revealprecision.revealserver.service.StorageService;
 import io.swagger.v3.oas.annotations.Operation;
-import java.io.IOException;
-import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
@@ -39,11 +37,17 @@ public class MetaImportController {
   )
   @PostMapping()
   public ResponseEntity<?> importMetaData(
-      @RequestParam("file") MultipartFile file) throws FileFormatException, IOException {
-    String path = storageService.saveXlsx(file);
-    Map<String,EntityTagEvent> booleanMapMap = metadataService.saveImportFile(path, file.getOriginalFilename());
+      @RequestParam("file") MultipartFile file) throws FileFormatException {
+    ValidatedTagMap booleanMapMap;
+    try {
+      String path = storageService.saveXlsx(file);
+      booleanMapMap = metadataService.saveImportFile(path,
+          file.getOriginalFilename());
+    } catch (FileFormatException e){
+      return ResponseEntity.badRequest().body(e.getMessage());
+    }
     return ResponseEntity.status(HttpStatus.CREATED)
-        .body(booleanMapMap);
+        .body(booleanMapMap.getEntityTagEventMap());
   }
 
   @Operation(summary = "Get List of Metadata Import files uploaded",

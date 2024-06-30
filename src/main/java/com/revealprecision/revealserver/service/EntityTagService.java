@@ -10,7 +10,6 @@ import static com.revealprecision.revealserver.constants.EntityTagDataTypes.BOOL
 import static com.revealprecision.revealserver.constants.EntityTagDataTypes.DOUBLE;
 import static com.revealprecision.revealserver.constants.EntityTagDataTypes.INTEGER;
 import static com.revealprecision.revealserver.constants.EntityTagDataTypes.STRING;
-import static com.revealprecision.revealserver.service.SimulationHierarchyService.GENERATED;
 
 import com.revealprecision.revealserver.api.v1.controller.EntityTagController.ComplexTagToDelete;
 import com.revealprecision.revealserver.api.v1.controller.EntityTagController.SimpleTagToDelete;
@@ -38,10 +37,13 @@ import com.revealprecision.revealserver.persistence.domain.EntityTag;
 import com.revealprecision.revealserver.persistence.domain.EntityTagAccGrantsOrganization;
 import com.revealprecision.revealserver.persistence.domain.EntityTagAccGrantsUser;
 import com.revealprecision.revealserver.persistence.domain.EntityTagOwnership;
+import com.revealprecision.revealserver.persistence.domain.GeographicLevel;
 import com.revealprecision.revealserver.persistence.domain.Organization;
 import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.persistence.domain.User.Fields;
 import com.revealprecision.revealserver.persistence.domain.aggregation.ImportAggregationNumeric;
+import com.revealprecision.revealserver.persistence.projection.EntityTagWithGeoLevelAndEntityTypeProjection;
+import com.revealprecision.revealserver.persistence.projection.EntityTagWithGeoLevelProjection;
 import com.revealprecision.revealserver.persistence.repository.ComplexTagAccGrantsOrganizationRepository;
 import com.revealprecision.revealserver.persistence.repository.ComplexTagAccGrantsUserRepository;
 import com.revealprecision.revealserver.persistence.repository.ComplexTagRepository;
@@ -150,27 +152,50 @@ public class EntityTagService {
   public TagResponse getAllAggregateEntityTagsAssociatedToData(
       String hierarchyIdentifier) {
 
-    List<EntityTagResponse> resourceTags = resourceAggregateRepository.getUniqueDataTagsAssociatedWithData(
-        hierarchyIdentifier).stream().map(tagProjection -> EntityTagResponse.builder()
-        .fieldType(EntityTagFieldTypes.RESOURCE_PLANNING).isAggregate(true)
-        .tag(tagProjection.getTag()).subType(tagProjection.getEventType()).valueType(DOUBLE).build()
 
+    List<EntityTagResponse> resourceTags =
+        resourceAggregateRepository.getUniqueDataTagsAssociatedWithDataWithLevels(
+            hierarchyIdentifier).stream()
+        .collect(Collectors.groupingBy(item->
+            //create a unique name for the key for the map
+            item.getEventType().concat(":").concat(item.getTagName())))
+            .entrySet()
+            .stream().map(resourceEntityTagWithGeoLevelProjections -> EntityTagResponse.builder()
+                .fieldType(EntityTagFieldTypes.RESOURCE_PLANNING).isAggregate(true)
+                .tag(resourceEntityTagWithGeoLevelProjections.getKey().split(":")[1])
+                .subType(resourceEntityTagWithGeoLevelProjections.getKey().split(":")[0]).valueType(DOUBLE)
+                .levels(resourceEntityTagWithGeoLevelProjections.getValue().stream()
+                    .map(EntityTagWithGeoLevelAndEntityTypeProjection::getGeoName).collect(
+                        Collectors.toList()))
+                .build()
+        ).collect(Collectors.toList());
+
+
+    Map<String, List<EntityTagWithGeoLevelProjection>> currentImportDataTags =
+        importAggregateRepository.getUniqueDataTagsAndLevelsListAssociatedWithData(
+                hierarchyIdentifier)
+            .stream().collect(Collectors.groupingBy(EntityTagWithGeoLevelProjection::getTagName));
+
+    List<EntityTagResponse> importTags = currentImportDataTags.entrySet().stream().map(entry ->
+      EntityTagResponse.builder().fieldType(EntityTagFieldTypes.IMPORT).subType("Import")
+          .isAggregate(true).tag(entry.getKey()).valueType(DOUBLE).levels(entry.getValue().stream()
+              .map(EntityTagWithGeoLevelProjection::getGeoName).collect(
+                  Collectors.toList())).build()
     ).collect(Collectors.toList());
 
-    List<EntityTagResponse> importTags = importAggregateRepository.getUniqueDataTagsAssociatedWithData(
-        hierarchyIdentifier).stream().map(
-        tag -> EntityTagResponse.builder().fieldType(EntityTagFieldTypes.IMPORT).subType("Import")
-            .isAggregate(true).tag(tag).valueType(DOUBLE).build()
-
-    ).collect(Collectors.toList());
-
-    List<EntityTagResponse> generated = generatedHierarchyMetadataRepository.getUniqueDataTagsAssociatedWithData(
-        hierarchyIdentifier).stream().map(
-        tagProjection -> EntityTagResponse.builder().fieldType(tagProjection.getEventType())
-            .subType(GENERATED).isAggregate(true).tag(tagProjection.getTag()).valueType(DOUBLE)
-            .build()
-
-    ).collect(Collectors.toList());
+    List<EntityTagResponse> generated = generatedHierarchyMetadataRepository.getUniqueDataTagsAndLevelsListAssociatedWithData(
+            hierarchyIdentifier).stream().collect(Collectors.groupingBy(item ->
+            item.getEventType().concat(":").concat(item.getTag())))
+        .entrySet().stream()
+        .map(generatedEntityTagWithGeoLevelProjections -> EntityTagResponse.builder()
+            .fieldType(EntityTagFieldTypes.RESOURCE_PLANNING).isAggregate(true)
+            .tag(generatedEntityTagWithGeoLevelProjections.getKey().split(":")[1])
+            .subType(generatedEntityTagWithGeoLevelProjections.getKey().split(":")[0]).valueType(DOUBLE)
+            .levels(generatedEntityTagWithGeoLevelProjections.getValue().stream()
+                .map(EntityTagWithGeoLevelAndEntityTypeProjection::getGeoName).collect(
+                    Collectors.toList()))
+            .build())
+        .collect(Collectors.toList());
 
     User currentUser = userService.getCurrentUser();
 
@@ -192,7 +217,9 @@ public class EntityTagService {
                 .identifier(String.valueOf(entityTag.getIdentifier()))
                 .isAggregate(entityTag.isAggregate())
                 .simulationDisplay(entityTag.isSimulationDisplay())
-                .tag(entityTag.getTag()).build())
+                .tag(entityTag.getTag())
+                .build()
+        )
         .collect(Collectors.toMap(EntityTagResponse::getTag, a -> a, (a, b) -> b));
 
     Set<Integer> complexTagIdByTagNamesIn = complexTagRepository.findComplexTagIdByTagNamesIn(
@@ -220,6 +247,7 @@ public class EntityTagService {
           allTag.setIdentifier(tagsWithAccess.get(allTag.getTag()).getIdentifier());
           allTag.setAggregate(tagsWithAccess.get(allTag.getTag()).isAggregate());
           allTag.setSimulationDisplay(tagsWithAccess.get(allTag.getTag()).isSimulationDisplay());
+          allTag.setLevels(allTag.getLevels());
         }).collect(Collectors.toList());
 
     return new TagResponse(collect1, new ArrayList<>(collect2.values()));
@@ -245,6 +273,7 @@ public class EntityTagService {
     Set<User> userGrants = userRepository.findBySidIn(userIds);
 
     List<ComplexTagDto> collect = allComplexTags.stream().map(complexTag -> {
+
       List<OrgGrant> orgGrantObj = orgGrants.stream().filter(
               organization -> complexTag.getComplexTagAccGrantsOrganizations().stream().map(
                   ComplexTagAccGrantsOrganization::getOrganizationId).collect(
@@ -252,6 +281,7 @@ public class EntityTagService {
           .map(organization -> new OrgGrant(organization.getIdentifier(), organization.getName()))
           .collect(
               Collectors.toList());
+
       List<UserGrant> userGrantObj = userGrants.stream().filter(
               user -> complexTag.getComplexTagAccGrantsUsers().stream().map(
                   ComplexTagAccGrantsUser::getUserSid).collect(
@@ -408,6 +438,53 @@ public class EntityTagService {
 
   @Transactional(rollbackOn = SQLException.class)
   public List<EntityTag> createEntityTagsSkipExisting(EntityTagRequest entityTagRequest,
+      boolean createAggregateTags, GeographicLevel geographicLevel) {
+
+    Set<EntityTag> entityTagsByTagNames = getEntityTagsByTagNames(
+        entityTagRequest.getTags().stream().map(EntityTagItem::getName)
+            .collect(Collectors.toSet()));
+
+    List<EntityTagRequest> tagsToSave = entityTagRequest.getTags().stream().filter(
+        entityTagRequestItem -> !entityTagsByTagNames.stream()
+            .map(EntityTag::getTag).collect(Collectors.toList())
+            .contains(entityTagRequestItem.getName())).map(entity -> {
+      EntityTagRequest entityTagRequest1 = EntityTagRequestFactory.getCopy(entityTagRequest);
+      entityTagRequest1.setTag(entity.getName());
+      return entityTagRequest1;
+    }).collect(Collectors.toList());
+
+    Map<String, EntityTagRequest> stringEntityTagRequestMap = tagsToSave.stream()
+        .collect(Collectors.toMap(EntityTagRequest::getTag, a -> a, (a, b) -> b));
+
+    List<EntityTag> tags = tagsToSave.stream().map(EntityTagFactory::toEntity)
+        .peek(entityTag -> entityTag.setUploadGeographicLevel(geographicLevel))
+        .collect(Collectors.toList());
+
+    List<EntityTag> entityTags = entityTagRepository.saveAll(tags);
+    saveEntityTagOwnership(entityTags);
+
+    if (createAggregateTags) {
+      List<EntityTag> autoCreatedTags = entityTags.stream().flatMap(
+          save -> aggregationMethods.get(save.getValueType()) == null ? null
+              : aggregationMethods.get(save.getValueType()).stream().map(
+                  aggregationMethod -> {
+                    EntityTagRequest entityTagRequest1 = stringEntityTagRequestMap.get(
+                        save.getTag());
+                    entityTagRequest1.setReferencedTag(save.getIdentifier());
+                    return createAggregateEntityTag(
+                        entityTagRequest1, aggregationMethod, true,geographicLevel);
+                  })
+
+      ).collect(Collectors.toList());
+      saveEntityTagOwnership(autoCreatedTags);
+      entityTags.addAll(autoCreatedTags);
+    }
+    return entityTags;
+  }
+
+
+  @Transactional(rollbackOn = SQLException.class)
+  public List<EntityTag> createEntityTagsSkipExisting(EntityTagRequest entityTagRequest,
       boolean createAggregateTags) {
 
     Set<EntityTag> entityTagsByTagNames = getEntityTagsByTagNames(
@@ -543,6 +620,16 @@ public class EntityTagService {
     entityTagSum.setTag(entityTagSum.getTag().concat(str));
     entityTagSum.setAggregate(isAggregate);
     return entityTagRepository.save(EntityTagFactory.toEntity(entityTagSum));
+  }
+
+  public EntityTag createAggregateEntityTag(EntityTagRequest entityTagRequest, String str,
+      boolean isAggregate, GeographicLevel geographicLevel) {
+    EntityTagRequest entityTagSum = EntityTagRequestFactory.getCopy(entityTagRequest);
+    entityTagSum.setTag(entityTagSum.getTag().concat(str));
+    entityTagSum.setAggregate(isAggregate);
+    EntityTag entity = EntityTagFactory.toEntity(entityTagSum);
+    entity.setUploadGeographicLevel(geographicLevel);
+    return entityTagRepository.save(entity);
   }
 
 

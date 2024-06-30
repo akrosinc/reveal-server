@@ -13,12 +13,14 @@ import com.revealprecision.revealserver.exceptions.FileFormatException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.messaging.message.EntityTagEvent;
 import com.revealprecision.revealserver.persistence.domain.EntityTag;
+import com.revealprecision.revealserver.persistence.domain.GeographicLevel;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.MetadataImport;
 import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.persistence.domain.metadata.metadataImport.MetaImportDTO;
 import com.revealprecision.revealserver.persistence.domain.metadata.metadataImport.SheetData;
+import com.revealprecision.revealserver.persistence.repository.GeographicLevelRepository;
 import com.revealprecision.revealserver.service.EntityTagService;
 import com.revealprecision.revealserver.service.LocationHierarchyService;
 import com.revealprecision.revealserver.service.LocationService;
@@ -31,15 +33,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
@@ -53,37 +59,51 @@ public class MetaFieldSetMapper {
   private final EntityTagService entityTagService;
   private final LocationService locationService;
   private final LocationHierarchyService locationHierarchyService;
+  private final GeographicLevelRepository geographicLevelRepository;
 
-  public List<MetaImportDTO> mapMetaFieldsDB(Map<String, EntityTagEvent> entityTagMap,
-      XSSFSheet sheet, MetadataImport currentMetaImport) throws FileFormatException {
+//  public List<MetaImportDTO> mapMetaFieldsDB(Map<String, EntityTagEvent> entityTagMap,
+//      XSSFSheet sheet, MetadataImport currentMetaImport) throws FileFormatException {
+//    //starting from 1st
+//    int fileRowsCount = getFileRowsCount(sheet);
+//
+//    XSSFRow tagNameRow = sheet.getRow(0);
+//
+//    Set<UUID> locationList = extractIdsFor(sheet, fileRowsCount, 1, "Location");
+//    Set<UUID> hierarchyList = extractIdsFor(sheet, fileRowsCount, 0, "Hierarchy");
+//    Set<String> geoLevels = extractStringsFor(sheet, fileRowsCount, 3, "GeographicLevel");
+//
+//    int rowCount = getRowCount(sheet, fileRowsCount);
+//
+//    Map<UUID, Location> locationMap = validateLocationsAndReturnLocationMapAndGetLocationMap(
+//        locationList);
+//
+//    Map<UUID, LocationHierarchy> hierarchyMap = validateHierarchiesAndReturnHierarchyMapAndGetHierarchyMap(
+//        hierarchyList);
+//
+//    validateGeographicLevels(geoLevels, entityTagMap);
+//
+//    return extractMetadata(
+//        sheet, tagNameRow, entityTagMap, rowCount, locationMap, hierarchyMap);
+//  }
+
+  public List<MetaImportDTO> mapMetaFieldsDB(ValidatedTagMap validatedTagMap,
+      XSSFSheet sheet, Map<UUID, Location> locationMap, Map<UUID, LocationHierarchy> hierarchyMap,
+      int rowCount) throws FileFormatException {
     //starting from 1st
-    int fileRowsCount = getFileRowsCount(sheet);
 
     XSSFRow tagNameRow = sheet.getRow(0);
 
-    Set<UUID> locationList = extractIdsFor(sheet, fileRowsCount, 1, "Location");
-    Set<UUID> hierarchyList = extractIdsFor(sheet, fileRowsCount, 0, "Hierarchy");
-
-    int rowCount = getRowCount(sheet, fileRowsCount);
-
-    Map<UUID, Location> locationMap = validateLocationsAndReturnLocationMap(
-        locationList);
-
-    Map<UUID, LocationHierarchy> hierarchyMap = validateHierarchiesAndReturnHierarchyMap(
-        hierarchyList);
-
     return extractMetadata(
-        sheet, tagNameRow, entityTagMap, rowCount, locationMap, hierarchyMap);
+        sheet, tagNameRow, validatedTagMap, rowCount, locationMap, hierarchyMap);
   }
 
-  public Map<String, EntityTagEvent> getTagsMap(XSSFSheet sheet,
-      MetadataImport currentMetaImport, XSSFRow tagNameRow, int physicalNumberOfCells,
-      User currentUser) {
+
+  public ValidatedTagMap getTagsMap(XSSFSheet sheet,
+      MetadataImport currentMetaImport, XSSFRow tagNameRow, int cellCount,
+      User currentUser, String newGeoLevel) {
     XSSFRow tagDataTypeRow = sheet.getRow(1);
 
-    XSSFRow headerRow = sheet.getRow(2);
-
-    Map<String, TagHelper> metadataTagNames = IntStream.range(4, physicalNumberOfCells)
+    Map<String, TagHelper> metadataTagNames = IntStream.range(4, cellCount)
         .mapToObj(i -> new TagHelper(tagNameRow.getCell(i).getStringCellValue(),
             tagDataTypeRow.getCell(i).getStringCellValue(),
             UserUtils.getCurrentPrinciple())
@@ -92,11 +112,11 @@ public class MetaFieldSetMapper {
         .collect(Collectors.toMap(TagHelper::getTagName, i -> i, (v, v1) -> v1));
 
     return validateTagNamesAndReturnMap(
-        metadataTagNames, currentMetaImport, currentUser);
+        metadataTagNames, currentMetaImport, currentUser, newGeoLevel);
   }
 
   private List<MetaImportDTO> extractMetadata(XSSFSheet sheet, XSSFRow tagNameRow,
-      Map<String, EntityTagEvent> entityTagMap, int rowCount,
+      ValidatedTagMap validatedTagMap, int rowCount,
       Map<UUID, Location> locationMap, Map<UUID, LocationHierarchy> hierarchyMap) {
     List<MetaImportDTO> metaImportDTOS = new ArrayList<>();
     boolean searchedLocationHierarchy = false;
@@ -119,7 +139,7 @@ public class MetaFieldSetMapper {
         metaImportDTO.setLocation(getLocation(locationMap, i,
             dataRow, 1));
 
-        SheetData sheetData = setMetadata(tagNameRow, entityTagMap, dataRow);
+        SheetData sheetData = setMetadata(tagNameRow, validatedTagMap, dataRow);
         metaImportDTO.setSheetData(sheetData);
 
       } else {
@@ -131,12 +151,12 @@ public class MetaFieldSetMapper {
     return metaImportDTOS;
   }
 
-  private SheetData setMetadata(XSSFRow tagNameRow, Map<String, EntityTagEvent> entityTagMap,
+  private SheetData setMetadata(XSSFRow tagNameRow, ValidatedTagMap validatedTagMap,
       XSSFRow dataRow) {
     EntityTagEvent entityTag;
     SheetData sheetData = new SheetData();
 
-    Map<String, EntityTagEvent> onlyNonAggregateTags = entityTagMap.entrySet().stream()
+    Map<String, EntityTagEvent> onlyNonAggregateTags = validatedTagMap.getEntityTagEventMap().entrySet().stream()
         .filter(entry -> !entry.getValue().isAggregate()).collect(
             Collectors.toMap(Entry::getKey, Entry::getValue));
     for (int j = 4; j < 4 + onlyNonAggregateTags.size(); j++) {
@@ -247,15 +267,22 @@ public class MetaFieldSetMapper {
     return sheetValue;
   }
 
-  private Map<String, EntityTagEvent> validateTagNamesAndReturnMap(
-      Map<String, TagHelper> metadataTagNames, MetadataImport currentMetaImport, User currentUser) {
+  private ValidatedTagMap validateTagNamesAndReturnMap(
+      Map<String, TagHelper> metadataTagNames, MetadataImport currentMetaImport, User currentUser,
+      String newGeoLevel) {
+
+    GeographicLevel newGeographicLevel;
+    Optional<GeographicLevel> byName = geographicLevelRepository.findByName(newGeoLevel);
+
+    newGeographicLevel = byName.orElseThrow(
+        () -> new FileFormatException("Geographic Level passed does not exist"));
 
     Set<EntityTag> entityTagsByTags = entityTagService.getEntityTagsByTagNames(
         metadataTagNames.keySet());
 
     List<EntityTag> tagsNotOwnerOf = entityTagsByTags.stream().filter(
         entityTag -> entityTag.getOwners().stream()
-            .anyMatch(owner -> owner.getUserSid().equals(currentUser.getSid()))).collect(
+            .noneMatch(owner -> owner.getUserSid().equals(currentUser.getSid()))).collect(
         Collectors.toList());
 
     if (tagsNotOwnerOf.size() > 0) {
@@ -263,7 +290,7 @@ public class MetaFieldSetMapper {
       throw new RuntimeException(
           "You cannot import data to tags " + tagsNotOwnerOf.stream().map(EntityTag::getTag)
               .collect(Collectors.joining(",")) + " as you are not the owner of it"
-          );
+      );
     }
 
     Set<EntityTag> entityTagsByTagsReferringTo = entityTagService.findEntityTagsByReferencedTagIn(
@@ -305,12 +332,13 @@ public class MetaFieldSetMapper {
           .metadataImport(currentMetaImport)
           .build();
 
-      return entityTagService.createEntityTagsSkipExisting(entityTagRequest, true).stream();
+      return entityTagService.createEntityTagsSkipExisting(entityTagRequest, true,newGeographicLevel).stream();
     }).collect(Collectors.toList());
 
     Map<String, EntityTagEvent> createdEntityTagEvents = createdTags.stream().map(entityTag -> {
       EntityTagEvent entityTagEvent = EntityTagEventFactory.getEntityTagEvent(entityTag);
       entityTagEvent.setCreated(true);
+
       return entityTagEvent;
     }).collect(Collectors.toMap(EntityTagEvent::getTag, v -> v));
 
@@ -325,10 +353,23 @@ public class MetaFieldSetMapper {
     allEntityTagEvents.putAll(existingEntityTagEvents);
     allEntityTagEvents.putAll(createdEntityTagEvents);
 
-    return allEntityTagEvents;
+    return ValidatedTagMap.builder()
+        .entityTagEventMap(allEntityTagEvents)
+        .entityTags(entityTagsByTags)
+        .build();
   }
 
-  private Set<UUID> extractIdsFor(XSSFSheet sheet, int fileRowsCount, int cellPosition,
+  @Builder
+  @Setter @Getter
+  @AllArgsConstructor
+  @NoArgsConstructor
+  public static class ValidatedTagMap{
+    private Map<String, EntityTagEvent> entityTagEventMap;
+    private Set<EntityTag> entityTags;
+  }
+
+
+  public Set<UUID> extractIdsFor(XSSFSheet sheet, int fileRowsCount, int cellPosition,
       String type) {
     Set<UUID> list = new HashSet<>();
     int rowCount = 0;
@@ -352,7 +393,32 @@ public class MetaFieldSetMapper {
     return list;
   }
 
-  private int getRowCount(XSSFSheet sheet, int fileRowsCount) {
+  public Set<String> extractStringsFor(XSSFSheet sheet, int fileRowsCount, int cellPosition,
+      String type) {
+    Set<String> list = new HashSet<>();
+    int rowCount = 0;
+    for (int i = 3; i < fileRowsCount; i++) {
+
+      XSSFRow dataRow = sheet.getRow(i);
+      if (dataRow != null && dataRow.getCell(cellPosition) != null) {
+        rowCount++;
+        try {
+          log.trace("dataRow.getCell({}) {}", cellPosition, dataRow.getCell(cellPosition));
+          list.add(dataRow.getCell(cellPosition).toString());
+        } catch (IllegalArgumentException e) {
+          log.warn("{} Id is not a uuid in row: {}", type, i);
+          throw new FileFormatException(type + " Id is not a uuid in row: " + i);
+        }
+      } else {
+        log.info("Exiting file processing loop...empty dataRow encountered!!");
+        break;
+      }
+    }
+    return list;
+  }
+
+
+  public int getRowCount(XSSFSheet sheet, int fileRowsCount) {
     int rowCount = 0;
     for (int i = 1; i < fileRowsCount; i++) {
 
@@ -367,7 +433,7 @@ public class MetaFieldSetMapper {
     return rowCount;
   }
 
-  private Map<UUID, LocationHierarchy> validateHierarchiesAndReturnHierarchyMap(
+  public Map<UUID, LocationHierarchy> validateHierarchiesAndReturnHierarchyMapAndGetHierarchyMap(
       Set<UUID> hierarchyList) {
     Set<LocationHierarchy> locationHierarchies = locationHierarchyService.getLocationHierarchiesIn(
         hierarchyList);
@@ -378,7 +444,21 @@ public class MetaFieldSetMapper {
         .collect(Collectors.toMap(LocationHierarchy::getIdentifier, hierarchy -> hierarchy));
   }
 
-  private Map<UUID, Location> validateLocationsAndReturnLocationMap(Set<UUID> locationList) {
+  public void validateGeographicLevels(
+      Set<String> geographicLevels, ValidatedTagMap validatedTagMap) {
+    List<Entry<String, EntityTagEvent>> unMatchingExistingGeoLevels = validatedTagMap.getEntityTagEventMap().entrySet()
+        .stream()
+        .filter(entityTagEventEntry -> !geographicLevels.contains(
+            entityTagEventEntry.getValue().getUploadGeo().getName()))
+        .collect(Collectors.toList());
+    if (unMatchingExistingGeoLevels.size() > 0) {
+      throw new FileFormatException("Cannot upload to Tag on a different geographic level");
+    }
+
+  }
+
+  public Map<UUID, Location> validateLocationsAndReturnLocationMapAndGetLocationMap(
+      Set<UUID> locationList) {
 
     Set<Location> locations = locationService.findLocationsWithoutGeoJsonByIdentifierIn(
         locationList);
@@ -400,7 +480,8 @@ public class MetaFieldSetMapper {
     }
     int cellCount = 0;
     XSSFCell cell = headerRow.getCell(cellCount);
-    while (cell != null || cellCount < 4) {
+    while ((cell != null && cell.getRawValue() != null && !cell.getRawValue().equals(""))
+        || cellCount < 4) {
       cellCount++;
       cell = headerRow.getCell(cellCount);
     }
@@ -416,7 +497,15 @@ public class MetaFieldSetMapper {
       throw new FileFormatException(
           "File is empty or not valid.");
     }
-    return fileRowsCount;
+    int rowCount = 0;
+    for (int i = 0; i < fileRowsCount; i++) {
+      Row row = sheet.getRow(i);
+      if (row == null) {
+        break;
+      }
+      rowCount++;
+    }
+    return rowCount;
   }
 
 }

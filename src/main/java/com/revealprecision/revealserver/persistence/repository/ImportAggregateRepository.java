@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.persistence.repository;
 
 import com.revealprecision.revealserver.persistence.domain.aggregation.ImportAggregationNumeric;
+import com.revealprecision.revealserver.persistence.projection.EntityTagWithGeoLevelProjection;
 import com.revealprecision.revealserver.persistence.projection.ImportAggregateNumericProjection;
 import com.revealprecision.revealserver.persistence.projection.ImportAggregateStringCountProjection;
 import java.util.List;
@@ -68,5 +69,81 @@ public interface ImportAggregateRepository extends JpaRepository<ImportAggregati
       + "UNION ALL\n"
       + "SELECT DISTINCT concat(fieldcode,'-count') from import_aggregate_string_count iasc WHERE iasc.hierarchyIdentifier =:hierarchyIdentifier\n",nativeQuery = true)
   List<String> getUniqueDataTagsAssociatedWithData(String hierarchyIdentifier);
+
+  @Query(value = "SELECT concat(t.fieldcode,'-sum')\n"
+      + "     ,concat(t.fieldcode,'-median')\n"
+      + "     ,concat(t.fieldcode,'-average')\n"
+      + "     ,concat(t.fieldcode,'-min')\n"
+      + "     ,concat(t.fieldcode,'-max')\n"
+      + "     ,concat(t.fieldcode,'-count')\n"
+      + "     ,t.hierarchyidentifier, array_agg(t.name) as levels from (\n"
+      + "SELECT DISTINCT\n"
+      + "                ian.hierarchyidentifier,\n"
+      + "                ian.fieldcode,\n"
+      + "       gl.name,\n"
+      + "                gl.identifier\n"
+      + "from import_aggregate_numeric ian\n"
+      + "         left join location l on cast(l.identifier as varchar) = ian.locationidentifier\n"
+      + "         left join geographic_level gl on gl.identifier = l.geographic_level_identifier\n"
+      + "    ) as t\n"
+      + "WHERE hierarchyidentifier = :hierarchyIdentifier\n"
+      + "group by t.fieldcode, t.hierarchyidentifier",nativeQuery = true)
+  List<String> getUniqueDataTagsAndLevelsAssociatedWithData(String hierarchyIdentifier);
+
+  @Query(value = "SELECT DISTINCT\n"
+      + "    concat(ian.fieldcode,'-sum') as tagName,\n"
+      + "    gl.name as geoName,\n"
+      + "    cast(gl.identifier as varchar ) as geoIdentifier\n"
+      + "from import_aggregate_numeric ian\n"
+      + "         left join location l on cast(l.identifier as varchar) = ian.locationidentifier\n"
+      + "         left join geographic_level gl on gl.identifier = l.geographic_level_identifier\n"
+      + "WHERE ian.hierarchyidentifier = :hierarchyIdentifier\n"
+      + "UNION ALL\n"
+      + "SELECT DISTINCT\n"
+      + "    concat(ian.fieldcode,'-min') as tagName,\n"
+      + "    gl.name as geoName,\n"
+      + "    cast(gl.identifier as varchar ) as geoIdentifier\n"
+      + "from import_aggregate_numeric ian\n"
+      + "         left join location l on cast(l.identifier as varchar) = ian.locationidentifier\n"
+      + "         left join geographic_level gl on gl.identifier = l.geographic_level_identifier\n"
+      + "WHERE ian.hierarchyidentifier = :hierarchyIdentifier\n"
+      + "UNION ALL\n"
+      + "SELECT DISTINCT\n"
+      + "    concat(ian.fieldcode,'-max') as tagName,\n"
+      + "    gl.name as geoName,\n"
+      + "    cast(gl.identifier as varchar ) as geoIdentifier\n"
+      + "from import_aggregate_numeric ian\n"
+      + "         left join location l on cast(l.identifier as varchar) = ian.locationidentifier\n"
+      + "         left join geographic_level gl on gl.identifier = l.geographic_level_identifier\n"
+      + "WHERE ian.hierarchyidentifier = :hierarchyIdentifier\n"
+      + "UNION ALL\n"
+      + "SELECT DISTINCT\n"
+      + "    concat(ian.fieldcode,'-median') as tagName,\n"
+      + "    gl.name as geoName,\n"
+      + "    cast(gl.identifier as varchar ) as geoIdentifier\n"
+      + "from import_aggregate_numeric ian\n"
+      + "         left join location l on cast(l.identifier as varchar) = ian.locationidentifier\n"
+      + "         left join geographic_level gl on gl.identifier = l.geographic_level_identifier\n"
+      + "WHERE ian.hierarchyidentifier = :hierarchyIdentifier\n"
+      + "UNION ALL\n"
+      + "SELECT DISTINCT\n"
+      + "    concat(ian.fieldcode,'-average') as tagName,\n"
+      + "    gl.name as geoName,\n"
+      + "    cast(gl.identifier as varchar ) as geoIdentifier\n"
+      + "from import_aggregate_numeric ian\n"
+      + "         left join location l on cast(l.identifier as varchar) = ian.locationidentifier\n"
+      + "         left join geographic_level gl on gl.identifier = l.geographic_level_identifier\n"
+      + "WHERE ian.hierarchyidentifier = :hierarchyIdentifier \n"
+      + "UNION ALL \n"
+      + "SELECT DISTINCT\n"
+      + "    concat(ian.fieldcode,'-count') as tagName,\n"
+      + "    gl.name as geoName,\n"
+      + "    cast(gl.identifier as varchar ) as geoIdentifier\n"
+      + "from import_aggregate_string_count ian\n"
+      + "         left join location l on cast(l.identifier as varchar) = ian.locationidentifier\n"
+      + "         left join geographic_level gl on gl.identifier = l.geographic_level_identifier\n"
+      + "WHERE ian.hierarchyidentifier =  :hierarchyIdentifier"
+      + "",nativeQuery = true)
+  List<EntityTagWithGeoLevelProjection> getUniqueDataTagsAndLevelsListAssociatedWithData(String hierarchyIdentifier);
 
 }

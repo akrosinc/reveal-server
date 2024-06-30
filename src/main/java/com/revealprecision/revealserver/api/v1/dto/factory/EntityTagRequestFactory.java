@@ -17,6 +17,7 @@ public class EntityTagRequestFactory {
         .isAggregate(entityTag.isAggregate())
         .metadataImport(entityTag.getMetadataImport())
         .referencedTag(entityTag.getReferencedTag())
+        .uploadGeo(entityTag.getUploadGeo())
         .build();
   }
 

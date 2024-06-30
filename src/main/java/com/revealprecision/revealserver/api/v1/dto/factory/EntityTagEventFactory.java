@@ -3,6 +3,7 @@ package com.revealprecision.revealserver.api.v1.dto.factory;
 import com.revealprecision.revealserver.messaging.message.EntityTagEvent;
 import com.revealprecision.revealserver.messaging.message.EntityTagEvent.OrgGrant;
 import com.revealprecision.revealserver.messaging.message.EntityTagEvent.Owner;
+import com.revealprecision.revealserver.messaging.message.EntityTagEvent.UploadGeo;
 import com.revealprecision.revealserver.messaging.message.EntityTagEvent.UserGrant;
 import com.revealprecision.revealserver.persistence.domain.EntityTag;
 import com.revealprecision.revealserver.persistence.domain.EntityTagAccGrantsOrganization;
@@ -32,7 +33,9 @@ public class EntityTagEventFactory {
             entityTag.getMetadataImport() != null ? entityTag.getMetadataImport().getIdentifier()
                 : null)
         .referencedTag(entityTag.getReferencedTag())
-
+        .uploadGeo(entityTag.getUploadGeographicLevel() != null ?
+            UploadGeo.builder().id(entityTag.getUploadGeographicLevel().getIdentifier())
+                .name(entityTag.getUploadGeographicLevel().getName()).build() : null)
         .isPublic(entityTag.isPublic())
         .build();
   }
@@ -56,18 +59,18 @@ public class EntityTagEventFactory {
         .collect(
             Collectors.toList());
 
-
     Map<UUID, User> ownerUserObjs = owners.stream().collect(
         Collectors.toMap(User::getSid, owner -> owner, (owner1, owner2) -> owner2));
 
     List<Owner> userOwners = entityTag.getOwners().stream()
         .map(owner -> ownerUserObjs.get(owner.getUserSid()))
-        .map(owner -> new Owner(owner.getSid(),owner.getUsername()))
+        .map(owner -> new Owner(owner.getSid(), owner.getUsername()))
         .collect(
             Collectors.toList());
 
     Optional<EntityTagOwnership> entityTagOwnership1 = entityTag.getOwners().stream()
-        .filter(entityTagOwnership -> entityTagOwnership.getUserSid().equals(currentUser.getSid())).findFirst();
+        .filter(entityTagOwnership -> entityTagOwnership.getUserSid().equals(currentUser.getSid()))
+        .findFirst();
 
     return EntityTagEvent
         .builder()
@@ -87,6 +90,9 @@ public class EntityTagEventFactory {
         .isPublic(entityTag.isPublic())
         .owners(userOwners)
         .isDeleting(entityTag.isDeleting())
+        .uploadGeo(entityTag.getUploadGeographicLevel() != null ?
+            UploadGeo.builder().id(entityTag.getUploadGeographicLevel().getIdentifier())
+                .name(entityTag.getUploadGeographicLevel().getName()).build() : null)
         .build();
   }
 }

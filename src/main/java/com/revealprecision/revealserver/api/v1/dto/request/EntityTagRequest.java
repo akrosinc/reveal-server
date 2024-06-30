@@ -2,6 +2,7 @@ package com.revealprecision.revealserver.api.v1.dto.request;
 
 import com.revealprecision.revealserver.messaging.message.EntityTagEvent.OrgGrant;
 import com.revealprecision.revealserver.messaging.message.EntityTagEvent.Owner;
+import com.revealprecision.revealserver.messaging.message.EntityTagEvent.UploadGeo;
 import com.revealprecision.revealserver.messaging.message.EntityTagEvent.UserGrant;
 import com.revealprecision.revealserver.persistence.domain.MetadataImport;
 import java.util.List;
@@ -52,4 +53,6 @@ public class EntityTagRequest {
   private List<UserGrant> resultingUsers;
 
   private List<Owner> owners;
+
+  private UploadGeo uploadGeo;
 }

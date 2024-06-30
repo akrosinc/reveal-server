@@ -21,6 +21,8 @@ import com.revealprecision.revealserver.persistence.domain.EntityTag;
 import com.revealprecision.revealserver.persistence.domain.EntityTagAccGrantsOrganization;
 import com.revealprecision.revealserver.persistence.domain.EntityTagAccGrantsUser;
 import com.revealprecision.revealserver.persistence.domain.EntityTagOwnership;
+import com.revealprecision.revealserver.persistence.domain.Location;
+import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.MetadataImport;
 import com.revealprecision.revealserver.persistence.domain.MetadataImportOwnership;
 import com.revealprecision.revealserver.persistence.domain.Organization;
@@ -30,6 +32,7 @@ import com.revealprecision.revealserver.persistence.domain.aggregation.ImportAgg
 import com.revealprecision.revealserver.persistence.domain.metadata.SaveHierarchyMetadata;
 import com.revealprecision.revealserver.persistence.domain.metadata.metadataImport.MetaImportDTO;
 import com.revealprecision.revealserver.persistence.domain.metadata.metadataImport.fieldMapper.MetaFieldSetMapper;
+import com.revealprecision.revealserver.persistence.domain.metadata.metadataImport.fieldMapper.MetaFieldSetMapper.ValidatedTagMap;
 import com.revealprecision.revealserver.persistence.repository.ImportAggregationNumericRepository;
 import com.revealprecision.revealserver.persistence.repository.ImportAggregationStringRepository;
 import com.revealprecision.revealserver.persistence.repository.MetadataImportRepository;
@@ -38,7 +41,6 @@ import com.revealprecision.revealserver.persistence.repository.UserRepository;
 import com.revealprecision.revealserver.props.ImportAggregationProperties;
 import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.util.UserUtils;
-import java.io.IOException;
 import java.security.Principal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -84,8 +86,8 @@ public class MetadataService {
   private final UserRepository userRepository;
 
   @Transactional(rollbackOn = Exception.class)
-  public Map<String, EntityTagEvent> saveImportFile(String file, String fileName)
-      throws FileFormatException, IOException {
+  public ValidatedTagMap saveImportFile(String file, String fileName)
+      throws FileFormatException {
 
     User currentUser = userService.getCurrentUser();
 
@@ -112,17 +114,37 @@ public class MetadataService {
     try (XSSFWorkbook workbook = new XSSFWorkbook(file)) {
       XSSFSheet sheet = workbook.getSheetAt(0);
 
-      int fileRowsCount = metaFieldSetMapper.getFileRowsCount(sheet);
-
       XSSFRow tagNameRow = sheet.getRow(0);
 
-      int physicalNumberOfCells = metaFieldSetMapper.getPhysicalNumberOfCells(tagNameRow);
+      int cellCount = metaFieldSetMapper.getPhysicalNumberOfCells(tagNameRow);
 
-      Map<String, EntityTagEvent> entityTagMap = metaFieldSetMapper.getTagsMap(
-          sheet, currentMetaImport, tagNameRow, physicalNumberOfCells, currentUser);
+      int fileRowsCount = metaFieldSetMapper.getFileRowsCount(sheet);
 
-      List<MetaImportDTO> metaImportDTOS = metaFieldSetMapper.mapMetaFieldsDB(entityTagMap, sheet,
-          metadataImport);
+      Set<UUID> locationList = metaFieldSetMapper.extractIdsFor(sheet, fileRowsCount, 1,
+          "Location");
+      Set<UUID> hierarchyList = metaFieldSetMapper.extractIdsFor(sheet, fileRowsCount, 0,
+          "Hierarchy");
+      Set<String> geoLevels = metaFieldSetMapper.extractStringsFor(sheet, fileRowsCount, 3,
+          "GeographicLevel");
+
+      Map<UUID, Location> locationMap = metaFieldSetMapper.validateLocationsAndReturnLocationMapAndGetLocationMap(
+          locationList);
+
+      Map<UUID, LocationHierarchy> hierarchyMap = metaFieldSetMapper.validateHierarchiesAndReturnHierarchyMapAndGetHierarchyMap(
+          hierarchyList);
+
+      ValidatedTagMap validatedTagMap = metaFieldSetMapper.getTagsMap(
+          sheet, currentMetaImport, tagNameRow, cellCount, currentUser,
+          geoLevels.stream().findFirst().orElseThrow(
+              () -> new FileFormatException("Geographic Levels passed in file is invalid")));
+
+      metaFieldSetMapper.validateGeographicLevels(geoLevels, validatedTagMap);
+
+      int rowCount = metaFieldSetMapper.getRowCount(sheet, fileRowsCount);
+
+      List<MetaImportDTO> metaImportDTOS = metaFieldSetMapper.mapMetaFieldsDB(validatedTagMap,
+          sheet,
+          locationMap, hierarchyMap, rowCount);
 
       if (metaImportDTOS.stream().map(metaImportDTO -> metaImportDTO.getSheetData().getErrors())
           .map(Map::size).reduce(0, Integer::sum) > 1) {
@@ -149,11 +171,13 @@ public class MetadataService {
             ancestryMap);
       }
 
-      return entityTagMap;
+      entityTagService.saveEntityTags(validatedTagMap.getEntityTags().stream()
+          .peek(entityTag -> entityTag.setMetadataImport(currentMetaImport)).collect(
+              Collectors.toSet()));
+
+      return validatedTagMap;
     } catch (Exception e) {
       log.error(e.getMessage(), e);
-      currentMetaImport.setStatus(BulkEntryStatus.FAILED);
-      metadataImportRepository.save(currentMetaImport);
       throw new FileFormatException(e.getMessage());
     }
 
@@ -161,23 +185,23 @@ public class MetadataService {
 
   public void publishToMessagingGen(List<SaveHierarchyMetadata> saveHierarchyMetadatas,
       Map<String, List<String>> ancestryMap) {
-    saveHierarchyMetadatas.forEach(saveHierarchyMetadata ->{
+    saveHierarchyMetadatas.forEach(saveHierarchyMetadata -> {
 
-        log.trace("saveHierarchyMetadata: {}",saveHierarchyMetadata);
-        if (ancestryMap.containsKey(saveHierarchyMetadata.getLocationIdentifier())){
-          ancestryMap.get(saveHierarchyMetadata.getLocationIdentifier())
+      log.trace("saveHierarchyMetadata: {}", saveHierarchyMetadata);
+      if (ancestryMap.containsKey(saveHierarchyMetadata.getLocationIdentifier())) {
+        ancestryMap.get(saveHierarchyMetadata.getLocationIdentifier())
 
-              .forEach(ancestor -> publisherService.send(
-                  kafkaProperties.getTopicMap().get(KafkaConstants.AGGREGATION_STAGING),
-                  LocationIdEvent.builder()
-                      .hierarchyIdentifier(saveHierarchyMetadata.getHierarchyIdentifier())
-                      .nodeOrder(String.join(",", saveHierarchyMetadata.getNodeOrder()))
-                      .uuids(List.of(UUID.fromString(ancestor)))
-                      .build())
-              );
-        } else {
-          log.error("location: {} does not have a location relationship",saveHierarchyMetadata );
-        }
+            .forEach(ancestor -> publisherService.send(
+                kafkaProperties.getTopicMap().get(KafkaConstants.AGGREGATION_STAGING),
+                LocationIdEvent.builder()
+                    .hierarchyIdentifier(saveHierarchyMetadata.getHierarchyIdentifier())
+                    .nodeOrder(String.join(",", saveHierarchyMetadata.getNodeOrder()))
+                    .uuids(List.of(UUID.fromString(ancestor)))
+                    .build())
+            );
+      } else {
+        log.error("location: {} does not have a location relationship", saveHierarchyMetadata);
+      }
 
     });
   }
@@ -329,15 +353,17 @@ public class MetadataService {
                     EntityTagOwnership::getUserSid))
                 )).collect(Collectors.toList());
 
-    ownerIds.addAll(all.getContent().stream().flatMap(metadataImport -> metadataImport.getOwners().stream().map(
-        MetadataImportOwnership::getUserSid)).collect(
-        Collectors.toList()));
+    ownerIds.addAll(
+        all.getContent().stream().flatMap(metadataImport -> metadataImport.getOwners().stream().map(
+            MetadataImportOwnership::getUserSid)).collect(
+            Collectors.toList()));
 
     Set<Organization> orgGrants = organizationRepository.findByIdentifiers(orgIds);
     Set<User> userGrants = userRepository.findBySidIn(userIds);
     Set<User> owners = userRepository.findBySidIn(ownerIds);
 
-    return MetadataImportResponseFactory.fromEntityPage(all,collect,orgGrants,userGrants,currentUser,owners,
+    return MetadataImportResponseFactory.fromEntityPage(all, collect, orgGrants, userGrants,
+        currentUser, owners,
         pageable);
   }
 

@@ -25,9 +25,12 @@ bin/
 out/
 !**/src/main/**/out/
 !**/src/test/**/out/
-
+*.xlsx
+*.log
+src/main/resources/db/migration/V0_0_100__myuser.sql
 ### Sensitive Data ###
 src/main/resources/application.properties
+src/main/resources/*.properties
 
 ### Unuseful Data ###
 src/main/resources/batch/

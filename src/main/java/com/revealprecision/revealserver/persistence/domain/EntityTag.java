@@ -17,12 +17,15 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.FieldNameConstants;
 import org.hibernate.annotations.Type;
+import org.hibernate.envers.Audited;
+import org.hibernate.envers.RelationTargetAuditMode;
 
 @FieldNameConstants
 @Entity
 @Getter
 @Setter
 @Builder
+@Audited(targetAuditMode = RelationTargetAuditMode.NOT_AUDITED)
 @AllArgsConstructor
 @NoArgsConstructor
 public class EntityTag {
@@ -65,5 +68,9 @@ public class EntityTag {
   private List<EntityTagOwnership> owners;
 
   private boolean isDeleting;
+
+  @ManyToOne
+  @JoinColumn(name = "upload_geographic_level_identifier")
+  private GeographicLevel uploadGeographicLevel;
 
 }

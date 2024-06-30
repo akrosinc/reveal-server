@@ -48,6 +48,8 @@ public class EntityTagEvent extends Message {
 
   private boolean isDeleting;
 
+  private UploadGeo uploadGeo;
+
   @Setter @Getter
   @AllArgsConstructor
   public static class OrgGrant{
@@ -67,4 +69,13 @@ public class EntityTagEvent extends Message {
     private UUID id;
     private String username;
   }
+
+  @Setter @Getter
+  @AllArgsConstructor
+  @Builder
+  public static class UploadGeo{
+    private UUID id;
+    private String name;
+  }
+
 }
