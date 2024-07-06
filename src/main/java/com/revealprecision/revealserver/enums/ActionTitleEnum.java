@@ -19,7 +19,7 @@ public enum ActionTitleEnum {
   MDA_SURVEY("MDA Survey", LookupEntityTypeCodeEnum.LOCATION_CODE),
   HABITAT_SURVEY("Habitat Survey", LookupEntityTypeCodeEnum.LOCATION_CODE),
   LSM_HOUSEHOLD_SURVEY("LSM Household Survey", LookupEntityTypeCodeEnum.LOCATION_CODE),
-
+  STRUCTURE_SURVEY("Structure Survey", LookupEntityTypeCodeEnum.LOCATION_CODE),
   MDA_ONCHOCERCIASIS_SURVEY("MDA Onchocerciasis Survey", LookupEntityTypeCodeEnum.LOCATION_CODE);
 
   private final String actionTitle;
