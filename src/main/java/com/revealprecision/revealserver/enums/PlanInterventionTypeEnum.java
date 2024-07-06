@@ -9,5 +9,6 @@ public enum PlanInterventionTypeEnum {
     IRS_LITE,
     MDA,
     MDA_LITE,
-    LSM
+    LSM,
+    SURVEY
 }

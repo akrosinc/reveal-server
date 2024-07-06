@@ -22,6 +22,12 @@ public interface FormConstants {
   String ZAMBIA_SPRAY_FORM = "Spray";
   String ZAMBIA_SPRAY_FORM_DATE_FIELD = "start";
 
+  String STRUCTURE_SURVEY_FORM_SUPERVISOR_FIELD = "supervisor";
+  String STRUCTURE_SURVEY_SPRAY_FORM_SPRAY_OPERATOR = "sprayop_code";
+  String STRUCTURE_SURVEY_SPRAY_FORM = "structure_survey";
+  String STRUCTURE_SURVEY_FORM_DATE_FIELD = "start";
+
+
   String MDA_TREATMENT_OUTSIDE_HOUSEHOLD_HEALTH_WORKER_SUPERVISOR_FIELD = "health_worker_supervisor";
   String MDA_TREATMENT_OUTSIDE_HOUSEHOLD_CDD_NAME_FIELD = "cdd_name";
   String MDA_TREATMENT_OUTSIDE_HOUSEHOLD_FORM = "treatment_outside_household";
