@@ -28,6 +28,7 @@ import com.revealprecision.revealserver.persistence.repository.UserRepository;
 import com.revealprecision.revealserver.service.EntityFilterEsService;
 import com.revealprecision.revealserver.service.EntityTagService;
 import com.revealprecision.revealserver.service.EventAggregationService;
+import com.revealprecision.revealserver.service.KeycloakService;
 import com.revealprecision.revealserver.service.LookupEntityTypeService;
 import com.revealprecision.revealserver.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -81,6 +82,7 @@ public class EntityTagController {
   private final OrganizationRepository organizationRepository;
   private final UserRepository userRepository;
   private final UserService userService;
+  private final KeycloakService keycloakService;
 
 
   @Operation(summary = "Create Tag", description = "Create Tag", tags = {"Entity Tags"})
@@ -268,7 +270,8 @@ public class EntityTagController {
 
   @GetMapping("/filter-sse")
   public SseEmitter filterEntities(
-      @RequestParam("simulationRequestId") String simulationRequestId) {
+      @RequestParam("simulationRequestId") String simulationRequestId, @RequestParam("token") String token) {
+//    keycloakService.generateTokenForUser(token);
     return entityFilterService.getSseEmitter(simulationRequestId);
   }
 

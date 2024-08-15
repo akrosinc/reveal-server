@@ -1,0 +1,48 @@
+package com.revealprecision.revealserver.config;
+
+//@Component
+//@Slf4j
+//public class HeaderAddingFilter implements Filter {
+//
+//  @Override
+//  public void init(FilterConfig filterConfig) throws ServletException {
+//    // Initialization code if needed
+//  }
+//
+//  @Override
+//  public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+//      throws IOException, ServletException {
+//
+//    HttpServletRequest httpRequest = (HttpServletRequest) request;
+//    HttpServletResponse httpResponse = (HttpServletResponse) response;
+//
+//    if (httpRequest != null && httpRequest.getRequestURI() != null && httpRequest.getRequestURI()
+//        .equals("/api/v1/entityTag/filter-sse")) {
+//      log.info("path {}",httpRequest.getContextPath());
+//      log.info("path request uri {}",httpRequest.getRequestURI());
+//      log.info("path servletpath {}",httpRequest.getServletPath());
+//      log.info("path request url {}",httpRequest.getRequestURL());
+//      log.info("pathinfo {}",httpRequest.getPathInfo());
+//
+//      // Modify the request or add headers here
+//
+//      CustomHttpServletRequestWrapper wrappedRequest = new CustomHttpServletRequestWrapper(httpRequest);
+//
+//
+//      wrappedRequest.addHeader("Authorization", "Bearer eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICI2Nm1qeFlkYVc4U01jQVhuY19UdUVmaDJ4dElIRS1CeFJSc2pPbFpyN2NvIn0.eyJleHAiOjE3MjI4MDQ4ODIsImlhdCI6MTcyMjgwMTI4MiwiYXV0aF90aW1lIjoxNzIyNzk5MjEzLCJqdGkiOiIzMjgxOTdkZS1iZTY1LTQyYmMtYWRhMy0zYmZmYTY1M2Q3YmIiLCJpc3MiOiJodHRwczovL3Nzby1teS1sb2NhbC5ha3Jvcy5kaWdpdGFsL2F1dGgvcmVhbG1zL3JldmVhbCIsImF1ZCI6WyJyZWFsbS1tYW5hZ2VtZW50IiwiYWNjb3VudCJdLCJzdWIiOiJiOGFlNzUwZC1iZmQzLTQxODktYjM5OC02MmFmMDFlZDVkYWYiLCJ0eXAiOiJCZWFyZXIiLCJhenAiOiJyZXZlYWwtd2ViIiwibm9uY2UiOiI1ZGIyZTliNi02NDg1LTRmYjEtODQxMC1lMmM4ZjE1YTEyZDUiLCJzZXNzaW9uX3N0YXRlIjoiMGY3OThmNGUtMGE2Yi00YTc1LTlhOGEtYTE0MTBhYTdjN2VmIiwiYWNyIjoiMCIsImFsbG93ZWQtb3JpZ2lucyI6WyJodHRwczovL3JldmVhbC1teS1sb2NhbC5ha3Jvcy5kaWdpdGFsIiwiaHR0cDovL2xvY2FsaG9zdCIsImh0dHA6Ly9sb2NhbGhvc3Q6MzAwMCIsImh0dHBzOi8vcmV2ZWFsLXFhLmFrcm9zLm9ubGluZSJdLCJyZWFsbV9hY2Nlc3MiOnsicm9sZXMiOlsidGFza19kZWxldGUiLCJ0YXNrX3VwZGF0ZSIsImxvY2F0aW9uX3ZpZXciLCJwbGFuX21hbmFnZSIsImFzc2lnbm1lbnRfdmlldyIsImxvY2F0aW9uX2ltcG9ydF92aWV3IiwicGxhbl9yZXBvcnRpbmciLCJwbGFuX2RlbGV0ZSIsInZpZXdfc3VydmV5X2RhdGEiLCJnZW9ncmFwaGljX2xldmVsX2RlbGV0ZSIsImdlb2dyYXBoaWNfbGV2ZWxfdXBkYXRlIiwidW1hX2F1dGhvcml6YXRpb24iLCJjb21wbGV4X3RhZ192aWV3IiwicGVyZm9ybWFuY2VfcmVwb3J0aW5nIiwicmVwb3J0X3ZpZXciLCJyZXNvdXJjZV9wbGFubmluZ192aWV3IiwicGxhbl92aWV3IiwicmV2ZWFsX21hbmFnZSIsImNvbXBsZXhfdGFnX3VwZGF0ZSIsImxvY2F0aW9uX2ltcG9ydF91cGRhdGUiLCJ0YWdfdXBkYXRlIiwibWV0YWRhdGFfZmlsZV9pbXBvcnQiLCJhc3NpZ25tZW50X2NyZWF0ZSIsInBsYW5fdXBkYXRlIiwiZGVmYXVsdC1yb2xlcy1yZXZlYWwiLCJtZXRhZGF0YV9pbXBvcnRfdmlldyIsInRhZ19tYW5hZ2VtZW50IiwicmV2ZWFsX3NpbXVsYXRpb25fZWRpdCIsIm1vYmlsZV9jbGllbnQiLCJnZW9ncmFwaGljX2xldmVsX2NyZWF0ZSIsImFzc2lnbm1lbnRfZGVsZXRlIiwibG9jYXRpb25fdXBkYXRlIiwib3JnYW5pemF0aW9uX3VwZGF0ZSIsImFzc2lnbm1lbnRfdXBkYXRlIiwib3JnYW5pemF0aW9uX2RlbGV0ZSIsImxvY2F0aW9uX2RlbGV0ZSIsImRhdGFfcHJvY2Vzc2luZ19wcm9ncmVzcyIsInRhZ19hY2Nlc3MiLCJ0YXNrX2NyZWF0ZSIsInRhZ192aWV3IiwicmVzb3VyY2VfcGxhbm5pbmdfdXBkYXRlIiwibG9jYXRpb25faGllcmFyY2h5X2RlbGV0ZSIsInRhc2tfdmlldyIsIm9mZmxpbmVfYWNjZXNzIiwibG9jYXRpb25faGllcmFyY2h5X3VwZGF0ZSIsIm1ldGFkYXRhX2ltcG9ydF91cGRhdGUiLCJwbGFuX2NyZWF0ZSIsIm1ldGFkYXRhX2ltcG9ydCIsImdlb2dyYXBoaWNfbGV2ZWxfdmlldyIsIm9yZ2FuaXphdGlvbl9jcmVhdGUiLCJvcmdhbml6YXRpb25fdmlldyIsImxvY2F0aW9uX2hpZXJhcmNoeV92aWV3IiwicmV2ZWFsX3NpbXVsYXRpb24iLCJkZXZfYWRtaW4iLCJsb2NhdGlvbl9oaWVyYXJjaHlfY3JlYXRlIiwibG9jYXRpb25fY3JlYXRlIl19LCJyZXNvdXJjZV9hY2Nlc3MiOnsicmVhbG0tbWFuYWdlbWVudCI6eyJyb2xlcyI6WyJ2aWV3LXJlYWxtIiwidmlldy1pZGVudGl0eS1wcm92aWRlcnMiLCJtYW5hZ2UtaWRlbnRpdHktcHJvdmlkZXJzIiwiaW1wZXJzb25hdGlvbiIsInJlYWxtLWFkbWluIiwiY3JlYXRlLWNsaWVudCIsIm1hbmFnZS11c2VycyIsInF1ZXJ5LXJlYWxtcyIsInZpZXctYXV0aG9yaXphdGlvbiIsInF1ZXJ5LWNsaWVudHMiLCJxdWVyeS11c2VycyIsIm1hbmFnZS1ldmVudHMiLCJtYW5hZ2UtcmVhbG0iLCJ2aWV3LWV2ZW50cyIsInZpZXctdXNlcnMiLCJ2aWV3LWNsaWVudHMiLCJtYW5hZ2UtYXV0aG9yaXphdGlvbiIsIm1hbmFnZS1jbGllbnRzIiwicXVlcnktZ3JvdXBzIl19LCJhY2NvdW50Ijp7InJvbGVzIjpbIm1hbmFnZS1hY2NvdW50IiwibWFuYWdlLWFjY291bnQtbGlua3MiLCJ2aWV3LXByb2ZpbGUiXX19LCJzY29wZSI6Im9wZW5pZCBwcm9maWxlIGVtYWlsIiwic2lkIjoiMGY3OThmNGUtMGE2Yi00YTc1LTlhOGEtYTE0MTBhYTdjN2VmIiwiZW1haWxfdmVyaWZpZWQiOmZhbHNlLCJuYW1lIjoiVHJldmxlbiBCYWhhZHVyIiwicHJlZmVycmVkX3VzZXJuYW1lIjoidHJldmxlbi5iYWhhZHVyIiwiZ2l2ZW5fbmFtZSI6IlRyZXZsZW4iLCJmYW1pbHlfbmFtZSI6IkJhaGFkdXIiLCJlbWFpbCI6InRiYWhhZHVyQGFrcm9zLmNvbSJ9.Tx6tt35mCbhbBIiAFvw3p0Endwrwi62bIaZ0rUnKepQe-RgQEEbKAOUAOfxhLgMougX9l1Y3Jj2n2rYsUcbJ3vkspn9b5OxWonPHsFAwQLA1vFl81gfhXI1EqkrfGTBLMQIThXoqkOgCcHXPjMToj1TZ8Tvm4HDqCuMU6r_i7gpFsSRJPLDWSCZ4QrE-OWYuD3brr4QXuaMlRUnKbHKO5ISzwjyMCFBKYyE_FlNyE31DmDxCzm0GYIlcIFSVgkNaHkr9I6kgGKK6Czuj6s8YHV5v4E9PXIpYOL5iUwzDBEskpu8lvsdK8Qa238aR6Xl7R_DfxvT7LtSZV_1RwT_wyQ");
+//
+//      chain.doFilter(wrappedRequest,response);
+//    }
+//
+//
+//
+//
+//    // Continue with the next filter in the chain
+//    chain.doFilter(httpRequest, httpResponse);
+//  }
+//
+//  @Override
+//  public void destroy() {
+//    // Cleanup code if needed
+//  }
+//}

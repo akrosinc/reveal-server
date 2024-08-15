@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.config;
 
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.keycloak.adapters.KeycloakConfigResolver;
 import org.keycloak.adapters.springboot.KeycloakSpringBootConfigResolver;
 import org.keycloak.adapters.springsecurity.authentication.KeycloakAuthenticationProvider;
@@ -21,13 +22,21 @@ import org.springframework.web.cors.CorsConfiguration;
 @Configuration
 @EnableWebSecurity
 @EnableGlobalMethodSecurity(jsr250Enabled = true)
+@RequiredArgsConstructor
 public class   KeycloakSecurityConfig extends KeycloakWebSecurityConfigurerAdapter {
+
+
+//  private final HeaderAddingFilter headerAddingFilter;
 
   @Override
   protected void configure(HttpSecurity http) throws Exception {
     super.configure(http);
-    http.authorizeRequests()
-        .anyRequest().permitAll();
+    http
+//        .addFilterBefore(headerAddingFilter, UsernamePasswordAuthenticationFilter.class)
+        .authorizeRequests()
+        .anyRequest().permitAll()
+        ;
+
 
     CorsConfiguration corsConfiguration = new CorsConfiguration();
     corsConfiguration.setAllowedHeaders(

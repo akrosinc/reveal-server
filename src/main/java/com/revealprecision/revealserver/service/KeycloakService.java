@@ -48,6 +48,9 @@ public class KeycloakService {
   @Value("${keycloak.realm}")
   private String realm;
 
+  @Value("{keycloak.auth-server-url}")
+  private String serverUrl;
+
   public static CredentialRepresentation createPasswordCredentials(String password,
       boolean temporary) {
     CredentialRepresentation passwordCredentials = new CredentialRepresentation();
@@ -119,6 +122,14 @@ public class KeycloakService {
         .get(kcId);
     return userResource.roles();
   }
+
+//  public void generateTokenForUser(String token){
+////    Keycloak keycloak = Keycloak.getInstance(serverUrl,realm,"reveal-web","Bearer ".concat(token));
+//    TokenManager tokenManager = keycloak.tokenManager();
+//    AccessTokenResponse accessToken = tokenManager.getAccessToken();
+//    keycloak
+//    System.out.println(accessToken);
+//  }
 
   public Set<String> updateUser(String kcId, UserUpdateRequest userRequest) {
     UserResource userResource = keycloak.realm(realm).users()
