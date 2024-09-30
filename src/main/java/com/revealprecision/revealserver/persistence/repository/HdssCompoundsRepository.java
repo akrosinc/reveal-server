@@ -76,6 +76,35 @@ public interface HdssCompoundsRepository extends EntityGraphJpaRepository<HdssCo
       + "    )",nativeQuery = true)
   List<HdssCompoundProjection> getAllCompoundsForUserAssignment(String username);
 
+  @Query(value = "SELECT\n"
+      + "    distinct u.email\n"
+      + "from plan_assignment pa\n"
+      + "         inner join organization o on pa.organization_identifier = o.identifier\n"
+      + "         left join plan_locations pl on pl.identifier = pa.plan_locations_identifier\n"
+      + "         left join location l on l.identifier = pl.location_identifier\n"
+      + "         left join geographic_level gl on gl.identifier = l.geographic_level_identifier\n"
+      + "         left join plan p on pl.plan_identifier = p.identifier\n"
+      + "         left join location_hierarchy lh on p.hierarchy_identifier = lh.identifier\n"
+      + "         left join plan_target_type ptt on ptt.plan_identifier = p.identifier\n"
+      + "         left join geographic_level pgl on ptt.geographic_level_identifier = pgl.identifier\n"
+      + "         left join user_organization uo on o.identifier = uo.organization_identifier\n"
+      + "         left join users u on u.identifier = uo.user_identifier\n"
+      + "inner join (\n"
+      + "    SELECT lp.identifier,hc.compound_id\n"
+      + "    FROM (SELECT lr.location_identifier as child_location, arr.ancestor\n"
+      + "          from location_relationship lr,\n"
+      + "               unnest(lr.ancestry) with ordinality arr(ancestor, pos)\n"
+      + "         ) as lr\n"
+      + "             left join location lp on lr.ancestor = lp.identifier\n"
+      + "             left join geographic_level pgl on pgl.identifier = lp.geographic_level_identifier\n"
+      + "             left join location lc on lc.identifier = lr.child_location\n"
+      + "             left join geographic_level cgl on cgl.identifier = lc.geographic_level_identifier\n"
+      + "             inner join hdss.hdss_compounds hc on hc.structure_id = lr.child_location\n"
+      + "    WHERE hc.compound_id = :compoundId\n"
+      + ") hl on hl.identifier = l.identifier\n"
+      + "WHERE p.identifier= :planIdentifier",nativeQuery = true)
+  List<String> getUserEmailsByCompoundIdAndPlan(String compoundId, UUID planIdentifier);
+
 
   @Query("SELECT DISTINCT  h.householdId FROM HdssCompounds h WHERE h.compoundId = :compoundId")
   List<String> getDistinctHouseholdsByCompoundId(List<String> compoundId);

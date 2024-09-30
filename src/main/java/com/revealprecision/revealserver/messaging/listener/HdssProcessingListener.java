@@ -10,7 +10,10 @@ import com.revealprecision.revealserver.persistence.domain.Goal;
 import com.revealprecision.revealserver.persistence.repository.ActionRepository;
 import com.revealprecision.revealserver.persistence.repository.GoalRepository;
 import com.revealprecision.revealserver.persistence.repository.HdssCompoundsRepository;
+import com.revealprecision.revealserver.props.HdssProperties;
 import com.revealprecision.revealserver.service.TaskService;
+import com.revealprecision.revealserver.service.UserService;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -47,6 +50,10 @@ public class HdssProcessingListener extends Listener {
 
   private final ActionRepository actionRepository;
 
+  private final HdssProperties hdssProperties;
+
+  private final UserService userService;
+
   @KafkaListener(topics = "#{kafkaConfigProperties.topicMap.get('HDSS_PROCESSING')}", groupId = "reveal_server_group")
   public void etl(EventTrackerMessage eventTrackerMessage) {
     log.info("Received Message in group foo: {}", eventTrackerMessage.toString());
@@ -81,34 +88,81 @@ public class HdssProcessingListener extends Listener {
 
       allStructuresInCompound.remove(indexStructure);
 
-      emailService.sendEmail("tbahadur@akros.com", "individual " + individual,
-          indexStructure.toString().concat("-").concat(indexHousehold).concat("\r\n\r\n")
-              .concat(allStructuresInCompound.stream().map(UUID::toString).collect(
-                  Collectors.joining(","))).concat("\r\n\r\n")
-              .concat(String.join(",", allHouseholdsInCompound)));
+      UUID planIdentifier1 = eventTrackerMessage.getPlanIdentifier();
 
-      UUID planIdentifier = UUID.fromString("fbbac8f8-9ce0-46ca-bfbf-02915152554a");
+      if (planIdentifier1 != null && hdssProperties.getTarget() != null) {
 
-      List<Goal> goalsByPlan_identifier = goalRepository.findGoalsByPlan_Identifier(planIdentifier);
+        UUID targetPlan = hdssProperties.getTarget().get(planIdentifier1);
 
-      List<Action> actions = goalsByPlan_identifier.stream()
-          .flatMap(
-              goal -> actionRepository.findActionsByGoal_Identifier(goal.getIdentifier()).stream())
-          .collect(
-              Collectors.toList());
+        if (targetPlan != null) {
 
-      submitTasks(owner, List.of(indexStructure), planIdentifier, actions, ActionTitleEnum.INDEX_CASE);
+          sendEmails(individual, indexStructure, indexHousehold, compoundId,
+              allStructuresInCompound,
+              allHouseholdsInCompound, targetPlan);
 
-      submitTasks(owner, List.of(UUID.fromString(indexIndividual.getId())), planIdentifier, actions, ActionTitleEnum.INDEX_CASE_MEMBER);
+          List<Goal> goalsByPlan_identifier = goalRepository.findGoalsByPlan_Identifier(targetPlan);
 
-      submitTasks(owner, allStructuresInCompound, planIdentifier, actions, ActionTitleEnum.RCD);
+          List<Action> actions = goalsByPlan_identifier.stream()
+              .flatMap(
+                  goal -> actionRepository.findActionsByGoal_Identifier(goal.getIdentifier())
+                      .stream())
+              .collect(
+                  Collectors.toList());
 
-      submitTasks(owner, allIndividualsInCompound.stream().map(individualObj->UUID.fromString(individualObj.getId())).collect(
-          Collectors.toList()), planIdentifier, actions, ActionTitleEnum.RCD_MEMBER);
+          submitTasks(owner, List.of(indexStructure), targetPlan, actions,
+              ActionTitleEnum.INDEX_CASE);
+
+          submitTasks(owner, List.of(UUID.fromString(indexIndividual.getId())), targetPlan, actions,
+              ActionTitleEnum.INDEX_CASE_MEMBER);
+
+          submitTasks(owner, allStructuresInCompound, targetPlan, actions, ActionTitleEnum.RCD);
+
+          submitTasks(owner, allIndividualsInCompound.stream()
+              .map(individualObj -> UUID.fromString(individualObj.getId())).collect(
+                  Collectors.toList()), targetPlan, actions, ActionTitleEnum.RCD_MEMBER);
+        }
+      }
     }
   }
 
-  private void submitTasks(String owner, List<UUID> entityIds, UUID planIdentifier, List<Action> actions, ActionTitleEnum actionEnum) {
+  private void sendEmails(String individual, UUID indexStructure, String indexHousehold,
+      List<String> compoundId, List<UUID> allStructuresInCompound,
+      List<String> allHouseholdsInCompound, UUID targetPlan) {
+    if (!hdssProperties.isSendToOverrideEmail()) {
+      for (String compoundItem : compoundId) {
+        List<String> userEmailsByCompoundIdAndPlan = hdssCompoundsRepository.getUserEmailsByCompoundIdAndPlan(
+            compoundItem, targetPlan);
+        if (userEmailsByCompoundIdAndPlan != null && userEmailsByCompoundIdAndPlan.size() > 0) {
+          sendMail(userEmailsByCompoundIdAndPlan, individual, indexStructure, indexHousehold,
+              allStructuresInCompound, allHouseholdsInCompound);
+
+        } else {
+          String[] split = hdssProperties.getDefaultEmailList().split(";");
+          List<String> collect = Arrays.stream(split).collect(Collectors.toList());
+          sendMail(collect, individual, indexStructure, indexHousehold, allStructuresInCompound,
+              allHouseholdsInCompound);
+        }
+      }
+    } else {
+      String[] split = hdssProperties.getOverrideEmailList().split(";");
+      List<String> collect = Arrays.stream(split).collect(Collectors.toList());
+      sendMail(collect, individual, indexStructure, indexHousehold, allStructuresInCompound,
+          allHouseholdsInCompound);
+    }
+  }
+
+  private void sendMail(List<String> collect, String individual, UUID indexStructure,
+      String indexHousehold, List<UUID> allStructuresInCompound,
+      List<String> allHouseholdsInCompound) {
+    emailService.sendEmail(collect, "individual " + individual,
+        indexStructure.toString().concat("-").concat(indexHousehold).concat("\r\n\r\n")
+            .concat(allStructuresInCompound.stream().map(UUID::toString).collect(
+                Collectors.joining(","))).concat("\r\n\r\n")
+            .concat(String.join(",", allHouseholdsInCompound)));
+  }
+
+  private void submitTasks(String owner, List<UUID> entityIds, UUID planIdentifier,
+      List<Action> actions, ActionTitleEnum actionEnum) {
 
     Optional<Action> optionalAction = actions.stream()
         .filter(action -> action.getTitle().equals(actionEnum.getActionTitle()))
@@ -117,7 +171,8 @@ public class HdssProcessingListener extends Listener {
     if (optionalAction.isPresent()) {
       ListObj uuidsObj = new ListObj();
       uuidsObj.setUuids(entityIds);
-      taskService.generateIndividualTaskWithOwner(planIdentifier, optionalAction.get().getIdentifier(),
+      taskService.generateIndividualTaskWithOwner(planIdentifier,
+          optionalAction.get().getIdentifier(),
           uuidsObj, owner);
     }
   }
