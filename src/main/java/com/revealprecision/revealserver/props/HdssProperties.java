@@ -13,10 +13,7 @@ import org.springframework.stereotype.Component;
 public class HdssProperties {
 
   private Map<UUID,UUID> target;
-
   private String defaultEmailList;
-
   private boolean sendToOverrideEmail = true;
-
   private String overrideEmailList;
 }

@@ -130,6 +130,6 @@ public interface HdssCompoundsRepository extends EntityGraphJpaRepository<HdssCo
   HdssIndividualProjection getIndividualByIndividualId(String individualId);
 
   @Query(value = "SELECT DISTINCT cast(hc.id as varchar) as id, hc.individual_id as individualId"
-      + ",CAST(hc.fields->>'dob' as date) as dob,fields->>'gender' as gender from  hdss.hdss_compounds hc WHERE hc.compound_id = :compoundId", nativeQuery = true)
-  List<HdssIndividualProjection> getAllIndividualsByCompoundId(String compoundId);
+      + ",CAST(hc.fields->>'dob' as date) as dob,fields->>'gender' as gender from  hdss.hdss_compounds hc WHERE hc.compound_id in :compoundId", nativeQuery = true)
+  List<HdssIndividualProjection> getAllIndividualsInCompoundId(List<String> compoundId);
 }
