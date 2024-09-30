@@ -48,6 +48,9 @@ import static com.revealprecision.revealserver.constants.FormConstants.MDA_ONCHO
 import static com.revealprecision.revealserver.constants.FormConstants.MDA_ONCHOCERCIASIS_SURVEY_FORM;
 import static com.revealprecision.revealserver.constants.FormConstants.MDA_ONCHOCERCIASIS_SURVEY_HEALTH_WORKER_SUPERVISOR_FIELD;
 import static com.revealprecision.revealserver.constants.FormConstants.NOTSPRAYED_REASON;
+import static com.revealprecision.revealserver.constants.FormConstants.PASSIVE_CASE_DETECTION_DATE_FIELD;
+import static com.revealprecision.revealserver.constants.FormConstants.PASSIVE_CASE_DETECTION_EVENT;
+import static com.revealprecision.revealserver.constants.FormConstants.PASSIVE_CASE_DETECTION_HEALTH_WORKER_SUPERVISOR_FIELD;
 import static com.revealprecision.revealserver.constants.FormConstants.SPRAYED;
 import static com.revealprecision.revealserver.constants.FormConstants.SPRAY_FORM;
 import static com.revealprecision.revealserver.constants.FormConstants.SPRAY_FORM_SACHET_COUNT_FIELD;
@@ -65,6 +68,7 @@ import static com.revealprecision.revealserver.constants.FormConstants.ZAMBIA_SP
 import static com.revealprecision.revealserver.constants.FormConstants.ZAMBIA_SPRAY_FORM_SPRAY_OPERATOR;
 import static com.revealprecision.revealserver.constants.FormConstants.ZAMBIA_SPRAY_FORM_SUPERVISOR_FIELD;
 import static com.revealprecision.revealserver.constants.KafkaConstants.EVENT_TRACKER;
+import static com.revealprecision.revealserver.constants.KafkaConstants.HDSS_PROCESSING;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -79,6 +83,7 @@ import com.revealprecision.revealserver.enums.ActionTitleEnum;
 import com.revealprecision.revealserver.enums.PlanInterventionTypeEnum;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.messaging.message.DeviceUser;
+import com.revealprecision.revealserver.messaging.message.EventTrackerMessage;
 import com.revealprecision.revealserver.messaging.message.FormCaptureEvent;
 import com.revealprecision.revealserver.messaging.message.OrgLevel;
 import com.revealprecision.revealserver.messaging.message.UserData;
@@ -414,6 +419,41 @@ public class FormDataProcessorService {
                     formSubmissionIdString));
           }
         }
+        if (savedEvent.getEventType().equals(PASSIVE_CASE_DETECTION_EVENT)) {
+
+          dateString = getFormValue(obsJavaList, PASSIVE_CASE_DETECTION_DATE_FIELD);
+
+          supervisorName = getFormValue(obsJavaList,
+              PASSIVE_CASE_DETECTION_HEALTH_WORKER_SUPERVISOR_FIELD);
+
+          cdd = null;
+
+          baseEntityIdentifier = null;
+          if (savedEvent.getDetails() != null){
+            JsonNode locationIdJsonNode = savedEvent.getDetails().get(LOCATION_ID);
+            if (locationIdJsonNode!=null){
+             String baseEntityIdentifierString = locationIdJsonNode.asText();
+
+             try {
+               baseEntityIdentifier = UUID.fromString(baseEntityIdentifierString);
+             } catch (IllegalArgumentException e){
+               log.error("cannot cast locationId to UUID: {}",baseEntityIdentifierString);
+             }
+            }
+          }
+
+          EventTrackerMessage entity = EventTrackerMessageFactory.getEntity(savedEvent, eventFacade,
+              plan, dateString,
+              supervisorName,
+              cdd,
+              baseEntityIdentifier,
+              formSubmissionIdString);
+          publisherService.send(kafkaProperties.getTopicMap().get(EVENT_TRACKER),
+              entity);
+          publisherService.send(kafkaProperties.getTopicMap().get(HDSS_PROCESSING),
+              entity);
+
+        }
 
         User deviceUser = savedEvent.getUser();
         String fieldWorker = null;
@@ -653,6 +693,14 @@ public class FormDataProcessorService {
     Optional<Obs> ob = obsJavaList.stream()
         .filter(obs -> obs.getFieldCode().equals(key)).findFirst();
     return ob.map(obs -> (String) FormDataUtil.extractData(obs).get(obs.getFieldCode()))
+        .orElse(null);
+  }
+
+  public String getFormValueFromHumanReadableValues(List<Obs> obsJavaList, String key) {
+    Optional<Obs> ob = obsJavaList.stream()
+        .filter(obs -> obs.getFieldCode().equals(key)).findFirst();
+    return ob.map(obs -> (String) FormDataUtil.extractDataFromHumanReadableValues(obs)
+            .get(obs.getFieldCode()))
         .orElse(null);
   }
 

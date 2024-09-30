@@ -36,7 +36,7 @@ public class TaskEventFactory {
     Action action = taskSaved.getAction();
     if (ActionUtils.isActionForLocation(action)){
       baseLocationIds = List.of(taskSaved.getLocation().getIdentifier().toString());
-    } else if (ActionUtils.isActionForLocation(action)){
+    } else if (ActionUtils.isActionForPerson(action)){
       baseLocationIds = taskSaved.getPerson().getLocations().stream().map(Location::getIdentifier).map(
           UUID::toString).collect(
           Collectors.toList());
@@ -69,7 +69,8 @@ public class TaskEventFactory {
         .lastModified(taskSaved.getModifiedDatetime())
         .identifier(taskSaved.getIdentifier())
         .priority(taskSaved.getPriority())
-        .locationGeographicLevelName(taskSaved.getLocation().getGeographicLevel().getName())
+        .locationGeographicLevelName(ActionUtils.isActionForPerson(action)?taskSaved.getPerson().getLocations().size()>0? new ArrayList<>(
+            taskSaved.getPerson().getLocations()).get(0).getGeographicLevel().getName(): taskSaved.getLocation().getGeographicLevel().getName():taskSaved.getLocation().getGeographicLevel().getName())
         .lastUpdated(taskSaved.getModifiedDatetime())
         .build();
 

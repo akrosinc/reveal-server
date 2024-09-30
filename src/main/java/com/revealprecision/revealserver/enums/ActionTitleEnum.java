@@ -20,6 +20,11 @@ public enum ActionTitleEnum {
   HABITAT_SURVEY("Habitat Survey", LookupEntityTypeCodeEnum.LOCATION_CODE),
   LSM_HOUSEHOLD_SURVEY("LSM Household Survey", LookupEntityTypeCodeEnum.LOCATION_CODE),
   STRUCTURE_SURVEY("Structure Survey", LookupEntityTypeCodeEnum.LOCATION_CODE),
+  RCD("RCD", LookupEntityTypeCodeEnum.LOCATION_CODE),
+  RCD_MEMBER("RCD Member",LookupEntityTypeCodeEnum.PERSON_CODE),
+  INDEX_CASE("Index Case", LookupEntityTypeCodeEnum.LOCATION_CODE),
+  INDEX_CASE_MEMBER("Index Case Member", LookupEntityTypeCodeEnum.PERSON_CODE),
+  SCREENING("Screening", LookupEntityTypeCodeEnum.LOCATION_CODE),
   MDA_ONCHOCERCIASIS_SURVEY("MDA Onchocerciasis Survey", LookupEntityTypeCodeEnum.LOCATION_CODE);
 
   private final String actionTitle;

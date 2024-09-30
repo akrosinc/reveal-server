@@ -74,7 +74,7 @@ public class Person extends AbstractAuditableEntity {
   @JoinTable(name = "person_group", joinColumns = @JoinColumn(name = "person_identifier"), inverseJoinColumns = @JoinColumn(name = "group_identifier"))
   private Set<Group> groups;
 
-  @ManyToMany
+  @ManyToMany(fetch = FetchType.EAGER)
   @JoinTable(name = "person_location", joinColumns = @JoinColumn(name = "person_identifier"), inverseJoinColumns = @JoinColumn(name = "location_identifier"))
   private Set<Location> locations; //TODO: Design needs to be updated on this person location story, what about initialization, especially with other parts of code depending on these locations
 

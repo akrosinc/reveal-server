@@ -81,10 +81,19 @@ public class TaskFacadeService {
     return plans.stream().flatMap(plan -> {
       if (plan.getPlanTargetType().getGeographicLevel().getName()
           .equals(LocationConstants.STRUCTURE)) {
-        return taskService.getStructureTaskFacadesByLocationServerVersionAndPlan(
-                plan.getIdentifier(),
-                planTargetsMap.get(plan.getIdentifier()).stream().map(Location::getIdentifier).collect(
-                    Collectors.toList()), serverVersion).stream()
+        List<Task> structureTaskFacadesByLocationServerVersionAndPlan = taskService.getStructureTaskFacadesByLocationServerVersionAndPlan(
+            plan.getIdentifier(),
+            planTargetsMap.get(plan.getIdentifier()).stream().map(Location::getIdentifier).collect(
+                Collectors.toList()), serverVersion);
+
+        List<Task> peopleTasks = taskService.getStructureForPeopleTaskFacadesByLocationServerVersionAndPlan(
+            plan.getIdentifier(),
+            planTargetsMap.get(plan.getIdentifier()).stream().map(Location::getIdentifier).collect(
+                Collectors.toList()), serverVersion);
+
+        structureTaskFacadesByLocationServerVersionAndPlan.addAll(peopleTasks);
+
+        return structureTaskFacadesByLocationServerVersionAndPlan.stream()
             .filter(task -> task.getTaskFacade() != null)
             .map(task -> {
               TaskFacade taskFacadeObj = TaskFacadeFactory.getTaskFacadeObj(requester,

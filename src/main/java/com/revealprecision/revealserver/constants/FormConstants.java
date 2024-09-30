@@ -135,6 +135,11 @@ public interface FormConstants {
 
   String NAME_HO_H = "nameHoH";
 
+  String PASSIVE_CASE_DETECTION_EVENT = "passive_case_detection";
+  String PASSIVE_CASE_DETECTION_DATE_FIELD = "date";
+  String PASSIVE_CASE_DETECTION_HEALTH_WORKER_SUPERVISOR_FIELD = "health_worker_supervisor";
+  String PASSIVE_CASE_DETECTION_LOCATION_FIELD = "location";
+
   interface BusinessStatus {
 
     String NOT_DISPENSED = "Not Dispensed";

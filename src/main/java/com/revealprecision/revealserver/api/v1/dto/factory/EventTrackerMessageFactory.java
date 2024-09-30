@@ -30,7 +30,23 @@ public  class EventTrackerMessageFactory {
   private static Map<String, List<Object>> unpackObservations(List<Obs> obs) {
 
     return obs.stream()
-        .collect(Collectors.toMap(Obs::getFormSubmissionField, Obs::getValues, (a, b) -> b));
+        .collect(Collectors.toMap(Obs::getFormSubmissionField,  ob->{
+          if (ob.getHumanReadableValues() != null && ob.getHumanReadableValues().size()>0) {
+            return ob.getHumanReadableValues();
+          } else if (ob.getKeyValPairs()!=null && ob.getKeyValPairs().keySet().size()>0 && ob.getValues()!=null&&ob.getValues().size()>0){
+            Map<String, Object> keyValPairs = ob.getKeyValPairs();
+            Object o = ob.getValues().get(0);
+            try {
+              String key = (String)o;
+
+              return List.of(keyValPairs.get(key));
+            } catch (ClassCastException e){
+              return ob.getValues();
+            }
+
+          }
+          return ob.getValues();
+        }, (a, b) -> b));
 
   }
 }

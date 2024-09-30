@@ -2,6 +2,7 @@ package com.revealprecision.revealserver.messaging.listener;
 
 import com.revealprecision.revealserver.constants.FormConstants.BusinessStatus;
 import com.revealprecision.revealserver.constants.LocationConstants;
+import com.revealprecision.revealserver.enums.LookupEntityTypeCodeEnum;
 import com.revealprecision.revealserver.enums.PlanInterventionTypeEnum;
 import com.revealprecision.revealserver.messaging.message.TaskEvent;
 import com.revealprecision.revealserver.persistence.domain.GeographicLevel;
@@ -45,6 +46,10 @@ public class TaskListener extends Listener {
     log.info("Received Message in group foo: {}", message.toString());
     init();
 
+    if (message.getAction().getLookupEntityType().getCode()
+        .equals(LookupEntityTypeCodeEnum.PERSON_CODE.getLookupEntityType())) {
+      return;
+    }
     List<TaskBusinessStateTracker> taskBusinessStateTrackers = taskBusinessStateTrackerRepository.findTaskBusinessStateTrackerByLocationHierarchyIdentifierAndTaskLocationIdentifierAndPlanIdentifier(
         message.getAction().getGoal().getPlan().getLocationHierarchy().getIdentifier(),
         UUID.fromString(message.getLocationId()),

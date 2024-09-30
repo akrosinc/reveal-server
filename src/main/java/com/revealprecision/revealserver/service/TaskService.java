@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.service;
 
+import com.revealprecision.revealserver.api.v1.controller.querying.KafkaGenerateIndividualTasksController.ListObj;
 import com.revealprecision.revealserver.api.v1.dto.factory.TaskEntityFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.TaskCreateRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.TaskUpdateRequest;
@@ -7,6 +8,7 @@ import com.revealprecision.revealserver.constants.KafkaConstants;
 import com.revealprecision.revealserver.constants.LocationConstants;
 import com.revealprecision.revealserver.enums.ActionTitleEnum;
 import com.revealprecision.revealserver.enums.EntityStatus;
+import com.revealprecision.revealserver.enums.PlanInterventionTypeEnum;
 import com.revealprecision.revealserver.enums.PlanStatusEnum;
 import com.revealprecision.revealserver.enums.ProcessTrackerEnum;
 import com.revealprecision.revealserver.enums.ProcessType;
@@ -49,6 +51,7 @@ import com.revealprecision.revealserver.props.TaskGenerationProperties;
 import com.revealprecision.revealserver.service.models.TaskSearchCriteria;
 import com.revealprecision.revealserver.util.ActionUtils;
 import com.revealprecision.revealserver.util.ConditionQueryUtil;
+import com.revealprecision.revealserver.util.UserUtils;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -125,6 +128,12 @@ public class TaskService {
   public List<Task> getStructureTaskFacadesByLocationServerVersionAndPlan(UUID planIdentifier,
       List<UUID> locationIdentifiers, Long serverVersion) {
     return taskRepository.getStructureTaskFacadesByLocationServerVersionAndPlan(planIdentifier,
+        locationIdentifiers, serverVersion);
+  }
+
+  public List<Task> getStructureForPeopleTaskFacadesByLocationServerVersionAndPlan(UUID planIdentifier,
+      List<UUID> locationIdentifiers, Long serverVersion) {
+    return taskRepository.getStructureForPeopleTaskFacadesByLocationServerVersionAndPlan(planIdentifier,
         locationIdentifiers, serverVersion);
   }
 
@@ -248,6 +257,12 @@ public class TaskService {
       uuids = getUuidsForTaskGenerationForHabitatSurvey(plan);
     } else if (action.getTitle().equals(ActionTitleEnum.LSM_HOUSEHOLD_SURVEY.getActionTitle())) {
       uuids = getUuidsForTaskGenerationForHouseholdSurvey(plan);
+    } else if (
+        plan.getInterventionType().getCode().equals(PlanInterventionTypeEnum.SURVEY.toString()) && (
+            action.getTitle().equals(ActionTitleEnum.RCD.getActionTitle()) || action.getTitle()
+                .equals(ActionTitleEnum.INDEX_CASE.getActionTitle()) || action.getTitle()
+                .equals(ActionTitleEnum.SCREENING.getActionTitle()))) {
+      uuids = new ArrayList<>();
     } else {
       uuids = getUuidsForTaskGeneration(action, plan, conditions);
     }
@@ -296,6 +311,67 @@ public class TaskService {
         alreadyExistingTasksShouldBeCreated);
 
   }
+
+  public Pair<String, Map<TaskGenerateRequestValidationStateEnum, List<UUID>>> generateIndividualTask(
+      UUID planIdentifier,
+      UUID actionIdentifier, ListObj uuidsObj) {
+      return generateIndividualTaskWithOwner(planIdentifier,actionIdentifier,uuidsObj, UserUtils.getCurrentPrincipleName());
+  }
+
+  public Pair<String, Map<TaskGenerateRequestValidationStateEnum, List<UUID>>> generateIndividualTaskWithOwner(
+      UUID planIdentifier,
+      UUID actionIdentifier, ListObj uuidsObj, String owner) {
+    Action action = actionService.getByIdentifier(actionIdentifier);
+
+    Plan plan = action.getGoal().getPlan();
+
+    List<UUID> uuids = uuidsObj.getUuids();
+
+    Map<TaskGenerateRequestValidationStateEnum, List<UUID>> validatedMap = validateImportedLocationsForTaskGeneration(
+        uuids, action, plan);
+
+    if (validatedMap.containsKey(TaskGenerateRequestValidationStateEnum.ALREADY_EXISTING)) {
+      if (validatedMap.get(TaskGenerateRequestValidationStateEnum.ALREADY_EXISTING) != null) {
+        if (validatedMap.get(TaskGenerateRequestValidationStateEnum.ALREADY_EXISTING).size() > 0) {
+          return Pair.of("No action taken as validation indicates supplied ids have tasks already",
+              validatedMap);
+        }
+      }
+    }
+
+    if (validatedMap.containsKey(TaskGenerateRequestValidationStateEnum.NOT_IN_PLAN)) {
+      if (validatedMap.get(TaskGenerateRequestValidationStateEnum.NOT_IN_PLAN) != null) {
+        if (validatedMap.get(TaskGenerateRequestValidationStateEnum.NOT_IN_PLAN).size() > 0) {
+          log.info("No action taken as validation indicates supplied not in plan assignment {}",
+              validatedMap);
+        }
+      }
+    }
+
+    if (validatedMap.containsKey(TaskGenerateRequestValidationStateEnum.CAN_GENERATE)) {
+      if (validatedMap.get(TaskGenerateRequestValidationStateEnum.CAN_GENERATE) != null) {
+        if (validatedMap.get(TaskGenerateRequestValidationStateEnum.CAN_GENERATE).size() <= 0) {
+          return Pair.of(
+              "No action taken as validation indicates no eligible entities supplied to be generated",
+              validatedMap);
+        } else {
+
+          ProcessTracker newProcessTracker = processTrackerService.createProcessTracker(
+              UUID.randomUUID(),
+              ProcessType.INDIVIDUAL_TASK_GENERATE, planIdentifier);
+
+          processLocationListForTasks(action, plan,owner ,
+              newProcessTracker, validatedMap.get(TaskGenerateRequestValidationStateEnum.CAN_GENERATE), true, false, false);
+
+          return Pair.of("No action taken as validation indicates entities should not be generated",
+              validatedMap);
+        }
+      }
+    }
+    return Pair.of("No action taken as no validation object returned", validatedMap);
+
+  }
+
 
   public void processLocationListForTasks(Action action, Plan plan, String ownerId,
       ProcessTracker processTracker, List<UUID> uuids, boolean generate, boolean reactivate,
@@ -512,8 +588,31 @@ public class TaskService {
 
       String owner = null;
       if (taskProcessEvent.getOwner() != null) {
-        User user = userService.getByKeycloakId(UUID.fromString(taskProcessEvent.getOwner()));
-        owner = user.getUsername();
+        if (taskProcessEvent.getOwner().equals("kafka")){
+          owner = taskProcessEvent.getOwner();
+        }
+        else {
+          User user = null;
+          String userId = taskProcessEvent.getOwner();
+          try {
+            UUID userUUID = UUID.fromString(userId);
+            user = userService.getByKeycloakId(userUUID);
+          } catch (IllegalArgumentException e){
+            try {
+              user = userService.getByUserName(userId);
+            }catch (NotFoundException notFoundException){
+              user = null;
+            }
+          }
+          if (user == null){
+            owner = userId;
+          } else {
+            owner = user.getUsername();
+          }
+
+        }
+      } else {
+        owner = "unknown";
       }
       task = createTaskObjectFromActionAndEntityId(action,
           uuid, plan, owner);
@@ -617,7 +716,7 @@ public class TaskService {
         //TODO how to get this before save unless we do it on save of the task with kafka
         .identifier(UUID.randomUUID()).executionPeriodEnd(action.getTimingPeriodEnd()).plan(plan)
         .build();
-    task.setBusinessStatus(businessStatusProperties.getDefaultLocationBusinessStatus());
+    task.setBusinessStatus(businessStatusProperties.getDefaultBusinessStatus(action));
 
     task.setEntityStatus(EntityStatus.ACTIVE);
 
@@ -627,6 +726,11 @@ public class TaskService {
     }
     if (isActionForPerson) {
       Person person = personService.getPersonByIdentifier(entityUUID);
+//      Set<UUID> collect = person.getLocations().stream().map(Location::getIdentifier)
+//          .collect(Collectors.toSet());
+//      Set<Location> locationsWithoutGeoJsonByIdentifierIn = locationService.findLocationsWithoutGeoJsonByIdentifierIn(
+//          collect);
+//      person.setLocations(locationsWithoutGeoJsonByIdentifierIn);
       task.setPerson(person);
     }
 
@@ -680,7 +784,7 @@ public class TaskService {
     taskEvent.setOwner(owner);
     task.setTaskFacade(taskEvent);
 
-    if (task.getDescription()==null){
+    if (task.getDescription() == null) {
       task.setDescription(task.getAction().getTitle());
     }
 
@@ -694,11 +798,11 @@ public class TaskService {
   }
 
 
-  public List<String> getAllTasksNotSameAsTaskBusinessStateTracker(){
+  public List<String> getAllTasksNotSameAsTaskBusinessStateTracker() {
     return taskRepository.findTasksNotSameAsInTaskBusinessStateTracker();
   }
 
-  public List<String> getAllTasksNotInTaskBusinessStateTracker(){
+  public List<String> getAllTasksNotInTaskBusinessStateTracker() {
     return taskRepository.findTasksByNotPresentInTaskBusinessStateTracker();
   }
 
