@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
-import com.revealprecision.revealserver.api.v1.controller.TestController.HdssIndividualProjection;
+import com.revealprecision.revealserver.persistence.projection.HdssIndividualProjection;
 import com.revealprecision.revealserver.api.v1.controller.querying.KafkaGenerateIndividualTasksController.ListObj;
 import com.revealprecision.revealserver.enums.ActionTitleEnum;
 import com.revealprecision.revealserver.integration.mail.EmailService;

@@ -1,10 +1,10 @@
 package com.revealprecision.revealserver.api.v1.facade.controller;
 
-import com.revealprecision.revealserver.api.v1.controller.TestController.HdssCompoundHouseholdProjection;
-import com.revealprecision.revealserver.api.v1.controller.TestController.HdssCompoundProjection;
-import com.revealprecision.revealserver.api.v1.controller.TestController.HdssHouseholdIndividualProjection;
-import com.revealprecision.revealserver.api.v1.controller.TestController.HdssHouseholdStructureProjection;
-import com.revealprecision.revealserver.api.v1.controller.TestController.HdssIndividualProjection;
+import com.revealprecision.revealserver.persistence.projection.HdssCompoundHouseholdProjection;
+import com.revealprecision.revealserver.persistence.projection.HdssCompoundProjection;
+import com.revealprecision.revealserver.persistence.projection.HdssHouseholdIndividualProjection;
+import com.revealprecision.revealserver.persistence.projection.HdssHouseholdStructureProjection;
+import com.revealprecision.revealserver.persistence.projection.HdssIndividualProjection;
 import com.revealprecision.revealserver.api.v1.facade.models.HdssCompoundObj;
 import com.revealprecision.revealserver.api.v1.facade.models.HdssCompoundObj.HdssCompound;
 import com.revealprecision.revealserver.api.v1.facade.models.HdssCompoundObj.HdssCompoundHousehold;
