@@ -5,7 +5,7 @@ name: Reveal Server test, build and deploy
 
 on:
   push:
-    branches: [ main, zambia_2022, keep-location-ids, nih-simulation ]
+    branches: [ main, zambia_2022, keep-location-ids, nih-simulation , security-changes ]
   pull_request:
     branches: [ none ]
 
@@ -37,7 +37,7 @@ jobs:
         run: ./gradlew clean build -x test
 
       - name: Archive jar files
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: reveal-server.jar
           path: build/libs/revealserver*-SNAPSHOT.jar
@@ -65,7 +65,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Download a single artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4
         with:
           name: reveal-server.jar
 
