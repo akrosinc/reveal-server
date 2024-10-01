@@ -270,7 +270,7 @@ public class EntityTagController {
 
   @GetMapping("/filter-sse")
   public SseEmitter filterEntities(
-      @RequestParam("simulationRequestId") String simulationRequestId, @RequestParam("token") String token) {
+      @RequestParam("simulationRequestId") String simulationRequestId) {
 //    keycloakService.generateTokenForUser(token);
     return entityFilterService.getSseEmitter(simulationRequestId);
   }
