@@ -14,7 +14,6 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-
 public class EventTrackerMessage extends Message {
 
   private UUID identifier;

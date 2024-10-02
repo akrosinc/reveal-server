@@ -65,19 +65,17 @@ public class HdssProcessingListener extends Listener {
   @KafkaListener(topics = "#{kafkaConfigProperties.topicMap.get('HDSS_PROCESSING')}", groupId = "reveal_server_group")
   public void etl(EventTrackerMessage eventTrackerMessage) {
     log.info("Received Message in group foo: {}", eventTrackerMessage.toString());
-
-
-
-
     Map<String, List<Object>> observations = eventTrackerMessage.getObservations();
 
-
     String individualHouseholdCompound = getValue(observations, INDIVIDUAL_HOUSEHOLD_COMPOUND);
+    log.info("individualHouseholdCompound: {}", individualHouseholdCompound);
+
     List<IndividualHouseholdCompound> individualHouseholdCompounds;
     ObjectReader reader = objectMapper.readerFor(new TypeReference<List<IndividualHouseholdCompound>>() {
     });
     try {
       individualHouseholdCompounds = reader.readValue(individualHouseholdCompound);
+      log.info("individualHouseholdCompounds: {}", individualHouseholdCompounds);
       if (individualHouseholdCompounds != null && individualHouseholdCompounds.size()>0){
         String individual = individualHouseholdCompounds.get(0).getText();
         String compound = getValue(observations, COMPOUND);
@@ -88,25 +86,27 @@ public class HdssProcessingListener extends Listener {
 
           UUID indexStructure = hdssCompoundsRepository.getStructureByIndividualId(
               individual);
-
+          log.info("indexStructure: {}", indexStructure);
           String indexHousehold = hdssCompoundsRepository.getHouseHoldByIndividualId(
               individual);
-
+          log.info("indexHousehold: {}", indexHousehold);
           List<String> compoundId = hdssCompoundsRepository.getDistinctCompoundsByHouseholdId(
               indexHousehold);
-
+          log.info("compoundId: {}", compoundId);
           List<UUID> allStructuresInCompound = hdssCompoundsRepository.getDistinctStructuresByCompoundId(
               compoundId);
-
+          log.info("allStructuresInCompound: {}", allStructuresInCompound);
           HdssIndividualProjection indexIndividual = hdssCompoundsRepository.getIndividualByIndividualId(
               individual);
-
+          log.info("indexIndividual: {}", indexIndividual.getIndividualId());
           List<HdssIndividualProjection> allIndividualsInCompound = hdssCompoundsRepository.getAllIndividualsInCompoundId(
               compoundId);
-
+          log.info("allIndividualsInCompound: {}", allIndividualsInCompound.stream().map(
+              HdssIndividualProjection::getIndividualId).collect(
+              Collectors.joining("|")));
           List<String> allHouseholdsInCompound = hdssCompoundsRepository.getDistinctHouseholdsByCompoundId(
               compoundId);
-
+          log.info("allHouseholdsInCompound: {}", allHouseholdsInCompound);
           allStructuresInCompound.remove(indexStructure);
 
           UUID planIdentifier1 = eventTrackerMessage.getPlanIdentifier();
