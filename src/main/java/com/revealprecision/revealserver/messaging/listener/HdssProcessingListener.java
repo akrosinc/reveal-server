@@ -176,7 +176,6 @@ public class HdssProcessingListener extends Listener {
               allHouseholdsInCompound);
         }
       }
-
     }
   }
 

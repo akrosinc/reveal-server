@@ -394,7 +394,6 @@ public class FormDataProcessorService {
           }
         }
 
-        if (plan.getInterventionType().getCode().equals(PlanInterventionTypeEnum.SURVEY.name())) {
 
           if (plan.getGoals().stream().flatMap(goal -> goal.getActions()
               .stream()).anyMatch(action -> action.getTitle()
@@ -418,7 +417,7 @@ public class FormDataProcessorService {
                     baseEntityIdentifier,
                     formSubmissionIdString));
           }
-        }
+
         if (savedEvent.getEventType().equals(PASSIVE_CASE_DETECTION_EVENT)) {
 
           dateString = getFormValue(obsJavaList, PASSIVE_CASE_DETECTION_DATE_FIELD);
@@ -448,8 +447,11 @@ public class FormDataProcessorService {
               cdd,
               baseEntityIdentifier,
               formSubmissionIdString);
+          log.debug("publishing event to {} - {}",EVENT_TRACKER,entity);
           publisherService.send(kafkaProperties.getTopicMap().get(EVENT_TRACKER),
               entity);
+
+          log.debug("publishing event to {} - {}",HDSS_PROCESSING,entity);
           publisherService.send(kafkaProperties.getTopicMap().get(HDSS_PROCESSING),
               entity);
 

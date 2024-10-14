@@ -28,4 +28,20 @@ public class EventTrackerMessage extends Message {
   private String operationDatetime;
   private List<UUID> contributingEvents;
 
+  @Override
+  public String toString() {
+    return "EventTrackerMessage{" +
+        "identifier=" + identifier +
+        ", aggregationKey='" + aggregationKey + '\'' +
+        ", locationIdentifier=" + locationIdentifier +
+        ", planIdentifier=" + planIdentifier +
+        ", eventType='" + eventType + '\'' +
+        ", taskIdentifier=" + taskIdentifier +
+        ", observations=" + observations +
+        ", supervisor='" + supervisor + '\'' +
+        ", deviceUser='" + deviceUser + '\'' +
+        ", operationDatetime='" + operationDatetime + '\'' +
+        ", contributingEvents=" + contributingEvents +
+        '}';
+  }
 }
