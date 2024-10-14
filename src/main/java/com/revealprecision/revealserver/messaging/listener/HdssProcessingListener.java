@@ -4,13 +4,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
-import com.revealprecision.revealserver.persistence.projection.HdssIndividualProjection;
 import com.revealprecision.revealserver.api.v1.controller.querying.KafkaGenerateIndividualTasksController.ListObj;
 import com.revealprecision.revealserver.enums.ActionTitleEnum;
 import com.revealprecision.revealserver.integration.mail.EmailService;
 import com.revealprecision.revealserver.messaging.message.EventTrackerMessage;
 import com.revealprecision.revealserver.persistence.domain.Action;
 import com.revealprecision.revealserver.persistence.domain.Goal;
+import com.revealprecision.revealserver.persistence.projection.HdssIndividualProjection;
 import com.revealprecision.revealserver.persistence.repository.ActionRepository;
 import com.revealprecision.revealserver.persistence.repository.GoalRepository;
 import com.revealprecision.revealserver.persistence.repository.HdssCompoundsRepository;
@@ -28,6 +28,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -71,12 +72,13 @@ public class HdssProcessingListener extends Listener {
     log.info("individualHouseholdCompound: {}", individualHouseholdCompound);
 
     List<IndividualHouseholdCompound> individualHouseholdCompounds;
-    ObjectReader reader = objectMapper.readerFor(new TypeReference<List<IndividualHouseholdCompound>>() {
-    });
+    ObjectReader reader = objectMapper.readerFor(
+        new TypeReference<List<IndividualHouseholdCompound>>() {
+        });
     try {
       individualHouseholdCompounds = reader.readValue(individualHouseholdCompound);
       log.info("individualHouseholdCompounds: {}", individualHouseholdCompounds);
-      if (individualHouseholdCompounds != null && individualHouseholdCompounds.size()>0){
+      if (individualHouseholdCompounds != null && individualHouseholdCompounds.size() > 0) {
         String individual = individualHouseholdCompounds.get(0).getText();
         String compound = getValue(observations, COMPOUND);
         String household = getValue(observations, HOUSEHOLD);
@@ -123,7 +125,8 @@ public class HdssProcessingListener extends Listener {
                   allStructuresInCompound,
                   allHouseholdsInCompound, targetPlan);
 
-              List<Goal> goalsByPlan_identifier = goalRepository.findGoalsByPlan_Identifier(targetPlan);
+              List<Goal> goalsByPlan_identifier = goalRepository.findGoalsByPlan_Identifier(
+                  targetPlan);
 
               List<Action> actions = goalsByPlan_identifier.stream()
                   .flatMap(
@@ -132,29 +135,34 @@ public class HdssProcessingListener extends Listener {
                   .collect(
                       Collectors.toList());
 
-
               log.info("submitting index case  {}", indexStructure);
               submitTasks(owner, List.of(indexStructure), targetPlan, actions,
                   ActionTitleEnum.INDEX_CASE);
 
-              log.info("submitting index case members {}", indexIndividual.getId());
-              submitTasks(owner, List.of(UUID.fromString(indexIndividual.getId())), targetPlan, actions,
-                  ActionTitleEnum.INDEX_CASE_MEMBER);
+              log.info("submitting rcd member {}", allIndividualsInCompound);
+              allIndividualsInCompound.stream()
+                  .map(individualObj -> UUID.fromString(individualObj.getId()))
+                      .forEach(individualId -> submitTasks(owner, List.of(individualId), targetPlan, actions, ActionTitleEnum.RCD_MEMBER));
 
               log.info("submitting rcd  {}", allStructuresInCompound);
-              submitTasks(owner, allStructuresInCompound, targetPlan, actions, ActionTitleEnum.RCD);
+              allStructuresInCompound.forEach(
+                  structure -> submitTasks(owner, List.of(structure), targetPlan, actions,
+                      ActionTitleEnum.RCD));
 
-              log.info("submitting rcd member {}", allIndividualsInCompound);
-              submitTasks(owner, allIndividualsInCompound.stream()
-                  .map(individualObj -> UUID.fromString(individualObj.getId())).collect(
-                      Collectors.toList()), targetPlan, actions, ActionTitleEnum.RCD_MEMBER);
+              log.info("submitting index case members {}", indexIndividual.getId());
+              List.of(UUID.fromString(indexIndividual.getId())).forEach(
+                  indexIndividualId -> submitTasks(owner,
+                      List.of(indexIndividualId), targetPlan, actions,
+                      ActionTitleEnum.INDEX_CASE_MEMBER));
+
+
             }
           }
         }
       }
 
     } catch (JsonProcessingException e) {
-      e.printStackTrace();
+      log.error("Err {}", e.getMessage(), e);
     }
 
 
@@ -196,7 +204,9 @@ public class HdssProcessingListener extends Listener {
             .concat(String.join(",", allHouseholdsInCompound)));
   }
 
-  private void submitTasks(String owner, List<UUID> entityIds, UUID planIdentifier,
+
+  @Async
+  protected void submitTasks(String owner, List<UUID> entityIds, UUID planIdentifier,
       List<Action> actions, ActionTitleEnum actionEnum) {
 
     Optional<Action> optionalAction = actions.stream()
@@ -230,8 +240,10 @@ public class HdssProcessingListener extends Listener {
   }
 
 }
+
 @Data
-class IndividualHouseholdCompound implements Serializable{
+class IndividualHouseholdCompound implements Serializable {
+
   private String key;
   private String text;
 }
