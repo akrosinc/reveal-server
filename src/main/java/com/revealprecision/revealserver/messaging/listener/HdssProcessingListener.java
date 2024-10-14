@@ -115,6 +115,8 @@ public class HdssProcessingListener extends Listener {
 
             UUID targetPlan = hdssProperties.getTarget().get(planIdentifier1);
 
+            log.info("Target plan {}", targetPlan);
+
             if (targetPlan != null) {
 
               sendEmails(individual, indexStructure, indexHousehold, compoundId,
@@ -130,14 +132,19 @@ public class HdssProcessingListener extends Listener {
                   .collect(
                       Collectors.toList());
 
+
+              log.info("submitting index case  {}", indexStructure);
               submitTasks(owner, List.of(indexStructure), targetPlan, actions,
                   ActionTitleEnum.INDEX_CASE);
 
+              log.info("submitting index case members {}", indexIndividual.getId());
               submitTasks(owner, List.of(UUID.fromString(indexIndividual.getId())), targetPlan, actions,
                   ActionTitleEnum.INDEX_CASE_MEMBER);
 
+              log.info("submitting rcd  {}", allStructuresInCompound);
               submitTasks(owner, allStructuresInCompound, targetPlan, actions, ActionTitleEnum.RCD);
 
+              log.info("submitting rcd member {}", allIndividualsInCompound);
               submitTasks(owner, allIndividualsInCompound.stream()
                   .map(individualObj -> UUID.fromString(individualObj.getId())).collect(
                       Collectors.toList()), targetPlan, actions, ActionTitleEnum.RCD_MEMBER);

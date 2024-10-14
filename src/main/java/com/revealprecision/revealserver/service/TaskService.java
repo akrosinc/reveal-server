@@ -497,6 +497,7 @@ public class TaskService {
                   taskProcessEvent);
               break;
             case GENERATE:
+              log.debug("submitting tasks {}",taskProcessEvent);
               publisherService.send(
                   kafkaProperties.getTopicMap().get(KafkaConstants.TASK_CANDIDATE_GENERATE),
                   taskProcessEvent);
