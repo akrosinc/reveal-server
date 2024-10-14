@@ -360,6 +360,7 @@ public class TaskService {
               UUID.randomUUID(),
               ProcessType.INDIVIDUAL_TASK_GENERATE, planIdentifier);
 
+          log.debug("running process tracker");
           processLocationListForTasks(action, plan,owner ,
               newProcessTracker, validatedMap.get(TaskGenerateRequestValidationStateEnum.CAN_GENERATE), true, false, false);
 
@@ -420,6 +421,7 @@ public class TaskService {
     List<TaskProcessStage> taskProcessStages = taskProcessStageRepository.saveAll(
         taskCandidatesToProcess);
 
+    log.debug("submitting taskProcessStages");
     submitTaskCandidatesToKafka(action, plan, ownerId, taskProcessStages);
   }
 
