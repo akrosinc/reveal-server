@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.persistence.repository;
 
 import com.cosium.spring.data.jpa.entity.graph.repository.EntityGraphJpaRepository;
+import com.revealprecision.revealserver.persistence.projection.HdssCompoundHouseholdIndividualProjection;
 import com.revealprecision.revealserver.persistence.projection.HdssCompoundHouseholdProjection;
 import com.revealprecision.revealserver.persistence.projection.HdssCompoundProjection;
 import com.revealprecision.revealserver.persistence.projection.HdssHouseholdIndividualProjection;
@@ -46,6 +47,21 @@ public interface HdssCompoundsRepository extends EntityGraphJpaRepository<HdssCo
       + ",CAST(hc.fields->>'dob' as date) as dob,fields->>'gender' as gender from  hdss.hdss_compounds hc WHERE hc.compound_id in :compoundIdList", nativeQuery = true)
   List<HdssIndividualProjection> getAllIndividualsByCompoundIdIn(List<String> compoundIdList);
 
+
+  @Query(value = "SELECT cast(hc.id as varchar) as id, hc.compound_id as compoundId,hc.household_id as householdId,hc.individual_id as individualId,\n"
+      + " hc.fields->>'gender' as gender, CAST(hc.fields->>'dob' as date)  as dob\n"
+      + " from hdss.hdss_compounds hc\n"
+      + " WHERE (hc.household_id like upper(concat('%',:searchString,'%'))\n"
+      + "           or hc.compound_id like upper(concat('%',:searchString,'%')) or hc.individual_id like upper(concat('%',:searchString,'%')))\n", nativeQuery = true)
+  List<HdssCompoundHouseholdIndividualProjection> searchWithString(String searchString);
+
+  @Query(value = "SELECT cast(hc.id as varchar) as id, hc.compound_id as compoundId,hc.household_id as householdId,hc.individual_id as individualId,\n"
+      + "hc.fields->>'gender' as gender, CAST(hc.fields->>'dob' as date)  as dob \n"
+      + "from hdss.hdss_compounds hc\n"
+      + "WHERE (hc.household_id like upper(concat('%',:searchString,'%'))\n"
+      + "           or hc.compound_id like upper(concat('%',:searchString,'%')) or hc.individual_id like upper(concat('%',:searchString,'%')))\n"
+      + "and upper(hc.fields->>'gender') =upper(:gender)", nativeQuery = true)
+  List<HdssCompoundHouseholdIndividualProjection> searchWithStringAndGender(String searchString, String gender);
 
   @Query(value = "SELECT DISTINCT  hc.compound_id as compoundId FROM\n"
       + "(SELECT lr.location_identifier as child_location, arr.ancestor\n"

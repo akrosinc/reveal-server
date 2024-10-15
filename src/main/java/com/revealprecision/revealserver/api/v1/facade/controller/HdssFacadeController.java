@@ -1,17 +1,20 @@
 package com.revealprecision.revealserver.api.v1.facade.controller;
 
-import com.revealprecision.revealserver.persistence.projection.HdssCompoundHouseholdProjection;
-import com.revealprecision.revealserver.persistence.projection.HdssCompoundProjection;
-import com.revealprecision.revealserver.persistence.projection.HdssHouseholdIndividualProjection;
-import com.revealprecision.revealserver.persistence.projection.HdssHouseholdStructureProjection;
-import com.revealprecision.revealserver.persistence.projection.HdssIndividualProjection;
+import com.revealprecision.revealserver.api.v1.facade.models.HdssCompoundHouseholdIndividualObj;
 import com.revealprecision.revealserver.api.v1.facade.models.HdssCompoundObj;
 import com.revealprecision.revealserver.api.v1.facade.models.HdssCompoundObj.HdssCompound;
 import com.revealprecision.revealserver.api.v1.facade.models.HdssCompoundObj.HdssCompoundHousehold;
 import com.revealprecision.revealserver.api.v1.facade.models.HdssCompoundObj.HdssHouseholdIndividual;
 import com.revealprecision.revealserver.api.v1.facade.models.HdssCompoundObj.HdssHouseholdStructure;
 import com.revealprecision.revealserver.api.v1.facade.models.HdssCompoundObj.HdssIndividual;
+import com.revealprecision.revealserver.api.v1.facade.request.HdssSearchRequest;
 import com.revealprecision.revealserver.api.v1.facade.request.HdssSyncRequest;
+import com.revealprecision.revealserver.persistence.projection.HdssCompoundHouseholdIndividualProjection;
+import com.revealprecision.revealserver.persistence.projection.HdssCompoundHouseholdProjection;
+import com.revealprecision.revealserver.persistence.projection.HdssCompoundProjection;
+import com.revealprecision.revealserver.persistence.projection.HdssHouseholdIndividualProjection;
+import com.revealprecision.revealserver.persistence.projection.HdssHouseholdStructureProjection;
+import com.revealprecision.revealserver.persistence.projection.HdssIndividualProjection;
 import com.revealprecision.revealserver.persistence.repository.HdssCompoundsRepository;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -42,18 +45,23 @@ public class HdssFacadeController {
   @Transactional
   public ResponseEntity<HdssCompoundObj> taskSync(@RequestBody HdssSyncRequest hdssSyncRequest) {
 
-    List<HdssCompoundProjection> allCompounds = compoundsRepository.getAllCompoundsForUserAssignment(hdssSyncRequest.getUserId());
+    List<HdssCompoundProjection> allCompounds = compoundsRepository.getAllCompoundsForUserAssignment(
+        hdssSyncRequest.getUserId());
 
     List<String> compounds = allCompounds.stream().map(HdssCompoundProjection::getCompoundId)
         .collect(Collectors.toList());
 
-    List<HdssCompoundHouseholdProjection> compoundHouseHolds = compoundsRepository.getCompoundHouseHoldsByCompoundIdIn(compounds);
+    List<HdssCompoundHouseholdProjection> compoundHouseHolds = compoundsRepository.getCompoundHouseHoldsByCompoundIdIn(
+        compounds);
 
-    List<HdssHouseholdIndividualProjection> allHouseholdIndividual = compoundsRepository.getAllHouseholdIndividualByCompoundIdIn(compounds);
+    List<HdssHouseholdIndividualProjection> allHouseholdIndividual = compoundsRepository.getAllHouseholdIndividualByCompoundIdIn(
+        compounds);
 
-    List<HdssHouseholdStructureProjection> hdssHouseholdStructureProjections = compoundsRepository.getAllHouseholdStructuresByCompoundIdIn(compounds);
+    List<HdssHouseholdStructureProjection> hdssHouseholdStructureProjections = compoundsRepository.getAllHouseholdStructuresByCompoundIdIn(
+        compounds);
 
-    List<HdssIndividualProjection> allIndividuals = compoundsRepository.getAllIndividualsByCompoundIdIn(compounds);
+    List<HdssIndividualProjection> allIndividuals = compoundsRepository.getAllIndividualsByCompoundIdIn(
+        compounds);
 
     return ResponseEntity.ok(HdssCompoundObj.builder()
         .allCompounds(allCompounds.stream().map(compound -> HdssCompound.builder()
@@ -85,6 +93,32 @@ public class HdssFacadeController {
             .gender(hdssIndividualProjection.getGender())
             .build()).collect(Collectors.toList()))
         .build());
+
+  }
+
+  @PostMapping(value = "/search", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+
+  public ResponseEntity<List<HdssCompoundHouseholdIndividualObj>> search(
+      @RequestBody HdssSearchRequest hdssSearchRequest) {
+    List<HdssCompoundHouseholdIndividualProjection> individualProjections;
+    if (hdssSearchRequest.getGender()!=null) {
+      individualProjections = compoundsRepository.searchWithStringAndGender(
+          hdssSearchRequest.getSearchString(),hdssSearchRequest.getGender());
+    } else {
+      individualProjections = compoundsRepository.searchWithString(
+          hdssSearchRequest.getSearchString());
+    }
+    return ResponseEntity.ok(individualProjections.stream()
+        .map(individualProjection ->
+            HdssCompoundHouseholdIndividualObj.builder()
+                .compoundId(individualProjection.getCompoundId())
+                .householdId(individualProjection.getHouseholdId())
+                .individualId(individualProjection.getIndividualId())
+                .gender(individualProjection.getGender())
+                .dob(individualProjection.getDob().toString())
+                .id(individualProjection.getId())
+                .build())
+        .collect(Collectors.toList()));
 
   }
 

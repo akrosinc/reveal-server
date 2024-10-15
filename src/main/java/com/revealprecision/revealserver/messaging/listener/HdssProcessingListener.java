@@ -222,7 +222,7 @@ public class HdssProcessingListener extends Listener {
           planIdentifier,
           optionalAction.get().getIdentifier(),
           uuidsObj, owner);
-      log.debug("stringMapPair {}",stringMapPair);
+//      log.debug("stringMapPair {}",stringMapPair);
     }
   }
 

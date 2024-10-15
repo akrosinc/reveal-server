@@ -300,15 +300,15 @@ public class TaskService {
     List<UUID> shouldNotGenerateList = new ArrayList<>(suppliedLocationUuidList);
     shouldNotGenerateList.removeAll(uuidsThatShouldBeInPlan);
 
-    List<UUID> alreadyExistingTasksShouldBeCreated = new ArrayList<>(uuidsThatShouldBeInPlan);
-    alreadyExistingTasksShouldBeCreated.removeAll(existingTaskUuids);
-    alreadyExistingTasksShouldBeCreated.removeAll(suppliedLocationUuidList);
+//    List<UUID> alreadyExistingTasksShouldBeCreated = new ArrayList<>(uuidsThatShouldBeInPlan);
+//    alreadyExistingTasksShouldBeCreated.removeAll(existingTaskUuids);
+//    alreadyExistingTasksShouldBeCreated.removeAll(suppliedLocationUuidList);
 
     return Map.of(TaskGenerateRequestValidationStateEnum.ALREADY_EXISTING, requestedButExisting,
         TaskGenerateRequestValidationStateEnum.CAN_GENERATE, canGenerate,
-        TaskGenerateRequestValidationStateEnum.NOT_IN_PLAN, shouldNotGenerateList,
-        TaskGenerateRequestValidationStateEnum.SHOULD_GENERATE_BUT_NOT_REQUESTED,
-        alreadyExistingTasksShouldBeCreated);
+        TaskGenerateRequestValidationStateEnum.NOT_IN_PLAN, shouldNotGenerateList);
+//    TaskGenerateRequestValidationStateEnum.SHOULD_GENERATE_BUT_NOT_REQUESTED,
+//        alreadyExistingTasksShouldBeCreated
 
   }
 
