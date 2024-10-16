@@ -1,9 +1,6 @@
 package com.revealprecision.revealserver.messaging.listener;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
 import com.revealprecision.revealserver.api.v1.controller.querying.KafkaGenerateIndividualTasksController.ListObj;
 import com.revealprecision.revealserver.enums.ActionTitleEnum;
 import com.revealprecision.revealserver.integration.mail.EmailService;
@@ -42,7 +39,7 @@ public class HdssProcessingListener extends Listener {
 
   public static String INDIVIDUAL = "individual";
 
-  public static String INDIVIDUAL_HOUSEHOLD_COMPOUND = "individual_household_compound";
+  public static String INDIVIDUAL_HOUSEHOLD_COMPOUND_SEARCH = "individual_household_compound_search";
 
   public static String COMPOUND = "compound";
 
@@ -68,29 +65,31 @@ public class HdssProcessingListener extends Listener {
     log.info("Received Message in group foo: {}", eventTrackerMessage.toString());
     Map<String, List<Object>> observations = eventTrackerMessage.getObservations();
 
-    String individualHouseholdCompound = getValue(observations, INDIVIDUAL_HOUSEHOLD_COMPOUND);
-    log.info("individualHouseholdCompound: {}", individualHouseholdCompound);
+//    String individualHouseholdCompound = getValue(observations,
+//        INDIVIDUAL_HOUSEHOLD_COMPOUND_SEARCH);
+//    log.info("individualHouseholdCompound: {}", individualHouseholdCompound);
 
-    List<IndividualHouseholdCompound> individualHouseholdCompounds;
-    ObjectReader reader = objectMapper.readerFor(
-        new TypeReference<List<IndividualHouseholdCompound>>() {
-        });
+    String individualHouseholdCompound = getValue(observations, INDIVIDUAL_HOUSEHOLD_COMPOUND_SEARCH);
+
+//    List<IndividualHouseholdCompound> individualHouseholdCompounds;
+//    ObjectReader reader = objectMapper.readerFor(
+//        new TypeReference<List<IndividualHouseholdCompound>>() {
+//        });
     try {
-      individualHouseholdCompounds = reader.readValue(individualHouseholdCompound);
-      log.info("individualHouseholdCompounds: {}", individualHouseholdCompounds);
-      if (individualHouseholdCompounds != null && individualHouseholdCompounds.size() > 0) {
-        String individual = individualHouseholdCompounds.get(0).getText();
+//      individualHouseholdCompounds = reader.readValue(individualHouseholdCompound);
+      log.info("individualHouseholdCompounds: {}", individualHouseholdCompound);
+      if (individualHouseholdCompound != null ) {
         String compound = getValue(observations, COMPOUND);
         String household = getValue(observations, HOUSEHOLD);
         String rdt = getValue(observations, RDT);
         String owner = eventTrackerMessage.getSupervisor();
-        if (individual != null && rdt != null && rdt.equals(POSITIVE)) {
+        if (rdt != null && rdt.equals(POSITIVE)) {
 
           UUID indexStructure = hdssCompoundsRepository.getStructureByIndividualId(
-              individual);
+              individualHouseholdCompound);
           log.info("indexStructure: {}", indexStructure);
           String indexHousehold = hdssCompoundsRepository.getHouseHoldByIndividualId(
-              individual);
+              individualHouseholdCompound);
           log.info("indexHousehold: {}", indexHousehold);
           List<String> compoundId = hdssCompoundsRepository.getDistinctCompoundsByHouseholdId(
               indexHousehold);
@@ -99,7 +98,7 @@ public class HdssProcessingListener extends Listener {
               compoundId);
           log.info("allStructuresInCompound: {}", allStructuresInCompound);
           HdssIndividualProjection indexIndividual = hdssCompoundsRepository.getIndividualByIndividualId(
-              individual);
+              individualHouseholdCompound);
           log.info("indexIndividual: {}", indexIndividual.getIndividualId());
           List<HdssIndividualProjection> allIndividualsInCompound = hdssCompoundsRepository.getAllIndividualsInCompoundId(
               compoundId);
@@ -121,7 +120,7 @@ public class HdssProcessingListener extends Listener {
 
             if (targetPlan != null) {
 
-              sendEmails(individual, indexStructure, indexHousehold, compoundId,
+              sendEmails(individualHouseholdCompound, indexStructure, indexHousehold, compoundId,
                   allStructuresInCompound,
                   allHouseholdsInCompound, targetPlan);
 
@@ -160,7 +159,7 @@ public class HdssProcessingListener extends Listener {
         }
       }
 
-    } catch (JsonProcessingException e) {
+    } catch (Exception e) {
       log.error("Err {}", e.getMessage(), e);
     }
 
