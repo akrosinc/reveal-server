@@ -273,7 +273,7 @@ public class TaskService {
   }
 
 
-  public Map<TaskGenerateRequestValidationStateEnum, List<UUID>> validateImportedLocationsForTaskGeneration(
+  public Map<TaskGenerateRequestValidationStateEnum, List<UUID>> validateImportedLocationsForTaskGenerationDirect(
       List<UUID> suppliedLocationUuidList, Action action, Plan plan) {
     List<UUID> uuidsThatShouldBeInPlan = getUuidsForTaskGeneration(action, plan, null);
 
@@ -309,6 +309,45 @@ public class TaskService {
         TaskGenerateRequestValidationStateEnum.NOT_IN_PLAN, shouldNotGenerateList);
 //    TaskGenerateRequestValidationStateEnum.SHOULD_GENERATE_BUT_NOT_REQUESTED,
 //        alreadyExistingTasksShouldBeCreated
+
+  }
+
+  public Map<TaskGenerateRequestValidationStateEnum, List<UUID>> validateImportedLocationsForTaskGeneration(
+      List<UUID> suppliedLocationUuidList, Action action, Plan plan) {
+    List<UUID> uuidsThatShouldBeInPlan = getUuidsForTaskGeneration(action, plan, null);
+
+    List<UUID> existingTaskUuids = taskRepository.findUniqueByPlanAndActionidentifier(
+            plan, action.getIdentifier())
+        .stream().map(
+            existingTask -> new TaskProjectionObj(existingTask.getIdentifier(),
+                existingTask.getBaseEntityIdentifier()))
+        .map(TaskProjectionObj::getBaseIdentifier)
+        .map(UUID::fromString)
+        .collect(
+            Collectors.toList());
+
+    List<UUID> alreadyExistingTasks = new ArrayList<>(uuidsThatShouldBeInPlan);
+    alreadyExistingTasks.retainAll(existingTaskUuids);
+    List<UUID> requestedButExisting = new ArrayList<>(suppliedLocationUuidList);
+    requestedButExisting.retainAll(alreadyExistingTasks);
+
+    List<UUID> alreadyExistingTasksCanGenerate = new ArrayList<>(uuidsThatShouldBeInPlan);
+    alreadyExistingTasksCanGenerate.removeAll(existingTaskUuids);
+    List<UUID> canGenerate = new ArrayList<>(suppliedLocationUuidList);
+    canGenerate.retainAll(alreadyExistingTasksCanGenerate);
+
+    List<UUID> shouldNotGenerateList = new ArrayList<>(suppliedLocationUuidList);
+    shouldNotGenerateList.removeAll(uuidsThatShouldBeInPlan);
+
+    List<UUID> alreadyExistingTasksShouldBeCreated = new ArrayList<>(uuidsThatShouldBeInPlan);
+    alreadyExistingTasksShouldBeCreated.removeAll(existingTaskUuids);
+    alreadyExistingTasksShouldBeCreated.removeAll(suppliedLocationUuidList);
+
+    return Map.of(TaskGenerateRequestValidationStateEnum.ALREADY_EXISTING, requestedButExisting,
+        TaskGenerateRequestValidationStateEnum.CAN_GENERATE, canGenerate,
+        TaskGenerateRequestValidationStateEnum.NOT_IN_PLAN, shouldNotGenerateList,
+    TaskGenerateRequestValidationStateEnum.SHOULD_GENERATE_BUT_NOT_REQUESTED,
+        alreadyExistingTasksShouldBeCreated);
 
   }
 
@@ -373,6 +412,24 @@ public class TaskService {
 
   }
 
+  public void generateIndividualTaskWithOwnerDirect(
+      UUID planIdentifier,
+      UUID actionIdentifier, ListObj uuidsObj, String owner) {
+    Action action = actionService.getByIdentifier(actionIdentifier);
+
+    Plan plan = action.getGoal().getPlan();
+
+    List<UUID> uuids = uuidsObj.getUuids();
+
+
+    ProcessTracker newProcessTracker = processTrackerService.createProcessTracker(
+        UUID.randomUUID(),
+        ProcessType.INDIVIDUAL_TASK_GENERATE, planIdentifier);
+
+    log.debug("running process tracker");
+    processLocationListForTasks(action, plan,owner ,
+        newProcessTracker, uuids, true, false, false);
+  }
 
   public void processLocationListForTasks(Action action, Plan plan, String ownerId,
       ProcessTracker processTracker, List<UUID> uuids, boolean generate, boolean reactivate,

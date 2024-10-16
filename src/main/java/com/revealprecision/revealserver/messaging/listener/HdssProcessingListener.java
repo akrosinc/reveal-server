@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.revealprecision.revealserver.api.v1.controller.querying.KafkaGenerateIndividualTasksController.ListObj;
 import com.revealprecision.revealserver.enums.ActionTitleEnum;
-import com.revealprecision.revealserver.enums.TaskGenerateRequestValidationStateEnum;
 import com.revealprecision.revealserver.integration.mail.EmailService;
 import com.revealprecision.revealserver.messaging.message.EventTrackerMessage;
 import com.revealprecision.revealserver.persistence.domain.Action;
@@ -28,7 +27,6 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
-import org.springframework.data.util.Pair;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -157,7 +155,6 @@ public class HdssProcessingListener extends Listener {
                       List.of(indexIndividualId), targetPlan, actions,
                       ActionTitleEnum.INDEX_CASE_MEMBER));
 
-
             }
           }
         }
@@ -218,11 +215,10 @@ public class HdssProcessingListener extends Listener {
     if (optionalAction.isPresent()) {
       ListObj uuidsObj = new ListObj();
       uuidsObj.setUuids(entityIds);
-      Pair<String, Map<TaskGenerateRequestValidationStateEnum, List<UUID>>> stringMapPair = taskService.generateIndividualTaskWithOwner(
+      taskService.generateIndividualTaskWithOwnerDirect(
           planIdentifier,
           optionalAction.get().getIdentifier(),
           uuidsObj, owner);
-//      log.debug("stringMapPair {}",stringMapPair);
     }
   }
 
