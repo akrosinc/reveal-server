@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS hdss.hdss_compounds
     primary key (id)
     );
 
-create sequence hdss.hdss_compounds_seq
+create sequence IF NOT EXISTS  hdss.hdss_compounds_seq
     as int
     minvalue 0;
 

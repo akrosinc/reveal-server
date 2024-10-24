@@ -138,6 +138,8 @@ public class HdssFacadeController {
 
       // Construct the JSON array format as a string
 
+      log.debug("search date: {}",searchDate);
+
       searchDeterminer = searchDeterminer.concat("D");
     }
     if (hdssSearchRequest.getSearchString() != null) {
@@ -155,9 +157,10 @@ public class HdssFacadeController {
             hdssSearchRequest.getGender(), searchDate);
         break;
       case "GDS":
+        log.debug("search date: {}",searchDate);
         individualProjections = compoundsRepository.searchWithStringGenderAndDob(
             hdssSearchRequest.getSearchString(), hdssSearchRequest.getGender(),
-            hdssSearchRequest.getDob());
+            searchDate);
         break;
       case "D":
         individualProjections = compoundsRepository.searchWithDob(
