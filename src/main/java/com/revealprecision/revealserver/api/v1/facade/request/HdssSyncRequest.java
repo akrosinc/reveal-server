@@ -10,4 +10,7 @@ public class HdssSyncRequest implements Serializable  {
   @JsonProperty(value = "user_id")
   private String userId;
 
+  private long serverVersion;
+
+  private int batchSize;
 }

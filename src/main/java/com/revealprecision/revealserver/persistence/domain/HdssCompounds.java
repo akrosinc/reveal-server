@@ -42,4 +42,6 @@ public class HdssCompounds {
   @Column(columnDefinition = "jsonb")
   private Fields fields;
 
+  private long serverVersion;
+
 }

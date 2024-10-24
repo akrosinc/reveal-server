@@ -13,4 +13,8 @@ public interface HdssCompoundHouseholdIndividualProjection {
   java.sql.Date getDob();
 
   String getGender();
+
+  long getServerVersion();
+
+  String getStructureId();
 }

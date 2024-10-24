@@ -9,4 +9,6 @@ public class HdssSearchRequest implements Serializable  {
   private String searchString;
 
   private String gender;
+
+  private String dob;
 }
