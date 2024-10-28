@@ -4,7 +4,6 @@ import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import java.util.UUID;
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -27,7 +26,6 @@ import org.hibernate.annotations.TypeDef;
 public class HdssCompounds {
 
   @Id
-  @GeneratedValue
   private UUID id;
 
   private String compoundId;

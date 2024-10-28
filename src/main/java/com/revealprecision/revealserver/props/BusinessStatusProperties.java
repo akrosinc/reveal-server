@@ -25,10 +25,13 @@ public class BusinessStatusProperties {
   String defaultPersonBusinessStatus = "Not Visited";
   String defaultGroupBusinessStatus = "Not Visited";
   String defaultIndexCaseBusinessStatus = "Index Case Not Visited";
+  String defaultSecondaryIndexCaseBusinessStatus = "Secondary Index Case Not Visited";
 
   public String getDefaultBusinessStatus(Action action) {
     if (action.getTitle().equals(ActionTitleEnum.INDEX_CASE.getActionTitle())) {
       return defaultIndexCaseBusinessStatus;
+    } else if (action.getTitle().equals(ActionTitleEnum.SECONDARY_INDEX_CASE.getActionTitle())) {
+      return defaultSecondaryIndexCaseBusinessStatus;
     } else {
       return defaultLocationBusinessStatus;
     }

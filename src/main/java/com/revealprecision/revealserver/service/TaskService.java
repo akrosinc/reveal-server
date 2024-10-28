@@ -137,6 +137,10 @@ public class TaskService {
         locationIdentifiers, serverVersion);
   }
 
+  public List<Task> getTasksAcrossPlansByBaseEntityIdentifiers(List<UUID> uuids){
+    return taskRepository.findAllByBaseEntityIdentifierIn(uuids);
+  }
+
   public Long countTasksBySearchCriteria(TaskSearchCriteria taskSearchCriteria) {
     return taskRepository.count(TaskSpec.getTaskSpecification(taskSearchCriteria));
   }
@@ -430,6 +434,24 @@ public class TaskService {
     processLocationListForTasks(action, plan,owner ,
         newProcessTracker, uuids, true, false, false);
   }
+  public void cancelIndividualTaskWithOwnerDirect(
+      UUID planIdentifier,
+      UUID actionIdentifier, ListObj uuidsObj, String owner) {
+    Action action = actionService.getByIdentifier(actionIdentifier);
+
+    Plan plan = action.getGoal().getPlan();
+
+    List<UUID> uuids = uuidsObj.getUuids();
+
+
+    ProcessTracker newProcessTracker = processTrackerService.createProcessTracker(
+        UUID.randomUUID(),
+        ProcessType.INDIVIDUAL_TASK_CANCEL, planIdentifier);
+
+    log.debug("running process tracker");
+    processLocationListForTasks(action, plan,owner ,
+        newProcessTracker, uuids, false, false, true);
+  }
 
   public void processLocationListForTasks(Action action, Plan plan, String ownerId,
       ProcessTracker processTracker, List<UUID> uuids, boolean generate, boolean reactivate,
@@ -530,7 +552,7 @@ public class TaskService {
       List<UUID> existingTaskUuids) {
 
     List<UUID> uuidsToCancel = new ArrayList<>(existingTaskUuids);
-    uuidsToCancel.removeAll(uuids);
+    uuidsToCancel.retainAll(uuids);
 
     List<TaskGen> tasksToCancel = existingTaskObjs.stream().filter(
             existingTask -> uuidsToCancel.contains(

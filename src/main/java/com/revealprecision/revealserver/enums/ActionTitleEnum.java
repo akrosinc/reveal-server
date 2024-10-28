@@ -24,6 +24,8 @@ public enum ActionTitleEnum {
   RCD_MEMBER("RCD Member",LookupEntityTypeCodeEnum.PERSON_CODE),
   INDEX_CASE("Index Case", LookupEntityTypeCodeEnum.LOCATION_CODE),
   INDEX_CASE_MEMBER("Index Case Member", LookupEntityTypeCodeEnum.PERSON_CODE),
+  SECONDARY_INDEX_CASE_MEMBER("Secondary Index Case Member", LookupEntityTypeCodeEnum.PERSON_CODE),
+  SECONDARY_INDEX_CASE("Secondary Index Case", LookupEntityTypeCodeEnum.LOCATION_CODE),
   SCREENING("Screening", LookupEntityTypeCodeEnum.LOCATION_CODE),
   MDA_ONCHOCERCIASIS_SURVEY("MDA Onchocerciasis Survey", LookupEntityTypeCodeEnum.LOCATION_CODE);
 

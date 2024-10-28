@@ -7,6 +7,7 @@ import com.revealprecision.revealserver.integration.mail.EmailService;
 import com.revealprecision.revealserver.messaging.message.EventTrackerMessage;
 import com.revealprecision.revealserver.persistence.domain.Action;
 import com.revealprecision.revealserver.persistence.domain.Goal;
+import com.revealprecision.revealserver.persistence.domain.Task;
 import com.revealprecision.revealserver.persistence.projection.HdssIndividualProjection;
 import com.revealprecision.revealserver.persistence.repository.ActionRepository;
 import com.revealprecision.revealserver.persistence.repository.GoalRepository;
@@ -14,9 +15,11 @@ import com.revealprecision.revealserver.persistence.repository.HdssCompoundsRepo
 import com.revealprecision.revealserver.props.HdssProperties;
 import com.revealprecision.revealserver.service.TaskService;
 import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -65,20 +68,12 @@ public class HdssProcessingListener extends Listener {
     log.info("Received Message in group foo: {}", eventTrackerMessage.toString());
     Map<String, List<Object>> observations = eventTrackerMessage.getObservations();
 
-//    String individualHouseholdCompound = getValue(observations,
-//        INDIVIDUAL_HOUSEHOLD_COMPOUND_SEARCH);
-//    log.info("individualHouseholdCompound: {}", individualHouseholdCompound);
+    String individualHouseholdCompound = getValue(observations,
+        INDIVIDUAL_HOUSEHOLD_COMPOUND_SEARCH);
 
-    String individualHouseholdCompound = getValue(observations, INDIVIDUAL_HOUSEHOLD_COMPOUND_SEARCH);
-
-//    List<IndividualHouseholdCompound> individualHouseholdCompounds;
-//    ObjectReader reader = objectMapper.readerFor(
-//        new TypeReference<List<IndividualHouseholdCompound>>() {
-//        });
     try {
-//      individualHouseholdCompounds = reader.readValue(individualHouseholdCompound);
       log.info("individualHouseholdCompounds: {}", individualHouseholdCompound);
-      if (individualHouseholdCompound != null ) {
+      if (individualHouseholdCompound != null) {
         String compound = getValue(observations, COMPOUND);
         String household = getValue(observations, HOUSEHOLD);
         String rdt = getValue(observations, RDT);
@@ -87,37 +82,96 @@ public class HdssProcessingListener extends Listener {
 
           UUID indexStructure = hdssCompoundsRepository.getStructureByIndividualId(
               individualHouseholdCompound);
-          log.info("indexStructure: {}", indexStructure);
+          log.debug("indexStructure: {}", indexStructure);
+
           String indexHousehold = hdssCompoundsRepository.getHouseHoldByIndividualId(
               individualHouseholdCompound);
-          log.info("indexHousehold: {}", indexHousehold);
+          log.debug("indexHousehold: {}", indexHousehold);
+
           List<String> compoundId = hdssCompoundsRepository.getDistinctCompoundsByHouseholdId(
               indexHousehold);
-          log.info("compoundId: {}", compoundId);
+          log.debug("compoundId: {}", compoundId);
+
           List<UUID> allStructuresInCompound = hdssCompoundsRepository.getDistinctStructuresByCompoundId(
               compoundId);
-          log.info("allStructuresInCompound: {}", allStructuresInCompound);
+          log.debug("allStructuresInCompound: {}", allStructuresInCompound);
+
           HdssIndividualProjection indexIndividual = hdssCompoundsRepository.getIndividualByIndividualId(
               individualHouseholdCompound);
-          log.info("indexIndividual: {}", indexIndividual.getIndividualId());
+          log.debug("indexIndividual: {}", indexIndividual.getIndividualId());
+
           List<HdssIndividualProjection> allIndividualsInCompound = hdssCompoundsRepository.getAllIndividualsInCompoundId(
               compoundId);
-          log.info("allIndividualsInCompound: {}", allIndividualsInCompound.stream().map(
+          allIndividualsInCompound.remove(indexIndividual);
+          List<HdssIndividualProjection> allIndividualsExcludingIndex = allIndividualsInCompound.stream()
+              .filter(compoundIndividual ->
+                  {
+                    if (!compoundIndividual.getIndividualId()
+                        .equals(indexIndividual.getIndividualId())) {
+                      return true;
+                    }
+                    return false;
+                  }
+              ).collect(Collectors.toList());
+
+          log.debug("allIndividualsInCompound: {}", allIndividualsInCompound.stream().map(
               HdssIndividualProjection::getIndividualId).collect(
               Collectors.joining("|")));
+
           List<String> allHouseholdsInCompound = hdssCompoundsRepository.getDistinctHouseholdsByCompoundId(
               compoundId);
-          log.info("allHouseholdsInCompound: {}", allHouseholdsInCompound);
+          log.debug("allHouseholdsInCompound: {}", allHouseholdsInCompound);
+
           allStructuresInCompound.remove(indexStructure);
 
-          UUID planIdentifier1 = eventTrackerMessage.getPlanIdentifier();
+          List<Task> allTasksAccrossPlansByBaseEntityIdentifiers = taskService.getTasksAcrossPlansByBaseEntityIdentifiers(
+              allIndividualsInCompound.stream().map(HdssIndividualProjection::getId).map(
+                      id -> {
+                        try {
+                          return UUID.fromString(id);
+                        } catch (IllegalArgumentException e) {
+                          return null;
+                        }
+                      }
+                  ).filter(Objects::nonNull)
+                  .collect(
+                      Collectors.toList()));
 
+          List<Task> tasksAccrossPlansByBaseEntityIdentifiers = allTasksAccrossPlansByBaseEntityIdentifiers.stream()
+              .filter(task -> task.getLookupTaskStatus().getCode().equals(
+                  "READY")).collect(Collectors.toList());
+
+          boolean existingIndexCase = tasksAccrossPlansByBaseEntityIdentifiers.stream()
+              .anyMatch(task -> {
+                LocalDateTime now = LocalDateTime.now();
+                LocalDateTime threeDaysAgo = now.minusDays(3);
+                if (task.getCreatedDatetime() != null && task.getCreatedDatetime()
+                    .isAfter(threeDaysAgo)) {
+                  if (task.getAction().getTitle()
+                      .equals(ActionTitleEnum.INDEX_CASE_MEMBER.getActionTitle())) {
+                    return true;
+                  }
+                }
+                return false;
+              });
+          boolean existingRCD = tasksAccrossPlansByBaseEntityIdentifiers.stream().anyMatch(task -> {
+            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime threeDaysAgo = now.minusDays(3);
+            if (task.getCreatedDatetime() != null && task.getCreatedDatetime()
+                .isAfter(threeDaysAgo)) {
+              if (task.getAction().getTitle()
+                  .equals(ActionTitleEnum.RCD_MEMBER.getActionTitle())) {
+                return true;
+              }
+            }
+            return false;
+          });
+
+          UUID planIdentifier1 = eventTrackerMessage.getPlanIdentifier();
           if (planIdentifier1 != null && hdssProperties.getTarget() != null) {
 
             UUID targetPlan = hdssProperties.getTarget().get(planIdentifier1);
-
-            log.info("Target plan {}", targetPlan);
-
+            log.debug("Target plan {}", targetPlan);
             if (targetPlan != null) {
 
               sendEmails(individualHouseholdCompound, indexStructure, indexHousehold, compoundId,
@@ -134,36 +188,66 @@ public class HdssProcessingListener extends Listener {
                   .collect(
                       Collectors.toList());
 
-              log.info("submitting index case  {}", indexStructure);
-              submitTasks(owner, List.of(indexStructure), targetPlan, actions,
-                  ActionTitleEnum.INDEX_CASE);
+              if (existingIndexCase) {
+                log.debug("submitting index case members {}", indexIndividual.getId());
+                List.of(UUID.fromString(indexIndividual.getId())).forEach(
+                    indexIndividualId -> submitTasks(owner,
+                        List.of(indexIndividualId), targetPlan, actions,
+                        ActionTitleEnum.SECONDARY_INDEX_CASE_MEMBER));
 
-              log.info("submitting rcd member {}", allIndividualsInCompound);
-              allIndividualsInCompound.stream()
-                  .map(individualObj -> UUID.fromString(individualObj.getId()))
-                      .forEach(individualId -> submitTasks(owner, List.of(individualId), targetPlan, actions, ActionTitleEnum.RCD_MEMBER));
+                if (existingRCD) {
+                  List.of(UUID.fromString(indexIndividual.getId())).forEach(
+                      indexIndividualId -> cancelTasks(owner,
+                          List.of(indexIndividualId), targetPlan, actions,
+                          ActionTitleEnum.RCD_MEMBER));
 
-              log.info("submitting rcd  {}", allStructuresInCompound);
-              allStructuresInCompound.forEach(
-                  structure -> submitTasks(owner, List.of(structure), targetPlan, actions,
-                      ActionTitleEnum.RCD));
+                  List<Task> active = taskService.getTasksAcrossPlansByBaseEntityIdentifiers(
+                      List.of(indexStructure));
+                  if (active.size() > 0) {
+                    Task task = active.get(0);
 
-              log.info("submitting index case members {}", indexIndividual.getId());
-              List.of(UUID.fromString(indexIndividual.getId())).forEach(
-                  indexIndividualId -> submitTasks(owner,
-                      List.of(indexIndividualId), targetPlan, actions,
-                      ActionTitleEnum.INDEX_CASE_MEMBER));
+                    if (task.getAction().getTitle().equals(ActionTitleEnum.RCD.getActionTitle()) &&
+                        task.getLookupTaskStatus().getCode().equals("READY")) {
+                      cancelTasks(owner,
+                          List.of(task.getBaseEntityIdentifier()), targetPlan, actions,
+                          ActionTitleEnum.RCD);
+                      submitTasks(owner,
+                          List.of(task.getBaseEntityIdentifier()), targetPlan, actions,
+                          ActionTitleEnum.SECONDARY_INDEX_CASE);
+                    }
+                  }
+                }
+              } else {
+                log.debug("submitting index case members {}", indexIndividual.getId());
+                List.of(UUID.fromString(indexIndividual.getId())).forEach(
+                    indexIndividualId -> submitTasks(owner,
+                        List.of(indexIndividualId), targetPlan, actions,
+                        ActionTitleEnum.INDEX_CASE_MEMBER));
 
+                log.debug("submitting index case  {}", indexStructure);
+                submitTasks(owner, List.of(indexStructure), targetPlan, actions,
+                    ActionTitleEnum.INDEX_CASE);
+
+                log.debug("submitting rcd member {}", allIndividualsExcludingIndex);
+                allIndividualsExcludingIndex.stream()
+                    .map(individualObj -> UUID.fromString(individualObj.getId()))
+                    .forEach(
+                        individualId -> submitTasks(owner, List.of(individualId), targetPlan,
+                            actions,
+                            ActionTitleEnum.RCD_MEMBER));
+
+                log.debug("submitting rcd  {}", allStructuresInCompound);
+                allStructuresInCompound.forEach(
+                    structure -> submitTasks(owner, List.of(structure), targetPlan, actions,
+                        ActionTitleEnum.RCD));
+              }
             }
           }
         }
       }
-
     } catch (Exception e) {
       log.error("Err {}", e.getMessage(), e);
     }
-
-
   }
 
   private void sendEmails(String individual, UUID indexStructure, String indexHousehold,
@@ -215,6 +299,24 @@ public class HdssProcessingListener extends Listener {
       ListObj uuidsObj = new ListObj();
       uuidsObj.setUuids(entityIds);
       taskService.generateIndividualTaskWithOwnerDirect(
+          planIdentifier,
+          optionalAction.get().getIdentifier(),
+          uuidsObj, owner);
+    }
+  }
+
+  @Async
+  protected void cancelTasks(String owner, List<UUID> entityIds, UUID planIdentifier,
+      List<Action> actions, ActionTitleEnum actionEnum) {
+
+    Optional<Action> optionalAction = actions.stream()
+        .filter(action -> action.getTitle().equals(actionEnum.getActionTitle()))
+        .findAny();
+
+    if (optionalAction.isPresent()) {
+      ListObj uuidsObj = new ListObj();
+      uuidsObj.setUuids(entityIds);
+      taskService.cancelIndividualTaskWithOwnerDirect(
           planIdentifier,
           optionalAction.get().getIdentifier(),
           uuidsObj, owner);
