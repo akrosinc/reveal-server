@@ -34,7 +34,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-@Profile("KafkaMessaging & (Listening | hdss-processing)")
+@Profile("KafkaMessaging & (Listening | hdss-processing) & Email")
 public class HdssProcessingListener extends Listener {
 
   public static final String POSITIVE = "Positive";
