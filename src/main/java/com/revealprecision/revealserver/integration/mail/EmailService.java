@@ -2,14 +2,14 @@ package com.revealprecision.revealserver.integration.mail;
 
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Profile;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-@Qualifier("Email")
+@Profile("Email")
 public class EmailService {
 
   private final JavaMailSender mailSender;
