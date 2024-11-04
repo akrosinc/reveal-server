@@ -131,13 +131,15 @@ public class TaskService {
         locationIdentifiers, serverVersion);
   }
 
-  public List<Task> getStructureForPeopleTaskFacadesByLocationServerVersionAndPlan(UUID planIdentifier,
+  public List<Task> getStructureForPeopleTaskFacadesByLocationServerVersionAndPlan(
+      UUID planIdentifier,
       List<UUID> locationIdentifiers, Long serverVersion) {
-    return taskRepository.getStructureForPeopleTaskFacadesByLocationServerVersionAndPlan(planIdentifier,
+    return taskRepository.getStructureForPeopleTaskFacadesByLocationServerVersionAndPlan(
+        planIdentifier,
         locationIdentifiers, serverVersion);
   }
 
-  public List<Task> getTasksAcrossPlansByBaseEntityIdentifiers(List<UUID> uuids){
+  public List<Task> getTasksAcrossPlansByBaseEntityIdentifiers(List<UUID> uuids) {
     return taskRepository.findAllByBaseEntityIdentifierIn(uuids);
   }
 
@@ -227,6 +229,11 @@ public class TaskService {
         ProcessTracker processTracker = processTrackerList.get(0);
         goals.stream().map(goal -> actionService.getActionsByGoalIdentifier(goal.getIdentifier()))
             .flatMap(Collection::stream)
+            .filter(action -> !Stream.of(ActionTitleEnum.RCD, ActionTitleEnum.INDEX_CASE,
+                ActionTitleEnum.SECONDARY_INDEX_CASE, ActionTitleEnum.INDEX_CASE_MEMBER,
+                ActionTitleEnum.SECONDARY_INDEX_CASE_MEMBER,ActionTitleEnum.RCD_MEMBER).map(
+                ActionTitleEnum::getActionTitle).collect(
+                Collectors.toList()).contains(action.getTitle()))
             .forEach((action) -> processPlanUpdatePerActionForTasks(action, plan, ownerId,
                 processTracker));
 
@@ -350,7 +357,7 @@ public class TaskService {
     return Map.of(TaskGenerateRequestValidationStateEnum.ALREADY_EXISTING, requestedButExisting,
         TaskGenerateRequestValidationStateEnum.CAN_GENERATE, canGenerate,
         TaskGenerateRequestValidationStateEnum.NOT_IN_PLAN, shouldNotGenerateList,
-    TaskGenerateRequestValidationStateEnum.SHOULD_GENERATE_BUT_NOT_REQUESTED,
+        TaskGenerateRequestValidationStateEnum.SHOULD_GENERATE_BUT_NOT_REQUESTED,
         alreadyExistingTasksShouldBeCreated);
 
   }
@@ -358,7 +365,8 @@ public class TaskService {
   public Pair<String, Map<TaskGenerateRequestValidationStateEnum, List<UUID>>> generateIndividualTask(
       UUID planIdentifier,
       UUID actionIdentifier, ListObj uuidsObj) {
-      return generateIndividualTaskWithOwner(planIdentifier,actionIdentifier,uuidsObj, UserUtils.getCurrentPrincipleName());
+    return generateIndividualTaskWithOwner(planIdentifier, actionIdentifier, uuidsObj,
+        UserUtils.getCurrentPrincipleName());
   }
 
   public Pair<String, Map<TaskGenerateRequestValidationStateEnum, List<UUID>>> generateIndividualTaskWithOwner(
@@ -404,8 +412,10 @@ public class TaskService {
               ProcessType.INDIVIDUAL_TASK_GENERATE, planIdentifier);
 
           log.debug("running process tracker");
-          processLocationListForTasks(action, plan,owner ,
-              newProcessTracker, validatedMap.get(TaskGenerateRequestValidationStateEnum.CAN_GENERATE), true, false, false);
+          processLocationListForTasks(action, plan, owner,
+              newProcessTracker,
+              validatedMap.get(TaskGenerateRequestValidationStateEnum.CAN_GENERATE), true, false,
+              false);
 
           return Pair.of("No action taken as validation indicates entities should not be generated",
               validatedMap);
@@ -425,15 +435,15 @@ public class TaskService {
 
     List<UUID> uuids = uuidsObj.getUuids();
 
-
     ProcessTracker newProcessTracker = processTrackerService.createProcessTracker(
         UUID.randomUUID(),
         ProcessType.INDIVIDUAL_TASK_GENERATE, planIdentifier);
 
     log.debug("running process tracker");
-    processLocationListForTasks(action, plan,owner ,
+    processLocationListForTasks(action, plan, owner,
         newProcessTracker, uuids, true, false, false);
   }
+
   public void cancelIndividualTaskWithOwnerDirect(
       UUID planIdentifier,
       UUID actionIdentifier, ListObj uuidsObj, String owner) {
@@ -443,13 +453,12 @@ public class TaskService {
 
     List<UUID> uuids = uuidsObj.getUuids();
 
-
     ProcessTracker newProcessTracker = processTrackerService.createProcessTracker(
         UUID.randomUUID(),
         ProcessType.INDIVIDUAL_TASK_CANCEL, planIdentifier);
 
     log.debug("running process tracker");
-    processLocationListForTasks(action, plan,owner ,
+    processLocationListForTasks(action, plan, owner,
         newProcessTracker, uuids, false, false, true);
   }
 
@@ -578,7 +587,7 @@ public class TaskService {
                   taskProcessEvent);
               break;
             case GENERATE:
-              log.debug("submitting tasks {}",taskProcessEvent);
+              log.debug("submitting tasks {}", taskProcessEvent);
               publisherService.send(
                   kafkaProperties.getTopicMap().get(KafkaConstants.TASK_CANDIDATE_GENERATE),
                   taskProcessEvent);
@@ -670,23 +679,22 @@ public class TaskService {
 
       String owner = null;
       if (taskProcessEvent.getOwner() != null) {
-        if (taskProcessEvent.getOwner().equals("kafka")){
+        if (taskProcessEvent.getOwner().equals("kafka")) {
           owner = taskProcessEvent.getOwner();
-        }
-        else {
+        } else {
           User user = null;
           String userId = taskProcessEvent.getOwner();
           try {
             UUID userUUID = UUID.fromString(userId);
             user = userService.getByKeycloakId(userUUID);
-          } catch (IllegalArgumentException e){
+          } catch (IllegalArgumentException e) {
             try {
               user = userService.getByUserName(userId);
-            }catch (NotFoundException notFoundException){
+            } catch (NotFoundException notFoundException) {
               user = null;
             }
           }
-          if (user == null){
+          if (user == null) {
             owner = userId;
           } else {
             owner = user.getUsername();

@@ -18,6 +18,7 @@ import com.revealprecision.revealserver.service.PlanLocationsService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -132,10 +133,12 @@ public class TaskListener extends Listener {
               nodeOrder.indexOf(LocationConstants.STRUCTURE) - 1)
           .mapToObj(nodeOrder::get)
           .map(
-              node1 -> trackers.stream()
-                  .filter(tracker -> tracker.getParentGeographicLevelName().equals(node1))
-                  .findFirst()
-                  .get())
+              node1 -> {
+                Optional<TaskBusinessStateTracker> first = trackers.stream()
+                    .filter(tracker -> tracker.getParentGeographicLevelName().equals(node1))
+                    .findFirst();
+                return first.orElse(null);
+              }).filter(Objects::nonNull)
           .map(taskBusinessStateTracker ->
               Location.builder()
                   .identifier(taskBusinessStateTracker.getParentLocationIdentifier())

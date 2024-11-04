@@ -108,8 +108,14 @@ public class HdssFacadeController {
     }
   }
 
-  @PostMapping(value = "/search", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  @PostMapping(value = "/count", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  public int gethdssDBcount(@RequestBody HdssSyncRequest hdssSyncRequest){
+    long serverVersion = hdssSyncRequest.getServerVersion();
 
+    return compoundsRepository.getCountOfCompoundsForUserAssignmentAndServerVersionAndBatchSize(hdssSyncRequest.getUserId(),serverVersion);
+  }
+
+  @PostMapping(value = "/search", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<List<HdssCompoundHouseholdIndividualObj>> search(
       @RequestBody HdssSearchRequest hdssSearchRequest) throws ParseException {
     List<HdssCompoundHouseholdIndividualProjection> individualProjections = null;
