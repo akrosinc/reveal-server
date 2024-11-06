@@ -229,7 +229,7 @@ public interface HdssCompoundsRepository extends EntityGraphJpaRepository<HdssCo
       + "             left join users u on u.identifier = uo.user_identifier\n"
       + "    WHERE gl.name = lh.node_order[array_position(lh.node_order, pgl.name) - 1]\n"
       + "      and u.username = :username\n "
-      + "    ) and  hc.server_version>=:serverVersion order by hc.server_version LIMIT :batchSize",nativeQuery = true)
+      + "    ) and  hc.server_version>:serverVersion order by hc.server_version LIMIT :batchSize",nativeQuery = true)
   List<HdssCompoundHouseholdIndividualProjection> getAllCompoundsForUserAssignmentAndServerVersionAndBatchSize(String username, long serverVersion, int batchSize);
 
 
