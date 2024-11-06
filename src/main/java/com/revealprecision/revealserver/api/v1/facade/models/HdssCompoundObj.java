@@ -25,6 +25,8 @@ public class HdssCompoundObj implements Serializable {
 
   long serverVersion;
 
+  int totalRecords;
+
   @Data
   @Builder
   public static class HdssCompound implements Serializable {
