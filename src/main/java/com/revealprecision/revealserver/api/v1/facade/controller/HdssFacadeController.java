@@ -86,7 +86,7 @@ public class HdssFacadeController {
           .serverVersion(maxServerVersion.isPresent() ? maxServerVersion.get() : 0)
           .totalRecords(count).isEmpty(false).build());
     } else {
-      return ResponseEntity.ok(HdssCompoundObj.builder().isEmpty(true).build());
+      return ResponseEntity.ok(HdssCompoundObj.builder().totalRecords(count).isEmpty(true).build());
     }
   }
 
