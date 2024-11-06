@@ -84,7 +84,7 @@ public class HdssFacadeController {
                   .serverVersion(individual.getServerVersion()).dob(individual.getDob().toString())
                   .gender(individual.getGender()).build()).collect(Collectors.toSet()))
           .serverVersion(maxServerVersion.isPresent() ? maxServerVersion.get() : 0)
-          .totalRecords(count).build());
+          .totalRecords(count).isEmpty(false).build());
     } else {
       return ResponseEntity.ok(HdssCompoundObj.builder().isEmpty(true).build());
     }

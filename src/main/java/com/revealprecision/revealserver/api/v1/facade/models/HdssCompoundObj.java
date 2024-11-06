@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.api.v1.facade.models;
 
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import java.io.Serializable;
 import java.util.Objects;
 import java.util.Set;
@@ -9,6 +10,7 @@ import lombok.Data;
 
 @Data
 @Builder
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class HdssCompoundObj implements Serializable {
 
   Set<HdssCompound> allCompounds;
