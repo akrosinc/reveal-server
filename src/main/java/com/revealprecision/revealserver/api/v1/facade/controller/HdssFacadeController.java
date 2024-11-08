@@ -190,6 +190,7 @@ public class HdssFacadeController {
               .individualId(individualProjection.getIndividualId())
               .gender(individualProjection.getGender())
               .dob(individualProjection.getDob().toString()).id(individualProjection.getId())
+              .name(individualProjection.getName())
               .build()).collect(Collectors.toList()));
     } else {
       return ResponseEntity.notFound().build();

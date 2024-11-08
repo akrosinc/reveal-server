@@ -15,5 +15,6 @@ public class HdssCompoundHouseholdIndividualObj implements Serializable {
         private String householdId;
         private String dob;
         private String gender;
+        private String name;
         private int serverVersion;
 }
