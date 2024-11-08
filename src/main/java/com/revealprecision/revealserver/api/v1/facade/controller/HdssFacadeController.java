@@ -80,7 +80,7 @@ public class HdssFacadeController {
                   .structureId(individual.getStructureId()).householdId(individual.getHouseholdId())
                   .build()).collect(Collectors.toSet())).allIndividuals(individuals.stream().map(
               individual -> HdssIndividual.builder().identifier(individual.getId())
-                  .individualId(individual.getIndividualId())
+                  .individualId(individual.getIndividualId()).name(individual.getName())
                   .serverVersion(individual.getServerVersion()).dob(individual.getDob().toString())
                   .gender(individual.getGender()).build()).collect(Collectors.toSet()))
           .serverVersion(maxServerVersion.isPresent() ? maxServerVersion.get() : 0)
@@ -136,6 +136,12 @@ public class HdssFacadeController {
       searchDeterminer = searchDeterminer.concat("S");
     }
 
+    if (hdssSearchRequest.getSearchString() != null) {
+      searchDeterminer = searchDeterminer.concat("S");
+    }
+    if (hdssSearchRequest.getName() != null){
+      searchDeterminer = searchDeterminer.concat("N");
+    }
     switch (searchDeterminer) {
 
       case "G":
@@ -150,6 +156,11 @@ public class HdssFacadeController {
         individualProjections = compoundsRepository.searchWithStringGenderAndDob(
             hdssSearchRequest.getSearchString(), hdssSearchRequest.getGender(), searchDate);
         break;
+      case "GDSN":
+        log.debug("search date: {}", searchDate);
+        individualProjections = compoundsRepository.searchWithStringGenderAndDobAndName(
+            hdssSearchRequest.getSearchString(), hdssSearchRequest.getGender(), searchDate,hdssSearchRequest.getName());
+        break;
       case "D":
         individualProjections = compoundsRepository.searchWithDob(searchDate);
         break;
@@ -159,6 +170,10 @@ public class HdssFacadeController {
         break;
       case "S":
         individualProjections = compoundsRepository.searchWithString(
+            hdssSearchRequest.getSearchString());
+        break;
+      case "N":
+        individualProjections = compoundsRepository.searchWithName(
             hdssSearchRequest.getSearchString());
         break;
       case "GS":

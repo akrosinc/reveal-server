@@ -36,6 +36,8 @@ public class HdssCompounds {
 
   private UUID structureId;
 
+  private String name;
+
   @Type(type = "jsonb")
   @Column(columnDefinition = "jsonb")
   private Fields fields;

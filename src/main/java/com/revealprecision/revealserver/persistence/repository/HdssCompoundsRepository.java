@@ -85,21 +85,27 @@ public interface HdssCompoundsRepository extends EntityGraphJpaRepository<HdssCo
 
 
   @Query(value = "SELECT cast(hc.id as varchar) as id, hc.compound_id as compoundId,hc.household_id as householdId,hc.individual_id as individualId,\n"
-      + " hc.fields->>'gender' as gender, CAST(hc.fields->>'dob' as date)  as dob\n"
+      + " hc.fields->>'gender' as gender, CAST(hc.fields->>'dob' as date)  as dob,hc.name as name\n"
       + " from hdss.hdss_compounds hc\n"
       + " WHERE (hc.household_id like upper(concat('%',:searchString,'%'))\n"
       + "           or hc.compound_id like upper(concat('%',:searchString,'%')) or hc.individual_id like upper(concat('%',:searchString,'%')))\n", nativeQuery = true)
   List<HdssCompoundHouseholdIndividualProjection> searchWithString(String searchString);
 
   @Query(value = "SELECT cast(hc.id as varchar) as id, hc.compound_id as compoundId,hc.household_id as householdId,hc.individual_id as individualId,\n"
-      + " hc.fields->>'gender' as gender, CAST(hc.fields->>'dob' as date)  as dob\n"
+      + " hc.fields->>'gender' as gender, CAST(hc.fields->>'dob' as date)  as dob,hc.name as name\n"
+      + " from hdss.hdss_compounds hc\n"
+      + " WHERE (hc.name like upper(concat('%',:searchString,'%')))\n", nativeQuery = true)
+  List<HdssCompoundHouseholdIndividualProjection> searchWithName(String searchString);
+
+  @Query(value = "SELECT cast(hc.id as varchar) as id, hc.compound_id as compoundId,hc.household_id as householdId,hc.individual_id as individualId,\n"
+      + " hc.fields->>'gender' as gender, CAST(hc.fields->>'dob' as date)  as dob,hc.name as name\n"
       + " from hdss.hdss_compounds hc\n"
       + " WHERE hc.server_version >= :serverVersion"
       + " LIMIT :batchSize", nativeQuery = true)
   List<HdssCompoundHouseholdIndividualProjection> getAllBySizeAndServerVersion(int batchSize, long serverVersion);
 
   @Query(value = "SELECT cast(hc.id as varchar) as id, hc.compound_id as compoundId,hc.household_id as householdId,hc.individual_id as individualId,\n"
-      + "hc.fields->>'gender' as gender, CAST(hc.fields->>'dob' as date)  as dob \n"
+      + "hc.fields->>'gender' as gender, CAST(hc.fields->>'dob' as date)  as dob,hc.name as name \n"
       + "from hdss.hdss_compounds hc\n"
       + "WHERE (hc.household_id like upper(concat('%',:searchString,'%'))\n"
       + "           or hc.compound_id like upper(concat('%',:searchString,'%')) or hc.individual_id like upper(concat('%',:searchString,'%')))\n"
@@ -108,7 +114,7 @@ public interface HdssCompoundsRepository extends EntityGraphJpaRepository<HdssCo
 
 
   @Query(value = "SELECT cast(hc.id as varchar) as id, hc.compound_id as compoundId,hc.household_id as householdId,hc.individual_id as individualId,\n"
-      + "hc.fields->>'gender' as gender, CAST(hc.fields->>'dob' as date)  as dob \n"
+      + "hc.fields->>'gender' as gender, CAST(hc.fields->>'dob' as date)  as dob,hc.name as name \n"
       + "from hdss.hdss_compounds hc\n"
       + "WHERE (hc.household_id like upper(concat('%',:searchString,'%'))\n"
       + "           or hc.compound_id like upper(concat('%',:searchString,'%')) or hc.individual_id like upper(concat('%',:searchString,'%')))\n"
@@ -116,7 +122,15 @@ public interface HdssCompoundsRepository extends EntityGraphJpaRepository<HdssCo
   List<HdssCompoundHouseholdIndividualProjection> searchWithStringGenderAndDob(String searchString, String gender, String dob);
 
   @Query(value = "SELECT cast(hc.id as varchar) as id, hc.compound_id as compoundId,hc.household_id as householdId,hc.individual_id as individualId,\n"
-      + "hc.fields->>'gender' as gender, CAST(hc.fields->>'dob' as date)  as dob \n"
+      + "hc.fields->>'gender' as gender, CAST(hc.fields->>'dob' as date)  as dob,hc.name as name \n"
+      + "from hdss.hdss_compounds hc\n"
+      + "WHERE (hc.household_id like upper(concat('%',:searchString,'%'))\n"
+      + "           or hc.compound_id like upper(concat('%',:searchString,'%')) or hc.individual_id like upper(concat('%',:searchString,'%')))\n"
+      + "and upper(hc.fields->>'gender') =upper(:gender) and hc.fields->>'dob' = :dob  and hc.individual_id like upper(concat('%',:searchString,'%')) and hc.name like upper(concat('%',:name,'%'))", nativeQuery = true)
+  List<HdssCompoundHouseholdIndividualProjection> searchWithStringGenderAndDobAndName(String searchString, String gender, String dob, String name);
+
+  @Query(value = "SELECT cast(hc.id as varchar) as id, hc.compound_id as compoundId,hc.household_id as householdId,hc.individual_id as individualId,\n"
+      + "hc.fields->>'gender' as gender, CAST(hc.fields->>'dob' as date)  as dob ,hc.name as name\n"
       + "from hdss.hdss_compounds hc\n"
       + "WHERE (hc.household_id like upper(concat('%',:searchString,'%'))\n"
       + "           or hc.compound_id like upper(concat('%',:searchString,'%')) or hc.individual_id like upper(concat('%',:searchString,'%')))\n"
@@ -124,19 +138,19 @@ public interface HdssCompoundsRepository extends EntityGraphJpaRepository<HdssCo
   List<HdssCompoundHouseholdIndividualProjection> searchWithStringAndDob(String searchString, String dob);
 
   @Query(value = "SELECT cast(hc.id as varchar) as id, hc.compound_id as compoundId,hc.household_id as householdId,hc.individual_id as individualId,\n"
-      + "hc.fields->>'gender' as gender, CAST(hc.fields->>'dob' as date)  as dob \n"
+      + "hc.fields->>'gender' as gender, CAST(hc.fields->>'dob' as date)  as dob ,hc.name as name\n"
       + "from hdss.hdss_compounds hc\n"
       + "WHERE upper(hc.fields->>'gender') =upper(:gender) and hc.fields->>'dob' = :dob ", nativeQuery = true)
   List<HdssCompoundHouseholdIndividualProjection> searchWithGenderAndDob(String gender, String dob);
 
   @Query(value = "SELECT cast(hc.id as varchar) as id, hc.compound_id as compoundId,hc.household_id as householdId,hc.individual_id as individualId,\n"
-      + "hc.fields->>'gender' as gender, CAST(hc.fields->>'dob' as date)  as dob \n"
+      + "hc.fields->>'gender' as gender, CAST(hc.fields->>'dob' as date)  as dob,hc.name as name \n"
       + "from hdss.hdss_compounds hc\n"
       + "WHERE hc.fields->>'dob' = :dob ", nativeQuery = true)
   List<HdssCompoundHouseholdIndividualProjection> searchWithDob(String dob);
 
   @Query(value = "SELECT cast(hc.id as varchar) as id, hc.compound_id as compoundId,hc.household_id as householdId,hc.individual_id as individualId,\n"
-      + "hc.fields->>'gender' as gender, CAST(hc.fields->>'dob' as date)  as dob \n"
+      + "hc.fields->>'gender' as gender, CAST(hc.fields->>'dob' as date)  as dob,hc.name as name \n"
       + "from hdss.hdss_compounds hc\n"
       + "WHERE upper(hc.fields->>'gender') =upper(:gender)", nativeQuery = true)
   List<HdssCompoundHouseholdIndividualProjection> searchWithGender(String gender);
@@ -203,7 +217,7 @@ public interface HdssCompoundsRepository extends EntityGraphJpaRepository<HdssCo
   @Query(value = "SELECT DISTINCT "
       + " cast(hc.id as varchar) as id, hc.compound_id as compoundId,hc.household_id as householdId,hc.individual_id as individualId, "
       + " hc.fields->>'gender' as gender, CAST(hc.fields->>'dob' as date)  as dob, hc.server_version as serverVersion"
-      + ", cast(hc.structure_id as varchar) as structureId FROM\n"
+      + ", cast(hc.structure_id as varchar) as structureId ,hc.name as name FROM\n"
       + "(SELECT lr.location_identifier as child_location, arr.ancestor\n"
       + "from location_relationship lr,\n"
       + "     unnest(lr.ancestry) with ordinality arr(ancestor, pos)\n"

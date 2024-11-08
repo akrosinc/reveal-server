@@ -144,6 +144,7 @@ public class HdssCompoundObj implements Serializable {
     private String individualId;
     private String dob;
     private String gender;
+    private String name;
 
     @Override
     public boolean equals(Object o) {
