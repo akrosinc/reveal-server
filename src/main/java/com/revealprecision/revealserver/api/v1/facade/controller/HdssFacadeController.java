@@ -174,7 +174,7 @@ public class HdssFacadeController {
         break;
       case "N":
         individualProjections = compoundsRepository.searchWithName(
-            hdssSearchRequest.getSearchString());
+            hdssSearchRequest.getName());
         break;
       case "GS":
         individualProjections = compoundsRepository.searchWithStringAndGender(
