@@ -711,14 +711,14 @@ public class TaskService {
       taskGenerationStage.setState(ProcessTrackerEnum.DONE);
       taskProcessStageRepository.save(taskGenerationStage);
 
-      updateProcessTracker(taskProcessEvent);
+//      updateProcessTracker(taskProcessEvent);
 
     }
 
     return task;
   }
 
-  private void updateProcessTracker(TaskProcessEvent taskProcessEvent) {
+  public void updateProcessTracker(TaskProcessEvent taskProcessEvent) {
 
     Optional<TaskProcessStage> byId = taskProcessStageRepository.findById(
         taskProcessEvent.getIdentifier());
@@ -737,6 +737,23 @@ public class TaskService {
           taskProcessEvent.getProcessTracker().getIdentifier(),
           ProcessTrackerEnum.DONE);
     }
+  }
+
+  public void updateProcessTrackers() {
+
+    List<TaskProcessStage> allByState = taskProcessStageRepository.findAllByState(
+        ProcessTrackerEnum.NEW);
+
+    allByState.forEach(taskProcessStage -> {
+      int countOfTaskProcessStages = taskProcessStageRepository.countByProcessTracker_IdentifierAndStateNot(
+          taskProcessStage.getProcessTracker().getIdentifier(), ProcessTrackerEnum.DONE);
+
+      if (countOfTaskProcessStages == 0) {
+        processTrackerService.updateProcessTracker(
+            taskProcessStage.getProcessTracker().getIdentifier(),
+            ProcessTrackerEnum.DONE);
+      }
+    });
   }
 
   private List<UUID> getUuidsForTaskGenerationForHabitatSurvey(Plan plan) {

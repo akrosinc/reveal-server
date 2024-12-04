@@ -3,6 +3,7 @@ package com.revealprecision.revealserver.persistence.repository;
 import com.cosium.spring.data.jpa.entity.graph.repository.EntityGraphJpaRepository;
 import com.revealprecision.revealserver.enums.ProcessTrackerEnum;
 import com.revealprecision.revealserver.persistence.domain.TaskProcessStage;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.Modifying;
@@ -20,4 +21,5 @@ public interface TaskProcessStageRepository extends EntityGraphJpaRepository<Tas
 
   int countByProcessTracker_IdentifierAndStateNot(UUID processTrackerIdentifier, ProcessTrackerEnum trackerEnum );
 
+  List<TaskProcessStage> findAllByState(ProcessTrackerEnum state);
 }
