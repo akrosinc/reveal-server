@@ -32,4 +32,12 @@ public class DataExtractController {
   }
 
 
+  @GetMapping("/code/{planIdentifier}")
+  public ResponseEntity<String> code(
+      @PathVariable("planIdentifier") UUID planIdentifier) throws IOException {
+
+    String code = dataExtractService.getCode(planIdentifier);
+    return ResponseEntity.ok(code);
+  }
+
 }

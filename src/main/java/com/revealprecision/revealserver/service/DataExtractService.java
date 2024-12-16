@@ -79,4 +79,16 @@ public class DataExtractService {
     }
     throw new NotFoundException("No Query found for plan " + planIdentifier);
   }
+
+  public String getCode(UUID planIdentifier){
+
+    List<DataExtractQuery> byPlanIdentifier = dataExtractQueryRepository.findByPlanIdentifier(
+        planIdentifier);
+
+    if (byPlanIdentifier == null || byPlanIdentifier.size() == 0) {
+      throw new NotFoundException("No Query found for plan " + planIdentifier);
+    }
+
+    return byPlanIdentifier.get(0).getQuery();
+  }
 }
