@@ -15,13 +15,11 @@ import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
 import com.revealprecision.revealserver.persistence.projection.LocationChildrenCountProjection;
 import com.revealprecision.revealserver.persistence.projection.LocationRelationshipProjection;
 import com.revealprecision.revealserver.persistence.repository.LocationHierarchyRepository;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+
+import java.util.*;
 import java.util.stream.Collectors;
+
+import com.revealprecision.revealserver.util.AppConstants;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -32,167 +30,167 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class LocationHierarchyService {
 
-  private final LocationHierarchyRepository locationHierarchyRepository;
-  private final LocationRelationshipService locationRelationshipService;
-  private final GeographicLevelService geographicLevelService;
+    private final LocationHierarchyRepository locationHierarchyRepository;
+    private final LocationRelationshipService locationRelationshipService;
+    private final GeographicLevelService geographicLevelService;
 
 
-  public LocationHierarchy createLocationHierarchy(
-      LocationHierarchyRequest locationHierarchyRequest) {
-    enforceOneHierarchyPerInstance();
-    geographicLevelService.validateGeographyLevels(locationHierarchyRequest.getNodeOrder());
-    validateLocationHierarchy(locationHierarchyRequest);
+    public LocationHierarchy createLocationHierarchy(
+            LocationHierarchyRequest locationHierarchyRequest) {
+        enforceOneHierarchyPerInstance();
+        geographicLevelService.validateGeographyLevels(locationHierarchyRequest.getNodeOrder());
+        validateLocationHierarchy(locationHierarchyRequest);
 
-    var locationHierarchyToSave = LocationHierarchy.builder()
-        .nodeOrder(locationHierarchyRequest.getNodeOrder()).name(locationHierarchyRequest.getName())
-        .build();
-    locationHierarchyToSave.setEntityStatus(EntityStatus.ACTIVE);
-    return locationHierarchyRepository.save(locationHierarchyToSave);
-  }
-
-  private void enforceOneHierarchyPerInstance() {
-    if (locationHierarchyRepository.activeHierarchyCount() > 0) {
-      throw new NotImplementedException(Error.ONE_HIERARCHY_SUPPORT);
+        var locationHierarchyToSave = LocationHierarchy.builder()
+                .nodeOrder(locationHierarchyRequest.getNodeOrder()).name(locationHierarchyRequest.getName())
+                .build();
+        locationHierarchyToSave.setEntityStatus(EntityStatus.ACTIVE);
+        return locationHierarchyRepository.save(locationHierarchyToSave);
     }
-  }
 
-  private void validateLocationHierarchy(LocationHierarchyRequest locationHierarchyRequest) {
-    List<LocationHierarchy> existingHierarchy = findByNodeOrder(
-        locationHierarchyRequest.getNodeOrder());
-    if (existingHierarchy != null && !existingHierarchy.isEmpty()) {
-      throw new ConflictException(
-          String.format(Error.NON_UNIQUE, LocationHierarchy.Fields.nodeOrder,
-              locationHierarchyRequest.getNodeOrder()));
+    private void enforceOneHierarchyPerInstance() {
+        if (locationHierarchyRepository.activeHierarchyCount() > 0) {
+            throw new NotImplementedException(Error.ONE_HIERARCHY_SUPPORT);
+        }
     }
-  }
 
-  public Page<LocationHierarchy> getLocationHierarchies(Pageable pageable) {
-    return locationHierarchyRepository.findAll(pageable);
-  }
+    private void validateLocationHierarchy(LocationHierarchyRequest locationHierarchyRequest) {
+        List<LocationHierarchy> existingHierarchy = findByNodeOrder(
+                locationHierarchyRequest.getNodeOrder());
+        if (existingHierarchy != null && !existingHierarchy.isEmpty()) {
+            throw new ConflictException(
+                    String.format(Error.NON_UNIQUE, LocationHierarchy.Fields.nodeOrder,
+                            locationHierarchyRequest.getNodeOrder()));
+        }
+    }
 
-  public Set<LocationHierarchy> getLocationHierarchiesIn(Set<UUID> locationHierarchyIdentifiers) {
-    return locationHierarchyRepository.findLocationHierarchiesByIdentifierIn(
-        locationHierarchyIdentifiers);
-  }
+    public Page<LocationHierarchy> getLocationHierarchies(Pageable pageable) {
+        return locationHierarchyRepository.findAll(pageable);
+    }
 
-  public List<LocationHierarchy> findByNodeOrder(List<String> nodeOrder) {
-    return locationHierarchyRepository
-        .findByNodeOrderArray(nodeOrder.stream().collect(joining(",", "{", "}")));
-  }
+    public Set<LocationHierarchy> getLocationHierarchiesIn(Set<UUID> locationHierarchyIdentifiers) {
+        return locationHierarchyRepository.findLocationHierarchiesByIdentifierIn(
+                locationHierarchyIdentifiers);
+    }
 
-  public List<LocationHierarchy> getAll() {
-    return locationHierarchyRepository
-        .findAll();
-  }
+    public List<LocationHierarchy> findByNodeOrder(List<String> nodeOrder) {
+        return locationHierarchyRepository
+                .findByNodeOrderArray(nodeOrder.stream().collect(joining(",", "{", "}")));
+    }
 
-  public void deleteLocationHierarchyAndAssociatedLocationRelationships(UUID identifier) {
-    LocationHierarchy locationHierarchy = findByIdentifier(identifier);
-    locationRelationshipService.deleteLocationRelationshipsForHierarchy(locationHierarchy);
-    deleteLocationHierarchy(locationHierarchy);
-  }
+    public List<LocationHierarchy> getAll() {
+        return locationHierarchyRepository
+                .findAll();
+    }
 
-  private void deleteLocationHierarchy(LocationHierarchy locationHierarchy) {
-    locationHierarchyRepository.delete(locationHierarchy);
-  }
+    public void deleteLocationHierarchyAndAssociatedLocationRelationships(UUID identifier) {
+        LocationHierarchy locationHierarchy = findByIdentifier(identifier);
+        locationRelationshipService.deleteLocationRelationshipsForHierarchy(locationHierarchy);
+        deleteLocationHierarchy(locationHierarchy);
+    }
 
-  public LocationHierarchy findByIdentifier(UUID identifier) {
-    return locationHierarchyRepository.findById(identifier).orElseThrow(
-        () -> new NotFoundException(Pair.of(LocationHierarchy.Fields.identifier, identifier),
-            LocationHierarchy.class));
-  }
+    private void deleteLocationHierarchy(LocationHierarchy locationHierarchy) {
+        locationHierarchyRepository.delete(locationHierarchy);
+    }
 
-  public List<String> findNodeOrderByIdentifier(UUID identifier){
-    return Arrays.asList(
-        locationHierarchyRepository.findNodeOrderByIdentifier(identifier).split(","));
-  }
+    public LocationHierarchy findByIdentifier(UUID identifier) {
+        return locationHierarchyRepository.findById(identifier).orElseThrow(
+                () -> new NotFoundException(Pair.of(LocationHierarchy.Fields.identifier, identifier),
+                        LocationHierarchy.class));
+    }
 
-  public UUID findNativeByName(String hierarchyName) {
-    return locationHierarchyRepository.findLocationHierarchyByName(hierarchyName);
-  }
+    public List<String> findNodeOrderByIdentifier(UUID identifier) {
+        return Arrays.asList(
+                locationHierarchyRepository.findNodeOrderByIdentifier(identifier).split(","));
+    }
 
-  public UUID findNativeById(UUID hierarchyIdentifier) {
-    return locationHierarchyRepository.findLocationHierarchyByIdentifier(hierarchyIdentifier);
-  }
+    public UUID findNativeByName(String hierarchyName) {
+        return locationHierarchyRepository.findLocationHierarchyByName(hierarchyName);
+    }
 
-  public List<GeoTreeResponse> getGeoTreeFromLocationHierarchy(
-      LocationHierarchy locationHierarchy) {
-    List<LocationRelationship> locationRelationship = getLocationRelationshipsForLocationHierarchy(
-        locationHierarchy);
-    List<GeoTreeResponse> geoTreeResponses = locationRelationship.stream()
-        .map(lr -> GeoTreeResponse.builder()
-            .identifier(lr.getLocation().getIdentifier())
-            .properties(LocationPropertyResponse.builder()
-                .parentIdentifier((lr.getParentLocation() == null) ? UUID.fromString(
-                    "00000000-0000-0000-0000-000000000000")
-                    : lr.getParentLocation().getIdentifier())
-                .name(lr.getLocation().getName())
-                .geographicLevel(lr.getLocation().getGeographicLevel().getName())
-                .build())
-            .build()).collect(Collectors.toList());
-    Map<UUID, List<GeoTreeResponse>> geoTreeHierarchy = geoTreeResponses.stream()
-        .collect(Collectors.groupingBy(lr -> lr.getProperties().getParentIdentifier(),
-            Collectors.mapping(lr -> lr, Collectors.toList())));
+    public LocationHierarchy getDefaultHierarchy() {
+        return locationHierarchyRepository.findByName(AppConstants.DEFAULT_KEYWORD).orElseThrow(() -> new NotFoundException("Default hierarchy not found"));
+    }
 
-    geoTreeResponses.forEach(gt -> gt.setChildren(
-        geoTreeHierarchy.get(gt.getIdentifier()) == null ? new ArrayList<>()
-            : geoTreeHierarchy.get(gt.getIdentifier())));
-    return geoTreeHierarchy.get(UUID.fromString("00000000-0000-0000-0000-000000000000"));
-  }
+    public UUID findNativeById(UUID hierarchyIdentifier) {
+        return locationHierarchyRepository.findLocationHierarchyByIdentifier(hierarchyIdentifier);
+    }
 
-  public List<GeoTreeResponse> getGeoTreeFromLocationHierarchyWithoutStructure(
-      LocationHierarchy locationHierarchy, List<String> notLike) {
-    List<LocationRelationshipProjection> locationRelationship =
-        notLike != null ? locationRelationshipService.getLocationRelationshipsNotLike(
-            locationHierarchy, notLike)
-            : locationRelationshipService.getLocationRelationshipsWithoutStructure(
+    public List<GeoTreeResponse> getGeoTreeFromLocationHierarchy(
+            LocationHierarchy locationHierarchy) {
+        List<LocationRelationship> locationRelationship = getLocationRelationshipsForLocationHierarchy(
                 locationHierarchy);
-    Map<String, Long> childrenCount = locationRelationshipService.getLocationChildrenCount(
-            locationHierarchy.getIdentifier())
-        .stream().filter(loc -> loc.getParentIdentifier() != null)
-        .collect(Collectors.toMap(LocationChildrenCountProjection::getParentIdentifier,
-            LocationChildrenCountProjection::getChildrenCount));
+        List<GeoTreeResponse> geoTreeResponses = locationRelationship.stream()
+                .map(lr -> GeoTreeResponse.builder()
+                        .identifier(lr.getLocation().getIdentifier())
+                        .properties(LocationPropertyResponse.builder()
+                                .parentIdentifier((lr.getParentLocation() == null) ? UUID.fromString(
+                                        "00000000-0000-0000-0000-000000000000")
+                                        : lr.getParentLocation().getIdentifier())
+                                .name(lr.getLocation().getName())
+                                .geographicLevel(lr.getLocation().getGeographicLevel().getName())
+                                .build())
+                        .build()).collect(Collectors.toList());
+        Map<UUID, List<GeoTreeResponse>> geoTreeHierarchy = geoTreeResponses.stream()
+                .collect(Collectors.groupingBy(lr -> lr.getProperties().getParentIdentifier(),
+                        Collectors.mapping(lr -> lr, Collectors.toList())));
 
-    List<GeoTreeResponse> geoTreeResponses = locationRelationship.stream()
-        .map(lr -> GeoTreeResponse.builder()
-            .identifier(UUID.fromString(lr.getLocationIdentifier()))
-            .properties(LocationPropertyResponse.builder()
-                .parentIdentifier((lr.getParentIdentifier() == null) ? UUID.fromString(
-                    "00000000-0000-0000-0000-000000000000")
-                    : UUID.fromString(lr.getParentIdentifier()))
-                .name(lr.getLocationName())
-                .geographicLevel(lr.getGeographicLevelName())
-                .childrenNumber(
-                    childrenCount.containsKey(lr.getLocationIdentifier()) ? childrenCount.get(
-                        lr.getLocationIdentifier()) : 0)
-                .build())
-            .build()).collect(Collectors.toList());
-    Map<UUID, List<GeoTreeResponse>> geoTreeHierarchy = geoTreeResponses.stream()
-        .collect(Collectors.groupingBy(lr -> lr.getProperties().getParentIdentifier(),
-            Collectors.mapping(lr -> lr, Collectors.toList())));
-
-    geoTreeResponses.forEach(gt -> gt.setChildren(
-        geoTreeHierarchy.get(gt.getIdentifier()) == null ? new ArrayList<>()
-            : geoTreeHierarchy.get(gt.getIdentifier())));
-    return geoTreeHierarchy.get(UUID.fromString("00000000-0000-0000-0000-000000000000"));
-  }
-
-  public List<LocationRelationship> getLocationRelationshipsForLocationHierarchy(
-      LocationHierarchy locationHierarchy) {
-    return locationRelationshipService
-        .getLocationRelationshipsForLocationHierarchy(locationHierarchy);
-  }
-
-  public List<LocationHierarchy> findByName(String name) {
-    return locationHierarchyRepository.findByName(name);
-  }
-
-  public LocationHierarchy getActiveLocationHierarchy() {
-    //Assumption: current support of 1 hierarchy per instance
-    LocationHierarchy locationHierarchy = null;
-    List<LocationHierarchy> hierarchies = locationHierarchyRepository.findAll();
-    if (!hierarchies.isEmpty()) {
-      locationHierarchy = hierarchies.get(0);
+        geoTreeResponses.forEach(gt -> gt.setChildren(
+                geoTreeHierarchy.get(gt.getIdentifier()) == null ? new ArrayList<>()
+                        : geoTreeHierarchy.get(gt.getIdentifier())));
+        return geoTreeHierarchy.get(UUID.fromString("00000000-0000-0000-0000-000000000000"));
     }
-    return locationHierarchy;
-  }
+
+    public List<GeoTreeResponse> getGeoTreeFromLocationHierarchyWithoutStructure(
+            LocationHierarchy locationHierarchy, List<String> notLike) {
+        List<LocationRelationshipProjection> locationRelationship =
+                notLike != null ? locationRelationshipService.getLocationRelationshipsNotLike(
+                        locationHierarchy, notLike)
+                        : locationRelationshipService.getLocationRelationshipsWithoutStructure(
+                        locationHierarchy);
+        Map<String, Long> childrenCount = locationRelationshipService.getLocationChildrenCount(
+                        locationHierarchy.getIdentifier())
+                .stream().filter(loc -> loc.getParentIdentifier() != null)
+                .collect(Collectors.toMap(LocationChildrenCountProjection::getParentIdentifier,
+                        LocationChildrenCountProjection::getChildrenCount));
+
+        List<GeoTreeResponse> geoTreeResponses = locationRelationship.stream()
+                .map(lr -> GeoTreeResponse.builder()
+                        .identifier(UUID.fromString(lr.getLocationIdentifier()))
+                        .properties(LocationPropertyResponse.builder()
+                                .parentIdentifier((lr.getParentIdentifier() == null) ? UUID.fromString(
+                                        "00000000-0000-0000-0000-000000000000")
+                                        : UUID.fromString(lr.getParentIdentifier()))
+                                .name(lr.getLocationName())
+                                .geographicLevel(lr.getGeographicLevelName())
+                                .childrenNumber(
+                                        childrenCount.containsKey(lr.getLocationIdentifier()) ? childrenCount.get(
+                                                lr.getLocationIdentifier()) : 0)
+                                .build())
+                        .build()).collect(Collectors.toList());
+        Map<UUID, List<GeoTreeResponse>> geoTreeHierarchy = geoTreeResponses.stream()
+                .collect(Collectors.groupingBy(lr -> lr.getProperties().getParentIdentifier(),
+                        Collectors.mapping(lr -> lr, Collectors.toList())));
+
+        geoTreeResponses.forEach(gt -> gt.setChildren(
+                geoTreeHierarchy.get(gt.getIdentifier()) == null ? new ArrayList<>()
+                        : geoTreeHierarchy.get(gt.getIdentifier())));
+        return geoTreeHierarchy.get(UUID.fromString("00000000-0000-0000-0000-000000000000"));
+    }
+
+    public List<LocationRelationship> getLocationRelationshipsForLocationHierarchy(
+            LocationHierarchy locationHierarchy) {
+        return locationRelationshipService
+                .getLocationRelationshipsForLocationHierarchy(locationHierarchy);
+    }
+
+    public LocationHierarchy getActiveLocationHierarchy() {
+        //Assumption: current support of 1 hierarchy per instance
+        LocationHierarchy locationHierarchy = null;
+        List<LocationHierarchy> hierarchies = locationHierarchyRepository.findAll();
+        if (!hierarchies.isEmpty()) {
+            locationHierarchy = hierarchies.get(0);
+        }
+        return locationHierarchy;
+    }
 }
