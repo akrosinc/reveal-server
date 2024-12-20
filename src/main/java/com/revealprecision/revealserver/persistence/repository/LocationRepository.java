@@ -29,7 +29,7 @@ public interface LocationRepository extends JpaRepository<Location, UUID> {
     @Query(value = "select new com.revealprecision.revealserver.persistence.projection.LocationWithChildrenCountProjection(l, count(lr)) " +
             "from Location l " +
             "join GeographicLevel gl on gl.identifier = l.geographicLevel.identifier " +
-            "join LocationRelationship lr on lr.parentLocation.identifier = l.identifier " +
+            "left join LocationRelationship lr on lr.parentLocation.identifier = l.identifier " +
             "where l.identifier IN :ids " +
             "group by lr.parentLocation.identifier, l.identifier, gl.name " +
             "order by " +
