@@ -21,6 +21,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -70,16 +71,15 @@ public class LocationController {
     }
 
     @GetMapping(value = "/{identifier}/children-included", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<List<LocationResponse>> findLocationWithChildrenById(
+    public ResponseEntity<Page<LocationResponse>> findLocationWithChildrenById(
+            Pageable pageable,
             @Parameter(description = "Location Identifier") @PathVariable UUID identifier) {
         List<UUID> locationChildrenIds = locationService.getAllLocationDirectChildren(identifier);
         locationChildrenIds.add(identifier);
-        List<Location> locations = locationService.findAllById(locationChildrenIds);
-        List<LocationResponse> locationResponse = locations.stream()
-                .map(LocationResponseFactory::fromEntity)
-                .collect(Collectors.toList());
+        Page<LocationWithChildrenCountProjection> pages = locationService.findAllPageableById(locationChildrenIds, pageable);
+        Page<LocationResponse> locations = LocationResponseFactory.fromEntityWithChildrenCountToPage(pages, pageable);
         return ResponseEntity.status(HttpStatus.OK)
-                .body(locationResponse);
+                .body(locations);
     }
 
     @Operation(summary = "Search for Locations",

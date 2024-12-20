@@ -15,6 +15,7 @@ import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.PlanAssignment;
 import com.revealprecision.revealserver.persistence.domain.PlanLocations;
 import com.revealprecision.revealserver.persistence.projection.LocationCoordinatesProjection;
+import com.revealprecision.revealserver.persistence.projection.LocationWithChildrenCountProjection;
 import com.revealprecision.revealserver.persistence.projection.LocationWithParentProjection;
 import com.revealprecision.revealserver.persistence.repository.LocationRepository;
 import com.revealprecision.revealserver.util.ElasticModelUtil;
@@ -109,6 +110,10 @@ public class LocationService {
 
     public List<Location> findAllById(List<UUID> ids){
         return locationRepository.findByIdentifierIn(ids);
+    }
+
+    public Page<LocationWithChildrenCountProjection> findAllPageableById(List<UUID> ids, Pageable pageable){
+        return locationRepository.findPageableByIdentifierIn(ids, pageable);
     }
 
     public Optional<Location> findNullableByIdentifier(UUID identifier) {

@@ -2,12 +2,15 @@ package com.revealprecision.revealserver.persistence.repository;
 
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.projection.LocationCoordinatesProjection;
+import com.revealprecision.revealserver.persistence.projection.LocationWithChildrenCountProjection;
 import com.revealprecision.revealserver.persistence.projection.LocationWithParentProjection;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -22,6 +25,24 @@ public interface LocationRepository extends JpaRepository<Location, UUID> {
     Page<UUID> getAllLocationIdentifiers(Pageable pageable);
 
     List<Location> findByIdentifierIn(List<UUID> ids);
+
+    @Query(value = "select new com.revealprecision.revealserver.persistence.projection.LocationWithChildrenCountProjection(l, count(lr)) " +
+            "from Location l " +
+            "join GeographicLevel gl on gl.identifier = l.geographicLevel.identifier " +
+            "join LocationRelationship lr on lr.parentLocation.identifier = l.identifier " +
+            "where l.identifier IN :ids " +
+            "group by lr.parentLocation.identifier, l.identifier, gl.name " +
+            "order by " +
+            "    CASE gl.name " +
+            "        WHEN 'admin0' THEN 1 " +
+            "        WHEN 'admin1' THEN 2 " +
+            "        WHEN 'admin2' THEN 3 " +
+            "        WHEN 'admin3' THEN 4 " +
+            "        WHEN 'structure' THEN 5 " +
+            "        ELSE 6 " +
+            "    END," +
+            "   l.identifier")
+    Page<LocationWithChildrenCountProjection> findPageableByIdentifierIn(@Param("ids") List<UUID> ids, Pageable pageable);
 
     @Query(value = "select l from Location l where l.geographicLevel.identifier = :identifier")
     List<Location> findByGeographicLevelIdentifier(@Param("identifier") UUID identifier);

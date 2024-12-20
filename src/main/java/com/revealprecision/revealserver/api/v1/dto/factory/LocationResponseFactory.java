@@ -9,6 +9,7 @@ import com.revealprecision.revealserver.enums.SummaryEnum;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.es.HierarchyDetailsElastic;
 import com.revealprecision.revealserver.persistence.es.LocationElastic;
+import com.revealprecision.revealserver.persistence.projection.LocationWithChildrenCountProjection;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -69,6 +70,13 @@ public class LocationResponseFactory {
             : LocationResponseFactory::fromEntity).collect(
             Collectors.toList());
     return new PageImpl<>(locationsResponseContent, pageable, locations.getTotalElements());
+  }
+
+  public static Page<LocationResponse> fromEntityWithChildrenCountToPage(Page<LocationWithChildrenCountProjection> locationsWithCount, Pageable pageable){
+    var locations = locationsWithCount.getContent().stream().map(
+            locationWithCount -> LocationResponseFactory.fromEntityWithChildCount(locationWithCount.getLocation(), locationWithCount.getChildrenCount())
+    ).collect(Collectors.toList());
+    return new PageImpl<>(locations, pageable, locationsWithCount.getTotalElements());
   }
 
   public static LocationResponse fromPlanLocationDetails(PlanLocationDetails planLocationDetails,
