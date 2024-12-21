@@ -14,6 +14,7 @@ import com.revealprecision.revealserver.persistence.domain.Fields;
 import com.revealprecision.revealserver.persistence.domain.HdssCompounds;
 import com.revealprecision.revealserver.persistence.projection.HdssCompoundHouseholdIndividualProjection;
 import com.revealprecision.revealserver.persistence.repository.HdssCompoundsRepository;
+import com.revealprecision.revealserver.service.HdssSearchService;
 import java.text.ParseException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -43,6 +44,8 @@ public class HdssFacadeController {
   public static final String TOTAL_RECORDS = "total_records";
 
   private final HdssCompoundsRepository compoundsRepository;
+
+  private final HdssSearchService hdssSearchService;
 
   @ResponseStatus(HttpStatus.OK)
   @PostMapping(value = "/sync", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -81,7 +84,7 @@ public class HdssFacadeController {
                   .build()).collect(Collectors.toSet())).allIndividuals(individuals.stream().map(
               individual -> HdssIndividual.builder().identifier(individual.getId())
                   .individualId(individual.getIndividualId()).name(individual.getName())
-                  .serverVersion(individual.getServerVersion()).dob(individual.getDob().toString())
+                  .serverVersion(individual.getServerVersion()).dob(individual.getDob())
                   .gender(individual.getGender()).build()).collect(Collectors.toSet()))
           .serverVersion(maxServerVersion.isPresent() ? maxServerVersion.get() : 0)
           .totalRecords(count).isEmpty(false).build());
@@ -98,9 +101,20 @@ public class HdssFacadeController {
         hdssSyncRequest.getUserId(), serverVersion);
   }
 
-
   @PostMapping(value = "/search", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<List<HdssCompoundHouseholdIndividualObj>> search(
+      @RequestBody HdssSearchRequest hdssSearchRequest) throws ParseException {
+    List<HdssCompoundHouseholdIndividualObj> hdssCompoundHouseholdIndividualObjs = hdssSearchService.searchHdssCompounds(
+        hdssSearchRequest);
+    if (hdssCompoundHouseholdIndividualObjs != null) {
+      return ResponseEntity.ok(hdssCompoundHouseholdIndividualObjs);
+    } else {
+      return ResponseEntity.ok().build();
+    }
+  }
+
+//  @PostMapping(value = "/search", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<List<HdssCompoundHouseholdIndividualObj>> search2(
       @RequestBody HdssSearchRequest hdssSearchRequest) throws ParseException {
     List<HdssCompoundHouseholdIndividualProjection> individualProjections = null;
 
@@ -193,7 +207,7 @@ public class HdssFacadeController {
               .name(individualProjection.getName())
               .build()).collect(Collectors.toList()));
     } else {
-      return ResponseEntity.notFound().build();
+      return ResponseEntity.ok().build();
     }
   }
 
