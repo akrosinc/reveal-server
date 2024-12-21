@@ -2,6 +2,9 @@ package com.revealprecision.revealserver.service;
 
 import com.revealprecision.revealserver.api.v1.facade.models.HdssCompoundHouseholdIndividualObj;
 import com.revealprecision.revealserver.api.v1.facade.request.HdssSearchRequest;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +17,8 @@ public class HdssSearchService {
 
   private final JdbcTemplate jdbcTemplate;
 
-  public List<HdssCompoundHouseholdIndividualObj> searchHdssCompounds(HdssSearchRequest searchRequest) {
+  public List<HdssCompoundHouseholdIndividualObj> searchHdssCompounds(
+      HdssSearchRequest searchRequest) {
     StringBuilder sql = new StringBuilder("SELECT "
         + "id,"
         + "compound_id,"
@@ -53,8 +57,31 @@ public class HdssSearchService {
 
 // Add condition for dob in the fields JSONB
     if (searchRequest.getDob() != null) {
+      String dobStr = searchRequest.getDob();
+      DateTimeFormatter formatter1 = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+      DateTimeFormatter formatter2 = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+
+      LocalDate dob = null;
+
+      // Try parsing with the first format (yyyy-MM-dd)
+      try {
+        dob = LocalDate.parse(dobStr, formatter1);
+      } catch (DateTimeParseException e) {
+        // If it fails, try parsing with the second format (dd-MM-yyyy)
+        try {
+          dob = LocalDate.parse(dobStr, formatter2);
+        } catch (DateTimeParseException ex) {
+          // Handle error if both formats fail
+          throw new IllegalArgumentException("Invalid date format. Expected 'yyyy-MM-dd' or 'dd-MM-yyyy'.");
+        }
+      }
+
+      // Format the LocalDate to yyyy-MM-dd string
+      DateTimeFormatter yyyymmddformatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+      String formattedDob = dob.format(yyyymmddformatter);
+
       sql.append(" AND fields->>'dob' = ?");
-      params.add(searchRequest.getDob());
+      params.add(formattedDob);
     }
 
 // Convert params List to an Object array
