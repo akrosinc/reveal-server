@@ -55,6 +55,23 @@ public class LocationResponseFactory {
         .build();
   }
 
+  public static LocationResponse fromEntityWithChildCountAndParent(Location location, Long childrenNumber, UUID parentIdentifier) {
+    return LocationResponse.builder()
+            .identifier(location.getIdentifier())
+            .type(location.getType())
+            .geometry(location.getGeometry())
+            .properties(
+                    LocationPropertyResponse.builder()
+                            .name(location.getName())
+                            .status(location.getStatus())
+                            .externalId(location.getExternalId())
+                            .geographicLevel(location.getGeographicLevel().getName())
+                            .childrenNumber(childrenNumber)
+                            .parentIdentifier(parentIdentifier)
+                            .build())
+            .build();
+  }
+
   public static LocationResponse fromEntitySummary(Location location) {
     return LocationResponse.builder().identifier(location.getIdentifier())
         .type(location.getType()).properties(
@@ -74,7 +91,7 @@ public class LocationResponseFactory {
 
   public static Page<LocationResponse> fromEntityWithChildrenCountToPage(Page<LocationWithChildrenCountProjection> locationsWithCount, Pageable pageable){
     var locations = locationsWithCount.getContent().stream().map(
-            locationWithCount -> LocationResponseFactory.fromEntityWithChildCount(locationWithCount.getLocation(), locationWithCount.getChildrenCount())
+            locationWithCount -> LocationResponseFactory.fromEntityWithChildCountAndParent(locationWithCount.getLocation(), locationWithCount.getChildrenCount(), locationWithCount.getParentIdentifier())
     ).collect(Collectors.toList());
     return new PageImpl<>(locations, pageable, locationsWithCount.getTotalElements());
   }
