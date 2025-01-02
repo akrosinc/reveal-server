@@ -47,7 +47,7 @@ public class DataExtractController {
       @PathVariable("planIdentifier") UUID planIdentifier,
       @PathVariable("queryLabel") String queryLabel) throws IOException {
 
-    String code = dataExtractService.getCode(planIdentifier);
+    String code = dataExtractService.getCode(planIdentifier, queryLabel);
     return ResponseEntity.ok(code);
   }
 
