@@ -48,7 +48,7 @@ public class DataExtractService {
 
       List<String[]> data = jdbcTemplate.query(
           target.getQuery(),
-          ps -> ps.setString(1, planIdentifier.toString()), (rs, rowNum) -> {
+          ps -> ps.setString(1, "%".concat(planIdentifier.toString()).concat("%")), (rs, rowNum) -> {
             int columnCount = rs.getMetaData().getColumnCount();
             ResultSetMetaData metaData = rs.getMetaData();
             String[] row = new String[columnCount];
