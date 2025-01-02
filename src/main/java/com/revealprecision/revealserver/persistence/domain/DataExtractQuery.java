@@ -26,5 +26,7 @@ public class DataExtractQuery {
 
   private UUID planIdentifier;
 
+  private String queryLabel;
+
   private String query;
 }

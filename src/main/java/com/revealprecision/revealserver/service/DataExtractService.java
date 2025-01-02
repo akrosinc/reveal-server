@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.service;
 
+import com.revealprecision.revealserver.api.v1.dto.response.DataExtractQueryResponse;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.DataExtractQuery;
 import com.revealprecision.revealserver.persistence.repository.DataExtractQueryRepository;
@@ -12,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.csveed.row.RowWriter;
@@ -29,13 +31,13 @@ public class DataExtractService {
 
   private final DataExtractQueryRepository dataExtractQueryRepository;
 
-  public InputStreamResource extract(UUID planIdentifier) throws IOException {
+  public InputStreamResource extract(UUID planIdentifier, String queryLabel) throws IOException {
     StringWriter stringWriter = new StringWriter();
 
     List<String> header = new ArrayList<>();
 
-    List<DataExtractQuery> firstByPlanIdentifier = dataExtractQueryRepository.findByPlanIdentifier(
-        planIdentifier);
+    List<DataExtractQuery> firstByPlanIdentifier = dataExtractQueryRepository.findByPlanIdentifierAndQueryLabel(
+        planIdentifier, queryLabel);
 
     if (firstByPlanIdentifier == null || firstByPlanIdentifier.size() == 0) {
       throw new NotFoundException("No Query found for plan " + planIdentifier);
@@ -80,15 +82,31 @@ public class DataExtractService {
     throw new NotFoundException("No Query found for plan " + planIdentifier);
   }
 
-  public String getCode(UUID planIdentifier){
+  public String getCode(UUID planIdentifier, String queryLabel){
 
-    List<DataExtractQuery> byPlanIdentifier = dataExtractQueryRepository.findByPlanIdentifier(
-        planIdentifier);
+    List<DataExtractQuery> byPlanIdentifier = dataExtractQueryRepository.findByPlanIdentifierAndQueryLabel(
+        planIdentifier, queryLabel);
 
     if (byPlanIdentifier == null || byPlanIdentifier.size() == 0) {
       throw new NotFoundException("No Query found for plan " + planIdentifier);
     }
 
     return byPlanIdentifier.get(0).getQuery();
+  }
+
+  public List<DataExtractQueryResponse> getQueryLabels(UUID planIdentifier){
+
+    List<DataExtractQuery> dataExtractQueries = dataExtractQueryRepository.findByPlanIdentifier(
+        planIdentifier);
+
+    if (dataExtractQueries == null || dataExtractQueries.size() == 0) {
+      throw new NotFoundException("No Query found for plan " + planIdentifier);
+    }
+
+    return dataExtractQueries.stream().map(dataExtractQuery -> DataExtractQueryResponse.builder()
+        .queryLabel(dataExtractQuery.getQueryLabel())
+        .id(dataExtractQuery.getId())
+        .planIdentifier(dataExtractQuery.getPlanIdentifier())
+        .build()).collect(Collectors.toList());
   }
 }

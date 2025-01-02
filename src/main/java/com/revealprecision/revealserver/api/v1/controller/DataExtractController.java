@@ -1,7 +1,9 @@
 package com.revealprecision.revealserver.api.v1.controller;
 
+import com.revealprecision.revealserver.api.v1.dto.response.DataExtractQueryResponse;
 import com.revealprecision.revealserver.service.DataExtractService;
 import java.io.IOException;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.InputStreamResource;
@@ -21,20 +23,29 @@ public class DataExtractController {
 
   private final DataExtractService dataExtractService;
 
-  @GetMapping("/{planIdentifier}")
-  public ResponseEntity<Resource> data(
-       @PathVariable("planIdentifier") UUID planIdentifier) throws IOException {
+  @GetMapping("/queryLabels/{planIdentifier}")
+  public ResponseEntity<List<DataExtractQueryResponse>> queryLabels(
+      @PathVariable("planIdentifier") UUID planIdentifier) {
+    List<DataExtractQueryResponse> queryLabels = dataExtractService.getQueryLabels(planIdentifier);
+    return ResponseEntity.status(HttpStatus.OK).body(queryLabels);
+  }
 
-    InputStreamResource resource = dataExtractService.extract(planIdentifier);
+  @GetMapping("/extract/{planIdentifier}/{queryLabel}")
+  public ResponseEntity<Resource> data(
+       @PathVariable("planIdentifier") UUID planIdentifier,
+      @PathVariable("queryLabel") String queryLabel) throws IOException {
+
+    InputStreamResource resource = dataExtractService.extract(planIdentifier,queryLabel);
 
     return ResponseEntity.status(HttpStatus.OK).contentType(MediaType.APPLICATION_OCTET_STREAM)
         .header("Content-disposition", "attachment;filename=" + "trev.csv").body(resource);
   }
 
 
-  @GetMapping("/code/{planIdentifier}")
+  @GetMapping("/code/{planIdentifier}/{queryLabel}")
   public ResponseEntity<String> code(
-      @PathVariable("planIdentifier") UUID planIdentifier) throws IOException {
+      @PathVariable("planIdentifier") UUID planIdentifier,
+      @PathVariable("queryLabel") String queryLabel) throws IOException {
 
     String code = dataExtractService.getCode(planIdentifier);
     return ResponseEntity.ok(code);

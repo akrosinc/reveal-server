@@ -10,4 +10,6 @@ import org.springframework.stereotype.Repository;
 public interface DataExtractQueryRepository extends JpaRepository<DataExtractQuery, UUID> {
 
   List<DataExtractQuery> findByPlanIdentifier(UUID planIdentifier);
+
+  List<DataExtractQuery> findByPlanIdentifierAndQueryLabel(UUID planIdentifier, String qeuryLabel);
 }
