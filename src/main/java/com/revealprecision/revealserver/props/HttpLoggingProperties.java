@@ -23,8 +23,6 @@ public class HttpLoggingProperties {
 
   private  Integer logLength = 2000;
 
-  private boolean logPostBody = false;
-
   private List<String> excludedPaths = List.of("/actuator/");
 
   private boolean shouldHideLocationResponses = true;
