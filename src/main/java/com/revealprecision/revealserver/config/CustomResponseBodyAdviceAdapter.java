@@ -85,9 +85,9 @@ public class CustomResponseBodyAdviceAdapter implements ResponseBodyAdvice<Objec
               servletRequest.getRequestURL().toString() + (servletRequest.getQueryString() != null ?
                   "?"
                       + servletRequest.getQueryString() : ""), null, o, tracer.currentSpan(),
-              servletRequest.getMethod(), String.valueOf(
+              servletRequest.getMethod(), httpLoggingProperties.isLogPostBody()?String.valueOf(
                   ((ServletServerHttpResponse) serverHttpResponse).getServletResponse()
-                      .getStatus()),
+                      .getStatus()):null,
               headers, triggerTime, LocalDateTime.now(), username,
               jwtKid);
         }
