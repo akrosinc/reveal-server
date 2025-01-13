@@ -16,16 +16,14 @@ import org.elasticsearch.search.SearchHit;
 @AllArgsConstructor
 @ToString
 public class DataFilterRequest {
-
-  @NotNull
-  private String hierarchyIdentifier;
-  private String hierarchyType;
-  private UUID locationIdentifier;
-  private List<EntityFilterRequest> entityFilters;
-  private SearchHit lastHit;
-  private List<String> filterGeographicLevelList;
-  private List<String> inactiveGeographicLevelList;
-  private boolean includeInactive;
-  private List<EntityTagRequest> resultTags;
-
+    @NotNull
+    private String hierarchyIdentifier;
+    private String hierarchyType;
+    private UUID locationIdentifier;
+    private List<EntityFilterRequest> entityFilters;
+    private SearchHit lastHit;
+    private List<String> filterGeographicLevelList;
+    private List<String> inactiveGeographicLevelList;
+    private boolean includeInactive;
+    private List<EntityTagRequest> resultTags;
 }

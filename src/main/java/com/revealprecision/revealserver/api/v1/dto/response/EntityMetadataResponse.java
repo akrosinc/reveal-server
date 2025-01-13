@@ -16,7 +16,6 @@ import lombok.ToString;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @ToString
 public class EntityMetadataResponse {
-
   private Object value;
   private String type;
   private String fieldType;

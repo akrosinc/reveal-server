@@ -15,7 +15,6 @@ import lombok.ToString;
 @Builder
 @ToString
 public class EntityFilterRequest {
-
   private String fieldIdentifier;
   private String fieldType;
   private RangeFilter range;

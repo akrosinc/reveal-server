@@ -42,6 +42,7 @@ import com.revealprecision.revealserver.persistence.domain.Organization;
 import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.persistence.domain.User.Fields;
 import com.revealprecision.revealserver.persistence.domain.aggregation.ImportAggregationNumeric;
+import com.revealprecision.revealserver.persistence.projection.AggregateWithTagProjection;
 import com.revealprecision.revealserver.persistence.projection.EntityTagWithGeoLevelAndEntityTypeProjection;
 import com.revealprecision.revealserver.persistence.projection.EntityTagWithGeoLevelProjection;
 import com.revealprecision.revealserver.persistence.repository.ComplexTagAccGrantsOrganizationRepository;
@@ -127,6 +128,9 @@ public class EntityTagService {
     return entityTagRepository.findAll();
   }
 
+  public  List<AggregateWithTagProjection> getValuesForTagAndLocations(List<UUID> tags, List<String> locationsIds) {
+    return importAggregateRepository.getValuesForTagAndLocations(tags, locationsIds);
+  }
 
   public Page<EntityTag> getOrSearchAllEntityTagsPaged(Pageable pageable, String search) {
     return entityTagRepository.findOrSearchEntityTags(pageable, search);

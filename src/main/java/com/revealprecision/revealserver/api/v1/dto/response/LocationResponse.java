@@ -22,7 +22,6 @@ import lombok.ToString;
 @JsonInclude(Include.NON_NULL)
 @ToString
 public class LocationResponse {
-
   private UUID identifier;
   private String type;
   private Geometry geometry;

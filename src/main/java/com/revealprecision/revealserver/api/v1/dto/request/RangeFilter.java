@@ -14,7 +14,6 @@ import lombok.ToString;
 @Builder
 @ToString
 public class RangeFilter {
-
   private Object minValue;
   private Object maxValue;
 }
