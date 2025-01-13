@@ -29,7 +29,9 @@ import com.revealprecision.revealserver.service.EventAggregationService;
 import com.revealprecision.revealserver.service.KeycloakService;
 import com.revealprecision.revealserver.service.LookupEntityTypeService;
 import com.revealprecision.revealserver.service.UserService;
+import com.revealprecision.revealserver.service.LocationHierarchyService;
 import io.swagger.v3.oas.annotations.Operation;
+
 import java.io.IOException;
 import java.io.Serializable;
 import java.text.ParseException;
@@ -40,6 +42,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.validation.Valid;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -81,6 +84,7 @@ public class EntityTagController {
     private final UserRepository userRepository;
     private final UserService userService;
     private final KeycloakService keycloakService;
+    private final LocationHierarchyService locationHierarchyService;
 
 
     @Operation(summary = "Create Tag", description = "Create Tag", tags = {"Entity Tags"})
@@ -190,6 +194,13 @@ public class EntityTagController {
         return ResponseEntity.status(HttpStatus.OK)
                 .body(entityTagService.getAllAggregateEntityTagsAssociatedToData(hierarchyIdentifier));
 
+    }
+
+    @GetMapping(value = "/default-hierarchy", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<TagResponse> getEntityTagsForDefaultHierarchy() {
+        UUID defaultHierarchyId = locationHierarchyService.getDefaultHierarchy().getIdentifier();
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(entityTagService.getAllAggregateEntityTagsAssociatedToData(defaultHierarchyId.toString()));
     }
 
     @AllArgsConstructor
