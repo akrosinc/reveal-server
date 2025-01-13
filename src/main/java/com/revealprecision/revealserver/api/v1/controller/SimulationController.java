@@ -5,7 +5,6 @@ import com.revealprecision.revealserver.api.v1.dto.request.SimulationDatasetRequ
 import com.revealprecision.revealserver.api.v1.dto.response.LocationResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.SimulationDatasetResponse;
 import com.revealprecision.revealserver.persistence.domain.Simulation;
-import com.revealprecision.revealserver.service.EntityFilterEsService;
 import com.revealprecision.revealserver.service.SimulationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -34,7 +33,7 @@ public class SimulationController {
         return ResponseEntity.ok(simulationService.addDatasetToSimulation(request));
     }
 
-    @GetMapping("dataset")
+    @PostMapping("dataset/location-data")
     public ResponseEntity<List<LocationResponse>> getDatasetDataForLocations(
             @RequestBody DatasetLocationsRequest request) throws IOException {
         return ResponseEntity.ok(simulationService.getDatasetDataForLocations(request));
