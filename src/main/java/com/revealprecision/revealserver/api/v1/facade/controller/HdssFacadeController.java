@@ -251,31 +251,27 @@ public class HdssFacadeController {
         .map(hdssCompoundHouseholdIndividualPushObj ->
 
             {
-              LocalDate parse = null;
-              try {
-                parse = LocalDate.parse(hdssCompoundHouseholdIndividualPushObj.getDob(),
-                    DateTimeFormatter.ofPattern("dd-MM-yyyy"));
-              } catch (DateTimeParseException e) {
-                try {
-                  parse = LocalDate.parse(hdssCompoundHouseholdIndividualPushObj.getDob(),
-                      DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-                } catch (DateTimeParseException pe) {
-                  log.error("cannot parse data for Hdss data {}",
-                      hdssCompoundHouseholdIndividualPushObj);
-                }
-              }
+
               HdssCompounds item;
               if (existing.containsKey(
                   hdssCompoundHouseholdIndividualPushObj.getIndividualId())) {
                  item = existing.get(
                     hdssCompoundHouseholdIndividualPushObj.getIndividualId());
-                item.setIndividualId(hdssCompoundHouseholdIndividualPushObj.getIndividualId());
-                item.setCompoundId(hdssCompoundHouseholdIndividualPushObj.getCompoundId());
-                item.setHouseholdId(
-                    hdssCompoundHouseholdIndividualPushObj.getHouseholdId());
-                item.setStructureId(hdssCompoundHouseholdIndividualPushObj.getStructureId());
-                item.setServerVersion(hdssCompoundHouseholdIndividualPushObj.getServerVersion());
-                if (hdssCompoundHouseholdIndividualPushObj.getFloatingLocationId()!=null){
+                if (hdssCompoundHouseholdIndividualPushObj.getCompoundId()!=null){
+                  item.setCompoundId(hdssCompoundHouseholdIndividualPushObj.getCompoundId());
+                }
+                if (hdssCompoundHouseholdIndividualPushObj.getHouseholdId()!=null){
+                  item.setHouseholdId(
+                      hdssCompoundHouseholdIndividualPushObj.getHouseholdId());
+                }
+                if (hdssCompoundHouseholdIndividualPushObj.getStructureId()!=null){
+                  item.setStructureId(hdssCompoundHouseholdIndividualPushObj.getStructureId());
+                }
+
+                long nextServerVersion = compoundsRepository.getNextServerVersion();
+
+                item.setServerVersion(nextServerVersion);
+                if (hdssCompoundHouseholdIndividualPushObj.getFloatingLocationName()!=null){
                   item.setFloatingLocationId(hdssCompoundHouseholdIndividualPushObj.getFloatingLocationId());
                   item.setFloatingLocationName(hdssCompoundHouseholdIndividualPushObj.getFloatingLocationName());
                   item.setFloatingLocationGeographicLevel(hdssCompoundHouseholdIndividualPushObj.getFloatingLocationGeographicLevel());
@@ -284,17 +280,32 @@ public class HdssFacadeController {
                   item.setStructureId(null);
                 }
               } else {
+                LocalDate parse = null;
+                try {
+                  parse = LocalDate.parse(hdssCompoundHouseholdIndividualPushObj.getDob(),
+                      DateTimeFormatter.ofPattern("dd-MM-yyyy"));
+                } catch (DateTimeParseException e) {
+                  try {
+                    parse = LocalDate.parse(hdssCompoundHouseholdIndividualPushObj.getDob(),
+                        DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+                  } catch (DateTimeParseException pe) {
+                    log.error("cannot parse data for Hdss data {}",
+                        hdssCompoundHouseholdIndividualPushObj);
+                  }
+                }
+
                 item = HdssCompounds.builder()
                     .id(UUID.fromString(hdssCompoundHouseholdIndividualPushObj.getIdentifier()))
                     .compoundId(hdssCompoundHouseholdIndividualPushObj.getCompoundId())
                     .serverVersion(hdssCompoundHouseholdIndividualPushObj.getServerVersion())
                     .individualId(hdssCompoundHouseholdIndividualPushObj.getIndividualId())
                     .householdId(hdssCompoundHouseholdIndividualPushObj.getHouseholdId())
-                    .structureId(hdssCompoundHouseholdIndividualPushObj.getStructureId()).fields(
+                    .structureId(hdssCompoundHouseholdIndividualPushObj.getStructureId())
+                    .fields(
                         Fields.builder().gender(hdssCompoundHouseholdIndividualPushObj.getGender())
                             .dob(parse).build()).build();
 
-                if (hdssCompoundHouseholdIndividualPushObj.getFloatingLocationId()!=null){
+                if (hdssCompoundHouseholdIndividualPushObj.getFloatingLocationName()!=null){
                   item.setFloatingLocationId(hdssCompoundHouseholdIndividualPushObj.getFloatingLocationId());
                   item.setFloatingLocationName(hdssCompoundHouseholdIndividualPushObj.getFloatingLocationName());
                   item.setFloatingLocationGeographicLevel(hdssCompoundHouseholdIndividualPushObj.getFloatingLocationGeographicLevel());

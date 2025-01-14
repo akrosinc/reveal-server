@@ -16,6 +16,9 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface HdssCompoundsRepository extends EntityGraphJpaRepository<HdssCompounds, UUID> {
 
+  @Query(value = "SELECT nextval('hdss.hdss_compounds_seq')", nativeQuery = true)
+  long getNextServerVersion();
+
   @Query(value = "SELECT DISTINCT compound_id as compoundId from hdss.hdss_compounds hc  ", nativeQuery = true)
   List<HdssCompoundProjection> getAllCompounds();
 
