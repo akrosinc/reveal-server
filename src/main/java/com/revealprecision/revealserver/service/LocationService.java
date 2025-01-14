@@ -15,6 +15,7 @@ import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.PlanAssignment;
 import com.revealprecision.revealserver.persistence.domain.PlanLocations;
 import com.revealprecision.revealserver.persistence.projection.LocationCoordinatesProjection;
+import com.revealprecision.revealserver.persistence.projection.LocationDetailsProjection;
 import com.revealprecision.revealserver.persistence.projection.LocationWithChildrenCountProjection;
 import com.revealprecision.revealserver.persistence.projection.LocationWithParentProjection;
 import com.revealprecision.revealserver.persistence.repository.LocationRepository;
@@ -205,6 +206,10 @@ public class LocationService {
     public List<UUID> getAllLocationDirectChildren(UUID locationIdentifier) {
         UUID defaultHierarchyId = locationHierarchyService.getDefaultHierarchy().getIdentifier();
         return locationRepository.getAllDirectDescendantsOfLocation(locationIdentifier, defaultHierarchyId);
+    }
+
+    public List<LocationDetailsProjection> getAllLocationDirectChildrenWithDetails(UUID locationIdentifier, UUID hierarchyIdentifier) {
+        return locationRepository.getAllDirectDescendantsOfLocationWithProperties(locationIdentifier, hierarchyIdentifier);
     }
 
     public List<UUID> getAllLocationChildrenNotLike(UUID locationIdentifier, UUID hierarchyIdentifier,

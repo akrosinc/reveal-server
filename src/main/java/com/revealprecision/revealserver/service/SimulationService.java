@@ -3,6 +3,7 @@ package com.revealprecision.revealserver.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.revealprecision.revealserver.api.v1.dto.factory.LocationResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.DatasetLocationsRequest;
+import com.revealprecision.revealserver.api.v1.dto.request.UpdateDatasetRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.SimulationDatasetRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.EntityMetadataResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationPropertyResponse;
@@ -13,6 +14,7 @@ import com.revealprecision.revealserver.persistence.domain.Dataset;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.Simulation;
 import com.revealprecision.revealserver.persistence.projection.AggregateWithTagProjection;
+import com.revealprecision.revealserver.persistence.projection.LocationDetailsProjection;
 import com.revealprecision.revealserver.persistence.repository.PlanRepository;
 import com.revealprecision.revealserver.persistence.repository.SimulationRepository;
 import lombok.RequiredArgsConstructor;
@@ -60,12 +62,29 @@ public class SimulationService {
         });
     }
 
+    public Simulation updateSimulationDataset(UpdateDatasetRequest request) {
+        Simulation simulation = simulationRepository.findById(request.getSimulationId()).orElseThrow(() -> new NotFoundException("Simulation not found with ID: " + request.getSimulationId()));
+        Dataset dataset = simulation.getDatasets().stream().filter(d -> d.getIdentifier().equals(request.getDatasetId())).findFirst().orElseThrow(() -> new NotFoundException("Dataset not found with ID: " + request.getDatasetId()));
+        dataset.setName(Objects.requireNonNullElse(request.getName(), dataset.getName()));
+        dataset.setHexColor(Objects.requireNonNullElse(request.getHexColor(), dataset.getHexColor()));
+        dataset.setLineWidth(Objects.requireNonNullElse(request.getLineWidth(), dataset.getLineWidth()));
+        return simulationRepository.save(simulation);
+    }
+
+    public Simulation deleteSimulationDataset(UpdateDatasetRequest request) {
+        Simulation simulation = simulationRepository.findById(request.getSimulationId()).orElseThrow(() -> new NotFoundException("Simulation not found with ID: " + request.getSimulationId()));
+        Dataset datasetToRemove = simulation.getDatasets().stream().filter(d -> d.getIdentifier().equals(request.getDatasetId())).findFirst().orElseThrow(() -> new NotFoundException("Dataset not found with ID: " + request.getDatasetId()));
+        simulation.getDatasets().remove(datasetToRemove);
+        return simulationRepository.save(simulation);
+    }
+
     public List<LocationResponse> getDatasetDataForLocations(DatasetLocationsRequest request) throws IOException {
         UUID defaultHierarchyId = locationHierarchyService.getDefaultHierarchy().getIdentifier();
         //TODO: check if this ID exists, if not throw exception
-        List<String> locationsIds = locationService.getAllLocationDirectChildren(request.getParentLocationId()).stream().map(UUID::toString).collect(Collectors.toList());
+        List<LocationDetailsProjection> locationDetailsProjections = locationService.getAllLocationDirectChildrenWithDetails(request.getParentLocationId(), defaultHierarchyId);
+        List<String> locationsIds = locationDetailsProjections.stream().map(projection -> projection.getLocationId().toString()).collect(Collectors.toList());
         Simulation simulation = simulationRepository.findById(request.getSimulationId()).orElseThrow(() -> new NotFoundException("Simulation not found with ID: " + request.getSimulationId()));
-        List <UUID> tagsIds = simulation.getDatasets()
+        List<UUID> tagsIds = simulation.getDatasets()
                 .stream()
                 .filter(dataset -> request.getDatasetsIds().contains(dataset.getIdentifier()))
                 .map(dataset -> dataset.getEntityTag().getIdentifier())
@@ -86,11 +105,11 @@ public class SimulationService {
 
         List<LocationResponse> locations;
 
-        if(request.getIncludeGeometry()) {
+        if (request.getIncludeGeometry()) {
             SearchRequest searchRequest = new SearchRequest(elasticIndex);
             searchRequest.source(buildLocationWithoutMetadataQuery(locationsIds, defaultHierarchyId));
             SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
-            locations =  Arrays.stream(searchResponse.getHits().getHits())
+            locations = Arrays.stream(searchResponse.getHits().getHits())
                     .filter(Objects::nonNull).map(hit -> {
                         LocationResponse locationResponse = null;
                         try {
@@ -100,14 +119,27 @@ public class SimulationService {
                             e.printStackTrace();
                         }
 
+                        var locationId = locationResponse != null ? locationResponse.getIdentifier() : null;
+                        if (locationId != null) {
+                            var properties = locationResponse.getProperties();
+                            Optional<LocationDetailsProjection> projection = locationDetailsProjections.stream().filter(p -> p.getLocationId().equals(locationId.toString())).findFirst();
+                            projection.ifPresent(locationDetailsProjection -> {
+                                properties.setChildrenNumber(locationDetailsProjection.getChildrenCount());
+                                properties.setParentIdentifier(UUID.fromString(locationDetailsProjection.getParentLocationId()));
+                            });
+                            locationResponse.setProperties(properties);
+                        }
                         return locationResponse;
                     }).filter(Objects::nonNull).collect(Collectors.toList());
-        }  else {
-            locations = locationsIds.stream()
-                    .map(locationId -> {
+        } else {
+            locations = locationDetailsProjections.stream()
+                    .map(projection -> {
                         LocationResponse locationResponse = new LocationResponse();
-                        locationResponse.setIdentifier(UUID.fromString(locationId));
-                        locationResponse.setProperties(new LocationPropertyResponse());
+                        locationResponse.setIdentifier(UUID.fromString(projection.getLocationId()));
+                        LocationPropertyResponse properties = new LocationPropertyResponse();
+                        properties.setChildrenNumber(projection.getChildrenCount());
+                        properties.setParentIdentifier(UUID.fromString(projection.getParentLocationId()));
+                        locationResponse.setProperties(properties);
                         return locationResponse;
                     })
                     .collect(Collectors.toList());

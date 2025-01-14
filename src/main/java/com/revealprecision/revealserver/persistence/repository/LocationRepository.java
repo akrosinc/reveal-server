@@ -1,10 +1,7 @@
 package com.revealprecision.revealserver.persistence.repository;
 
 import com.revealprecision.revealserver.persistence.domain.Location;
-import com.revealprecision.revealserver.persistence.projection.LocationCoordinatesProjection;
-import com.revealprecision.revealserver.persistence.projection.LocationWithChildrenCountProjection;
-import com.revealprecision.revealserver.persistence.projection.LocationWithParentProjection;
-import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
+import com.revealprecision.revealserver.persistence.projection.*;
 
 import java.util.List;
 import java.util.Optional;
@@ -143,6 +140,27 @@ public interface LocationRepository extends JpaRepository<Location, UUID> {
             + "from location_relationship lr "
             + "where lr.parent_identifier = :locationIdentifier and lr.location_hierarchy_identifier = :hierarchyIdentifier ", nativeQuery = true)
     List<UUID> getAllDirectDescendantsOfLocation(UUID locationIdentifier, UUID hierarchyIdentifier);
+
+    @Query(value = "WITH DirectDescendants AS (\n" +
+            "    SELECT \n" +
+            "        CAST(lr.location_identifier AS VARCHAR) AS id,\n" +
+            "        lr.parent_identifier AS parent_id\n" +
+            "    FROM \n" +
+            "        location_relationship lr\n" +
+            "    WHERE \n" +
+            "        lr.parent_identifier = :locationIdentifier and lr.location_hierarchy_identifier = :hierarchyIdentifier \n" +
+            ")\n" +
+            "SELECT \n" +
+            "    dd.id AS locationId,\n" +
+            "    COUNT(lr.location_identifier) AS childrenCount,\n" +
+            "    CAST(dd.parent_id AS VARCHAR) AS parentLocationId\n" +
+            "FROM \n" +
+            "    DirectDescendants dd\n" +
+            "LEFT JOIN \n" +
+            "    location_relationship lr ON CAST(lr.parent_identifier as VARCHAR) = dd.id\n" +
+            "GROUP BY \n" +
+            "    dd.id, dd.parent_id; ", nativeQuery = true)
+    List<LocationDetailsProjection> getAllDirectDescendantsOfLocationWithProperties(@Param("locationIdentifier") UUID locationIdentifier, @Param("hierarchyIdentifier") UUID hierarchyIdentifier);
 
     @Query(value = "WITH RECURSIVE ancestors(id, parent_id, lvl) AS ( "
             + "      SELECT lr.location_identifier, lr.parent_identifier,1 AS lvl "

@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.api.v1.controller;
 
 import com.revealprecision.revealserver.api.v1.dto.request.DatasetLocationsRequest;
+import com.revealprecision.revealserver.api.v1.dto.request.UpdateDatasetRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.SimulationDatasetRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.SimulationDatasetResponse;
@@ -33,6 +34,17 @@ public class SimulationController {
         return ResponseEntity.ok(simulationService.addDatasetToSimulation(request));
     }
 
+    @PutMapping("dataset")
+    public ResponseEntity<Simulation> updateSimulationDataset(@RequestBody UpdateDatasetRequest request) {
+        return ResponseEntity.ok(simulationService.updateSimulationDataset(request));
+    }
+
+    @DeleteMapping("dataset")
+    public ResponseEntity<Simulation> deleteSimulationDataset(@RequestBody UpdateDatasetRequest request) {
+        return ResponseEntity.ok(simulationService.deleteSimulationDataset(request));
+    }
+
+    //TODO: move to location controller
     @PostMapping("dataset/location-data")
     public ResponseEntity<List<LocationResponse>> getDatasetDataForLocations(
             @RequestBody DatasetLocationsRequest request) throws IOException {
