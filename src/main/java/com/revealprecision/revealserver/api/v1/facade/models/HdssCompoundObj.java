@@ -23,6 +23,8 @@ public class HdssCompoundObj implements Serializable {
 
   Set<HdssIndividual> allIndividuals;
 
+  Set<String> allHouseholdIndividualToDelete;
+
   boolean isEmpty;
 
   long serverVersion;
@@ -145,6 +147,9 @@ public class HdssCompoundObj implements Serializable {
     private String dob;
     private String gender;
     private String name;
+    private String floatingLocationId;
+    private String floatingLocationName;
+    private String floatingLocationGeographicLevel;
 
     @Override
     public boolean equals(Object o) {

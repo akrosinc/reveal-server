@@ -19,4 +19,10 @@ public interface HdssCompoundHouseholdIndividualProjection {
   long getServerVersion();
 
   String getStructureId();
+
+  String getFloatingLocationId();
+
+  String getFloatingLocationName();
+
+  String getFloatingLocationGeographicLevel();
 }

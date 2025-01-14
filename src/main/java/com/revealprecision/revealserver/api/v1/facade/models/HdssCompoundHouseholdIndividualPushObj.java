@@ -17,5 +17,8 @@ public class HdssCompoundHouseholdIndividualPushObj implements Serializable {
         private UUID structureId;
         private String dob;
         private String gender;
+        private String floatingLocationId;
+        private String floatingLocationName;
+        private String floatingLocationGeographicLevel;
         private int serverVersion;
 }

@@ -42,6 +42,12 @@ public class HdssCompounds {
   @Column(columnDefinition = "jsonb")
   private Fields fields;
 
+  private String floatingLocationId;
+
+  private String floatingLocationName;
+
+  private String floatingLocationGeographicLevel;
+
   private long serverVersion;
 
 }

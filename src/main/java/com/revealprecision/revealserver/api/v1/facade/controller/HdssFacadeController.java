@@ -66,29 +66,45 @@ public class HdssFacadeController {
       Optional<Long> maxServerVersion = individuals.stream()
           .map(HdssCompoundHouseholdIndividualProjection::getServerVersion).reduce(Long::max);
 
-      return ResponseEntity.ok(HdssCompoundObj.builder().allCompounds(individuals.stream().map(
-              individual -> HdssCompound.builder().serverVersion(individual.getServerVersion())
+      HdssCompoundObj compounds = HdssCompoundObj.builder()
+          .allCompounds(individuals.stream()
+              .filter(individual->individual.getStructureId()!=null)
+              .map(individual -> HdssCompound.builder().serverVersion(individual.getServerVersion())
                   .compoundId(individual.getCompoundId()).build()).collect(Collectors.toSet()))
-          .compoundHouseHolds(individuals.stream().map(
-              individual -> HdssCompoundHousehold.builder().compoundId(individual.getCompoundId())
+          .compoundHouseHolds(individuals.stream()
+              .filter(individual->individual.getStructureId()!=null)
+              .map(individual -> HdssCompoundHousehold.builder().compoundId(individual.getCompoundId())
                   .serverVersion(individual.getServerVersion())
                   .householdId(individual.getHouseholdId()).build()).collect(Collectors.toSet()))
-          .allHouseholdIndividual(individuals.stream().map(
-              individual -> HdssHouseholdIndividual.builder()
+          .allHouseholdIndividual(individuals.stream()
+              .filter(individual->individual.getStructureId()!=null)
+              .map(individual -> HdssHouseholdIndividual.builder()
                   .serverVersion(individual.getServerVersion())
                   .individualId(individual.getIndividualId())
                   .householdId(individual.getHouseholdId()).build()).collect(Collectors.toSet()))
-          .allHouseholdStructure(individuals.stream().map(
-              individual -> HdssHouseholdStructure.builder()
+          .allHouseholdStructure(individuals.stream()
+              .filter(individual->individual.getStructureId()!=null)
+              .map(individual -> HdssHouseholdStructure.builder()
                   .serverVersion(individual.getServerVersion())
                   .structureId(individual.getStructureId()).householdId(individual.getHouseholdId())
-                  .build()).collect(Collectors.toSet())).allIndividuals(individuals.stream().map(
+                  .build())
+              .collect(Collectors.toSet()))
+          .allIndividuals(individuals.stream().map(
               individual -> HdssIndividual.builder().identifier(individual.getId())
                   .individualId(individual.getIndividualId()).name(individual.getName())
                   .serverVersion(individual.getServerVersion()).dob(individual.getDob())
-                  .gender(individual.getGender()).build()).collect(Collectors.toSet()))
+                  .gender(individual.getGender())
+                  .floatingLocationGeographicLevel(individual.getFloatingLocationGeographicLevel())
+                  .floatingLocationId(individual.getFloatingLocationId())
+                  .floatingLocationName(individual.getFloatingLocationName()).build())
+              .collect(Collectors.toSet()))
+          .allHouseholdIndividualToDelete(individuals.stream()
+              .filter(individual->individual.getStructureId()==null)
+              .map(HdssCompoundHouseholdIndividualProjection::getIndividualId).collect(Collectors.toSet()))
           .serverVersion(maxServerVersion.isPresent() ? maxServerVersion.get() : 0)
-          .totalRecords(count).isEmpty(false).build());
+          .totalRecords(count).isEmpty(false).build();
+
+      return ResponseEntity.ok(compounds);
     } else {
       return ResponseEntity.ok(HdssCompoundObj.builder().totalRecords(count).isEmpty(true).build());
     }
@@ -259,6 +275,14 @@ public class HdssFacadeController {
                     hdssCompoundHouseholdIndividualPushObj.getHouseholdId());
                 item.setStructureId(hdssCompoundHouseholdIndividualPushObj.getStructureId());
                 item.setServerVersion(hdssCompoundHouseholdIndividualPushObj.getServerVersion());
+                if (hdssCompoundHouseholdIndividualPushObj.getFloatingLocationId()!=null){
+                  item.setFloatingLocationId(hdssCompoundHouseholdIndividualPushObj.getFloatingLocationId());
+                  item.setFloatingLocationName(hdssCompoundHouseholdIndividualPushObj.getFloatingLocationName());
+                  item.setFloatingLocationGeographicLevel(hdssCompoundHouseholdIndividualPushObj.getFloatingLocationGeographicLevel());
+                  item.setCompoundId(null);
+                  item.setHouseholdId(null);
+                  item.setStructureId(null);
+                }
               } else {
                 item = HdssCompounds.builder()
                     .id(UUID.fromString(hdssCompoundHouseholdIndividualPushObj.getIdentifier()))
@@ -269,6 +293,16 @@ public class HdssFacadeController {
                     .structureId(hdssCompoundHouseholdIndividualPushObj.getStructureId()).fields(
                         Fields.builder().gender(hdssCompoundHouseholdIndividualPushObj.getGender())
                             .dob(parse).build()).build();
+
+                if (hdssCompoundHouseholdIndividualPushObj.getFloatingLocationId()!=null){
+                  item.setFloatingLocationId(hdssCompoundHouseholdIndividualPushObj.getFloatingLocationId());
+                  item.setFloatingLocationName(hdssCompoundHouseholdIndividualPushObj.getFloatingLocationName());
+                  item.setFloatingLocationGeographicLevel(hdssCompoundHouseholdIndividualPushObj.getFloatingLocationGeographicLevel());
+                  item.setCompoundId(null);
+                  item.setHouseholdId(null);
+                  item.setStructureId(null);
+                }
+
               }
 
               return item;
