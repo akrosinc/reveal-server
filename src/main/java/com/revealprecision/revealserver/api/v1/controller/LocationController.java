@@ -5,8 +5,8 @@ import com.revealprecision.revealserver.api.v1.dto.factory.LocationResponseFacto
 import com.revealprecision.revealserver.api.v1.dto.request.LocationRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.CountResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.PopulationResponseData;
 import com.revealprecision.revealserver.enums.SummaryEnum;
-import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.projection.LocationWithChildrenCountProjection;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import com.revealprecision.revealserver.service.LocationRelationshipService;
@@ -36,6 +36,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import reactor.core.publisher.Mono;
 
 @RequiredArgsConstructor
 @RestController
@@ -163,5 +164,10 @@ public class LocationController {
         locationRelationshipService.refreshLiteStructureCountView();
         locationRelationshipService.refreshLocationRelationshipMaterializedView();
         return ResponseEntity.ok("refreshed requested");
+    }
+
+    @GetMapping("/{locationId}/population")
+    public ResponseEntity<Mono<PopulationResponseData>> getPopulationDataForLocation(@PathVariable("locationId") UUID locationId) {
+        return ResponseEntity.ok( locationService.getPopulationDataForLocation(locationId));
     }
 }

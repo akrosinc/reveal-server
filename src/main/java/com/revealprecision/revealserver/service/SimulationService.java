@@ -5,10 +5,7 @@ import com.revealprecision.revealserver.api.v1.dto.factory.LocationResponseFacto
 import com.revealprecision.revealserver.api.v1.dto.request.DatasetLocationsRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.UpdateDatasetRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.SimulationDatasetRequest;
-import com.revealprecision.revealserver.api.v1.dto.response.EntityMetadataResponse;
-import com.revealprecision.revealserver.api.v1.dto.response.LocationPropertyResponse;
-import com.revealprecision.revealserver.api.v1.dto.response.LocationResponse;
-import com.revealprecision.revealserver.api.v1.dto.response.SimulationDatasetResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.*;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.Dataset;
 import com.revealprecision.revealserver.persistence.domain.Plan;
@@ -44,6 +41,7 @@ public class SimulationService {
     private final LocationService locationService;
     private final RestHighLevelClient client;
     private final LocationHierarchyService locationHierarchyService;
+
     @Value("${reveal.elastic.index-name}")
     private final String elasticIndex;
 

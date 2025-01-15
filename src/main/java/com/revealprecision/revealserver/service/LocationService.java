@@ -5,6 +5,9 @@ import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toSet;
 
 import com.revealprecision.revealserver.api.v1.dto.request.LocationRequest;
+import com.revealprecision.revealserver.api.v1.dto.response.PopulationResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.PopulationResponseData;
+import com.revealprecision.revealserver.client.PopulationClient;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.EntityTag;
@@ -53,6 +56,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
 
 @Service
 @RequiredArgsConstructor
@@ -64,6 +68,7 @@ public class LocationService {
     private final StorageService storageService;
     private final EntityTagService entityTagService;
     private final LocationHierarchyService locationHierarchyService;
+    private final PopulationClient populationClient;
 
     public Location createLocation(LocationRequest locationRequest, UUID parentLocationId)
             throws Exception {
@@ -361,5 +366,41 @@ public class LocationService {
         ByteArrayResource resource = new ByteArrayResource(Files.readAllBytes(filePath));
         storageService.deleteFile(fileLocation);
         return resource;
+    }
+
+    public Mono<PopulationResponseData> getPopulationDataForLocation(UUID locationId) {
+        Location location = findByIdentifier(locationId);
+        List<Object> coordinates = location.getGeometry().getCoordinates();
+        var coordinatesWithElevation = addElevation(coordinates);
+        Mono<PopulationResponse> response = populationClient.getPopulationForLocation(coordinatesWithElevation);
+        return response.flatMap(res -> {
+            if (res.getResults() != null && !res.getResults().isEmpty()) {
+                return Mono.justOrEmpty(res.getResults().get(0).getPopulationData());
+            }
+            return Mono.empty();
+        });
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Object> addElevation(List<Object> coordinates) {
+        List<Object> result = new ArrayList<>();
+        if (coordinates.size() == 1 && coordinates.get(0) instanceof List) {
+            List<Object> secondLevel = (List<Object>) coordinates.get(0);
+            if (secondLevel.size() == 1 && secondLevel.get(0) instanceof List) {
+                List<Object> thirdLevel = (List<Object>) secondLevel.get(0);
+                List<List<Double>> updatedCoordinates = new ArrayList<>();
+
+                for (Object coordinate : thirdLevel) {
+                    if (coordinate instanceof List) {
+                        List<Double> point = (List<Double>) coordinate;
+                        List<Double> updatedPoint = new ArrayList<>(point);
+                        updatedPoint.add(0.0);
+                        updatedCoordinates.add(updatedPoint);
+                    }
+                }
+                result.add(updatedCoordinates);
+            }
+        }
+        return result;
     }
 }
