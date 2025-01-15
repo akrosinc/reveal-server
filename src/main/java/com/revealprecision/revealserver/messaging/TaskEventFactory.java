@@ -69,8 +69,11 @@ public class TaskEventFactory {
         .lastModified(taskSaved.getModifiedDatetime())
         .identifier(taskSaved.getIdentifier())
         .priority(taskSaved.getPriority())
-        .locationGeographicLevelName(ActionUtils.isActionForPerson(action)?taskSaved.getPerson().getLocations().size()>0? new ArrayList<>(
-            taskSaved.getPerson().getLocations()).get(0).getGeographicLevel().getName(): taskSaved.getLocation().getGeographicLevel().getName():taskSaved.getLocation().getGeographicLevel().getName())
+        .locationGeographicLevelName(ActionUtils.isActionForPerson(action)?
+            taskSaved.getPerson().getLocations().size()>0
+                  ? new ArrayList<>(taskSaved.getPerson().getLocations()).get(0).getGeographicLevel().getName()
+                  : taskSaved.getLocation().getGeographicLevel().getName()
+            :taskSaved.getLocation().getGeographicLevel().getName())
         .lastUpdated(taskSaved.getModifiedDatetime())
         .build();
 
