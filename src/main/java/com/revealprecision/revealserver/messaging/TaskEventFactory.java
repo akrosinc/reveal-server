@@ -56,14 +56,25 @@ public class TaskEventFactory {
     LookupTaskStatus lookupTaskStatus = taskSaved.getLookupTaskStatus();
 
     log.info("task baseEntity {}", taskSaved.getBaseEntityIdentifier());
-    log.info("task person {}", taskSaved.getPerson().getIdentifier());
-
-    if (taskSaved.getPerson()!=null && taskSaved.getPerson().getLocations()!=null ){
-      if (taskSaved.getPerson().getLocations().size()>0){
-        log.info("task person location size {}", taskSaved.getPerson().getLocations().size());
-      } else {
-        log.info("task person location size !>0 {}", taskSaved.getPerson().getLocations().size());
+    if (ActionUtils.isActionForPerson(action) ) {
+      if (taskSaved.getPerson() != null) {
+        log.info("task person {}", taskSaved.getPerson().getIdentifier());
       }
+      if (taskSaved.getPerson() != null && taskSaved.getPerson().getLocations() != null) {
+        if (taskSaved.getPerson().getLocations().size() > 0) {
+          log.info("task person location size {}", taskSaved.getPerson().getLocations().size());
+        } else {
+          log.info("task person location size !>0 {}", taskSaved.getPerson().getLocations().size());
+        }
+      }
+    } else {
+
+      if (taskSaved.getLocation() !=null){
+        log.info("location id {}", taskSaved.getLocation().getIdentifier());
+      } else {
+        log.info("no location attached to task");
+      }
+
     }
 
     TaskEvent taskEvent = TaskEvent.builder()
@@ -84,8 +95,12 @@ public class TaskEventFactory {
         .locationGeographicLevelName(ActionUtils.isActionForPerson(action) ?
             taskSaved.getPerson().getLocations().size()>0 ?
                 new ArrayList<>(taskSaved.getPerson().getLocations()).get(0).getGeographicLevel().getName()
-                : taskSaved.getLocation().getGeographicLevel().getName()
-            :taskSaved.getLocation().getGeographicLevel().getName())
+                : taskSaved.getLocation()!=null ?
+                    taskSaved.getLocation().getGeographicLevel().getName()
+                    : null
+            : taskSaved.getLocation()!=null?
+                  taskSaved.getLocation().getGeographicLevel().getName()
+                  : null)
         .lastUpdated(taskSaved.getModifiedDatetime())
         .build();
 
