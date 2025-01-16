@@ -149,17 +149,29 @@ public interface LocationRepository extends JpaRepository<Location, UUID> {
             "        location_relationship lr\n" +
             "    WHERE \n" +
             "        lr.parent_identifier = :locationIdentifier and lr.location_hierarchy_identifier = :hierarchyIdentifier \n" +
-            ")\n" +
-            "SELECT \n" +
-            "    dd.id AS locationId,\n" +
-            "    COUNT(lr.location_identifier) AS childrenCount,\n" +
-            "    CAST(dd.parent_id AS VARCHAR) AS parentLocationId\n" +
-            "FROM \n" +
-            "    DirectDescendants dd\n" +
-            "LEFT JOIN \n" +
-            "    location_relationship lr ON CAST(lr.parent_identifier as VARCHAR) = dd.id\n" +
-            "GROUP BY \n" +
-            "    dd.id, dd.parent_id; ", nativeQuery = true)
+            "    UNION \n" +
+            "    SELECT \n" +
+            "        CAST(lr.location_identifier AS VARCHAR) AS id, \n" +
+            "        COALESCE(lr.parent_identifier, '00000000-0000-0000-0000-000000000000') AS parent_id \n" +
+            "    FROM  \n" +
+            "        location_relationship lr \n" +
+            "    WHERE  \n" +
+            "       lr.location_identifier = :locationIdentifier and lr.location_hierarchy_identifier = :hierarchyIdentifier \n" +
+            ")\n"+
+                    "SELECT \n"+
+                    "    dd.id AS locationId,\n"+
+                    "    COUNT(lr.location_identifier) AS childrenCount,\n"+
+                    "    CAST(dd.parent_id AS VARCHAR) AS parentLocationId,\n"+
+                    "    CAST(l.population_data AS TEXT) AS populationData\n"+
+                    "FROM \n"+
+                    "    DirectDescendants dd\n"+
+                    "LEFT JOIN \n"+
+                    "    location_relationship lr ON CAST(lr.parent_identifier as VARCHAR) = dd.id\n"+
+                    "LEFT JOIN \n"+
+                    "    location l ON CAST(l.identifier as VARCHAR) = dd.id\n"+
+                    "GROUP BY \n"+
+                    "    dd.id, dd.parent_id, l.population_data ",nativeQuery =true)
+
     List<LocationDetailsProjection> getAllDirectDescendantsOfLocationWithProperties(@Param("locationIdentifier") UUID locationIdentifier, @Param("hierarchyIdentifier") UUID hierarchyIdentifier);
 
     @Query(value = "WITH RECURSIVE ancestors(id, parent_id, lvl) AS ( "
@@ -195,4 +207,4 @@ public interface LocationRepository extends JpaRepository<Location, UUID> {
     @Query(value = "select l.name from Location l where l.hashValue in :hashes")
     List<String> findAllByHashes(Set<String> hashes);
 
-}
+  }
