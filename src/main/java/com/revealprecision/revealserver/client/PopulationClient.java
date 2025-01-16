@@ -16,10 +16,6 @@ public class PopulationClient {
 
     public PopulationClient(WebClient.Builder builder) {
         this.webClient = builder.baseUrl("https://populationexplorer.com")
-                .defaultHeader("Content-Type", "application/json")
-                .defaultHeader("Authorization", "Token 270c931c147557035071cc118841e4d528d11ffe")
-                .defaultHeader("DS-NAME", "landscan")
-                .defaultHeader("DS-YEAR", "2016")
                 .build();
     }
 
