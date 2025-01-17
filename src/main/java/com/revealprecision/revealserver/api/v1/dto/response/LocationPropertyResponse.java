@@ -48,4 +48,5 @@ public class LocationPropertyResponse {
   private UUID parent;
   private BigDecimal xCentroid;
   private BigDecimal yCentroid;
+  private PopulationResponseData population;
 }

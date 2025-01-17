@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.persistence.repository;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.projection.*;
 
@@ -11,9 +12,12 @@ import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+
+import javax.transaction.Transactional;
 
 @Repository
 public interface LocationRepository extends JpaRepository<Location, UUID> {
@@ -22,6 +26,25 @@ public interface LocationRepository extends JpaRepository<Location, UUID> {
     Page<UUID> getAllLocationIdentifiers(Pageable pageable);
 
     List<Location> findByIdentifierIn(List<UUID> ids);
+
+    @Query("select l.identifier from Location l")
+    Set<UUID> findAllIdentifiers();
+
+    @Query("select l " +
+            "from Location l " +
+            "left join PlanLocations pl on pl.location.identifier = l.identifier " +
+            "where pl.plan.identifier = :planId " +
+            "and l.geographicLevel.name in :levelsList")
+    List<Location> getAllTargetAreasOfPlan(@Param("planId") UUID planId, @Param("levelsList") String levelsList);
+
+    @Query(
+            value = "SELECT NOT EXISTS (\n" +
+                    "    SELECT 1\n" +
+                    "    FROM location l\n" +
+                    "    WHERE l.population_data IS NULL\n" +
+                    ") ",
+            nativeQuery = true)
+    boolean populationDataExistsForAll();
 
     @Query(value = "select new com.revealprecision.revealserver.persistence.projection.LocationWithChildrenCountProjection(l, count(lr), lr2.parentLocation.identifier) " +
             "from Location l " +
@@ -207,4 +230,8 @@ public interface LocationRepository extends JpaRepository<Location, UUID> {
     @Query(value = "select l.name from Location l where l.hashValue in :hashes")
     List<String> findAllByHashes(Set<String> hashes);
 
-  }
+    @Transactional
+    @Modifying
+    @Query("UPDATE Location l SET l.populationData = :populationData WHERE l.id = :locationId")
+    void updatePopulationData(@Param("locationId") UUID locationId, @Param("populationData") JsonNode populationData);
+}

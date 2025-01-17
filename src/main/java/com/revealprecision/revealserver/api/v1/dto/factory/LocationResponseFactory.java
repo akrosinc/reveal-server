@@ -39,6 +39,21 @@ public class LocationResponseFactory {
                 .geographicLevel(location.getGeographicLevel().getName()).build()).build();
   }
 
+  public static LocationResponse fromEntityWithPopulation(Location location) {
+    return LocationResponse.builder()
+            .identifier(location.getIdentifier())
+            .type(location.getType())
+            .properties(
+                    LocationPropertyResponse.builder()
+                            .name(location.getName())
+                            .status(location.getStatus())
+                            .externalId(location.getExternalId())
+                            .population(location.getPopulationData())
+                            .geographicLevel(location.getGeographicLevel().getName())
+                            .build()
+            ).build();
+  }
+
   public static LocationResponse fromEntityWithChildCount(Location location, Long childrenNumber) {
     return LocationResponse.builder()
         .identifier(location.getIdentifier())

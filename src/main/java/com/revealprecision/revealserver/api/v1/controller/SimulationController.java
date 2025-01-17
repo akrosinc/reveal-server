@@ -5,6 +5,7 @@ import com.revealprecision.revealserver.api.v1.dto.request.UpdateDatasetRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.SimulationDatasetRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.SimulationDatasetResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.SimulationResponse;
 import com.revealprecision.revealserver.persistence.domain.Simulation;
 import com.revealprecision.revealserver.service.SimulationService;
 import lombok.RequiredArgsConstructor;
@@ -23,8 +24,8 @@ public class SimulationController {
     private final SimulationService simulationService;
 
     @GetMapping("{planId}")
-    public ResponseEntity<Simulation> getSimulationByPlanId(@PathVariable UUID planId) {
-        Simulation simulation = simulationService.getOrCreateSimulationByPlanId(planId);
+    public ResponseEntity<SimulationResponse> getSimulationByPlanId(@PathVariable UUID planId) {
+        SimulationResponse simulation = simulationService.getSimulationWithTargetAreas(planId);
         return ResponseEntity.ok(simulation);
     }
 

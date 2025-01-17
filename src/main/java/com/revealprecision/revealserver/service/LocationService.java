@@ -4,6 +4,8 @@ import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toSet;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.revealprecision.revealserver.api.v1.dto.request.LocationRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.PopulationResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.PopulationResponseData;
@@ -23,6 +25,7 @@ import com.revealprecision.revealserver.persistence.projection.LocationWithChild
 import com.revealprecision.revealserver.persistence.projection.LocationWithParentProjection;
 import com.revealprecision.revealserver.persistence.repository.LocationRepository;
 import com.revealprecision.revealserver.util.ElasticModelUtil;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -31,6 +34,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +42,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
@@ -56,7 +61,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.util.retry.Retry;
+
+import javax.transaction.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -69,6 +79,7 @@ public class LocationService {
     private final EntityTagService entityTagService;
     private final LocationHierarchyService locationHierarchyService;
     private final PopulationClient populationClient;
+    private final ObjectMapper objectMapper;
 
     public Location createLocation(LocationRequest locationRequest, UUID parentLocationId)
             throws Exception {
@@ -114,11 +125,11 @@ public class LocationService {
                         Location.class));
     }
 
-    public List<Location> findAllById(List<UUID> ids){
+    public List<Location> findAllById(List<UUID> ids) {
         return locationRepository.findByIdentifierIn(ids);
     }
 
-    public Page<LocationWithChildrenCountProjection> findAllPageableById(List<UUID> ids, Pageable pageable){
+    public Page<LocationWithChildrenCountProjection> findAllPageableById(List<UUID> ids, Pageable pageable) {
         return locationRepository.findPageableByIdentifierIn(ids, pageable);
     }
 
@@ -334,7 +345,7 @@ public class LocationService {
                 tagNameRowCell.setCellStyle(rowHeaderStyle);
                 Cell tagDataTypeDropDownCell = tagDataTypeRow.createCell(entityTagIndex);
                 tagDataTypeDropDownCell.setCellStyle(rowHeaderStyle);
-        tagDataTypeDropDownCell.setCellValue(entityTag.getValueType().equals("double")?"number":entityTag.getValueType());
+                tagDataTypeDropDownCell.setCellValue(entityTag.getValueType().equals("double") ? "number" : entityTag.getValueType());
                 entityTagIndex++;
             }
 
@@ -368,39 +379,60 @@ public class LocationService {
         return resource;
     }
 
+    public List<Location> getAllTargetAreasOfPlan(UUID planId, String planTargetLevelName) {
+        LocationHierarchy defaultHierarchy = locationHierarchyService.getDefaultHierarchy();
+        int idx = defaultHierarchy.getNodeOrder().indexOf(planTargetLevelName);
+        String targetAreaLevel = idx > 0 ? defaultHierarchy.getNodeOrder().get(idx - 1) : null;
+        return locationRepository.getAllTargetAreasOfPlan(planId, targetAreaLevel);
+    }
+
     public Mono<PopulationResponseData> getPopulationDataForLocation(UUID locationId) {
         Location location = findByIdentifier(locationId);
         List<Object> coordinates = location.getGeometry().getCoordinates();
         var coordinatesWithElevation = addElevation(coordinates);
-        Mono<PopulationResponse> response = populationClient.getPopulationForLocation(coordinatesWithElevation);
+        Mono<PopulationResponse> response = populationClient.getPopulationForLocation(location.getGeometry().getType(), coordinatesWithElevation);
         return response.flatMap(res -> {
             if (res.getResults() != null && !res.getResults().isEmpty()) {
-                return Mono.justOrEmpty(res.getResults().get(0).getPopulationData());
+                var population = res.getResults().get(0).getPopulationData();
+                JsonNode jsonNode = objectMapper.convertValue(population, JsonNode.class);
+                updatePopulationData(locationId, jsonNode);
+                return Mono.justOrEmpty(population);
             }
             return Mono.empty();
         });
     }
 
+    @Transactional
+    public void updatePopulationData(UUID locationId, JsonNode populationData) {
+        locationRepository.updatePopulationData(locationId, populationData);
+    }
+
     @SuppressWarnings("unchecked")
     private List<Object> addElevation(List<Object> coordinates) {
         List<Object> result = new ArrayList<>();
-        if (coordinates.size() == 1 && coordinates.get(0) instanceof List) {
-            List<Object> secondLevel = (List<Object>) coordinates.get(0);
-            if (secondLevel.size() == 1 && secondLevel.get(0) instanceof List) {
-                List<Object> thirdLevel = (List<Object>) secondLevel.get(0);
-                List<List<Double>> updatedCoordinates = new ArrayList<>();
 
-                for (Object coordinate : thirdLevel) {
-                    if (coordinate instanceof List) {
-                        List<Double> point = (List<Double>) coordinate;
-                        List<Double> updatedPoint = new ArrayList<>(point);
-                        updatedPoint.add(0.0);
-                        updatedCoordinates.add(updatedPoint);
+        for (Object item : coordinates) {
+            if (item instanceof List) {
+                List<Object> nestedList = (List<Object>) item;
+                if (!nestedList.isEmpty() && nestedList.get(0) instanceof Number) {
+                    List<Double> updatedPoint = new ArrayList<>();
+                    for (Object value : nestedList) {
+                        if (value instanceof Number) {
+                            updatedPoint.add(((Number) value).doubleValue());
+                        } else {
+                            throw new IllegalArgumentException("Unexpected value in coordinate list: " + value);
+                        }
                     }
+                    updatedPoint.add(0.0);
+                    result.add(updatedPoint);
+                } else {
+                    result.add(addElevation(nestedList));
                 }
-                result.add(updatedCoordinates);
+            } else {
+                throw new IllegalArgumentException("Unexpected non-list item in coordinates: " + item);
             }
         }
+
         return result;
     }
 }

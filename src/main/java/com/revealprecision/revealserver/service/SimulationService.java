@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.revealprecision.revealserver.api.v1.dto.factory.LocationResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.DatasetLocationsRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.UpdateDatasetRequest;
@@ -8,6 +9,7 @@ import com.revealprecision.revealserver.api.v1.dto.request.SimulationDatasetRequ
 import com.revealprecision.revealserver.api.v1.dto.response.*;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.Dataset;
+import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.Simulation;
 import com.revealprecision.revealserver.persistence.projection.AggregateWithTagProjection;
@@ -41,6 +43,7 @@ public class SimulationService {
     private final LocationService locationService;
     private final RestHighLevelClient client;
     private final LocationHierarchyService locationHierarchyService;
+    private final ObjectMapper objectMapper;
 
     @Value("${reveal.elastic.index-name}")
     private final String elasticIndex;
@@ -58,6 +61,12 @@ public class SimulationService {
 
             return simulationRepository.save(newSimulation);
         });
+    }
+
+    public SimulationResponse getSimulationWithTargetAreas(UUID planId) {
+        Simulation s = getOrCreateSimulationByPlanId(planId);
+        List<Location> l = locationService.getAllTargetAreasOfPlan(planId, s.getPlan().getPlanTargetType().getGeographicLevel().getName());
+        return new SimulationResponse(s.getIdentifier(), s.getDatasets(), l.stream().map(LocationResponseFactory::fromEntityWithPopulation).collect(Collectors.toList()));
     }
 
     public Simulation updateSimulationDataset(UpdateDatasetRequest request) {
@@ -80,7 +89,7 @@ public class SimulationService {
         UUID defaultHierarchyId = locationHierarchyService.getDefaultHierarchy().getIdentifier();
         //TODO: check if this ID exists, if not throw exception
         List<LocationDetailsProjection> locationDetailsProjections = locationService.getAllLocationDirectChildrenWithDetails(request.getParentLocationId(), defaultHierarchyId);
-        List<String> locationsIds = locationDetailsProjections.stream().map(projection -> projection.getLocationId().toString()).collect(Collectors.toList());
+        List<String> locationsIds = locationDetailsProjections.stream().map(LocationDetailsProjection::getLocationId).collect(Collectors.toList());
         Simulation simulation = simulationRepository.findById(request.getSimulationId()).orElseThrow(() -> new NotFoundException("Simulation not found with ID: " + request.getSimulationId()));
         List<UUID> tagsIds = simulation.getDatasets()
                 .stream()
@@ -124,6 +133,11 @@ public class SimulationService {
                             projection.ifPresent(locationDetailsProjection -> {
                                 properties.setChildrenNumber(locationDetailsProjection.getChildrenCount());
                                 properties.setParentIdentifier(UUID.fromString(locationDetailsProjection.getParentLocationId()));
+                                try {
+                                    properties.setPopulation(objectMapper.readValue(locationDetailsProjection.getPopulationData(), PopulationResponseData.class));
+                                } catch (JsonProcessingException e) {
+                                   properties.setPopulation(null);
+                                }
                             });
                             locationResponse.setProperties(properties);
                         }
@@ -137,6 +151,11 @@ public class SimulationService {
                         LocationPropertyResponse properties = new LocationPropertyResponse();
                         properties.setChildrenNumber(projection.getChildrenCount());
                         properties.setParentIdentifier(UUID.fromString(projection.getParentLocationId()));
+                        try {
+                            properties.setPopulation(objectMapper.readValue(projection.getPopulationData(), PopulationResponseData.class));
+                        } catch (JsonProcessingException e) {
+                            properties.setPopulation(null);
+                        }                        
                         locationResponse.setProperties(properties);
                         return locationResponse;
                     })
