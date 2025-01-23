@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
+import java.util.UUID;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -19,4 +21,11 @@ public class EntityMetadataResponse {
   private Object value;
   private String type;
   private String fieldType;
+  private UUID datasetId;
+
+  public EntityMetadataResponse(Object value, String type, String fieldType){
+    this.value = value;
+    this.type = type;
+    this.fieldType = fieldType;
+  }
 }

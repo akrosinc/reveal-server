@@ -104,7 +104,8 @@ public class SimulationService {
                                 tag -> new EntityMetadataResponse(
                                         getRequestedValue(tag),
                                         tag.getTag().getTag(),
-                                        tag.getEventType()
+                                        tag.getEventType(),
+                                        simulation.getDatasets().stream().filter(dataset -> dataset.getEntityTag().getIdentifier().equals(tag.getTag().getIdentifier())).findFirst().get().getIdentifier()
                                 ),
                                 Collectors.toList()
                         )
@@ -133,6 +134,7 @@ public class SimulationService {
                             projection.ifPresent(locationDetailsProjection -> {
                                 properties.setChildrenNumber(locationDetailsProjection.getChildrenCount());
                                 properties.setParentIdentifier(UUID.fromString(locationDetailsProjection.getParentLocationId()));
+                                properties.setId(locationDetailsProjection.getLocationId());
                                 try {
                                     properties.setPopulation(objectMapper.readValue(locationDetailsProjection.getPopulationData(), PopulationResponseData.class));
                                 } catch (JsonProcessingException e) {
@@ -151,6 +153,7 @@ public class SimulationService {
                         LocationPropertyResponse properties = new LocationPropertyResponse();
                         properties.setChildrenNumber(projection.getChildrenCount());
                         properties.setParentIdentifier(UUID.fromString(projection.getParentLocationId()));
+                        properties.setId(projection.getLocationId());
                         try {
                             properties.setPopulation(objectMapper.readValue(projection.getPopulationData(), PopulationResponseData.class));
                         } catch (JsonProcessingException e) {
@@ -195,7 +198,8 @@ public class SimulationService {
                         tag -> new EntityMetadataResponse(
                                 getRequestedValue(tag),
                                 tag.getTag().getTag(),
-                                tag.getEventType()
+                                tag.getEventType(),
+                                savedDataset.getIdentifier()
                         )
                 ));
         return new SimulationDatasetResponse(savedSimulation.getIdentifier(), tagProjection.getTag().getIdentifier(), savedDataset.getIdentifier(), savedDataset.getName(), savedDataset.getHexColor(), savedDataset.getLineWidth(), map);
