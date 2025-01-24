@@ -224,8 +224,8 @@ public class LocationService {
         return locationRepository.getAllDirectDescendantsOfLocation(locationIdentifier, defaultHierarchyId);
     }
 
-    public List<LocationDetailsProjection> getAllLocationDirectChildrenWithDetails(UUID locationIdentifier, UUID hierarchyIdentifier) {
-        return locationRepository.getAllDirectDescendantsOfLocationWithProperties(locationIdentifier, hierarchyIdentifier);
+    public List<LocationDetailsProjection> getAllLocationDirectChildrenWithDetails(UUID locationIdentifier, UUID hierarchyIdentifier, UUID planId) {
+        return locationRepository.getAllDirectDescendantsOfLocationWithProperties(locationIdentifier, hierarchyIdentifier, planId);
     }
 
     public List<UUID> getAllLocationChildrenNotLike(UUID locationIdentifier, UUID hierarchyIdentifier,

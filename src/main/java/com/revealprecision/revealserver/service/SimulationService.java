@@ -3,15 +3,13 @@ package com.revealprecision.revealserver.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.revealprecision.revealserver.api.v1.dto.factory.LocationResponseFactory;
+import com.revealprecision.revealserver.api.v1.dto.request.DataFilterRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.DatasetLocationsRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.UpdateDatasetRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.SimulationDatasetRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.*;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
-import com.revealprecision.revealserver.persistence.domain.Dataset;
-import com.revealprecision.revealserver.persistence.domain.Location;
-import com.revealprecision.revealserver.persistence.domain.Plan;
-import com.revealprecision.revealserver.persistence.domain.Simulation;
+import com.revealprecision.revealserver.persistence.domain.*;
 import com.revealprecision.revealserver.persistence.projection.AggregateWithTagProjection;
 import com.revealprecision.revealserver.persistence.projection.LocationDetailsProjection;
 import com.revealprecision.revealserver.persistence.repository.PlanRepository;
@@ -88,9 +86,9 @@ public class SimulationService {
     public List<LocationResponse> getDatasetDataForLocations(DatasetLocationsRequest request) throws IOException {
         UUID defaultHierarchyId = locationHierarchyService.getDefaultHierarchy().getIdentifier();
         //TODO: check if this ID exists, if not throw exception
-        List<LocationDetailsProjection> locationDetailsProjections = locationService.getAllLocationDirectChildrenWithDetails(request.getParentLocationId(), defaultHierarchyId);
-        List<String> locationsIds = locationDetailsProjections.stream().map(LocationDetailsProjection::getLocationId).collect(Collectors.toList());
         Simulation simulation = simulationRepository.findById(request.getSimulationId()).orElseThrow(() -> new NotFoundException("Simulation not found with ID: " + request.getSimulationId()));
+        List<LocationDetailsProjection> locationDetailsProjections = locationService.getAllLocationDirectChildrenWithDetails(request.getParentLocationId(), defaultHierarchyId, simulation.getPlan().getIdentifier());
+        List<String> locationsIds = locationDetailsProjections.stream().map(LocationDetailsProjection::getLocationId).collect(Collectors.toList());
         List<UUID> tagsIds = simulation.getDatasets()
                 .stream()
                 .filter(dataset -> request.getDatasetsIds().contains(dataset.getIdentifier()))
@@ -135,6 +133,7 @@ public class SimulationService {
                                 properties.setChildrenNumber(locationDetailsProjection.getChildrenCount());
                                 properties.setParentIdentifier(UUID.fromString(locationDetailsProjection.getParentLocationId()));
                                 properties.setId(locationDetailsProjection.getLocationId());
+                                properties.setAssigned(locationDetailsProjection.getAssigned());
                                 try {
                                     properties.setPopulation(objectMapper.readValue(locationDetailsProjection.getPopulationData(), PopulationResponseData.class));
                                 } catch (JsonProcessingException e) {
@@ -154,6 +153,7 @@ public class SimulationService {
                         properties.setChildrenNumber(projection.getChildrenCount());
                         properties.setParentIdentifier(UUID.fromString(projection.getParentLocationId()));
                         properties.setId(projection.getLocationId());
+                        properties.setAssigned(projection.getAssigned());
                         try {
                             properties.setPopulation(objectMapper.readValue(projection.getPopulationData(), PopulationResponseData.class));
                         } catch (JsonProcessingException e) {

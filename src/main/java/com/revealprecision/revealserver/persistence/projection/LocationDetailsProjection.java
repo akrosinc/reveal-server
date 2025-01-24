@@ -7,4 +7,5 @@ public interface  LocationDetailsProjection {
     Long getChildrenCount();
     String getParentLocationId();
     String getPopulationData();
+    Boolean getAssigned();
 }

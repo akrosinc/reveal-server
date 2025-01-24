@@ -14,6 +14,7 @@ import java.util.UUID;
 @NoArgsConstructor
 public class DatasetLocationsRequest {
     private UUID simulationId;
+    private UUID planId;
     private List<UUID> datasetsIds;
     private Boolean includeGeometry;
     private UUID parentLocationId;

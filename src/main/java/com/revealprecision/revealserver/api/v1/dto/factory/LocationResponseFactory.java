@@ -43,6 +43,7 @@ public class LocationResponseFactory {
     return LocationResponse.builder()
             .identifier(location.getIdentifier())
             .type(location.getType())
+            .geometry(location.getGeometry())
             .properties(
                     LocationPropertyResponse.builder()
                             .name(location.getName())
