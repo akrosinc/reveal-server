@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.api.v1.controller;
 
+import com.revealprecision.revealserver.api.v1.dto.request.DataFilterRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.DatasetLocationsRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.UpdateDatasetRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.SimulationDatasetRequest;
@@ -11,6 +12,7 @@ import com.revealprecision.revealserver.service.SimulationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
 import java.util.List;
@@ -50,5 +52,17 @@ public class SimulationController {
     public ResponseEntity<List<LocationResponse>> getDatasetDataForLocations(
             @RequestBody DatasetLocationsRequest request) throws IOException {
         return ResponseEntity.ok(simulationService.getDatasetDataForLocations(request));
+    }
+
+    @PostMapping("/add-search-request")
+    public String addSearchRequest(
+            @RequestBody SimulationDatasetRequest request) {
+        return simulationService.filterDatasetsPerAdminLevel(request);
+    }
+
+    @GetMapping("/datasets/filter-sse")
+    public SseEmitter addSearchRequest(
+            @RequestParam("searchId") String searchId) {
+        return simulationService.getDatasetDataForLocations(searchId);
     }
 }

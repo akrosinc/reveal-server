@@ -100,6 +100,12 @@ public class LocationHierarchyController {
         return ResponseEntity.status(HttpStatus.OK).body(geoTreeResponses);
     }
 
+    @GetMapping("/default")
+    public ResponseEntity<LocationHierarchyResponse> getDefaultHierarchy() {
+        LocationHierarchy locationHierarchy = locationHierarchyService.getDefaultHierarchy();
+        return ResponseEntity.status(HttpStatus.OK).body(LocationHierarchyResponseFactory.fromEntityWithoutTree(locationHierarchy));
+    }
+
     @GetMapping("/{identifier}/location/{locationIdentifier}")
     public ResponseEntity<List<LocationResponse>> getChildLocations(@Parameter(description = "LocationHierarchy identifier") @PathVariable UUID identifier,
                                                                     @Parameter(description = "Location identifier") @PathVariable UUID locationIdentifier) {

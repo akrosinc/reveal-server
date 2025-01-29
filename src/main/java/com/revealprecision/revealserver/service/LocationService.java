@@ -228,6 +228,10 @@ public class LocationService {
         return locationRepository.getAllDirectDescendantsOfLocationWithProperties(locationIdentifier, hierarchyIdentifier, planId);
     }
 
+    public List<LocationDetailsProjection> getLocationsWithPropertiesForAdminLevel(String geoLevel, UUID hierarchyIdentifier, UUID planId) {
+        return locationRepository.getLocationsWithPropertiesForAdminLevel(geoLevel, hierarchyIdentifier, planId);
+    }
+
     public List<UUID> getAllLocationChildrenNotLike(UUID locationIdentifier, UUID hierarchyIdentifier,
                                                     List<String> targetNode) {
         return locationRepository.getAllLocationChildrenNotLike(locationIdentifier, hierarchyIdentifier,

@@ -184,7 +184,7 @@ public interface LocationRepository extends JpaRepository<Location, UUID> {
             "SELECT \n" +
             "    dd.id AS locationId,\n" +
             "    COUNT(lr.location_identifier) AS childrenCount,\n" +
-            "    CAST(dd.parent_id AS VARCHAR) AS parentLocationId,\n" +
+            "    COALESCE(CAST(dd.parent_id AS VARCHAR), '00000000-0000-0000-0000-000000000000') AS parentLocationId,\n" +
             "    CAST(l.population_data AS TEXT) AS populationData,\n" +
             "    dd.id in (\n" +
             "    select cast(pl.location_identifier as VARCHAR) as id\n" +
@@ -200,6 +200,37 @@ public interface LocationRepository extends JpaRepository<Location, UUID> {
             "GROUP BY \n" +
             "    dd.id, dd.parent_id, l.population_data ", nativeQuery = true)
     List<LocationDetailsProjection> getAllDirectDescendantsOfLocationWithProperties(@Param("locationIdentifier") UUID locationIdentifier, @Param("hierarchyIdentifier") UUID hierarchyIdentifier, @Param("planId") UUID planId);
+
+    @Query(value = "WITH DirectDescendants AS ( \n" +
+            "    SELECT  \n" +
+            "        CAST(l.identifier AS VARCHAR) AS id, \n" +
+            "        lr.parent_identifier AS parent_id, \n" +
+            "\t\tgl.name as level_name\n" +
+            "    FROM  \n" +
+            "        location l \n" +
+            "\tJOIN geographic_level gl on l.geographic_level_identifier = gl.identifier\n" +
+            "\tJOIN location_relationship lr on lr.location_identifier = l.identifier \n" +
+            "    WHERE  \n" +
+            "        gl.name = :geoLevel and lr.location_hierarchy_identifier = :hierarchyIdentifier  \n" +
+            ")\n" +
+            "SELECT \n" +
+            "    dd.id AS locationId,\n" +
+            "    COUNT(lr.location_identifier) AS childrenCount,\n" +
+            "    COALESCE(CAST(dd.parent_id AS VARCHAR), '00000000-0000-0000-0000-000000000000') AS parentLocationId,\n" +
+            "    CAST(l.population_data AS TEXT) AS populationData,\n" +
+            "    dd.id in (\n" +
+            "    select cast(pl.location_identifier as VARCHAR) as id\n" +
+            "    from plan_locations pl\n" +
+            "    where pl.plan_identifier = :planId\n" +
+            ") as assigned \n" +
+            "FROM  \n" +
+            "    DirectDescendants dd \n" +
+            "LEFT JOIN  \n" +
+            "    location_relationship lr ON CAST(lr.parent_identifier as VARCHAR) = dd.id \n" +
+            "LEFT JOIN location l ON CAST(l.identifier as VARCHAR) = dd.id\n" +
+            "GROUP BY  \n" +
+            "    dd.id, dd.parent_id, l.population_data;", nativeQuery = true)
+    List<LocationDetailsProjection> getLocationsWithPropertiesForAdminLevel(@Param("geoLevel") String geoLevel, @Param("hierarchyIdentifier") UUID hierarchyIdentifier, @Param("planId") UUID planId);
 
     @Query(value = "WITH RECURSIVE ancestors(id, parent_id, lvl) AS ( "
             + "      SELECT lr.location_identifier, lr.parent_identifier,1 AS lvl "

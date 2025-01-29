@@ -15,5 +15,5 @@ public class SimulationDatasetRequest {
     String hexColor;
     Integer lineWidth;
     UUID parentLocationId;
-    List<String> tagsIds;
+    String parentAdminLevel;
 }
