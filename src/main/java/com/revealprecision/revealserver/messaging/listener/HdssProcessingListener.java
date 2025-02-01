@@ -169,15 +169,15 @@ public class HdssProcessingListener extends Listener {
 
           UUID planIdentifier1 = eventTrackerMessage.getPlanIdentifier();
           log.debug("submitting plan {}", planIdentifier1);
-          if (hdssProperties.getTarget()!=null){
-            hdssProperties.getTarget().entrySet().stream().forEach(entry->{
-              log.debug("current plan targets {} {} ", entry.getKey(),entry.getValue());
-            });
-
-          }
+//          if (hdssProperties.getTarget()!=null){
+//            hdssProperties.getTarget().entrySet().stream().forEach(entry->{
+//              log.debug("current plan targets {} {} ", entry.getKey(),entry.getValue());
+//            });
+//
+//          }
           if (planIdentifier1 != null && hdssProperties.getTarget() != null) {
-
-            UUID targetPlan = hdssProperties.getTarget().get(planIdentifier1);
+            UUID targetPlan = planIdentifier1;
+//            UUID targetPlan = hdssProperties.getTarget().get(planIdentifier1);
             log.debug("Target plan {}", targetPlan);
             if (targetPlan != null) {
 
