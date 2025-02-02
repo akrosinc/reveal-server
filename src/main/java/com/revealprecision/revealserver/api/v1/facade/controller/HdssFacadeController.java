@@ -14,11 +14,13 @@ import com.revealprecision.revealserver.persistence.domain.Fields;
 import com.revealprecision.revealserver.persistence.domain.HdssCompounds;
 import com.revealprecision.revealserver.persistence.projection.HdssCompoundHouseholdIndividualProjection;
 import com.revealprecision.revealserver.persistence.repository.HdssCompoundsRepository;
+import com.revealprecision.revealserver.service.HdssSearchService;
 import java.text.ParseException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -44,6 +46,8 @@ public class HdssFacadeController {
 
   private final HdssCompoundsRepository compoundsRepository;
 
+  private final HdssSearchService hdssSearchService;
+
   @ResponseStatus(HttpStatus.OK)
   @PostMapping(value = "/sync", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   @Transactional
@@ -56,179 +60,265 @@ public class HdssFacadeController {
 
     List<HdssCompoundHouseholdIndividualProjection> individuals = compoundsRepository
         .getAllCompoundsForUserAssignmentAndServerVersionAndBatchSize(
-        hdssSyncRequest.getUserId(), serverVersion, hdssSyncRequest.getBatchSize());
+            hdssSyncRequest.getUserId(), serverVersion, hdssSyncRequest.getBatchSize());
+
+
 
     if (!individuals.isEmpty()) {
       Optional<Long> maxServerVersion = individuals.stream()
           .map(HdssCompoundHouseholdIndividualProjection::getServerVersion).reduce(Long::max);
 
-      return ResponseEntity.ok(HdssCompoundObj.builder().allCompounds(individuals.stream().map(
-              individual -> HdssCompound.builder().serverVersion(individual.getServerVersion())
+      HdssCompoundObj compounds = HdssCompoundObj.builder()
+          .allCompounds(individuals.stream()
+              .filter(individual->individual.getStructureId()!=null)
+              .map(individual -> HdssCompound.builder().serverVersion(individual.getServerVersion())
                   .compoundId(individual.getCompoundId()).build()).collect(Collectors.toSet()))
-          .compoundHouseHolds(individuals.stream().map(
-              individual -> HdssCompoundHousehold.builder().compoundId(individual.getCompoundId())
+          .compoundHouseHolds(individuals.stream()
+              .filter(individual->individual.getStructureId()!=null)
+              .map(individual -> HdssCompoundHousehold.builder().compoundId(individual.getCompoundId())
                   .serverVersion(individual.getServerVersion())
                   .householdId(individual.getHouseholdId()).build()).collect(Collectors.toSet()))
-          .allHouseholdIndividual(individuals.stream().map(
-              individual -> HdssHouseholdIndividual.builder()
+          .allHouseholdIndividual(individuals.stream()
+              .filter(individual->individual.getStructureId()!=null)
+              .map(individual -> HdssHouseholdIndividual.builder()
                   .serverVersion(individual.getServerVersion())
                   .individualId(individual.getIndividualId())
                   .householdId(individual.getHouseholdId()).build()).collect(Collectors.toSet()))
-          .allHouseholdStructure(individuals.stream().map(
-              individual -> HdssHouseholdStructure.builder()
+          .allHouseholdStructure(individuals.stream()
+              .filter(individual->individual.getStructureId()!=null)
+              .map(individual -> HdssHouseholdStructure.builder()
                   .serverVersion(individual.getServerVersion())
                   .structureId(individual.getStructureId()).householdId(individual.getHouseholdId())
-                  .build()).collect(Collectors.toSet())).allIndividuals(individuals.stream().map(
+                  .build())
+              .collect(Collectors.toSet()))
+          .allIndividuals(individuals.stream().map(
               individual -> HdssIndividual.builder().identifier(individual.getId())
                   .individualId(individual.getIndividualId()).name(individual.getName())
-                  .serverVersion(individual.getServerVersion()).dob(individual.getDob().toString())
-                  .gender(individual.getGender()).build()).collect(Collectors.toSet()))
+                  .serverVersion(individual.getServerVersion()).dob(individual.getDob())
+                  .gender(individual.getGender())
+                  .floatingLocationGeographicLevel(individual.getFloatingLocationGeographicLevel())
+                  .floatingLocationId(individual.getFloatingLocationId())
+                  .floatingLocationName(individual.getFloatingLocationName()).build())
+              .collect(Collectors.toSet()))
+          .allHouseholdIndividualToDelete(individuals.stream()
+              .filter(individual->individual.getStructureId()==null)
+              .map(HdssCompoundHouseholdIndividualProjection::getIndividualId).collect(Collectors.toSet()))
           .serverVersion(maxServerVersion.isPresent() ? maxServerVersion.get() : 0)
-          .totalRecords(count).isEmpty(false).build());
+          .totalRecords(count).isEmpty(false).build();
+
+      return ResponseEntity.ok(compounds);
     } else {
       return ResponseEntity.ok(HdssCompoundObj.builder().totalRecords(count).isEmpty(true).build());
     }
   }
 
-  @PostMapping(value = "/count", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-  public int gethdssDBcount(@RequestBody HdssSyncRequest hdssSyncRequest) {
-    long serverVersion = hdssSyncRequest.getServerVersion();
-
-    return compoundsRepository.getCountOfCompoundsForUserAssignmentAndServerVersionAndBatchSize(
-        hdssSyncRequest.getUserId(), serverVersion);
-  }
-
+//  @PostMapping(value = "/count", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+//  public int gethdssDBcount(@RequestBody HdssSyncRequest hdssSyncRequest) {
+//    long serverVersion = hdssSyncRequest.getServerVersion();
+//
+//    return compoundsRepository.getCountOfCompoundsForUserAssignmentAndServerVersionAndBatchSize(
+//        hdssSyncRequest.getUserId(), serverVersion);
+//  }
 
   @PostMapping(value = "/search", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<List<HdssCompoundHouseholdIndividualObj>> search(
       @RequestBody HdssSearchRequest hdssSearchRequest) throws ParseException {
-    List<HdssCompoundHouseholdIndividualProjection> individualProjections = null;
-
-    String searchDeterminer = "";
-
-    String searchDate = null;
-
-    if (hdssSearchRequest.getGender() != null) {
-      searchDeterminer = "G";
-    }
-    if (hdssSearchRequest.getDob() != null) {
-
-      DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
-
-      // Parse the string into LocalDate
-      LocalDate dob = LocalDate.parse(hdssSearchRequest.getDob(), formatter);
-
-      // Extract year, month, and day
-      int year = dob.getYear();
-      int month = dob.getMonthValue();
-      int day = dob.getDayOfMonth();
-
-      // Construct the JSON array format as a string
-      searchDate = String.format("[%d, %d, %d]", year, month, day);
-
-      // Construct the JSON array format as a string
-
-      log.debug("search date: {}", searchDate);
-
-      searchDeterminer = searchDeterminer.concat("D");
-    }
-    if (hdssSearchRequest.getSearchString() != null) {
-      searchDeterminer = searchDeterminer.concat("S");
-    }
-
-    if (hdssSearchRequest.getSearchString() != null) {
-      searchDeterminer = searchDeterminer.concat("S");
-    }
-    if (hdssSearchRequest.getName() != null){
-      searchDeterminer = searchDeterminer.concat("N");
-    }
-    switch (searchDeterminer) {
-
-      case "G":
-        individualProjections = compoundsRepository.searchWithGender(hdssSearchRequest.getGender());
-        break;
-      case "GD":
-        individualProjections = compoundsRepository.searchWithGenderAndDob(
-            hdssSearchRequest.getGender(), searchDate);
-        break;
-      case "GDS":
-        log.debug("search date: {}", searchDate);
-        individualProjections = compoundsRepository.searchWithStringGenderAndDob(
-            hdssSearchRequest.getSearchString(), hdssSearchRequest.getGender(), searchDate);
-        break;
-      case "GDSN":
-        log.debug("search date: {}", searchDate);
-        individualProjections = compoundsRepository.searchWithStringGenderAndDobAndName(
-            hdssSearchRequest.getSearchString(), hdssSearchRequest.getGender(), searchDate,hdssSearchRequest.getName());
-        break;
-      case "D":
-        individualProjections = compoundsRepository.searchWithDob(searchDate);
-        break;
-      case "DS":
-        individualProjections = compoundsRepository.searchWithStringAndDob(
-            hdssSearchRequest.getSearchString(), searchDate);
-        break;
-      case "S":
-        individualProjections = compoundsRepository.searchWithString(
-            hdssSearchRequest.getSearchString());
-        break;
-      case "N":
-        individualProjections = compoundsRepository.searchWithName(
-            hdssSearchRequest.getName());
-        break;
-      case "GS":
-        individualProjections = compoundsRepository.searchWithStringAndGender(
-            hdssSearchRequest.getSearchString(), hdssSearchRequest.getGender());
-        break;
-
-    }
-    if (individualProjections != null) {
-      return ResponseEntity.ok(individualProjections.stream().map(
-          individualProjection -> HdssCompoundHouseholdIndividualObj.builder()
-              .compoundId(individualProjection.getCompoundId())
-              .householdId(individualProjection.getHouseholdId())
-              .individualId(individualProjection.getIndividualId())
-              .gender(individualProjection.getGender())
-              .dob(individualProjection.getDob().toString()).id(individualProjection.getId())
-              .name(individualProjection.getName())
-              .build()).collect(Collectors.toList()));
+    List<HdssCompoundHouseholdIndividualObj> hdssCompoundHouseholdIndividualObjs = hdssSearchService.searchHdssCompounds(
+        hdssSearchRequest);
+    if (hdssCompoundHouseholdIndividualObjs != null) {
+      return ResponseEntity.ok(hdssCompoundHouseholdIndividualObjs);
     } else {
-      return ResponseEntity.notFound().build();
+      return ResponseEntity.ok().build();
     }
   }
 
+  //  @PostMapping(value = "/search", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+//  public ResponseEntity<List<HdssCompoundHouseholdIndividualObj>> search2(
+//      @RequestBody HdssSearchRequest hdssSearchRequest) throws ParseException {
+//    List<HdssCompoundHouseholdIndividualProjection> individualProjections = null;
+//
+//    String searchDeterminer = "";
+//
+//    String searchDate = null;
+//
+//    if (hdssSearchRequest.getGender() != null) {
+//      searchDeterminer = "G";
+//    }
+//    if (hdssSearchRequest.getDob() != null) {
+//
+//      DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+//
+//      // Parse the string into LocalDate
+//      LocalDate dob = LocalDate.parse(hdssSearchRequest.getDob(), formatter);
+//
+//      // Extract year, month, and day
+//      int year = dob.getYear();
+//      int month = dob.getMonthValue();
+//      int day = dob.getDayOfMonth();
+//
+//      // Construct the JSON array format as a string
+//      searchDate = String.format("[%d, %d, %d]", year, month, day);
+//
+//      // Construct the JSON array format as a string
+//
+//      log.debug("search date: {}", searchDate);
+//
+//      searchDeterminer = searchDeterminer.concat("D");
+//    }
+//    if (hdssSearchRequest.getSearchString() != null) {
+//      searchDeterminer = searchDeterminer.concat("S");
+//    }
+//
+//    if (hdssSearchRequest.getSearchString() != null) {
+//      searchDeterminer = searchDeterminer.concat("S");
+//    }
+//    if (hdssSearchRequest.getName() != null) {
+//      searchDeterminer = searchDeterminer.concat("N");
+//    }
+//    switch (searchDeterminer) {
+//
+//      case "G":
+//        individualProjections = compoundsRepository.searchWithGender(hdssSearchRequest.getGender());
+//        break;
+//      case "GD":
+//        individualProjections = compoundsRepository.searchWithGenderAndDob(
+//            hdssSearchRequest.getGender(), searchDate);
+//        break;
+//      case "GDS":
+//        log.debug("search date: {}", searchDate);
+//        individualProjections = compoundsRepository.searchWithStringGenderAndDob(
+//            hdssSearchRequest.getSearchString(), hdssSearchRequest.getGender(), searchDate);
+//        break;
+//      case "GDSN":
+//        log.debug("search date: {}", searchDate);
+//        individualProjections = compoundsRepository.searchWithStringGenderAndDobAndName(
+//            hdssSearchRequest.getSearchString(), hdssSearchRequest.getGender(), searchDate,
+//            hdssSearchRequest.getName());
+//        break;
+//      case "D":
+//        individualProjections = compoundsRepository.searchWithDob(searchDate);
+//        break;
+//      case "DS":
+//        individualProjections = compoundsRepository.searchWithStringAndDob(
+//            hdssSearchRequest.getSearchString(), searchDate);
+//        break;
+//      case "S":
+//        individualProjections = compoundsRepository.searchWithString(
+//            hdssSearchRequest.getSearchString());
+//        break;
+//      case "N":
+//        individualProjections = compoundsRepository.searchWithName(
+//            hdssSearchRequest.getName());
+//        break;
+//      case "GS":
+//        individualProjections = compoundsRepository.searchWithStringAndGender(
+//            hdssSearchRequest.getSearchString(), hdssSearchRequest.getGender());
+//        break;
+//
+//    }
+//    if (individualProjections != null) {
+//      return ResponseEntity.ok(individualProjections.stream().map(
+//          individualProjection -> HdssCompoundHouseholdIndividualObj.builder()
+//              .compoundId(individualProjection.getCompoundId())
+//              .householdId(individualProjection.getHouseholdId())
+//              .individualId(individualProjection.getIndividualId())
+//              .gender(individualProjection.getGender())
+//              .dob(individualProjection.getDob().toString()).id(individualProjection.getId())
+//              .name(individualProjection.getName())
+//              .build()).collect(Collectors.toList()));
+//    } else {
+//      return ResponseEntity.ok().build();
+//    }
+//  }
+
   @ResponseStatus(HttpStatus.OK)
-  @PostMapping(value = "/add", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  @PostMapping(value = "/addOrUpdate", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   @Transactional
   public ResponseEntity<HdssCompoundObj> taskSync(
       @RequestBody List<HdssCompoundHouseholdIndividualPushObj> hdssCompoundHouseholdIndividualObjs) {
+
+    List<String> individualIds = hdssCompoundHouseholdIndividualObjs.stream().map(
+        HdssCompoundHouseholdIndividualPushObj::getIndividualId).collect(
+        Collectors.toList());
+
+    List<HdssCompounds> allByIndividualIdIn = compoundsRepository.findAllByIndividualIdIn(
+        individualIds);
+
+    Map<String, HdssCompounds> existing = allByIndividualIdIn.stream()
+        .collect(
+            Collectors.toMap(HdssCompounds::getIndividualId, i -> i,
+                (a, b) -> a));
 
     List<HdssCompounds> collect = hdssCompoundHouseholdIndividualObjs.stream()
         .map(hdssCompoundHouseholdIndividualPushObj ->
 
             {
-              LocalDate parse = null;
-              try {
-                parse = LocalDate.parse(hdssCompoundHouseholdIndividualPushObj.getDob(),
-                    DateTimeFormatter.ofPattern("dd-MM-yyyy"));
-              } catch (DateTimeParseException e) {
+
+              HdssCompounds item;
+              if (existing.containsKey(
+                  hdssCompoundHouseholdIndividualPushObj.getIndividualId())) {
+                 item = existing.get(
+                    hdssCompoundHouseholdIndividualPushObj.getIndividualId());
+                if (hdssCompoundHouseholdIndividualPushObj.getCompoundId()!=null){
+                  item.setCompoundId(hdssCompoundHouseholdIndividualPushObj.getCompoundId());
+                }
+                if (hdssCompoundHouseholdIndividualPushObj.getHouseholdId()!=null){
+                  item.setHouseholdId(
+                      hdssCompoundHouseholdIndividualPushObj.getHouseholdId());
+                }
+                if (hdssCompoundHouseholdIndividualPushObj.getStructureId()!=null){
+                  item.setStructureId(hdssCompoundHouseholdIndividualPushObj.getStructureId());
+                }
+
+                long nextServerVersion = compoundsRepository.getNextServerVersion();
+
+                item.setServerVersion(nextServerVersion);
+                if (hdssCompoundHouseholdIndividualPushObj.getFloatingLocationName()!=null){
+                  item.setFloatingLocationId(hdssCompoundHouseholdIndividualPushObj.getFloatingLocationId());
+                  item.setFloatingLocationName(hdssCompoundHouseholdIndividualPushObj.getFloatingLocationName());
+                  item.setFloatingLocationGeographicLevel(hdssCompoundHouseholdIndividualPushObj.getFloatingLocationGeographicLevel());
+                  item.setCompoundId(null);
+                  item.setHouseholdId(null);
+                  item.setStructureId(null);
+                }
+              } else {
+                LocalDate parse = null;
                 try {
                   parse = LocalDate.parse(hdssCompoundHouseholdIndividualPushObj.getDob(),
-                      DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-                } catch (DateTimeParseException pe) {
-                  log.error("cannot parse data for Hdss data {}",
-                      hdssCompoundHouseholdIndividualPushObj);
+                      DateTimeFormatter.ofPattern("dd-MM-yyyy"));
+                } catch (DateTimeParseException e) {
+                  try {
+                    parse = LocalDate.parse(hdssCompoundHouseholdIndividualPushObj.getDob(),
+                        DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+                  } catch (DateTimeParseException pe) {
+                    log.error("cannot parse data for Hdss data {}",
+                        hdssCompoundHouseholdIndividualPushObj);
+                  }
                 }
+
+                item = HdssCompounds.builder()
+                    .id(UUID.fromString(hdssCompoundHouseholdIndividualPushObj.getIdentifier()))
+                    .compoundId(hdssCompoundHouseholdIndividualPushObj.getCompoundId())
+                    .serverVersion(hdssCompoundHouseholdIndividualPushObj.getServerVersion())
+                    .individualId(hdssCompoundHouseholdIndividualPushObj.getIndividualId())
+                    .householdId(hdssCompoundHouseholdIndividualPushObj.getHouseholdId())
+                    .structureId(hdssCompoundHouseholdIndividualPushObj.getStructureId())
+                    .fields(
+                        Fields.builder().gender(hdssCompoundHouseholdIndividualPushObj.getGender())
+                            .dob(parse).build()).build();
+
+                if (hdssCompoundHouseholdIndividualPushObj.getFloatingLocationName()!=null){
+                  item.setFloatingLocationId(hdssCompoundHouseholdIndividualPushObj.getFloatingLocationId());
+                  item.setFloatingLocationName(hdssCompoundHouseholdIndividualPushObj.getFloatingLocationName());
+                  item.setFloatingLocationGeographicLevel(hdssCompoundHouseholdIndividualPushObj.getFloatingLocationGeographicLevel());
+                  item.setCompoundId(null);
+                  item.setHouseholdId(null);
+                  item.setStructureId(null);
+                }
+
               }
-              return HdssCompounds.builder()
-                  .id(UUID.fromString(hdssCompoundHouseholdIndividualPushObj.getIdentifier()))
-                  .compoundId(hdssCompoundHouseholdIndividualPushObj.getCompoundId())
-                  .serverVersion(hdssCompoundHouseholdIndividualPushObj.getServerVersion())
-                  .individualId(hdssCompoundHouseholdIndividualPushObj.getIndividualId())
-                  .householdId(hdssCompoundHouseholdIndividualPushObj.getHouseholdId())
-                  .structureId(hdssCompoundHouseholdIndividualPushObj.getStructureId()).fields(
-                      Fields.builder().gender(hdssCompoundHouseholdIndividualPushObj.getGender())
-                          .dob(parse).build()).build();
+
+              return item;
             }
 
         ).collect(Collectors.toList());

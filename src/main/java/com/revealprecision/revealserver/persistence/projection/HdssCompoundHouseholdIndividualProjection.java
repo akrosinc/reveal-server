@@ -12,11 +12,17 @@ public interface HdssCompoundHouseholdIndividualProjection {
 
   String getName();
 
-  java.sql.Date getDob();
+  String getDob();
 
   String getGender();
 
   long getServerVersion();
 
   String getStructureId();
+
+  String getFloatingLocationId();
+
+  String getFloatingLocationName();
+
+  String getFloatingLocationGeographicLevel();
 }

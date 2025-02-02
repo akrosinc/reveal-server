@@ -1,21 +1,22 @@
 package com.revealprecision.revealserver.config;
 
-import io.swagger.v3.oas.annotations.OpenAPIDefinition;
-import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
-import io.swagger.v3.oas.annotations.info.Contact;
-import io.swagger.v3.oas.annotations.info.Info;
-import io.swagger.v3.oas.annotations.info.License;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.security.SecurityScheme;
-import io.swagger.v3.oas.annotations.servers.Server;
+import com.revealprecision.revealserver.props.SwaggerProperties;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.info.Contact;
+import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.info.License;
+import io.swagger.v3.oas.models.security.SecurityRequirement;
+import io.swagger.v3.oas.models.servers.Server;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-@Configuration
-@SecurityScheme(
-    name = "keycloakauth", // can be set to anything
-    type = SecuritySchemeType.HTTP,
-    scheme = "bearer"
-)
+//@Configuration
+//@SecurityScheme(
+//    name = "keycloakauth", // can be set to anything
+//    type = SecuritySchemeType.HTTP,
+//    scheme = "bearer"
+//)
 //@OpenAPIDefinition(
 //    info = @Info(title = "Reveal Server"
 //        , version = "${springdoc.version}"
@@ -25,18 +26,30 @@ import org.springframework.context.annotation.Configuration;
 //    )),
 //    security = @SecurityRequirement(name = "keycloakauth") // references the name defined in the line 3
 //)
-@OpenAPIDefinition(
-    info = @Info(title = "Reveal Server"
-        , version = "${springdoc.version}"
-        , description = "Reveal Server forms the backend processing of the Reveal Platform"
-        , license = @License(name = "Reveal Precision", url = "https://www.revealprecision.com")
-        , contact = @Contact(name = "Akros Inc. ", email = "info@akros.com", url = "https://www.akros.com")
-    ),
-
-    security = @SecurityRequirement(name = "keycloakauth") // references the name defined in the line 3,
-    ,servers = {@Server(url = "https://api-my-local.akros.digital")}
-)
+@Configuration
 public class SwaggerConfig {
 
+    @Autowired
+    private SwaggerProperties swaggerProperties;
+
+    @Bean
+    public OpenAPI customOpenAPI() {
+        return new OpenAPI()
+            .info(new Info()
+                .title("Reveal Server")
+                .version("${springdoc.version}")
+                .description("Reveal Server forms the backend processing of the Reveal Platform")
+                .license(new License()
+                    .name("Reveal Precision")
+                    .url("https://www.revealprecision.com"))
+                .contact(new Contact()
+                    .name("Akros Inc.")
+                    .email("info@akros.com")
+                    .url("https://www.akros.com")))
+            // Dynamically add the server URL from properties
+            .addServersItem(new Server().url(swaggerProperties.getServer()))
+            // Add the security requirement
+            .addSecurityItem(new SecurityRequirement().addList("keycloakauth"));
+    }
 
 }

@@ -23,12 +23,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
-
+import lombok.extern.slf4j.Slf4j;
+@Slf4j
 public class TaskEventFactory {
 
   // Proceed with caution here as new updates / removals to the object will prevent rewind of the streams application.
   // In the event of new data being introduced, ensure that null pointers are catered in the streams
   // application if the event comes through, and it does not have the new fields populated
+
   public static TaskEvent getTaskEventFromTask(Task taskSaved){
 
     List<String> baseLocationIds = new ArrayList<>();
@@ -53,6 +55,27 @@ public class TaskEventFactory {
 
     LookupTaskStatus lookupTaskStatus = taskSaved.getLookupTaskStatus();
 
+    log.info("task baseEntity {}", taskSaved.getBaseEntityIdentifier());
+    if (ActionUtils.isActionForPerson(action) ) {
+      if (taskSaved.getPerson() != null) {
+        log.info("task person {}", taskSaved.getPerson().getIdentifier());
+      }
+      if (taskSaved.getPerson() != null && taskSaved.getPerson().getLocations() != null) {
+        if (taskSaved.getPerson().getLocations().size() > 0) {
+          log.info("task person location size {}", taskSaved.getPerson().getLocations().size());
+        } else {
+          log.info("task person location size !>0 {}", taskSaved.getPerson().getLocations().size());
+        }
+      }
+    } else {
+
+      if (taskSaved.getLocation() !=null){
+        log.info("location id {}", taskSaved.getLocation().getIdentifier());
+      } else {
+        log.info("no location attached to task");
+      }
+
+    }
 
     TaskEvent taskEvent = TaskEvent.builder()
         .baseLocationIds(baseLocationIds)
@@ -69,8 +92,15 @@ public class TaskEventFactory {
         .lastModified(taskSaved.getModifiedDatetime())
         .identifier(taskSaved.getIdentifier())
         .priority(taskSaved.getPriority())
-        .locationGeographicLevelName(ActionUtils.isActionForPerson(action)?taskSaved.getPerson().getLocations().size()>0? new ArrayList<>(
-            taskSaved.getPerson().getLocations()).get(0).getGeographicLevel().getName(): taskSaved.getLocation().getGeographicLevel().getName():taskSaved.getLocation().getGeographicLevel().getName())
+        .locationGeographicLevelName(ActionUtils.isActionForPerson(action) ?
+            taskSaved.getPerson().getLocations().size()>0 ?
+                new ArrayList<>(taskSaved.getPerson().getLocations()).get(0).getGeographicLevel().getName()
+                : taskSaved.getLocation()!=null ?
+                    taskSaved.getLocation().getGeographicLevel().getName()
+                    : null
+            : taskSaved.getLocation()!=null?
+                  taskSaved.getLocation().getGeographicLevel().getName()
+                  : null)
         .lastUpdated(taskSaved.getModifiedDatetime())
         .build();
 
