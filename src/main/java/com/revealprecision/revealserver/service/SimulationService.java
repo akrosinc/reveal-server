@@ -46,7 +46,6 @@ public class SimulationService {
     private final EntityFilterEsService filterEsService;
     private final ObjectMapper objectMapper;
 
-
     @Value("${reveal.elastic.index-name}")
     private final String elasticIndex;
 
@@ -95,7 +94,7 @@ public class SimulationService {
     }
 
     public SseEmitter getDatasetDataForLocations(String requestId) {
-        SimulationRequest simulationRequest = filterEsService.getSimulationRequestById(requestId).orElseThrow(()-> new NotFoundException("x"));
+        SimulationRequest simulationRequest = filterEsService.getSimulationRequestById(requestId).orElseThrow(() -> new NotFoundException("x"));
         SimulationDatasetRequest request = simulationRequest.getDatasetRequest();
         UUID defaultHierarchyId = locationHierarchyService.getDefaultHierarchy().getIdentifier();
         //TODO: check if this ID exists, if not throw exception
@@ -276,11 +275,12 @@ public class SimulationService {
         Simulation simulation = simulationRepository.findById(request.getSimulationId())
                 .orElseThrow(() -> new NotFoundException("Simulation not found with ID: " + request.getSimulationId()));
         AggregateWithTagProjection tagProjection = tags.stream().findFirst().orElseThrow();
+        String DEFAULT_BORDER_COLOR = "#000000";
         Dataset dataset = Dataset.builder()
                 .entityTag(tags.get(0).getTag())
                 .hexColor(request.getHexColor())
                 .lineWidth(request.getLineWidth())
-                .borderColor(request.getBorderColor())
+                .borderColor(request.getBorderColor() != null ? request.getBorderColor() : DEFAULT_BORDER_COLOR)
                 .name(tags.get(0).getTag().getTag())
                 .build();
         simulation.getDatasets().add(dataset);
