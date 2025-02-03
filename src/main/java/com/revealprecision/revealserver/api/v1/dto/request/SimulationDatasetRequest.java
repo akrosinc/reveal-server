@@ -10,10 +10,11 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class SimulationDatasetRequest {
-    UUID simulationId;
-    UUID tagId;
-    String hexColor;
-    Integer lineWidth;
-    UUID parentLocationId;
-    String parentAdminLevel;
+    private UUID simulationId;
+    private UUID tagId;
+    private String hexColor;
+    private Integer lineWidth;
+    private String borderColor;
+    private UUID parentLocationId;
+    private String parentAdminLevel;
 }

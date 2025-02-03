@@ -82,6 +82,7 @@ public class SimulationService {
         dataset.setName(Objects.requireNonNullElse(request.getName(), dataset.getName()));
         dataset.setHexColor(Objects.requireNonNullElse(request.getHexColor(), dataset.getHexColor()));
         dataset.setLineWidth(Objects.requireNonNullElse(request.getLineWidth(), dataset.getLineWidth()));
+        dataset.setBorderColor(Objects.requireNonNullElse(request.getBorderColor(), dataset.getBorderColor()));
         return simulationRepository.save(simulation);
     }
 
@@ -279,6 +280,7 @@ public class SimulationService {
                 .entityTag(tags.get(0).getTag())
                 .hexColor(request.getHexColor())
                 .lineWidth(request.getLineWidth())
+                .borderColor(request.getBorderColor())
                 .name(tags.get(0).getTag().getTag())
                 .build();
         simulation.getDatasets().add(dataset);
@@ -294,7 +296,7 @@ public class SimulationService {
                                 savedDataset.getIdentifier()
                         )
                 ));
-        return new SimulationDatasetResponse(savedSimulation.getIdentifier(), tagProjection.getTag().getIdentifier(), savedDataset.getIdentifier(), savedDataset.getName(), savedDataset.getHexColor(), savedDataset.getLineWidth(), map);
+        return new SimulationDatasetResponse(savedSimulation.getIdentifier(), tagProjection.getTag().getIdentifier(), savedDataset.getIdentifier(), savedDataset.getName(), savedDataset.getHexColor(), savedDataset.getBorderColor(), savedDataset.getLineWidth(), map);
     }
 
     private SearchSourceBuilder buildLocationWithoutMetadataQuery(List<String> locationIds, UUID hierarchyId) {

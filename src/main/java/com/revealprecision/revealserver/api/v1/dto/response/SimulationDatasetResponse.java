@@ -16,6 +16,7 @@ public class SimulationDatasetResponse {
     private UUID datasetId;
     private String datasetName;
     private String hexColor;
+    private String borderColor;
     private Integer lineWidth;
     private Map<String, EntityMetadataResponse> locationWithMetadata;
 }
