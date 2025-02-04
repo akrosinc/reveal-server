@@ -11,12 +11,8 @@ import com.revealprecision.revealserver.persistence.es.HierarchyDetailsElastic;
 import com.revealprecision.revealserver.persistence.es.LocationElastic;
 import com.revealprecision.revealserver.persistence.projection.LocationWithChildrenCountProjection;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+
+import java.util.*;
 import java.util.stream.Collectors;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -39,11 +35,16 @@ public class LocationResponseFactory {
                 .geographicLevel(location.getGeographicLevel().getName()).build()).build();
   }
 
-  public static LocationResponse fromEntityWithPopulation(Location location) {
+  public static LocationResponse fromEntityWithPopulationAndAncestry(Location location, String ancestryString) {
+    List<String> ancestry = Collections.emptyList();
+    if(ancestryString != null && !ancestryString.isEmpty()) {
+      ancestry = Arrays.stream(ancestryString.split(",")).collect(Collectors.toList());
+    }
     return LocationResponse.builder()
             .identifier(location.getIdentifier())
             .type(location.getType())
             .geometry(location.getGeometry())
+            .ancestry(ancestry)
             .properties(
                     LocationPropertyResponse.builder()
                             .name(location.getName())

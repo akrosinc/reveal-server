@@ -19,6 +19,7 @@ import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.PlanAssignment;
 import com.revealprecision.revealserver.persistence.domain.PlanLocations;
+import com.revealprecision.revealserver.persistence.projection.LocationWithAncestryProjection;
 import com.revealprecision.revealserver.persistence.projection.LocationCoordinatesProjection;
 import com.revealprecision.revealserver.persistence.projection.LocationDetailsProjection;
 import com.revealprecision.revealserver.persistence.projection.LocationWithChildrenCountProjection;
@@ -383,7 +384,7 @@ public class LocationService {
         return resource;
     }
 
-    public List<Location> getAllTargetAreasOfPlan(UUID planId, String planTargetLevelName) {
+    public List<LocationWithAncestryProjection> getAllTargetAreasOfPlan(UUID planId, String planTargetLevelName) {
         LocationHierarchy defaultHierarchy = locationHierarchyService.getDefaultHierarchy();
         int idx = defaultHierarchy.getNodeOrder().indexOf(planTargetLevelName);
         String targetAreaLevel = idx > 0 ? defaultHierarchy.getNodeOrder().get(idx - 1) : null;
