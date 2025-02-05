@@ -144,6 +144,7 @@ public interface FormConstants {
 
     String NOT_DISPENSED = "Not Dispensed";
     String NOT_VISITED = "Not Visited";
+    String VISITED = "Visited";
     String NOT_SPRAYED = "Not Sprayed";
     String SPRAYED = "Sprayed";
     String NOT_SPRAYABLE = "Not Sprayable";
