@@ -5,12 +5,16 @@ import com.revealprecision.revealserver.api.v1.dto.request.OrganizationCriteria;
 import com.revealprecision.revealserver.api.v1.dto.request.OrganizationRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.CountResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.OrganizationResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.UserResponse;
 import com.revealprecision.revealserver.enums.SummaryEnum;
 import com.revealprecision.revealserver.service.OrganizationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+
+import java.util.List;
 import java.util.UUID;
 import javax.validation.Valid;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -32,94 +36,112 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class OrganizationController {
 
-  private final OrganizationService organizationService;
+    private final OrganizationService organizationService;
 
 
-  @Operation(summary = "Create an organization",
-      description = "Create an organization",
-      tags = {"Organization"}
-  )
-  @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<OrganizationResponse> createOrganization(
-      @Valid @RequestBody OrganizationRequest organizationRequest) {
-    return ResponseEntity.status(HttpStatus.CREATED)
-        .body(OrganizationResponseFactory.fromEntityWithoutChild(
-            organizationService.createOrganization(organizationRequest)));
-  }
-
-  @Operation(summary = "Fetch organizations",
-      description = "Fetch organizations",
-      tags = {"Organization"}
-  )
-  @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<?> getOrganizations(
-      Pageable pageable,
-      OrganizationCriteria criteria,
-      @Parameter(description = "Toggle summary data") @RequestParam(value = "_summary", defaultValue = "TRUE") SummaryEnum _summary) {
-
-    if (_summary.equals(SummaryEnum.COUNT)) {
-      return ResponseEntity.status(HttpStatus.OK)
-          .body(new CountResponse(organizationService.getCountFindAll(criteria)));
-    } else {
-      if (criteria.isRoot()) {
-        return ResponseEntity.status(HttpStatus.OK)
-            .body(organizationService.findAllTreeView(criteria, pageable));
-      } else {
-        return ResponseEntity.status(HttpStatus.OK).body(
-            OrganizationResponseFactory.fromEntityPage(
-                organizationService.findAllWithoutTreeView(criteria, pageable),
-                pageable, _summary));
-      }
+    @Operation(summary = "Create an organization",
+            description = "Create an organization",
+            tags = {"Organization"}
+    )
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<OrganizationResponse> createOrganization(
+            @Valid @RequestBody OrganizationRequest organizationRequest) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(OrganizationResponseFactory.fromEntityWithoutChild(
+                        organizationService.createOrganization(organizationRequest)));
     }
-  }
 
-  @GetMapping(value = "/search",produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<Page<OrganizationResponse>> getOrgs(
-      OrganizationCriteria criteria,
-      Pageable pageable,
-      @Parameter(description = "Toggle summary data") @RequestParam(value = "_summary", defaultValue = "TRUE") SummaryEnum _summary) {
+    @Operation(summary = "Fetch organizations",
+            description = "Fetch organizations",
+            tags = {"Organization"}
+    )
+    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> getOrganizations(
+            Pageable pageable,
+            OrganizationCriteria criteria,
+            @Parameter(description = "Toggle summary data") @RequestParam(value = "_summary", defaultValue = "TRUE") SummaryEnum _summary) {
 
-      return ResponseEntity.status(HttpStatus.OK)
-          .body(organizationService.searchAllTreeView(criteria,pageable));
-  }
+        if (_summary.equals(SummaryEnum.COUNT)) {
+            return ResponseEntity.status(HttpStatus.OK)
+                    .body(new CountResponse(organizationService.getCountFindAll(criteria)));
+        } else {
+            if (criteria.isRoot()) {
+                return ResponseEntity.status(HttpStatus.OK)
+                        .body(organizationService.findAllTreeView(criteria, pageable));
+            } else {
+                return ResponseEntity.status(HttpStatus.OK).body(
+                        OrganizationResponseFactory.fromEntityPage(
+                                organizationService.findAllWithoutTreeView(criteria, pageable),
+                                pageable, _summary));
+            }
+        }
+    }
 
-  @Operation(summary = "Get an organization by identifier",
-      description = "Get an organization by identifier",
-      tags = {"Organization"}
-  )
-  @GetMapping(value = "/{identifier}", produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<OrganizationResponse> getOrganization(
-      @Parameter(description = "Organization identifier") @PathVariable UUID identifier,
-      @Parameter(description = "Toggle summary data") @RequestParam(defaultValue = "true", required = false) boolean _summary) {
-    return ResponseEntity
-        .status(HttpStatus.OK)
-        .body((_summary) ? OrganizationResponseFactory.fromEntityWithoutChild(
-            organizationService.findById(identifier, _summary))
-            : OrganizationResponseFactory.fromEntityWithChild(
-                organizationService.findById(identifier, _summary)));
-  }
+    @GetMapping(value = "/search", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Page<OrganizationResponse>> getOrgs(
+            OrganizationCriteria criteria,
+            Pageable pageable,
+            @Parameter(description = "Toggle summary data") @RequestParam(value = "_summary", defaultValue = "TRUE") SummaryEnum _summary) {
 
-  @Operation(summary = "Update an organization",
-      description = "Update an organization",
-      tags = {"Organization"}
-  )
-  @PutMapping(value = "/{identifier}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<OrganizationResponse> updateOrganization(
-      @Valid @RequestBody OrganizationRequest organizationRequest,
-      @Parameter(description = "Organization identifier") @PathVariable UUID identifier) {
-    return ResponseEntity.status(HttpStatus.OK).body(
-        OrganizationResponseFactory.fromEntityWithoutChild(
-            organizationService.updateOrganization(identifier, organizationRequest)));
-  }
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(organizationService.searchAllTreeView(criteria, pageable));
+    }
 
-  @Operation(summary = "Delete an organization",
-      description = "Delete an organization",
-      tags = {"Organization"}
-  )
-  @DeleteMapping(value = "/{identifier}")
-  public ResponseEntity<Void> deleteOrganization(
-      @Parameter(description = "Organization identifier") @PathVariable UUID identifier) {
-    organizationService.deleteOrganization(identifier);
-    return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
-  }
+    @Operation(summary = "Get an organization by identifier",
+            description = "Get an organization by identifier",
+            tags = {"Organization"}
+    )
+    @GetMapping(value = "/{identifier}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<OrganizationResponse> getOrganization(
+            @Parameter(description = "Organization identifier") @PathVariable UUID identifier,
+            @Parameter(description = "Toggle summary data") @RequestParam(defaultValue = "true", required = false) boolean _summary) {
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body((_summary) ? OrganizationResponseFactory.fromEntityWithoutChild(
+                        organizationService.findById(identifier, _summary))
+                        : OrganizationResponseFactory.fromEntityWithChild(
+                        organizationService.findById(identifier, _summary)));
+    }
+
+    @Operation(summary = "Update an organization",
+            description = "Update an organization",
+            tags = {"Organization"}
+    )
+    @PutMapping(value = "/{identifier}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<OrganizationResponse> updateOrganization(
+            @Valid @RequestBody OrganizationRequest organizationRequest,
+            @Parameter(description = "Organization identifier") @PathVariable UUID identifier) {
+        return ResponseEntity.status(HttpStatus.OK).body(
+                OrganizationResponseFactory.fromEntityWithoutChild(
+                        organizationService.updateOrganization(identifier, organizationRequest)));
+    }
+
+    @Operation(summary = "Delete an organization",
+            description = "Delete an organization",
+            tags = {"Organization"}
+    )
+    @DeleteMapping(value = "/{identifier}")
+    public ResponseEntity<Void> deleteOrganization(
+            @Parameter(description = "Organization identifier") @PathVariable UUID identifier) {
+        organizationService.deleteOrganization(identifier);
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    }
+
+    @GetMapping(value = "/{identifier}/members", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<List<UserResponse>> getAllMembersOfOrganization(@PathVariable UUID identifier) {
+        List<UserResponse> response = organizationService.getAllMembersOfOrganization(identifier);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping(value = "/{identifier}/members", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<List<UserResponse>> addMemberToOrganization(@PathVariable UUID identifier, @RequestBody String username) {
+        List<UserResponse> response = organizationService.addMemberToOrganization(username, identifier);
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping(value = "/{identifier}/members/{username}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<List<UserResponse>> removeMemberFromOrganization(@PathVariable UUID identifier, @PathVariable String username) {
+        List<UserResponse> response = organizationService.removeMemberFromOrganization(username, identifier);
+        return ResponseEntity.ok(response);
+    }
 }
