@@ -1,2 +1,0 @@
-ALTER TABLE IF EXISTS dataset
-ADD COLUMN border_color VARCHAR(7) NOT NULL;
