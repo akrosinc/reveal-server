@@ -11,6 +11,7 @@ import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.*;
 import com.revealprecision.revealserver.persistence.projection.AggregateWithTagProjection;
 import com.revealprecision.revealserver.persistence.projection.LocationDetailsProjection;
+import com.revealprecision.revealserver.persistence.projection.LocationWithAncestryProjection;
 import com.revealprecision.revealserver.persistence.repository.PlanRepository;
 import com.revealprecision.revealserver.persistence.repository.SimulationRepository;
 import lombok.RequiredArgsConstructor;
@@ -46,7 +47,6 @@ public class SimulationService {
     private final EntityFilterEsService filterEsService;
     private final ObjectMapper objectMapper;
 
-
     @Value("${reveal.elastic.index-name}")
     private final String elasticIndex;
 
@@ -72,8 +72,8 @@ public class SimulationService {
 
     public SimulationResponse getSimulationWithTargetAreas(UUID planId) {
         Simulation s = getOrCreateSimulationByPlanId(planId);
-        List<Location> l = locationService.getAllTargetAreasOfPlan(planId, s.getPlan().getPlanTargetType().getGeographicLevel().getName());
-        return new SimulationResponse(s.getIdentifier(), s.getDatasets(), l.stream().map(LocationResponseFactory::fromEntityWithPopulation).collect(Collectors.toList()));
+        List<LocationWithAncestryProjection> l = locationService.getAllTargetAreasOfPlan(planId, s.getPlan().getPlanTargetType().getGeographicLevel().getName());
+        return new SimulationResponse(s.getIdentifier(), s.getDatasets(), l.stream().map(loc -> LocationResponseFactory.fromEntityWithPopulationAndAncestry(loc.getLocation(), loc.getAncestry())).collect(Collectors.toList()));
     }
 
     public Simulation updateSimulationDataset(UpdateDatasetRequest request) {
@@ -82,6 +82,7 @@ public class SimulationService {
         dataset.setName(Objects.requireNonNullElse(request.getName(), dataset.getName()));
         dataset.setHexColor(Objects.requireNonNullElse(request.getHexColor(), dataset.getHexColor()));
         dataset.setLineWidth(Objects.requireNonNullElse(request.getLineWidth(), dataset.getLineWidth()));
+        dataset.setBorderColor(Objects.requireNonNullElse(request.getBorderColor(), dataset.getBorderColor()));
         return simulationRepository.save(simulation);
     }
 
@@ -94,7 +95,7 @@ public class SimulationService {
     }
 
     public SseEmitter getDatasetDataForLocations(String requestId) {
-        SimulationRequest simulationRequest = filterEsService.getSimulationRequestById(requestId).orElseThrow(()-> new NotFoundException("x"));
+        SimulationRequest simulationRequest = filterEsService.getSimulationRequestById(requestId).orElseThrow(() -> new NotFoundException("x"));
         SimulationDatasetRequest request = simulationRequest.getDatasetRequest();
         UUID defaultHierarchyId = locationHierarchyService.getDefaultHierarchy().getIdentifier();
         //TODO: check if this ID exists, if not throw exception
@@ -232,6 +233,14 @@ public class SimulationService {
                                     properties.setPopulation(null);
                                 }
                             });
+                            if (projection.isPresent()) {
+                                var ancestry = projection.get().getAncestry();
+                                if(ancestry == null || ancestry.isEmpty() || ancestry.get(0) == null || ancestry.get(0).isBlank()){
+                                    locationResponse.setAncestry(Collections.emptyList());
+                                } else {
+                                    locationResponse.setAncestry(Arrays.stream(ancestry.get(0).split(",")).collect(Collectors.toList()));
+                                }
+                            }
                             locationResponse.setProperties(properties);
                         }
                         return locationResponse;
@@ -246,6 +255,12 @@ public class SimulationService {
                         properties.setParentIdentifier(UUID.fromString(projection.getParentLocationId()));
                         properties.setId(projection.getLocationId());
                         properties.setAssigned(projection.getAssigned());
+                        List<String> ancestry = projection.getAncestry();
+                        if(ancestry == null || ancestry.isEmpty() || ancestry.get(0) == null || ancestry.get(0).isBlank()){
+                            locationResponse.setAncestry(Collections.emptyList());
+                        } else {
+                            locationResponse.setAncestry(Arrays.stream(ancestry.get(0).split(",")).collect(Collectors.toList()));
+                        }
                         try {
                             properties.setPopulation(objectMapper.readValue(projection.getPopulationData(), PopulationResponseData.class));
                         } catch (JsonProcessingException e) {
@@ -275,10 +290,12 @@ public class SimulationService {
         Simulation simulation = simulationRepository.findById(request.getSimulationId())
                 .orElseThrow(() -> new NotFoundException("Simulation not found with ID: " + request.getSimulationId()));
         AggregateWithTagProjection tagProjection = tags.stream().findFirst().orElseThrow();
+        String DEFAULT_BORDER_COLOR = "#000000";
         Dataset dataset = Dataset.builder()
                 .entityTag(tags.get(0).getTag())
                 .hexColor(request.getHexColor())
                 .lineWidth(request.getLineWidth())
+                .borderColor(request.getBorderColor() != null ? request.getBorderColor() : DEFAULT_BORDER_COLOR)
                 .name(tags.get(0).getTag().getTag())
                 .build();
         simulation.getDatasets().add(dataset);
@@ -294,7 +311,7 @@ public class SimulationService {
                                 savedDataset.getIdentifier()
                         )
                 ));
-        return new SimulationDatasetResponse(savedSimulation.getIdentifier(), tagProjection.getTag().getIdentifier(), savedDataset.getIdentifier(), savedDataset.getName(), savedDataset.getHexColor(), savedDataset.getLineWidth(), map);
+        return new SimulationDatasetResponse(savedSimulation.getIdentifier(), tagProjection.getTag().getIdentifier(), savedDataset.getIdentifier(), savedDataset.getName(), savedDataset.getHexColor(), savedDataset.getBorderColor(), savedDataset.getLineWidth(), map);
     }
 
     private SearchSourceBuilder buildLocationWithoutMetadataQuery(List<String> locationIds, UUID hierarchyId) {

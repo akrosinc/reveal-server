@@ -30,12 +30,13 @@ public interface LocationRepository extends JpaRepository<Location, UUID> {
     @Query("select l.identifier from Location l")
     Set<UUID> findAllIdentifiers();
 
-    @Query("select l " +
+    @Query("select l as location, lr.ancestry as ancestry " +
             "from Location l " +
             "left join PlanLocations pl on pl.location.identifier = l.identifier " +
+            "left join LocationRelationship lr on lr.location.identifier = l.identifier " +
             "where pl.plan.identifier = :planId " +
             "and l.geographicLevel.name in :levelsList")
-    List<Location> getAllTargetAreasOfPlan(@Param("planId") UUID planId, @Param("levelsList") String levelsList);
+    List<LocationWithAncestryProjection> getAllTargetAreasOfPlan(@Param("planId") UUID planId, @Param("levelsList") String levelsList);
 
     @Query(
             value = "SELECT NOT EXISTS (\n" +
@@ -167,7 +168,9 @@ public interface LocationRepository extends JpaRepository<Location, UUID> {
     @Query(value = "WITH DirectDescendants AS (\n" +
             "    SELECT \n" +
             "        CAST(lr.location_identifier AS VARCHAR) AS id,\n" +
-            "        lr.parent_identifier AS parent_id\n" +
+            "        lr.parent_identifier AS parent_id, \n" +
+            "        (select array_to_string(array_agg(uuid), ',') from unnest(lr.ancestry) as uuid) \n" +
+            "        as ancestry \n" +
             "    FROM \n" +
             "        location_relationship lr\n" +
             "    WHERE \n" +
@@ -175,7 +178,9 @@ public interface LocationRepository extends JpaRepository<Location, UUID> {
             "    UNION \n" +
             "    SELECT \n" +
             "        CAST(lr.location_identifier AS VARCHAR) AS id, \n" +
-            "        COALESCE(lr.parent_identifier, '00000000-0000-0000-0000-000000000000') AS parent_id \n" +
+            "        COALESCE(lr.parent_identifier, '00000000-0000-0000-0000-000000000000') AS parent_id, \n" +
+            "        (select array_to_string(array_agg(uuid), ',') from unnest(lr.ancestry) as uuid) \n" +
+            "        as ancestry \n" +
             "    FROM  \n" +
             "        location_relationship lr \n" +
             "    WHERE  \n" +
@@ -190,7 +195,8 @@ public interface LocationRepository extends JpaRepository<Location, UUID> {
             "    select cast(pl.location_identifier as VARCHAR) as id\n" +
             "    from plan_locations pl\n" +
             "    where pl.plan_identifier = :planId\n" +
-            ") as assigned \n" +
+            ") as assigned, \n" +
+            "  dd.ancestry as ancestry \n" +
             "FROM \n" +
             "    DirectDescendants dd\n" +
             "LEFT JOIN \n" +
@@ -198,14 +204,16 @@ public interface LocationRepository extends JpaRepository<Location, UUID> {
             "LEFT JOIN \n" +
             "    location l ON CAST(l.identifier as VARCHAR) = dd.id\n" +
             "GROUP BY \n" +
-            "    dd.id, dd.parent_id, l.population_data ", nativeQuery = true)
+            "    dd.id, dd.parent_id, l.population_data, dd.ancestry ", nativeQuery = true)
     List<LocationDetailsProjection> getAllDirectDescendantsOfLocationWithProperties(@Param("locationIdentifier") UUID locationIdentifier, @Param("hierarchyIdentifier") UUID hierarchyIdentifier, @Param("planId") UUID planId);
 
     @Query(value = "WITH DirectDescendants AS ( \n" +
             "    SELECT  \n" +
             "        CAST(l.identifier AS VARCHAR) AS id, \n" +
             "        lr.parent_identifier AS parent_id, \n" +
-            "\t\tgl.name as level_name\n" +
+            "\t\tgl.name as level_name, \n" +
+            "        (select array_to_string(array_agg(uuid), ',') from unnest(lr.ancestry) as uuid) \n" +
+            "        as ancestry \n" +
             "    FROM  \n" +
             "        location l \n" +
             "\tJOIN geographic_level gl on l.geographic_level_identifier = gl.identifier\n" +
@@ -222,14 +230,15 @@ public interface LocationRepository extends JpaRepository<Location, UUID> {
             "    select cast(pl.location_identifier as VARCHAR) as id\n" +
             "    from plan_locations pl\n" +
             "    where pl.plan_identifier = :planId\n" +
-            ") as assigned \n" +
+            ") as assigned, \n" +
+            "  dd.ancestry as ancestry \n" +
             "FROM  \n" +
             "    DirectDescendants dd \n" +
             "LEFT JOIN  \n" +
             "    location_relationship lr ON CAST(lr.parent_identifier as VARCHAR) = dd.id \n" +
             "LEFT JOIN location l ON CAST(l.identifier as VARCHAR) = dd.id\n" +
             "GROUP BY  \n" +
-            "    dd.id, dd.parent_id, l.population_data;", nativeQuery = true)
+            "    dd.id, dd.parent_id, l.population_data, dd.ancestry", nativeQuery = true)
     List<LocationDetailsProjection> getLocationsWithPropertiesForAdminLevel(@Param("geoLevel") String geoLevel, @Param("hierarchyIdentifier") UUID hierarchyIdentifier, @Param("planId") UUID planId);
 
     @Query(value = "WITH RECURSIVE ancestors(id, parent_id, lvl) AS ( "

@@ -14,10 +14,11 @@ import java.util.UUID;
 @AllArgsConstructor
 public class UpdateDatasetRequest {
     @NotNull
-    UUID simulationId;
+    private UUID simulationId;
     @NotNull
-    UUID datasetId;
-    String name;
-    String hexColor;
-    Integer lineWidth;
+    private UUID datasetId;
+    private String name;
+    private String hexColor;
+    private Integer lineWidth;
+    private String borderColor;
 }

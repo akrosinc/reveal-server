@@ -29,5 +29,6 @@ public class Dataset {
 
     private Integer lineWidth;
 
+    private String borderColor;
 
 }
