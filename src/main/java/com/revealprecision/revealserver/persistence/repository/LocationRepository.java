@@ -30,13 +30,24 @@ public interface LocationRepository extends JpaRepository<Location, UUID> {
     @Query("select l.identifier from Location l")
     Set<UUID> findAllIdentifiers();
 
-    @Query("select l as location, lr.ancestry as ancestry " +
+    @Query("select new com.revealprecision.revealserver.persistence.projection.LocationWithAncestryProjection(l, lr.ancestry, " +
+            "count(pa.organization.identifier)) " +
             "from Location l " +
-            "left join PlanLocations pl on pl.location.identifier = l.identifier " +
             "left join LocationRelationship lr on lr.location.identifier = l.identifier " +
-            "where pl.plan.identifier = :planId " +
-            "and l.geographicLevel.name in :levelsList")
+            "join PlanLocations pl on pl.location.identifier = l.identifier and pl.plan.identifier = :planId " +
+            "left join PlanAssignment pa on pa.planLocations.identifier = pl.identifier " +
+            "where l.geographicLevel.name in :levelsList  " +
+            "group by l.identifier, lr.ancestry ")
     List<LocationWithAncestryProjection> getAllTargetAreasOfPlan(@Param("planId") UUID planId, @Param("levelsList") String levelsList);
+
+    @Query(value = "select cast(l.identifier as varchar) as identifier, l.type as type, to_json(l.geometry as geometry, lr.ancestry as ancestry  \n" +
+            "from location l " +
+            "left join plan_locations pl on pl.location_identifier = l.identifier " +
+            "left join location_relationship lr on lr.location_identifier = l.identifier " +
+            "left join geographic_level gl on gl.identifier = l.geographic_level_identifier " +
+            "where pl.plan_identifier = :planId " +
+            "and gl.name = :levelsList", nativeQuery = true)
+    List<LocationWithAncestryProjection> getAllTargetAreasOfPlann(@Param("planId") UUID planId, @Param("levelsList") String levelsList);
 
     @Query(
             value = "SELECT NOT EXISTS (\n" +

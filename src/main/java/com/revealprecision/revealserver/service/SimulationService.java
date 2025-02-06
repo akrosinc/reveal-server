@@ -73,7 +73,7 @@ public class SimulationService {
     public SimulationResponse getSimulationWithTargetAreas(UUID planId) {
         Simulation s = getOrCreateSimulationByPlanId(planId);
         List<LocationWithAncestryProjection> l = locationService.getAllTargetAreasOfPlan(planId, s.getPlan().getPlanTargetType().getGeographicLevel().getName());
-        return new SimulationResponse(s.getIdentifier(), s.getDatasets(), l.stream().map(loc -> LocationResponseFactory.fromEntityWithPopulationAndAncestry(loc.getLocation(), loc.getAncestry())).collect(Collectors.toList()));
+        return new SimulationResponse(s.getIdentifier(), s.getDatasets(), l.stream().map(loc -> LocationResponseFactory.fromEntityWithPopulationAndAncestry(loc.getLocation(), loc.getAncestry().toString(), loc.getNumberOfTeams())).collect(Collectors.toList()));
     }
 
     public Simulation updateSimulationDataset(UpdateDatasetRequest request) {

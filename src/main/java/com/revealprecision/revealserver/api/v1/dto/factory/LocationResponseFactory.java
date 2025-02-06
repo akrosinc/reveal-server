@@ -2,6 +2,7 @@ package com.revealprecision.revealserver.api.v1.dto.factory;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
 import com.revealprecision.revealserver.api.v1.dto.response.EntityMetadataResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationPropertyResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationResponse;
@@ -35,10 +36,12 @@ public class LocationResponseFactory {
                 .geographicLevel(location.getGeographicLevel().getName()).build()).build();
   }
 
-  public static LocationResponse fromEntityWithPopulationAndAncestry(Location location, String ancestryString) {
+  public static LocationResponse fromEntityWithPopulationAndAncestry(Location location, String ancestryString, Long numberOfTeams) {
     List<String> ancestry = Collections.emptyList();
     if(ancestryString != null && !ancestryString.isEmpty()) {
-      ancestry = Arrays.stream(ancestryString.split(",")).collect(Collectors.toList());
+      Gson gson = new Gson();
+      String[] ancestryArray = gson.fromJson(ancestryString, String[].class);
+      ancestry = Arrays.asList(ancestryArray);
     }
     return LocationResponse.builder()
             .identifier(location.getIdentifier())
@@ -52,6 +55,7 @@ public class LocationResponseFactory {
                             .externalId(location.getExternalId())
                             .population(location.getPopulationData())
                             .geographicLevel(location.getGeographicLevel().getName())
+                            .numberOfTeams(numberOfTeams)
                             .build()
             ).build();
   }
