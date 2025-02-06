@@ -48,4 +48,10 @@ public class TaskBusinessStateTracker {
     this.taskLocationName = taskLocationName;
     this.taskBusinessStatus = taskBusinessStatus;
   }
+
+  public TaskBusinessStateTracker(UUID taskLocationIdentifier, String taskLocationName, String taskBusinessStatus){
+    this.taskLocationIdentifier = taskLocationIdentifier;
+    this.taskLocationName = taskLocationName;
+    this.taskBusinessStatus = taskBusinessStatus;
+  }
 }

@@ -2,11 +2,18 @@ package com.revealprecision.revealserver.persistence.projection;
 
 
 import com.revealprecision.revealserver.persistence.domain.Location;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.List;
 import java.util.UUID;
 
-public interface LocationWithAncestryProjection {
-    Location getLocation();
-    String getAncestry();
+@Getter
+@Setter
+@AllArgsConstructor
+public class LocationWithAncestryProjection {
+    Location location;
+    Object ancestry;
+    Long numberOfTeams;
 }

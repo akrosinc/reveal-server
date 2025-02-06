@@ -29,4 +29,5 @@ public class LocationResponse {
   private LocationPropertyResponse properties;
   List<String> ancestry;
   Map<String,Object> aggregates;
+  private List<OrganizationResponse> teams;
 }

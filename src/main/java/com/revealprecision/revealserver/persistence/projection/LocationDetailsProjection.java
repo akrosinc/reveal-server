@@ -13,4 +13,5 @@ public interface  LocationDetailsProjection {
     String getPopulationData();
     Boolean getAssigned();
     List<String> getAncestry();
+    String getGeographicLevelName();
 }

@@ -57,10 +57,10 @@ public class LocationBusinessStatusService {
         taskBusinessStatus, locationHierarchyIdentifier);
   }
 
-  public TaskBusinessStateTracker findLocationBusinessState(UUID locationHierarchyIdentifier,
-      UUID taskLocationIdentifier, UUID planIdentifier) {
-    return taskBusinessStateTrackerRepository.findDistinctTaskBusinessStateTrackerByLocationHierarchyIdentifierAndTaskLocationIdentifierAndPlanIdentifier(
-        locationHierarchyIdentifier, taskLocationIdentifier, planIdentifier);
+  public String findLocationBusinessState(UUID locationHierarchyIdentifier,
+      UUID parentLocationIdentifier, UUID planIdentifier) {
+    return taskBusinessStateTrackerRepository.findDistinctStateTracerBTaskLocationId(
+        locationHierarchyIdentifier, parentLocationIdentifier, planIdentifier);
   }
 
   public LocationAboveStructure getLocationAboveStructureCount(UUID parentLocationIdentifier,

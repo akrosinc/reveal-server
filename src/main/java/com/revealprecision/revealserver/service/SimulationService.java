@@ -3,6 +3,7 @@ package com.revealprecision.revealserver.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.revealprecision.revealserver.api.v1.dto.factory.LocationResponseFactory;
+import com.revealprecision.revealserver.api.v1.dto.factory.OrganizationResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.DatasetLocationsRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.UpdateDatasetRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.SimulationDatasetRequest;
@@ -12,6 +13,7 @@ import com.revealprecision.revealserver.persistence.domain.*;
 import com.revealprecision.revealserver.persistence.projection.AggregateWithTagProjection;
 import com.revealprecision.revealserver.persistence.projection.LocationDetailsProjection;
 import com.revealprecision.revealserver.persistence.projection.LocationWithAncestryProjection;
+import com.revealprecision.revealserver.persistence.repository.PlanLocationsRepository;
 import com.revealprecision.revealserver.persistence.repository.PlanRepository;
 import com.revealprecision.revealserver.persistence.repository.SimulationRepository;
 import lombok.RequiredArgsConstructor;
@@ -46,6 +48,8 @@ public class SimulationService {
     private final LocationHierarchyService locationHierarchyService;
     private final EntityFilterEsService filterEsService;
     private final ObjectMapper objectMapper;
+    private final PlanAssignmentService planAssignmentService;
+    private final LocationBusinessStatusService locationBusinessStatusService;
 
     @Value("${reveal.elastic.index-name}")
     private final String elasticIndex;
@@ -73,7 +77,9 @@ public class SimulationService {
     public SimulationResponse getSimulationWithTargetAreas(UUID planId) {
         Simulation s = getOrCreateSimulationByPlanId(planId);
         List<LocationWithAncestryProjection> l = locationService.getAllTargetAreasOfPlan(planId, s.getPlan().getPlanTargetType().getGeographicLevel().getName());
-        return new SimulationResponse(s.getIdentifier(), s.getDatasets(), l.stream().map(loc -> LocationResponseFactory.fromEntityWithPopulationAndAncestry(loc.getLocation(), loc.getAncestry())).collect(Collectors.toList()));
+        List<LocationResponse> locationsResponse = l.stream()
+                .map(loc -> LocationResponseFactory.fromEntityWithPopulationAndAncestry(loc.getLocation(), loc.getAncestry().toString(), loc.getNumberOfTeams())).collect(Collectors.toList());
+        return new SimulationResponse(s.getIdentifier(), s.getDatasets(), locationsResponse);
     }
 
     public Simulation updateSimulationDataset(UpdateDatasetRequest request) {
@@ -235,7 +241,7 @@ public class SimulationService {
                             });
                             if (projection.isPresent()) {
                                 var ancestry = projection.get().getAncestry();
-                                if(ancestry == null || ancestry.isEmpty() || ancestry.get(0) == null || ancestry.get(0).isBlank()){
+                                if (ancestry == null || ancestry.isEmpty() || ancestry.get(0) == null || ancestry.get(0).isBlank()) {
                                     locationResponse.setAncestry(Collections.emptyList());
                                 } else {
                                     locationResponse.setAncestry(Arrays.stream(ancestry.get(0).split(",")).collect(Collectors.toList()));
@@ -254,9 +260,10 @@ public class SimulationService {
                         properties.setChildrenNumber(projection.getChildrenCount());
                         properties.setParentIdentifier(UUID.fromString(projection.getParentLocationId()));
                         properties.setId(projection.getLocationId());
+                        properties.setGeographicLevel(projection.getGeographicLevelName());
                         properties.setAssigned(projection.getAssigned());
                         List<String> ancestry = projection.getAncestry();
-                        if(ancestry == null || ancestry.isEmpty() || ancestry.get(0) == null || ancestry.get(0).isBlank()){
+                        if (ancestry == null || ancestry.isEmpty() || ancestry.get(0) == null || ancestry.get(0).isBlank()) {
                             locationResponse.setAncestry(Collections.emptyList());
                         } else {
                             locationResponse.setAncestry(Arrays.stream(ancestry.get(0).split(",")).collect(Collectors.toList()));
@@ -271,6 +278,29 @@ public class SimulationService {
                     })
                     .collect(Collectors.toList());
         }
+
+        List<PlanAssignment> planAssignments = planAssignmentService.getPlanAssignmentsByPlanIdentifier(simulation.getPlan().getIdentifier());
+        Map<UUID, List<PlanAssignment>> planAssignmentMap = planAssignments.stream()
+                .collect(Collectors.groupingBy(
+                        planAssignment -> planAssignment.getPlanLocations().getLocation().getIdentifier()));
+
+        locations = locations.stream().peek(loc -> {
+            List<PlanAssignment> assignments = planAssignmentMap.get(loc.getIdentifier());
+            List<OrganizationResponse> teams = Collections.emptyList();
+            if (assignments != null) {
+                teams = assignments.stream()
+                        .map(el -> OrganizationResponseFactory.fromEntityIdAndName(el.getOrganization()))
+                        .collect(Collectors.toList());
+            }
+            loc.setTeams(teams);
+            if (Objects.equals(loc.getProperties().getGeographicLevel(), "structure")) {
+                String taskStatus = locationBusinessStatusService.findLocationBusinessState(defaultHierarchyId, loc.getIdentifier(), simulation.getPlan().getIdentifier());
+                if (taskStatus != null) {
+                    loc.getProperties().setBusinessStatus(taskStatus);
+                }
+            }
+        }).collect(Collectors.toList());
+
         locations.forEach(locationResponse -> {
             String locationId = locationResponse.getIdentifier().toString();
             List<EntityMetadataResponse> metadata = metadataMap.getOrDefault(locationId, new ArrayList<>());
