@@ -294,7 +294,7 @@ public class SimulationService {
             }
             loc.setTeams(teams);
             if (Objects.equals(loc.getProperties().getGeographicLevel(), "structure")) {
-                String taskStatus = locationBusinessStatusService.findLocationBusinessState(defaultHierarchyId, loc.getProperties().getParentIdentifier(), simulation.getPlan().getIdentifier());
+                String taskStatus = locationBusinessStatusService.findLocationBusinessState(defaultHierarchyId, loc.getIdentifier(), simulation.getPlan().getIdentifier());
                 if (taskStatus != null) {
                     loc.getProperties().setBusinessStatus(taskStatus);
                 }
