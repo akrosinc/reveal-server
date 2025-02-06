@@ -24,6 +24,12 @@ public interface TaskBusinessStateTrackerRepository extends
       UUID locationHierarchyIdentifier, UUID taskLocationIdentifier, UUID planIdentifier);
 
   @Query(
+          value = "SELECT DISTINCT t.task_business_status from task_business_state_tracker t WHERE t.plan_identifier = '24e8d653-c939-4de9-9e02-0246126e33d2'\n" +
+                  "         and t.task_location_identifier = '220b31f3-421e-4a94-864d-1de9642f1163' and t.location_hierarchy_identifier = 'b88451af-5759-4e01-ad4e-9b34d21c958a'", nativeQuery = true)
+  String findDistinctStateTracerBTaskLocationId(
+          UUID locationHierarchyIdentifier, UUID taskLocationIdentifier, UUID planIdentifier);
+
+  @Query(
       "SELECT t.parentLocationIdentifier as parentLocationIdentifier, t.planIdentifier as planIdentifier, count(t) as locationCount from TaskBusinessStateTracker t "
           + "where t.parentLocationIdentifier = :parentLocationIdentifier"
           + " and t.taskLocationGeographicLevelName = :taskLocationGeographicLevelName and "

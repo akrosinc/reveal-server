@@ -207,15 +207,18 @@ public interface LocationRepository extends JpaRepository<Location, UUID> {
             "    from plan_locations pl\n" +
             "    where pl.plan_identifier = :planId\n" +
             ") as assigned, \n" +
-            "  dd.ancestry as ancestry \n" +
+            "  dd.ancestry as ancestry, \n" +
+            "  gl.name as geographicLevelName \n" +
             "FROM \n" +
             "    DirectDescendants dd\n" +
             "LEFT JOIN \n" +
             "    location_relationship lr ON CAST(lr.parent_identifier as VARCHAR) = dd.id\n" +
             "LEFT JOIN \n" +
             "    location l ON CAST(l.identifier as VARCHAR) = dd.id\n" +
+            "LEFT JOIN \n" +
+            "    geographic_level gl ON gl.identifier = l.geographic_level_identifier \n" +
             "GROUP BY \n" +
-            "    dd.id, dd.parent_id, l.population_data, dd.ancestry ", nativeQuery = true)
+            "    dd.id, dd.parent_id, l.population_data, dd.ancestry, gl.name ", nativeQuery = true)
     List<LocationDetailsProjection> getAllDirectDescendantsOfLocationWithProperties(@Param("locationIdentifier") UUID locationIdentifier, @Param("hierarchyIdentifier") UUID hierarchyIdentifier, @Param("planId") UUID planId);
 
     @Query(value = "WITH DirectDescendants AS ( \n" +
@@ -242,14 +245,15 @@ public interface LocationRepository extends JpaRepository<Location, UUID> {
             "    from plan_locations pl\n" +
             "    where pl.plan_identifier = :planId\n" +
             ") as assigned, \n" +
-            "  dd.ancestry as ancestry \n" +
+            "  dd.ancestry as ancestry, \n" +
+            "  cast(l.geographic_level_identifier as varchar) as geographicLevelName \n" +
             "FROM  \n" +
             "    DirectDescendants dd \n" +
             "LEFT JOIN  \n" +
             "    location_relationship lr ON CAST(lr.parent_identifier as VARCHAR) = dd.id \n" +
             "LEFT JOIN location l ON CAST(l.identifier as VARCHAR) = dd.id\n" +
             "GROUP BY  \n" +
-            "    dd.id, dd.parent_id, l.population_data, dd.ancestry", nativeQuery = true)
+            "    dd.id, dd.parent_id, l.population_data, dd.ancestry, l.geographic_level_identifier", nativeQuery = true)
     List<LocationDetailsProjection> getLocationsWithPropertiesForAdminLevel(@Param("geoLevel") String geoLevel, @Param("hierarchyIdentifier") UUID hierarchyIdentifier, @Param("planId") UUID planId);
 
     @Query(value = "WITH RECURSIVE ancestors(id, parent_id, lvl) AS ( "

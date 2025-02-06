@@ -49,7 +49,7 @@ public class SimulationService {
     private final EntityFilterEsService filterEsService;
     private final ObjectMapper objectMapper;
     private final PlanAssignmentService planAssignmentService;
-    private final PlanLocationsRepository planLocationsRepository;
+    private final LocationBusinessStatusService locationBusinessStatusService;
 
     @Value("${reveal.elastic.index-name}")
     private final String elasticIndex;
@@ -260,6 +260,7 @@ public class SimulationService {
                         properties.setChildrenNumber(projection.getChildrenCount());
                         properties.setParentIdentifier(UUID.fromString(projection.getParentLocationId()));
                         properties.setId(projection.getLocationId());
+                        properties.setGeographicLevel(projection.getGeographicLevelName());
                         properties.setAssigned(projection.getAssigned());
                         List<String> ancestry = projection.getAncestry();
                         if (ancestry == null || ancestry.isEmpty() || ancestry.get(0) == null || ancestry.get(0).isBlank()) {
@@ -292,6 +293,12 @@ public class SimulationService {
                         .collect(Collectors.toList());
             }
             loc.setTeams(teams);
+            if (Objects.equals(loc.getProperties().getGeographicLevel(), "structure")) {
+                String taskStatus = locationBusinessStatusService.findLocationBusinessState(defaultHierarchyId, loc.getProperties().getParentIdentifier(), simulation.getPlan().getIdentifier());
+                if (taskStatus != null) {
+                    loc.getProperties().setBusinessStatus(taskStatus);
+                }
+            }
         }).collect(Collectors.toList());
 
         locations.forEach(locationResponse -> {
