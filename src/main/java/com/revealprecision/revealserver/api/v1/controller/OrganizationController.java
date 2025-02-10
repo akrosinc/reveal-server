@@ -77,6 +77,16 @@ public class OrganizationController {
         }
     }
 
+    @Operation(summary = "Fetch organizations with members",
+            description = "Fetch organizations with members",
+            tags = {"Organization"}
+    )
+    @GetMapping(value = "/members", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<List<OrganizationResponse>> getOrganizationsWithMembers() {
+
+        return ResponseEntity.status(HttpStatus.OK).body(organizationService.getAllOrganizationsWithMembers());
+    }
+
     @GetMapping(value = "/search", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Page<OrganizationResponse>> getOrgs(
             OrganizationCriteria criteria,
