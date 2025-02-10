@@ -10,7 +10,6 @@ import com.revealprecision.revealserver.persistence.projection.OrganizationProje
 import java.util.*;
 import java.util.stream.Collectors;
 
-import com.revealprecision.revealserver.persistence.projection.OrganizationWithMembersProjection;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.springframework.data.domain.Page;
