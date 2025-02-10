@@ -23,7 +23,9 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -233,10 +235,12 @@ public class SimulationService {
                                 properties.setParentIdentifier(UUID.fromString(locationDetailsProjection.getParentLocationId()));
                                 properties.setId(locationDetailsProjection.getLocationId());
                                 properties.setAssigned(locationDetailsProjection.getAssigned());
-                                try {
-                                    properties.setPopulation(objectMapper.readValue(locationDetailsProjection.getPopulationData(), PopulationResponseData.class));
-                                } catch (JsonProcessingException e) {
-                                    properties.setPopulation(null);
+                                if (locationDetailsProjection.getPopulationData() != null) {
+                                    try {
+                                        properties.setPopulation(objectMapper.readValue(locationDetailsProjection.getPopulationData(), PopulationResponseData.class));
+                                    } catch (JsonProcessingException e) {
+                                        properties.setPopulation(null);
+                                    }
                                 }
                             });
                             if (projection.isPresent()) {
@@ -268,10 +272,12 @@ public class SimulationService {
                         } else {
                             locationResponse.setAncestry(Arrays.stream(ancestry.get(0).split(",")).collect(Collectors.toList()));
                         }
-                        try {
-                            properties.setPopulation(objectMapper.readValue(projection.getPopulationData(), PopulationResponseData.class));
-                        } catch (JsonProcessingException e) {
-                            properties.setPopulation(null);
+                        if (projection.getPopulationData() != null) {
+                            try {
+                                properties.setPopulation(objectMapper.readValue(projection.getPopulationData(), PopulationResponseData.class));
+                            } catch (JsonProcessingException e) {
+                                properties.setPopulation(null);
+                            }
                         }
                         locationResponse.setProperties(properties);
                         return locationResponse;
@@ -299,6 +305,13 @@ public class SimulationService {
                     loc.getProperties().setBusinessStatus(taskStatus);
                 }
             }
+            long counts = 0;
+            try {
+                counts = countMatchingLocations(defaultHierarchyId, loc.getIdentifier());
+            } catch (IOException e) {
+                loc.getProperties().setNumberOfStructures(0);
+            }
+            loc.getProperties().setNumberOfStructures(counts);
         }).collect(Collectors.toList());
 
         locations.forEach(locationResponse -> {
@@ -415,5 +428,28 @@ public class SimulationService {
             default:
                 throw new IllegalArgumentException("Unsupported aggregation type: " + aggregationType);
         }
+    }
+
+    public long countMatchingLocations(UUID hierarchyId, UUID parentLocationId) throws IOException {
+        SearchRequest searchRequest = new SearchRequest(elasticIndex);
+        SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+        sourceBuilder.size(0);
+        TermQueryBuilder levelQuery = QueryBuilders.termQuery("level", "structure");
+
+        String dynamicField = "hierarchyDetailsElastic." + hierarchyId.toString() + ".ancestry.keyword";
+        TermQueryBuilder nestedTermQuery = QueryBuilders.termQuery(dynamicField, parentLocationId.toString());
+
+        NestedQueryBuilder nestedQuery = QueryBuilders.nestedQuery("hierarchyDetailsElastic", nestedTermQuery, ScoreMode.Avg);
+
+        BoolQueryBuilder boolQuery = QueryBuilders.boolQuery()
+                .must(levelQuery)
+                .must(nestedQuery);
+
+        sourceBuilder.query(boolQuery);
+        searchRequest.source(sourceBuilder);
+
+        SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+
+        return Objects.requireNonNull(searchResponse.getHits().getTotalHits()).value;
     }
 }

@@ -171,6 +171,17 @@ public interface LocationRelationshipRepository extends JpaRepository<LocationRe
         + "where gl.name = :geographicLevel and lr.location_hierarchy_identifier = :hierarchyIdentifier", nativeQuery = true)
   List<LocationStructureCount> getNumberOfStructures(UUID hierarchyIdentifier, String geographicLevel);
 
+  @Query(value =
+          "select cast(lr.location_identifier as varchar) as identifier, ( select count(*) from location_relationship lre "
+                  + "left join location loc on loc.identifier = lre.location_identifier "
+                  + "left join geographic_level gle on gle.identifier = loc.geographic_level_identifier "
+                  + "where lr.location_identifier = any(lre.ancestry)  and gle.name = 'structure') as structureCount "
+                  + "from location_relationship lr "
+                  + "left join location l on lr.location_identifier = l.identifier "
+                  + "left join geographic_level gl on gl.identifier = l.geographic_level_identifier "
+                  + "where gl.name = :geographicLevel and lr.location_hierarchy_identifier = :hierarchyIdentifier", nativeQuery = true)
+  List<LocationStructureCount> getNumberOfStructuresBasedOnParentId(UUID hierarchyIdentifier, String geographicLevel);
+
   @Query(value = "SELECT cast(lr.location_identifier as varchar) as locationIdentifier, cast(unnest(array_append(lr.ancestry,lr.location_identifier)) as varchar) as ancestor from location_relationship lr WHERE lr.location_identifier in :ids",nativeQuery = true)
   List<LocationRelationshipAncestryProjection> getLocationAncestryListsFromLocationIds(List<UUID> ids);
 
