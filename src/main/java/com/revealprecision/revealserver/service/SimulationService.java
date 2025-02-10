@@ -309,7 +309,7 @@ public class SimulationService {
             try {
                 counts = countMatchingLocations(defaultHierarchyId, loc.getIdentifier());
             } catch (IOException e) {
-                loc.getProperties().setNumberOfStructures(0);
+                loc.getProperties().setNumberOfStructures(0L);
             }
             loc.getProperties().setNumberOfStructures(counts);
         }).collect(Collectors.toList());
