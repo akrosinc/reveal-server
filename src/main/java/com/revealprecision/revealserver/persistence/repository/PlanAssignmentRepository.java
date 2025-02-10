@@ -16,6 +16,9 @@ public interface PlanAssignmentRepository extends EntityGraphJpaRepository<PlanA
 
   List<PlanAssignment> findPlanAssignmentsByOrganization_Identifier(UUID organizationIdentifier);
 
+  @Query(value = "select pl.planLocations.location.identifier from PlanAssignment pl where pl.planLocations.plan.identifier = :planIdentifier and pl.selected = true and pl.organization.identifier = :organizationIdentifier")
+  List<UUID> findSelectedLocationsAssignedForOrganization(UUID planIdentifier, UUID organizationIdentifier);
+
 
   @Query(value = "select new com.revealprecision.revealserver.persistence.domain.PlanAssignment(pl.identifier, pl.organization.identifier, pl.organization.name, pl.planLocations.identifier, pl.planLocations.location.identifier) from PlanAssignment pl where pl.planLocations.plan.identifier = :planIdentifier")
   List<PlanAssignment> findPlanAssignmentsByPlanLocations_Plan_Identifier(UUID planIdentifier);
