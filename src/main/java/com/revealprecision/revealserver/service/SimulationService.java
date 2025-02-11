@@ -434,6 +434,7 @@ public class SimulationService {
         SearchRequest searchRequest = new SearchRequest(elasticIndex);
         SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
         sourceBuilder.size(0);
+        sourceBuilder.trackTotalHits(true);
         TermQueryBuilder levelQuery = QueryBuilders.termQuery("level", "structure");
 
         String dynamicField = "hierarchyDetailsElastic." + hierarchyId.toString() + ".ancestry.keyword";

@@ -117,9 +117,14 @@ public class LocationHierarchyService {
     }
 
     public List<GeoTreeResponse> getGeoTreeFromLocationHierarchy(
-            LocationHierarchy locationHierarchy) {
-        List<LocationRelationship> locationRelationship = getLocationRelationshipsForLocationHierarchy(
-                locationHierarchy);
+            LocationHierarchy locationHierarchy, boolean excludeStructures) {
+        List<LocationRelationship> locationRelationship;
+        if (excludeStructures) {
+            locationRelationship = getLocationRelationshipsWithoutStructuresForLocationHierarchy(locationHierarchy);
+        } else {
+            locationRelationship = getLocationRelationshipsForLocationHierarchy(
+                    locationHierarchy);
+        }
         List<GeoTreeResponse> geoTreeResponses = locationRelationship.stream()
                 .map(lr -> GeoTreeResponse.builder()
                         .identifier(lr.getLocation().getIdentifier())
@@ -182,6 +187,12 @@ public class LocationHierarchyService {
             LocationHierarchy locationHierarchy) {
         return locationRelationshipService
                 .getLocationRelationshipsForLocationHierarchy(locationHierarchy);
+    }
+
+    public List<LocationRelationship> getLocationRelationshipsWithoutStructuresForLocationHierarchy(
+            LocationHierarchy locationHierarchy) {
+        return locationRelationshipService
+                .getLocationRelationshipsWithoutStructuresForLocationHierarchy(locationHierarchy);
     }
 
     public LocationHierarchy getActiveLocationHierarchy() {

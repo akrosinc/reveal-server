@@ -201,6 +201,13 @@ public class LocationRelationshipService {
         Collectors.toList());
   }
 
+  public List<LocationRelationship> getLocationRelationshipsWithoutStructuresForLocationHierarchy(
+      LocationHierarchy locationHierarchy) {
+    return locationRelationshipRepository.findLocationTreeWithoutStructures(
+        locationHierarchy.getIdentifier()).stream().map((LocationRelationship::new)).collect(
+        Collectors.toList());
+  }
+
   public List<LocationRelationshipProjection> getLocationRelationshipsForLocationHierarchyId(
       String locationHierarchy) {
     return locationRelationshipRepository.findByLocationHierarchyIdentifier(
