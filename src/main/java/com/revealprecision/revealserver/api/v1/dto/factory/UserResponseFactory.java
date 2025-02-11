@@ -35,4 +35,16 @@ public class UserResponseFactory {
         .collect(Collectors.toList());
     return new PageImpl<>(response, pageable, users.getTotalElements());
   }
+
+  public static UserResponse fromEntityWithoutOrganizations(User user) {
+    return UserResponse.builder()
+            .identifier(user.getIdentifier())
+            .sid(user.getSid())
+            .firstName(user.getFirstName())
+            .lastName(user.getLastName())
+            .username(user.getUsername())
+            .email(user.getEmail())
+            .securityGroups(user.getSecurityGroups())
+            .build();
+  }
 }

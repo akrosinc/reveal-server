@@ -96,6 +96,11 @@ public class OrganizationService {
         return organizationRepository.getAllByCriteriaWithoutRoot(criteria.getSearch(), pageable);
     }
 
+    public List<OrganizationResponse> getAllOrganizationsWithMembers() {
+        List<Organization> organizations = organizationRepository.findAll();
+        return organizations.stream().map(OrganizationResponseFactory::fromEntityWithMembers).collect(Collectors.toList());
+    }
+
     public List<UserResponse> getAllMembersOfOrganization(UUID organizationId) {
         return userRepository.getAllMembersOfTeam(organizationId).stream().map(UserResponseFactory::fromEntity).collect(Collectors.toList());
     }

@@ -27,7 +27,7 @@ public interface LocationRepository extends JpaRepository<Location, UUID> {
 
     List<Location> findByIdentifierIn(List<UUID> ids);
 
-    @Query("select l.identifier from Location l")
+    @Query("select l.identifier from Location l where l.geographicLevel.name != 'structure'")
     Set<UUID> findAllIdentifiers();
 
     @Query("select new com.revealprecision.revealserver.persistence.projection.LocationWithAncestryProjection(l, lr.ancestry, " +
@@ -53,7 +53,8 @@ public interface LocationRepository extends JpaRepository<Location, UUID> {
             value = "SELECT NOT EXISTS (\n" +
                     "    SELECT 1\n" +
                     "    FROM location l\n" +
-                    "    WHERE l.population_data IS NULL\n" +
+                    "    LEFT JOIN geographic_level gl on gl.identifier = l.geographic_level_identifier \n" +
+                    "    WHERE gl.name != 'structure' and l.population_data IS NULL\n" +
                     ") ",
             nativeQuery = true)
     boolean populationDataExistsForAll();
