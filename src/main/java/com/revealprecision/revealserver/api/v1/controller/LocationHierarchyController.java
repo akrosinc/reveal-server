@@ -83,7 +83,7 @@ public class LocationHierarchyController {
             @Parameter(description = "Toggle summary data") @RequestParam(defaultValue = "TRUE", required = false) SummaryEnum _summary) {
         LocationHierarchy locationHierarchy = locationHierarchyService.findByIdentifier(identifier);
         Boolean includeGeometry = _summary.equals(SummaryEnum.FALSE);
-        List<GeoTreeResponse> geoTreeResponses = locationHierarchyService.getGeoTreeFromLocationHierarchy(locationHierarchy);
+        List<GeoTreeResponse> geoTreeResponses = locationHierarchyService.getGeoTreeFromLocationHierarchy(locationHierarchy, false);
         Page<GeoTreeResponse> pageableGeoTreeResponse = LocationHierarchyResponseFactory.generatePageableGeoTreeResponse(geoTreeResponses, pageable, search);
         return ResponseEntity.status(HttpStatus.OK).body(pageableGeoTreeResponse);
     }
@@ -96,7 +96,7 @@ public class LocationHierarchyController {
     @GetMapping("/default/location")
     public ResponseEntity<List<GeoTreeResponse>> getDefaultHierarchyLocations() {
         LocationHierarchy locationHierarchy = locationHierarchyService.getDefaultHierarchy();
-        List<GeoTreeResponse> geoTreeResponses = locationHierarchyService.getGeoTreeFromLocationHierarchy(locationHierarchy);
+        List<GeoTreeResponse> geoTreeResponses = locationHierarchyService.getGeoTreeFromLocationHierarchy(locationHierarchy, true);
         return ResponseEntity.status(HttpStatus.OK).body(geoTreeResponses);
     }
 
