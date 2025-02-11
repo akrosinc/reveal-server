@@ -18,7 +18,7 @@ public class TaskDetailsService {
 
     public TaskDetailsResponse getReportDataForLocation(UUID planId, UUID parentLocationId) {
         UUID defaultHierarchyId = locationHierarchyService.getDefaultHierarchy().getIdentifier();
-
+    
         Set<LocationBusinessStateCount> businessStateCounts = locationBusinessStatusService.getLocationBusinessStateObjPerGeoLevel
                 (planId, parentLocationId, LocationConstants.STRUCTURE, defaultHierarchyId);
 
@@ -29,8 +29,9 @@ public class TaskDetailsService {
                 ));
 
         long totalStructures = statusCounts.values().stream().mapToLong(Long::longValue).sum();
-        long totalVisited = statusCounts.getOrDefault(FormConstants.BusinessStatus.COMPLETE, 0L) + statusCounts.getOrDefault(FormConstants.BusinessStatus.VISITED, 0L);
+        long totalVisited = statusCounts.getOrDefault(FormConstants.BusinessStatus.COMPLETE, 0L) + statusCounts.getOrDefault(FormConstants.BusinessStatus.VISITED, 0L) + statusCounts.getOrDefault(FormConstants.BusinessStatus.INCOMPLETE, 0L);
         long totalComplete = statusCounts.getOrDefault(FormConstants.BusinessStatus.COMPLETE, 0L);
+        long totalIncomplete = statusCounts.getOrDefault(FormConstants.BusinessStatus.INCOMPLETE, 0L);
 
         double completionCoverage = totalVisited > 0 ? (double) totalComplete / totalVisited * 100 : 0.0;
         double visitationCoverage = totalStructures > 0 ? (double) totalVisited / totalStructures * 100 : 0.0;
@@ -41,7 +42,7 @@ public class TaskDetailsService {
                 .totalVisited(totalVisited)
                 .totalNotVisited(totalStructures - totalVisited)
                 .totalComplete(totalComplete)
-                .totalIncomplete(totalVisited - totalComplete)
+                .totalIncomplete(totalIncomplete)
                 .completionCoverage(completionCoverage)
                 .visitationCoverage(visitationCoverage)
                 .build();
