@@ -200,7 +200,7 @@ public class EntityTagController {
     public ResponseEntity<TagResponse> getEntityTagsForDefaultHierarchy() {
         UUID defaultHierarchyId = locationHierarchyService.getDefaultHierarchy().getIdentifier();
         return ResponseEntity.status(HttpStatus.OK)
-                .body(entityTagService.getAllAggregateEntityTagsAssociatedToData(defaultHierarchyId.toString()));
+                .body(entityTagService.getAverageTags(defaultHierarchyId.toString()));
     }
 
     @AllArgsConstructor
