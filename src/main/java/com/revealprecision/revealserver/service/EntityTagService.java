@@ -17,6 +17,7 @@ import com.revealprecision.revealserver.api.v1.controller.EntityTagController.Ta
 import com.revealprecision.revealserver.api.v1.dto.factory.EntityTagEventFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.EntityTagFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.EntityTagRequestFactory;
+import com.revealprecision.revealserver.api.v1.dto.factory.EntityTagResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.EntityTagItem;
 import com.revealprecision.revealserver.api.v1.dto.request.EntityTagRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.UpdateEntityTagRequest;
@@ -152,6 +153,44 @@ public class EntityTagService {
   public List<EntityTag> getAllNonAggregateEntityTags() {
     return entityTagRepository.findEntityTagsByIsAggregate(false);
   }
+
+    public TagResponse getAllAggregateEntityTagsAssociatedToData() {
+        List<EntityTagResponse> resourceTags =
+                entityTagRepository.findAggregateTags().stream().map(EntityTagResponseFactory::fromEntity
+                ).collect(Collectors.toList());
+
+        User currentUser = userService.getCurrentUser();
+
+        Set<UUID> currentUserOrgs = currentUser.getOrganizations().stream()
+                .map(Organization::getIdentifier)
+                .collect(Collectors.toSet());
+
+        Map<String, EntityTagResponse> tagsWithAccess = entityTagRepository.findEntityTagsByTagIn(
+                        resourceTags.stream().map(EntityTagResponse::getTag).collect(Collectors.toSet()))
+                .stream()
+                .filter(entityTag -> checkAccess(entityTag, currentUserOrgs, currentUser))
+                .map(
+                        entityTag -> EntityTagResponse.builder()
+                                .identifier(String.valueOf(entityTag.getIdentifier()))
+                                .isAggregate(entityTag.isAggregate())
+                                .simulationDisplay(entityTag.isSimulationDisplay())
+                                .tag(entityTag.getTag())
+                                .build()
+                )
+                .collect(Collectors.toMap(EntityTagResponse::getTag, a -> a, (a, b) -> b));
+
+
+        List<EntityTagResponse> collect1 = resourceTags.stream()
+                .filter(allTag -> tagsWithAccess.get(allTag.getTag()) != null)
+                .peek(allTag -> {
+                    allTag.setIdentifier(tagsWithAccess.get(allTag.getTag()).getIdentifier());
+                    allTag.setAggregate(tagsWithAccess.get(allTag.getTag()).isAggregate());
+                    allTag.setSimulationDisplay(tagsWithAccess.get(allTag.getTag()).isSimulationDisplay());
+                    allTag.setLevels(allTag.getLevels());
+                }).collect(Collectors.toList());
+
+        return new TagResponse(collect1, null);
+    }
 
   public TagResponse getAllAggregateEntityTagsAssociatedToData(
       String hierarchyIdentifier) {

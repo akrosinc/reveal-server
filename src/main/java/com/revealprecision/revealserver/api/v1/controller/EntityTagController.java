@@ -198,9 +198,8 @@ public class EntityTagController {
 
     @GetMapping(value = "/default-hierarchy", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<TagResponse> getEntityTagsForDefaultHierarchy() {
-        UUID defaultHierarchyId = locationHierarchyService.getDefaultHierarchy().getIdentifier();
         return ResponseEntity.status(HttpStatus.OK)
-                .body(entityTagService.getAllAggregateEntityTagsAssociatedToData(defaultHierarchyId.toString()));
+                .body(entityTagService.getAllAggregateEntityTagsAssociatedToData());
     }
 
     @AllArgsConstructor

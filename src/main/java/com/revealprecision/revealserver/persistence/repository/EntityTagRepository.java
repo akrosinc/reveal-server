@@ -37,6 +37,9 @@ public interface EntityTagRepository extends JpaRepository<EntityTag, UUID> {
   Page<EntityTag> findEntityTagsByIsAggregate(
       boolean isAggregate,Pageable pageable);
 
+  @Query(value = "select et from EntityTag et where et.isAggregate = true ")
+  List<EntityTag> findAggregateTags();
+
   Set<EntityTag> findEntityTagsByTagIn(Set<String> tags);
 
   Set<EntityTag> findEntityTagsByReferencedTagIn(List<UUID> id);
