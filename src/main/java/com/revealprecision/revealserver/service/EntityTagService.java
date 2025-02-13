@@ -153,15 +153,6 @@ public class EntityTagService {
     return entityTagRepository.findEntityTagsByIsAggregate(false);
   }
 
-  public TagResponse getAverageTags(String hierarchyId) {
-    TagResponse tagResponse = getAllAggregateEntityTagsAssociatedToData(hierarchyId);
-    var filteredTags = tagResponse.getEntityTagResponses().stream()
-            .filter(tag -> tag.getTag().endsWith("-average"))
-            .collect(Collectors.toList());
-    tagResponse.setEntityTagResponses(filteredTags);
-    return tagResponse;
-  }
-
   public TagResponse getAllAggregateEntityTagsAssociatedToData(
       String hierarchyIdentifier) {
     List<EntityTagResponse> resourceTags =
