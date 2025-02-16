@@ -66,7 +66,7 @@ public interface HdssCompoundsRepository extends EntityGraphJpaRepository<HdssCo
       + "                cast(hc.floating_location_id as varchar)               as floatingLocationId,\n"
       + "                cast(hc.floating_location_name as varchar)             as floatingLocationName,\n"
       + "                cast(hc.floating_location_geographic_level as varchar) as floatingLocationGeographicLevel,\n"
-      + "                cast(hc.floating_household_location_name as varchar)             as getFloatingHouseholdLocationName\n"
+      + "                cast(hc.floating_household_location_name as varchar)             as floatingHouseholdLocationName\n"
       + "FROM hdss.hdss_compounds hc\n"
       + "         LEFT JOIN\n"
       + "\n"
