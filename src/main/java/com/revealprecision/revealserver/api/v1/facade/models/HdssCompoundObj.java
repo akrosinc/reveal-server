@@ -181,9 +181,8 @@ public class HdssCompoundObj implements Serializable {
 
     private long serverVersion;
     private String householdId;
-    private String floatingLocationId;
-    private String floatingLocationName;
-    private String floatingLocationGeographicLevel;
+    private String floatingHouseholdLocationName;
+
 
     @Override
     public boolean equals(Object o) {
@@ -194,16 +193,13 @@ public class HdssCompoundObj implements Serializable {
         return false;
       }
       HdssHousehold that = (HdssHousehold) o;
-      return householdId.equals(that.householdId) && Objects.equals(floatingLocationId,
-          that.floatingLocationId) && Objects.equals(floatingLocationName,
-          that.floatingLocationName) && Objects.equals(floatingLocationGeographicLevel,
-          that.floatingLocationGeographicLevel);
+      return getHouseholdId().equals(that.getHouseholdId()) && Objects.equals(
+          this.getFloatingHouseholdLocationName(), that.getFloatingHouseholdLocationName());
     }
 
     @Override
     public int hashCode() {
-      return Objects.hash(householdId, floatingLocationId, floatingLocationName,
-          floatingLocationGeographicLevel);
+      return Objects.hash(getHouseholdId(), this.getFloatingHouseholdLocationName());
     }
   }
 }

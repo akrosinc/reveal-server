@@ -102,7 +102,7 @@ public class HdssFacadeController {
           .allHouseholds(individuals.stream().map(individual -> HdssHousehold
               .builder()
               .householdId(individual.getHouseholdId())
-              .floatingLocationName(individual.getFloatingHouseholdLocationName())
+              .floatingHouseholdLocationName(individual.getFloatingHouseholdLocationName())
               .serverVersion(individual.getServerVersion())
               .build()).collect(Collectors.toSet()))
           .allHouseholdIndividualToDelete(individuals.stream()
