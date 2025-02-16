@@ -25,4 +25,6 @@ public interface HdssCompoundHouseholdIndividualProjection {
   String getFloatingLocationName();
 
   String getFloatingLocationGeographicLevel();
+
+  String getFloatingHouseholdLocationName();
 }

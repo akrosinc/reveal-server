@@ -5,6 +5,7 @@ import com.revealprecision.revealserver.api.v1.facade.models.HdssCompoundHouseho
 import com.revealprecision.revealserver.api.v1.facade.models.HdssCompoundObj;
 import com.revealprecision.revealserver.api.v1.facade.models.HdssCompoundObj.HdssCompound;
 import com.revealprecision.revealserver.api.v1.facade.models.HdssCompoundObj.HdssCompoundHousehold;
+import com.revealprecision.revealserver.api.v1.facade.models.HdssCompoundObj.HdssHousehold;
 import com.revealprecision.revealserver.api.v1.facade.models.HdssCompoundObj.HdssHouseholdIndividual;
 import com.revealprecision.revealserver.api.v1.facade.models.HdssCompoundObj.HdssHouseholdStructure;
 import com.revealprecision.revealserver.api.v1.facade.models.HdssCompoundObj.HdssIndividual;
@@ -62,8 +63,6 @@ public class HdssFacadeController {
         .getAllCompoundsForUserAssignmentAndServerVersionAndBatchSize(
             hdssSyncRequest.getUserId(), serverVersion, hdssSyncRequest.getBatchSize());
 
-
-
     if (!individuals.isEmpty()) {
       Optional<Long> maxServerVersion = individuals.stream()
           .map(HdssCompoundHouseholdIndividualProjection::getServerVersion).reduce(Long::max);
@@ -100,9 +99,18 @@ public class HdssFacadeController {
                   .floatingLocationId(individual.getFloatingLocationId())
                   .floatingLocationName(individual.getFloatingLocationName()).build())
               .collect(Collectors.toSet()))
+          .allHouseholds(individuals.stream().map(individual -> HdssHousehold
+              .builder()
+              .householdId(individual.getHouseholdId())
+              .floatingLocationName(individual.getFloatingHouseholdLocationName())
+              .serverVersion(individual.getServerVersion())
+              .build()).collect(Collectors.toSet()))
           .allHouseholdIndividualToDelete(individuals.stream()
-              .filter(individual->individual.getStructureId()==null)
+              .filter(individual->individual.getStructureId()==null && individual.getHouseholdId()==null)
               .map(HdssCompoundHouseholdIndividualProjection::getIndividualId).collect(Collectors.toSet()))
+          .allCompoundHouseholdToDelete(individuals.stream()
+              .filter(individual->individual.getCompoundId()==null && individual.getStructureId()==null)
+              .map(HdssCompoundHouseholdIndividualProjection::getHouseholdId).collect(Collectors.toSet()))
           .serverVersion(maxServerVersion.isPresent() ? maxServerVersion.get() : 0)
           .totalRecords(count).isEmpty(false).build();
 
@@ -281,6 +289,12 @@ public class HdssFacadeController {
                   item.setHouseholdId(null);
                   item.setStructureId(null);
                 }
+
+                if (hdssCompoundHouseholdIndividualPushObj.getFloatingHouseholdLocationName()!=null){
+                  item.setFloatingHouseLocationName(hdssCompoundHouseholdIndividualPushObj.getFloatingHouseholdLocationName());
+                  item.setCompoundId(null);
+                  item.setStructureId(null);
+                }
               } else {
                 LocalDate parse = null;
                 try {
@@ -313,6 +327,11 @@ public class HdssFacadeController {
                   item.setFloatingLocationGeographicLevel(hdssCompoundHouseholdIndividualPushObj.getFloatingLocationGeographicLevel());
                   item.setCompoundId(null);
                   item.setHouseholdId(null);
+                  item.setStructureId(null);
+                }
+                if (hdssCompoundHouseholdIndividualPushObj.getFloatingHouseholdLocationName()!=null){
+                  item.setFloatingHouseLocationName(hdssCompoundHouseholdIndividualPushObj.getFloatingHouseholdLocationName());
+                  item.setCompoundId(null);
                   item.setStructureId(null);
                 }
 

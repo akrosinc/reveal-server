@@ -23,7 +23,11 @@ public class HdssCompoundObj implements Serializable {
 
   Set<HdssIndividual> allIndividuals;
 
+  Set<HdssHousehold> allHouseholds;
+
   Set<String> allHouseholdIndividualToDelete;
+
+  Set<String> allCompoundHouseholdToDelete;
 
   boolean isEmpty;
 
@@ -168,6 +172,38 @@ public class HdssCompoundObj implements Serializable {
     @Override
     public int hashCode() {
       return Objects.hash(serverVersion, identifier, individualId, dob, gender);
+    }
+  }
+
+  @Data
+  @Builder
+  public static class HdssHousehold implements Serializable {
+
+    private long serverVersion;
+    private String householdId;
+    private String floatingLocationId;
+    private String floatingLocationName;
+    private String floatingLocationGeographicLevel;
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof HdssHousehold)) {
+        return false;
+      }
+      HdssHousehold that = (HdssHousehold) o;
+      return householdId.equals(that.householdId) && Objects.equals(floatingLocationId,
+          that.floatingLocationId) && Objects.equals(floatingLocationName,
+          that.floatingLocationName) && Objects.equals(floatingLocationGeographicLevel,
+          that.floatingLocationGeographicLevel);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(householdId, floatingLocationId, floatingLocationName,
+          floatingLocationGeographicLevel);
     }
   }
 }
