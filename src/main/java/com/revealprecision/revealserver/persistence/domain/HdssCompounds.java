@@ -48,7 +48,7 @@ public class HdssCompounds {
 
   private String floatingLocationGeographicLevel;
 
-  private String floatingHouseLocationName;
+  private String floatingHouseholdLocationName;
 
   private long serverVersion;
 

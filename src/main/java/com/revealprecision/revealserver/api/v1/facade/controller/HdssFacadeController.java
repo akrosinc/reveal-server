@@ -291,7 +291,7 @@ public class HdssFacadeController {
                 }
 
                 if (hdssCompoundHouseholdIndividualPushObj.getFloatingHouseholdLocationName()!=null){
-                  item.setFloatingHouseLocationName(hdssCompoundHouseholdIndividualPushObj.getFloatingHouseholdLocationName());
+                  item.setFloatingHouseholdLocationName(hdssCompoundHouseholdIndividualPushObj.getFloatingHouseholdLocationName());
                   item.setCompoundId(null);
                   item.setStructureId(null);
                 }
@@ -330,7 +330,7 @@ public class HdssFacadeController {
                   item.setStructureId(null);
                 }
                 if (hdssCompoundHouseholdIndividualPushObj.getFloatingHouseholdLocationName()!=null){
-                  item.setFloatingHouseLocationName(hdssCompoundHouseholdIndividualPushObj.getFloatingHouseholdLocationName());
+                  item.setFloatingHouseholdLocationName(hdssCompoundHouseholdIndividualPushObj.getFloatingHouseholdLocationName());
                   item.setCompoundId(null);
                   item.setStructureId(null);
                 }
