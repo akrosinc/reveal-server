@@ -29,7 +29,7 @@ public interface ImportAggregateRepository extends JpaRepository<ImportAggregati
             + "join EntityTag et on ag.fieldCode = et.definition \n"
             + "where ag.ancestor in :locationsIds \n"
             + "and et.identifier in :tagsIds "
-            + "group by et, ag.ancestor, ag.eventType ")
+            + "group by et.identifier, ag.ancestor, ag.eventType ")
     List<AggregateWithTagProjection> getValuesForTagAndLocations(@Param("tagsIds") List<UUID> tagsIds, @Param("locationsIds") List<String> locationsIds);
 
     @Query(value = "SELECT ean2.hierarchyidentifier as hierarchyIdentifier, ean2.name as name,\n"
