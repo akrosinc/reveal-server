@@ -177,49 +177,57 @@ public interface LocationRepository extends JpaRepository<Location, UUID> {
             + "where lr.parent_identifier = :locationIdentifier and lr.location_hierarchy_identifier = :hierarchyIdentifier ", nativeQuery = true)
     List<UUID> getAllDirectDescendantsOfLocation(UUID locationIdentifier, UUID hierarchyIdentifier);
 
-    @Query(value = "WITH DirectDescendants AS (\n" +
-            "    SELECT \n" +
-            "        CAST(lr.location_identifier AS VARCHAR) AS id,\n" +
-            "        lr.parent_identifier AS parent_id, \n" +
-            "        (select array_to_string(array_agg(uuid), ',') from unnest(lr.ancestry) as uuid) \n" +
-            "        as ancestry \n" +
-            "    FROM \n" +
-            "        location_relationship lr\n" +
-            "    WHERE \n" +
-            "        lr.parent_identifier = :locationIdentifier and lr.location_hierarchy_identifier = :hierarchyIdentifier \n" +
-            "    UNION \n" +
-            "    SELECT \n" +
-            "        CAST(lr.location_identifier AS VARCHAR) AS id, \n" +
-            "        COALESCE(lr.parent_identifier, '00000000-0000-0000-0000-000000000000') AS parent_id, \n" +
-            "        (select array_to_string(array_agg(uuid), ',') from unnest(lr.ancestry) as uuid) \n" +
-            "        as ancestry \n" +
-            "    FROM  \n" +
-            "        location_relationship lr \n" +
-            "    WHERE  \n" +
-            "       lr.location_identifier = :locationIdentifier and lr.location_hierarchy_identifier = :hierarchyIdentifier \n" +
+    @Query(value = "WITH\n" +
+            "ParentGeo AS (\n" +
+            "  SELECT gl.name AS geo_name\n" +
+            "  FROM location l\n" +
+            "  JOIN geographic_level gl \n" +
+            "    ON gl.identifier = l.geographic_level_identifier\n" +
+            "  WHERE l.identifier = :locationIdentifier\n" +
+            "),\n" +
+            "DirectDescendants AS (\n" +
+            "  SELECT  \n" +
+            "    lr.location_identifier AS id, \n" +
+            "    lr.parent_identifier AS parent_id,  \n" +
+            "    COALESCE(array_to_string(array_agg(unnest_lr), ','), '') AS ancestry\n" +
+            "  FROM location_relationship lr\n" +
+            "  LEFT JOIN LATERAL unnest(lr.ancestry) AS unnest_lr ON true\n" +
+            "  WHERE lr.location_hierarchy_identifier = :hierarchyIdentifier\n" +
+            "    AND (lr.parent_identifier = :locationIdentifier OR lr.location_identifier = :locationIdentifier)\n" +
+            "  GROUP BY lr.location_identifier, lr.parent_identifier\n" +
+            "),\n" +
+            "ChildCounts AS (\n" +
+            "  SELECT lr.parent_identifier AS parent_id, COUNT(*) AS child_count\n" +
+            "  FROM location_relationship lr\n" +
+            "  WHERE lr.location_hierarchy_identifier = :hierarchyIdentifier\n" +
+            "  GROUP BY lr.parent_identifier\n" +
             ")\n" +
-            "SELECT \n" +
-            "    dd.id AS locationId,\n" +
-            "    COUNT(lr.location_identifier) AS childrenCount,\n" +
-            "    COALESCE(CAST(dd.parent_id AS VARCHAR), '00000000-0000-0000-0000-000000000000') AS parentLocationId,\n" +
-            "    CAST(l.population_data AS TEXT) AS populationData,\n" +
-            "    dd.id in (\n" +
-            "    select cast(pl.location_identifier as VARCHAR) as id\n" +
-            "    from plan_locations pl\n" +
-            "    where pl.plan_identifier = :planId\n" +
-            ") as assigned, \n" +
-            "  dd.ancestry as ancestry, \n" +
-            "  gl.name as geographicLevelName \n" +
-            "FROM \n" +
-            "    DirectDescendants dd\n" +
-            "LEFT JOIN \n" +
-            "    location_relationship lr ON CAST(lr.parent_identifier as VARCHAR) = dd.id\n" +
-            "LEFT JOIN \n" +
-            "    location l ON CAST(l.identifier as VARCHAR) = dd.id\n" +
-            "LEFT JOIN \n" +
-            "    geographic_level gl ON gl.identifier = l.geographic_level_identifier \n" +
-            "GROUP BY \n" +
-            "    dd.id, dd.parent_id, l.population_data, dd.ancestry, gl.name ", nativeQuery = true)
+            "SELECT  \n" +
+            "  cast(dd.id as varchar) AS locationId, \n" +
+            "  CASE \n" +
+            "    WHEN pg.geo_name = 'structure' THEN 0 \n" +
+            "    ELSE COALESCE(cc.child_count, 0)\n" +
+            "  END AS childrenCount, \n" +
+            "  COALESCE(cast(dd.parent_id as varchar), '00000000-0000-0000-0000-000000000000') AS parentLocationId, \n" +
+            "  cast(l.population_data as text) AS populationData, \n" +
+            "  EXISTS (\n" +
+            "    SELECT 1\n" +
+            "    FROM plan_locations pl\n" +
+            "    WHERE pl.plan_identifier = :planId\n" +
+            "      AND pl.location_identifier = dd.id\n" +
+            "  ) AS assigned,  \n" +
+            "  dd.ancestry AS ancestry,  \n" +
+            "  gl.name AS geographicLevelName  \n" +
+            "FROM DirectDescendants dd\n" +
+            "LEFT JOIN ChildCounts cc \n" +
+            "  ON cc.parent_id = dd.id\n" +
+            "LEFT JOIN location l \n" +
+            "  ON l.identifier = dd.id \n" +
+            "LEFT JOIN geographic_level gl \n" +
+            "  ON gl.identifier = l.geographic_level_identifier\n" +
+            "CROSS JOIN ParentGeo pg\n" +
+            "GROUP BY dd.id, dd.parent_id, l.population_data, dd.ancestry, gl.name, pg.geo_name, cc.child_count\n" +
+            "\n", nativeQuery = true)
     List<LocationDetailsProjection> getAllDirectDescendantsOfLocationWithProperties(@Param("locationIdentifier") UUID locationIdentifier, @Param("hierarchyIdentifier") UUID hierarchyIdentifier, @Param("planId") UUID planId);
 
     @Query(value = "WITH DirectDescendants AS ( \n" +

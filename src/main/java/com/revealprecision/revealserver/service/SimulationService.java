@@ -22,15 +22,17 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.NestedQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.query.TermQueryBuilder;
+import org.elasticsearch.common.geo.ShapeRelation;
+import org.elasticsearch.common.geo.builders.EnvelopeBuilder;
+import org.elasticsearch.geometry.Point;
+import org.elasticsearch.index.query.*;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.locationtech.jts.geom.Coordinate;
 import org.springframework.beans.factory.annotation.Value;
+import org.elasticsearch.geometry.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -559,5 +561,42 @@ public class SimulationService {
         SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
 
         return Objects.requireNonNull(searchResponse.getHits().getTotalHits()).value;
+    }
+
+    public List<LocationResponse> getStructuresWithinBoundingBox(double topLeftLon, double topLeftLat, double bottomRightLon, double bottomRightLat) {
+        UUID defaultHierarchyId = locationHierarchyService.getDefaultHierarchy().getIdentifier();
+        List<LocationResponse> structures = new ArrayList<>();
+
+        try {
+            EnvelopeBuilder envelopeBuilder = new EnvelopeBuilder(
+                    new Coordinate(topLeftLon, topLeftLat),
+                    new Coordinate(bottomRightLon, bottomRightLat)
+            );
+
+            GeoShapeQueryBuilder geoShapeQuery = QueryBuilders
+                    .geoShapeQuery("geometry", envelopeBuilder)
+                    .relation(ShapeRelation.INTERSECTS);
+
+            BoolQueryBuilder boolQuery = QueryBuilders.boolQuery()
+                    .filter(QueryBuilders.termQuery("level", "structure"))
+                    .filter(geoShapeQuery);
+
+            SearchSourceBuilder sourceBuilder = new SearchSourceBuilder()
+                    .query(boolQuery)
+                    .size(1000);
+
+            SearchRequest searchRequest = new SearchRequest(elasticIndex);
+            searchRequest.source(sourceBuilder);
+
+            SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+
+            for (SearchHit hit : searchResponse.getHits().getHits()) {
+                structures.add(LocationResponseFactory.fromSearchHit(hit, null, defaultHierarchyId.toString()));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return structures;
     }
 }
