@@ -2,11 +2,13 @@ package com.revealprecision.revealserver.api.v1.controller;
 
 import com.revealprecision.revealserver.annotation.AllowedSortProperties;
 import com.revealprecision.revealserver.api.v1.dto.factory.UserResponseFactory;
+import com.revealprecision.revealserver.api.v1.dto.request.RegisterUserRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.UserPasswordRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.UserRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.UserUpdateRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.CountResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.UserResponse;
+import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.service.UserService;
 import java.util.UUID;
 import javax.validation.Valid;
@@ -43,6 +45,12 @@ public class UserController {
   public ResponseEntity<Void> createUser(@Valid @RequestBody UserRequest userRequest) {
     userService.createUser(userRequest);
     return ResponseEntity.status(HttpStatus.CREATED).build();
+  }
+
+  @PostMapping(value = "/invitation", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<UserResponse> inviteUser(@Valid @RequestBody RegisterUserRequest request) {
+    User createdUser = userService.createUserForInvitation(request);
+    return ResponseEntity.status(HttpStatus.CREATED).body(UserResponseFactory.fromEntity(createdUser));
   }
 
   @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
