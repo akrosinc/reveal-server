@@ -158,8 +158,22 @@ public interface ImportAggregateRepository extends JpaRepository<ImportAggregati
             + "from import_aggregate_string_count ian\n"
             + "         left join location l on cast(l.identifier as varchar) = ian.locationidentifier\n"
             + "         left join geographic_level gl on gl.identifier = l.geographic_level_identifier\n"
-            + "WHERE ian.hierarchyidentifier =  :hierarchyIdentifier"
+            + "WHERE ian.hierarchyidentifier = :hierarchyIdentifier"
             + "", nativeQuery = true)
     List<EntityTagWithGeoLevelProjection> getUniqueDataTagsAndLevelsListAssociatedWithData(String hierarchyIdentifier);
+
+    @Query(value = "WITH distinct_fieldcodes AS (\n" +
+            "  SELECT DISTINCT fieldcode\n" +
+            "  FROM import_aggregate_numeric \n" +
+            "  WHERE hierarchyidentifier = '2179ed32-05c0-454c-9b4a-f5dec0bece4b'\n" +
+            "\n" +
+            "),\n" +
+            "suffixes AS (\n" +
+            "  SELECT unnest(ARRAY['-sum','-min','-max','-median','-average','-count']) AS suffix\n" +
+            ")\n" +
+            "SELECT CONCAT(d.fieldcode, s.suffix) AS tagName\n" +
+            "FROM distinct_fieldcodes d\n" +
+            "CROSS JOIN suffixes s", nativeQuery = true)
+    List<String> getUniqueTagsAggregatesForHierarchy();
 
 }

@@ -162,8 +162,10 @@ public class EntityTagService {
 
     public TagResponse getAllAggregateEntityTagsAssociatedToData() {
         List<EntityTagResponse> resourceTags =
-                entityTagRepository.findAggregateTags().stream().map(EntityTagResponseFactory::fromEntity
-                ).collect(Collectors.toList());
+                importAggregateRepository.getUniqueTagsAggregatesForHierarchy().stream().map(tag -> {
+                    return EntityTagResponse.builder().fieldType(EntityTagFieldTypes.IMPORT).subType("Import")
+                            .isAggregate(true).tag(tag).valueType(DOUBLE).build();
+    }).collect(Collectors.toList());
 
         User currentUser = userService.getCurrentUser();
 
@@ -174,7 +176,7 @@ public class EntityTagService {
         Map<String, EntityTagResponse> tagsWithAccess = entityTagRepository.findEntityTagsByTagIn(
                         resourceTags.stream().map(EntityTagResponse::getTag).collect(Collectors.toSet()))
                 .stream()
-                .filter(entityTag -> checkAccess(entityTag, currentUserOrgs, currentUser))
+               .filter(entityTag -> checkAccess(entityTag, currentUserOrgs, currentUser))
                 .map(
                         entityTag -> EntityTagResponse.builder()
                                 .identifier(String.valueOf(entityTag.getIdentifier()))

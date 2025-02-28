@@ -518,7 +518,7 @@ public class SimulationService {
             if (loc.getProperties().getPopulation() == null) {
                 try {
                     Optional<LocationDetailsProjection> projection = projections.stream().filter(p -> p.getLocationId().equals(loc.getIdentifier().toString())).findFirst();
-                    if (projection.isPresent()) {
+                    if (projection.isPresent() && projection.get().getPopulationData() != null) {
                         loc.getProperties().setPopulation(objectMapper.readValue(projection.get().getPopulationData(), PopulationResponseData.class));
                     }
                 } catch (JsonProcessingException e) {
