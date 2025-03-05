@@ -193,7 +193,7 @@ public class HdssCompoundObj implements Serializable {
         return false;
       }
       HdssHousehold that = (HdssHousehold) o;
-      return getHouseholdId().equals(that.getHouseholdId()) && Objects.equals(
+      return (getHouseholdId()!=null && getHouseholdId().equals(that.getHouseholdId())) && Objects.equals(
           this.getFloatingHouseholdLocationName(), that.getFloatingHouseholdLocationName());
     }
 
