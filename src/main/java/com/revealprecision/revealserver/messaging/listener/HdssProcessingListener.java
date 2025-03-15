@@ -244,7 +244,7 @@ public class HdssProcessingListener extends Listener {
                             ActionTitleEnum.RCD_MEMBER));
 
                 log.debug("submitting rcd  {}", allStructuresInCompound);
-                allStructuresInCompound.forEach(
+                allStructuresInCompound.stream().filter(Objects::nonNull).forEach(
                     structure -> submitTasks(owner, List.of(structure), targetPlan, actions,
                         ActionTitleEnum.RCD));
               }
@@ -288,7 +288,7 @@ public class HdssProcessingListener extends Listener {
       List<String> allHouseholdsInCompound) {
     emailService.sendEmail(collect, "individual " + individual,
         indexStructure.toString().concat("-").concat(indexHousehold).concat("\r\n\r\n")
-            .concat(allStructuresInCompound.stream().map(UUID::toString).collect(
+            .concat(allStructuresInCompound.stream().filter(Objects::nonNull).map(UUID::toString).collect(
                 Collectors.joining(","))).concat("\r\n\r\n")
             .concat(String.join(",", allHouseholdsInCompound)));
   }
