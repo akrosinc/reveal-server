@@ -336,8 +336,14 @@ public interface HdssCompoundsRepository extends EntityGraphJpaRepository<HdssCo
   @Query("SELECT DISTINCT  h.householdId FROM HdssCompounds h WHERE h.compoundId = :compoundId")
   List<String> getDistinctHouseholdsByCompoundId(List<String> compoundId);
 
+  @Query("SELECT DISTINCT  h.householdId FROM HdssCompounds h WHERE h.compoundId = :compoundId and h.structureId IS NOT NULL")
+  List<String> getDistinctHouseholdsByCompoundIdWithStructure(List<String> compoundId);
+
   @Query("SELECT DISTINCT  h.structureId FROM HdssCompounds h WHERE h.compoundId in :compoundId")
   List<UUID> getDistinctStructuresByCompoundId(List<String> compoundId);
+
+  @Query("SELECT DISTINCT  h.structureId FROM HdssCompounds h WHERE h.compoundId in :compoundId and h.structureId IS NOT NULL")
+  List<UUID> getDistinctStructuresByCompoundIdExcludingNullStructures(List<String> compoundId);
 
   @Query(value = "SELECT h.structureId  FROM HdssCompounds h WHERE h.individualId = :individualId ")
   UUID getStructureByIndividualId(String individualId);
@@ -359,6 +365,11 @@ public interface HdssCompoundsRepository extends EntityGraphJpaRepository<HdssCo
   @Query(value = "SELECT DISTINCT cast(hc.id as varchar) as id, hc.individual_id as individualId"
       + ",CAST(hc.fields->>'dob' as date) as dob,fields->>'gender' as gender from  hdss.hdss_compounds hc WHERE hc.compound_id in :compoundId", nativeQuery = true)
   List<HdssIndividualProjection> getAllIndividualsInCompoundId(List<String> compoundId);
+
+  @Query(value = "SELECT DISTINCT cast(hc.id as varchar) as id, hc.individual_id as individualId"
+      + ",CAST(hc.fields->>'dob' as date) as dob,fields->>'gender' as gender from  hdss.hdss_compounds hc WHERE hc.compound_id in :compoundId AND "
+      + "hc.structure_id IS NOT NULL", nativeQuery = true)
+  List<HdssIndividualProjection> getAllIndividualsInCompoundIdWithStructure(List<String> compoundId);
 
   List<HdssCompounds> findAllByIndividualIdIn(List<String> individualIds);
 }

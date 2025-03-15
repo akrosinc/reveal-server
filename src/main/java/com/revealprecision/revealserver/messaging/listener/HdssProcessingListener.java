@@ -92,7 +92,7 @@ public class HdssProcessingListener extends Listener {
               indexHousehold);
           log.debug("compoundId: {}", compoundId);
 
-          List<UUID> allStructuresInCompound = hdssCompoundsRepository.getDistinctStructuresByCompoundId(
+          List<UUID> allStructuresInCompound = hdssCompoundsRepository.getDistinctStructuresByCompoundIdExcludingNullStructures(
               compoundId);
           log.debug("allStructuresInCompound: {}", allStructuresInCompound);
 
@@ -100,7 +100,7 @@ public class HdssProcessingListener extends Listener {
               individualHouseholdCompound);
           log.debug("indexIndividual: {}", indexIndividual.getIndividualId());
 
-          List<HdssIndividualProjection> allIndividualsInCompound = hdssCompoundsRepository.getAllIndividualsInCompoundId(
+          List<HdssIndividualProjection> allIndividualsInCompound = hdssCompoundsRepository.getAllIndividualsInCompoundIdWithStructure(
               compoundId);
           allIndividualsInCompound.remove(indexIndividual);
           List<HdssIndividualProjection> allIndividualsExcludingIndex = allIndividualsInCompound.stream()
@@ -118,7 +118,7 @@ public class HdssProcessingListener extends Listener {
               HdssIndividualProjection::getIndividualId).collect(
               Collectors.joining("|")));
 
-          List<String> allHouseholdsInCompound = hdssCompoundsRepository.getDistinctHouseholdsByCompoundId(
+          List<String> allHouseholdsInCompound = hdssCompoundsRepository.getDistinctHouseholdsByCompoundIdWithStructure(
               compoundId);
           log.debug("allHouseholdsInCompound: {}", allHouseholdsInCompound);
 
