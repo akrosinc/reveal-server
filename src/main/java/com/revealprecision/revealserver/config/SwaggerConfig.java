@@ -1,11 +1,13 @@
 package com.revealprecision.revealserver.config;
 
 import com.revealprecision.revealserver.props.SwaggerProperties;
+import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
+import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.servers.Server;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -49,7 +51,13 @@ public class SwaggerConfig {
             // Dynamically add the server URL from properties
             .addServersItem(new Server().url(swaggerProperties.getServer()))
             // Add the security requirement
-            .addSecurityItem(new SecurityRequirement().addList("keycloakauth"));
+            .addSecurityItem(new SecurityRequirement().addList("keycloakauth"))
+            .components(new Components()
+            .addSecuritySchemes("keycloakauth", new SecurityScheme()
+                .type(SecurityScheme.Type.APIKEY)  // Specify the security type as API key
+                .in(SecurityScheme.In.HEADER)      // Token will be passed in the "Authorization" header
+                .name("Authorization")             // The name of the header
+                .description("Enter your Bearer token")));
     }
 
 }

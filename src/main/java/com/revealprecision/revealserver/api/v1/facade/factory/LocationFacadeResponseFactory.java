@@ -24,7 +24,9 @@ public class LocationFacadeResponseFactory {
         Collectors.toSet());
     LocationFacade locationFacade = LocationFacade.builder()
         .locationId(location.getIdentifier().toString())
-        .name(location.getName()).tags(locationTags).planIds(assignedPlans).build();
+        .name(location.getName())
+        .tags(locationTags)
+        .planIds(assignedPlans).build();
     locationFacade.setServerVersion(location.getServerVersion());
     return locationFacade;
   }
@@ -34,6 +36,22 @@ public class LocationFacadeResponseFactory {
     Location parentLocation = null;
     Optional<Location> parentLocationOptional = locationRelationships.stream()
         .filter(lr -> lr.getLocation().equals(location) && lr.getParentLocation() != null)
+        .map(LocationRelationship::getParentLocation).findFirst();
+    if (parentLocationOptional.isPresent()) {
+      parentLocation = parentLocationOptional.get();
+    }
+    LocationFacade parentLocationFacade =
+        parentLocation != null ? fromEntity(parentLocation, plans) : null;
+    LocationFacade locationFacade = fromEntity(location, plans);
+    locationFacade.setParentLocation(parentLocationFacade);
+    return locationFacade;
+  }
+
+  public static LocationFacade fromLocationEntityAndLocationRelationship2(Location location,
+      List<LocationRelationship> locationRelationships, Set<Plan> plans) {
+    Location parentLocation = null;
+    Optional<Location> parentLocationOptional = locationRelationships.stream()
+        .filter(lr -> lr.getLocation().getIdentifier().equals(location.getIdentifier()) && lr.getParentLocation() != null)
         .map(LocationRelationship::getParentLocation).findFirst();
     if (parentLocationOptional.isPresent()) {
       parentLocation = parentLocationOptional.get();
