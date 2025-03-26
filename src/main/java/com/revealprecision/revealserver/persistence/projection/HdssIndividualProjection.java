@@ -11,4 +11,6 @@ public interface HdssIndividualProjection {
   java.sql.Date getDob();
 
   String getGender();
+
+  String getHouseholdId();
 }

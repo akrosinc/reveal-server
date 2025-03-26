@@ -23,6 +23,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import javax.mail.MessagingException;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -286,14 +287,21 @@ public class HdssProcessingListener extends Listener {
   private void sendMail(List<String> collect, String individual, UUID indexStructure,
       String indexHousehold, List<UUID> allStructuresInCompound,
       List<String> allHouseholdsInCompound) {
-    emailService.sendEmail(collect, "Index Case Notification: " + individual,
-        "<p>for structure: ".concat(indexStructure.toString()).concat("</p><br>").concat("<p>").concat(indexHousehold).concat("</p><br>")
-            .concat("<p>structures in compounds</p>")
-            .concat(allStructuresInCompound.stream().filter(Objects::nonNull).map(UUID::toString).map(uuid->"<p>".concat(uuid).concat("</p>")).collect(
-                Collectors.joining("<br>"))).concat("<br>")
-            .concat("<p>households in compounds</p>")
-            .concat(allHouseholdsInCompound.stream().map(household->"<p>".concat(household).concat("</p>")).collect(
-                Collectors.joining("<br>"))));
+    try {
+      emailService.sendEmail(collect, "Index Case Notification: " + individual,
+          "<p>for structure: ".concat(indexStructure.toString()).concat("</p><br>").concat("<p>")
+              .concat(indexHousehold).concat("</p><br>")
+              .concat("<p>structures in compounds</p>")
+              .concat(allStructuresInCompound.stream().filter(Objects::nonNull).map(UUID::toString)
+                  .map(uuid -> "<p>".concat(uuid).concat("</p>")).collect(
+                      Collectors.joining("<br>"))).concat("<br>")
+              .concat("<p>households in compounds</p>")
+              .concat(allHouseholdsInCompound.stream()
+                  .map(household -> "<p>".concat(household).concat("</p>")).collect(
+                      Collectors.joining("<br>"))));
+    } catch (MessagingException e) {
+      log.error(e.getMessage(),e);
+    }
   }
 
 
