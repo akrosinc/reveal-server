@@ -235,18 +235,18 @@ public class HdssProcessingListener extends Listener {
                 submitTasks(owner, List.of(indexStructure), targetPlan, actions,
                     ActionTitleEnum.INDEX_CASE);
 
-                log.debug("submitting rcd member {}", allIndividualsExcludingIndex);
-                allIndividualsExcludingIndex.stream()
-                    .map(individualObj -> UUID.fromString(individualObj.getId()))
-                    .forEach(
-                        individualId -> submitTasks(owner, List.of(individualId), targetPlan,
-                            actions,
-                            ActionTitleEnum.RCD_MEMBER));
-
-                log.debug("submitting rcd  {}", allStructuresInCompound);
-                allStructuresInCompound.stream().filter(Objects::nonNull).forEach(
-                    structure -> submitTasks(owner, List.of(structure), targetPlan, actions,
-                        ActionTitleEnum.RCD));
+//                log.debug("submitting rcd member {}", allIndividualsExcludingIndex);
+//                allIndividualsExcludingIndex.stream()
+//                    .map(individualObj -> UUID.fromString(individualObj.getId()))
+//                    .forEach(
+//                        individualId -> submitTasks(owner, List.of(individualId), targetPlan,
+//                            actions,
+//                            ActionTitleEnum.RCD_MEMBER));
+//
+//                log.debug("submitting rcd  {}", allStructuresInCompound);
+//                allStructuresInCompound.stream().filter(Objects::nonNull).forEach(
+//                    structure -> submitTasks(owner, List.of(structure), targetPlan, actions,
+//                        ActionTitleEnum.RCD));
               }
             }
           }
@@ -286,11 +286,14 @@ public class HdssProcessingListener extends Listener {
   private void sendMail(List<String> collect, String individual, UUID indexStructure,
       String indexHousehold, List<UUID> allStructuresInCompound,
       List<String> allHouseholdsInCompound) {
-    emailService.sendEmail(collect, "individual " + individual,
-        indexStructure.toString().concat("-").concat(indexHousehold).concat("\r\n\r\n")
-            .concat(allStructuresInCompound.stream().filter(Objects::nonNull).map(UUID::toString).collect(
-                Collectors.joining(","))).concat("\r\n\r\n")
-            .concat(String.join(",", allHouseholdsInCompound)));
+    emailService.sendEmail(collect, "Index Case Notification: " + individual,
+        "<p>for structure: ".concat(indexStructure.toString()).concat("</p><br>").concat("<p>").concat(indexHousehold).concat("</p><br>")
+            .concat("<p>structures in compounds</p>")
+            .concat(allStructuresInCompound.stream().filter(Objects::nonNull).map(UUID::toString).map(uuid->"<p>".concat(uuid).concat("</p>")).collect(
+                Collectors.joining("<br>"))).concat("<br>")
+            .concat("<p>households in compounds</p>")
+            .concat(allHouseholdsInCompound.stream().map(household->"<p>".concat(household).concat("</p>")).collect(
+                Collectors.joining("<br>"))));
   }
 
 
