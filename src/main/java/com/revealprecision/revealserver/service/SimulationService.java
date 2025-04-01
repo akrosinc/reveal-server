@@ -22,18 +22,24 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.NestedQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.query.TermQueryBuilder;
+import org.elasticsearch.common.geo.ShapeRelation;
+import org.elasticsearch.common.geo.builders.EnvelopeBuilder;
+import org.elasticsearch.geometry.Point;
+import org.elasticsearch.index.query.*;
+import org.elasticsearch.script.Script;
+import org.elasticsearch.script.ScriptType;
+import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.locationtech.jts.geom.Coordinate;
 import org.springframework.beans.factory.annotation.Value;
+import org.elasticsearch.geometry.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import javax.transaction.Transactional;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
@@ -140,7 +146,7 @@ public class SimulationService {
                 List<List<String>> batches = getBatches(locationsIds, BATCH_SIZE);
 
                 for (List<String> batch : batches) {
-                    SearchSourceBuilder query = buildLocationWithoutMetadataQuery(batch, defaultHierarchyId);
+                    SearchSourceBuilder query = buildLocationWithoutMetadataQuery(batch, defaultHierarchyId, new ArrayList<String>());
                     List<LocationResponse> results = executeSearch(query, defaultHierarchyId);
                     List<LocationResponse> locationsTransformed = results.stream().peek(locationResponse -> {
                         var locationId = locationResponse != null ? locationResponse.getIdentifier() : null;
@@ -184,167 +190,120 @@ public class SimulationService {
         return emitter;
     }
 
-    public List<LocationResponse> getDatasetDataForLocations(DatasetLocationsRequest request) throws IOException {
+    // Used only for polygons, structures need to be fetched by bbox
+    public List<LocationResponse> getDatasetDataForLocations(DatasetLocationsRequest request) {
+
         UUID defaultHierarchyId = locationHierarchyService.getDefaultHierarchy().getIdentifier();
-        //TODO: check if this ID exists, if not throw exception
-        Simulation simulation = simulationRepository.findById(request.getSimulationId()).orElseThrow(() -> new NotFoundException("Simulation not found with ID: " + request.getSimulationId()));
-        List<LocationDetailsProjection> locationDetailsProjections = locationService.getAllLocationDirectChildrenWithDetails(request.getParentLocationId(), defaultHierarchyId, simulation.getPlan().getIdentifier());
-        List<String> locationsIds = locationDetailsProjections.stream().map(LocationDetailsProjection::getLocationId).collect(Collectors.toList());
-        List<UUID> tagsIds = simulation.getDatasets()
-                .stream()
-                .filter(dataset -> request.getDatasetsIds().contains(dataset.getIdentifier()))
-                .map(dataset -> dataset.getEntityTag().getIdentifier())
+        Simulation simulation = simulationRepository.findById(request.getSimulationId())
+                .orElseThrow(() -> new NotFoundException("Simulation not found with ID: " + request.getSimulationId()));
+
+        List<LocationDetailsProjection> locationDetailsProjections = locationService.getAllLocationDirectChildrenWithDetails(
+                request.getParentLocationId(), defaultHierarchyId, simulation.getPlan().getIdentifier());
+
+        List<String> locationsIds = locationDetailsProjections.stream()
+                .map(LocationDetailsProjection::getLocationId)
                 .collect(Collectors.toList());
-        List<AggregateWithTagProjection> tags = entityTagService.getValuesForTagAndLocations(tagsIds, locationsIds);
-        Map<String, List<EntityMetadataResponse>> metadataMap = tags.stream()
-                .collect(Collectors.groupingBy(
-                        AggregateWithTagProjection::getLocationIdentifier,
-                        Collectors.mapping(
-                                tag -> new EntityMetadataResponse(
-                                        getRequestedValue(tag),
-                                        tag.getTag().getTag(),
-                                        tag.getEventType(),
-                                        simulation.getDatasets().stream().filter(dataset -> dataset.getEntityTag().getIdentifier().equals(tag.getTag().getIdentifier())).findFirst().get().getIdentifier()
-                                ),
-                                Collectors.toList()
-                        )
-                ));
+
+        Map<String, UUID> tagsMap = buildTagsMap(simulation, request.getDatasetsIds());
+
+        Map<String, List<EntityMetadataResponse>> metadataMap = request.getCampaignManagementFeatures()
+                ? Collections.emptyMap()
+                : fetchMetadata(simulation, request.getDatasetsIds(), locationsIds);
 
         List<LocationResponse> locations;
-
         if (request.getIncludeGeometry()) {
-            SearchRequest searchRequest = new SearchRequest(elasticIndex);
-            searchRequest.source(buildLocationWithoutMetadataQuery(locationsIds, defaultHierarchyId));
-            SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
-            locations = Arrays.stream(searchResponse.getHits().getHits())
-                    .filter(Objects::nonNull).map(hit -> {
-                        LocationResponse locationResponse = null;
-                        try {
-                            locationResponse = LocationResponseFactory.fromSearchHit(hit, null,
-                                    defaultHierarchyId.toString());
-                        } catch (JsonProcessingException e) {
-                            e.printStackTrace();
-                        }
-
-                        var locationId = locationResponse != null ? locationResponse.getIdentifier() : null;
-                        if (locationId != null) {
-                            var properties = locationResponse.getProperties();
-                            Optional<LocationDetailsProjection> projection = locationDetailsProjections.stream().filter(p -> p.getLocationId().equals(locationId.toString())).findFirst();
-                            projection.ifPresent(locationDetailsProjection -> {
-                                properties.setChildrenNumber(locationDetailsProjection.getChildrenCount());
-                                properties.setParentIdentifier(UUID.fromString(locationDetailsProjection.getParentLocationId()));
-                                properties.setId(locationDetailsProjection.getLocationId());
-                                properties.setAssigned(locationDetailsProjection.getAssigned());
-                                if (locationDetailsProjection.getPopulationData() != null) {
-                                    try {
-                                        properties.setPopulation(objectMapper.readValue(locationDetailsProjection.getPopulationData(), PopulationResponseData.class));
-                                    } catch (JsonProcessingException e) {
-                                        properties.setPopulation(null);
-                                    }
-                                }
-                            });
-                            if (projection.isPresent()) {
-                                var ancestry = projection.get().getAncestry();
-                                if (ancestry == null || ancestry.isEmpty() || ancestry.get(0) == null || ancestry.get(0).isBlank()) {
-                                    locationResponse.setAncestry(Collections.emptyList());
-                                } else {
-                                    locationResponse.setAncestry(Arrays.stream(ancestry.get(0).split(",")).collect(Collectors.toList()));
-                                }
-                            }
-                            locationResponse.setProperties(properties);
-                        }
-                        return locationResponse;
-                    }).filter(Objects::nonNull).collect(Collectors.toList());
+            locations = fetchLocationsWithGeometry(defaultHierarchyId, tagsMap, locationsIds);
         } else {
-            locations = locationDetailsProjections.stream()
-                    .map(projection -> {
-                        LocationResponse locationResponse = new LocationResponse();
-                        locationResponse.setIdentifier(UUID.fromString(projection.getLocationId()));
-                        LocationPropertyResponse properties = new LocationPropertyResponse();
-                        properties.setChildrenNumber(projection.getChildrenCount());
-                        properties.setParentIdentifier(UUID.fromString(projection.getParentLocationId()));
-                        properties.setId(projection.getLocationId());
-                        properties.setGeographicLevel(projection.getGeographicLevelName());
-                        properties.setAssigned(projection.getAssigned());
-                        List<String> ancestry = projection.getAncestry();
-                        if (ancestry == null || ancestry.isEmpty() || ancestry.get(0) == null || ancestry.get(0).isBlank()) {
-                            locationResponse.setAncestry(Collections.emptyList());
-                        } else {
-                            locationResponse.setAncestry(Arrays.stream(ancestry.get(0).split(",")).collect(Collectors.toList()));
-                        }
-                        if (projection.getPopulationData() != null) {
-                            try {
-                                properties.setPopulation(objectMapper.readValue(projection.getPopulationData(), PopulationResponseData.class));
-                            } catch (JsonProcessingException e) {
-                                properties.setPopulation(null);
-                            }
-                        }
-                        locationResponse.setProperties(properties);
-                        return locationResponse;
-                    })
-                    .collect(Collectors.toList());
+            locations = new ArrayList<>();
         }
 
-        List<PlanAssignment> planAssignments = planAssignmentService.getPlanAssignmentsByPlanIdentifier(simulation.getPlan().getIdentifier());
-        Map<UUID, List<PlanAssignment>> planAssignmentMap = planAssignments.stream()
-                .collect(Collectors.groupingBy(
-                        planAssignment -> planAssignment.getPlanLocations().getLocation().getIdentifier()));
+        Map<String, LocationResponse> locationsMap = locations.stream()
+                .collect(Collectors.toMap(loc -> loc.getIdentifier().toString(), loc -> loc));
 
-        locations = locations.stream().peek(loc -> {
-            List<PlanAssignment> assignments = planAssignmentMap.get(loc.getIdentifier());
-            List<OrganizationResponse> teams = Collections.emptyList();
-            if (assignments != null) {
-                teams = assignments.stream()
-                        .map(el -> OrganizationResponseFactory.fromEntityIdAndName(el.getOrganization()))
-                        .collect(Collectors.toList());
+        setLocationProperties(locationDetailsProjections).forEach(locationWithoutGeometry -> {
+            LocationResponse location = locationsMap.get(locationWithoutGeometry.getIdentifier().toString());
+            if (location != null) {
+                String locationName = location.getProperties() != null ? location.getProperties().getName() : null;
+                location.setProperties(locationWithoutGeometry.getProperties());
+                location.getProperties().setName(locationName);
+            } else {
+                locations.add(locationWithoutGeometry);
             }
-            loc.setTeams(teams);
-            if (Objects.equals(loc.getProperties().getGeographicLevel(), "structure")) {
-                String taskStatus = locationBusinessStatusService.findLocationBusinessState(defaultHierarchyId, loc.getIdentifier(), simulation.getPlan().getIdentifier());
-                if (taskStatus != null) {
-                    loc.getProperties().setBusinessStatus(taskStatus);
-                }
-            }
-            long counts = 0;
-            try {
-                counts = countMatchingLocations(defaultHierarchyId, loc.getIdentifier());
-            } catch (IOException e) {
-                loc.getProperties().setNumberOfStructures(0L);
-            }
-            loc.getProperties().setNumberOfStructures(counts);
-        }).collect(Collectors.toList());
-
-        locations.forEach(locationResponse -> {
-            String locationId = locationResponse.getIdentifier().toString();
-            List<EntityMetadataResponse> metadata = metadataMap.getOrDefault(locationId, new ArrayList<>());
-
-            if (locationResponse.getProperties() == null) {
-                locationResponse.setProperties(new LocationPropertyResponse());
-            }
-            locationResponse.getProperties().setMetadata(metadata);
         });
+
+        List<CompletableFuture<Void>> tasks = new ArrayList<>();
+        if (request.getCampaignManagementFeatures()) {
+            tasks.add(CompletableFuture.runAsync(() -> applyPlanAssignments(locations, simulation)));
+            tasks.add(CompletableFuture.runAsync(() -> applyBusinessStatus(locations, defaultHierarchyId, simulation)));
+        } else {
+            tasks.add(CompletableFuture.runAsync(() -> applyMetadataAndPopulationData(locations, metadataMap, locationDetailsProjections)));
+            tasks.add(CompletableFuture.runAsync(() -> applyStructureCounts(locations, defaultHierarchyId)));
+        }
+        CompletableFuture.allOf(tasks.toArray(new CompletableFuture[0])).join();
+
+
         return locations;
     }
 
     @Transactional
     public SimulationDatasetResponse addDatasetToSimulation(SimulationDatasetRequest request) {
-        List<String> locationsIds = locationService.getAllLocationDirectChildren(request.getParentLocationId()).stream().map(UUID::toString).collect(Collectors.toList());
-        List<AggregateWithTagProjection> tags = entityTagService.getValuesForTagAndLocations(Collections.singletonList(request.getTagId()), locationsIds);
         Simulation simulation = simulationRepository.findById(request.getSimulationId())
                 .orElseThrow(() -> new NotFoundException("Simulation not found with ID: " + request.getSimulationId()));
-        AggregateWithTagProjection tagProjection = tags.stream().findFirst().orElseThrow();
-        String DEFAULT_BORDER_COLOR = "#000000";
-        Dataset dataset = Dataset.builder()
-                .entityTag(tags.get(0).getTag())
+
+        boolean returnLocationData = request.getParentLocationId() != null;
+        EntityTag tagForDataset;
+        List<AggregateWithTagProjection> tags = Collections.emptyList();
+        if (returnLocationData) {
+            List<String> locationsIds = locationService.getAllLocationDirectChildren(request.getParentLocationId()).stream().map(UUID::toString).collect(Collectors.toList());
+            tags = entityTagService.getValuesForTagAndLocations(
+                    Collections.singletonList(request.getTagId()), locationsIds);
+            if (tags.isEmpty()) {
+                throw new NotFoundException("No tags found for Tag ID: " + request.getTagId());
+            }
+            tagForDataset = tags.get(0).getTag();
+        } else {
+            tagForDataset = entityTagService.getEntityTagById(request.getTagId());
+        }
+
+        Dataset dataset = createDataset(request, tagForDataset);
+        simulation.getDatasets().add(dataset);
+        Simulation savedSimulation = simulationRepository.save(simulation);
+
+        Dataset savedDataset = findSavedDataset(savedSimulation, tagForDataset.getIdentifier());
+
+        return new SimulationDatasetResponse(
+                savedSimulation.getIdentifier(),
+                request.getTagId(),
+                savedDataset.getIdentifier(),
+                savedDataset.getName(),
+                savedDataset.getHexColor(),
+                savedDataset.getBorderColor(),
+                savedDataset.getLineWidth(),
+                returnLocationData ? buildMetadataMap(tags, savedDataset) : Collections.emptyMap()
+        );
+    }
+
+    private Dataset createDataset(SimulationDatasetRequest request, EntityTag tag) {
+        final String DEFAULT_BORDER_COLOR = "#000000";
+        return Dataset.builder()
+                .entityTag(tag)
                 .hexColor(request.getHexColor())
                 .lineWidth(request.getLineWidth())
                 .borderColor(request.getBorderColor() != null ? request.getBorderColor() : DEFAULT_BORDER_COLOR)
-                .name(tags.get(0).getTag().getTag())
+                .name(tag.getTag())
                 .build();
-        simulation.getDatasets().add(dataset);
-        Simulation savedSimulation = simulationRepository.save(simulation);
-        Dataset savedDataset = savedSimulation.getDatasets().stream().filter(t -> t.getEntityTag().getIdentifier().equals(tagProjection.getTag().getIdentifier())).findFirst().orElseThrow(() -> new NotFoundException("Could not get dataset of Tag with ID: " + tagProjection.getTag().getIdentifier()));
-        Map<String, EntityMetadataResponse> map = tags.stream()
+    }
+
+    private Dataset findSavedDataset(Simulation savedSimulation, UUID tagId) {
+        return savedSimulation.getDatasets().stream()
+                .filter(dataset -> dataset.getEntityTag().getIdentifier().equals(tagId))
+                .findFirst()
+                .orElseThrow(() -> new NotFoundException(
+                        "Could not retrieve dataset for Tag ID: " + tagId));
+    }
+
+    private Map<String, EntityMetadataResponse> buildMetadataMap(List<AggregateWithTagProjection> tags, Dataset savedDataset) {
+        return tags.stream()
                 .collect(Collectors.toMap(
                         AggregateWithTagProjection::getLocationIdentifier,
                         tag -> new EntityMetadataResponse(
@@ -354,10 +313,9 @@ public class SimulationService {
                                 savedDataset.getIdentifier()
                         )
                 ));
-        return new SimulationDatasetResponse(savedSimulation.getIdentifier(), tagProjection.getTag().getIdentifier(), savedDataset.getIdentifier(), savedDataset.getName(), savedDataset.getHexColor(), savedDataset.getBorderColor(), savedDataset.getLineWidth(), map);
     }
 
-    private SearchSourceBuilder buildLocationWithoutMetadataQuery(List<String> locationIds, UUID hierarchyId) {
+    private SearchSourceBuilder buildLocationWithoutMetadataQuery(List<String> locationIds, UUID hierarchyId, Collection<String> tagsNames) {
         var termsQuery = QueryBuilders.termsQuery("id.keyword", locationIds);
         var existsQuery = QueryBuilders.existsQuery("hierarchyDetailsElastic." + hierarchyId);
         var nestedQuery = QueryBuilders.nestedQuery(
@@ -368,9 +326,20 @@ public class SimulationService {
         BoolQueryBuilder boolQuery = QueryBuilders.boolQuery()
                 .must(termsQuery)
                 .must(nestedQuery);
+
+        String collect = tagsNames.stream()
+                .map(tag -> "n.add('" + tag + "');")
+                .collect(Collectors.joining(""));
+        Script inline = new Script(ScriptType.INLINE, "painless",
+                "List a = params['_source']['metadata']; List n = new ArrayList(); " + collect
+                        + "  return a.stream().filter(val->n.contains(val.tag) && val.hierarchyIdentifier.equals('"
+                        + hierarchyId + "')).collect(Collectors.toList());",
+                new HashMap<>());
+
         return new SearchSourceBuilder()
                 .fetchSource(null, new String[]{"metadata"})
                 .query(boolQuery)
+                .scriptField("meta", inline)
                 .size(10000);
     }
 
@@ -430,6 +399,145 @@ public class SimulationService {
         }
     }
 
+    private Map<String, UUID> buildTagsMap(Simulation simulation, List<UUID> requestedDatasetIds) {
+        Set<UUID> requestedIdsSet = new HashSet<>(requestedDatasetIds);
+        return simulation.getDatasets()
+                .stream()
+                .filter(dataset -> requestedIdsSet.contains(dataset.getIdentifier()))
+                .collect(Collectors.toMap(
+                        dataset -> dataset.getEntityTag().getTag(),
+                        Dataset::getIdentifier
+                ));
+    }
+
+    private Map<String, List<EntityMetadataResponse>> fetchMetadata(
+            Simulation simulation, List<UUID> requestedDatasetIds, List<String> locationsIds) {
+
+        List<UUID> tagsIds = simulation.getDatasets()
+                .stream()
+                .filter(dataset -> requestedDatasetIds.contains(dataset.getIdentifier()))
+                .map(dataset -> dataset.getEntityTag().getIdentifier())
+                .collect(Collectors.toList());
+
+        List<AggregateWithTagProjection> tags = entityTagService.getValuesForTagAndLocations(tagsIds, locationsIds);
+
+        return tags.stream().collect(Collectors.groupingBy(
+                AggregateWithTagProjection::getLocationIdentifier,
+                Collectors.mapping(tag -> new EntityMetadataResponse(
+                        getRequestedValue(tag),
+                        tag.getTag().getTag(),
+                        tag.getEventType(),
+                        simulation.getDatasets().stream()
+                                .filter(dataset -> dataset.getEntityTag().getIdentifier().equals(tag.getTag().getIdentifier()))
+                                .findFirst()
+                                .get()
+                                .getIdentifier()
+                ), Collectors.toList())
+        ));
+    }
+
+    private List<LocationResponse> fetchLocationsWithGeometry(
+            UUID defaultHierarchyId, Map<String, UUID> tagsMap, List<String> locationsIds) {
+
+        SearchRequest searchRequest = new SearchRequest(elasticIndex);
+        searchRequest.source(buildLocationWithoutMetadataQuery(locationsIds, defaultHierarchyId, tagsMap.keySet()));
+
+        try {
+            SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+            return Arrays.stream(searchResponse.getHits().getHits())
+                    .filter(Objects::nonNull).map(hit -> {
+                        try {
+                            return LocationResponseFactory.fromSearchHit(hit, null,
+                                    defaultHierarchyId.toString());
+                        } catch (JsonProcessingException e) {
+                            e.printStackTrace();
+                            return null;
+                        }
+                    }).collect(Collectors.toList());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private List<LocationResponse> setLocationProperties(List<LocationDetailsProjection> locationDetailsProjections) {
+        return locationDetailsProjections.stream().map(projection -> {
+            LocationResponse locationResponse = new LocationResponse();
+            locationResponse.setIdentifier(UUID.fromString(projection.getLocationId()));
+
+            LocationPropertyResponse properties = new LocationPropertyResponse();
+            properties.setChildrenNumber(projection.getChildrenCount());
+            properties.setParentIdentifier(UUID.fromString(projection.getParentLocationId()));
+            properties.setId(projection.getLocationId());
+            properties.setGeographicLevel(projection.getGeographicLevelName());
+            properties.setAssigned(projection.getAssigned());
+            locationResponse.setProperties(properties);
+
+            List<String> ancestry = projection.getAncestry();
+            locationResponse.setAncestry(ancestry == null || ancestry.isEmpty() || ancestry.get(0) == null || ancestry.get(0).isBlank()
+                    ? Collections.emptyList()
+                    : Arrays.stream(ancestry.get(0).split(",")).collect(Collectors.toList()));
+
+            return locationResponse;
+        }).collect(Collectors.toList());
+    }
+
+    private void applyPlanAssignments(List<LocationResponse> locations, Simulation simulation) {
+        List<PlanAssignment> planAssignments = planAssignmentService.getPlanAssignmentsByPlanIdentifier(simulation.getPlan().getIdentifier());
+        Map<UUID, List<PlanAssignment>> planAssignmentMap = planAssignments.stream()
+                .collect(Collectors.groupingBy(
+                        planAssignment -> planAssignment.getPlanLocations().getLocation().getIdentifier()));
+
+        locations.forEach(loc -> {
+            List<PlanAssignment> assignments = planAssignmentMap.get(loc.getIdentifier());
+            List<OrganizationResponse> teams = (assignments != null)
+                    ? assignments.stream()
+                    .map(el -> OrganizationResponseFactory.fromEntityIdAndName(el.getOrganization()))
+                    .collect(Collectors.toList())
+                    : Collections.emptyList();
+            loc.setTeams(teams);
+        });
+    }
+
+    private void applyBusinessStatus(List<LocationResponse> locations, UUID defaultHierarchyId, Simulation simulation) {
+        locations.forEach(loc -> {
+            if (Objects.equals(loc.getProperties().getGeographicLevel(), "structure")) {
+                String taskStatus = locationBusinessStatusService.findLocationBusinessState(defaultHierarchyId,
+                        loc.getIdentifier(), simulation.getPlan().getIdentifier());
+                if (taskStatus != null) {
+                    loc.getProperties().setBusinessStatus(taskStatus);
+                }
+            }
+        });
+    }
+
+    private void applyMetadataAndPopulationData(List<LocationResponse> locations, Map<String, List<EntityMetadataResponse>> metadataMap, List<LocationDetailsProjection> projections) {
+        locations.forEach(loc -> {
+            String locationId = loc.getIdentifier().toString();
+            loc.getProperties().setMetadata(metadataMap.getOrDefault(locationId, new ArrayList<>()));
+
+            if (loc.getProperties().getPopulation() == null) {
+                try {
+                    Optional<LocationDetailsProjection> projection = projections.stream().filter(p -> p.getLocationId().equals(loc.getIdentifier().toString())).findFirst();
+                    if (projection.isPresent() && projection.get().getPopulationData() != null) {
+                        loc.getProperties().setPopulation(objectMapper.readValue(projection.get().getPopulationData(), PopulationResponseData.class));
+                    }
+                } catch (JsonProcessingException e) {
+                    loc.getProperties().setPopulation(null);
+                }
+            }
+        });
+    }
+
+    private void applyStructureCounts(List<LocationResponse> locations, UUID defaultHierarchyId) {
+        locations.forEach(loc -> {
+            try {
+                loc.getProperties().setNumberOfStructures(countMatchingLocations(defaultHierarchyId, loc.getIdentifier()));
+            } catch (IOException e) {
+                loc.getProperties().setNumberOfStructures(0L);
+            }
+        });
+    }
+
     public long countMatchingLocations(UUID hierarchyId, UUID parentLocationId) throws IOException {
         SearchRequest searchRequest = new SearchRequest(elasticIndex);
         SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
@@ -447,10 +555,48 @@ public class SimulationService {
                 .must(nestedQuery);
 
         sourceBuilder.query(boolQuery);
+
         searchRequest.source(sourceBuilder);
 
         SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
 
         return Objects.requireNonNull(searchResponse.getHits().getTotalHits()).value;
+    }
+
+    public List<LocationResponse> getStructuresWithinBoundingBox(double topLeftLon, double topLeftLat, double bottomRightLon, double bottomRightLat) {
+        UUID defaultHierarchyId = locationHierarchyService.getDefaultHierarchy().getIdentifier();
+        List<LocationResponse> structures = new ArrayList<>();
+
+        try {
+            EnvelopeBuilder envelopeBuilder = new EnvelopeBuilder(
+                    new Coordinate(topLeftLon, topLeftLat),
+                    new Coordinate(bottomRightLon, bottomRightLat)
+            );
+
+            GeoShapeQueryBuilder geoShapeQuery = QueryBuilders
+                    .geoShapeQuery("geometry", envelopeBuilder)
+                    .relation(ShapeRelation.INTERSECTS);
+
+            BoolQueryBuilder boolQuery = QueryBuilders.boolQuery()
+                    .filter(QueryBuilders.termQuery("level", "structure"))
+                    .filter(geoShapeQuery);
+
+            SearchSourceBuilder sourceBuilder = new SearchSourceBuilder()
+                    .query(boolQuery)
+                    .size(1000);
+
+            SearchRequest searchRequest = new SearchRequest(elasticIndex);
+            searchRequest.source(sourceBuilder);
+
+            SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+
+            for (SearchHit hit : searchResponse.getHits().getHits()) {
+                structures.add(LocationResponseFactory.fromSearchHit(hit, null, defaultHierarchyId.toString()));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return structures;
     }
 }

@@ -71,4 +71,13 @@ public class SimulationController {
             @RequestParam("searchId") String searchId) {
         return simulationService.getDatasetDataForLocations(searchId);
     }
+
+    @GetMapping("/within")
+    public ResponseEntity<List<LocationResponse>> getStructuresWithinBoundingBox(
+            @RequestParam double topLeftLon,
+            @RequestParam double topLeftLat,
+            @RequestParam double bottomRightLon,
+            @RequestParam double bottomRightLat) {
+        return ResponseEntity.ok(simulationService.getStructuresWithinBoundingBox(topLeftLon, topLeftLat, bottomRightLon, bottomRightLat));
+    }
 }

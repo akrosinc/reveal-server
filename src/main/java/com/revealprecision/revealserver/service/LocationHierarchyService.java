@@ -2,9 +2,12 @@ package com.revealprecision.revealserver.service;
 
 import static java.util.stream.Collectors.joining;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.revealprecision.revealserver.api.v1.dto.factory.LocationResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.LocationHierarchyRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.GeoTreeResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationPropertyResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.LocationResponse;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.exceptions.ConflictException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
@@ -12,15 +15,34 @@ import com.revealprecision.revealserver.exceptions.NotImplementedException;
 import com.revealprecision.revealserver.exceptions.constant.Error;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
+import com.revealprecision.revealserver.persistence.es.LocationElastic;
 import com.revealprecision.revealserver.persistence.projection.LocationChildrenCountProjection;
 import com.revealprecision.revealserver.persistence.projection.LocationRelationshipProjection;
 import com.revealprecision.revealserver.persistence.repository.LocationHierarchyRepository;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import com.revealprecision.revealserver.util.AppConstants;
 import lombok.RequiredArgsConstructor;
+import org.apache.lucene.search.join.ScoreMode;
+import org.elasticsearch.action.search.ClearScrollRequest;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.search.SearchScrollRequest;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.common.unit.TimeValue;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.NestedQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.TermQueryBuilder;
+import org.elasticsearch.search.Scroll;
+import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.SearchHits;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
@@ -33,6 +55,10 @@ public class LocationHierarchyService {
     private final LocationHierarchyRepository locationHierarchyRepository;
     private final LocationRelationshipService locationRelationshipService;
     private final GeographicLevelService geographicLevelService;
+    private final RestHighLevelClient client;
+
+    @Value("${reveal.elastic.index-name}")
+    private final String elasticIndex;
 
 
     public LocationHierarchy createLocationHierarchy(
@@ -146,6 +172,45 @@ public class LocationHierarchyService {
         return geoTreeHierarchy.get(UUID.fromString("00000000-0000-0000-0000-000000000000"));
     }
 
+    public List<GeoTreeResponse> getGeoTreeWithoutStructuresES(UUID locationHierarchyId) throws IOException {
+        List<Map<String, Object>> documents = getNonStructureLocations(locationHierarchyId);
+
+        List<GeoTreeResponse> geoTreeResponses = documents.stream().map(doc -> {
+                    String level = (String) doc.get("level");
+                    String name = (String) doc.get("name");
+                    String id = (String) doc.get("id");
+                    String parent = "00000000-0000-0000-0000-000000000000";
+                    Map<String, Object> hierarchyDetails = (Map<String, Object>) doc.get("hierarchyDetailsElastic");
+                    if (hierarchyDetails != null) {
+                        Map<String, Object> dynamicDetails = (Map<String, Object>) hierarchyDetails.get(locationHierarchyId.toString());
+                        if (dynamicDetails != null) {
+                            parent = (String) dynamicDetails.get("parent");
+                        }
+                    }
+                    if (id != null && level != null && name != null && parent != null) {
+                        return GeoTreeResponse.builder()
+                                .identifier(UUID.fromString(id))
+                                .properties(
+                                        LocationPropertyResponse.builder()
+                                                .parentIdentifier(UUID.fromString(parent))
+                                                .name(name)
+                                                .geographicLevel(level)
+                                                .build()
+                                ).build();
+                    } else return null;
+                }).filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+        Map<UUID, List<GeoTreeResponse>> geoTreeHierarchy = geoTreeResponses.stream()
+                .collect(Collectors.groupingBy(lr -> lr.getProperties().getParentIdentifier(),
+                        Collectors.mapping(lr -> lr, Collectors.toList())));
+
+        geoTreeResponses.forEach(gt -> gt.setChildren(
+                geoTreeHierarchy.get(gt.getIdentifier()) == null ? new ArrayList<>()
+                        : geoTreeHierarchy.get(gt.getIdentifier())));
+        return geoTreeHierarchy.get(UUID.fromString("00000000-0000-0000-0000-000000000000"));
+    }
+
     public List<GeoTreeResponse> getGeoTreeFromLocationHierarchyWithoutStructure(
             LocationHierarchy locationHierarchy, List<String> notLike) {
         List<LocationRelationshipProjection> locationRelationship =
@@ -203,5 +268,51 @@ public class LocationHierarchyService {
             locationHierarchy = hierarchies.get(0);
         }
         return locationHierarchy;
+    }
+
+    private List<Map<String, Object>> getNonStructureLocations(UUID hierarchyId) throws IOException {
+        final Scroll scroll = new Scroll(TimeValue.timeValueMinutes(1L));
+        SearchRequest searchRequest = new SearchRequest(elasticIndex);
+        searchRequest.scroll(scroll);
+
+        SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+
+        BoolQueryBuilder boolQuery = QueryBuilders.boolQuery()
+                .mustNot(QueryBuilders.termQuery("level", "structure"));
+        sourceBuilder.query(boolQuery);
+
+        String parentField = "hierarchyDetailsElastic." + hierarchyId + ".parent";
+        String[] includeFields = new String[]{
+                "id",
+                "name",
+                "level",
+                parentField
+        };
+        sourceBuilder.fetchSource(includeFields, null);
+        sourceBuilder.size(1000);
+        searchRequest.source(sourceBuilder);
+
+        SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+        String scrollId = searchResponse.getScrollId();
+        SearchHit[] searchHits = searchResponse.getHits().getHits();
+
+        List<Map<String, Object>> allResults = new ArrayList<>();
+
+        while (searchHits != null && searchHits.length > 0) {
+            for (SearchHit hit : searchHits) {
+                allResults.add(hit.getSourceAsMap());
+            }
+            SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId);
+            scrollRequest.scroll(scroll);
+            searchResponse = client.scroll(scrollRequest, RequestOptions.DEFAULT);
+            scrollId = searchResponse.getScrollId();
+            searchHits = searchResponse.getHits().getHits();
+        }
+
+        ClearScrollRequest clearScrollRequest = new ClearScrollRequest();
+        clearScrollRequest.addScrollId(scrollId);
+        client.clearScroll(clearScrollRequest, RequestOptions.DEFAULT);
+
+        return allResults;
     }
 }

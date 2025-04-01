@@ -15,6 +15,7 @@ import com.revealprecision.revealserver.service.LocationRelationshipService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -94,9 +95,9 @@ public class LocationHierarchyController {
             tags = {"Location Hierarchy"}
     )
     @GetMapping("/default/location")
-    public ResponseEntity<List<GeoTreeResponse>> getDefaultHierarchyLocations() {
+    public ResponseEntity<List<GeoTreeResponse>> getDefaultHierarchyLocations() throws IOException {
         LocationHierarchy locationHierarchy = locationHierarchyService.getDefaultHierarchy();
-        List<GeoTreeResponse> geoTreeResponses = locationHierarchyService.getGeoTreeFromLocationHierarchy(locationHierarchy, true);
+        List<GeoTreeResponse> geoTreeResponses = locationHierarchyService.getGeoTreeWithoutStructuresES(locationHierarchy.getIdentifier());
         return ResponseEntity.status(HttpStatus.OK).body(geoTreeResponses);
     }
 

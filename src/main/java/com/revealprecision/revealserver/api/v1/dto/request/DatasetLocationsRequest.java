@@ -18,4 +18,5 @@ public class DatasetLocationsRequest {
     private List<UUID> datasetsIds;
     private Boolean includeGeometry;
     private UUID parentLocationId;
+    private Boolean campaignManagementFeatures;
 }
