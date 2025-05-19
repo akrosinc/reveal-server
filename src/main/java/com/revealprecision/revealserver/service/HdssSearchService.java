@@ -20,16 +20,20 @@ public class HdssSearchService {
   public List<HdssCompoundHouseholdIndividualObj> searchHdssCompounds(
       HdssSearchRequest searchRequest) {
     StringBuilder sql = new StringBuilder("SELECT "
-        + "id,"
-        + "compound_id,"
-        + "household_id,"
-        + "individual_id,"
-        + "name,"
-        + "fields->>'gender' as gender,"
-        + "fields->>'dob' as dob,"
-        + "server_version as serverVersion"
+        + "hc.id,"
+        + "hc.compound_id,"
+        + "hc.household_id,"
+        + "hc.individual_id,"
+        + "hc.name,"
+        + "lp.name as cluster,"
+        + "hc.fields->>'gender' as gender,"
+        + "hc.fields->>'dob' as dob,"
+        + "hc.server_version as serverVersion"
 
-        + " FROM hdss.hdss_compounds WHERE 1=1");
+        + " FROM hdss.hdss_compounds hc"
+        + " LEFT JOIN location_relationship lr on hc.structure_id = lr.location_identifier "
+        + " left join location lp on lp.identifier = lr.parent_identifier "
+        + " WHERE 1=1 ");
     List<Object> params = new ArrayList<>();
 
 // Add conditions for searchString (compoundId, householdId, individualId) with case-insensitive comparison
@@ -98,6 +102,7 @@ public class HdssSearchService {
             .householdId(rs.getString("household_id"))
             .individualId(rs.getString("individual_id"))
             .name(rs.getString("name"))
+            .cluster(rs.getString("cluster"))
             .dob(rs.getString("dob"))
             .gender(rs.getString("gender"))
             .serverVersion(rs.getInt("serverVersion"))
