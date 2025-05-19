@@ -39,7 +39,7 @@ public class HdssSearchService {
 // Add conditions for searchString (compoundId, householdId, individualId) with case-insensitive comparison
     if (searchRequest.getSearchString() != null && !searchRequest.getSearchString().isEmpty()) {
       sql.append(
-          " AND (LOWER(compound_id) LIKE LOWER(?) OR LOWER(household_id) LIKE LOWER(?) OR LOWER(individual_id) LIKE LOWER(?))");
+          " AND (LOWER(hc.compound_id) LIKE LOWER(?) OR LOWER(hc.household_id) LIKE LOWER(?) OR LOWER(hc.individual_id) LIKE LOWER(?))");
       String searchString = "%" + searchRequest.getSearchString().toLowerCase()
           + "%";  // Make sure search string is lowercased
       params.add(searchString);
@@ -49,13 +49,13 @@ public class HdssSearchService {
 
 // Add condition for name with case-insensitive comparison
     if (searchRequest.getName() != null) {
-      sql.append(" AND LOWER(name) LIKE LOWER(?)");
+      sql.append(" AND LOWER(hc.name) LIKE LOWER(?)");
       params.add("%" + searchRequest.getName().toLowerCase() + "%");
     }
 
 // Add condition for gender in the fields JSONB with case-insensitive comparison
     if (searchRequest.getGender() != null) {
-      sql.append(" AND LOWER(fields->>'gender') = LOWER(?)");
+      sql.append(" AND LOWER(hc.fields->>'gender') = LOWER(?)");
       params.add(searchRequest.getGender().toLowerCase());  // Make sure gender is lowercased
     }
 
@@ -84,7 +84,7 @@ public class HdssSearchService {
       DateTimeFormatter yyyymmddformatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
       String formattedDob = dob.format(yyyymmddformatter);
 
-      sql.append(" AND fields->>'dob' = ?");
+      sql.append(" AND hc.fields->>'dob' = ?");
       params.add(formattedDob);
     }
 
