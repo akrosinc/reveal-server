@@ -10,6 +10,8 @@ public interface HdssCompoundHouseholdIndividualProjection {
 
   String getIndividualId();
 
+  String getCluster();
+
   String getName();
 
   String getDob();

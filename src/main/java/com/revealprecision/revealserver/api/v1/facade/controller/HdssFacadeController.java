@@ -95,6 +95,7 @@ public class HdssFacadeController {
                   .individualId(individual.getIndividualId()).name(individual.getName())
                   .serverVersion(individual.getServerVersion()).dob(individual.getDob())
                   .gender(individual.getGender())
+                  .cluster(individual.getCluster())
                   .floatingLocationGeographicLevel(individual.getFloatingLocationGeographicLevel())
                   .floatingLocationId(individual.getFloatingLocationId())
                   .floatingLocationName(individual.getFloatingLocationName()).build())
