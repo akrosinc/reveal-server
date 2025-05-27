@@ -17,7 +17,6 @@ import com.revealprecision.revealserver.api.v1.controller.EntityTagController.Ta
 import com.revealprecision.revealserver.api.v1.dto.factory.EntityTagEventFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.EntityTagFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.EntityTagRequestFactory;
-import com.revealprecision.revealserver.api.v1.dto.factory.EntityTagResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.EntityTagItem;
 import com.revealprecision.revealserver.api.v1.dto.request.EntityTagRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.UpdateEntityTagRequest;
@@ -56,12 +55,12 @@ import com.revealprecision.revealserver.persistence.repository.EntityTagReposito
 import com.revealprecision.revealserver.persistence.repository.GeneratedHierarchyMetadataRepository;
 import com.revealprecision.revealserver.persistence.repository.ImportAggregateRepository;
 import com.revealprecision.revealserver.persistence.repository.ImportAggregationNumericRepository;
+import com.revealprecision.revealserver.persistence.repository.LocationHierarchyRepository;
 import com.revealprecision.revealserver.persistence.repository.OrganizationRepository;
 import com.revealprecision.revealserver.persistence.repository.ResourceAggregateRepository;
 import com.revealprecision.revealserver.persistence.repository.UserRepository;
 import com.revealprecision.revealserver.props.SecurityProperties;
 import com.revealprecision.revealserver.util.UserUtils;
-
 import java.io.IOException;
 import java.security.Principal;
 import java.sql.SQLException;
@@ -75,7 +74,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.transaction.Transactional;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
@@ -118,6 +116,7 @@ public class EntityTagService {
     private final SecurityProperties securityProperties;
     private final RestHighLevelClient client;
     private final ImportAggregationNumericRepository importAggregationNumericRepository;
+    private final LocationHierarchyRepository locationHierarchyRepository;
 
     @Value("${reveal.elastic.index-name}")
     String elasticIndex;
@@ -161,8 +160,9 @@ public class EntityTagService {
     }
 
     public TagResponse getAllAggregateEntityTagsAssociatedToData() {
+        UUID aDefault = locationHierarchyRepository.findLocationHierarchyByName("default");
         List<EntityTagResponse> resourceTags =
-                importAggregateRepository.getUniqueTagsAggregatesForHierarchy().stream().map(tag -> {
+                importAggregateRepository.getUniqueTagsAggregatesForHierarchy(aDefault).stream().map(tag -> {
                     return EntityTagResponse.builder().fieldType(EntityTagFieldTypes.IMPORT).subType("Import")
                             .isAggregate(true).tag(tag).valueType(DOUBLE).build();
     }).collect(Collectors.toList());
@@ -199,6 +199,8 @@ public class EntityTagService {
 
         return new TagResponse(collect1, null);
     }
+
+
 
     public TagResponse getAllAggregateEntityTagsAssociatedToData(
             String hierarchyIdentifier) {

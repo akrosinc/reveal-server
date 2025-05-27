@@ -165,7 +165,7 @@ public interface ImportAggregateRepository extends JpaRepository<ImportAggregati
     @Query(value = "WITH distinct_fieldcodes AS (\n" +
             "  SELECT DISTINCT fieldcode\n" +
             "  FROM import_aggregate_numeric \n" +
-            "  WHERE hierarchyidentifier = '2179ed32-05c0-454c-9b4a-f5dec0bece4b'\n" +
+            "  WHERE hierarchyidentifier = :hierarchyId\n" +
             "\n" +
             "),\n" +
             "suffixes AS (\n" +
@@ -174,6 +174,6 @@ public interface ImportAggregateRepository extends JpaRepository<ImportAggregati
             "SELECT CONCAT(d.fieldcode, s.suffix) AS tagName\n" +
             "FROM distinct_fieldcodes d\n" +
             "CROSS JOIN suffixes s", nativeQuery = true)
-    List<String> getUniqueTagsAggregatesForHierarchy();
+    List<String> getUniqueTagsAggregatesForHierarchy(UUID hierarchyId);
 
 }
