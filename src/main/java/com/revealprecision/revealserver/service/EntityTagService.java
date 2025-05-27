@@ -164,15 +164,21 @@ public class EntityTagService {
   public TagResponse getAllAggregateEntityTagsAssociatedToData() {
     log.info("reaching here 1");
     UUID aDefault = locationHierarchyRepository.findLocationHierarchyByName("default");
+    log.info("reaching here 1.1");
+    List<String> uniqueTagsForHierarchy = importAggregateRepository.getUniqueTagsForHierarchy(
+        aDefault.toString());
     log.info("reaching here 2");
+    List<String> uniqueTagsAggregatesForHierarchy = importAggregateRepository.getUniqueTagsAggregatesForHierarchy(
+        aDefault.toString());
+    log.info("reaching here 2.1");
     List<EntityTagResponse> resourceTags =
-        importAggregateRepository.getUniqueTagsAggregatesForHierarchy(aDefault.toString()).stream()
+        uniqueTagsAggregatesForHierarchy.stream()
             .map(tag -> {
               return EntityTagResponse.builder().fieldType(EntityTagFieldTypes.IMPORT)
                   .subType("Import")
                   .isAggregate(true).tag(tag).valueType(DOUBLE).build();
             }).collect(Collectors.toList());
-
+    log.info("reaching here 3");
     User currentUser = userService.getCurrentUser();
 
     Set<UUID> currentUserOrgs = currentUser.getOrganizations().stream()
