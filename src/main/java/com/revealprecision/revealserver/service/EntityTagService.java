@@ -165,9 +165,6 @@ public class EntityTagService {
     log.info("reaching here 1");
     UUID aDefault = locationHierarchyRepository.findLocationHierarchyByName("default");
     log.info("reaching here 1.1");
-    List<String> uniqueTagsForHierarchy = importAggregateRepository.getUniqueTagsForHierarchy(
-        aDefault.toString());
-    log.info("reaching here 2");
     List<String> uniqueTagsAggregatesForHierarchy = importAggregateRepository.getUniqueTagsAggregatesForHierarchy(
         aDefault.toString());
     log.info("reaching here 2.1");

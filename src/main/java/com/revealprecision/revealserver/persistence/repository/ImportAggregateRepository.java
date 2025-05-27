@@ -176,9 +176,5 @@ public interface ImportAggregateRepository extends JpaRepository<ImportAggregati
             "CROSS JOIN suffixes s", nativeQuery = true)
     List<String> getUniqueTagsAggregatesForHierarchy(String hierarchyId);
 
-    @Query(value =
-        "  SELECT DISTINCT fieldcode\n" +
-        "  FROM import_aggregate_numeric \n" +
-        "  WHERE hierarchyidentifier = :hierarchyId\n" , nativeQuery = true)
-    List<String> getUniqueTagsForHierarchy(String hierarchyId);
+
 }
