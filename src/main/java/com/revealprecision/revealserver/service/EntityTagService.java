@@ -162,7 +162,7 @@ public class EntityTagService {
     public TagResponse getAllAggregateEntityTagsAssociatedToData() {
         UUID aDefault = locationHierarchyRepository.findLocationHierarchyByName("default");
         List<EntityTagResponse> resourceTags =
-                importAggregateRepository.getUniqueTagsAggregatesForHierarchy(aDefault).stream().map(tag -> {
+                importAggregateRepository.getUniqueTagsAggregatesForHierarchy(aDefault.toString()).stream().map(tag -> {
                     return EntityTagResponse.builder().fieldType(EntityTagFieldTypes.IMPORT).subType("Import")
                             .isAggregate(true).tag(tag).valueType(DOUBLE).build();
     }).collect(Collectors.toList());

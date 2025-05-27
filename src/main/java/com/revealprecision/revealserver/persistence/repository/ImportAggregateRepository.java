@@ -174,6 +174,6 @@ public interface ImportAggregateRepository extends JpaRepository<ImportAggregati
             "SELECT CONCAT(d.fieldcode, s.suffix) AS tagName\n" +
             "FROM distinct_fieldcodes d\n" +
             "CROSS JOIN suffixes s", nativeQuery = true)
-    List<String> getUniqueTagsAggregatesForHierarchy(UUID hierarchyId);
+    List<String> getUniqueTagsAggregatesForHierarchy(String hierarchyId);
 
 }
