@@ -198,8 +198,16 @@ public class EntityTagController {
 
   }
 
+  @GetMapping(value = "/rrr", produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<String> rrr() {
+    log.info("reaching here");
+    return ResponseEntity.status(HttpStatus.OK)
+        .body("thanks");
+  }
+
   @GetMapping(value = "/default-hierarchy", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<TagResponse> getEntityTagsForDefaultHierarchy() {
+    log.info("reaching here");
     return ResponseEntity.status(HttpStatus.OK)
         .body(entityTagService.getAllAggregateEntityTagsAssociatedToData());
   }

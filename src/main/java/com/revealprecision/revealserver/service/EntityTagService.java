@@ -162,7 +162,9 @@ public class EntityTagService {
   }
 
   public TagResponse getAllAggregateEntityTagsAssociatedToData() {
+    log.info("reaching here 1");
     UUID aDefault = locationHierarchyRepository.findLocationHierarchyByName("default");
+    log.info("reaching here 2");
     List<EntityTagResponse> resourceTags =
         importAggregateRepository.getUniqueTagsAggregatesForHierarchy(aDefault.toString()).stream()
             .map(tag -> {
