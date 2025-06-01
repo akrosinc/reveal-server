@@ -96,7 +96,7 @@ public class HdssSearchService {
     }
 
     if (searchRequest.getCluster()!=null){
-      sql.append(" AND hc.cluster LIKE  ? ");
+      sql.append(" AND lp.name LIKE  ? ");
       params.add(searchRequest.getCluster() + "%");
     }
 
