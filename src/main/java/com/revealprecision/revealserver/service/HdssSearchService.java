@@ -122,8 +122,8 @@ public class HdssSearchService {
     }
 
     if (searchRequest.getCluster()!=null){
-      sql.append(" AND lp.name LIKE  ? ");
-      params.add(searchRequest.getCluster() + "%");
+      sql.append(" AND lower(lp.name) LIKE  ? ");
+      params.add(searchRequest.getCluster().trim().toLowerCase() + "%");
     }
 
     sql.append(" AND hc.structure_id IS NOT NULL ");
