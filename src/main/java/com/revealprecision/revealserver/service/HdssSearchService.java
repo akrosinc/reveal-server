@@ -53,28 +53,28 @@ public class HdssSearchService {
 
       sql.append("(");
       sql.append("LOWER(hc.name) LIKE LOWER(?) OR" );
-      params.add("%" + searchRequest.getName().trim().replaceAll(" "," ").toLowerCase() + "%");
+      params.add("%" + searchRequest.getName().trim().replaceAll("\\s+"," ").toLowerCase() + "%");
 
       sql.append("LOWER(hc.name) LIKE LOWER(?) OR" );
-      params.add("%" + searchRequest.getName().trim().replaceAll(" ","  ").toLowerCase() + "%");
+      params.add("%" + searchRequest.getName().trim().replaceAll("\\s+","  ").toLowerCase() + "%");
 
       sql.append("LOWER(hc.name) LIKE LOWER(?) OR" );
-      params.add("%" + searchRequest.getName().trim().replaceAll(" ","   ").toLowerCase() + "%");
+      params.add("%" + searchRequest.getName().trim().replaceAll("\\s+","   ").toLowerCase() + "%");
 
       sql.append("LOWER(hc.name) LIKE LOWER(?) OR" );
-      params.add("%" + searchRequest.getName().trim().replaceAll(" ","    ").toLowerCase() + "%");
+      params.add("%" + searchRequest.getName().trim().replaceAll("\\s+","    ").toLowerCase() + "%");
 
       sql.append("LOWER(hc.name) LIKE LOWER(?) OR" );
-      params.add("%" + searchRequest.getName().trim().replaceAll(" ","     ").toLowerCase() + "%");
+      params.add("%" + searchRequest.getName().trim().replaceAll("\\s+","     ").toLowerCase() + "%");
 
       sql.append("LOWER(hc.name) LIKE LOWER(?) OR" );
-      params.add("%" + searchRequest.getName().trim().replaceAll(" ","      ").toLowerCase() + "%");
+      params.add("%" + searchRequest.getName().trim().replaceAll("\\s+","      ").toLowerCase() + "%");
 
       sql.append("LOWER(hc.name) LIKE LOWER(?) OR" );
-      params.add("%" + searchRequest.getName().trim().replaceAll(" ","       ").toLowerCase() + "%");
+      params.add("%" + searchRequest.getName().trim().replaceAll("\\s+","       ").toLowerCase() + "%");
 
       sql.append("LOWER(hc.name) LIKE LOWER(?) " );
-      params.add("%" + searchRequest.getName().trim().replaceAll(" ","        ").toLowerCase() + "%");
+      params.add("%" + searchRequest.getName().trim().replaceAll("\\s+","        ").toLowerCase() + "%");
 
       sql.append(")");
     }
