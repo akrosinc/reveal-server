@@ -49,8 +49,34 @@ public class HdssSearchService {
 
 // Add condition for name with case-insensitive comparison
     if (searchRequest.getName() != null) {
-      sql.append(" AND LOWER(hc.name) LIKE LOWER(?)");
-      params.add("%" + searchRequest.getName().trim().replaceAll(" ","%").toLowerCase() + "%");
+      sql.append(" AND ");
+
+      sql.append("(");
+      sql.append("LOWER(hc.name) LIKE LOWER(?) OR" );
+      params.add("%" + searchRequest.getName().trim().replaceAll(" "," ").toLowerCase() + "%");
+
+      sql.append("LOWER(hc.name) LIKE LOWER(?) OR" );
+      params.add("%" + searchRequest.getName().trim().replaceAll(" ","  ").toLowerCase() + "%");
+
+      sql.append("LOWER(hc.name) LIKE LOWER(?) OR" );
+      params.add("%" + searchRequest.getName().trim().replaceAll(" ","   ").toLowerCase() + "%");
+
+      sql.append("LOWER(hc.name) LIKE LOWER(?) OR" );
+      params.add("%" + searchRequest.getName().trim().replaceAll(" ","    ").toLowerCase() + "%");
+
+      sql.append("LOWER(hc.name) LIKE LOWER(?) OR" );
+      params.add("%" + searchRequest.getName().trim().replaceAll(" ","     ").toLowerCase() + "%");
+
+      sql.append("LOWER(hc.name) LIKE LOWER(?) OR" );
+      params.add("%" + searchRequest.getName().trim().replaceAll(" ","      ").toLowerCase() + "%");
+
+      sql.append("LOWER(hc.name) LIKE LOWER(?) OR" );
+      params.add("%" + searchRequest.getName().trim().replaceAll(" ","       ").toLowerCase() + "%");
+
+      sql.append("LOWER(hc.name) LIKE LOWER(?) " );
+      params.add("%" + searchRequest.getName().trim().replaceAll(" ","        ").toLowerCase() + "%");
+
+      sql.append(")");
     }
 
 // Add condition for gender in the fields JSONB with case-insensitive comparison
