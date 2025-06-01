@@ -40,7 +40,7 @@ public class HdssSearchService {
     if (searchRequest.getSearchString() != null && !searchRequest.getSearchString().isEmpty()) {
       sql.append(
           " AND (LOWER(hc.compound_id) LIKE LOWER(?) OR LOWER(hc.household_id) LIKE LOWER(?) OR LOWER(hc.individual_id) LIKE LOWER(?))");
-      String searchString = "%" + searchRequest.getSearchString().toLowerCase()
+      String searchString = "%" + searchRequest.getSearchString().trim().toLowerCase()
           + "%";  // Make sure search string is lowercased
       params.add(searchString);
       params.add(searchString);
@@ -99,6 +99,8 @@ public class HdssSearchService {
       sql.append(" AND hc.cluster LIKE  ? ");
       params.add(searchRequest.getCluster() + "%");
     }
+
+    sql.append(" AND hc.structure_id IS NOT NULL ");
 
 // Convert params List to an Object array
     Object[] paramsArray = params.toArray(new Object[0]);
