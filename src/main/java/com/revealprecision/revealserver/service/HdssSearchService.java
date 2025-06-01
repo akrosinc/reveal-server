@@ -50,7 +50,7 @@ public class HdssSearchService {
 // Add condition for name with case-insensitive comparison
     if (searchRequest.getName() != null) {
       sql.append(" AND LOWER(hc.name) LIKE LOWER(?)");
-      params.add("%" + searchRequest.getName().toLowerCase() + "%");
+      params.add("%" + searchRequest.getName().trim().replaceAll(" ","%").toLowerCase() + "%");
     }
 
 // Add condition for gender in the fields JSONB with case-insensitive comparison
@@ -86,6 +86,18 @@ public class HdssSearchService {
 
       sql.append(" AND hc.fields->>'dob' = ?");
       params.add(formattedDob);
+    }
+
+    if (searchRequest.getStartAge()!=null && searchRequest.getEndAge()!=null){
+      sql.append(" AND TO_DATE(hc.fields->>'dob', 'YYYY-MM-DD') BETWEEN\n"
+              + "    CURRENT_DATE - INTERVAL '").append(searchRequest.getEndAge())
+          .append(" years' AND\n").append("    CURRENT_DATE - INTERVAL '")
+          .append(searchRequest.getStartAge()).append(" years' ");
+    }
+
+    if (searchRequest.getCluster()!=null){
+      sql.append(" AND hc.cluster LIKE  ? ");
+      params.add(searchRequest.getCluster() + "%");
     }
 
 // Convert params List to an Object array
