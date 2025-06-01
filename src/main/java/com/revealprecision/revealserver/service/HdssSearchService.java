@@ -52,28 +52,28 @@ public class HdssSearchService {
       sql.append(" AND ");
 
       sql.append("(");
-      sql.append("LOWER(hc.name) LIKE LOWER(?) OR" );
+      sql.append("LOWER(hc.name) LIKE LOWER(?) OR " );
       params.add("%" + searchRequest.getName().trim().replaceAll("\\s+"," ").toLowerCase() + "%");
 
-      sql.append("LOWER(hc.name) LIKE LOWER(?) OR" );
+      sql.append("LOWER(hc.name) LIKE LOWER(?) OR " );
       params.add("%" + searchRequest.getName().trim().replaceAll("\\s+","  ").toLowerCase() + "%");
 
-      sql.append("LOWER(hc.name) LIKE LOWER(?) OR" );
+      sql.append("LOWER(hc.name) LIKE LOWER(?) OR " );
       params.add("%" + searchRequest.getName().trim().replaceAll("\\s+","   ").toLowerCase() + "%");
 
-      sql.append("LOWER(hc.name) LIKE LOWER(?) OR" );
+      sql.append("LOWER(hc.name) LIKE LOWER(?) OR " );
       params.add("%" + searchRequest.getName().trim().replaceAll("\\s+","    ").toLowerCase() + "%");
 
-      sql.append("LOWER(hc.name) LIKE LOWER(?) OR" );
+      sql.append("LOWER(hc.name) LIKE LOWER(?) OR " );
       params.add("%" + searchRequest.getName().trim().replaceAll("\\s+","     ").toLowerCase() + "%");
 
-      sql.append("LOWER(hc.name) LIKE LOWER(?) OR" );
+      sql.append("LOWER(hc.name) LIKE LOWER(?) OR " );
       params.add("%" + searchRequest.getName().trim().replaceAll("\\s+","      ").toLowerCase() + "%");
 
-      sql.append("LOWER(hc.name) LIKE LOWER(?) OR" );
+      sql.append("LOWER(hc.name) LIKE LOWER(?) OR " );
       params.add("%" + searchRequest.getName().trim().replaceAll("\\s+","       ").toLowerCase() + "%");
 
-      sql.append("LOWER(hc.name) LIKE LOWER(?) " );
+      sql.append("LOWER(hc.name) LIKE LOWER(?)  " );
       params.add("%" + searchRequest.getName().trim().replaceAll("\\s+","        ").toLowerCase() + "%");
 
       sql.append(")");
