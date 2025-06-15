@@ -13,4 +13,6 @@ public interface HdssIndividualProjection {
   String getGender();
 
   String getHouseholdId();
+
+  String getIndName();
 }
