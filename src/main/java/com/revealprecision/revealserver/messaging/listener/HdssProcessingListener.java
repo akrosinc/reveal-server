@@ -293,20 +293,13 @@ public class HdssProcessingListener extends Listener {
       String indexHousehold, List<UUID> allStructuresInCompound,
       List<String> allHouseholdsInCompound,HdssIndividualProjection indexIndividual) {
     try {
-      emailService.sendEmail(collect, "<b>Index Case Notification:</b> " + individual,
-          "<p><b>For structure: </b>".concat(indexStructure.toString()).concat("</p><br>")
-              .concat("<p><b>For Household: </b>").concat(indexHousehold).concat("</p><br>")
-//              .concat("<p>structures in compounds</p>")
-//              .concat(allStructuresInCompound.stream().filter(Objects::nonNull).map(UUID::toString)
-//                  .map(uuid -> "<p>".concat(uuid).concat("</p>")).collect(
-//                      Collectors.joining("<br>"))).concat("<br>")
-              .concat("<p><b>Individual Details: <b></p>")
-              .concat("<p><b>Name: </b>").concat(indexIndividual.getIndName()).concat("</p><br>")
-              .concat("<p><b>Date of Birth: </b>").concat(indexIndividual.getDob().toString()).concat("</p><br>")
-              .concat("<p><b>Gender: </b>").concat(indexIndividual.getGender().toString()).concat("</p><br>"));
-//              .concat(allHouseholdsInCompound.stream()
-//                  .map(household -> "<p>".concat(household).concat("</p>")).collect(
-//                      Collectors.joining("<br>"))));
+      emailService.sendEmail(collect, "Index Case Notification: " + individual,
+          "<p><b>Structure: </b>".concat(indexStructure.toString()).concat("</p>")
+              .concat("<p><b>Household: </b>").concat(indexHousehold).concat("</p>")
+              .concat("<p><b><u>Individual Details: </u><b></p>")
+              .concat("<p><b>Name: </b>").concat(indexIndividual.getIndName()).concat("</p>")
+              .concat("<p><b>Date of Birth: </b>").concat(indexIndividual.getDob().toString()).concat("</p>")
+              .concat("<p><b>Gender: </b>").concat(indexIndividual.getGender().toString()).concat("</p>"));
     } catch (MessagingException e) {
       log.error(e.getMessage(),e);
     }
