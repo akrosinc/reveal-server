@@ -44,7 +44,7 @@ public class HdssProcessingListener extends Listener {
   public static String INDIVIDUAL = "individual";
 
   public static String INDIVIDUAL_HOUSEHOLD_COMPOUND_SEARCH = "individual_household_compound_search";
-
+  public static String ICC_PHONE = "icc_phone";
   public static String COMPOUND = "compound";
 
   public static String HOUSEHOLD = "household";
@@ -71,6 +71,9 @@ public class HdssProcessingListener extends Listener {
 
     String individualHouseholdCompound = getValue(observations,
         INDIVIDUAL_HOUSEHOLD_COMPOUND_SEARCH);
+
+    String phoneNumber = getValue(observations,
+        ICC_PHONE);
 
     try {
       log.info("individualHouseholdCompounds: {}", individualHouseholdCompound);
@@ -184,7 +187,7 @@ public class HdssProcessingListener extends Listener {
 
               sendEmails(individualHouseholdCompound, indexStructure, indexHousehold, compoundId,
                   allStructuresInCompound,
-                  allHouseholdsInCompound, targetPlan, indexIndividual);
+                  allHouseholdsInCompound, targetPlan, indexIndividual, phoneNumber);
 
               List<Goal> goalsByPlan_identifier = goalRepository.findGoalsByPlan_Identifier(
                   targetPlan);
@@ -260,30 +263,30 @@ public class HdssProcessingListener extends Listener {
 
   private void sendEmails(String individual, UUID indexStructure, String indexHousehold,
       List<String> compoundId, List<UUID> allStructuresInCompound,
-      List<String> allHouseholdsInCompound, UUID targetPlan,HdssIndividualProjection indexIndividual) {
+      List<String> allHouseholdsInCompound, UUID targetPlan,
+      HdssIndividualProjection indexIndividual, String phoneNumber) {
     if (hdssProperties.isSendToOverrideEmail()) {
       String[] split = hdssProperties.getOverrideEmailList().split(";");
       List<String> collect = Arrays.stream(split).collect(Collectors.toList());
       sendMail(collect, individual, indexStructure, indexHousehold, allStructuresInCompound,
-          allHouseholdsInCompound,indexIndividual);
+          allHouseholdsInCompound, indexIndividual, phoneNumber);
     } else {
       for (String compoundItem : compoundId) {
         List<String> userEmailsByCompoundIdAndPlan = hdssCompoundsRepository.getUserEmailsByCompoundIdAndPlan(
             compoundItem, targetPlan);
-
 
         if (userEmailsByCompoundIdAndPlan != null && userEmailsByCompoundIdAndPlan.size() > 0) {
           String[] split = hdssProperties.getOverrideEmailList().split(";");
           List<String> collect = Arrays.stream(split).collect(Collectors.toList());
           userEmailsByCompoundIdAndPlan.addAll(collect);
           sendMail(userEmailsByCompoundIdAndPlan, individual, indexStructure, indexHousehold,
-              allStructuresInCompound, allHouseholdsInCompound, indexIndividual);
+              allStructuresInCompound, allHouseholdsInCompound, indexIndividual, phoneNumber);
 
         } else {
           String[] split = hdssProperties.getDefaultEmailList().split(";");
           List<String> collect = Arrays.stream(split).collect(Collectors.toList());
           sendMail(collect, individual, indexStructure, indexHousehold, allStructuresInCompound,
-              allHouseholdsInCompound, indexIndividual);
+              allHouseholdsInCompound, indexIndividual, phoneNumber);
         }
       }
     }
@@ -291,17 +294,25 @@ public class HdssProcessingListener extends Listener {
 
   private void sendMail(List<String> collect, String individual, UUID indexStructure,
       String indexHousehold, List<UUID> allStructuresInCompound,
-      List<String> allHouseholdsInCompound,HdssIndividualProjection indexIndividual) {
+      List<String> allHouseholdsInCompound, HdssIndividualProjection indexIndividual,
+      String phoneNumber) {
     try {
+      String body = "<p><b>Structure: </b>".concat(indexStructure.toString()).concat("</p>")
+          .concat("<p><b>Household: </b>").concat(indexHousehold).concat("</p>")
+          .concat("<p><b><u>Individual Details: </u><b></p>")
+          .concat("<p><b>Name: </b>").concat(indexIndividual.getIndName()).concat("</p>")
+          .concat("<p><b>Date of Birth: </b>").concat(indexIndividual.getDob().toString())
+          .concat("</p>")
+          .concat("<p><b>Gender: </b>").concat(indexIndividual.getGender().toString())
+          .concat("</p>");
+
+      if (phoneNumber != null && !phoneNumber.equals("")) {
+        body = body.concat("<p>Phone Number:").concat(phoneNumber).concat("</p>");
+      }
       emailService.sendEmail(collect, "Index Case Notification: " + individual,
-          "<p><b>Structure: </b>".concat(indexStructure.toString()).concat("</p>")
-              .concat("<p><b>Household: </b>").concat(indexHousehold).concat("</p>")
-              .concat("<p><b><u>Individual Details: </u><b></p>")
-              .concat("<p><b>Name: </b>").concat(indexIndividual.getIndName()).concat("</p>")
-              .concat("<p><b>Date of Birth: </b>").concat(indexIndividual.getDob().toString()).concat("</p>")
-              .concat("<p><b>Gender: </b>").concat(indexIndividual.getGender().toString()).concat("</p>"));
+          body);
     } catch (MessagingException e) {
-      log.error(e.getMessage(),e);
+      log.error(e.getMessage(), e);
     }
   }
 
