@@ -458,44 +458,6 @@ public class FormDataProcessorService {
 
         }
 
-        if (savedEvent.getEventType().equals(PASSIVE_CASE_DETECTION_EVENT)) {
-
-          dateString = getFormValue(obsJavaList, PASSIVE_CASE_DETECTION_DATE_FIELD);
-
-          supervisorName = getFormValue(obsJavaList,
-              PASSIVE_CASE_DETECTION_HEALTH_WORKER_SUPERVISOR_FIELD);
-
-          cdd = null;
-
-          baseEntityIdentifier = null;
-          if (savedEvent.getDetails() != null){
-            JsonNode locationIdJsonNode = savedEvent.getDetails().get(LOCATION_ID);
-            if (locationIdJsonNode!=null){
-              String baseEntityIdentifierString = locationIdJsonNode.asText();
-
-              try {
-                baseEntityIdentifier = UUID.fromString(baseEntityIdentifierString);
-              } catch (IllegalArgumentException e){
-                log.error("cannot cast locationId to UUID: {}",baseEntityIdentifierString);
-              }
-            }
-          }
-
-          EventTrackerMessage entity = EventTrackerMessageFactory.getEntity(savedEvent, eventFacade,
-              plan, dateString,
-              supervisorName,
-              cdd,
-              baseEntityIdentifier,
-              formSubmissionIdString);
-          log.debug("publishing event to {} - {}",EVENT_TRACKER,entity);
-          publisherService.send(kafkaProperties.getTopicMap().get(EVENT_TRACKER),
-              entity);
-
-          log.debug("publishing event to {} - {}",HDSS_PROCESSING,entity);
-          publisherService.send(kafkaProperties.getTopicMap().get(HDSS_PROCESSING),
-              entity);
-
-        }
 
         if (savedEvent.getEventType().equals(RCD)) {
 
