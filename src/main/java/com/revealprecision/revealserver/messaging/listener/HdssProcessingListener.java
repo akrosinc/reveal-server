@@ -16,6 +16,7 @@ import com.revealprecision.revealserver.props.HdssProperties;
 import com.revealprecision.revealserver.service.TaskService;
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -265,31 +266,38 @@ public class HdssProcessingListener extends Listener {
       List<String> compoundId, List<UUID> allStructuresInCompound,
       List<String> allHouseholdsInCompound, UUID targetPlan,
       HdssIndividualProjection indexIndividual, String phoneNumber) {
+    List<String> collect = new ArrayList<>();
     if (hdssProperties.isSendToOverrideEmail()) {
       String[] split = hdssProperties.getOverrideEmailList().split(";");
-      List<String> collect = Arrays.stream(split).collect(Collectors.toList());
-      sendMail(collect, individual, indexStructure, indexHousehold, allStructuresInCompound,
-          allHouseholdsInCompound, indexIndividual, phoneNumber);
+       collect = Arrays.stream(split).collect(Collectors.toList());
+//      sendMail(collect, individual, indexStructure, indexHousehold, allStructuresInCompound,
+//          allHouseholdsInCompound, indexIndividual, phoneNumber);
+      log.info("emailing is overridden");
     } else {
       for (String compoundItem : compoundId) {
         List<String> userEmailsByCompoundIdAndPlan = hdssCompoundsRepository.getUserEmailsByCompoundIdAndPlan(
             compoundItem, targetPlan);
 
         if (userEmailsByCompoundIdAndPlan != null && userEmailsByCompoundIdAndPlan.size() > 0) {
+          collect.addAll(userEmailsByCompoundIdAndPlan);
           String[] split = hdssProperties.getOverrideEmailList().split(";");
-          List<String> collect = Arrays.stream(split).collect(Collectors.toList());
-          userEmailsByCompoundIdAndPlan.addAll(collect);
-          sendMail(userEmailsByCompoundIdAndPlan, individual, indexStructure, indexHousehold,
-              allStructuresInCompound, allHouseholdsInCompound, indexIndividual, phoneNumber);
-
+          List<String> override = Arrays.stream(split).collect(Collectors.toList());
+          collect.addAll(override);
+//          sendMail(userEmailsByCompoundIdAndPlan, individual, indexStructure, indexHousehold,
+//              allStructuresInCompound, allHouseholdsInCompound, indexIndividual, phoneNumber);
+          log.info("userEmailsByCompoundIdAndPlan is not null");
         } else {
           String[] split = hdssProperties.getDefaultEmailList().split(";");
-          List<String> collect = Arrays.stream(split).collect(Collectors.toList());
-          sendMail(collect, individual, indexStructure, indexHousehold, allStructuresInCompound,
-              allHouseholdsInCompound, indexIndividual, phoneNumber);
+          collect = Arrays.stream(split).collect(Collectors.toList());
+//          sendMail(collect, individual, indexStructure, indexHousehold, allStructuresInCompound,
+//              allHouseholdsInCompound, indexIndividual, phoneNumber);
+          log.info("userEmailsByCompoundIdAndPlan is null");
         }
       }
     }
+    log.info("email list: {}",collect);
+    sendMail(collect, individual, indexStructure, indexHousehold,
+        allStructuresInCompound, allHouseholdsInCompound, indexIndividual, phoneNumber);
   }
 
   private void sendMail(List<String> collect, String individual, UUID indexStructure,
@@ -309,7 +317,7 @@ public class HdssProcessingListener extends Listener {
       if (phoneNumber != null && !phoneNumber.equals("")) {
         body = body.concat("<p>Phone Number:").concat(phoneNumber).concat("</p>");
       }
-      emailService.sendEmail(collect, "Index Case Notification: " + individual,
+      emailService.sendEmail(collect.stream().filter(Objects::nonNull).collect(Collectors.toList()), "Index Case Notification: " + individual,
           body);
     } catch (MessagingException e) {
       log.error(e.getMessage(), e);
