@@ -126,7 +126,7 @@ public class HdssSearchService {
       params.add(searchRequest.getCluster().trim().toLowerCase() + "%");
     }
 
-    sql.append(" AND hc.structure_id IS NOT NULL ");
+//    sql.append(" AND hc.structure_id IS NOT NULL ");
 
 // Convert params List to an Object array
     Object[] paramsArray = params.toArray(new Object[0]);
