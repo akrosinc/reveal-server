@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.api.v1.facade.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.revealprecision.revealserver.api.v1.facade.models.HdssCompoundHouseholdIndividualObj;
 import com.revealprecision.revealserver.api.v1.facade.models.HdssCompoundHouseholdIndividualPushObj;
 import com.revealprecision.revealserver.api.v1.facade.models.HdssCompoundObj;
@@ -16,18 +17,29 @@ import com.revealprecision.revealserver.persistence.domain.HdssCompounds;
 import com.revealprecision.revealserver.persistence.projection.HdssCompoundHouseholdIndividualProjection;
 import com.revealprecision.revealserver.persistence.repository.HdssCompoundsRepository;
 import com.revealprecision.revealserver.service.HdssSearchService;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringWriter;
 import java.text.ParseException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.csveed.row.RowWriter;
+import org.csveed.row.RowWriterImpl;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -244,4 +256,161 @@ public class HdssFacadeController {
     return ResponseEntity.ok().build();
   }
 
+  @PostMapping("/file")
+  public ResponseEntity<Resource> data(HdssSyncRequest hdssSyncRequest) throws IOException {
+
+    List<HdssCompoundHouseholdIndividualProjection> individuals = compoundsRepository
+        .getAllCompoundsForUserAssignmentAndServerVersion(
+            hdssSyncRequest.getUserId(), 0);
+
+    StringWriter stringWriter = new StringWriter();
+
+    RowWriter rowWriter = new RowWriterImpl(stringWriter);
+
+    HdssCompoundObj compounds = HdssCompoundObj.builder()
+        .allCompounds(individuals.stream()
+            .filter(individual->individual.getStructureId()!=null)
+            .map(individual -> HdssCompound.builder().serverVersion(individual.getServerVersion())
+                .compoundId(individual.getCompoundId()).build()).collect(Collectors.toSet()))
+        .compoundHouseHolds(individuals.stream()
+            .filter(individual->individual.getCompoundId()!=null)
+            .map(individual -> HdssCompoundHousehold.builder().compoundId(individual.getCompoundId())
+                .serverVersion(individual.getServerVersion())
+                .householdId(individual.getHouseholdId()).build()).collect(Collectors.toSet()))
+        .allHouseholdIndividual(individuals.stream()
+            .filter(individual->individual.getHouseholdId()!=null )
+            .map(individual -> HdssHouseholdIndividual.builder()
+                .serverVersion(individual.getServerVersion())
+                .individualId(individual.getIndividualId())
+                .householdId(individual.getHouseholdId()).build()).collect(Collectors.toSet()))
+        .allHouseholdStructure(individuals.stream()
+            .filter(individual->individual.getStructureId()!=null)
+            .map(individual -> HdssHouseholdStructure.builder()
+                .serverVersion(individual.getServerVersion())
+                .structureId(individual.getStructureId()).householdId(individual.getHouseholdId())
+                .build())
+            .collect(Collectors.toSet()))
+        .allIndividuals(individuals.stream().map(
+                individual -> HdssIndividual.builder().identifier(individual.getId())
+                    .individualId(individual.getIndividualId()).name(individual.getName())
+                    .serverVersion(individual.getServerVersion()).dob(individual.getDob())
+                    .gender(individual.getGender())
+                    .cluster(individual.getCluster())
+                    .floatingLocationGeographicLevel(individual.getFloatingLocationGeographicLevel())
+                    .floatingLocationId(individual.getFloatingLocationId())
+                    .floatingLocationName(individual.getFloatingLocationName()).build())
+            .collect(Collectors.toSet()))
+        .allHouseholds(individuals.stream().map(individual -> HdssHousehold
+            .builder()
+            .householdId(individual.getHouseholdId())
+            .floatingHouseholdLocationName(individual.getFloatingHouseholdLocationName())
+            .serverVersion(individual.getServerVersion())
+            .build()).collect(Collectors.toSet()))
+        .allHouseholdIndividualToDelete(individuals.stream()
+            .filter(individual->individual.getStructureId()==null && individual.getHouseholdId()==null)
+            .map(HdssCompoundHouseholdIndividualProjection::getIndividualId).collect(Collectors.toSet()))
+        .allCompoundHouseholdToDelete(individuals.stream()
+            .filter(individual->individual.getCompoundId()==null && individual.getStructureId()==null)
+            .map(HdssCompoundHouseholdIndividualProjection::getHouseholdId).collect(Collectors.toSet())).build();
+
+    Consumer<List<String>> writeRowWithType = (row) -> rowWriter.writeRow(row.toArray(new String[0]));
+
+    for (HdssCompound compound : compounds.getAllCompounds()) {
+      writeRowWithType.accept(Arrays.asList(
+          "allCompounds",
+          safe(compound.getCompoundId()),
+          safe(String.valueOf(compound.getServerVersion()))
+      ));
+    }
+
+// compoundHouseHolds
+    for (HdssCompoundHousehold chh : compounds.getCompoundHouseHolds()) {
+      writeRowWithType.accept(Arrays.asList(
+          "compoundHouseHolds",
+          safe(chh.getCompoundId()),
+          safe(chh.getHouseholdId()),
+          safe(String.valueOf(chh.getServerVersion()))
+      ));
+    }
+
+// allHouseholdIndividual
+    for (HdssHouseholdIndividual hi : compounds.getAllHouseholdIndividual()) {
+      writeRowWithType.accept(Arrays.asList(
+          "allHouseholdIndividual",
+          safe(hi.getIndividualId()),
+          safe(hi.getHouseholdId()),
+          safe(String.valueOf(hi.getServerVersion()))
+      ));
+    }
+
+// allHouseholdStructure
+    for (HdssHouseholdStructure hs : compounds.getAllHouseholdStructure()) {
+      writeRowWithType.accept(Arrays.asList(
+          "allHouseholdStructure",
+          safe(hs.getStructureId()),
+          safe(hs.getHouseholdId()),
+          safe(String.valueOf(hs.getServerVersion()))
+      ));
+    }
+
+// allIndividuals
+    for (HdssIndividual i : compounds.getAllIndividuals()) {
+      writeRowWithType.accept(Arrays.asList(
+          "allIndividuals",
+          safe(i.getIdentifier()),
+          safe(i.getIndividualId()),
+          safe(i.getName()),
+          safe(i.getDob()),
+          safe(i.getGender()),
+          safe(i.getCluster()),
+          safe(i.getFloatingLocationId()),
+          safe(i.getFloatingLocationName()),
+          safe(i.getFloatingLocationGeographicLevel()),
+          safe(String.valueOf(i.getServerVersion()))
+      ));
+    }
+
+// allHouseholds
+    for (HdssHousehold h : compounds.getAllHouseholds()) {
+      writeRowWithType.accept(Arrays.asList(
+          "allHouseholds",
+          safe(h.getHouseholdId()),
+          safe(h.getFloatingHouseholdLocationName()),
+          safe(String.valueOf(h.getServerVersion()))
+      ));
+    }
+
+// allHouseholdIndividualToDelete
+    for (String id : compounds.getAllHouseholdIndividualToDelete()) {
+      writeRowWithType.accept(Arrays.asList("allHouseholdIndividualToDelete", safe(id)));
+    }
+
+// allCompoundHouseholdToDelete
+    for (String id : compounds.getAllCompoundHouseholdToDelete()) {
+      writeRowWithType.accept(Arrays.asList("allCompoundHouseholdToDelete", safe(id)));
+    }
+
+    Map<String, Object> metadata = new HashMap<>();
+    metadata.put("allCompounds", compounds.getAllCompounds().size());
+    metadata.put("compoundHouseHolds", compounds.getCompoundHouseHolds().size());
+    metadata.put("allHouseholdIndividual", compounds.getAllHouseholdIndividual().size());
+    metadata.put("allHouseholdStructure", compounds.getAllHouseholdStructure().size());
+    metadata.put("allIndividuals", compounds.getAllIndividuals().size());
+    metadata.put("allHouseholds", compounds.getAllHouseholds().size());
+    metadata.put("allHouseholdIndividualToDelete", compounds.getAllHouseholdIndividualToDelete().size());
+    metadata.put("allCompoundHouseholdToDelete", compounds.getAllCompoundHouseholdToDelete().size());
+
+    String metadataJson = new ObjectMapper().writeValueAsString(metadata);
+
+    stringWriter.close();
+    InputStream targetStream = new ByteArrayInputStream(stringWriter.toString().getBytes());
+
+    return ResponseEntity.status(HttpStatus.OK).contentType(MediaType.APPLICATION_OCTET_STREAM)
+        .header("Content-disposition", "attachment;filename=" + "user.csv")
+        .header("X-File-Metadata",metadataJson)
+        .body(new InputStreamResource(targetStream));
+  }
+  private String safe(String value) {
+    return value != null ? value : "";
+  }
 }
