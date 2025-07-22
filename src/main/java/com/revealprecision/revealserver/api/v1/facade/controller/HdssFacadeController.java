@@ -258,7 +258,7 @@ public class HdssFacadeController {
   }
 
   @PostMapping("/file")
-  public ResponseEntity<Resource> data(HdssSyncRequest hdssSyncRequest) throws IOException {
+  public ResponseEntity<Resource> data(@RequestBody HdssSyncRequest hdssSyncRequest) throws IOException {
 
     log.info("hdssSyncRequest json: > {} <",new ObjectMapper().writeValueAsString(hdssSyncRequest));
     log.info("hdssSyncRequest: > {} <",hdssSyncRequest);
