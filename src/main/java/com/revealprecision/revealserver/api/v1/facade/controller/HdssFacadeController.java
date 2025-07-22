@@ -12,7 +12,6 @@ import com.revealprecision.revealserver.api.v1.facade.models.HdssCompoundObj.Hds
 import com.revealprecision.revealserver.api.v1.facade.models.HdssCompoundObj.HdssIndividual;
 import com.revealprecision.revealserver.api.v1.facade.request.HdssSearchRequest;
 import com.revealprecision.revealserver.api.v1.facade.request.HdssSyncRequest;
-import com.revealprecision.revealserver.api.v1.facade.request.HdssSyncRequestV2;
 import com.revealprecision.revealserver.persistence.domain.Fields;
 import com.revealprecision.revealserver.persistence.domain.HdssCompounds;
 import com.revealprecision.revealserver.persistence.projection.HdssCompoundHouseholdIndividualProjection;
@@ -259,14 +258,14 @@ public class HdssFacadeController {
   }
 
   @PostMapping("/file")
-  public ResponseEntity<Resource> data2(@RequestBody HdssSyncRequestV2 hdssSyncRequest) throws IOException {
+  public ResponseEntity<Resource> data2(@RequestBody HdssSyncRequest hdssSyncRequest) throws IOException {
 
     log.info("hdssSyncRequest json: > {} <",new ObjectMapper().writeValueAsString(hdssSyncRequest));
     log.info("hdssSyncRequest: > {} <",hdssSyncRequest);
     log.info("hdssSyncRequest.getUserId(): > {} <",hdssSyncRequest.getUserId());
     List<HdssCompoundHouseholdIndividualProjection> individuals = compoundsRepository
-        .getAllCompoundsForUserAssignmentAndServerVersionV2(
-            hdssSyncRequest.getUserId());
+        .getAllCompoundsForUserAssignmentAndServerVersion(
+            hdssSyncRequest.getUserId(),0);
 
     StringWriter stringWriter = new StringWriter();
 
