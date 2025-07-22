@@ -260,7 +260,7 @@ public class HdssFacadeController {
   public ResponseEntity<Resource> data(HdssSyncRequest hdssSyncRequest) throws IOException {
 
     List<HdssCompoundHouseholdIndividualProjection> individuals = compoundsRepository
-        .getAllCompoundsForUserAssignmentAndServerVersion(
+        .getAllCompoundsForUserAssignmentAndServerVersionV2(
             hdssSyncRequest.getUserId(), 0);
 
     StringWriter stringWriter = new StringWriter();
