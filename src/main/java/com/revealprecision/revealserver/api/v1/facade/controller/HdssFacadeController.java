@@ -262,7 +262,7 @@ public class HdssFacadeController {
 
     List<HdssCompoundHouseholdIndividualProjection> individuals = compoundsRepository
         .getAllCompoundsForUserAssignmentAndServerVersionV2(
-            hdssSyncRequest.getUserId(), 0);
+            hdssSyncRequest.getUserId());
 
     StringWriter stringWriter = new StringWriter();
 
