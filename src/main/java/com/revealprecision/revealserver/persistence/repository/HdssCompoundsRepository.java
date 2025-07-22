@@ -261,7 +261,7 @@ public interface HdssCompoundsRepository extends EntityGraphJpaRepository<HdssCo
       + "             left join geographic_level pgl on ptt.geographic_level_identifier = pgl.identifier\n"
       + "             left join user_organization uo on o.identifier = uo.organization_identifier\n"
       + "             left join users u on u.identifier = uo.user_identifier\n"
-      + "    WHERE gl.name = lh.node_order[array_position(lh.node_order, pgl.name) - 1]\n"
+      + "    WHERE cast(gl.name as varchar) = cast(lh.node_order[array_position(cast(lh.node_order as varchar[]), cast(pgl.name as varchar)) - 1] as varchar)\n"
       + "      and u.username = :username\n"
       + "))"
       + "  and hc.server_version > :serverVersion "
