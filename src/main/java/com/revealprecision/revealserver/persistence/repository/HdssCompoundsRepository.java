@@ -263,8 +263,8 @@ public interface HdssCompoundsRepository extends EntityGraphJpaRepository<HdssCo
       + "    WHERE gl.name = lh.node_order[array_position(lh.node_order, pgl.name) - 1]\n"
       + "      and u.username = :username\n"
       + ")"
-      + "\n",nativeQuery = true)
-  List<HdssCompoundHouseholdIndividualProjection> getAllCompoundsForUserAssignmentAndServerVersionV2(String username, long serverVersion);
+      + "",nativeQuery = true)
+  List<HdssCompoundHouseholdIndividualProjection> getAllCompoundsForUserAssignmentAndServerVersionV2(String username);
 
 
 
