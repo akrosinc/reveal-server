@@ -240,7 +240,7 @@ public interface HdssCompoundsRepository extends EntityGraphJpaRepository<HdssCo
       + "                cast(hc.floating_location_geographic_level as varchar) as floatingLocationGeographicLevel,\n"
       + "                cast(hc.floating_household_location_name as varchar)             as floatingHouseholdLocationName\n"
       + "FROM hdss.hdss_compounds hc\n"
-      + " LIMIT 10\n",nativeQuery = true)
+      + " LIMIT 8000\n",nativeQuery = true)
   List<HdssCompoundHouseholdIndividualProjection> getAllCompoundsForUserAssignmentAndServerVersionV2(String username, long serverVersion);
 
 
