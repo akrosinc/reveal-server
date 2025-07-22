@@ -7,6 +7,7 @@ import com.revealprecision.revealserver.persistence.projection.HdssIndividualPro
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -261,10 +262,10 @@ public interface HdssCompoundsRepository extends EntityGraphJpaRepository<HdssCo
       + "             left join user_organization uo on o.identifier = uo.organization_identifier\n"
       + "             left join users u on u.identifier = uo.user_identifier\n"
       + "    WHERE gl.name = lh.node_order[array_position(lh.node_order, pgl.name) - 1]\n"
-      + "      and u.username = :username\n"
+      + "      and cast(u.username as varchar) = cast(:username as varchar)\n"
       + ")"
       + "",nativeQuery = true)
-  List<HdssCompoundHouseholdIndividualProjection> getAllCompoundsForUserAssignmentAndServerVersionV2(String username);
+  List<HdssCompoundHouseholdIndividualProjection> getAllCompoundsForUserAssignmentAndServerVersionV2(@Param("username")String username);
 
 
 
