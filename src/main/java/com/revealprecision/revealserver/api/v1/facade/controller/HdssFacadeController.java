@@ -36,6 +36,7 @@ import java.util.stream.Collectors;
 import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.csveed.row.RowInstructionsImpl;
 import org.csveed.row.RowWriter;
 import org.csveed.row.RowWriterImpl;
 import org.springframework.core.io.InputStreamResource;
@@ -265,7 +266,8 @@ public class HdssFacadeController {
 
     StringWriter stringWriter = new StringWriter();
 
-    RowWriter rowWriter = new RowWriterImpl(stringWriter);
+    RowWriter rowWriter = new RowWriterImpl(stringWriter, new RowInstructionsImpl()
+        .setUseHeader(false));
 
     HdssCompoundObj compounds = HdssCompoundObj.builder()
         .allCompounds(individuals.stream()
