@@ -260,6 +260,9 @@ public class HdssFacadeController {
   @PostMapping("/file")
   public ResponseEntity<Resource> data(HdssSyncRequest hdssSyncRequest) throws IOException {
 
+    log.info("hdssSyncRequest json: > {} <",new ObjectMapper().writeValueAsString(hdssSyncRequest));
+    log.info("hdssSyncRequest: > {} <",hdssSyncRequest);
+    log.info("hdssSyncRequest.getUserId(): > {} <",hdssSyncRequest.getUserId());
     List<HdssCompoundHouseholdIndividualProjection> individuals = compoundsRepository
         .getAllCompoundsForUserAssignmentAndServerVersionV2(
             hdssSyncRequest.getUserId());
