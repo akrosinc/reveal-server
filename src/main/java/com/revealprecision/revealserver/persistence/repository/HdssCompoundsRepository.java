@@ -220,7 +220,7 @@ public interface HdssCompoundsRepository extends EntityGraphJpaRepository<HdssCo
       + "                                     and u.username = :username"
       + ")"
       + ")\n"
-      + "  and hc.server_version > :serverVersion"
+      + "  and hc.server_version > :serverVersion order by hc.server_version asc"
       + "",nativeQuery = true)
   List<HdssCompoundHouseholdIndividualProjection> getAllCompoundsForUserAssignmentAndServerVersion(String username, long serverVersion);
 
