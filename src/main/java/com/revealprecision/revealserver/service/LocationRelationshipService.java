@@ -15,6 +15,7 @@ import com.revealprecision.revealserver.persistence.projection.LocationMainData;
 import com.revealprecision.revealserver.persistence.projection.LocationRelationshipAncestryProjection;
 import com.revealprecision.revealserver.persistence.projection.LocationRelationshipProjection;
 import com.revealprecision.revealserver.persistence.projection.LocationWithParentProjection;
+import com.revealprecision.revealserver.persistence.projection.ParentMapProjection;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import com.revealprecision.revealserver.persistence.repository.GeographicLevelRepository;
 import com.revealprecision.revealserver.persistence.repository.LiteStructureCountRepository;
@@ -82,9 +83,9 @@ public class LocationRelationshipService {
                     Collectors.toList())));
 
     return collect;
-    
+
   }
-  
+
 
   public List<LocationWithParentProjection> getChildrenByGeoLevelNameWithinLocationListHierarchyAndServerVersion(
       List<UUID> parentIdentifiers,
@@ -285,6 +286,16 @@ public class LocationRelationshipService {
             locationRelationship ->
                 locationRelationship.getParentLocation() == null ? new Location()
                     : locationRelationship.getParentLocation(), (a, b) -> b));
+
+  }
+
+  public Map<String, ParentMapProjection> getParentMap(
+      UUID locationHierarchyIdentifier, List<UUID> locationIdentifiers) {
+    List<ParentMapProjection> parentMap = locationRepository.getParentMap(locationIdentifiers,
+        locationHierarchyIdentifier);
+
+    return parentMap.stream()
+        .collect(Collectors.toMap(ParentMapProjection::getLocationId, e -> e, (a, b) -> b));
 
   }
 

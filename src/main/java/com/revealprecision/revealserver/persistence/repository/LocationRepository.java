@@ -81,6 +81,9 @@ public interface LocationRepository extends JpaRepository<Location, UUID> {
     @Query(value = "select l from Location l where l.geographicLevel.identifier = :identifier")
     List<Location> findByGeographicLevelIdentifier(@Param("identifier") UUID identifier);
 
+    @Query(value = "select l from Location l where l.geographicLevel.identifier = :identifier order by l.name")
+    List<Location> findByGeographicLevelIdentifierSorted(@Param("identifier") UUID identifier);
+
     @Query(value = "SELECT l FROM Location l WHERE (lower(l.name) like lower(concat('%', :param, '%'))) AND l.entityStatus='ACTIVE'")
     Page<Location> findAlLByCriteria(@Param("param") String param, Pageable pageable);
 
@@ -280,6 +283,37 @@ public interface LocationRepository extends JpaRepository<Location, UUID> {
             + "      select cast(a.id as varchar) from ancestors a", nativeQuery = true)
     List<UUID> getAllLocationChildrenNotLike(UUID locationIdentifier, UUID hierarchyIdentifier,
                                              List<String> nodeList);
+
+    @Query(value = "WITH RECURSIVE ancestors(id, lname, parent_id, pname, lvl) AS (\n"
+        + "    SELECT lr.location_identifier,\n"
+        + "           l.name,\n"
+        + "           lr.parent_identifier,\n"
+        + "           pl.name,\n"
+        + "           array_length(lr.ancestry, 1) AS lvl\n"
+        + "    FROM location_relationship lr\n"
+        + "             inner join location l on l.identifier = lr.location_identifier\n"
+        + "             left join location pl on pl.identifier = lr.parent_identifier\n"
+        + "    WHERE l.identifier in :locationIdentifiers\n"
+        + "      and lr.location_hierarchy_identifier = :hierarchyIdentifier\n"
+        + "    UNION ALL\n"
+        + "    SELECT DISTINCT lr2.location_identifier,\n"
+        + "                    l2.name,\n"
+        + "                    pl.identifier,\n"
+        + "                    pl.name,\n"
+        + "                    array_length(lr2.ancestry, 1)\n"
+        + "    from ancestors a\n"
+        + "             inner join location_relationship lr2 on lr2.location_identifier = a.parent_id\n"
+        + "             inner join location l2 on l2.identifier = lr2.location_identifier\n"
+        + "             left join location pl on pl.identifier = lr2.parent_identifier\n"
+        + "    WHERE lr2.location_hierarchy_identifier = :hierarchyIdentifier\n"
+        + ")\n"
+        + "SELECT cast(a.id as varchar)        as locationId,\n"
+        + "       a.lname                      as locationName,\n"
+        + "       cast(a.parent_id as varchar) as parentId,\n"
+        + "       a.pname                      as parentName,\n"
+        + "       coalesce(a.lvl, 0)           as nodeLevel\n"
+        + "from ancestors a;", nativeQuery = true)
+    List<ParentMapProjection> getParentMap(List<UUID> locationIdentifiers, UUID hierarchyIdentifier);
 
     List<Location> getLocationsByPeople_Identifier(UUID personIdentifier);
 

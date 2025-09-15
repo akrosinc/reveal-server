@@ -88,22 +88,23 @@ public class MetaFieldSetMapper {
 
   public List<MetaImportDTO> mapMetaFieldsDB(ValidatedTagMap validatedTagMap,
       XSSFSheet sheet, Map<UUID, Location> locationMap, Map<UUID, LocationHierarchy> hierarchyMap,
-      int rowCount) throws FileFormatException {
+      int rowCount, int startingColForTags) throws FileFormatException {
     //starting from 1st
 
     XSSFRow tagNameRow = sheet.getRow(0);
 
     return extractMetadata(
-        sheet, tagNameRow, validatedTagMap, rowCount, locationMap, hierarchyMap);
+        sheet, tagNameRow, validatedTagMap, rowCount, locationMap, hierarchyMap,
+        startingColForTags);
   }
 
 
   public ValidatedTagMap getTagsMap(XSSFSheet sheet,
-      MetadataImport currentMetaImport, XSSFRow tagNameRow, int cellCount,
-      User currentUser, String newGeoLevel) {
+      MetadataImport currentMetaImport, XSSFRow tagNameRow, int endColForTags,
+      User currentUser, String newGeoLevel, int startColForTags) {
     XSSFRow tagDataTypeRow = sheet.getRow(1);
 
-    Map<String, TagHelper> metadataTagNames = IntStream.range(4, cellCount)
+    Map<String, TagHelper> metadataTagNames = IntStream.range(startColForTags, endColForTags)
         .mapToObj(i -> new TagHelper(tagNameRow.getCell(i).getStringCellValue(),
             tagDataTypeRow.getCell(i).getStringCellValue(),
             UserUtils.getCurrentPrinciple())
@@ -117,7 +118,8 @@ public class MetaFieldSetMapper {
 
   private List<MetaImportDTO> extractMetadata(XSSFSheet sheet, XSSFRow tagNameRow,
       ValidatedTagMap validatedTagMap, int rowCount,
-      Map<UUID, Location> locationMap, Map<UUID, LocationHierarchy> hierarchyMap) {
+      Map<UUID, Location> locationMap, Map<UUID, LocationHierarchy> hierarchyMap,
+      int startingColForTags) {
     List<MetaImportDTO> metaImportDTOS = new ArrayList<>();
     boolean searchedLocationHierarchy = false;
 
@@ -139,7 +141,7 @@ public class MetaFieldSetMapper {
         metaImportDTO.setLocation(getLocation(locationMap, i,
             dataRow, 1));
 
-        SheetData sheetData = setMetadata(tagNameRow, validatedTagMap, dataRow);
+        SheetData sheetData = setMetadata(tagNameRow, validatedTagMap, dataRow, startingColForTags);
         metaImportDTO.setSheetData(sheetData);
 
       } else {
@@ -152,14 +154,15 @@ public class MetaFieldSetMapper {
   }
 
   private SheetData setMetadata(XSSFRow tagNameRow, ValidatedTagMap validatedTagMap,
-      XSSFRow dataRow) {
+      XSSFRow dataRow, int startingColForTags) {
     EntityTagEvent entityTag;
     SheetData sheetData = new SheetData();
 
-    Map<String, EntityTagEvent> onlyNonAggregateTags = validatedTagMap.getEntityTagEventMap().entrySet().stream()
+    Map<String, EntityTagEvent> onlyNonAggregateTags = validatedTagMap.getEntityTagEventMap()
+        .entrySet().stream()
         .filter(entry -> !entry.getValue().isAggregate()).collect(
             Collectors.toMap(Entry::getKey, Entry::getValue));
-    for (int j = 4; j < 4 + onlyNonAggregateTags.size(); j++) {
+    for (int j = startingColForTags; j < startingColForTags + onlyNonAggregateTags.size(); j++) {
       Object value = null;
       Object sheetValue;
       if (dataRow.getCell(j).getRawValue() == null) {
@@ -332,7 +335,8 @@ public class MetaFieldSetMapper {
           .metadataImport(currentMetaImport)
           .build();
 
-      return entityTagService.createEntityTagsSkipExisting(entityTagRequest, true,newGeographicLevel).stream();
+      return entityTagService.createEntityTagsSkipExisting(entityTagRequest, true,
+          newGeographicLevel).stream();
     }).collect(Collectors.toList());
 
     Map<String, EntityTagEvent> createdEntityTagEvents = createdTags.stream().map(entityTag -> {
@@ -360,10 +364,12 @@ public class MetaFieldSetMapper {
   }
 
   @Builder
-  @Setter @Getter
+  @Setter
+  @Getter
   @AllArgsConstructor
   @NoArgsConstructor
-  public static class ValidatedTagMap{
+  public static class ValidatedTagMap {
+
     private Map<String, EntityTagEvent> entityTagEventMap;
     private Set<EntityTag> entityTags;
   }
@@ -446,7 +452,8 @@ public class MetaFieldSetMapper {
 
   public void validateGeographicLevels(
       Set<String> geographicLevels, ValidatedTagMap validatedTagMap) {
-    List<Entry<String, EntityTagEvent>> unMatchingExistingGeoLevels = validatedTagMap.getEntityTagEventMap().entrySet()
+    List<Entry<String, EntityTagEvent>> unMatchingExistingGeoLevels = validatedTagMap.getEntityTagEventMap()
+        .entrySet()
         .stream()
         .filter(entityTagEventEntry -> !geographicLevels.contains(
             entityTagEventEntry.getValue().getUploadGeo().getName()))
@@ -484,6 +491,42 @@ public class MetaFieldSetMapper {
         || cellCount < 4) {
       cellCount++;
       cell = headerRow.getCell(cellCount);
+    }
+
+    return cellCount;
+  }
+
+  public int getStartingColForTags(XSSFRow colIdentifierRow) {
+    int physicalNumberOfCells = colIdentifierRow.getPhysicalNumberOfCells();
+    if (physicalNumberOfCells > 1) {
+      log.info("Import file has metadata columns");
+    } else {
+      throw new FileFormatException(
+          "File is does not have any metadata columns.");
+    }
+    int cellCount = 0;
+    XSSFCell cell = colIdentifierRow.getCell(cellCount);
+    while ((cell != null && cell.getRawValue() != null && !cell.getRawValue().equals(""))) {
+      cellCount++;
+      cell = colIdentifierRow.getCell(cellCount);
+    }
+
+    return cellCount;
+  }
+
+  public int getEndingColForTags(int startColForTags, XSSFRow colIdentifierRow) {
+    int physicalNumberOfCells = colIdentifierRow.getPhysicalNumberOfCells();
+    if (physicalNumberOfCells > 1) {
+      log.info("Import file has metadata columns");
+    } else {
+      throw new FileFormatException(
+          "File is does not have any metadata columns.");
+    }
+    int cellCount = startColForTags;
+    XSSFCell cell = colIdentifierRow.getCell(cellCount);
+    while ((cell != null && cell.getRawValue() != null && !cell.getRawValue().equals(""))) {
+      cellCount++;
+      cell = colIdentifierRow.getCell(cellCount);
     }
 
     return cellCount;

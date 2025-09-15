@@ -118,6 +118,12 @@ public class MetadataService {
 
       int cellCount = metaFieldSetMapper.getPhysicalNumberOfCells(tagNameRow);
 
+      XSSFRow colIdentifierRow = sheet.getRow(2);
+
+      int startingColForTags = metaFieldSetMapper.getStartingColForTags(colIdentifierRow);
+
+      int endingColForTags = metaFieldSetMapper.getEndingColForTags(startingColForTags, tagNameRow);
+
       int fileRowsCount = metaFieldSetMapper.getFileRowsCount(sheet);
 
       Set<UUID> locationList = metaFieldSetMapper.extractIdsFor(sheet, fileRowsCount, 1,
@@ -134,9 +140,9 @@ public class MetadataService {
           hierarchyList);
 
       ValidatedTagMap validatedTagMap = metaFieldSetMapper.getTagsMap(
-          sheet, currentMetaImport, tagNameRow, cellCount, currentUser,
+          sheet, currentMetaImport, tagNameRow, endingColForTags, currentUser,
           geoLevels.stream().findFirst().orElseThrow(
-              () -> new FileFormatException("Geographic Levels passed in file is invalid")));
+              () -> new FileFormatException("Geographic Levels passed in file is invalid")),startingColForTags);
 
       metaFieldSetMapper.validateGeographicLevels(geoLevels, validatedTagMap);
 
@@ -144,7 +150,7 @@ public class MetadataService {
 
       List<MetaImportDTO> metaImportDTOS = metaFieldSetMapper.mapMetaFieldsDB(validatedTagMap,
           sheet,
-          locationMap, hierarchyMap, rowCount);
+          locationMap, hierarchyMap, rowCount,startingColForTags);
 
       if (metaImportDTOS.stream().map(metaImportDTO -> metaImportDTO.getSheetData().getErrors())
           .map(Map::size).reduce(0, Integer::sum) > 1) {
