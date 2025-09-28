@@ -3,7 +3,6 @@ package com.revealprecision.revealserver.api.v1.facade.models;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.io.Serializable;
-import java.util.Objects;
 import java.util.Set;
 import lombok.Builder;
 import lombok.Data;
@@ -23,7 +22,11 @@ public class HdssCompoundObj implements Serializable {
 
   Set<HdssIndividual> allIndividuals;
 
+  Set<HdssHousehold> allHouseholds;
+
   Set<String> allHouseholdIndividualToDelete;
+
+  Set<String> allCompoundHouseholdToDelete;
 
   boolean isEmpty;
 
@@ -38,22 +41,6 @@ public class HdssCompoundObj implements Serializable {
     private long serverVersion;
     private String compoundId;
 
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null || getClass() != o.getClass()) {
-        return false;
-      }
-      HdssCompound that = (HdssCompound) o;
-      return serverVersion == that.serverVersion && compoundId.equals(that.compoundId);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(serverVersion, compoundId);
-    }
   }
 
   @Data
@@ -64,23 +51,6 @@ public class HdssCompoundObj implements Serializable {
     private String compoundId;
     private String householdId;
 
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null || getClass() != o.getClass()) {
-        return false;
-      }
-      HdssCompoundHousehold that = (HdssCompoundHousehold) o;
-      return serverVersion == that.serverVersion && compoundId.equals(that.compoundId)
-          && householdId.equals(that.householdId);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(serverVersion, compoundId, householdId);
-    }
   }
 
   @Data
@@ -91,23 +61,6 @@ public class HdssCompoundObj implements Serializable {
     private String householdId;
     private String individualId;
 
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null || getClass() != o.getClass()) {
-        return false;
-      }
-      HdssHouseholdIndividual that = (HdssHouseholdIndividual) o;
-      return serverVersion == that.serverVersion && householdId.equals(that.householdId)
-          && individualId.equals(that.individualId);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(serverVersion, householdId, individualId);
-    }
   }
 
   @Data
@@ -118,23 +71,6 @@ public class HdssCompoundObj implements Serializable {
     private String householdId;
     private String structureId;
 
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null || getClass() != o.getClass()) {
-        return false;
-      }
-      HdssHouseholdStructure that = (HdssHouseholdStructure) o;
-      return serverVersion == that.serverVersion && householdId.equals(that.householdId)
-          && structureId.equals(that.structureId);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(serverVersion, householdId, structureId);
-    }
   }
 
   @Data
@@ -147,27 +83,19 @@ public class HdssCompoundObj implements Serializable {
     private String dob;
     private String gender;
     private String name;
+    private String cluster;
     private String floatingLocationId;
     private String floatingLocationName;
     private String floatingLocationGeographicLevel;
+  }
 
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null || getClass() != o.getClass()) {
-        return false;
-      }
-      HdssIndividual that = (HdssIndividual) o;
-      return serverVersion == that.serverVersion && identifier.equals(that.identifier)
-          && individualId.equals(that.individualId) && dob.equals(that.dob) && gender.equals(
-          that.gender);
-    }
+  @Data
+  @Builder
+  public static class HdssHousehold implements Serializable {
 
-    @Override
-    public int hashCode() {
-      return Objects.hash(serverVersion, identifier, individualId, dob, gender);
-    }
+    private long serverVersion;
+    private String householdId;
+    private String floatingHouseholdLocationName;
+
   }
 }

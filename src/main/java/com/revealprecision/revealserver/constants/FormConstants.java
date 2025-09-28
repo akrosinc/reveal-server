@@ -140,6 +140,11 @@ public interface FormConstants {
   String PASSIVE_CASE_DETECTION_HEALTH_WORKER_SUPERVISOR_FIELD = "health_worker_supervisor";
   String PASSIVE_CASE_DETECTION_LOCATION_FIELD = "location";
 
+  String RCD = "rcd";
+  String INDEX_CASE_MEMBER = "index_case_member";
+  String PARASITOLOGY = "parasitology";
+  String ADD_MEMBER = "add_member";
+
   interface BusinessStatus {
 
     String NOT_DISPENSED = "Not Dispensed";

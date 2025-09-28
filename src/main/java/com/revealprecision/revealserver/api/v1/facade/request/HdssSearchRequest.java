@@ -13,4 +13,10 @@ public class HdssSearchRequest implements Serializable  {
   private String dob;
 
   private String name;
+
+  private String cluster;
+
+  private String startAge;
+
+  private String endAge;
 }

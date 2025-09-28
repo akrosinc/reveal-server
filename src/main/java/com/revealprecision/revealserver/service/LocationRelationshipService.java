@@ -278,7 +278,7 @@ public class LocationRelationshipService {
         locationIdentifier, locationHierarchyIdentifier);
   }
 
-  public Map<UUID, Location> getLocationRelationshipsForLocations(
+  public Map<UUID, Location> getLocationRelationshipLocationsForLocations(
       UUID locationHierarchyIdentifier, List<UUID> locationIdentifiers) {
     return locationRelationshipRepository.getLocationRelationshipByLocation_IdentifierInAndLocationHierarchy_Identifier(
         locationIdentifiers, locationHierarchyIdentifier).stream().collect(
@@ -286,6 +286,13 @@ public class LocationRelationshipService {
             locationRelationship ->
                 locationRelationship.getParentLocation() == null ? new Location()
                     : locationRelationship.getParentLocation(), (a, b) -> b));
+
+  }
+
+  public List<LocationRelationship> getLocationRelationshipsForLocations(
+      UUID locationHierarchyIdentifier, List<UUID> locationIdentifiers) {
+    return locationRelationshipRepository.getLocationRelationshipByLocation_IdentifierInAndLocationHierarchy_Identifier(
+        locationIdentifiers, locationHierarchyIdentifier);
 
   }
 

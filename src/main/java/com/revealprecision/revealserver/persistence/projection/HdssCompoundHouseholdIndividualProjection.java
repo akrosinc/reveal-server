@@ -10,6 +10,8 @@ public interface HdssCompoundHouseholdIndividualProjection {
 
   String getIndividualId();
 
+  String getCluster();
+
   String getName();
 
   String getDob();
@@ -25,4 +27,6 @@ public interface HdssCompoundHouseholdIndividualProjection {
   String getFloatingLocationName();
 
   String getFloatingLocationGeographicLevel();
+
+  String getFloatingHouseholdLocationName();
 }

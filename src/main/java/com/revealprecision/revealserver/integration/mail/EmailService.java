@@ -1,26 +1,31 @@
 package com.revealprecision.revealserver.integration.mail;
 
 import java.util.List;
+import javax.mail.MessagingException;
+import javax.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
 @Profile("Email")
+@Slf4j
 public class EmailService {
 
   private final JavaMailSender mailSender;
 
-  public void sendEmail(List<String> to,String subject, String body) {
-    SimpleMailMessage message = new SimpleMailMessage();
-
+  public void sendEmail(List<String> to,String subject, String body) throws MessagingException {
+    MimeMessage message = mailSender.createMimeMessage();
+    MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
     String[] to_ = to.toArray(new String[]{});
-    message.setTo(to_);
-    message.setSubject(subject);
-    message.setText(body);
+    helper.setTo(to_);
+    helper.setSubject(subject);
+    helper.setText(body,true);
+    log.info("Email body: {}",body);
     mailSender.send(message);
   }
 

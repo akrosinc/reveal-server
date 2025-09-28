@@ -16,6 +16,7 @@ import com.revealprecision.revealserver.props.HdssProperties;
 import com.revealprecision.revealserver.service.TaskService;
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -23,6 +24,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import javax.mail.MessagingException;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -43,7 +45,7 @@ public class HdssProcessingListener extends Listener {
   public static String INDIVIDUAL = "individual";
 
   public static String INDIVIDUAL_HOUSEHOLD_COMPOUND_SEARCH = "individual_household_compound_search";
-
+  public static String ICC_PHONE = "icc_phone";
   public static String COMPOUND = "compound";
 
   public static String HOUSEHOLD = "household";
@@ -71,6 +73,9 @@ public class HdssProcessingListener extends Listener {
     String individualHouseholdCompound = getValue(observations,
         INDIVIDUAL_HOUSEHOLD_COMPOUND_SEARCH);
 
+    String phoneNumber = getValue(observations,
+        ICC_PHONE);
+
     try {
       log.info("individualHouseholdCompounds: {}", individualHouseholdCompound);
       if (individualHouseholdCompound != null) {
@@ -92,7 +97,7 @@ public class HdssProcessingListener extends Listener {
               indexHousehold);
           log.debug("compoundId: {}", compoundId);
 
-          List<UUID> allStructuresInCompound = hdssCompoundsRepository.getDistinctStructuresByCompoundId(
+          List<UUID> allStructuresInCompound = hdssCompoundsRepository.getDistinctStructuresByCompoundIdExcludingNullStructures(
               compoundId);
           log.debug("allStructuresInCompound: {}", allStructuresInCompound);
 
@@ -100,7 +105,7 @@ public class HdssProcessingListener extends Listener {
               individualHouseholdCompound);
           log.debug("indexIndividual: {}", indexIndividual.getIndividualId());
 
-          List<HdssIndividualProjection> allIndividualsInCompound = hdssCompoundsRepository.getAllIndividualsInCompoundId(
+          List<HdssIndividualProjection> allIndividualsInCompound = hdssCompoundsRepository.getAllIndividualsInCompoundIdWithStructure(
               compoundId);
           allIndividualsInCompound.remove(indexIndividual);
           List<HdssIndividualProjection> allIndividualsExcludingIndex = allIndividualsInCompound.stream()
@@ -118,7 +123,7 @@ public class HdssProcessingListener extends Listener {
               HdssIndividualProjection::getIndividualId).collect(
               Collectors.joining("|")));
 
-          List<String> allHouseholdsInCompound = hdssCompoundsRepository.getDistinctHouseholdsByCompoundId(
+          List<String> allHouseholdsInCompound = hdssCompoundsRepository.getDistinctHouseholdsByCompoundIdWithStructure(
               compoundId);
           log.debug("allHouseholdsInCompound: {}", allHouseholdsInCompound);
 
@@ -183,7 +188,7 @@ public class HdssProcessingListener extends Listener {
 
               sendEmails(individualHouseholdCompound, indexStructure, indexHousehold, compoundId,
                   allStructuresInCompound,
-                  allHouseholdsInCompound, targetPlan);
+                  allHouseholdsInCompound, targetPlan, indexIndividual, phoneNumber);
 
               List<Goal> goalsByPlan_identifier = goalRepository.findGoalsByPlan_Identifier(
                   targetPlan);
@@ -235,18 +240,18 @@ public class HdssProcessingListener extends Listener {
                 submitTasks(owner, List.of(indexStructure), targetPlan, actions,
                     ActionTitleEnum.INDEX_CASE);
 
-                log.debug("submitting rcd member {}", allIndividualsExcludingIndex);
-                allIndividualsExcludingIndex.stream()
-                    .map(individualObj -> UUID.fromString(individualObj.getId()))
-                    .forEach(
-                        individualId -> submitTasks(owner, List.of(individualId), targetPlan,
-                            actions,
-                            ActionTitleEnum.RCD_MEMBER));
-
-                log.debug("submitting rcd  {}", allStructuresInCompound);
-                allStructuresInCompound.forEach(
-                    structure -> submitTasks(owner, List.of(structure), targetPlan, actions,
-                        ActionTitleEnum.RCD));
+//                log.debug("submitting rcd member {}", allIndividualsExcludingIndex);
+//                allIndividualsExcludingIndex.stream()
+//                    .map(individualObj -> UUID.fromString(individualObj.getId()))
+//                    .forEach(
+//                        individualId -> submitTasks(owner, List.of(individualId), targetPlan,
+//                            actions,
+//                            ActionTitleEnum.RCD_MEMBER));
+//
+//                log.debug("submitting rcd  {}", allStructuresInCompound);
+//                allStructuresInCompound.stream().filter(Objects::nonNull).forEach(
+//                    structure -> submitTasks(owner, List.of(structure), targetPlan, actions,
+//                        ActionTitleEnum.RCD));
               }
             }
           }
@@ -259,38 +264,64 @@ public class HdssProcessingListener extends Listener {
 
   private void sendEmails(String individual, UUID indexStructure, String indexHousehold,
       List<String> compoundId, List<UUID> allStructuresInCompound,
-      List<String> allHouseholdsInCompound, UUID targetPlan) {
+      List<String> allHouseholdsInCompound, UUID targetPlan,
+      HdssIndividualProjection indexIndividual, String phoneNumber) {
+    List<String> collect = new ArrayList<>();
     if (hdssProperties.isSendToOverrideEmail()) {
       String[] split = hdssProperties.getOverrideEmailList().split(";");
-      List<String> collect = Arrays.stream(split).collect(Collectors.toList());
-      sendMail(collect, individual, indexStructure, indexHousehold, allStructuresInCompound,
-          allHouseholdsInCompound);
+       collect = Arrays.stream(split).collect(Collectors.toList());
+//      sendMail(collect, individual, indexStructure, indexHousehold, allStructuresInCompound,
+//          allHouseholdsInCompound, indexIndividual, phoneNumber);
+      log.info("emailing is overridden");
     } else {
       for (String compoundItem : compoundId) {
         List<String> userEmailsByCompoundIdAndPlan = hdssCompoundsRepository.getUserEmailsByCompoundIdAndPlan(
             compoundItem, targetPlan);
-        if (userEmailsByCompoundIdAndPlan != null && userEmailsByCompoundIdAndPlan.size() > 0) {
-          sendMail(userEmailsByCompoundIdAndPlan, individual, indexStructure, indexHousehold,
-              allStructuresInCompound, allHouseholdsInCompound);
 
+        if (userEmailsByCompoundIdAndPlan != null && userEmailsByCompoundIdAndPlan.size() > 0) {
+          collect.addAll(userEmailsByCompoundIdAndPlan);
+          String[] split = hdssProperties.getOverrideEmailList().split(";");
+          List<String> override = Arrays.stream(split).collect(Collectors.toList());
+          collect.addAll(override);
+//          sendMail(userEmailsByCompoundIdAndPlan, individual, indexStructure, indexHousehold,
+//              allStructuresInCompound, allHouseholdsInCompound, indexIndividual, phoneNumber);
+          log.info("userEmailsByCompoundIdAndPlan is not null");
         } else {
           String[] split = hdssProperties.getDefaultEmailList().split(";");
-          List<String> collect = Arrays.stream(split).collect(Collectors.toList());
-          sendMail(collect, individual, indexStructure, indexHousehold, allStructuresInCompound,
-              allHouseholdsInCompound);
+          collect = Arrays.stream(split).collect(Collectors.toList());
+//          sendMail(collect, individual, indexStructure, indexHousehold, allStructuresInCompound,
+//              allHouseholdsInCompound, indexIndividual, phoneNumber);
+          log.info("userEmailsByCompoundIdAndPlan is null");
         }
       }
     }
+    log.info("email list: {}",collect);
+    sendMail(collect, individual, indexStructure, indexHousehold,
+        allStructuresInCompound, allHouseholdsInCompound, indexIndividual, phoneNumber);
   }
 
   private void sendMail(List<String> collect, String individual, UUID indexStructure,
       String indexHousehold, List<UUID> allStructuresInCompound,
-      List<String> allHouseholdsInCompound) {
-    emailService.sendEmail(collect, "individual " + individual,
-        indexStructure.toString().concat("-").concat(indexHousehold).concat("\r\n\r\n")
-            .concat(allStructuresInCompound.stream().map(UUID::toString).collect(
-                Collectors.joining(","))).concat("\r\n\r\n")
-            .concat(String.join(",", allHouseholdsInCompound)));
+      List<String> allHouseholdsInCompound, HdssIndividualProjection indexIndividual,
+      String phoneNumber) {
+    try {
+      String body = "<p><b>Structure: </b>".concat(indexStructure.toString()).concat("</p>")
+          .concat("<p><b>Household: </b>").concat(indexHousehold).concat("</p>")
+          .concat("<p><b><u>Individual Details: </u><b></p>")
+          .concat("<p><b>Name: </b>").concat(indexIndividual.getIndName()).concat("</p>")
+          .concat("<p><b>Date of Birth: </b>").concat(indexIndividual.getDob().toString())
+          .concat("</p>")
+          .concat("<p><b>Gender: </b>").concat(indexIndividual.getGender().toString())
+          .concat("</p>");
+
+      if (phoneNumber != null && !phoneNumber.equals("")) {
+        body = body.concat("<p>Phone Number:").concat(phoneNumber).concat("</p>");
+      }
+      emailService.sendEmail(collect.stream().filter(Objects::nonNull).collect(Collectors.toList()), "Index Case Notification: " + individual,
+          body);
+    } catch (MessagingException e) {
+      log.error(e.getMessage(), e);
+    }
   }
 
 

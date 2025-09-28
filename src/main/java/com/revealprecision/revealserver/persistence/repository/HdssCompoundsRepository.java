@@ -58,6 +58,7 @@ public interface HdssCompoundsRepository extends EntityGraphJpaRepository<HdssCo
       + "                hc.compound_id                                         as compoundId,\n"
       + "                hc.household_id                                        as householdId,\n"
       + "                hc.individual_id                                       as individualId,\n"
+      + "                lp.name                                                as cluster,\n"
       + "                hc.fields ->> 'gender'                                 as gender,\n"
       + "                CAST(hc.fields ->> 'dob' as date)                      as dob,\n"
       + "                hc.server_version                                      as serverVersion,\n"
@@ -65,7 +66,8 @@ public interface HdssCompoundsRepository extends EntityGraphJpaRepository<HdssCo
       + "                hc.name                                                as name,\n"
       + "                cast(hc.floating_location_id as varchar)               as floatingLocationId,\n"
       + "                cast(hc.floating_location_name as varchar)             as floatingLocationName,\n"
-      + "                cast(hc.floating_location_geographic_level as varchar) as floatingLocationGeographicLevel\n"
+      + "                cast(hc.floating_location_geographic_level as varchar) as floatingLocationGeographicLevel,\n"
+      + "                cast(hc.floating_household_location_name as varchar)             as floatingHouseholdLocationName\n"
       + "FROM hdss.hdss_compounds hc\n"
       + "         LEFT JOIN\n"
       + "\n"
@@ -109,12 +111,160 @@ public interface HdssCompoundsRepository extends EntityGraphJpaRepository<HdssCo
       + "                                            left join users u on u.identifier = uo.user_identifier\n"
       + "                                   WHERE gl.name =\n"
       + "                                         lh.node_order[array_position(lh.node_order, pgl.name) - 1]\n"
-      + "                                     and u.username = :username))\n"
+      + "                                     and u.username = :username"
+      + ") or hc.floating_household_location_name  in (SELECT l.name\n"
+      + "                                   from plan_assignment pa\n"
+      + "                                            inner join organization o on pa.organization_identifier = o.identifier\n"
+      + "                                            left join plan_locations pl\n"
+      + "                                                      on pl.identifier = pa.plan_locations_identifier\n"
+      + "                                            left join location l on l.identifier = pl.location_identifier\n"
+      + "                                            left join geographic_level gl\n"
+      + "                                                      on gl.identifier = l.geographic_level_identifier\n"
+      + "                                            left join plan p on pl.plan_identifier = p.identifier\n"
+      + "                                            left join location_hierarchy lh\n"
+      + "                                                      on p.hierarchy_identifier = lh.identifier\n"
+      + "                                            left join plan_target_type ptt on ptt.plan_identifier = p.identifier\n"
+      + "                                            left join geographic_level pgl\n"
+      + "                                                      on ptt.geographic_level_identifier = pgl.identifier\n"
+      + "                                            left join user_organization uo\n"
+      + "                                                      on o.identifier = uo.organization_identifier\n"
+      + "                                            left join users u on u.identifier = uo.user_identifier\n"
+      + "                                   WHERE gl.name =\n"
+      + "                                         lh.node_order[array_position(lh.node_order, pgl.name) - 1]\n"
+      + "                                     and u.username = :username"
+      + ")"
+      + ")\n"
       + "  and hc.server_version > :serverVersion\n"
       + "order by hc.server_version\n"
       + "\n"
       + "LIMIT :batchSize",nativeQuery = true)
   List<HdssCompoundHouseholdIndividualProjection> getAllCompoundsForUserAssignmentAndServerVersionAndBatchSize(String username, long serverVersion, int batchSize);
+
+  @Query(value = "SELECT DISTINCT cast(hc.id as varchar)                                 as id,\n"
+      + "                hc.compound_id                                         as compoundId,\n"
+      + "                hc.household_id                                        as householdId,\n"
+      + "                hc.individual_id                                       as individualId,\n"
+      + "                lp.name                                                as cluster,\n"
+      + "                hc.fields ->> 'gender'                                 as gender,\n"
+      + "                CAST(hc.fields ->> 'dob' as date)                      as dob,\n"
+      + "                hc.server_version                                      as serverVersion,\n"
+      + "                cast(hc.structure_id as varchar)                       as structureId,\n"
+      + "                hc.name                                                as name,\n"
+      + "                cast(hc.floating_location_id as varchar)               as floatingLocationId,\n"
+      + "                cast(hc.floating_location_name as varchar)             as floatingLocationName,\n"
+      + "                cast(hc.floating_location_geographic_level as varchar) as floatingLocationGeographicLevel,\n"
+      + "                cast(hc.floating_household_location_name as varchar)             as floatingHouseholdLocationName\n"
+      + "FROM hdss.hdss_compounds hc\n"
+      + "         LEFT JOIN\n"
+      + "\n"
+      + "     (SELECT lr.location_identifier as child_location, arr.ancestor\n"
+      + "      from location_relationship lr,\n"
+      + "           unnest(lr.ancestry) with ordinality arr(ancestor, pos)\n"
+      + "     ) as lr on lr.child_location = hc.structure_id\n"
+      + "         left join location lp on lr.ancestor = lp.identifier\n"
+      + "\n"
+      + "WHERE (lr.ancestor  in (\n"
+      + "    SELECT l.identifier \n"
+      + "    from plan_assignment pa\n"
+      + "             inner join organization o on pa.organization_identifier = o.identifier\n"
+      + "             left join plan_locations pl on pl.identifier = pa.plan_locations_identifier\n"
+      + "             left join location l on l.identifier = pl.location_identifier\n"
+      + "             left join geographic_level gl on gl.identifier = l.geographic_level_identifier\n"
+      + "             left join plan p on pl.plan_identifier = p.identifier\n"
+      + "             left join location_hierarchy lh on p.hierarchy_identifier = lh.identifier\n"
+      + "             left join plan_target_type ptt on ptt.plan_identifier = p.identifier\n"
+      + "             left join geographic_level pgl on ptt.geographic_level_identifier = pgl.identifier\n"
+      + "             left join user_organization uo on o.identifier = uo.organization_identifier\n"
+      + "             left join users u on u.identifier = uo.user_identifier\n"
+      + "    WHERE gl.name = lh.node_order[array_position(lh.node_order, pgl.name) - 1]\n"
+      + "      and u.username = :username\n"
+      + ") or hc.floating_location_name in (SELECT l.name\n"
+      + "                                   from plan_assignment pa\n"
+      + "                                            inner join organization o on pa.organization_identifier = o.identifier\n"
+      + "                                            left join plan_locations pl\n"
+      + "                                                      on pl.identifier = pa.plan_locations_identifier\n"
+      + "                                            left join location l on l.identifier = pl.location_identifier\n"
+      + "                                            left join geographic_level gl\n"
+      + "                                                      on gl.identifier = l.geographic_level_identifier\n"
+      + "                                            left join plan p on pl.plan_identifier = p.identifier\n"
+      + "                                            left join location_hierarchy lh\n"
+      + "                                                      on p.hierarchy_identifier = lh.identifier\n"
+      + "                                            left join plan_target_type ptt on ptt.plan_identifier = p.identifier\n"
+      + "                                            left join geographic_level pgl\n"
+      + "                                                      on ptt.geographic_level_identifier = pgl.identifier\n"
+      + "                                            left join user_organization uo\n"
+      + "                                                      on o.identifier = uo.organization_identifier\n"
+      + "                                            left join users u on u.identifier = uo.user_identifier\n"
+      + "                                   WHERE gl.name =\n"
+      + "                                         lh.node_order[array_position(lh.node_order, pgl.name) - 1]\n"
+      + "                                     and u.username = :username"
+      + ") or hc.floating_household_location_name  in (SELECT l.name\n"
+      + "                                   from plan_assignment pa\n"
+      + "                                            inner join organization o on pa.organization_identifier = o.identifier\n"
+      + "                                            left join plan_locations pl\n"
+      + "                                                      on pl.identifier = pa.plan_locations_identifier\n"
+      + "                                            left join location l on l.identifier = pl.location_identifier\n"
+      + "                                            left join geographic_level gl\n"
+      + "                                                      on gl.identifier = l.geographic_level_identifier\n"
+      + "                                            left join plan p on pl.plan_identifier = p.identifier\n"
+      + "                                            left join location_hierarchy lh\n"
+      + "                                                      on p.hierarchy_identifier = lh.identifier\n"
+      + "                                            left join plan_target_type ptt on ptt.plan_identifier = p.identifier\n"
+      + "                                            left join geographic_level pgl\n"
+      + "                                                      on ptt.geographic_level_identifier = pgl.identifier\n"
+      + "                                            left join user_organization uo\n"
+      + "                                                      on o.identifier = uo.organization_identifier\n"
+      + "                                            left join users u on u.identifier = uo.user_identifier\n"
+      + "                                   WHERE gl.name =\n"
+      + "                                         lh.node_order[array_position(lh.node_order, pgl.name) - 1]\n"
+      + "                                     and u.username = :username"
+      + ")"
+      + ")\n"
+      + "  and hc.server_version > :serverVersion order by hc.server_version asc"
+      + "",nativeQuery = true)
+  List<HdssCompoundHouseholdIndividualProjection> getAllCompoundsForUserAssignmentAndServerVersion(String username, long serverVersion);
+
+
+  @Query(value = "SELECT DISTINCT cast(hc.id as varchar)                                 as id,\n"
+      + "                hc.compound_id                                         as compoundId,\n"
+      + "                hc.household_id                                        as householdId,\n"
+      + "                hc.individual_id                                       as individualId,\n"
+      + "                lp.name                                                as cluster,\n"
+      + "                hc.fields ->> 'gender'                                 as gender,\n"
+      + "                CAST(hc.fields ->> 'dob' as date)                      as dob,\n"
+      + "                hc.server_version                                      as serverVersion,\n"
+      + "                cast(hc.structure_id as varchar)                       as structureId,\n"
+      + "                hc.name                                                as name,\n"
+      + "                cast(hc.floating_location_id as varchar)               as floatingLocationId,\n"
+      + "                cast(hc.floating_location_name as varchar)             as floatingLocationName,\n"
+      + "                cast(hc.floating_location_geographic_level as varchar) as floatingLocationGeographicLevel,\n"
+      + "                cast(hc.floating_household_location_name as varchar)             as floatingHouseholdLocationName\n"
+      + "FROM hdss.hdss_compounds hc\n"
+      + "         LEFT JOIN\n"
+      + "\n"
+      + "     (SELECT lr.location_identifier as child_location, arr.ancestor\n"
+      + "      from location_relationship lr,\n"
+      + "           unnest(lr.ancestry) with ordinality arr(ancestor, pos)\n"
+      + "     ) as lr on lr.child_location = hc.structure_id\n"
+      + "         left join location lp on lr.ancestor = lp.identifier\n"
+      + "WHERE lr.ancestor  in (\n"
+      + "    SELECT l.identifier\n"
+      + "    from plan_assignment pa\n"
+      + "             inner join organization o on pa.organization_identifier = o.identifier\n"
+      + "             left join plan_locations pl on pl.identifier = pa.plan_locations_identifier\n"
+      + "             left join location l on l.identifier = pl.location_identifier\n"
+      + "             left join geographic_level gl on gl.identifier = l.geographic_level_identifier\n"
+      + "             left join plan p on pl.plan_identifier = p.identifier\n"
+      + "             left join location_hierarchy lh on p.hierarchy_identifier = lh.identifier\n"
+      + "             left join plan_target_type ptt on ptt.plan_identifier = p.identifier\n"
+      + "             left join geographic_level pgl on ptt.geographic_level_identifier = pgl.identifier\n"
+      + "             left join user_organization uo on o.identifier = uo.organization_identifier\n"
+      + "             left join users u on u.identifier = uo.user_identifier\n"
+      + "    WHERE gl.name = lh.node_order[array_position(lh.node_order, pgl.name) - 1]\n"
+      + "      and cast(u.username as varchar) = :userVal \n"
+      + ")"
+      + "",nativeQuery = true)
+  List<HdssCompoundHouseholdIndividualProjection> getAllCompoundsForUserAssignmentAndServerVersionV2(String userVal);
 
 
 
@@ -202,6 +352,7 @@ public interface HdssCompoundsRepository extends EntityGraphJpaRepository<HdssCo
       + "                hc.compound_id                                         as compoundId,\n"
       + "                hc.household_id                                        as householdId,\n"
       + "                hc.individual_id                                       as individualId,\n"
+      + "                lp.name                                                as cluster,\n"
       + "                hc.fields ->> 'gender'                                 as gender,\n"
       + "                CAST(hc.fields ->> 'dob' as date)                      as dob,\n"
       + "                hc.server_version                                      as serverVersion,\n"
@@ -253,8 +404,29 @@ public interface HdssCompoundsRepository extends EntityGraphJpaRepository<HdssCo
       + "                                            left join users u on u.identifier = uo.user_identifier\n"
       + "                                   WHERE gl.name =\n"
       + "                                         lh.node_order[array_position(lh.node_order, pgl.name) - 1]\n"
-      + "                                     and u.username = :username))\n"
-      + " ) as t ",nativeQuery = true)
+      + "                                     and u.username = :username"
+      + ") or hc.floating_household_location_name in (SELECT l.name\n"
+      + "                                   from plan_assignment pa\n"
+      + "                                            inner join organization o on pa.organization_identifier = o.identifier\n"
+      + "                                            left join plan_locations pl\n"
+      + "                                                      on pl.identifier = pa.plan_locations_identifier\n"
+      + "                                            left join location l on l.identifier = pl.location_identifier\n"
+      + "                                            left join geographic_level gl\n"
+      + "                                                      on gl.identifier = l.geographic_level_identifier\n"
+      + "                                            left join plan p on pl.plan_identifier = p.identifier\n"
+      + "                                            left join location_hierarchy lh\n"
+      + "                                                      on p.hierarchy_identifier = lh.identifier\n"
+      + "                                            left join plan_target_type ptt on ptt.plan_identifier = p.identifier\n"
+      + "                                            left join geographic_level pgl\n"
+      + "                                                      on ptt.geographic_level_identifier = pgl.identifier\n"
+      + "                                            left join user_organization uo\n"
+      + "                                                      on o.identifier = uo.organization_identifier\n"
+      + "                                            left join users u on u.identifier = uo.user_identifier\n"
+      + "                                   WHERE gl.name =\n"
+      + "                                         lh.node_order[array_position(lh.node_order, pgl.name) - 1]\n"
+      + "                                     and u.username = :username"
+      + ")"
+      + " )) as t ",nativeQuery = true)
   int getTotalCountOfCompoundsForUserAssignmentAndServerVersionAndBatchSize(String username);
 
   @Query(value = "SELECT\n"
@@ -292,8 +464,14 @@ public interface HdssCompoundsRepository extends EntityGraphJpaRepository<HdssCo
   @Query("SELECT DISTINCT  h.householdId FROM HdssCompounds h WHERE h.compoundId = :compoundId")
   List<String> getDistinctHouseholdsByCompoundId(List<String> compoundId);
 
+  @Query("SELECT DISTINCT  h.householdId FROM HdssCompounds h WHERE h.compoundId = :compoundId and h.structureId IS NOT NULL")
+  List<String> getDistinctHouseholdsByCompoundIdWithStructure(List<String> compoundId);
+
   @Query("SELECT DISTINCT  h.structureId FROM HdssCompounds h WHERE h.compoundId in :compoundId")
   List<UUID> getDistinctStructuresByCompoundId(List<String> compoundId);
+
+  @Query("SELECT DISTINCT  h.structureId FROM HdssCompounds h WHERE h.compoundId in :compoundId and h.structureId IS NOT NULL")
+  List<UUID> getDistinctStructuresByCompoundIdExcludingNullStructures(List<String> compoundId);
 
   @Query(value = "SELECT h.structureId  FROM HdssCompounds h WHERE h.individualId = :individualId ")
   UUID getStructureByIndividualId(String individualId);
@@ -309,12 +487,17 @@ public interface HdssCompoundsRepository extends EntityGraphJpaRepository<HdssCo
   List<HdssIndividualProjection> getAllIndividualsByHouseholdId(String householdId);
 
   @Query(value = "SELECT DISTINCT cast(hc.id as varchar) as id, hc.individual_id as individualId"
-      + ",CAST(hc.fields->>'dob' as date) as dob,fields->>'gender' as gender from  hdss.hdss_compounds hc WHERE hc.individual_id = :individualId", nativeQuery = true)
+      + ",CAST(hc.fields->>'dob' as date) as dob,fields->>'gender' as gender, hc.name as indName from  hdss.hdss_compounds hc WHERE hc.individual_id = :individualId", nativeQuery = true)
   HdssIndividualProjection getIndividualByIndividualId(String individualId);
 
   @Query(value = "SELECT DISTINCT cast(hc.id as varchar) as id, hc.individual_id as individualId"
       + ",CAST(hc.fields->>'dob' as date) as dob,fields->>'gender' as gender from  hdss.hdss_compounds hc WHERE hc.compound_id in :compoundId", nativeQuery = true)
   List<HdssIndividualProjection> getAllIndividualsInCompoundId(List<String> compoundId);
+
+  @Query(value = "SELECT DISTINCT cast(hc.id as varchar) as id, hc.individual_id as individualId, hc.household_id as householdId"
+      + ",CAST(hc.fields->>'dob' as date) as dob,fields->>'gender' as gender from  hdss.hdss_compounds hc WHERE hc.compound_id in :compoundId AND "
+      + "hc.structure_id IS NOT NULL", nativeQuery = true)
+  List<HdssIndividualProjection> getAllIndividualsInCompoundIdWithStructure(List<String> compoundId);
 
   List<HdssCompounds> findAllByIndividualIdIn(List<String> individualIds);
 }
