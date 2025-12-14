@@ -1,4 +1,4 @@
-FROM openjdk:11
+FROM amazoncorretto:11.0.29
 
 COPY reveal-server.jar /
 
