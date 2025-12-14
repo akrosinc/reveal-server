@@ -1,5 +1,7 @@
 package com.revealprecision.revealserver;
 
+import com.cosium.spring.data.jpa.entity.graph.repository.support.EntityGraphJpaRepositoryFactoryBean;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.n52.jackson.datatype.jts.JtsModule;
 import org.springframework.boot.SpringApplication;
@@ -9,6 +11,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.web.servlet.ServletComponentScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
@@ -21,8 +24,16 @@ import org.springframework.validation.beanvalidation.MethodValidationPostProcess
 @EnableConfigurationProperties
 @ServletComponentScan
 @EnableScheduling
+@RequiredArgsConstructor
+@EnableJpaRepositories(basePackages =
+    {
+        "com.revealprecision.revealserver.persistence.repository",
+        "com.revealprecision.revealserver.amdr.persistence.repository"
+    }
+    , repositoryFactoryBeanClass = EntityGraphJpaRepositoryFactoryBean.class)
 @EntityScan
 public class RevealServerApplication {
+
 
   public static void main(String[] args) {
     SpringApplication.run(RevealServerApplication.class, args);
@@ -45,4 +56,6 @@ public class RevealServerApplication {
   public JtsModule jtsModule() {
     return new JtsModule();
   }
+
+
 }

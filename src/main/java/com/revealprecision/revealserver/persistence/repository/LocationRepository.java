@@ -2,6 +2,7 @@ package com.revealprecision.revealserver.persistence.repository;
 
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.projection.LocationCoordinatesProjection;
+import com.revealprecision.revealserver.persistence.projection.LocationMainDataWithGeo;
 import com.revealprecision.revealserver.persistence.projection.LocationWithParentProjection;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 import java.util.List;
@@ -23,6 +24,13 @@ public interface LocationRepository extends JpaRepository<Location, UUID> {
 
   @Query(value = "select l from Location l where l.geographicLevel.identifier = :identifier")
   List<Location> findByGeographicLevelIdentifier(@Param("identifier") UUID identifier);
+
+  @Query(value =
+      "select new com.revealprecision.revealserver.persistence.projection.LocationMainDataWithGeo(l.identifier, l.name,l.geographicLevel.name) "
+          + "from Location l "
+          + "where l.geographicLevel.name = :geoName")
+  List<LocationMainDataWithGeo> findLocationMainDataByGeographicLevelIdentifier(
+      @Param("geoName") String geoName);
 
   @Query(value = "SELECT l FROM Location l WHERE (lower(l.name) like lower(concat('%', :param, '%'))) AND l.entityStatus='ACTIVE'")
   Page<Location> findAlLByCriteria(@Param("param") String param, Pageable pageable);
@@ -65,7 +73,8 @@ public interface LocationRepository extends JpaRepository<Location, UUID> {
       + " from location  l left join geographic_level gl on gl.identifier = l.geographic_level_identifier "
       + "left join location_relationship lr on lr.location_identifier = l.identifier "
       + "where  l.name in :names and l.server_version >= :serverVersion and gl.name != 'structure'", nativeQuery = true)
-  List<LocationWithParentProjection> getAllNotStructureByNamesAndServerVersion(@Param("names") List<String> names,
+  List<LocationWithParentProjection> getAllNotStructureByNamesAndServerVersion(
+      @Param("names") List<String> names,
       @Param("serverVersion") long serverVersion);
 
   @Query(value = "select l from Location  l where  l.name in :names")
@@ -79,7 +88,8 @@ public interface LocationRepository extends JpaRepository<Location, UUID> {
   @Query(value =
       "SELECT  CAST(identifier as varchar) as identifier, name as name, ST_X(ST_Centroid(ST_GeomFromGeoJSON(geometry))) as longitude,ST_Y(ST_Centroid(ST_GeomFromGeoJSON(geometry))) as  latitude from location"
           + " WHERE identifier in :locationIdentifierList", nativeQuery = true)
-  List<LocationCoordinatesProjection> getLocationCentroidCoordinatesByIdentifierList(List<UUID> locationIdentifierList);
+  List<LocationCoordinatesProjection> getLocationCentroidCoordinatesByIdentifierList(
+      List<UUID> locationIdentifierList);
 
   @Query(value = "select ST_AsText(ST_Centroid(st_geomfromgeojson(l.geometry))) from location l where l.identifier = :identifier", nativeQuery = true)
   String getCentroid(@Param("identifier") UUID identifier);
