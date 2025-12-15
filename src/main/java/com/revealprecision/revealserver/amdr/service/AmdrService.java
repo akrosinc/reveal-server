@@ -622,11 +622,11 @@ public class AmdrService {
           }
           // process each record
 
-          AmdrPassiveEventProjection passiveSampleData = amdrRepository.getPassiveCaseSampleData(
+          List<AmdrPassiveEventProjection> passiveSampleData = amdrRepository.getPassiveCaseSampleData(
               record.getSampleInternalId());
-          if (passiveSampleData != null && passiveSampleData.getLocationName()!=null) {
-            record.setRegion(passiveSampleData.getLocationName());
-            record.setLocationIdentifier(passiveSampleData.getLocationIdentifier());
+          if (passiveSampleData != null && !passiveSampleData.isEmpty() && passiveSampleData.get(0).getLocationName()!=null) {
+            record.setRegion(passiveSampleData.get(0).getLocationName());
+            record.setLocationIdentifier(passiveSampleData.get(0).getLocationIdentifier());
             record.setStatus(AmdrProcessingStatus.PROCESSED);
           } else {
             log.info("Unable to find event for sample: {}", record.getSampleInternalId());

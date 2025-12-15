@@ -73,7 +73,7 @@ public interface AmdrRepository extends JpaRepository<AmdrData, UUID> {
       + "         left join location_relationship lr on lr.location_identifier = p.locationIdentifier\n"
       + "         left join location_relationship plr on plr.location_identifier = lr.parent_identifier\n"
       + "         left join location pl on plr.parent_identifier = pl.identifier\n",nativeQuery = true)
-  AmdrPassiveEventProjection getPassiveCaseSampleData(String sample);
+  List<AmdrPassiveEventProjection> getPassiveCaseSampleData(String sample);
 
 
 
