@@ -50,6 +50,7 @@ public class DataExtractService {
           target.getQuery(),
           ps -> ps.setString(1, "%".concat(planIdentifier.toString()).concat("%")), (rs, rowNum) -> {
             int columnCount = rs.getMetaData().getColumnCount();
+
             ResultSetMetaData metaData = rs.getMetaData();
             String[] row = new String[columnCount];
 
@@ -57,6 +58,7 @@ public class DataExtractService {
               for (int i = 1; i <= columnCount; i++) {
                 header.add(metaData.getColumnName(i));  // Add column names to header list
               }
+              log.debug("header {}",header);
             }
 
             for (int i = 1; i <= columnCount; i++) {
@@ -71,8 +73,12 @@ public class DataExtractService {
 
       rowWriter.writeHeader(header.toArray(new String[0]));
 
+      log.debug("data size {}",data.size());
       for (String[] row : data) {
+
         List<String> strArr = new ArrayList<>(Arrays.asList(row));
+        log.debug("row size {}",strArr.size());
+
         rowWriter.writeRow(strArr.toArray(new String[0]));
       }
       stringWriter.close();
