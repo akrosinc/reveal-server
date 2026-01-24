@@ -14,4 +14,5 @@ public interface AmdrSampleDataRepository extends JpaRepository<AmdrSampleData, 
   Page<AmdrSampleData> findAllByStatus(AmdrProcessingStatus bulkEntryStatus, Pageable pageable);
 
   int countByImportId(UUID importId);
+
 }

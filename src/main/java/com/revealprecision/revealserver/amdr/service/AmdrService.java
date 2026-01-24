@@ -1,27 +1,27 @@
 package com.revealprecision.revealserver.amdr.service;
 
-import com.revealprecision.revealserver.api.v1.dto.factory.amdr.AmdrImportResponseFactory;
 import com.revealprecision.revealserver.amdr.api.v1.dto.response.AdmrImportResultsResponse;
 import com.revealprecision.revealserver.amdr.api.v1.dto.response.AmdrImportResponse;
-import com.revealprecision.revealserver.enums.EntityStatus;
-import com.revealprecision.revealserver.exceptions.FileFormatException;
-import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.amdr.model.KeyValue;
-import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
-import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.amdr.persistence.domain.AmdrData;
 import com.revealprecision.revealserver.amdr.persistence.domain.AmdrImport;
 import com.revealprecision.revealserver.amdr.persistence.domain.AmdrMappings;
 import com.revealprecision.revealserver.amdr.persistence.domain.AmdrProcessingStatus;
 import com.revealprecision.revealserver.amdr.persistence.domain.AmdrSampleData;
-import com.revealprecision.revealserver.persistence.projection.LocationMainDataWithGeo;
 import com.revealprecision.revealserver.amdr.persistence.projection.AmdrEventSampleProjection;
 import com.revealprecision.revealserver.amdr.persistence.projection.AmdrPassiveEventProjection;
-import com.revealprecision.revealserver.persistence.repository.LocationRepository;
 import com.revealprecision.revealserver.amdr.persistence.repository.AmdrImportRepository;
 import com.revealprecision.revealserver.amdr.persistence.repository.AmdrMappingsRepository;
 import com.revealprecision.revealserver.amdr.persistence.repository.AmdrRepository;
 import com.revealprecision.revealserver.amdr.persistence.repository.AmdrSampleDataRepository;
+import com.revealprecision.revealserver.api.v1.dto.factory.amdr.AmdrImportResponseFactory;
+import com.revealprecision.revealserver.enums.EntityStatus;
+import com.revealprecision.revealserver.exceptions.FileFormatException;
+import com.revealprecision.revealserver.exceptions.NotFoundException;
+import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
+import com.revealprecision.revealserver.persistence.domain.User;
+import com.revealprecision.revealserver.persistence.projection.LocationMainDataWithGeo;
+import com.revealprecision.revealserver.persistence.repository.LocationRepository;
 import com.revealprecision.revealserver.service.LocationHierarchyService;
 import com.revealprecision.revealserver.service.StorageService;
 import com.revealprecision.revealserver.service.UserService;
@@ -34,10 +34,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.Principal;
 import java.text.SimpleDateFormat;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -590,13 +588,14 @@ public class AmdrService {
 
   private void getDateAndLocationForSample() {
 
-    List<AmdrImport> allByStatus = amdrImportRepository.findAllByStatusOrderByCreatedDatetime(
-        AmdrProcessingStatus.SAVED_BUSY_PROCESSING);
+    List<AmdrImport> allByStatus = amdrImportRepository.findAllByStatusNotOrderByCreatedDatetime(
+        AmdrProcessingStatus.SUCCESSFUL);
 
     allByStatus.stream().forEach(importFile -> {
       int page = 0;
       int size = 500; // batch size
       Page<AmdrSampleData> batch;
+      boolean awaitingParasitology = false;
       do {
         Pageable pageable = PageRequest.of(page, size);
 
@@ -615,14 +614,12 @@ public class AmdrService {
           if (latest != null) {
             record.setDateCollection(latest.getCaptureDatetime());
           } else {
-            LocalDateTime ldt = Instant.ofEpochMilli(0)
-                .atZone(ZoneId.systemDefault())
-                .toLocalDateTime();
-            record.setDateCollection(ldt);
+            awaitingParasitology = true;
+            continue;
           }
           // process each record
 
-          List<AmdrPassiveEventProjection> passiveSampleData = amdrRepository.getPassiveCaseSampleData(
+          List<AmdrPassiveEventProjection> passiveSampleData = amdrRepository.getPassiveCaseSampleDataCluster(
               record.getSampleInternalId());
           if (passiveSampleData != null && !passiveSampleData.isEmpty() && passiveSampleData.get(0).getLocationName()!=null) {
             record.setRegion(passiveSampleData.get(0).getLocationName());
@@ -630,6 +627,7 @@ public class AmdrService {
             record.setStatus(AmdrProcessingStatus.PROCESSED);
           } else {
             log.info("Unable to find event for sample: {}", record.getSampleInternalId());
+            awaitingParasitology = true;
             continue;
           }
         }
@@ -642,7 +640,8 @@ public class AmdrService {
       amdrRepository.refreshAmdrImportData();
       amdrRepository.summarizeImportData();
 
-      importFile.setStatus(AmdrProcessingStatus.SUCCESSFUL);
+
+      importFile.setStatus(awaitingParasitology? AmdrProcessingStatus.AWAITING_PARASITOLOGY : AmdrProcessingStatus.SUCCESSFUL);
 
       amdrImportRepository.save(importFile);
     });

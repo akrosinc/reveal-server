@@ -15,9 +15,9 @@ public class AmdrProcessorSchedule {
 
   @Scheduled(cron = "#{amdrProperties.cron}")
   public void processData() {
-    log.debug("schedule start");
+    log.info("schedule start");
     amdrService.processData();
-    log.debug("schedule end");
+    log.info("schedule end");
   }
 
 }

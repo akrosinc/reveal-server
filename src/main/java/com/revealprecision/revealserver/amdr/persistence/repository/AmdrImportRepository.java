@@ -12,4 +12,5 @@ public interface AmdrImportRepository extends JpaRepository<AmdrImport, UUID> {
 
 
   List<AmdrImport> findAllByStatusOrderByCreatedDatetime(AmdrProcessingStatus bulkEntryStatus);
+  List<AmdrImport> findAllByStatusNotOrderByCreatedDatetime(AmdrProcessingStatus bulkEntryStatus);
 }
