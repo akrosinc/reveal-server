@@ -11,5 +11,5 @@ import org.springframework.stereotype.Component;
 @Getter
 public class AmdrProperties {
 
-  private String cron = "* */5 * * * *";
+  private String cron = "* */15 * * * *";
 }
