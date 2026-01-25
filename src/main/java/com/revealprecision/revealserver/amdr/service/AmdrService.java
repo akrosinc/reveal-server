@@ -8,7 +8,6 @@ import com.revealprecision.revealserver.amdr.persistence.domain.AmdrImport;
 import com.revealprecision.revealserver.amdr.persistence.domain.AmdrMappings;
 import com.revealprecision.revealserver.amdr.persistence.domain.AmdrProcessingStatus;
 import com.revealprecision.revealserver.amdr.persistence.domain.AmdrSampleData;
-import com.revealprecision.revealserver.amdr.persistence.projection.AmdrEventSampleProjection;
 import com.revealprecision.revealserver.amdr.persistence.projection.AmdrPassiveEventProjection;
 import com.revealprecision.revealserver.amdr.persistence.repository.AmdrImportRepository;
 import com.revealprecision.revealserver.amdr.persistence.repository.AmdrMappingsRepository;
@@ -595,7 +594,7 @@ public class AmdrService {
       int page = 0;
       int size = 500; // batch size
       Page<AmdrSampleData> batch;
-      boolean awaitingParasitology = false;
+      boolean partial = false;
       do {
         Pageable pageable = PageRequest.of(page, size);
 
@@ -604,19 +603,19 @@ public class AmdrService {
 
         List<AmdrSampleData> content = batch.getContent();
         for (AmdrSampleData record : content) {
-          List<AmdrEventSampleProjection> sampleData = amdrRepository.getSampleData(
-              record.getSampleInternalId());
-
-          AmdrEventSampleProjection latest =
-              sampleData.stream()
-                  .max(Comparator.comparing(AmdrEventSampleProjection::getCaptureDatetime))
-                  .orElse(null);
-          if (latest != null) {
-            record.setDateCollection(latest.getCaptureDatetime());
-          } else {
-            awaitingParasitology = true;
-            continue;
-          }
+//          List<AmdrEventSampleProjection> sampleData = amdrRepository.getSampleData(
+//              record.getSampleInternalId());
+//
+//          AmdrEventSampleProjection latest =
+//              sampleData.stream()
+//                  .max(Comparator.comparing(AmdrEventSampleProjection::getCaptureDatetime))
+//                  .orElse(null);
+//          if (latest != null) {
+//            record.setDateCollection(latest.getCaptureDatetime());
+//          } else {
+//            awaitingParasitology = true;
+//            continue;
+//          }
           // process each record
 
           List<AmdrPassiveEventProjection> passiveSampleData = amdrRepository.getPassiveCaseSampleDataCluster(
@@ -624,11 +623,45 @@ public class AmdrService {
           if (passiveSampleData != null && !passiveSampleData.isEmpty() && passiveSampleData.get(0).getLocationName()!=null) {
             record.setRegion(passiveSampleData.get(0).getLocationName());
             record.setLocationIdentifier(passiveSampleData.get(0).getLocationIdentifier());
-            record.setStatus(AmdrProcessingStatus.PROCESSED);
+
+
+            AmdrPassiveEventProjection latest =
+                passiveSampleData.stream()
+                    .max(Comparator.comparing(AmdrPassiveEventProjection::getCaptureDatetime))
+                    .orElse(null);
+
+            if (latest != null && latest.getCaptureDatetime() != null){
+              record.setDateCollection(latest.getCaptureDatetime());
+              record.setStatus(AmdrProcessingStatus.PROCESSED);
+            } else {
+              partial = true;
+              continue;
+            }
           } else {
-            log.info("Unable to find event for sample: {}", record.getSampleInternalId());
-            awaitingParasitology = true;
-            continue;
+            List<AmdrPassiveEventProjection> rcdSampleData = amdrRepository.getRcdCaseSampleDataCluster(
+                record.getSampleInternalId());
+            if (rcdSampleData != null && !rcdSampleData.isEmpty() && rcdSampleData.get(0).getLocationName()!=null) {
+              record.setRegion(rcdSampleData.get(0).getLocationName());
+              record.setLocationIdentifier(rcdSampleData.get(0).getLocationIdentifier());
+
+              AmdrPassiveEventProjection latest =
+                  rcdSampleData.stream()
+                      .max(Comparator.comparing(AmdrPassiveEventProjection::getCaptureDatetime))
+                      .orElse(null);
+
+              if (latest != null && latest.getCaptureDatetime() != null){
+                record.setDateCollection(latest.getCaptureDatetime());
+                record.setStatus(AmdrProcessingStatus.PROCESSED);
+              } else {
+                partial = true;
+                continue;
+              }
+
+            } else {
+              log.info("Unable to find event for sample: {}", record.getSampleInternalId());
+              partial = true;
+              continue;
+            }
           }
         }
 
@@ -641,7 +674,7 @@ public class AmdrService {
       amdrRepository.summarizeImportData();
 
 
-      importFile.setStatus(awaitingParasitology? AmdrProcessingStatus.AWAITING_PARASITOLOGY : AmdrProcessingStatus.SUCCESSFUL);
+      importFile.setStatus(partial? AmdrProcessingStatus.PARTIALLY_PROCESSED : AmdrProcessingStatus.SUCCESSFUL);
 
       amdrImportRepository.save(importFile);
     });

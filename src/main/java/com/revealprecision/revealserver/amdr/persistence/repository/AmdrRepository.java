@@ -75,7 +75,7 @@ public interface AmdrRepository extends JpaRepository<AmdrData, UUID> {
       + "         left join location pl on plr.parent_identifier = pl.identifier\n",nativeQuery = true)
   List<AmdrPassiveEventProjection> getPassiveCaseSampleData(String sample);
 
-  @Query(value = "SELECT p.barcode, cast(pl.identifier as varchar) AS locationIdentifier, pl.name AS locationName\n"
+  @Query(value = "SELECT p.barcode, cast(pl.identifier as varchar) AS locationIdentifier, pl.name AS locationName,p.capture_datetime as captureDatetime\n"
       + "FROM (\n"
       + "         SELECT DISTINCT t.val ->> 'rcd_barcode' as barcode\n"
       + "                       , CASE\n"
@@ -93,10 +93,12 @@ public interface AmdrRepository extends JpaRepository<AmdrData, UUID> {
       + "                                  ll.location_property ->> 'geographicLevel' = 'cluster'\n"
       + "                                 THEN ll.name\n"
       + "                             ELSE NULL\n"
-      + "             END                                 AS locationName\n"
+      + "             END                                 AS locationName,\n"
+      + "                         t.capture_datetime\n"
       + "         from (\n"
       + "                  SELECT e.identifier,\n"
       + "                         e.location_identifier,\n"
+      + "                         e.capture_datetime,\n"
       + "                         arr.*\n"
       + "                  from event e,\n"
       + "                       lateral amdr.extract_obs_fields_dynamic(e.additional_information,\n"
@@ -108,10 +110,46 @@ public interface AmdrRepository extends JpaRepository<AmdrData, UUID> {
       + "         WHERE t.val ->> 'rcd_barcode' IS NOT NULL\n"
       + "           and t.val ->> 'rcd_barcode' = :sample\n"
       + "     ) as p\n"
-
-      + "         left join location pl on pl.identifier = p.locationIdentifier\n",nativeQuery = true)
+      + "         left join location pl on pl.identifier = p.locationIdentifier",nativeQuery = true)
   List<AmdrPassiveEventProjection> getPassiveCaseSampleDataCluster(String sample);
 
 
+  @Query(value = "SELECT p.barcode, cast(pl.identifier as varchar) AS locationIdentifier, pl.name AS locationName,p.capture_datetime as captureDatetime\n"
+      + "FROM (\n"
+      + "         SELECT DISTINCT t.val ->> 'rcd_barcode' as barcode\n"
+      + "                       , CASE\n"
+      + "                             WHEN t.val ->> 'cluster' IS NOT NULL AND l.name IS NOT NULL\n"
+      + "                                 THEN l.identifier\n"
+      + "                             WHEN t.val ->> 'cluster' IS NULL AND ll.name IS NOT NULL AND\n"
+      + "                                  ll.location_property ->> 'geographicLevel' = 'cluster'\n"
+      + "                                 THEN ll.identifier\n"
+      + "                             ELSE NULL\n"
+      + "             END                                 AS locationIdentifier\n"
+      + "                       , CASE\n"
+      + "                             WHEN t.val ->> 'cluster' IS NOT NULL AND l.name IS NOT NULL\n"
+      + "                                 THEN t.val ->> 'cluster'\n"
+      + "                             WHEN t.val ->> 'cluster' IS NULL AND ll.name IS NOT NULL AND\n"
+      + "                                  ll.location_property ->> 'geographicLevel' = 'cluster'\n"
+      + "                                 THEN ll.name\n"
+      + "                             ELSE NULL\n"
+      + "             END                                 AS locationName,\n"
+      + "                         t.capture_datetime\n"
+      + "         from (\n"
+      + "                  SELECT e.identifier,\n"
+      + "                         e.location_identifier,\n"
+      + "                         e.capture_datetime,\n"
+      + "                         arr.*\n"
+      + "                  from event e,\n"
+      + "                       lateral amdr.extract_obs_fields_dynamic(e.additional_information,\n"
+      + "                                                               CAST(ARRAY ['cluster','rcd_barcode'] as text[])) with ordinality arr(val, pos)\n"
+      + "                  WHERE e.event_type = 'rcd'\n"
+      + "              ) t\n"
+      + "                  left join location l on l.name = t.val ->> 'cluster'\n"
+      + "                  left join location ll on t.location_identifier = ll.identifier\n"
+      + "         WHERE t.val ->> 'rcd_barcode' IS NOT NULL\n"
+      + "           and t.val ->> 'rcd_barcode' = :sample\n"
+      + "     ) as p\n"
+      + "         left join location pl on pl.identifier = p.locationIdentifier",nativeQuery = true)
+  List<AmdrPassiveEventProjection> getRcdCaseSampleDataCluster(String sample);
 
 }
