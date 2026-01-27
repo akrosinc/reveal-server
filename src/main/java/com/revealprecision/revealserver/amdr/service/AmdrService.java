@@ -5,7 +5,6 @@ import com.revealprecision.revealserver.amdr.api.v1.dto.response.AmdrImportRespo
 import com.revealprecision.revealserver.amdr.model.KeyValue;
 import com.revealprecision.revealserver.amdr.persistence.domain.AmdrData;
 import com.revealprecision.revealserver.amdr.persistence.domain.AmdrImport;
-import com.revealprecision.revealserver.amdr.persistence.domain.AmdrMappings;
 import com.revealprecision.revealserver.amdr.persistence.domain.AmdrProcessingStatus;
 import com.revealprecision.revealserver.amdr.persistence.domain.AmdrSampleData;
 import com.revealprecision.revealserver.amdr.persistence.projection.AmdrPassiveEventProjection;
@@ -16,10 +15,7 @@ import com.revealprecision.revealserver.amdr.persistence.repository.AmdrSampleDa
 import com.revealprecision.revealserver.api.v1.dto.factory.amdr.AmdrImportResponseFactory;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.exceptions.FileFormatException;
-import com.revealprecision.revealserver.exceptions.NotFoundException;
-import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.User;
-import com.revealprecision.revealserver.persistence.projection.LocationMainDataWithGeo;
 import com.revealprecision.revealserver.persistence.repository.LocationRepository;
 import com.revealprecision.revealserver.service.LocationHierarchyService;
 import com.revealprecision.revealserver.service.StorageService;
@@ -44,7 +40,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import javax.annotation.Nullable;
 import javax.persistence.PersistenceException;
 import javax.ws.rs.BadRequestException;
@@ -53,20 +48,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.CellType;
-import org.apache.poi.ss.usermodel.ClientAnchor;
-import org.apache.poi.ss.usermodel.Comment;
-import org.apache.poi.ss.usermodel.CreationHelper;
 import org.apache.poi.ss.usermodel.DataFormat;
-import org.apache.poi.ss.usermodel.DataValidation;
-import org.apache.poi.ss.usermodel.DataValidationConstraint;
-import org.apache.poi.ss.usermodel.DataValidationHelper;
 import org.apache.poi.ss.usermodel.DateUtil;
-import org.apache.poi.ss.usermodel.Drawing;
-import org.apache.poi.ss.usermodel.FillPatternType;
-import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.util.CellRangeAddressList;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFFont;
 import org.apache.poi.xssf.usermodel.XSSFRow;
@@ -94,25 +79,8 @@ public class AmdrService {
   private final AmdrImportRepository amdrImportRepository;
   private final AmdrSampleDataRepository amdrSampleDataRepository;
 
-  public ByteArrayResource downloadAmdrImportTemplate(UUID hierarchyIdentifier,
-      String geographicLevelName, String amdrKey)
+  public ByteArrayResource downloadAmdrImportTemplate()
       throws IOException {
-    LocationHierarchy locationHierarchy = locationHierarchyService.findByIdentifier(
-        hierarchyIdentifier);
-
-    int index = locationHierarchy.getNodeOrder().indexOf(geographicLevelName);
-
-    if (index == -1) {
-      throw new NotFoundException("GeoLevel not found");
-    }
-
-    ArrayList<String> nodes = IntStream.range(0, index + 1)
-        .mapToObj(locationHierarchy.getNodeOrder()::get)
-        .collect(Collectors.toCollection(ArrayList::new));
-
-    List<LocationMainDataWithGeo> collect = nodes.stream().flatMap(node ->
-        locationRepository.findLocationMainDataByGeographicLevelIdentifier(node).stream()
-    ).collect(Collectors.toList());
 
     File currDir = new File(".");
     String path = currDir.getAbsolutePath();
@@ -122,11 +90,7 @@ public class AmdrService {
     try (XSSFWorkbook workbook = new XSSFWorkbook();
 
         FileOutputStream outputStream = new FileOutputStream(fileLocation)) {
-      Sheet sheet = workbook.createSheet("Locations");
-      sheet.setColumnWidth(0, 11000);
-      sheet.setColumnWidth(1, 10000);
-      sheet.setColumnWidth(2, 6500);
-      sheet.setColumnWidth(3, 8000);
+      Sheet sheet = workbook.createSheet("Samples");
 
       CellStyle textStyle = workbook.createCellStyle();
       DataFormat dataFormat = workbook.createDataFormat();
@@ -134,24 +98,33 @@ public class AmdrService {
       sheet.setDefaultColumnStyle(0, textStyle);
 
       CellStyle headerStyle = workbook.createCellStyle();
-      headerStyle.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
-      headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 
       XSSFFont font = workbook.createFont();
-      font.setFontName("Arial");
-      font.setFontHeightInPoints((short) 16);
+      font.setFontName("Calibri");
+      font.setFontHeightInPoints((short) 11);
       font.setBold(true);
       headerStyle.setFont(font);
 
-      XSSFFont headerRowFont = workbook.createFont();
-      headerRowFont.setFontName("Arial");
-      headerRowFont.setFontHeightInPoints((short) 11);
-      headerRowFont.setBold(true);
-
-      CellStyle rowHeaderStyle = workbook.createCellStyle();
-      rowHeaderStyle.setFont(headerRowFont);
-
       int rowIndex = 0;
+
+      List<String> headerVals = List.of("Sample.Internal.ID",
+          "Kelch",
+          "PfCRT:72",
+          "PfCRT:74",
+          "PfCRT:75",
+          "PfCRT:76",
+          "PfDHFR:51",
+          "PfDHFR:59",
+          "PfDHFR:108",
+          "PfDHFR:164",
+          "PfDHPS:436",
+          "PfDHPS:437",
+          "PfDHPS:540",
+          "PfDHPS:581",
+          "PfDHPS:613",
+          "PfMDR1:86",
+          "PfMDR1:184",
+          "PfMDR1:1246");
 
       CellStyle style = workbook.createCellStyle();
       style.setWrapText(true);
@@ -159,97 +132,7 @@ public class AmdrService {
       Row header = sheet.createRow(rowIndex);
       header.setRowStyle(headerStyle);
 
-      Cell headerCell = header.createCell(0);
-      headerCell.setCellValue("Location Hierarchy Identifier");
-      headerCell.setCellStyle(headerStyle);
-
-      headerCell = header.createCell(1);
-      headerCell.setCellValue("Identifier");
-      headerCell.setCellStyle(headerStyle);
-
-      headerCell = header.createCell(2);
-      headerCell.setCellValue("Name");
-      headerCell.setCellStyle(headerStyle);
-
-      headerCell = header.createCell(3);
-      headerCell.setCellValue("Geographic level");
-      headerCell.setCellStyle(headerStyle);
-
-      headerCell = header.createCell(4);
-      headerCell.setCellValue("Date");
-      headerCell.setCellStyle(headerStyle);
-
-      DataValidationHelper dvHelper = sheet.getDataValidationHelper();
-      DataValidationConstraint dvConstraint = dvHelper.createDateConstraint(
-          DataValidationConstraint.OperatorType.LESS_OR_EQUAL,
-          "TODAY()", // Upper bound: today
-          null,      // No lower bound
-          "yyyy-MM-dd"
-      );
-
-      headerCell = header.createCell(5);
-      headerCell.setCellValue(amdrKey);
-      headerCell.setCellStyle(headerStyle);
-
-      int headerIndex = 6;
-      AmdrMappings byAmdrKey = amdrMappingsRepository.findFirstByAmdrKey(amdrKey);
-      for (String el : byAmdrKey.getAmdrSubKeys()) {
-
-        sheet.setColumnWidth(headerIndex, 9600);
-        Cell tagNameRowCell = header.createCell(headerIndex);
-        tagNameRowCell.setCellValue(el);
-        tagNameRowCell.setCellStyle(headerStyle);
-        headerIndex++;
-      }
-
-      rowIndex++;
-
-      for (LocationMainDataWithGeo location : collect) {
-
-        CellRangeAddressList addressList = new CellRangeAddressList(rowIndex, rowIndex, 4,
-            4); // A2:A101
-        DataValidation validation = dvHelper.createValidation(dvConstraint, addressList);
-
-        Row row = sheet.createRow(rowIndex);
-        validation.setErrorStyle(DataValidation.ErrorStyle.STOP);
-        validation.setShowErrorBox(true);
-        validation.createErrorBox(
-            "Invalid Date",
-            "Please enter a date that is today or earlier."
-        );
-
-        CreationHelper createHelper = workbook.getCreationHelper();
-        ClientAnchor anchor = createHelper.createClientAnchor();
-        anchor.setCol1(4); // Start column of the comment
-        anchor.setRow1(rowIndex); // Start row of the comment
-        anchor.setCol2(4); // End column of the comment
-        anchor.setRow2(rowIndex); // End row of the comment
-        Drawing<?> drawing = sheet.createDrawingPatriarch();
-        // Create the cell comment
-        Comment comment = drawing.createCellComment(anchor);
-        comment.setString(createHelper.createRichTextString("Double click for date picker"));
-
-        // Add to sheet
-        sheet.addValidationData(validation);
-
-        Cell cell = row.createCell(0);
-        cell.setCellValue(locationHierarchy.getIdentifier().toString());
-        cell.setCellStyle(style);
-
-        cell = row.createCell(1);
-        cell.setCellValue(location.getIdentifier().toString());
-        cell.setCellStyle(style);
-
-        cell = row.createCell(2);
-        cell.setCellValue(location.getName());
-        cell.setCellStyle(style);
-
-        cell = row.createCell(3);
-        cell.setCellValue(location.getGeographicLevelName());
-        cell.setCellStyle(style);
-        rowIndex++;
-      }
-
+      createHeaderFromList(header, headerStyle,headerVals);
       workbook.write(outputStream);
     }
 
@@ -258,6 +141,16 @@ public class AmdrService {
     ByteArrayResource resource = new ByteArrayResource(Files.readAllBytes(filePath));
     storageService.deleteFile(fileLocation);
     return resource;
+  }
+
+  private void createHeaderFromList(Row header, CellStyle headerStyle, List<String> values){
+    int count=0;
+    for (String headerVal: values) {
+      Cell headerCell = header.createCell(count);
+      headerCell.setCellValue(headerVal);
+      headerCell.setCellStyle(headerStyle);
+      count++;
+    }
   }
 
   public List<String> getAmdrKeys() {
@@ -603,20 +496,7 @@ public class AmdrService {
 
         List<AmdrSampleData> content = batch.getContent();
         for (AmdrSampleData record : content) {
-//          List<AmdrEventSampleProjection> sampleData = amdrRepository.getSampleData(
-//              record.getSampleInternalId());
-//
-//          AmdrEventSampleProjection latest =
-//              sampleData.stream()
-//                  .max(Comparator.comparing(AmdrEventSampleProjection::getCaptureDatetime))
-//                  .orElse(null);
-//          if (latest != null) {
-//            record.setDateCollection(latest.getCaptureDatetime());
-//          } else {
-//            awaitingParasitology = true;
-//            continue;
-//          }
-          // process each record
+
 
           List<AmdrPassiveEventProjection> passiveSampleData = amdrRepository.getPassiveCaseSampleDataCluster(
               record.getSampleInternalId());

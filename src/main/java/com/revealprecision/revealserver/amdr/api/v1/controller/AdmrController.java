@@ -2,9 +2,9 @@ package com.revealprecision.revealserver.amdr.api.v1.controller;
 
 import com.revealprecision.revealserver.amdr.api.v1.dto.response.AdmrImportResultsResponse;
 import com.revealprecision.revealserver.amdr.api.v1.dto.response.AmdrImportResponse;
+import com.revealprecision.revealserver.amdr.service.AmdrService;
 import com.revealprecision.revealserver.exceptions.FileFormatException;
 import com.revealprecision.revealserver.service.StorageService;
-import com.revealprecision.revealserver.amdr.service.AmdrService;
 import java.io.IOException;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +14,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -29,17 +28,15 @@ public class AdmrController {
   private final AmdrService amdrService;
   private final StorageService storageService;
 
-  @GetMapping("/downloadAmdrImportTemplate/{hierarchyIdentifier}/{geographicLevelName}/{amdrKey}")
-  public ResponseEntity<?> downloadAllLocationsUpToGeoLevel(@PathVariable UUID hierarchyIdentifier,
-      @PathVariable String geographicLevelName, @PathVariable String amdrKey)
+  @GetMapping("/downloadAmdrImportTemplate")
+  public ResponseEntity<?> downloadAllLocationsUpToGeoLevel()
       throws IOException {
 
     return ResponseEntity.status(HttpStatus.OK)
         .contentType(MediaType.APPLICATION_OCTET_STREAM)
         .header("Content-disposition", "attachment;filename=Location.xlsx")
         .body(
-            amdrService.downloadAmdrImportTemplate(hierarchyIdentifier, geographicLevelName,
-                amdrKey));
+            amdrService.downloadAmdrImportTemplate());
   }
 
   @GetMapping("/amdrKeys")
