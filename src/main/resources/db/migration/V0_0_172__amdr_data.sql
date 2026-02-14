@@ -71,7 +71,8 @@ VALUES ('pfdhps'::text, 'Sulfadoxine Resistance [PfDHPS]'::text)
     ON CONFLICT DO NOTHING;
 
 INSERT INTO amdr.amdr_header_names (key, name)
-VALUES ('pfdhps_436'::text, 'DHPS S436A'::text);
+VALUES ('pfdhps_436'::text, 'DHPS S436A'::text)
+ON CONFLICT DO NOTHING;
 
 INSERT INTO amdr.amdr_header_names (key, name)
 VALUES ('pfdhps_437'::text, 'DHPS A437G'::text)
