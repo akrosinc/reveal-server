@@ -60,4 +60,7 @@ public class MetadataImport extends AbstractAuditableEntity {
   @OneToMany(mappedBy = "metadataImport",cascade = CascadeType.ALL)
   private List<MetadataImportOwnership> owners;
 
+  @Column(name = "metadata_name", nullable = true)
+  private String metadataName;
+
 }

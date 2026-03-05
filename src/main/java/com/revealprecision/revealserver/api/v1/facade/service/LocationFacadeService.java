@@ -62,7 +62,7 @@ public class LocationFacadeService {
     for (Entry<LocationRequest, UUID> locationRequestUUIDEntry : locationRequestWithParent.entrySet()) {
       try {
         locationService.createLocation(locationRequestUUIDEntry.getKey(),
-            locationRequestUUIDEntry.getValue());
+            locationRequestUUIDEntry.getValue(),true);
       } catch (Exception e) {
         log.error(e.getMessage(), e);
         locationRequestsWithErrors.add(

@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.service;
 
+import com.revealprecision.revealserver.api.v1.dto.request.GlobalUserRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.UserPasswordRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.UserRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.UserUpdateRequest;
@@ -55,6 +56,40 @@ public class KeycloakService {
         passwordCredentials.setType(CredentialRepresentation.PASSWORD);
         passwordCredentials.setValue(password);
         return passwordCredentials;
+    }
+
+    public String addGlobalUser(GlobalUserRequest userRequest, UUID identifier) {
+        UsersResource usersResource = keycloak.realm(realm).users();
+        CredentialRepresentation credentialRepresentation = createPasswordCredentials(
+            userRequest.getPassword(), userRequest.isTempPassword());
+
+        UserRepresentation kcUser = new UserRepresentation();
+        kcUser.setUsername(userRequest.getUsername());
+        kcUser.setCredentials(Collections.singletonList(credentialRepresentation));
+        kcUser.setFirstName(userRequest.getFirstName());
+        kcUser.setLastName(userRequest.getLastName());
+        kcUser.setEmail(userRequest.getEmail());
+        kcUser.setEnabled(true);
+        kcUser.setTotp(false);
+        kcUser.setEmailVerified(false);
+        kcUser.setNotBefore(0);
+        kcUser.setAccess(access);
+        kcUser.setGroups(new ArrayList<>(userRequest.getSecurityGroups()));
+        Response response = usersResource.create(kcUser);
+        String output = response.readEntity(String.class);
+
+        response.close();
+        if (response.getStatus() == 201) {
+            UserRepresentation kcCreatedUser = usersResource.search(userRequest.getUsername()).get(0);
+            return kcCreatedUser.getId();
+        } else if (response.getStatus() == 409) {
+            JSONObject error = new JSONObject(output);
+            userRepository.setApiResponse(identifier, error.getString("errorMessage"));
+            throw new ConflictException(error.getString("errorMessage"));
+        } else {
+            userRepository.setApiResponse(identifier, "Unknown error on Keycloak");
+            throw new KeycloakException("Unknown error on Keycloak");
+        }
     }
 
     public String addUser(UserRequest userRequest, UUID identifier) {

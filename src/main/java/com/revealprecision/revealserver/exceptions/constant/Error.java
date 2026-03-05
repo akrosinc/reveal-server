@@ -13,4 +13,6 @@ public class Error {
   public static final String WRONG_FORMAT = "Resource '%s' with value '%s' does not have format of '%s'";
 
   public static final String ONE_HIERARCHY_SUPPORT = "Cannot create another hierarchy, currently have support for one hierarchy per instance";
+
+  public static final String ONE_BASE_HIERARCHY_SUPPORT = "Cannot create another base hierarchy, currently have support for one base hierarchy";
 }

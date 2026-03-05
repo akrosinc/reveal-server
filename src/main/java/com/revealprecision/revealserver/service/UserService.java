@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.service;
 
 import com.revealprecision.revealserver.api.v1.dto.factory.UserEntityFactory;
+import com.revealprecision.revealserver.api.v1.dto.request.GlobalUserRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.RegisterUserRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.UserPasswordRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.UserRequest;
@@ -21,6 +22,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.RoleMappingResource;
@@ -188,5 +191,37 @@ public class UserService {
             finalUsername = baseUsername + suffix++;
         }
         return finalUsername;
+    }
+
+    public User globalCreateUser(GlobalUserRequest userRequest) {
+        if (userRequest.getEmail() == null) {
+            if (userRepository.getByUsername(userRequest.getUsername()).isPresent()) {
+                throw new ConflictException(
+                    String.format(Error.NON_UNIQUE, StringUtils.capitalize(Fields.username),
+                        userRequest.getUsername()));
+            }
+        } else if (userRepository.findByUserNameOrEmail(userRequest.getUsername(),
+            userRequest.getEmail()).isPresent()) {
+            throw new ConflictException(
+                "Username and email must be unique!"); //TODO This could be refactored to be prettier
+        }
+
+
+        User user = UserEntityFactory.toEntity(userRequest);
+        user.setEntityStatus(EntityStatus.CREATING);
+        user = userRepository.save(user);
+
+        UUID keyCloakId = UUID.fromString(keycloakService.addGlobalUser(userRequest, user.getIdentifier()));
+        user.setSid(keyCloakId);
+        user.setEntityStatus(EntityStatus.ACTIVE);
+        return userRepository.save(user);
+    }
+
+    public List<User> findAllById(List<UUID> members) {
+        return  userRepository.findAllById(members);
+    }
+
+    public List<User> saveAll(List<User> users) {
+        return  userRepository.saveAll(users);
     }
 }

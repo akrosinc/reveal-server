@@ -2,6 +2,7 @@ package com.revealprecision.revealserver.api.v1.controller;
 
 import com.revealprecision.revealserver.annotation.AllowedSortProperties;
 import com.revealprecision.revealserver.api.v1.dto.factory.UserResponseFactory;
+import com.revealprecision.revealserver.api.v1.dto.request.GlobalUserRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.RegisterUserRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.UserPasswordRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.UserRequest;
@@ -44,6 +45,13 @@ public class UserController {
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<Void> createUser(@Valid @RequestBody UserRequest userRequest) {
     userService.createUser(userRequest);
+    return ResponseEntity.status(HttpStatus.CREATED).build();
+  }
+
+
+  @PostMapping(path = "/global", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<Void> globalCreateUser(@Valid @RequestBody GlobalUserRequest userRequest) {
+    userService.globalCreateUser(userRequest);
     return ResponseEntity.status(HttpStatus.CREATED).build();
   }
 

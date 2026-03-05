@@ -44,4 +44,6 @@ public interface LocationBulkRepository extends JpaRepository<LocationBulk, UUID
   List<Location> getAllCreatedInBulk(@Param("identifier") UUID identifier);
 
   Integer countByStatusNot(BulkStatusEnum bulkStatusEnum);
+
+  List<LocationBulk> findBulkByStatus(BulkStatusEnum bulkStatusEnum);
 }

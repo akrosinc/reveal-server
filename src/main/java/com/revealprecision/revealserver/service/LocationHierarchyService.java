@@ -2,20 +2,19 @@ package com.revealprecision.revealserver.service;
 
 import static java.util.stream.Collectors.joining;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.revealprecision.revealserver.api.v1.dto.factory.LocationResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.LocationHierarchyRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.GeoTreeResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationPropertyResponse;
-import com.revealprecision.revealserver.api.v1.dto.response.LocationResponse;
+import com.revealprecision.revealserver.enums.BulkStatusEnum;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.exceptions.ConflictException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.exceptions.NotImplementedException;
 import com.revealprecision.revealserver.exceptions.constant.Error;
+import com.revealprecision.revealserver.persistence.domain.Location;
+import com.revealprecision.revealserver.persistence.domain.LocationBulk;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
-import com.revealprecision.revealserver.persistence.es.LocationElastic;
 import com.revealprecision.revealserver.persistence.projection.LocationChildrenCountProjection;
 import com.revealprecision.revealserver.persistence.projection.LocationRelationshipProjection;
 import com.revealprecision.revealserver.persistence.repository.LocationHierarchyRepository;
@@ -26,7 +25,7 @@ import java.util.stream.Collectors;
 
 import com.revealprecision.revealserver.util.AppConstants;
 import lombok.RequiredArgsConstructor;
-import org.apache.lucene.search.join.ScoreMode;
+import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -35,12 +34,9 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.search.Scroll;
 import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -50,12 +46,15 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class LocationHierarchyService {
 
     private final LocationHierarchyRepository locationHierarchyRepository;
     private final LocationRelationshipService locationRelationshipService;
     private final GeographicLevelService geographicLevelService;
+    private final LocationBulkService locationBulkService;
     private final RestHighLevelClient client;
+    private final CreateLocationRelationshipService createLocationRelationshipService;
 
     @Value("${reveal.elastic.index-name}")
     private final String elasticIndex;
@@ -63,7 +62,11 @@ public class LocationHierarchyService {
 
     public LocationHierarchy createLocationHierarchy(
             LocationHierarchyRequest locationHierarchyRequest) {
-        enforceOneHierarchyPerInstance();
+//        enforceOneHierarchyPerInstance();
+
+        LocationHierarchy baseHierarchy =  getBaseHierarchy();
+        locationHierarchyRequest.getNodeOrder().addAll(0, baseHierarchy.getNodeOrder());
+
         geographicLevelService.validateGeographyLevels(locationHierarchyRequest.getNodeOrder());
         validateLocationHierarchy(locationHierarchyRequest);
 
@@ -314,5 +317,57 @@ public class LocationHierarchyService {
         client.clearScroll(clearScrollRequest, RequestOptions.DEFAULT);
 
         return allResults;
+    }
+
+    public LocationHierarchy createBaseLocationHierarchy(LocationHierarchyRequest locationHierarchyRequest) {
+        enforceOneBaseHierarchy();
+        geographicLevelService.validateGeographyLevels(locationHierarchyRequest.getNodeOrder());
+        validateLocationHierarchy(locationHierarchyRequest);
+
+        var locationHierarchyToSave = LocationHierarchy.builder()
+            .nodeOrder(locationHierarchyRequest.getNodeOrder()).name(locationHierarchyRequest.getName())
+            .baseHierarchy(true)
+            .build();
+        locationHierarchyToSave.setEntityStatus(EntityStatus.ACTIVE);
+        return locationHierarchyRepository.save(locationHierarchyToSave);
+    }
+
+    private void enforceOneBaseHierarchy(){
+        if (locationHierarchyRepository.activeBaseHierarchyCount() > 0) {
+            throw new ConflictException(Error.ONE_BASE_HIERARCHY_SUPPORT);
+        }
+    }
+
+    private LocationHierarchy getBaseHierarchy(){
+        return locationHierarchyRepository.findByName(AppConstants.DEFAULT_KEYWORD).
+            orElseThrow(() -> new NotFoundException("Default hierarchy not found"));
+    }
+
+    public void activateLocationHierarchy(UUID identifier) {
+
+       List<LocationBulk>  locationBulks = locationBulkService.getUnCompletedLocationBulk();
+
+       LocationHierarchy locationHierarchy = findByIdentifier(identifier);
+
+        for(LocationBulk locationBulk : locationBulks){
+
+            List<Location> addedLocations = locationBulkService.getAllCreatedInBulk(
+                locationBulk.getIdentifier());
+            log.info("addLocations size: {}", addedLocations.size());
+            int index = 0;
+            for (Location location : addedLocations) {
+                try {
+                    createLocationRelationshipService.createRelationshipForImportedLocationAndHierarchy(location, index,
+                        addedLocations.size(), locationBulk, locationHierarchy);
+                } catch (IOException e) {
+                    log.error("Error creating relationship for location {}", location.getIdentifier(),e);
+                }
+                index++;
+            }
+            if (addedLocations.isEmpty()) {
+                locationBulk.setStatus(BulkStatusEnum.EMPTY);
+                locationBulkService.update(locationBulk);
+            }
+        }
     }
 }

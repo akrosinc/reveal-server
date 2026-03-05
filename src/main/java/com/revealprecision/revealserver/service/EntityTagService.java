@@ -939,6 +939,10 @@ public class EntityTagService {
     return entityTagRepository.findEntityTagsByMetadataImport_Identifier(id);
   }
 
+  public List<EntityTag> findEntityTagsByMetadataImportAndIsPublic(UUID id, boolean isPublic) {
+    return entityTagRepository.findEntityTagsByMetadataImport_IdentifierAndIsPublic(id, isPublic);
+  }
+
   public List<ComplexTag> getAllComplexTags() {
     return complexTagRepository.findAll();
   }

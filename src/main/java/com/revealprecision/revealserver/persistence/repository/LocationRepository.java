@@ -300,6 +300,11 @@ public interface LocationRepository extends JpaRepository<Location, UUID> {
 
     @Transactional
     @Modifying
-    @Query("UPDATE Location l SET l.populationData = :populationData WHERE l.id = :locationId")
+    @Query("UPDATE Location l SET l.populationData = :populationData WHERE l.identifier = :locationId")
     void updatePopulationData(@Param("locationId") UUID locationId, @Param("populationData") JsonNode populationData);
+
+    @Query("select new com.revealprecision.revealserver.persistence.domain.Location"
+        + " (l.identifier, l.type, l.name, l.status, l.externalId, l.geographicLevel, l.locationBulk)"
+        + " from Location l where l.geographicLevel.name != 'structure' and l.identifier in :identifiers")
+    List<Location> findAllIdentifiersWithoutStructureAndGeoJSON(List<UUID> identifiers);
 }

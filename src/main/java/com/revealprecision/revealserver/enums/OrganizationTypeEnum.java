@@ -9,7 +9,8 @@ import lombok.Getter;
 public enum OrganizationTypeEnum implements Serializable {
   CG("Community group"),
   TEAM("Team"),
-  OTHER("Other");
+  OTHER("Other"),
+  GROUP("Group");
 
   private String organizationType;
 

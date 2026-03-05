@@ -56,7 +56,7 @@ public class LocationController {
             @Valid @RequestBody LocationRequest locationRequest) throws Exception {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(LocationResponseFactory.fromEntity(
-                        locationService.createLocation(locationRequest, null)));
+                        locationService.createLocation(locationRequest, null, false)));
     }
 
     @Operation(summary = "Fetch a Location by Identifier",

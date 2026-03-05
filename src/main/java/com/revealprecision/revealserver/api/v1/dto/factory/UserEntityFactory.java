@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.api.v1.dto.factory;
 
+import com.revealprecision.revealserver.api.v1.dto.request.GlobalUserRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.RegisterUserRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.UserRequest;
 import com.revealprecision.revealserver.batch.dto.UserBatchDTO;
@@ -42,5 +43,16 @@ public class UserEntityFactory {
             .securityGroups(request.getSecurityGroups())
             .organizations(organizations)
             .build();
+  }
+
+
+  public static User toEntity(GlobalUserRequest request) {
+    return User.builder()
+        .username(request.getUsername())
+        .email(request.getEmail())
+        .firstName(request.getFirstName())
+        .lastName(request.getLastName())
+        .securityGroups(request.getSecurityGroups())
+        .build();
   }
 }

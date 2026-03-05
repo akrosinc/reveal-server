@@ -144,4 +144,35 @@ public class LocationHierarchyController {
     public ResponseEntity<List<LocationMainData>> getLocationsByHierarchyIdAndLevelName(@PathVariable UUID identifier, @PathVariable String levelName) {
         return ResponseEntity.status(HttpStatus.OK).body(locationRelationshipService.getLocationsByHierarchyIdAndLevelName(identifier, levelName));
     }
+
+
+    @Operation(summary = "Add base Hierarchy",
+        description = "Add base Hierarchy",
+        tags = {"Location Hierarchy"}
+    )
+    @PostMapping(path="/base",consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<LocationHierarchyResponse> createBaseLocationHierarchy(
+        @Valid @RequestBody LocationHierarchyRequest locationHierarchyRequest) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(LocationHierarchyResponseFactory
+            .fromEntityWithoutTree(
+                locationHierarchyService.createBaseLocationHierarchy(locationHierarchyRequest)));
+    }
+
+
+    @Operation(summary = "Activate LocationHierarchy by identifier",
+        description = "Activate LocationHierarchy by identifier",
+        tags = {"Location Hierarchy"}
+    )
+    @PostMapping("/activate/{identifier}")
+    public ResponseEntity<LocationHierarchyResponse> activateLocationHierarchy(
+        @Parameter(description = "LocationHierarchy identifier") @PathVariable UUID identifier) {
+        var locationHierarchy = locationHierarchyService.findByIdentifier(identifier);
+
+        locationHierarchyService.activateLocationHierarchy(identifier);
+
+        return ResponseEntity.status(HttpStatus.OK).body(LocationHierarchyResponseFactory
+            .fromEntityWithoutTree(locationHierarchy));
+    }
+
+
 }

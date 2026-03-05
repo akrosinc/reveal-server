@@ -48,4 +48,5 @@ public interface EntityTagRepository extends JpaRepository<EntityTag, UUID> {
 
   List<EntityTag> findEntityTagsByIdentifierIn(List<UUID> ids);
 
+  List<EntityTag> findEntityTagsByMetadataImport_IdentifierAndIsPublic(UUID id, boolean isPublic);
 }

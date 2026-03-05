@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import javax.persistence.CascadeType;
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
@@ -57,4 +58,7 @@ public class LocationHierarchy extends AbstractAuditableEntity {
 
   @OneToMany(mappedBy = "locationHierarchy", cascade = CascadeType.REMOVE)
   private Set<Plan> plans;
+
+  @Column(name = "is_base_hierarchy", nullable = false)
+  private Boolean baseHierarchy = false;
 }

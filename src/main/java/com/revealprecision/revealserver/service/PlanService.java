@@ -98,7 +98,7 @@ public class PlanService {
     }
   }
 
-  public void createPlan(PlanRequest planRequest) {
+  public Plan createPlan(PlanRequest planRequest) {
 
     LookupInterventionType interventionType = lookupInterventionTypeService.findByIdentifier(
         planRequest.getInterventionType());
@@ -141,7 +141,7 @@ public class PlanService {
 
     plan.setEntityStatus(EntityStatus.ACTIVE);
 
-    savePlan(plan);
+    return savePlan(plan);
   }
 
   public void activatePlan(UUID planIdentifier) {
@@ -174,7 +174,7 @@ public class PlanService {
     savePlan(plan);
   }
 
-  private void savePlan(Plan plan) {
-    Plan savedPlan = planRepository.save(plan);
+  private Plan savePlan(Plan plan) {
+    return planRepository.save(plan);
   }
 }

@@ -75,6 +75,10 @@ public class Plan extends AbstractAuditableEntity {
     @JoinColumn(name = "lookup_intervention_type_identifier")
     private LookupInterventionType interventionType;
 
+    @ManyToOne
+    @JoinColumn(name = "instance_identifier")
+    private Instance instance;
+
     public void addLocation(PlanLocations planLocations) {
         this.planLocations.add(planLocations);
     }
