@@ -85,7 +85,8 @@ public class LocationService {
   private final PopulationClient populationClient;
   private final ObjectMapper objectMapper;
 
-  public Location createLocation(LocationRequest locationRequest, UUID parentLocationId)
+  public Location createLocation(LocationRequest locationRequest, UUID parentLocationId,
+          boolean buildHierarchy)
       throws Exception {
     GeographicLevel geographicLevel = geographicLevelService.findByName(
         locationRequest.getProperties().getGeographicLevel());
@@ -108,16 +109,20 @@ public class LocationService {
     }
     locationToSave.setEntityStatus(EntityStatus.ACTIVE);
     var savedLocation = locationRepository.save(locationToSave);
-    Location parentLocation =
-        parentLocationId != null ? locationRepository.findById(parentLocationId).orElse(null)
-            : null;
 
-    if (parentLocation != null) {
-      LocationHierarchy locationHierarchy = locationHierarchyService.getActiveLocationHierarchy();
-      locationRelationshipService.createLocationRelationship(parentLocation, savedLocation,
-          locationHierarchy);
-    } else {
-      locationRelationshipService.updateLocationRelationshipsForNewLocation(savedLocation);
+
+    if(buildHierarchy){
+      Location parentLocation =
+          parentLocationId != null ? locationRepository.findById(parentLocationId).orElse(null)
+              : null;
+
+      if (parentLocation != null) {
+        LocationHierarchy locationHierarchy = locationHierarchyService.getActiveLocationHierarchy();
+        locationRelationshipService.createLocationRelationship(parentLocation, savedLocation,
+            locationHierarchy);
+      } else {
+        locationRelationshipService.updateLocationRelationshipsForNewLocation(savedLocation);
+      }
     }
 
     return savedLocation;
