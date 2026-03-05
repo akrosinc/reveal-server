@@ -18,12 +18,16 @@ import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
 import com.revealprecision.revealserver.persistence.projection.LocationChildrenCountProjection;
 import com.revealprecision.revealserver.persistence.projection.LocationRelationshipProjection;
 import com.revealprecision.revealserver.persistence.repository.LocationHierarchyRepository;
-
-import java.io.IOException;
-import java.util.*;
-import java.util.stream.Collectors;
-
 import com.revealprecision.revealserver.util.AppConstants;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.action.search.ClearScrollRequest;
@@ -127,6 +131,18 @@ public class LocationHierarchyService {
                 () -> new NotFoundException(Pair.of(LocationHierarchy.Fields.identifier, identifier),
                         LocationHierarchy.class));
     }
+    public UUID findLocationHierarchyIdentifierByIdentifier(UUID identifier) {
+        return locationHierarchyRepository.findLocationHierarchyIdentifierByIdentifier(identifier).orElseThrow(
+            () -> new NotFoundException(Pair.of(LocationHierarchy.Fields.identifier, identifier),
+                LocationHierarchy.class));
+    }
+
+    public LocationHierarchy findLocationHierarchyByIdentifier(UUID identifier) {
+        return locationHierarchyRepository.findLocationHierarchyObjByIdentifier(identifier).orElseThrow(
+            () -> new NotFoundException(Pair.of(LocationHierarchy.Fields.identifier, identifier),
+                LocationHierarchy.class));
+    }
+
 
     public List<String> findNodeOrderByIdentifier(UUID identifier) {
         return Arrays.asList(
@@ -190,6 +206,10 @@ public class LocationHierarchyService {
                             parent = (String) dynamicDetails.get("parent");
                         }
                     }
+                    if (parent == null ){
+                        parent = "00000000-0000-0000-0000-000000000000";
+                    }
+
                     if (id != null && level != null && name != null && parent != null) {
                         return GeoTreeResponse.builder()
                                 .identifier(UUID.fromString(id))
