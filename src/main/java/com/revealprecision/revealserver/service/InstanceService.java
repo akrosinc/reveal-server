@@ -3,6 +3,7 @@ package com.revealprecision.revealserver.service;
 import com.revealprecision.revealserver.api.v1.dto.factory.InstanceResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.InstanceRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.InstanceUserListResponse;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.EntityTag;
 import com.revealprecision.revealserver.persistence.domain.Instance;
@@ -176,5 +177,18 @@ public class InstanceService {
 
   public List<InstanceProjection> findInstancesNamesByEntityIds(List<UUID> entityTagtIdList) {
     return instanceRepository.findInstancesNamesByEntityIds(entityTagtIdList);
+  }
+
+  public List<InstanceUserListResponse> getUserInstances() {
+
+    User currentUser = userService.getCurrentUser();
+
+    return instanceUserRepository.getUserInstances(currentUser.getIdentifier()).stream()
+        .map(instanceUser -> {
+          InstanceUserListResponse response = new InstanceUserListResponse();
+          response.setIdentifier(instanceUser.getIdentifier());
+          response.setName(instanceUser.getName());
+          return response;
+        }).collect(Collectors.toList());
   }
 }

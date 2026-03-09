@@ -175,4 +175,15 @@ public class LocationHierarchyController {
     }
 
 
+    @Operation(
+        summary = "Get Locations and their children by Hierarchy",
+        description = "Get Locations and their children by Hierarchy",
+        tags = {"Location Hierarchy"}
+    )
+    @GetMapping("/location/byhierarchy/{identifier}")
+    public ResponseEntity<List<GeoTreeResponse>> getLocationsByHierarchy( @Parameter(description = "LocationHierarchy identifier") @PathVariable UUID identifier) throws IOException {
+        var locationHierarchy = locationHierarchyService.findByIdentifier(identifier);
+        List<GeoTreeResponse> geoTreeResponses = locationHierarchyService.getGeoTreeWithoutStructuresES(locationHierarchy.getIdentifier());
+        return ResponseEntity.status(HttpStatus.OK).body(geoTreeResponses);
+    }
 }

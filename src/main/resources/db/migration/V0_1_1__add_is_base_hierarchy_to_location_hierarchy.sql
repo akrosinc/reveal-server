@@ -1,2 +1,2 @@
-ALTER TABLE location_hierarchy
-ADD COLUMN is_base_hierarchy BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE IF EXISTS location_hierarchy
+    ADD COLUMN IF NOT EXISTS is_base_hierarchy BOOLEAN NOT NULL DEFAULT FALSE;

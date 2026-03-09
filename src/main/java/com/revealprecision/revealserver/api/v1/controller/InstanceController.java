@@ -2,11 +2,15 @@ package com.revealprecision.revealserver.api.v1.controller;
 
 import com.revealprecision.revealserver.api.v1.dto.request.InstanceRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.InstanceUserListResponse;
 import com.revealprecision.revealserver.service.InstanceService;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -42,5 +46,10 @@ public class InstanceController {
   public void update(@PathVariable UUID identifier,
       @RequestBody final InstanceRequest instanceRequest) {
     instanceService.update(identifier, instanceRequest);
+  }
+
+  @GetMapping("/user/list")
+  public ResponseEntity<List<InstanceUserListResponse>> getUserInstances() {
+    return ResponseEntity.status(HttpStatus.OK).body(instanceService.getUserInstances());
   }
 }
