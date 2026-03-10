@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.api.v1.controller;
 
 import com.revealprecision.revealserver.api.v1.dto.request.InstanceRequest;
+import com.revealprecision.revealserver.api.v1.dto.response.IdentifierNameResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceUserListResponse;
 import com.revealprecision.revealserver.service.InstanceService;
@@ -33,7 +34,7 @@ public class InstanceController {
   }
 
   @GetMapping
-  public Page<InstanceResponse> get(@RequestParam("") String searchParam, Pageable pageable) {
+  public Page<InstanceResponse> get(@RequestParam(value = "",required = false) String searchParam, Pageable pageable) {
     return instanceService.searchInstance(searchParam, pageable);
   }
 
@@ -42,14 +43,34 @@ public class InstanceController {
     return instanceService.getInstanceResponse(identifier);
   }
 
+  @GetMapping("/context")
+  public ResponseEntity<IdentifierNameResponse> instanceContext(@RequestParam(value = "identifier",required = false) UUID identifier) {
+    return ResponseEntity.ok(instanceService.instanceContext(identifier));
+  }
+
   @PutMapping("/{identifier}")
   public void update(@PathVariable UUID identifier,
       @RequestBody final InstanceRequest instanceRequest) {
     instanceService.update(identifier, instanceRequest);
   }
 
-  @GetMapping("/user/list")
-  public ResponseEntity<List<InstanceUserListResponse>> getUserInstances() {
-    return ResponseEntity.status(HttpStatus.OK).body(instanceService.getUserInstances());
+  @GetMapping("/user/instancelist")
+  public ResponseEntity<List<InstanceUserListResponse>> getUsersInstances() {
+    return ResponseEntity.status(HttpStatus.OK).body(instanceService.getUsersInstances());
+  }
+
+  @GetMapping("/assigned/user/list")
+  public ResponseEntity<List<InstanceUserListResponse>> getAssignedInstanceUsers() {
+    return ResponseEntity.status(HttpStatus.OK).body(instanceService.getUsersInstances());
+  }
+
+  @GetMapping("/assigned/area/list")
+  public ResponseEntity<List<IdentifierNameResponse>> getAssignedInstanceAreas() {
+    return ResponseEntity.status(HttpStatus.OK).body(instanceService.getAssignedInstanceAreas());
+  }
+
+  @PostMapping("/instances/{instanceId}/select")
+  public  ResponseEntity<IdentifierNameResponse> selectInstance(@PathVariable UUID instanceId) {
+    return ResponseEntity.ok(instanceService.instanceContext(instanceId));
   }
 }

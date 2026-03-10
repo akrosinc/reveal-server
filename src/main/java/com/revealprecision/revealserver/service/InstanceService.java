@@ -2,6 +2,7 @@ package com.revealprecision.revealserver.service;
 
 import com.revealprecision.revealserver.api.v1.dto.factory.InstanceResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.InstanceRequest;
+import com.revealprecision.revealserver.api.v1.dto.response.IdentifierNameResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceUserListResponse;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
@@ -21,10 +22,12 @@ import com.revealprecision.revealserver.persistence.repository.InstanceLocationR
 import com.revealprecision.revealserver.persistence.repository.InstanceRepository;
 import com.revealprecision.revealserver.persistence.repository.InstanceUserRepository;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
@@ -113,7 +116,14 @@ public class InstanceService {
   }
 
   public Page<InstanceResponse> searchInstance(String searchParam, Pageable pageable) {
-    Page<Instance> instancePage = instanceRepository.searchInstance(searchParam, pageable);
+    Page<Instance> instancePage ;
+    if(StringUtils.isBlank(searchParam)) {
+      instancePage = instanceRepository.findAll(pageable);
+    }
+    else {
+      instancePage  = instanceRepository.searchInstance(searchParam, pageable);
+    }
+
     return InstanceResponseFactory.fromInstancePage(instancePage, pageable);
   }
 
@@ -179,7 +189,7 @@ public class InstanceService {
     return instanceRepository.findInstancesNamesByEntityIds(entityTagtIdList);
   }
 
-  public List<InstanceUserListResponse> getUserInstances() {
+  public List<InstanceUserListResponse> getUsersInstances() {
 
     User currentUser = userService.getCurrentUser();
 
@@ -190,5 +200,68 @@ public class InstanceService {
           response.setName(instanceUser.getName());
           return response;
         }).collect(Collectors.toList());
+  }
+
+  public List<InstanceUserListResponse> getAssignedInstanceUsers() {
+
+    User currentUser = userService.getCurrentUser();
+
+    return instanceUserRepository.getUserInstances(currentUser.getIdentifier()).stream()
+        .map(instanceUser -> {
+          InstanceUserListResponse response = new InstanceUserListResponse();
+          response.setIdentifier(instanceUser.getIdentifier());
+          response.setName(instanceUser.getName());
+          return response;
+        }).collect(Collectors.toList());
+  }
+
+  public List<IdentifierNameResponse> getAssignedInstanceAreas() {
+//    User currentUser = userService.getCurrentUser();
+    UUID instanceId = userService.getCurrentUser().getIdentifier();
+
+    return instanceLocationRepository.getAreasByInstance(instanceId).stream()
+        .map(area -> {
+          IdentifierNameResponse response = new IdentifierNameResponse();
+          response.setIdentifier(area.getIdentifier());
+          response.setName(area.getName());
+          return response;
+        }).collect(Collectors.toList());
+  }
+
+  public IdentifierNameResponse instanceContext(UUID identifier) {
+    User currentUser = userService.getCurrentUser();
+
+    if(identifier == null){
+      Optional<Instance> instanceOptional = instanceUserRepository.findFirstInstanceByUserIdentifier(currentUser.getIdentifier());
+
+      if(instanceOptional.isPresent()) {
+        IdentifierNameResponse response = new IdentifierNameResponse();
+        response.setIdentifier(instanceOptional.get().getIdentifier());
+        response.setName(instanceOptional.get().getName());
+        return response;
+      }
+      else {
+        throw new NotFoundException("User has no instances");
+      }
+    }
+    else {
+      Optional<Instance> instanceOptional = instanceUserRepository.findFirstInstanceByUserIdentifierAndInstanceIddentifier
+                  (currentUser.getIdentifier(), identifier);
+      if(instanceOptional.isPresent()) {
+        IdentifierNameResponse response = new IdentifierNameResponse();
+        response.setIdentifier(instanceOptional.get().getIdentifier());
+        response.setName(instanceOptional.get().getName());
+        return response;
+      }
+      else {
+        throw new NotFoundException("User has no instances");
+      }
+    }
+  }
+
+  public boolean isMember(UUID userId, UUID instanceId) {
+    Optional<Instance> instanceOptional = instanceUserRepository.findFirstInstanceByUserIdentifierAndInstanceIddentifier
+        (userId, instanceId);
+    return instanceOptional.isPresent();
   }
 }
