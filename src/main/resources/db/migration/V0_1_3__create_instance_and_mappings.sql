@@ -1,5 +1,5 @@
 -- INSTANCE
-CREATE TABLE IF NOT EXISTS instance
+CREATE TABLE IF NOT EXISTS instance 
 (
     identifier UUID NOT NULL,
     name VARCHAR(255) NOT NULL,

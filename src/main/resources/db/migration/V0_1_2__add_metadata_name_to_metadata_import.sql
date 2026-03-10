@@ -1,2 +1,2 @@
 ALTER TABLE IF EXISTS metadata_import
-    ADD COLUMN IF NOT EXISTS metadata_name VARCHAR(255);
+    ADD COLUMN IF NOT EXISTS  metadata_name VARCHAR(255);

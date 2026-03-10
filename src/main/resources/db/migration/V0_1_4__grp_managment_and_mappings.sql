@@ -3,7 +3,7 @@ ALTER TABLE IF EXISTS organization
     ADD COLUMN IF NOT EXISTS instance_id UUID;
 
 ALTER TABLE organization
-DROP CONSTRAINT IF EXISTS fk_organization_instance;
+    DROP CONSTRAINT IF EXISTS fk_organization_instance;
 
 ALTER TABLE organization
     ADD CONSTRAINT fk_organization_instance
