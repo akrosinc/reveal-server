@@ -33,7 +33,7 @@ public class InstanceContextFilter extends OncePerRequestFilter {
         try {
             String instanceIdHeader = request.getHeader("X-Instance-ID");
 
-            if(StringUtils.isEmpty(instanceIdHeader)){
+            if(StringUtils.isNotEmpty(instanceIdHeader)){
                 UUID instanceId = UUID.fromString(instanceIdHeader);
                 UUID userId = userService.getCurrentUser().getIdentifier(); // from SecurityContext
 
