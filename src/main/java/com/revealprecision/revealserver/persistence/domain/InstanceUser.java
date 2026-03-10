@@ -42,4 +42,10 @@ public class InstanceUser {
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "instance_role_id")
   private InstanceRole role;
+
+  public void populate(final Instance instance, final User user) {
+    this.instance = instance;
+    this.user = user;
+    this.id = new InstanceUserId(instance.getIdentifier(), user.getIdentifier());
+  }
 }

@@ -29,8 +29,9 @@ public class InstanceController {
   private final InstanceService instanceService;
 
   @PostMapping
-  public void create(@RequestBody final InstanceRequest instanceRequest) {
+  public ResponseEntity<Void> create(@RequestBody final InstanceRequest instanceRequest) {
     instanceService.create(instanceRequest);
+    return ResponseEntity.ok().build();
   }
 
   @GetMapping

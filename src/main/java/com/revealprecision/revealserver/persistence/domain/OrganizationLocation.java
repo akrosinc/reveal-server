@@ -38,5 +38,11 @@ public class OrganizationLocation {
   @MapsId("locationId")
   @JoinColumn(name = "location_id")
   private Location location;
+
+  public void populate(final Organization organization, final Location location) {
+    this.organization = organization;
+    this.location = location;
+    this.id = new OrganizationLocationId(organization.getIdentifier(), location.getIdentifier());
+  }
 }
 

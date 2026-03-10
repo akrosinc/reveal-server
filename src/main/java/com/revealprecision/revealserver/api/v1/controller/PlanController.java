@@ -186,7 +186,7 @@ public class PlanController {
 
     @PostMapping
     public ResponseEntity<Void> createPlan(@Valid @RequestBody PlanRequest planRequest) {
-        planService.createPlan(planRequest);
+        planService.createPlan(planRequest,null);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 

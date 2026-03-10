@@ -18,6 +18,7 @@ import com.revealprecision.revealserver.persistence.domain.Condition;
 import com.revealprecision.revealserver.persistence.domain.Form;
 import com.revealprecision.revealserver.persistence.domain.GeographicLevel;
 import com.revealprecision.revealserver.persistence.domain.Goal;
+import com.revealprecision.revealserver.persistence.domain.Instance;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.LookupEntityType;
@@ -37,6 +38,7 @@ import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
@@ -98,7 +100,7 @@ public class PlanService {
     }
   }
 
-  public Plan createPlan(PlanRequest planRequest) {
+  public Plan createPlan(PlanRequest planRequest, Instance instance) {
 
     LookupInterventionType interventionType = lookupInterventionTypeService.findByIdentifier(
         planRequest.getInterventionType());
@@ -128,7 +130,7 @@ public class PlanService {
         .equals(PlanInterventionTypeEnum.MDA_LITE.name())) {
       geographicLevel = geographicLevelService.findByName(LocationConstants.STRUCTURE);
     } else {
-      if (planRequest.getHierarchyLevelTarget() == null) {
+      if (StringUtils.isEmpty(planRequest.getHierarchyLevelTarget())) {
         geographicLevel = geographicLevelService.findByName(LocationConstants.OPERATIONAL);
       } else {
         geographicLevel = geographicLevelService.findByName(planRequest.getHierarchyLevelTarget());
@@ -140,6 +142,10 @@ public class PlanService {
     plan.setPlanTargetType(planTargetType);
 
     plan.setEntityStatus(EntityStatus.ACTIVE);
+
+    if(instance != null) {
+      plan.setInstance(instance);
+    }
 
     return savePlan(plan);
   }

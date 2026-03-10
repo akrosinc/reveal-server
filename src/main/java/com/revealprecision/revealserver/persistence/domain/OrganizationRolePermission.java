@@ -36,4 +36,10 @@ public class OrganizationRolePermission {
   @MapsId("permissionId")
   @JoinColumn(name = "permission_id")
   private Permission permission;
+
+  public void populate(final OrganizationRole organizationRole, final Permission permission) {
+    this.organizationRole = organizationRole;
+    this.permission = permission;
+    this.id = new OrganizationRolePermissionId(organizationRole.getIdentifier(), permission.getIdentifier());
+  }
 }

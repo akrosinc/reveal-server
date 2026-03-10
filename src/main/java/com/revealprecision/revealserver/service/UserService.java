@@ -22,6 +22,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import javax.transaction.Transactional;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
@@ -35,7 +36,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import javax.validation.Valid;

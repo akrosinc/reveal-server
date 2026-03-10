@@ -75,7 +75,7 @@ public class Plan extends AbstractAuditableEntity {
     @JoinColumn(name = "lookup_intervention_type_identifier")
     private LookupInterventionType interventionType;
 
-    @ManyToOne
+    @ManyToOne()
     @JoinColumn(name = "instance_identifier")
     private Instance instance;
 

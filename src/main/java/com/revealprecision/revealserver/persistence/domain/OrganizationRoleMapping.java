@@ -36,4 +36,10 @@ public class OrganizationRoleMapping {
   @MapsId("organizationRoleId")
   @JoinColumn(name = "organization_role_id")
   private OrganizationRole organizationRole;
+
+  public void populate(final Organization organization, final OrganizationRole organizationRole) {
+    this.organization = organization;
+    this.organizationRole = organizationRole;
+    this.id = new OrganizationRoleMappingId(organizationRole.getIdentifier(), organization.getIdentifier());
+  }
 }

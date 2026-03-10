@@ -37,5 +37,11 @@ public class InstanceLocation {
   @MapsId("locationId")
   @JoinColumn(name = "location_id")
   private Location location;
+
+  public void populate(final Instance instance, final Location location) {
+    this.instance = instance;
+    this.location = location;
+    this.id = new InstanceLocationId(instance.getIdentifier(), location.getIdentifier());
+  }
 }
 

@@ -5,6 +5,7 @@ import com.revealprecision.revealserver.api.v1.dto.request.InstanceRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.IdentifierNameResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceUserListResponse;
+import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.EntityTag;
 import com.revealprecision.revealserver.persistence.domain.Instance;
@@ -26,16 +27,18 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class InstanceService {
 
   private final PlanService planService;
@@ -52,67 +55,68 @@ public class InstanceService {
   @Transactional
   public void create(InstanceRequest instanceRequest) {
 
-    Plan plan = planService.createPlan(instanceRequest.getPlanRequest());
+      Instance instance = new Instance();
+      instance.setName(instanceRequest.getInstanceName());
+      instance.setEntityStatus(EntityStatus.ACTIVE);
+      LocationHierarchy locationHierarchy = locationHierarchyService.findByIdentifier(
+          instanceRequest.getLocationHierarchy());
+      instance.setLocationHierarchy(locationHierarchy);
 
-    Instance instance = new Instance();
-    instance.setName(instanceRequest.getInstanceName());
-    instance.setPlans(Set.of(plan));
-    LocationHierarchy locationHierarchy = locationHierarchyService.findByIdentifier(
-        instanceRequest.getLocationHierarchy());
-    instance.setLocationHierarchy(locationHierarchy);
-
-
-    plan.setInstance(instance);
+      Instance savedInstance = instanceRepository.save(instance);
 
 
-    Instance savedInstance = instanceRepository.save(instance);
+      Plan plan = planService.createPlan(instanceRequest.getPlanRequest(), savedInstance);
 
-    //    Adding inatnce datasets tags
+      //    Adding instance datasets tags
 
-    List<EntityTag> tags = entityTagService.findEntityTagsByIdentifierIn(
-        instanceRequest.getDatasets_tags());
+      if (instanceRequest.getDatasets_tags() != null) {
+        List<EntityTag> tags = entityTagService.findEntityTagsByIdentifierIn(
+            instanceRequest.getDatasets_tags());
 
-    List<InstanceEntityTag> instanceEntityTags = tags.stream().map(tag -> {
+        List<InstanceEntityTag> instanceEntityTags = tags.stream().distinct().map(tag -> {
 
-      InstanceEntityTag mapping = new InstanceEntityTag();
+          InstanceEntityTag mapping = new InstanceEntityTag();
 
-      mapping.setInstance(savedInstance);
-      mapping.setEntityTag(tag);
+          mapping.populate(savedInstance, tag);
 
-      return mapping;
-    }).collect(Collectors.toList());
+          return mapping;
+        }).collect(Collectors.toList());
 
-    instanceEntityTagRepository.saveAll(instanceEntityTags);
+        instanceEntityTagRepository.saveAll(instanceEntityTags);
+      }
 
-    //Adding instance users
-    List<User> users = userService.findAllById(instanceRequest.getMembers());
+      //Adding instance users
+      if (instanceRequest.getMembers() != null) {
+        List<User> users = userService.findAllById(instanceRequest.getMembers());
 
-    InstanceRole adminRole = instanceRoleService.getInstanceAdminRole();
+        InstanceRole adminRole = instanceRoleService.getInstanceAdminRole();
 
-    List<InstanceUser> instanceUsers = users.stream().map(user -> {
-      InstanceUser mapping = new InstanceUser();
-      mapping.setInstance(savedInstance);
-      mapping.setUser(user);
-      mapping.setRole(adminRole);
-      return mapping;
-    }).collect(Collectors.toList());
+        List<InstanceUser> instanceUsers = users.stream().distinct().map(user -> {
+          InstanceUser mapping = new InstanceUser();
+          mapping.populate(savedInstance, user);
+          mapping.setRole(adminRole);
+          return mapping;
+        }).collect(Collectors.toList());
 
-    instanceUserRepository.saveAll(instanceUsers);
+        instanceUserRepository.saveAll(instanceUsers);
+      }
 
-    //Adding Areas
-    List<Location> locations = locationService.findAllIdentifiersWithoutStructureAndGeoJSON(
-        instanceRequest.getAreas());
+      //Adding Areas
+      if (instanceRequest.getAreas() != null) {
+        List<Location> locations = locationService.findAllIdentifiersWithoutStructureAndGeoJSON(
+            instanceRequest.getAreas());
 
-    List<InstanceLocation> areas = locations.stream().map(location -> {
+        List<InstanceLocation> areas = locations.stream().distinct().map(location -> {
 
-      InstanceLocation mapping = new InstanceLocation();
-      mapping.setInstance(savedInstance);
-      mapping.setLocation(location);
+          InstanceLocation mapping = new InstanceLocation();
+          mapping.populate(savedInstance, location);
 
-      return mapping;
-    }).collect(Collectors.toList());
+          return mapping;
+        }).collect(Collectors.toList());
 
-    instanceLocationRepository.saveAll(areas);
+        instanceLocationRepository.saveAll(areas);
+      }
+
   }
 
   public Page<InstanceResponse> searchInstance(String searchParam, Pageable pageable) {
@@ -149,40 +153,43 @@ public class InstanceService {
 
     // Update tags
     instanceEntityTagRepository.deleteByInstance(instance);
-    List<EntityTag> tags = entityTagService.findEntityTagsByIdentifierIn(
-        instanceRequest.getDatasets_tags());
-    List<InstanceEntityTag> instanceEntityTags = tags.stream().map(tag -> {
-      InstanceEntityTag mapping = new InstanceEntityTag();
-      mapping.setInstance(instance);
-      mapping.setEntityTag(tag);
-      return mapping;
-    }).collect(Collectors.toList());
-    instanceEntityTagRepository.saveAll(instanceEntityTags);
+    if (instanceRequest.getDatasets_tags() != null) {
+      List<EntityTag> tags = entityTagService.findEntityTagsByIdentifierIn(
+          instanceRequest.getDatasets_tags());
+      List<InstanceEntityTag> instanceEntityTags = tags.stream().distinct().map(tag -> {
+        InstanceEntityTag mapping = new InstanceEntityTag();
+        mapping.populate(instance, tag);
+        return mapping;
+      }).collect(Collectors.toList());
+      instanceEntityTagRepository.saveAll(instanceEntityTags);
+    }
 
     // Update users
     instanceUserRepository.deleteByInstance(instance);
-    List<User> users = userService.findAllById(instanceRequest.getMembers());
-    InstanceRole adminRole = instanceRoleService.getInstanceAdminRole();
-    List<InstanceUser> instanceUsers = users.stream().map(user -> {
-      InstanceUser mapping = new InstanceUser();
-      mapping.setInstance(instance);
-      mapping.setUser(user);
-      mapping.setRole(adminRole);
-      return mapping;
-    }).collect(Collectors.toList());
-    instanceUserRepository.saveAll(instanceUsers);
+    if (instanceRequest.getMembers() != null) {
+      List<User> users = userService.findAllById(instanceRequest.getMembers());
+      InstanceRole adminRole = instanceRoleService.getInstanceAdminRole();
+      List<InstanceUser> instanceUsers = users.stream().distinct().map(user -> {
+        InstanceUser mapping = new InstanceUser();
+        mapping.populate(instance, user);
+        mapping.setRole(adminRole);
+        return mapping;
+      }).collect(Collectors.toList());
+      instanceUserRepository.saveAll(instanceUsers);
+    }
 
     // Update locations
     instanceLocationRepository.deleteByInstance(instance);
-    List<Location> locations = locationService.findAllIdentifiersWithoutStructureAndGeoJSON(
-        instanceRequest.getAreas());
-    List<InstanceLocation> areas = locations.stream().map(location -> {
-      InstanceLocation mapping = new InstanceLocation();
-      mapping.setInstance(instance);
-      mapping.setLocation(location);
-      return mapping;
-    }).collect(Collectors.toList());
-    instanceLocationRepository.saveAll(areas);
+    if (instanceRequest.getAreas() != null) {
+      List<Location> locations = locationService.findAllIdentifiersWithoutStructureAndGeoJSON(
+          instanceRequest.getAreas());
+      List<InstanceLocation> areas = locations.stream().distinct().map(location -> {
+        InstanceLocation mapping = new InstanceLocation();
+        mapping.populate(instance, location);
+        return mapping;
+      }).collect(Collectors.toList());
+      instanceLocationRepository.saveAll(areas);
+    }
   }
 
   public List<InstanceProjection> findInstancesNamesByEntityIds(List<UUID> entityTagtIdList) {

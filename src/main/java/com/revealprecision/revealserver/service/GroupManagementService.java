@@ -85,8 +85,7 @@ public class GroupManagementService {
       List<OrganizationLocation> areas = locations.stream().map(location -> {
 
         OrganizationLocation mapping = new OrganizationLocation();
-        mapping.setOrganization(savedOrg);
-        mapping.setLocation(location);
+        mapping.populate(savedOrg, location);
 
         return mapping;
       }).collect(Collectors.toList());
@@ -98,8 +97,7 @@ public class GroupManagementService {
       List<OrganizationRoleMapping> orgRoleMapping = roles.stream().map(role -> {
 
         OrganizationRoleMapping mapping = new OrganizationRoleMapping();
-        mapping.setOrganization(savedOrg);
-        mapping.setOrganizationRole(role);
+        mapping.populate(savedOrg, role);
 
         return mapping;
       }).collect(Collectors.toList());

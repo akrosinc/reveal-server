@@ -6,10 +6,8 @@ import com.revealprecision.revealserver.persistence.domain.InstanceRole;
 import com.revealprecision.revealserver.persistence.repository.InstanceRoleRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class InstanceRoleService {
 

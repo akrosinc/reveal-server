@@ -35,6 +35,13 @@ public class InstanceEntityTag {
   @MapsId("entityTagId")
   @JoinColumn(name = "entity_tag_id", nullable = false)
   private EntityTag entityTag;
+
+  public void populate(final Instance instance, final EntityTag entityTag) {
+    this.instance = instance;
+    this.entityTag = entityTag;
+    this.id = new InstanceEntityTagId(instance.getIdentifier(), entityTag.getIdentifier());
+  }
+
 }
 
 
