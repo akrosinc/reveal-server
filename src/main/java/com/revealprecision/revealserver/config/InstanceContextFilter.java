@@ -10,6 +10,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
@@ -29,23 +30,28 @@ public class InstanceContextFilter extends OncePerRequestFilter {
                                     FilterChain chain)
             throws ServletException, IOException {
 
-        UUID instanceId = UUID.fromString(request.getHeader("X-Instance-ID"));
-        UUID userId = userService.getCurrentUser().getIdentifier(); // from SecurityContext
-
-        if (instanceId != null && userId != null) {
-            // Validate user is actually a member of this instance
-            if (!instanceService.isMember(userId, instanceId)) {
-                response.sendError(HttpServletResponse.SC_FORBIDDEN,
-                    "User is not a member of this instance");
-                return;
-            }
-            // Store in thread-local context
-            InstanceContext.set(instanceId);
-        }
-
         try {
+            String instanceIdHeader = request.getHeader("X-Instance-ID");
+
+            if(StringUtils.isEmpty(instanceIdHeader)){
+                UUID instanceId = UUID.fromString(instanceIdHeader);
+                UUID userId = userService.getCurrentUser().getIdentifier(); // from SecurityContext
+
+                if (userId != null) {
+                    // Validate user is actually a member of this instance
+                    if (!instanceService.isMember(userId, instanceId)) {
+                        response.sendError(HttpServletResponse.SC_FORBIDDEN,
+                            "User is not a member of this instance");
+                        return;
+                    }
+                    // Store in thread-local context
+                    InstanceContext.set(instanceId);
+                }
+            }
+
             chain.doFilter(request, response);
-        } finally {
+        }
+        finally {
             InstanceContext.clear(); // CRITICAL: prevent thread leaks
         }
     }
