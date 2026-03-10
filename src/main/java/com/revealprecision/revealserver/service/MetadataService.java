@@ -35,7 +35,7 @@ import com.revealprecision.revealserver.persistence.domain.metadata.SaveHierarch
 import com.revealprecision.revealserver.persistence.domain.metadata.metadataImport.MetaImportDTO;
 import com.revealprecision.revealserver.persistence.domain.metadata.metadataImport.fieldMapper.MetaFieldSetMapper;
 import com.revealprecision.revealserver.persistence.domain.metadata.metadataImport.fieldMapper.MetaFieldSetMapper.ValidatedTagMap;
-import com.revealprecision.revealserver.persistence.projection.InstanceProjection;
+import com.revealprecision.revealserver.persistence.projection.InstanceEntityTagIdProjection;
 import com.revealprecision.revealserver.persistence.repository.ImportAggregationNumericRepository;
 import com.revealprecision.revealserver.persistence.repository.ImportAggregationStringRepository;
 import com.revealprecision.revealserver.persistence.repository.MetadataImportRepository;
@@ -418,7 +418,7 @@ public class MetadataService {
         .stream().flatMap(entityTagListEntry ->
             entityTagListEntry.getValue().stream().map(EntityTag::getIdentifier)).collect(Collectors.toList());
 
-    List<InstanceProjection> instances = instanceService.findInstancesNamesByEntityIds(entityTagtIdList);
+    List<InstanceEntityTagIdProjection> instances = instanceService.findInstancesNamesByEntityIds(entityTagtIdList);
 
     return DatasetImportResponseFactory.fromEntityPage(all, collect,instances, pageable);
   }

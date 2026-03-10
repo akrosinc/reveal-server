@@ -4,7 +4,7 @@ import com.revealprecision.revealserver.api.v1.dto.response.DataSetEntityTagResp
 import com.revealprecision.revealserver.api.v1.dto.response.DatasetResponse;
 import com.revealprecision.revealserver.persistence.domain.EntityTag;
 import com.revealprecision.revealserver.persistence.domain.MetadataImport;
-import com.revealprecision.revealserver.persistence.projection.InstanceProjection;
+import com.revealprecision.revealserver.persistence.projection.InstanceEntityTagIdProjection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -24,7 +24,7 @@ public class DatasetImportResponseFactory {
   public static Page<DatasetResponse> fromEntityPage(
       Page<MetadataImport> metadataImportPage,
       Map<UUID, List<EntityTag>> entityTagsByMetadataId,
-      List<InstanceProjection> instances,
+      List<InstanceEntityTagIdProjection> instances,
       Pageable pageable) {
 
     // Create a map of entityTagId to instance name for lookup
@@ -87,9 +87,9 @@ public class DatasetImportResponseFactory {
         .build();
   }
 
-  private static Map<String, String> mapEntityTagIdsToInstanceNames( List<InstanceProjection> instances) {
+  private static Map<String, String> mapEntityTagIdsToInstanceNames( List<InstanceEntityTagIdProjection> instances) {
     Map<String, String> mapping = new HashMap<>();
-    for (InstanceProjection instance : instances) {
+    for (InstanceEntityTagIdProjection instance : instances) {
       mapping.put(instance.getEntityTagIdentifier(), instance.getName());
     }
     return mapping;

@@ -4,6 +4,7 @@ import com.revealprecision.revealserver.api.v1.dto.request.InstanceRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.IdentifierNameResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceUserListResponse;
+import com.revealprecision.revealserver.persistence.projection.InstanceListProjection;
 import com.revealprecision.revealserver.service.InstanceService;
 import java.util.List;
 import java.util.UUID;
@@ -35,8 +36,8 @@ public class InstanceController {
   }
 
   @GetMapping
-  public Page<InstanceResponse> get(@RequestParam(value = "",required = false) String searchParam, Pageable pageable) {
-    return instanceService.searchInstance(searchParam, pageable);
+  public ResponseEntity<Page<InstanceListProjection>> get(@RequestParam(value = "",required = false) String searchParam, Pageable pageable) {
+    return ResponseEntity.ok(instanceService.searchInstance(searchParam, pageable));
   }
 
   @GetMapping("/{identifier}")

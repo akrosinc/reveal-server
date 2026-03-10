@@ -17,14 +17,14 @@ import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.User;
-import com.revealprecision.revealserver.persistence.projection.InstanceProjection;
+import com.revealprecision.revealserver.persistence.projection.InstanceEntityTagIdProjection;
+import com.revealprecision.revealserver.persistence.projection.InstanceListProjection;
 import com.revealprecision.revealserver.persistence.repository.InstanceEntityTagRepository;
 import com.revealprecision.revealserver.persistence.repository.InstanceLocationRepository;
 import com.revealprecision.revealserver.persistence.repository.InstanceRepository;
 import com.revealprecision.revealserver.persistence.repository.InstanceUserRepository;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.transaction.annotation.Transactional;
@@ -119,16 +119,12 @@ public class InstanceService {
 
   }
 
-  public Page<InstanceResponse> searchInstance(String searchParam, Pageable pageable) {
-    Page<Instance> instancePage ;
-    if(StringUtils.isBlank(searchParam)) {
-      instancePage = instanceRepository.findAll(pageable);
-    }
-    else {
-      instancePage  = instanceRepository.searchInstance(searchParam, pageable);
-    }
+  public Page<InstanceListProjection> searchInstance(String searchParam, Pageable pageable) {
+    Page<InstanceListProjection> projectionPage = StringUtils.isBlank(searchParam)
+        ? instanceRepository.findAllInstances(pageable)
+        : instanceRepository.findInstanceListBySearch(searchParam, pageable);
 
-    return InstanceResponseFactory.fromInstancePage(instancePage, pageable);
+    return projectionPage;
   }
 
   public Instance findById(UUID identifier) {
@@ -192,7 +188,7 @@ public class InstanceService {
     }
   }
 
-  public List<InstanceProjection> findInstancesNamesByEntityIds(List<UUID> entityTagtIdList) {
+  public List<InstanceEntityTagIdProjection> findInstancesNamesByEntityIds(List<UUID> entityTagtIdList) {
     return instanceRepository.findInstancesNamesByEntityIds(entityTagtIdList);
   }
 

@@ -1,6 +1,6 @@
 package com.revealprecision.revealserver.persistence.projection;
 
-public interface InstanceProjection {
+public interface InstanceEntityTagIdProjection {
   String getName();
   String getEntityTagIdentifier();
 }
