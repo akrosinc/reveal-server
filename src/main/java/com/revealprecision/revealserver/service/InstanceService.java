@@ -1,10 +1,12 @@
 package com.revealprecision.revealserver.service;
 
+import com.revealprecision.revealserver.api.v1.dto.factory.IdentifierNameResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.InstanceResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.InstanceRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.IdentifierNameResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceUserListResponse;
+import com.revealprecision.revealserver.config.InstanceContext;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.EntityTag;
@@ -205,30 +207,26 @@ public class InstanceService {
         }).collect(Collectors.toList());
   }
 
-  public List<InstanceUserListResponse> getAssignedInstanceUsers() {
-
-    User currentUser = userService.getCurrentUser();
-
-    return instanceUserRepository.getUserInstances(currentUser.getIdentifier()).stream()
-        .map(instanceUser -> {
-          InstanceUserListResponse response = new InstanceUserListResponse();
-          response.setIdentifier(instanceUser.getIdentifier());
-          response.setName(instanceUser.getName());
-          return response;
-        }).collect(Collectors.toList());
+  public List<IdentifierNameResponse> getAssignedInstanceUsers() {
+    UUID instanceIdentifier = InstanceContext.get();
+    return instanceUserRepository.getInstancesUsers(instanceIdentifier).stream()
+        .map(IdentifierNameResponseFactory::toIdentifierNameResponse).collect(Collectors.toList());
   }
 
   public List<IdentifierNameResponse> getAssignedInstanceAreas() {
-//    User currentUser = userService.getCurrentUser();
-    UUID instanceId = userService.getCurrentUser().getIdentifier();
 
-    return instanceLocationRepository.getAreasByInstance(instanceId).stream()
-        .map(area -> {
-          IdentifierNameResponse response = new IdentifierNameResponse();
-          response.setIdentifier(area.getIdentifier());
-          response.setName(area.getName());
-          return response;
-        }).collect(Collectors.toList());
+    UUID instanceIdentifier = InstanceContext.get();
+
+    return instanceLocationRepository.getAreasIdNamesByInstance(instanceIdentifier).stream()
+        .map(IdentifierNameResponseFactory::toIdentifierNameResponse).collect(Collectors.toList());
+  }
+
+  public List<IdentifierNameResponse> getAssignedInstanceDatasets() {
+
+    UUID instanceIdentifier = InstanceContext.get();
+
+    return instanceEntityTagRepository.getDatasetsIdNamesByInstance(instanceIdentifier).stream()
+        .map(IdentifierNameResponseFactory::toIdentifierNameResponse).collect(Collectors.toList());
   }
 
   public IdentifierNameResponse instanceContext(UUID identifier) {

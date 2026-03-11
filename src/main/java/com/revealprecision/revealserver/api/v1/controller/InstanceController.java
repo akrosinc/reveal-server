@@ -62,13 +62,17 @@ public class InstanceController {
   }
 
   @GetMapping("/assigned/user/list")
-  public ResponseEntity<List<InstanceUserListResponse>> getAssignedInstanceUsers() {
-    return ResponseEntity.status(HttpStatus.OK).body(instanceService.getUsersInstances());
+  public ResponseEntity<List<IdentifierNameResponse>> getAssignedInstanceUsers() {
+    return ResponseEntity.status(HttpStatus.OK).body(instanceService.getAssignedInstanceUsers());
   }
 
   @GetMapping("/assigned/area/list")
   public ResponseEntity<List<IdentifierNameResponse>> getAssignedInstanceAreas() {
     return ResponseEntity.status(HttpStatus.OK).body(instanceService.getAssignedInstanceAreas());
+  }
+  @GetMapping("/assigned/dataset/list")
+  public ResponseEntity<List<IdentifierNameResponse>> getAssignedInstanceDatasets() {
+    return ResponseEntity.status(HttpStatus.OK).body(instanceService.getAssignedInstanceDatasets());
   }
 
   @PostMapping("/instances/{instanceId}/select")
