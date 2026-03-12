@@ -26,6 +26,6 @@ public interface InstanceUserRepository  extends
   @Query("SELECT iu.instance FROM InstanceUser iu WHERE iu.user.identifier = :identifier and iu.instance.identifier = :instanceIdentifier")
   Optional<Instance> findFirstInstanceByUserIdentifierAndInstanceIddentifier(UUID identifier, UUID instanceIdentifier);
 
-  @Query("SELECT iu.user.identifier AS identifier, iu.user.email AS name FROM  InstanceUser iu WHERE iu.instance.identifier = :identifier")
+  @Query("SELECT iu.user.identifier AS identifier, iu.user.email AS name FROM  InstanceUser iu WHERE iu.instance.identifier = :instanceIdentifier")
   List<IdentifierNameProjection> getInstancesUsers(UUID instanceIdentifier);
 }
