@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.service;
 
 import com.revealprecision.revealserver.api.v1.dto.request.GroupManagementRequest;
+import com.revealprecision.revealserver.config.InstanceContext;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.enums.OrganizationTypeEnum;
 import com.revealprecision.revealserver.persistence.domain.EntityTag;
@@ -19,6 +20,7 @@ import com.revealprecision.revealserver.persistence.repository.OrganizationRepos
 import com.revealprecision.revealserver.persistence.repository.OrganizationRoleMappingRepository;
 import com.revealprecision.revealserver.persistence.repository.OrganizationRoleRepository;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -37,10 +39,13 @@ public class GroupManagementService {
   private final OrganizationRoleRepository organizationRoleRepository;
   private final OrganizationRoleMappingRepository organizationRoleMappingRepository;
 
+
   public void createGroup(GroupManagementRequest request) {
 
+    UUID instanceIdentifier = InstanceContext.get();
+
     Instance instance =
-        instanceRepository.findById(request.getInstanceId())
+        instanceRepository.findById(instanceIdentifier)
             .orElseThrow(() -> new IllegalArgumentException("Instance not found"));
 
     Organization organization = Organization.builder()
