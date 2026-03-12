@@ -12,8 +12,6 @@ public class GroupManagementRequest {
   private String name;
   private Boolean isTeam;
 
-  private UUID instanceId;
-
   @NotNull
   private List<UUID> areasIdentifiers;
 
