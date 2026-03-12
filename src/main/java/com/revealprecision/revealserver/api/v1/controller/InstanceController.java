@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.api.v1.controller;
 
 import com.revealprecision.revealserver.api.v1.dto.request.InstanceRequest;
+import com.revealprecision.revealserver.api.v1.dto.response.GeoTreeResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.IdentifierNameResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceUserListResponse;
@@ -69,6 +70,11 @@ public class InstanceController {
   @GetMapping("/assigned/area/list")
   public ResponseEntity<List<IdentifierNameResponse>> getAssignedInstanceAreas() {
     return ResponseEntity.status(HttpStatus.OK).body(instanceService.getAssignedInstanceAreas());
+  }
+
+  @GetMapping("/assigned/area/tree")
+  public ResponseEntity<List<GeoTreeResponse>> getAssignedInstanceAreasTree() {
+    return ResponseEntity.status(HttpStatus.OK).body(instanceService.getAssignedInstanceAreasTree());
   }
   @GetMapping("/assigned/dataset/list")
   public ResponseEntity<List<IdentifierNameResponse>> getAssignedInstanceDatasets() {

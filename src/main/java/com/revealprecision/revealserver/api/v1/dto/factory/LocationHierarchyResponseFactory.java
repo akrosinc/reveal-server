@@ -48,6 +48,10 @@ public class LocationHierarchyResponseFactory {
         .nodeOrder(locationHierarchy.getNodeOrder()).build();
   }
 
+  public static List<GeoTreeResponse> generateLocationTreeResponseWithoutGeom(List<LocationRelationship> locationRelationships){
+    return generateLocationTreeResponse(locationRelationships, false);
+  }
+
   private static List<GeoTreeResponse> generateLocationTreeResponse(
       List<LocationRelationship> locationRelationships,Boolean includeGeometry) {
     var rootLocations = locationRelationships.stream()

@@ -224,4 +224,11 @@ public interface LocationRelationshipRepository extends JpaRepository<LocationRe
                     + "left join geographic_level pgl on pgl.identifier = lp.geographic_level_identifier\n"
                     + "WHERE l.identifier = :locationIdentifier and pgl.name = :parentGeographicLevelName", nativeQuery = true)
     LocationAndHigherParentProjection getHigherLocationParentByLocationAndParentGeographicLevelType(UUID locationIdentifier, UUID locationHierarchyIdentifier, String parentGeographicLevelName);
+
+    @Query("SELECT lr FROM LocationRelationship lr " +
+        "JOIN FETCH lr.location l " +
+        "JOIN FETCH l.geographicLevel " +
+        "LEFT JOIN FETCH lr.parentLocation " +
+        "WHERE lr.location.identifier IN :locationIds")
+    List<LocationRelationship> getRelationshipsByLocationIds(List<UUID> locationIds);
 }

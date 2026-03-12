@@ -1,5 +1,8 @@
 package com.revealprecision.revealserver.config;
 
+import com.revealprecision.revealserver.service.InstanceService;
+import com.revealprecision.revealserver.service.UserService;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
@@ -13,4 +16,11 @@ public class FilterConfig {
 //    registrationBean.setOrder(0); // Ensure it runs before other filters
 //    return registrationBean;
 //  }
+
+  @Bean
+  public InstanceContextFilter instanceContextFilter(
+      final InstanceService instanceService,
+      final UserService userService) {
+    return new InstanceContextFilter(instanceService, userService);
+  }
 }

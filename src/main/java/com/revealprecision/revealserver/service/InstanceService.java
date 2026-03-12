@@ -3,6 +3,7 @@ package com.revealprecision.revealserver.service;
 import com.revealprecision.revealserver.api.v1.dto.factory.IdentifierNameResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.InstanceResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.InstanceRequest;
+import com.revealprecision.revealserver.api.v1.dto.response.GeoTreeResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.IdentifierNameResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceUserListResponse;
@@ -53,6 +54,7 @@ public class InstanceService {
   private final InstanceUserRepository instanceUserRepository;
   private final InstanceLocationRepository instanceLocationRepository;
   private final LocationHierarchyService locationHierarchyService;
+  private final LocationRelationshipService locationRelationshipService;
 
   @Transactional
   public void create(InstanceRequest instanceRequest) {
@@ -264,5 +266,15 @@ public class InstanceService {
     Optional<Instance> instanceOptional = instanceUserRepository.findFirstInstanceByUserIdentifierAndInstanceIdentifier
         (userId, instanceId).stream().findFirst();
     return instanceOptional.isPresent();
+  }
+
+  public List<GeoTreeResponse> getAssignedInstanceAreasTree() {
+
+    List<IdentifierNameResponse> instancesAreas =  getAssignedInstanceAreas();
+    List<UUID> instancesAreasIds = instancesAreas.stream().map(IdentifierNameResponse::getIdentifier).collect(Collectors.toList());
+
+    List<GeoTreeResponse>  geoTreeResponses = locationRelationshipService.getFilteredGeoTreeByLocationIds(instancesAreasIds);
+
+    return  geoTreeResponses;
   }
 }

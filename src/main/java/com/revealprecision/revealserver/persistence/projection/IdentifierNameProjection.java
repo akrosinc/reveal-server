@@ -7,13 +7,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class IdentifierNameProjection{
 
-  private UUID identifier;
-  private String name;
+public interface IdentifierNameProjection{
+  UUID getIdentifier();
+  String getName();
 }

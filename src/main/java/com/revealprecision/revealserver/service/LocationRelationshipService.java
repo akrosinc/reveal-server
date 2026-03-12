@@ -4,6 +4,8 @@ import static com.revealprecision.revealserver.constants.LocationConstants.STRUC
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.revealprecision.revealserver.api.v1.dto.factory.LocationHierarchyResponseFactory;
+import com.revealprecision.revealserver.api.v1.dto.response.GeoTreeResponse;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.Location;
@@ -26,6 +28,7 @@ import com.revealprecision.revealserver.persistence.repository.LocationRepositor
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -413,6 +416,46 @@ public class LocationRelationshipService {
       UUID locationHierarchyIdentifier, String parentGeographicLevelName) {
     return locationRelationshipRepository.getHigherLocationParentByLocationAndParentGeographicLevelType(
         locationIdentifier, locationHierarchyIdentifier, parentGeographicLevelName);
+  }
+
+  public List<GeoTreeResponse> getFilteredGeoTreeByLocationIds(List<UUID> locationIds) {
+
+    if (locationIds == null || locationIds.isEmpty()) {
+      return new ArrayList<>();
+    }
+
+    List<LocationRelationship> directRelationships =
+        locationRelationshipRepository.getRelationshipsByLocationIds(locationIds);
+
+    if (directRelationships.isEmpty()) {
+      log.warn("No relationships found for provided locationIds");
+      return new ArrayList<>();
+    }
+
+    Set<UUID> directIds = directRelationships.stream()
+        .map(lr -> lr.getLocation().getIdentifier())
+        .collect(Collectors.toSet());
+
+    Set<UUID> ancestorIds = directRelationships.stream()
+        .filter(lr -> lr.getAncestry() != null && !lr.getAncestry().isEmpty())
+        .flatMap(lr -> lr.getAncestry().stream())
+        .filter(id -> !directIds.contains(id))
+        .collect(Collectors.toSet());
+
+
+    List<LocationRelationship> ancestorRelationships = ancestorIds.isEmpty()
+        ? new ArrayList<>()
+        : locationRelationshipRepository.getRelationshipsByLocationIds(
+            new ArrayList<>(ancestorIds));
+
+
+    Map<UUID, LocationRelationship> relationshipMap = new LinkedHashMap<>();
+    ancestorRelationships.forEach(lr ->
+        relationshipMap.put(lr.getLocation().getIdentifier(), lr));
+    directRelationships.forEach(lr ->
+        relationshipMap.put(lr.getLocation().getIdentifier(), lr));
+
+    return LocationHierarchyResponseFactory.generateLocationTreeResponseWithoutGeom( new ArrayList<>(relationshipMap.values()));
   }
 }
 
