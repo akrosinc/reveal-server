@@ -304,7 +304,7 @@ public class LocationHierarchyService {
                 .mustNot(QueryBuilders.termQuery("level", "structure"));
         sourceBuilder.query(boolQuery);
 
-        String parentField = "hierarchyDetailsElastic." + hierarchyId + ".parent";
+        String parentField  = "hierarchyDetailsElastic." + hierarchyId + ".parent";
         String[] includeFields = new String[]{
                 "id",
                 "name",
