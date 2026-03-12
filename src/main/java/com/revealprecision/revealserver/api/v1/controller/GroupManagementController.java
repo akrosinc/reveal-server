@@ -2,8 +2,10 @@ package com.revealprecision.revealserver.api.v1.controller;
 
 import com.revealprecision.revealserver.api.v1.dto.factory.GroupResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.GroupManagementRequest;
+import com.revealprecision.revealserver.api.v1.dto.response.GroupManagementResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.GroupResponse;
 import com.revealprecision.revealserver.enums.SummaryEnum;
+import com.revealprecision.revealserver.persistence.projection.GroupManagementProjection;
 import com.revealprecision.revealserver.service.GroupManagementService;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
@@ -26,8 +28,8 @@ public class GroupManagementController {
 
   @Operation(summary = "Fetch all management groups", description = "Fetch all management Groups", tags = {"GroupManagement"})
   @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<Page<GroupResponse>> getGroups(Pageable pageable) {
-    return null;
+  public ResponseEntity<Page<GroupManagementProjection>> getGroups(Pageable pageable) {
+    return ResponseEntity.ok(groupManagementService.getGroups(pageable));
   }
 
 

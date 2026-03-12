@@ -233,7 +233,7 @@ public class InstanceService {
     User currentUser = userService.getCurrentUser();
 
     if(identifier == null){
-      Optional<Instance> instanceOptional = instanceUserRepository.findFirstInstanceByUserIdentifier(currentUser.getIdentifier());
+      Optional<Instance> instanceOptional = instanceUserRepository.findFirstInstanceByUserIdentifier(currentUser.getIdentifier()).stream().findFirst();
 
       if(instanceOptional.isPresent()) {
         IdentifierNameResponse response = new IdentifierNameResponse();
@@ -246,8 +246,8 @@ public class InstanceService {
       }
     }
     else {
-      Optional<Instance> instanceOptional = instanceUserRepository.findFirstInstanceByUserIdentifierAndInstanceIddentifier
-                  (currentUser.getIdentifier(), identifier);
+      Optional<Instance> instanceOptional = instanceUserRepository.findFirstInstanceByUserIdentifierAndInstanceIdentifier
+                  (currentUser.getIdentifier(), identifier).stream().findFirst();
       if(instanceOptional.isPresent()) {
         IdentifierNameResponse response = new IdentifierNameResponse();
         response.setIdentifier(instanceOptional.get().getIdentifier());
@@ -261,8 +261,8 @@ public class InstanceService {
   }
 
   public boolean isMember(UUID userId, UUID instanceId) {
-    Optional<Instance> instanceOptional = instanceUserRepository.findFirstInstanceByUserIdentifierAndInstanceIddentifier
-        (userId, instanceId);
+    Optional<Instance> instanceOptional = instanceUserRepository.findFirstInstanceByUserIdentifierAndInstanceIdentifier
+        (userId, instanceId).stream().findFirst();
     return instanceOptional.isPresent();
   }
 }

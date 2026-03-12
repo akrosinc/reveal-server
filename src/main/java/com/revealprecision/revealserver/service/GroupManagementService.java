@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.service;
 
 import com.revealprecision.revealserver.api.v1.dto.request.GroupManagementRequest;
+import com.revealprecision.revealserver.api.v1.dto.response.GroupManagementResponse;
 import com.revealprecision.revealserver.config.InstanceContext;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.enums.OrganizationTypeEnum;
@@ -13,6 +14,7 @@ import com.revealprecision.revealserver.persistence.domain.OrganizationLocation;
 import com.revealprecision.revealserver.persistence.domain.OrganizationRole;
 import com.revealprecision.revealserver.persistence.domain.OrganizationRoleMapping;
 import com.revealprecision.revealserver.persistence.domain.User;
+import com.revealprecision.revealserver.persistence.projection.GroupManagementProjection;
 import com.revealprecision.revealserver.persistence.repository.EntityTagAccGrantsOrganizationRepository;
 import com.revealprecision.revealserver.persistence.repository.InstanceRepository;
 import com.revealprecision.revealserver.persistence.repository.OrganizationLocationRepository;
@@ -23,6 +25,8 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -111,5 +115,10 @@ public class GroupManagementService {
 
 
     }
+  }
+
+  public Page<GroupManagementProjection> getGroups(Pageable pageable) {
+    UUID instanceIdentifier = InstanceContext.get();
+    return organizationRepository.findByInstanceId(instanceIdentifier, pageable);
   }
 }
