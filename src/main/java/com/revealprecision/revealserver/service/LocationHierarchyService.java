@@ -300,7 +300,7 @@ public class LocationHierarchyService {
 
         SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
 
-        BoolQueryBuilder boolQuery =  QueryBuilders.boolQuery()
+        BoolQueryBuilder boolQuery = QueryBuilders.boolQuery()
                 .mustNot(QueryBuilders.termQuery("level", "structure"));
         sourceBuilder.query(boolQuery);
 
