@@ -8,4 +8,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface InstanceRoleRepository extends JpaRepository<InstanceRole, UUID> {
   Optional<InstanceRole> findByName(String name);
+
+
 }

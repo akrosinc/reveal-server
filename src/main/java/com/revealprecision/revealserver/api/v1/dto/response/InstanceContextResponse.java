@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.api.v1.dto.response;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -15,5 +16,7 @@ import lombok.Setter;
 @Builder
 public class InstanceContextResponse {
   private IdentifierNameResponse selectedInstance;
-  List<String> roles;
+  private UUID roleIdentifier;
+  private String roleName;
+  private Set<String> permissions;
 }

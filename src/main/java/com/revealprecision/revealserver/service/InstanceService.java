@@ -1,10 +1,12 @@
 package com.revealprecision.revealserver.service;
 
 import com.revealprecision.revealserver.api.v1.dto.factory.IdentifierNameResponseFactory;
+import com.revealprecision.revealserver.api.v1.dto.factory.InstanceContextResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.InstanceResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.InstanceRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.GeoTreeResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.IdentifierNameResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.InstanceContextResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceUserListResponse;
 import com.revealprecision.revealserver.config.InstanceContext;
@@ -231,35 +233,27 @@ public class InstanceService {
         .map(IdentifierNameResponseFactory::toIdentifierNameResponse).collect(Collectors.toList());
   }
 
-  public IdentifierNameResponse instanceContext(UUID identifier) {
+  public InstanceContextResponse instanceContext(UUID identifier) {
     User currentUser = userService.getCurrentUser();
 
-    if(identifier == null){
-      Optional<Instance> instanceOptional = instanceUserRepository.findFirstInstanceByUserIdentifier(currentUser.getIdentifier()).stream().findFirst();
+    InstanceUser instanceUser;
 
-      if(instanceOptional.isPresent()) {
-        IdentifierNameResponse response = new IdentifierNameResponse();
-        response.setIdentifier(instanceOptional.get().getIdentifier());
-        response.setName(instanceOptional.get().getName());
-        return response;
-      }
-      else {
-        throw new NotFoundException("User has no instances");
-      }
+    if (identifier == null) {
+      instanceUser = instanceUserRepository
+          .findFirstByUserIdentifier(currentUser.getIdentifier())
+          .stream()
+          .findFirst()
+          .orElseThrow(() -> new NotFoundException("User has no instances"));
+    } else {
+      instanceUser = instanceUserRepository
+          .findFirstByUserIdentifierAndInstanceIdentifier(
+              currentUser.getIdentifier(), identifier)
+          .stream()
+          .findFirst()
+          .orElseThrow(() -> new NotFoundException("User has no instances"));
     }
-    else {
-      Optional<Instance> instanceOptional = instanceUserRepository.findFirstInstanceByUserIdentifierAndInstanceIdentifier
-                  (currentUser.getIdentifier(), identifier).stream().findFirst();
-      if(instanceOptional.isPresent()) {
-        IdentifierNameResponse response = new IdentifierNameResponse();
-        response.setIdentifier(instanceOptional.get().getIdentifier());
-        response.setName(instanceOptional.get().getName());
-        return response;
-      }
-      else {
-        throw new NotFoundException("User has no instances");
-      }
-    }
+
+    return InstanceContextResponseFactory.buildInstanceContextResponse(instanceUser);
   }
 
   public boolean isMember(UUID userId, UUID instanceId) {

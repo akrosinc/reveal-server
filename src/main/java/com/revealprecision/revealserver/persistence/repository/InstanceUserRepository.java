@@ -28,4 +28,19 @@ public interface InstanceUserRepository  extends
 
   @Query("SELECT iu.user.identifier AS identifier, iu.user.email AS name FROM  InstanceUser iu WHERE iu.instance.identifier = :instanceIdentifier")
   List<IdentifierNameProjection> getInstancesUsers(UUID instanceIdentifier);
+
+  @Query("SELECT iu FROM InstanceUser iu " +
+      "JOIN FETCH iu.instance " +
+      "JOIN FETCH iu.role " +
+      "WHERE iu.user.identifier = :userIdentifier")
+  List<InstanceUser> findFirstByUserIdentifier(UUID userIdentifier);
+
+  @Query("SELECT iu FROM InstanceUser iu " +
+      "JOIN FETCH iu.instance " +
+      "JOIN FETCH iu.role " +
+      "WHERE iu.user.identifier = :userIdentifier " +
+      "AND iu.instance.identifier = :instanceIdentifier")
+  List<InstanceUser> findFirstByUserIdentifierAndInstanceIdentifier(
+      UUID userIdentifier,
+       UUID instanceIdentifier);
 }

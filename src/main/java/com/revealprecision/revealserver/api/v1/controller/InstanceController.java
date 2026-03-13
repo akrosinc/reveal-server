@@ -3,6 +3,7 @@ package com.revealprecision.revealserver.api.v1.controller;
 import com.revealprecision.revealserver.api.v1.dto.request.InstanceRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.GeoTreeResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.IdentifierNameResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.InstanceContextResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceUserListResponse;
 import com.revealprecision.revealserver.persistence.projection.InstanceListProjection;
@@ -47,7 +48,7 @@ public class InstanceController {
   }
 
   @GetMapping("/context")
-  public ResponseEntity<IdentifierNameResponse> instanceContext(@RequestParam(value = "identifier",required = false) UUID identifier) {
+  public ResponseEntity<InstanceContextResponse> instanceContext(@RequestParam(value = "identifier",required = false) UUID identifier) {
     return ResponseEntity.ok(instanceService.instanceContext(identifier));
   }
 
@@ -82,7 +83,7 @@ public class InstanceController {
   }
 
   @PostMapping("/instances/{instanceId}/select")
-  public  ResponseEntity<IdentifierNameResponse> selectInstance(@PathVariable UUID instanceId) {
+  public  ResponseEntity<InstanceContextResponse> selectInstance(@PathVariable UUID instanceId) {
     return ResponseEntity.ok(instanceService.instanceContext(instanceId));
   }
 }
