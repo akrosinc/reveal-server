@@ -19,6 +19,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @RequiredArgsConstructor
 public class InstanceContextFilter extends OncePerRequestFilter {
 
+    public static String INSTANCE_HEADER_KEY = "X-Instance-ID";
+
     private final InstanceService instanceService;
     private final UserService  userService;
 
@@ -29,7 +31,7 @@ public class InstanceContextFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         try {
-            String instanceIdHeader = request.getHeader("X-Instance-ID");
+            String instanceIdHeader = request.getHeader(INSTANCE_HEADER_KEY);
 
             if(StringUtils.isNotEmpty(instanceIdHeader)){
                 UUID instanceId = UUID.fromString(instanceIdHeader);

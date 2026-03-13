@@ -42,7 +42,7 @@ public class   KeycloakSecurityConfig extends KeycloakWebSecurityConfigurerAdapt
 
     CorsConfiguration corsConfiguration = new CorsConfiguration();
     corsConfiguration.setAllowedHeaders(
-        List.of("Authorization", "Cache-Control", "Content-Type"));
+        List.of("Authorization", "Cache-Control", "Content-Type",InstanceContextFilter.INSTANCE_HEADER_KEY));
     corsConfiguration.setAllowedOriginPatterns(List.of("*"));
     corsConfiguration.setAllowedMethods(
         List.of("GET", "POST", "PUT", "DELETE", "PUT", "OPTIONS", "PATCH", "DELETE"));
