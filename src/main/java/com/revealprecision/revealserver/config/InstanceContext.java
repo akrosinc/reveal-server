@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.config;
 
+import com.revealprecision.revealserver.exceptions.handler.BadRequestException;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -15,7 +16,7 @@ public class InstanceContext {
     public static UUID get() {
         UUID instanceId = CURRENT_INSTANCE.get();
         if (instanceId == null) {
-            throw new IllegalStateException("No instance context set");
+            throw new IllegalArgumentException("No instance context set");
         }
         return instanceId;
     }

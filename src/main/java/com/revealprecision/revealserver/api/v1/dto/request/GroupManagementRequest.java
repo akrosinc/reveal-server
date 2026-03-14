@@ -8,7 +8,6 @@ import lombok.Data;
 
 @Data
 public class GroupManagementRequest {
-  private UUID identifier;
   private String name;
   private Boolean isTeam;
 

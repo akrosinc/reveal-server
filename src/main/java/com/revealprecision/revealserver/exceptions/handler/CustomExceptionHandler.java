@@ -143,4 +143,15 @@ public class CustomExceptionHandler {
             .message(ex.getMessage().split(":")[1].trim()).build();
     return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
   }
+
+  @ExceptionHandler(IllegalArgumentException.class)
+  protected ResponseEntity<ApiErrorResponse> handleBadRequestException(
+      IllegalArgumentException ex) {
+    ApiErrorResponse response = ApiErrorResponse.builder()
+        .statusCode(HttpStatus.BAD_REQUEST.value())
+        .timestamp(LocalDateTime.now())
+        .message(ex.getMessage())
+        .build();
+    return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+  }
 }
