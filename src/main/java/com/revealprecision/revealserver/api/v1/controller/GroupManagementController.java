@@ -47,7 +47,7 @@ public class GroupManagementController {
 
 
   @Operation(summary = "Fetch all locations associated to users", description = "Fetch all locations associated to users", tags = {"GroupManagement"})
-  @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE , path = "user/{userId}/locationstree")
+  @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE , path = "/user/{userId}/locationstree")
   public ResponseEntity<List<GeoTreeResponse>> getUserLocations(@PathVariable UUID userId) {
     return ResponseEntity.ok(groupManagementService.getUserLocations(userId));
   }
