@@ -199,16 +199,8 @@ public class InstanceService {
   }
 
   public List<InstanceUserListResponse> getUsersInstances() {
-
     User currentUser = userService.getCurrentUser();
-
-    return instanceUserRepository.getUserInstances(currentUser.getIdentifier()).stream()
-        .map(instanceUser -> {
-          InstanceUserListResponse response = new InstanceUserListResponse();
-          response.setIdentifier(instanceUser.getIdentifier());
-          response.setName(instanceUser.getName());
-          return response;
-        }).collect(Collectors.toList());
+    return getInstancesByUserId(currentUser.getIdentifier());
   }
 
   public List<IdentifierNameResponse> getAssignedInstanceUsers() {
@@ -270,5 +262,17 @@ public class InstanceService {
     List<GeoTreeResponse>  geoTreeResponses = locationRelationshipService.getFilteredGeoTreeByLocationIds(instancesAreasIds);
 
     return  geoTreeResponses;
+  }
+
+  public List<InstanceUserListResponse> getInstancesByUserId(UUID userId) {
+    User currentUser = userService.getCurrentUser();
+
+    return instanceUserRepository.getUserInstances(currentUser.getIdentifier()).stream()
+        .map(instanceUser -> {
+          InstanceUserListResponse response = new InstanceUserListResponse();
+          response.setIdentifier(instanceUser.getIdentifier());
+          response.setName(instanceUser.getName());
+          return response;
+        }).collect(Collectors.toList());
   }
 }

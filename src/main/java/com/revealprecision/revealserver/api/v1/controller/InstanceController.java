@@ -63,6 +63,11 @@ public class InstanceController {
     return ResponseEntity.status(HttpStatus.OK).body(instanceService.getUsersInstances());
   }
 
+  @GetMapping("/user/{userId}/instancelist")
+  public ResponseEntity<List<InstanceUserListResponse>> getInstancesByUserId(@PathVariable UUID userId) {
+    return ResponseEntity.status(HttpStatus.OK).body(instanceService.getInstancesByUserId(userId));
+  }
+
   @GetMapping("/assigned/user/list")
   public ResponseEntity<List<IdentifierNameResponse>> getAssignedInstanceUsers() {
     return ResponseEntity.status(HttpStatus.OK).body(instanceService.getAssignedInstanceUsers());
