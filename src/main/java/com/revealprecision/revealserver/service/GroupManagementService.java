@@ -1,7 +1,7 @@
 package com.revealprecision.revealserver.service;
 
 import com.revealprecision.revealserver.api.v1.dto.request.GroupManagementRequest;
-import com.revealprecision.revealserver.api.v1.dto.response.GroupManagementResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.GeoTreeResponse;
 import com.revealprecision.revealserver.config.InstanceContext;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.enums.OrganizationTypeEnum;
@@ -21,6 +21,7 @@ import com.revealprecision.revealserver.persistence.repository.OrganizationLocat
 import com.revealprecision.revealserver.persistence.repository.OrganizationRepository;
 import com.revealprecision.revealserver.persistence.repository.OrganizationRoleMappingRepository;
 import com.revealprecision.revealserver.persistence.repository.OrganizationRoleRepository;
+import com.revealprecision.revealserver.persistence.repository.UserRepository;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -42,7 +43,8 @@ public class GroupManagementService {
   private final OrganizationLocationRepository organizationLocationRepository;
   private final OrganizationRoleRepository organizationRoleRepository;
   private final OrganizationRoleMappingRepository organizationRoleMappingRepository;
-
+  private final LocationRelationshipService locationRelationshipService;
+  private final UserRepository userRepository;
 
   public void createGroup(GroupManagementRequest request) {
 
@@ -120,5 +122,25 @@ public class GroupManagementService {
   public Page<GroupManagementProjection> getGroups(Pageable pageable) {
     UUID instanceIdentifier = InstanceContext.get();
     return organizationRepository.findByInstanceId(instanceIdentifier, pageable);
+  }
+
+  public List<GeoTreeResponse> getUserLocations(UUID userId) {
+    UUID instanceIdentifier = InstanceContext.get();
+
+    List<UUID> userLocationsIds = organizationLocationRepository.findLocationIdentifiersByInstanceAndUser(
+        instanceIdentifier, userId);
+
+    List<GeoTreeResponse>  geoTreeResponses = locationRelationshipService.getFilteredGeoTreeByLocationIds(userLocationsIds);
+    return  geoTreeResponses;
+  }
+
+  public List<String> getUserGroups(UUID userId) {
+    UUID instanceIdentifier = InstanceContext.get();
+    return userRepository.findOrganizationsNamesByUserId(userId, instanceIdentifier);
+  }
+
+  public List<String> getUserDatasetTags(UUID userId) {
+    UUID instanceIdentifier = InstanceContext.get();
+    return entityTagAccGrantsOrganizationRepository.findDatasetsByUserIdAndInstanceId(userId, instanceIdentifier);
   }
 }
