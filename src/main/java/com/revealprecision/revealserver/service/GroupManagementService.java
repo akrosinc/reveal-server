@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.service;
 
+import com.revealprecision.revealserver.api.v1.dto.request.AssignLocationsToTeamRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.GroupManagementRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.GeoTreeResponse;
 import com.revealprecision.revealserver.config.InstanceContext;
@@ -13,6 +14,7 @@ import com.revealprecision.revealserver.persistence.domain.Organization;
 import com.revealprecision.revealserver.persistence.domain.OrganizationLocation;
 import com.revealprecision.revealserver.persistence.domain.OrganizationRole;
 import com.revealprecision.revealserver.persistence.domain.OrganizationRoleMapping;
+import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.persistence.projection.GroupManagementProjection;
 import com.revealprecision.revealserver.persistence.repository.EntityTagAccGrantsOrganizationRepository;
@@ -29,6 +31,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -45,6 +48,8 @@ public class GroupManagementService {
   private final OrganizationRoleMappingRepository organizationRoleMappingRepository;
   private final LocationRelationshipService locationRelationshipService;
   private final UserRepository userRepository;
+  private final  PlanLocationsService planLocationsService ;
+  private final PlanService planService;
 
   public void createGroup(GroupManagementRequest request) {
 
@@ -142,5 +147,18 @@ public class GroupManagementService {
   public List<String> getUserDatasetTags(UUID userId) {
     UUID instanceIdentifier = InstanceContext.get();
     return entityTagAccGrantsOrganizationRepository.findDatasetsByUserIdAndInstanceId(userId, instanceIdentifier);
+  }
+
+  @Transactional
+  public void assignLocations(AssignLocationsToTeamRequest assignLocationsToTeamRequest) {
+
+    UUID instanceIdentifier = InstanceContext.get();
+
+    List<Plan> plans =  planService.findPlanByInstanceIdentifier(instanceIdentifier);
+
+    ///  as there is one plan only so assign location to that plan
+    Plan selectedPlan = plans.get(0);
+
+    planLocationsService.assignLocationsToTeam(selectedPlan.getIdentifier(), assignLocationsToTeamRequest);
   }
 }

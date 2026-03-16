@@ -183,4 +183,8 @@ public class PlanService {
   private Plan savePlan(Plan plan) {
     return planRepository.save(plan);
   }
+
+  public List<Plan> findPlanByInstanceIdentifier(UUID instanceIdentifier) {
+    return planRepository.findAllByInstanceIdentifier(instanceIdentifier);
+  }
 }

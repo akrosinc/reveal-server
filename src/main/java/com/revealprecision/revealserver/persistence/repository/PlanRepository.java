@@ -35,4 +35,6 @@ public interface PlanRepository extends EntityGraphJpaRepository<Plan, UUID> {
 
   Plan findPlanByIdentifier(UUID planIdentifier);
 
+  @Query("select p from Plan p where p.instance.identifier = :instanceIdentifier")
+  List<Plan> findAllByInstanceIdentifier(UUID instanceIdentifier);
 }

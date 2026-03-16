@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.api.v1.controller;
 
 import com.revealprecision.revealserver.api.v1.dto.factory.GroupResponseFactory;
+import com.revealprecision.revealserver.api.v1.dto.request.AssignLocationsToTeamRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.GroupManagementRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.GeoTreeResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.GroupManagementResponse;
@@ -40,7 +41,7 @@ public class GroupManagementController {
 
   @Operation(summary = "Create a management group", description = "Create a Management Group", tags = {"GroupManagement"})
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<Void> createGroup(@RequestBody GroupManagementRequest groupManagementGroupRequest) {
+  public ResponseEntity<Void> createGroup(GroupManagementRequest groupManagementGroupRequest) {
     groupManagementService.createGroup(groupManagementGroupRequest);
     return ResponseEntity.status(HttpStatus.CREATED).build();
   }
@@ -62,5 +63,12 @@ public class GroupManagementController {
   @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE , path = "/user/{userId}/datasettags")
   public ResponseEntity<List<String>> getUserDatasetTags(@PathVariable UUID userId) {
     return ResponseEntity.ok(groupManagementService.getUserDatasetTags(userId));
+  }
+
+  @Operation(summary = "Assign Location to Group(Team)", description = "Assign Location to Group(Team)", tags = {"GroupManagement"})
+  @PostMapping(path = "/assignlocation", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<Void> assignLocations(AssignLocationsToTeamRequest assignLocationsToTeamRequest) {
+    groupManagementService.assignLocations(assignLocationsToTeamRequest);
+    return ResponseEntity.ok().build();
   }
 }
