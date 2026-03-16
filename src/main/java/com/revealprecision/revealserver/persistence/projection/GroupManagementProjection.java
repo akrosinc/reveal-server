@@ -5,5 +5,5 @@ import java.util.UUID;
 public interface GroupManagementProjection {
   UUID getIdentifier();
   String getName();
-  String organizationType(); // maps to "Te
+  String getOrganizationType();
 }
