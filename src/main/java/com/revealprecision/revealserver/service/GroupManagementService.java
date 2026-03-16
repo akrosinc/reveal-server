@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.service;
 
+import com.revealprecision.revealserver.api.v1.dto.factory.LocationHierarchyResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.AssignLocationsToTeamRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.GroupManagementRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.GeoTreeResponse;
@@ -30,6 +31,8 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -160,5 +163,21 @@ public class GroupManagementService {
     Plan selectedPlan = plans.get(0);
 
     planLocationsService.assignLocationsToTeam(selectedPlan.getIdentifier(), assignLocationsToTeamRequest);
+  }
+
+  public List<GeoTreeResponse> getInstanceGroupsLocations() {
+
+    UUID instanceIdentifier = InstanceContext.get();
+
+    List<Plan> plans =  planService.findPlanByInstanceIdentifier(instanceIdentifier);
+
+    ///  as there is one plan only so assign location to that plan
+    Plan selectedPlan = plans.get(0);
+
+
+    List<GeoTreeResponse> geoTreeResponseList = planLocationsService.getHierarchyByPlanIdentifier(
+        selectedPlan.getIdentifier());
+
+    return geoTreeResponseList;
   }
 }

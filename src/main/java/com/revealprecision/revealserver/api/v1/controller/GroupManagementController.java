@@ -71,4 +71,11 @@ public class GroupManagementController {
     groupManagementService.assignLocations(assignLocationsToTeamRequest);
     return ResponseEntity.ok().build();
   }
+
+
+  @Operation(summary = "Fetch groups and location assignment of instance", description = "Fetch groups and location assignment of instance", tags = {"GroupManagement"})
+  @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE , path = "/instance/locationassigments")
+  public ResponseEntity<List<GeoTreeResponse>> getInstanceGroupsLocations() {
+    return ResponseEntity.ok(groupManagementService.getInstanceGroupsLocations());
+  }
 }
