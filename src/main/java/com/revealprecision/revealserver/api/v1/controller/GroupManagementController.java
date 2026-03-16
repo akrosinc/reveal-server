@@ -41,7 +41,7 @@ public class GroupManagementController {
 
   @Operation(summary = "Create a management group", description = "Create a Management Group", tags = {"GroupManagement"})
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<Void> createGroup(GroupManagementRequest groupManagementGroupRequest) {
+  public ResponseEntity<Void> createGroup(@RequestBody GroupManagementRequest groupManagementGroupRequest) {
     groupManagementService.createGroup(groupManagementGroupRequest);
     return ResponseEntity.status(HttpStatus.CREATED).build();
   }
@@ -67,7 +67,7 @@ public class GroupManagementController {
 
   @Operation(summary = "Assign Location to Group(Team)", description = "Assign Location to Group(Team)", tags = {"GroupManagement"})
   @PostMapping(path = "/assignlocation", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<Void> assignLocations(AssignLocationsToTeamRequest assignLocationsToTeamRequest) {
+  public ResponseEntity<Void> assignLocations(@RequestBody AssignLocationsToTeamRequest assignLocationsToTeamRequest) {
     groupManagementService.assignLocations(assignLocationsToTeamRequest);
     return ResponseEntity.ok().build();
   }
