@@ -5,7 +5,13 @@ import com.revealprecision.revealserver.persistence.domain.OrganizationRoleMappi
 import com.revealprecision.revealserver.persistence.domain.id.OrganizationRoleMappingId;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
 
 public interface OrganizationRoleMappingRepository extends
     JpaRepository<OrganizationRoleMapping, OrganizationRoleMappingId> {
+
+  @Modifying
+  @Query("DELETE FROM OrganizationRoleMapping rm WHERE rm.organization.identifier = :organizationId")
+  void deleteByOrganizationIdentifier(UUID organizationId);
 }

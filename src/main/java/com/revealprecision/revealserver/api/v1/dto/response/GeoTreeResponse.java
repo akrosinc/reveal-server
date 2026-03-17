@@ -25,4 +25,5 @@ public class GeoTreeResponse {
   private List<GeoTreeResponse> children;
   private Boolean active;
   private List<OrganizationResponse> teams;
+  private Boolean selected;
 }

@@ -4,9 +4,12 @@ import com.revealprecision.revealserver.api.v1.dto.factory.LocationHierarchyResp
 import com.revealprecision.revealserver.api.v1.dto.request.AssignLocationsToTeamRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.GroupManagementRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.GeoTreeResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.GroupManagementResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.IdentifierNameResponse;
 import com.revealprecision.revealserver.config.InstanceContext;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.enums.OrganizationTypeEnum;
+import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.EntityTag;
 import com.revealprecision.revealserver.persistence.domain.EntityTagAccGrantsOrganization;
 import com.revealprecision.revealserver.persistence.domain.Instance;
@@ -126,8 +129,6 @@ public class GroupManagementService {
       }).collect(Collectors.toList());
 
       organizationRoleMappingRepository.saveAll(orgRoleMapping);
-
-
     }
   }
 
@@ -175,7 +176,7 @@ public class GroupManagementService {
 
     List<Plan> plans =  planService.findPlanByInstanceIdentifier(instanceIdentifier);
 
-    ///  as there is one plan only so assign location to that plan
+    ///  as there is one plan only so assign a location to that plan
     Plan selectedPlan = plans.get(0);
 
     List<GeoTreeResponse> geoTreeResponses =  instanceService.getAssignedInstanceAreasTree();
@@ -193,5 +194,142 @@ public class GroupManagementService {
             planAssignment -> planAssignment.getPlanLocations().getLocation().getIdentifier()));
     geoTreeResponses.forEach(el -> planLocationsService.assignLocations(locationMap, el, planAssignmentMap));
     return geoTreeResponses;
+  }
+
+  public GroupManagementResponse getGroupById(UUID identifier) {
+    Organization org = organizationRepository.findById(identifier)
+        .orElseThrow(() -> new NotFoundException("Group not found: " + identifier));
+
+    // members
+    List<IdentifierNameResponse> members = org.getUsers().stream()
+        .map(user -> IdentifierNameResponse.builder()
+            .identifier(user.getIdentifier())
+            .name(user.getUsername())
+            .build())
+        .collect(Collectors.toList());
+
+    if(org.getType().equals(OrganizationTypeEnum.TEAM)){
+      return GroupManagementResponse.builder()
+          .identifier(org.getIdentifier())
+          .name(org.getName())
+          .type(org.getType().name())
+          .active(org.isActive())
+          .members(members)
+          .build();
+    }
+
+    // datasets
+    List<EntityTagAccGrantsOrganization> entityTags = entityTagAccGrantsOrganizationRepository
+        .findByOrganizationId(identifier);
+
+    List<IdentifierNameResponse> datasets = entityTags.stream()
+        .map(et -> IdentifierNameResponse.builder()
+            .identifier(et.getEntityTag().getIdentifier())
+            .name(et.getEntityTag().getTag())
+            .build())
+        .collect(Collectors.toList());
+
+    // roles
+    List<IdentifierNameResponse> roles = organizationRoleRepository
+        .findByOrganizationId(identifier).stream()
+        .map(role -> IdentifierNameResponse.builder()
+            .identifier(role.getIdentifier())
+            .name(role.getName())
+            .build())
+        .collect(Collectors.toList());
+
+
+    List<OrganizationLocation> orgLocations = organizationLocationRepository
+        .findByOrganizationIdentifier(identifier);
+
+    Set<UUID> groupLocationIds = orgLocations.stream()
+        .map(ol -> ol.getLocation().getIdentifier())
+        .collect(Collectors.toSet());
+
+    List<GeoTreeResponse> areas = instanceService.getAssignedInstanceAreasTree();
+    markSelectedAreas(areas, groupLocationIds);
+
+    return GroupManagementResponse.builder()
+        .identifier(org.getIdentifier())
+        .name(org.getName())
+        .type(org.getType().name())
+        .active(org.isActive())
+        .members(members)
+        .datasets(datasets)
+        .roles(roles)
+        .areas(areas)
+        .build();
+  }
+
+
+  private void markSelectedAreas(List<GeoTreeResponse> areas, Set<UUID> selectedIds) {
+    if (areas == null) return;
+    areas.forEach(area -> {
+      area.setSelected(selectedIds.contains(area.getIdentifier()));
+      markSelectedAreas(area.getChildren(), selectedIds);
+    });
+  }
+
+
+  @Transactional
+  public void updateGroup(UUID identifier, GroupManagementRequest request) {
+    Organization org = organizationRepository.findById(identifier)
+        .orElseThrow(() -> new NotFoundException("Group not found: " + identifier));
+
+    // Update basic fields
+    org.setName(request.getName());
+    if (request.getIsTeam() != null) {
+      org.setType(request.getIsTeam() ? OrganizationTypeEnum.TEAM : OrganizationTypeEnum.GROUP);
+    }
+    organizationRepository.save(org);
+
+    // Update members
+    List<User> currentUsers = userRepository.findByOrganizationId(identifier);
+    currentUsers.forEach(user -> user.getOrganizations().remove(org));
+    userService.saveAll(currentUsers);
+
+    List<User> newUsers = userService.findAllById(request.getMembersIdentifiers());
+    newUsers.forEach(user -> user.getOrganizations().add(org));
+    userService.saveAll(newUsers);
+
+    if (!request.getIsTeam()) {
+
+      // Update datasets
+      entityTagAccGrantsOrganizationRepository.deleteByOrganizationId(identifier);
+      List<EntityTag> tags = entityTagService.findEntityTagsByIdentifierIn(
+          request.getDatasetsIdentifiers());
+      List<EntityTagAccGrantsOrganization> entityTagAccGrantsOrganizations = tags.stream()
+          .map(entityTag -> {
+            EntityTagAccGrantsOrganization mapping = new EntityTagAccGrantsOrganization();
+            mapping.setEntityTag(entityTag);
+            mapping.setOrganizationId(identifier);
+            return mapping;
+          }).collect(Collectors.toList());
+      entityTagAccGrantsOrganizationRepository.saveAll(entityTagAccGrantsOrganizations);
+
+      // Update locations
+      organizationLocationRepository.deleteByOrganizationIdentifier(identifier);
+      List<Location> locations = locationService.findAllIdentifiersWithoutStructureAndGeoJSON(
+          request.getAreasIdentifiers());
+      List<OrganizationLocation> areas = locations.stream()
+          .map(location -> {
+            OrganizationLocation mapping = new OrganizationLocation();
+            mapping.populate(org, location);
+            return mapping;
+          }).collect(Collectors.toList());
+      organizationLocationRepository.saveAll(areas);
+
+      // Update roles
+      organizationRoleMappingRepository.deleteByOrganizationIdentifier(identifier);
+      List<OrganizationRole> roles = organizationRoleRepository.findAllById(
+          request.getRolesIdentifiers());
+      List<OrganizationRoleMapping> orgRoleMappings = roles.stream()
+          .map(role -> {
+            OrganizationRoleMapping mapping = new OrganizationRoleMapping();
+            mapping.populate(org, role);
+            return mapping;
+          }).collect(Collectors.toList());
+      organizationRoleMappingRepository.saveAll(orgRoleMappings);
+    }
   }
 }

@@ -81,4 +81,8 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     @Query("SELECT o.name FROM User u JOIN u.organizations o WHERE u.identifier = :userId and o.instance.identifier = :instanceIdentifier")
     List<String> findOrganizationsNamesByUserId(UUID userId, UUID instanceIdentifier );
+
+
+    @Query("SELECT u FROM User u JOIN u.organizations o WHERE o.identifier = :organizationId")
+    List<User> findByOrganizationId(UUID organizationId);
 }

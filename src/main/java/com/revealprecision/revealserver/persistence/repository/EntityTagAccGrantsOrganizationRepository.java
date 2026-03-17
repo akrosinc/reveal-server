@@ -20,4 +20,8 @@ public interface EntityTagAccGrantsOrganizationRepository extends JpaRepository<
       "WHERE u.identifier = :userId " +
       "AND o.instance.identifier = :instanceId)")
   List<String> findDatasetsByUserIdAndInstanceId(UUID userId, UUID instanceId);
+
+  List<EntityTagAccGrantsOrganization> findByOrganizationId(UUID identifier);
+
+  void deleteByOrganizationId(UUID organizationId);
 }

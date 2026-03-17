@@ -5,6 +5,7 @@ import com.revealprecision.revealserver.persistence.domain.id.OrganizationLocati
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
 public interface OrganizationLocationRepository extends
@@ -16,4 +17,13 @@ public interface OrganizationLocationRepository extends
       "WHERE o.instance.identifier = :instanceIdentifier " +
       "AND u.identifier = :userId")
   List<UUID> findLocationIdentifiersByInstanceAndUser(UUID instanceIdentifier, UUID userId);
+
+  @Query("SELECT ol FROM OrganizationLocation ol " +
+      "JOIN FETCH ol.location " +
+      "WHERE ol.organization.identifier = :organizationId")
+  List<OrganizationLocation> findByOrganizationIdentifier(UUID organizationId);
+
+  @Modifying
+  @Query("DELETE FROM OrganizationLocation ol WHERE ol.organization.identifier = :organizationId")
+  void deleteByOrganizationIdentifier(UUID organizationId);
 }
