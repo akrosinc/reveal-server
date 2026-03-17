@@ -22,6 +22,7 @@ import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.User;
+import com.revealprecision.revealserver.persistence.projection.IdentifierNameProjection;
 import com.revealprecision.revealserver.persistence.projection.InstanceEntityTagIdProjection;
 import com.revealprecision.revealserver.persistence.projection.InstanceListProjection;
 import com.revealprecision.revealserver.persistence.repository.InstanceEntityTagRepository;
@@ -139,7 +140,17 @@ public class InstanceService {
   }
 
   public InstanceResponse getInstanceResponse(UUID identifier) {
-    return InstanceResponseFactory.fromEntity(findById(identifier));
+    Instance instance = findById(identifier);
+
+    List<IdentifierNameProjection> assignedLocations = instanceLocationRepository.getAreasIdNamesByInstance(identifier);
+    List<GeoTreeResponse> areas = getAssignedInstanceAreasTree(instance.getIdentifier());
+
+    Plan instancePlan = instance.getPlans().stream().findFirst().orElse(null);
+
+    List<UUID>  assignedLocationsIds = assignedLocations.stream().map(IdentifierNameProjection::getIdentifier)
+              .collect(Collectors.toList());
+
+    return InstanceResponseFactory.fromEntity(instance, areas , instancePlan ,  assignedLocationsIds);
   }
 
   @Transactional
@@ -210,9 +221,11 @@ public class InstanceService {
   }
 
   public List<IdentifierNameResponse> getAssignedInstanceAreas() {
-
     UUID instanceIdentifier = InstanceContext.get();
+    return getAssignedInstanceAreas(instanceIdentifier);
+  }
 
+  public List<IdentifierNameResponse> getAssignedInstanceAreas(UUID instanceIdentifier) {
     return instanceLocationRepository.getAreasIdNamesByInstance(instanceIdentifier).stream()
         .map(IdentifierNameResponseFactory::toIdentifierNameResponse).collect(Collectors.toList());
   }
@@ -255,9 +268,22 @@ public class InstanceService {
   }
 
   public List<GeoTreeResponse> getAssignedInstanceAreasTree() {
+    return getAssignedInstanceAreasTree(null);
+  }
 
-    List<IdentifierNameResponse> instancesAreas =  getAssignedInstanceAreas();
-    List<UUID> instancesAreasIds = instancesAreas.stream().map(IdentifierNameResponse::getIdentifier).collect(Collectors.toList());
+  public List<GeoTreeResponse> getAssignedInstanceAreasTree(UUID instanceIdentifier) {
+
+    List<IdentifierNameResponse> instancesAreas = null;
+
+    if(instanceIdentifier == null) {
+      instancesAreas = getAssignedInstanceAreas();
+    }
+    else {
+      instancesAreas = getAssignedInstanceAreas(instanceIdentifier);
+    }
+
+    List<UUID> instancesAreasIds = instancesAreas.stream().map(IdentifierNameResponse::getIdentifier)
+        .collect(Collectors.toList());
 
     List<GeoTreeResponse>  geoTreeResponses = locationRelationshipService.getFilteredGeoTreeByLocationIds(instancesAreasIds);
 

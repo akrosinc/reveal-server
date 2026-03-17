@@ -18,13 +18,13 @@ import lombok.Setter;
 public class InstanceResponse {
   private UUID identifier;
   private String name;
-  private PlanResponse planResponse;
+  private PlanResponse plan;
 
-  private List<MemberResponse> members;
+  private List<IdentifierNameResponse> members;
 
-  private List<LocationResponse> areas;
+  private List<GeoTreeResponse> areas;
 
   private List<LocationHierarchyResponse> locationHierarchy;
 
-  private List<EntityTagResponse> datasets;
+  private List<IdentifierNameResponse> datasets;
 }
