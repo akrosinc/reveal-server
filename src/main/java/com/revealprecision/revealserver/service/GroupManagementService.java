@@ -16,6 +16,7 @@ import com.revealprecision.revealserver.persistence.domain.OrganizationLocation;
 import com.revealprecision.revealserver.persistence.domain.OrganizationRole;
 import com.revealprecision.revealserver.persistence.domain.OrganizationRoleMapping;
 import com.revealprecision.revealserver.persistence.domain.Plan;
+import com.revealprecision.revealserver.persistence.domain.PlanAssignment;
 import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.persistence.projection.GroupManagementProjection;
 import com.revealprecision.revealserver.persistence.repository.EntityTagAccGrantsOrganizationRepository;
@@ -24,8 +25,11 @@ import com.revealprecision.revealserver.persistence.repository.OrganizationLocat
 import com.revealprecision.revealserver.persistence.repository.OrganizationRepository;
 import com.revealprecision.revealserver.persistence.repository.OrganizationRoleMappingRepository;
 import com.revealprecision.revealserver.persistence.repository.OrganizationRoleRepository;
+import com.revealprecision.revealserver.persistence.repository.PlanLocationsRepository;
 import com.revealprecision.revealserver.persistence.repository.UserRepository;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -43,7 +47,7 @@ public class GroupManagementService {
   private final EntityTagService entityTagService;
   private final UserService userService;
   private final LocationService locationService;
-  private final InstanceRepository instanceRepository;
+  private final InstanceService instanceService;
   private final OrganizationRepository organizationRepository;
   private final EntityTagAccGrantsOrganizationRepository entityTagAccGrantsOrganizationRepository;
   private final OrganizationLocationRepository organizationLocationRepository;
@@ -51,16 +55,16 @@ public class GroupManagementService {
   private final OrganizationRoleMappingRepository organizationRoleMappingRepository;
   private final LocationRelationshipService locationRelationshipService;
   private final UserRepository userRepository;
-  private final  PlanLocationsService planLocationsService ;
+  private final PlanLocationsService planLocationsService ;
   private final PlanService planService;
+  private final PlanAssignmentService planAssignmentService;
+  private final PlanLocationsRepository planLocationsRepository;
 
   public void createGroup(GroupManagementRequest request) {
 
     UUID instanceIdentifier = InstanceContext.get();
 
-    Instance instance =
-        instanceRepository.findById(instanceIdentifier)
-            .orElseThrow(() -> new IllegalArgumentException("Instance not found"));
+    Instance instance = instanceService.findById(instanceIdentifier);
 
     Organization organization = Organization.builder()
         .name(request.getName())
@@ -174,10 +178,20 @@ public class GroupManagementService {
     ///  as there is one plan only so assign location to that plan
     Plan selectedPlan = plans.get(0);
 
+    List<GeoTreeResponse> geoTreeResponses =  instanceService.getAssignedInstanceAreasTree();
 
-    List<GeoTreeResponse> geoTreeResponseList = planLocationsService.getHierarchyByPlanIdentifier(
+    Set<Location> locations = planLocationsRepository.findLocationsByPlan_Identifier(
         selectedPlan.getIdentifier());
 
-    return geoTreeResponseList;
+    Map<UUID, Location> locationMap = locations.stream()
+        .collect(Collectors.toMap(Location::getIdentifier, location -> location));
+
+    List<PlanAssignment> planAssignments = planAssignmentService.getPlanAssignmentsByPlanIdentifier(selectedPlan.getIdentifier());
+
+    Map<UUID, List<PlanAssignment>> planAssignmentMap = planAssignments.stream()
+        .collect(Collectors.groupingBy(
+            planAssignment -> planAssignment.getPlanLocations().getLocation().getIdentifier()));
+    geoTreeResponses.forEach(el -> planLocationsService.assignLocations(locationMap, el, planAssignmentMap));
+    return geoTreeResponses;
   }
 }
