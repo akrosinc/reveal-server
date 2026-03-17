@@ -18,7 +18,7 @@ public interface InstanceRepository extends JpaRepository<Instance, UUID> {
 
   @Query(
       "select ins.name as name,insEtag.entityTag.identifier as entityTagIdentifier  from Instance ins  inner join InstanceEntityTag insEtag "
-          + " on insEtag.instance = ins where insEtag.id in :entityTagtIdList")
+          + " on insEtag.instance = ins where insEtag.id.entityTagId in :entityTagtIdList")
   List<InstanceEntityTagIdProjection> findInstancesNamesByEntityIds(List<UUID> entityTagtIdList);
 
   @Query("SELECT " +

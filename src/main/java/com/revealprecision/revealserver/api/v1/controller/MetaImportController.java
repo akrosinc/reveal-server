@@ -37,7 +37,7 @@ public class MetaImportController {
       tags = {"MetaData import"}
   )
   @PostMapping()
-  public ResponseEntity<?> importMetaData( @RequestParam(value = "file" , required = false) String metaDataName,
+  public ResponseEntity<?> importMetaData( @RequestParam(value = "name" , required = false) String metaDataName,
       @RequestParam("file") MultipartFile file) throws FileFormatException {
     ValidatedTagMap booleanMapMap;
     try {
@@ -74,7 +74,8 @@ public class MetaImportController {
       tags = {"Metadata import"})
   @GetMapping( path = "/dataset",
               produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<Page<DatasetResponse>> getDatasetList(Pageable pageable,@RequestParam("accessType") Boolean isPublic) {
+  public ResponseEntity<Page<DatasetResponse>> getDatasetList(Pageable pageable,
+        @RequestParam(value = "accessType" , required = false) Boolean isPublic) {
     return ResponseEntity.status(HttpStatus.OK)
         .body(metadataService.getDatasetList(pageable, isPublic));
   }

@@ -399,15 +399,22 @@ public class MetadataService {
     Page<MetadataImport> all = metadataImportRepository.findAll(pageable);
 
     Map<UUID, List<EntityTag>> collect = all.get().flatMap(metadataImport -> {
-          if (accessType != null) {
-            return entityTagService
-                .findEntityTagsByMetadataImportAndIsPublic(
-                    metadataImport.getIdentifier(),accessType)
-                .stream();
-          } else {
+      
+          if(accessType == null){
             return entityTagService
                 .findEntityTagsByMetadataImport(
                     metadataImport.getIdentifier())
+                .stream();
+          } else if (accessType) {
+            return entityTagService
+                .findEntityTagsByMetadataImportAndIsPublic(
+                    metadataImport.getIdentifier(),true)
+                .stream();
+          }
+          else {
+            return entityTagService
+                .findEntityTagsByMetadataImportAndIsPublic(
+                    metadataImport.getIdentifier(),false)
                 .stream();
           }
         }).filter(entityTag -> entityTag.getMetadataImport() != null)

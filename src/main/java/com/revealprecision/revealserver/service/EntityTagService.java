@@ -943,6 +943,7 @@ public class EntityTagService {
     return entityTagRepository.findEntityTagsByMetadataImport_IdentifierAndIsPublic(id, isPublic);
   }
 
+
   public List<ComplexTag> getAllComplexTags() {
     return complexTagRepository.findAll();
   }
