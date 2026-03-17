@@ -395,17 +395,17 @@ public class MetadataService {
   }
 
 
-  public Page<DatasetResponse> getDatasetList(final Pageable pageable,final Boolean accessType) {
+  public Page<DatasetResponse> getDatasetList(final Pageable pageable,final Boolean isPublic) {
     Page<MetadataImport> all = metadataImportRepository.findAll(pageable);
 
     Map<UUID, List<EntityTag>> collect = all.get().flatMap(metadataImport -> {
       
-          if(accessType == null){
+          if(isPublic == null){
             return entityTagService
                 .findEntityTagsByMetadataImport(
                     metadataImport.getIdentifier())
                 .stream();
-          } else if (accessType) {
+          } else if (isPublic) {
             return entityTagService
                 .findEntityTagsByMetadataImportAndIsPublic(
                     metadataImport.getIdentifier(),true)
