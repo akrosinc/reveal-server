@@ -44,7 +44,7 @@ public class GroupManagementController {
 
 
   @Operation(summary = "Get management group By Id", description = "Get management group By Id", tags = {"GroupManagement"})
-  @GetMapping(path = "/{identifier}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  @GetMapping(path = "/{identifier}", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<GroupManagementResponse> getGroupById(@PathVariable UUID identifier) {
     return ResponseEntity.ok(groupManagementService.getGroupById(identifier));
   }
