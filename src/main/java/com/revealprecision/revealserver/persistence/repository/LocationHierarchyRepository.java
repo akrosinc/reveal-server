@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -48,4 +50,7 @@ LocationHierarchyRepository extends JpaRepository<LocationHierarchy, UUID> {
 
   @Query(value = "SELECT  lh.nodeOrder  FROM LocationHierarchy lh where lh.identifier = :identifier")
   String findNodeOrderByIdentifier(UUID identifier);
+
+  @Query(value = "SELECT  lh FROM LocationHierarchy lh where lh.baseHierarchy = false")
+  Page<LocationHierarchy> findAllWithoutBaseHierarchy(Pageable pageable);
 }

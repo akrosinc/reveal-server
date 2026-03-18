@@ -4,7 +4,6 @@ import static java.util.stream.Collectors.joining;
 
 import com.revealprecision.revealserver.api.v1.dto.request.LocationHierarchyRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.GeoTreeResponse;
-import com.revealprecision.revealserver.api.v1.dto.response.LocationHierarchyResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationPropertyResponse;
 import com.revealprecision.revealserver.enums.BulkStatusEnum;
 import com.revealprecision.revealserver.enums.EntityStatus;
@@ -29,6 +28,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.action.search.ClearScrollRequest;
@@ -77,6 +77,7 @@ public class LocationHierarchyService {
 
         var locationHierarchyToSave = LocationHierarchy.builder()
                 .nodeOrder(locationHierarchyRequest.getNodeOrder()).name(locationHierarchyRequest.getName())
+                .baseHierarchy(false)
                 .build();
         locationHierarchyToSave.setEntityStatus(EntityStatus.ACTIVE);
         return locationHierarchyRepository.save(locationHierarchyToSave);
@@ -99,7 +100,7 @@ public class LocationHierarchyService {
     }
 
     public Page<LocationHierarchy> getLocationHierarchies(Pageable pageable) {
-        return locationHierarchyRepository.findAll(pageable);
+        return locationHierarchyRepository.findAllWithoutBaseHierarchy(pageable);
     }
 
     public Set<LocationHierarchy> getLocationHierarchiesIn(Set<UUID> locationHierarchyIdentifiers) {
@@ -346,7 +347,7 @@ public class LocationHierarchyService {
         validateLocationHierarchy(locationHierarchyRequest);
 
         var locationHierarchyToSave = LocationHierarchy.builder()
-            .nodeOrder(locationHierarchyRequest.getNodeOrder()).name(locationHierarchyRequest.getName())
+            .nodeOrder(locationHierarchyRequest.getNodeOrder()).name(AppConstants.BASE_HIERARCHY_KEYWORD)
             .baseHierarchy(true)
             .build();
         locationHierarchyToSave.setEntityStatus(EntityStatus.ACTIVE);
@@ -394,5 +395,14 @@ public class LocationHierarchyService {
 
     public LocationHierarchy getBaseLocationHierarchy() {
         return getBaseHierarchy();
+    }
+
+    public LocationHierarchy updateBaseLocationHierarchy(LocationHierarchyRequest locationHierarchyRequest) {
+        LocationHierarchy locationHierarchy = getBaseLocationHierarchy();
+
+        geographicLevelService.validateGeographyLevels(locationHierarchyRequest.getNodeOrder());
+        validateLocationHierarchy(locationHierarchyRequest);
+        locationHierarchy.setNodeOrder(locationHierarchyRequest.getNodeOrder());
+        return locationHierarchyRepository.save(locationHierarchy);
     }
 }
