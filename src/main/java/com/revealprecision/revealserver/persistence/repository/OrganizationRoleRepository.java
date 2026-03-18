@@ -14,4 +14,5 @@ public interface OrganizationRoleRepository extends
       "JOIN rm.organizationRole r " +
       "WHERE rm.organization.identifier = :organizationId")
   List<OrganizationRole> findByOrganizationId(UUID organizationId);
+
 }

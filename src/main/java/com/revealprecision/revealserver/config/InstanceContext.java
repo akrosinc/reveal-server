@@ -21,6 +21,14 @@ public class InstanceContext {
         return instanceId;
     }
 
+    public static Optional<UUID> getSafe() {
+        UUID instanceId = CURRENT_INSTANCE.get();
+        if (instanceId == null) {
+            return  Optional.empty();
+        }
+        return Optional.of(instanceId);
+    }
+
     public static Optional<UUID> getOptional() {
         return Optional.ofNullable(CURRENT_INSTANCE.get());
     }

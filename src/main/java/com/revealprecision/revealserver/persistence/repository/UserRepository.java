@@ -52,6 +52,19 @@ public interface UserRepository extends JpaRepository<User, UUID> {
                     + "OR lower(org.name) like lower(concat('%', :param, '%'))")
     Page<User> searchByParameter(@Param("param") String param, Pageable pageable);
 
+    @Query(value = "select u from User u " +
+        "where lower(u.username) like lower(concat('%', :param, '%')) " +
+        "OR lower(u.firstName) like lower(concat('%', :param, '%')) " +
+        "OR lower(u.lastName) like lower(concat('%', :param, '%')) " +
+        "OR lower(u.email) like lower(concat('%', :param, '%'))",
+        countQuery = "select count(u) from User u " +
+            "where lower(u.username) like lower(concat('%', :param, '%')) " +
+            "OR lower(u.firstName) like lower(concat('%', :param, '%')) " +
+            "OR lower(u.lastName) like lower(concat('%', :param, '%')) " +
+            "OR lower(u.email) like lower(concat('%', :param, '%'))")
+    Page<User> getGlobalUsers(@Param("param") String param, Pageable pageable);
+
+
     @Query(value = "select count(u) from User u")
     long getNumberOfUsers();
 
@@ -85,4 +98,10 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     @Query("SELECT u FROM User u JOIN u.organizations o WHERE o.identifier = :organizationId")
     List<User> findByOrganizationId(UUID organizationId);
+
+    @Query("SELECT DISTINCT u FROM User u " +
+        "LEFT JOIN FETCH u.organizations o " +
+        "LEFT JOIN FETCH o.instance i " +
+        "WHERE u.identifier = :userId")
+    List<User> findByIdWithOrganizations(UUID userId);
 }

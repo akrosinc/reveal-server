@@ -13,6 +13,8 @@ import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.EntityTag;
 import com.revealprecision.revealserver.persistence.domain.EntityTagAccGrantsOrganization;
 import com.revealprecision.revealserver.persistence.domain.Instance;
+import com.revealprecision.revealserver.persistence.domain.InstanceRole;
+import com.revealprecision.revealserver.persistence.domain.InstanceUser;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.Organization;
 import com.revealprecision.revealserver.persistence.domain.OrganizationLocation;
@@ -24,6 +26,7 @@ import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.persistence.projection.GroupManagementProjection;
 import com.revealprecision.revealserver.persistence.repository.EntityTagAccGrantsOrganizationRepository;
 import com.revealprecision.revealserver.persistence.repository.InstanceRepository;
+import com.revealprecision.revealserver.persistence.repository.InstanceUserRepository;
 import com.revealprecision.revealserver.persistence.repository.OrganizationLocationRepository;
 import com.revealprecision.revealserver.persistence.repository.OrganizationRepository;
 import com.revealprecision.revealserver.persistence.repository.OrganizationRoleMappingRepository;
@@ -62,6 +65,8 @@ public class GroupManagementService {
   private final PlanService planService;
   private final PlanAssignmentService planAssignmentService;
   private final PlanLocationsRepository planLocationsRepository;
+  private final InstanceRoleService instanceRoleService;
+  private final InstanceUserRepository instanceUserRepository;
 
   public void createGroup(GroupManagementRequest request) {
 
@@ -89,6 +94,19 @@ public class GroupManagementService {
     users.forEach(user -> user.getOrganizations().add(organization));
 
     userService.saveAll(users);
+
+    InstanceRole standardRole = instanceRoleService.getStandardRole();
+
+    List<InstanceUser> instanceUsers =  users.stream()
+        .map(user -> {
+          InstanceUser instanceUser = new InstanceUser();
+          instanceUser.setRole(standardRole);
+          instanceUser.populate(instance, user);
+          return instanceUser;
+        })
+        .collect(Collectors.toList());
+
+    instanceUserRepository.saveAll(instanceUsers);
 
     if(!request.getIsTeam()){
       List<EntityTag> tags = entityTagService.findEntityTagsByIdentifierIn(
@@ -273,6 +291,10 @@ public class GroupManagementService {
 
   @Transactional
   public void updateGroup(UUID identifier, GroupManagementRequest request) {
+
+    UUID instanceIdentifier = InstanceContext.get();
+    Instance instance = instanceService.findById(instanceIdentifier);
+
     Organization org = organizationRepository.findById(identifier)
         .orElseThrow(() -> new NotFoundException("Group not found: " + identifier));
 
@@ -288,9 +310,27 @@ public class GroupManagementService {
     currentUsers.forEach(user -> user.getOrganizations().remove(org));
     userService.saveAll(currentUsers);
 
+    // Remove instance users for current members
+    List<UUID> currentUserIds = currentUsers.stream()
+        .map(User::getIdentifier)
+        .collect(Collectors.toList());
+    instanceUserRepository.deleteByUserIdsAndInstanceId(currentUserIds, instanceIdentifier);
+
+    // Add new members
     List<User> newUsers = userService.findAllById(request.getMembersIdentifiers());
     newUsers.forEach(user -> user.getOrganizations().add(org));
     userService.saveAll(newUsers);
+
+    // Add instance users for new members
+    InstanceRole standardRole = instanceRoleService.getStandardRole();
+    List<InstanceUser> instanceUsers = newUsers.stream()
+        .map(user -> {
+          InstanceUser instanceUser = new InstanceUser();
+          instanceUser.setRole(standardRole);
+          instanceUser.populate(instance, user);
+          return instanceUser;
+        }).collect(Collectors.toList());
+    instanceUserRepository.saveAll(instanceUsers);
 
     if (!request.getIsTeam()) {
 

@@ -16,7 +16,44 @@ import lombok.Setter;
 @Builder
 public class InstanceContextResponse {
   private IdentifierNameResponse selectedInstance;
-  private UUID roleIdentifier;
-  private String roleName;
-  private Set<String> permissions;
+  private InstanceRoleInfo role;
+  private List<GroupContextInfo> groups;
+
+  @Getter
+  @Setter
+  @Builder
+  @NoArgsConstructor
+  @AllArgsConstructor
+  public static class InstanceRoleInfo {
+    private UUID identifier;
+    private String name;
+    private Set<String> permissions;
+  }
+
+  @Getter
+  @Setter
+  @Builder
+  @NoArgsConstructor
+  @AllArgsConstructor
+  public static class GroupContextInfo {
+    private UUID identifier;
+    private String name;
+    private String type;
+    private List<GroupRoleInfo> roles;
+    private Set<String> permissions;
+  }
+
+
+  @Getter
+  @Setter
+  @Builder
+  @NoArgsConstructor
+  @AllArgsConstructor
+  public static class GroupRoleInfo {
+    private UUID identifier;
+    private String name;
+    private Set<String> permissions;
+  }
 }
+
+

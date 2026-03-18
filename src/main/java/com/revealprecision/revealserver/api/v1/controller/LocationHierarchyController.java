@@ -170,7 +170,10 @@ public class LocationHierarchyController {
                 locationHierarchyService.getBaseLocationHierarchy()));
     }
 
-
+    @Operation(summary = "Update base Hierarchy",
+        description = "Update base Hierarchy",
+        tags = {"Location Hierarchy"}
+    )
     @PutMapping(path="/base",consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<LocationHierarchyResponse> updateBaseLocationHierarchy(
         @Valid @RequestBody LocationHierarchyRequest locationHierarchyRequest) {

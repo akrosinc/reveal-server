@@ -1,11 +1,13 @@
 package com.revealprecision.revealserver.service;
 
 import com.revealprecision.revealserver.api.v1.dto.factory.UserEntityFactory;
+import com.revealprecision.revealserver.api.v1.dto.factory.UserResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.GlobalUserRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.RegisterUserRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.UserPasswordRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.UserRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.UserUpdateRequest;
+import com.revealprecision.revealserver.api.v1.dto.response.GlobalUserResponse;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.exceptions.ConflictException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
@@ -13,18 +15,19 @@ import com.revealprecision.revealserver.exceptions.constant.Error;
 import com.revealprecision.revealserver.persistence.domain.Organization;
 import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.persistence.domain.User.Fields;
+import com.revealprecision.revealserver.persistence.projection.UserIdInstanceNameProjection;
+import com.revealprecision.revealserver.persistence.repository.InstanceUserRepository;
 import com.revealprecision.revealserver.persistence.repository.UserRepository;
 import com.revealprecision.revealserver.util.UserUtils;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 import javax.transaction.Transactional;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.RoleMappingResource;
@@ -50,6 +53,7 @@ public class UserService {
     private final Keycloak keycloak;
     @Value("${keycloak.realm}")
     private String realm;
+    private final InstanceUserRepository instanceUserRepository;
 
     public User createUser(UserRequest userRequest) {
         if (userRequest.getEmail() == null) {
@@ -84,6 +88,8 @@ public class UserService {
     public Page<User> searchUsers(String searchParam, Pageable pageable) {
         return userRepository.searchByParameter(searchParam, pageable);
     }
+
+
 
     public long getUsersNumber() {
         return userRepository.getNumberOfUsers();
@@ -223,5 +229,29 @@ public class UserService {
 
     public List<User> saveAll(List<User> users) {
         return  userRepository.saveAll(users);
+    }
+
+    public List<User> findByIdWithOrganizations(UUID userId) {
+        return userRepository.findByIdWithOrganizations(userId);
+    }
+
+    public Page<GlobalUserResponse> getGlobalUsers(String searchParam, Pageable pageable) {
+
+        Page<User> users = userRepository.getGlobalUsers(searchParam, pageable);
+
+        List<UUID> userIds = users.getContent().stream()
+            .map(User::getIdentifier)
+            .collect(Collectors.toList());
+
+        Map<UUID, List<String>> instanceUserMap = instanceUserRepository.getUserInstancesByUserIds(
+                userIds)
+            .stream()
+            .collect(Collectors.groupingBy(
+                UserIdInstanceNameProjection::getUserIdentifier,
+                Collectors.mapping(UserIdInstanceNameProjection::getInstanceName,
+                    Collectors.toList())
+            ));
+
+        return UserResponseFactory.toGlobalUserResponsePage(users, pageable, instanceUserMap);
     }
 }

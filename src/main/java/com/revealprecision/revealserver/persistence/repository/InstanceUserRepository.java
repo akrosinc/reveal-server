@@ -5,11 +5,13 @@ import com.revealprecision.revealserver.persistence.domain.InstanceUser;
 import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.persistence.domain.id.InstanceUserId;
 import com.revealprecision.revealserver.persistence.projection.IdentifierNameProjection;
+import com.revealprecision.revealserver.persistence.projection.UserIdInstanceNameProjection;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
 public interface InstanceUserRepository  extends
@@ -20,8 +22,6 @@ public interface InstanceUserRepository  extends
   @Query("SELECT iu.instance FROM InstanceUser iu WHERE iu.user.identifier = :identifier")
   List<Instance> getUserInstances(UUID identifier);
 
-  @Query(value = "SELECT iu.instance FROM InstanceUser iu WHERE iu.user.identifier = :identifier")
-  List<Instance> findFirstInstanceByUserIdentifier(UUID identifier);
 
   @Query("SELECT iu.instance FROM InstanceUser iu WHERE iu.user.identifier = :identifier and iu.instance.identifier = :instanceIdentifier")
   List<Instance> findFirstInstanceByUserIdentifierAndInstanceIdentifier(UUID identifier, UUID instanceIdentifier);
@@ -30,17 +30,28 @@ public interface InstanceUserRepository  extends
   List<IdentifierNameProjection> getInstancesUsers(UUID instanceIdentifier);
 
   @Query("SELECT iu FROM InstanceUser iu " +
-      "JOIN FETCH iu.instance " +
-      "JOIN FETCH iu.role " +
-      "WHERE iu.user.identifier = :userIdentifier")
-  List<InstanceUser> findFirstByUserIdentifier(UUID userIdentifier);
+      "JOIN FETCH iu.instance i " +
+      "JOIN FETCH iu.user u " +
+      "JOIN FETCH iu.role r " +
+      "LEFT JOIN FETCH r.permissions p " +
+      "LEFT JOIN FETCH p.permission " +
+      "WHERE u.identifier = :userIdentifier")
+  List<InstanceUser> findByUser(UUID userIdentifier);
 
   @Query("SELECT iu FROM InstanceUser iu " +
       "JOIN FETCH iu.instance " +
       "JOIN FETCH iu.role " +
       "WHERE iu.user.identifier = :userIdentifier " +
       "AND iu.instance.identifier = :instanceIdentifier")
-  List<InstanceUser> findFirstByUserIdentifierAndInstanceIdentifier(
-      UUID userIdentifier,
-       UUID instanceIdentifier);
+  List<InstanceUser> findByUserAndInstance(UUID userIdentifier, UUID instanceIdentifier);
+
+  @Query("SELECT iu.instance.name as instanceName,iu.user.identifier as userIdentifier "
+      + " FROM InstanceUser iu WHERE iu.user.identifier in (:userIds) ")
+  List<UserIdInstanceNameProjection> getUserInstancesByUserIds(List<UUID> userIds);
+
+  @Modifying
+  @Query("DELETE FROM InstanceUser iu " +
+      "WHERE iu.user.identifier IN :userIds " +
+      "AND iu.instance.identifier = :instanceId")
+  void deleteByUserIdsAndInstanceId(List<UUID> currentUserIds, UUID instanceIdentifier);
 }

@@ -22,15 +22,20 @@ import com.revealprecision.revealserver.persistence.domain.InstanceRole;
 import com.revealprecision.revealserver.persistence.domain.InstanceUser;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
+import com.revealprecision.revealserver.persistence.domain.OrganizationRole;
+import com.revealprecision.revealserver.persistence.domain.OrganizationRoleMapping;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.persistence.projection.IdentifierNameProjection;
 import com.revealprecision.revealserver.persistence.projection.InstanceEntityTagIdProjection;
 import com.revealprecision.revealserver.persistence.projection.InstanceListProjection;
+import com.revealprecision.revealserver.persistence.projection.UserIdInstanceNameProjection;
 import com.revealprecision.revealserver.persistence.repository.InstanceEntityTagRepository;
 import com.revealprecision.revealserver.persistence.repository.InstanceLocationRepository;
 import com.revealprecision.revealserver.persistence.repository.InstanceRepository;
 import com.revealprecision.revealserver.persistence.repository.InstanceUserRepository;
+import com.revealprecision.revealserver.persistence.repository.OrganizationRoleMappingRepository;
+import com.revealprecision.revealserver.persistence.repository.OrganizationRoleRepository;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -60,6 +65,7 @@ public class InstanceService {
   private final InstanceLocationRepository instanceLocationRepository;
   private final LocationHierarchyService locationHierarchyService;
   private final LocationRelationshipService locationRelationshipService;
+  private final OrganizationRoleMappingRepository organizationRoleMappingRepository;
 
   @Transactional
   public void create(InstanceRequest instanceRequest) {
@@ -258,27 +264,48 @@ public class InstanceService {
         .map(IdentifierNameResponseFactory::toIdentifierNameResponse).collect(Collectors.toList());
   }
 
-  public InstanceContextResponse instanceContext(UUID identifier) {
+  public InstanceContextResponse instanceContext(final UUID instanceIdentifier) {
+
     User currentUser = userService.getCurrentUser();
+    UUID userId = currentUser.getIdentifier();
 
-    InstanceUser instanceUser;
+    // Resolve instance identifier - use provided, fall back to context, then first available
+    UUID resolvedInstanceId = instanceIdentifier != null
+        ? instanceIdentifier
+        : InstanceContext.getSafe().orElse(null);
 
-    if (identifier == null) {
-      instanceUser = instanceUserRepository
-          .findFirstByUserIdentifier(currentUser.getIdentifier())
-          .stream()
-          .findFirst()
-          .orElseThrow(() -> new NotFoundException("User has no instances"));
-    } else {
-      instanceUser = instanceUserRepository
-          .findFirstByUserIdentifierAndInstanceIdentifier(
-              currentUser.getIdentifier(), identifier)
-          .stream()
-          .findFirst()
-          .orElseThrow(() -> new NotFoundException("User has no instances"));
-    }
+    InstanceUser instanceUser = (resolvedInstanceId == null
+        ? instanceUserRepository.findByUser(userId)
+        : instanceUserRepository.findByUserAndInstance(userId, resolvedInstanceId))
+        .stream()
+        .findFirst()
+        .orElseThrow(() -> new NotFoundException(resolvedInstanceId == null
+            ? "User is not a member of any instance"
+            : "User is not a member of this instance"));
 
-    return InstanceContextResponseFactory.buildInstanceContextResponse(instanceUser);
+    // Use the resolved instance id from the found instanceUser
+    UUID effectiveInstanceId = instanceUser.getInstance().getIdentifier();
+
+    User userWithOrganizations = userService.findByIdWithOrganizations(userId)
+        .stream()
+        .findFirst()
+        .orElseThrow(() -> new NotFoundException("User not found"));
+
+    List<InstanceContextResponse.GroupContextInfo> groups = userWithOrganizations.getOrganizations()
+        .stream()
+        .filter(org -> org.getInstance().getIdentifier().equals(effectiveInstanceId))
+        .map(org -> {
+          List<OrganizationRole> orgRoles = organizationRoleMappingRepository
+              .findRolesByUserAndOrganization(userId, org.getIdentifier())
+              .stream()
+              .map(OrganizationRoleMapping::getOrganizationRole)
+              .collect(Collectors.toList());
+
+          return InstanceContextResponseFactory.toGroupContextInfo(org, orgRoles);
+        })
+        .collect(Collectors.toList());
+
+    return InstanceContextResponseFactory.buildInstanceContextResponse(instanceUser, groups);
   }
 
   public boolean isMember(UUID userId, UUID instanceId) {
@@ -321,5 +348,9 @@ public class InstanceService {
           response.setName(instanceUser.getName());
           return response;
         }).collect(Collectors.toList());
+  }
+
+  public List<UserIdInstanceNameProjection> findInstanceNamesUserIdByUserIds(List<UUID> userIds) {
+    return instanceUserRepository.getUserInstancesByUserIds(userIds);
   }
 }

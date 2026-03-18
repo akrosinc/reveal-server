@@ -78,6 +78,22 @@ public class UserController {
     }
   }
 
+  @GetMapping(path = "/global", produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<?> getGlobalUsers(
+      @RequestParam(value = "search", defaultValue = "") String search,
+      @RequestParam(value = "count", defaultValue = "false", required = false) boolean count,
+      @AllowedSortProperties(value = {
+          "username", "firstName", "lastName"}) Pageable pageable) {
+    if (!count) {
+      return ResponseEntity.status(HttpStatus.OK)
+          .body(userService.getGlobalUsers(search, pageable));
+    }
+    {
+      return ResponseEntity.status(HttpStatus.OK).body(new CountResponse(
+          userService.getUsersNumber()));
+    }
+  }
+
   @GetMapping(value = "/{identifier}", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<UserResponse> getUser(@PathVariable("identifier") UUID identifier) {
     return ResponseEntity.status(HttpStatus.OK)
