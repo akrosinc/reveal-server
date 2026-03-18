@@ -4,6 +4,7 @@ import static java.util.stream.Collectors.joining;
 
 import com.revealprecision.revealserver.api.v1.dto.request.LocationHierarchyRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.GeoTreeResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.LocationHierarchyResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationPropertyResponse;
 import com.revealprecision.revealserver.enums.BulkStatusEnum;
 import com.revealprecision.revealserver.enums.EntityStatus;
@@ -359,8 +360,8 @@ public class LocationHierarchyService {
     }
 
     private LocationHierarchy getBaseHierarchy(){
-        return locationHierarchyRepository.findByName(AppConstants.DEFAULT_KEYWORD).
-            orElseThrow(() -> new NotFoundException("Default hierarchy not found"));
+        return locationHierarchyRepository.getBaseHierarchy().
+            orElseThrow(() -> new NotFoundException("BASE hierarchy not found"));
     }
 
     public void activateLocationHierarchy(UUID identifier) {
@@ -389,5 +390,9 @@ public class LocationHierarchyService {
                 locationBulkService.update(locationBulk);
             }
         }
+    }
+
+    public LocationHierarchy getBaseLocationHierarchy() {
+        return getBaseHierarchy();
     }
 }

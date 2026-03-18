@@ -158,6 +158,17 @@ public class LocationHierarchyController {
                 locationHierarchyService.createBaseLocationHierarchy(locationHierarchyRequest)));
     }
 
+    @Operation(summary = "Get base Hierarchy",
+        description = "Add base Hierarchy",
+        tags = {"Location Hierarchy"}
+    )
+    @GetMapping(path="/base", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<LocationHierarchyResponse> getBaseLocationHierarchy() {
+        return ResponseEntity.ok(LocationHierarchyResponseFactory
+            .fromEntityWithoutTree(
+                locationHierarchyService.getBaseLocationHierarchy()));
+    }
+
 
     @Operation(summary = "Activate LocationHierarchy by identifier",
         description = "Activate LocationHierarchy by identifier",
