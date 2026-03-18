@@ -402,18 +402,18 @@ public class MetadataService {
       
           if(isPublic == null){
             return entityTagService
-                .findEntityTagsByMetadataImport(
+                .findEntityTagsByMetadataImportIsNotAggregate(
                     metadataImport.getIdentifier())
                 .stream();
           } else if (isPublic) {
             return entityTagService
-                .findEntityTagsByMetadataImportAndIsPublic(
+                .findEntityTagsByMetadataImportAndIsPublicAndIsNotAggregate(
                     metadataImport.getIdentifier(),true)
                 .stream();
           }
           else {
             return entityTagService
-                .findEntityTagsByMetadataImportAndIsPublic(
+                .findEntityTagsByMetadataImportAndIsPublicAndIsNotAggregate(
                     metadataImport.getIdentifier(),false)
                 .stream();
           }

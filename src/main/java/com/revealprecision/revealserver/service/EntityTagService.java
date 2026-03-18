@@ -939,7 +939,11 @@ public class EntityTagService {
     return entityTagRepository.findEntityTagsByMetadataImport_Identifier(id);
   }
 
-  public List<EntityTag> findEntityTagsByMetadataImportAndIsPublic(UUID id, boolean isPublic) {
+  public List<EntityTag> findEntityTagsByMetadataImportIsNotAggregate(UUID id) {
+    return entityTagRepository.findEntityTagsByMetadataImport_IdentifierAndIsAggregate(id,false);
+  }
+
+  public List<EntityTag> findEntityTagsByMetadataImportAndIsPublicAndIsNotAggregate(UUID id, boolean isPublic) {
     return entityTagRepository.findEntityTagsByMetadataImport_IdentifierAndIsPublicAndIsAggregate(id, isPublic,false);
   }
 
