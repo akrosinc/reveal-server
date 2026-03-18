@@ -940,7 +940,7 @@ public class EntityTagService {
   }
 
   public List<EntityTag> findEntityTagsByMetadataImportAndIsPublic(UUID id, boolean isPublic) {
-    return entityTagRepository.findEntityTagsByMetadataImport_IdentifierAndIsPublic(id, isPublic);
+    return entityTagRepository.findEntityTagsByMetadataImport_IdentifierAndIsPublicAndIsAggregate(id, isPublic,false);
   }
 
 

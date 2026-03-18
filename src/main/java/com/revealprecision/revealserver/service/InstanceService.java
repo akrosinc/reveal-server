@@ -11,7 +11,9 @@ import com.revealprecision.revealserver.api.v1.dto.response.InstanceResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceUserListResponse;
 import com.revealprecision.revealserver.config.InstanceContext;
 import com.revealprecision.revealserver.enums.EntityStatus;
+import com.revealprecision.revealserver.exceptions.ConflictException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
+import com.revealprecision.revealserver.exceptions.constant.Error;
 import com.revealprecision.revealserver.persistence.domain.EntityTag;
 import com.revealprecision.revealserver.persistence.domain.Instance;
 import com.revealprecision.revealserver.persistence.domain.InstanceEntityTag;
@@ -62,67 +64,71 @@ public class InstanceService {
   @Transactional
   public void create(InstanceRequest instanceRequest) {
 
-      Instance instance = new Instance();
-      instance.setName(instanceRequest.getInstanceName());
-      instance.setEntityStatus(EntityStatus.ACTIVE);
-      LocationHierarchy locationHierarchy = locationHierarchyService.findByIdentifier(
-          instanceRequest.getLocationHierarchy());
-      instance.setLocationHierarchy(locationHierarchy);
+    instanceRepository.findByName(instanceRequest.getInstanceName()).ifPresent(instance -> {
+      throw new ConflictException(
+          String.format(Error.NON_UNIQUE, "Instance name", instanceRequest.getInstanceName()));
+    });
 
-      Instance savedInstance = instanceRepository.save(instance);
+    Instance instance = new Instance();
+    instance.setName(instanceRequest.getInstanceName());
+    instance.setEntityStatus(EntityStatus.ACTIVE);
+    LocationHierarchy locationHierarchy = locationHierarchyService.findByIdentifier(
+        instanceRequest.getLocationHierarchy());
+    instance.setLocationHierarchy(locationHierarchy);
 
+    Instance savedInstance = instanceRepository.save(instance);
 
-      Plan plan = planService.createPlan(instanceRequest.getPlanRequest(), savedInstance);
+    Plan plan = planService.createPlan(instanceRequest.getPlanRequest(), savedInstance);
 
-      //    Adding instance datasets tags
+    //    Adding instance datasets tags
 
-      if (instanceRequest.getDatasets_tags() != null) {
-        List<EntityTag> tags = entityTagService.findEntityTagsByIdentifierIn(
-            instanceRequest.getDatasets_tags());
+    if (instanceRequest.getDatasets_tags() != null) {
+      List<EntityTag> tags = entityTagService.findEntityTagsByIdentifierIn(
+          instanceRequest.getDatasets_tags());
 
-        List<InstanceEntityTag> instanceEntityTags = tags.stream().distinct().map(tag -> {
+      List<InstanceEntityTag> instanceEntityTags = tags.stream().distinct().map(tag -> {
 
-          InstanceEntityTag mapping = new InstanceEntityTag();
+        InstanceEntityTag mapping = new InstanceEntityTag();
 
-          mapping.populate(savedInstance, tag);
+        mapping.populate(savedInstance, tag);
 
-          return mapping;
-        }).collect(Collectors.toList());
+        return mapping;
+      }).collect(Collectors.toList());
 
-        instanceEntityTagRepository.saveAll(instanceEntityTags);
-      }
+      instanceEntityTagRepository.saveAll(instanceEntityTags);
+    }
 
-      //Adding instance users
-      if (instanceRequest.getMembers() != null) {
-        List<User> users = userService.findAllById(instanceRequest.getMembers());
+    //Adding instance users
+    if (instanceRequest.getMembers() != null) {
+      List<User> users = userService.findAllById(instanceRequest.getMembers());
 
-        InstanceRole adminRole = instanceRoleService.getInstanceAdminRole();
+      InstanceRole adminRole = instanceRoleService.getInstanceAdminRole();
 
-        List<InstanceUser> instanceUsers = users.stream().distinct().map(user -> {
-          InstanceUser mapping = new InstanceUser();
-          mapping.populate(savedInstance, user);
-          mapping.setRole(adminRole);
-          return mapping;
-        }).collect(Collectors.toList());
+      List<InstanceUser> instanceUsers = users.stream().distinct().map(user -> {
+        InstanceUser mapping = new InstanceUser();
+        mapping.populate(savedInstance, user);
+        mapping.setRole(adminRole);
+        return mapping;
+      }).collect(Collectors.toList());
 
-        instanceUserRepository.saveAll(instanceUsers);
-      }
+      instanceUserRepository.saveAll(instanceUsers);
+    }
 
-      //Adding Areas
-      if (instanceRequest.getAreas() != null) {
-        List<Location> locations = locationService.findAllIdentifiersWithoutStructureAndGeoJSON(
-            instanceRequest.getAreas());
+    //Adding Areas
+    if (instanceRequest.getAreas() != null) {
+      List<Location> locations = locationService.findAllIdentifiersWithoutStructureAndGeoJSON(
+          instanceRequest.getAreas());
 
-        List<InstanceLocation> areas = locations.stream().distinct().map(location -> {
+      List<InstanceLocation> areas = locations.stream().distinct().map(location -> {
 
-          InstanceLocation mapping = new InstanceLocation();
-          mapping.populate(savedInstance, location);
+        InstanceLocation mapping = new InstanceLocation();
+        mapping.populate(savedInstance, location);
 
-          return mapping;
-        }).collect(Collectors.toList());
+        return mapping;
+      }).collect(Collectors.toList());
 
-        instanceLocationRepository.saveAll(areas);
-      }
+      instanceLocationRepository.saveAll(areas);
+    }
 
   }
 
@@ -136,26 +142,39 @@ public class InstanceService {
 
   public Instance findById(UUID identifier) {
     return instanceRepository.findById(identifier)
-        .orElseThrow(() -> new NotFoundException(Pair.of("identifier", identifier), Instance.class));
+        .orElseThrow(
+            () -> new NotFoundException(Pair.of("identifier", identifier), Instance.class));
   }
 
   public InstanceResponse getInstanceResponse(UUID identifier) {
     Instance instance = findById(identifier);
 
-    List<IdentifierNameProjection> assignedLocations = instanceLocationRepository.getAreasIdNamesByInstance(identifier);
+    List<IdentifierNameProjection> assignedLocations = instanceLocationRepository.getAreasIdNamesByInstance(
+        identifier);
     List<GeoTreeResponse> areas = getAssignedInstanceAreasTree(instance.getIdentifier());
 
     Plan instancePlan = instance.getPlans().stream().findFirst().orElse(null);
 
-    List<UUID>  assignedLocationsIds = assignedLocations.stream().map(IdentifierNameProjection::getIdentifier)
-              .collect(Collectors.toList());
+    List<UUID> assignedLocationsIds = assignedLocations.stream()
+        .map(IdentifierNameProjection::getIdentifier)
+        .collect(Collectors.toList());
 
-    return InstanceResponseFactory.fromEntity(instance, areas , instancePlan ,  assignedLocationsIds);
+    return InstanceResponseFactory.fromEntity(instance, areas, instancePlan, assignedLocationsIds);
   }
 
   @Transactional
   public void update(UUID identifier, InstanceRequest instanceRequest) {
     Instance instance = findById(identifier);
+
+    if (instanceRequest.getInstanceName() != null && !instance.getName()
+        .equals(instanceRequest.getInstanceName())) {
+      instanceRepository.findByName(instanceRequest.getInstanceName()).ifPresent(instance1 -> {
+        if (!instance1.getIdentifier().equals(instance.getIdentifier())) {
+          throw new ConflictException(
+              String.format(Error.NON_UNIQUE, "Instance name", instanceRequest.getInstanceName()));
+        }
+      });
+    }
 
     instance.setName(instanceRequest.getInstanceName());
     LocationHierarchy locationHierarchy = locationHierarchyService.findByIdentifier(
@@ -205,7 +224,8 @@ public class InstanceService {
     }
   }
 
-  public List<InstanceEntityTagIdProjection> findInstancesNamesByEntityIds(List<UUID> entityTagtIdList) {
+  public List<InstanceEntityTagIdProjection> findInstancesNamesByEntityIds(
+      List<UUID> entityTagtIdList) {
     return instanceRepository.findInstancesNamesByEntityIds(entityTagtIdList);
   }
 
@@ -275,19 +295,20 @@ public class InstanceService {
 
     List<IdentifierNameResponse> instancesAreas = null;
 
-    if(instanceIdentifier == null) {
+    if (instanceIdentifier == null) {
       instancesAreas = getAssignedInstanceAreas();
-    }
-    else {
+    } else {
       instancesAreas = getAssignedInstanceAreas(instanceIdentifier);
     }
 
-    List<UUID> instancesAreasIds = instancesAreas.stream().map(IdentifierNameResponse::getIdentifier)
+    List<UUID> instancesAreasIds = instancesAreas.stream()
+        .map(IdentifierNameResponse::getIdentifier)
         .collect(Collectors.toList());
 
-    List<GeoTreeResponse>  geoTreeResponses = locationRelationshipService.getFilteredGeoTreeByLocationIds(instancesAreasIds);
+    List<GeoTreeResponse> geoTreeResponses = locationRelationshipService.getFilteredGeoTreeByLocationIds(
+        instancesAreasIds);
 
-    return  geoTreeResponses;
+    return geoTreeResponses;
   }
 
   public List<InstanceUserListResponse> getInstancesByUserId(UUID userId) {

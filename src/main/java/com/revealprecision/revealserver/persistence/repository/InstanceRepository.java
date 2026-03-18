@@ -4,6 +4,7 @@ import com.revealprecision.revealserver.persistence.domain.Instance;
 import com.revealprecision.revealserver.persistence.projection.InstanceEntityTagIdProjection;
 import com.revealprecision.revealserver.persistence.projection.InstanceListProjection;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -53,4 +54,6 @@ public interface InstanceRepository extends JpaRepository<Instance, UUID> {
       String searchParam,
       Pageable pageable
   );
+
+  Optional<Instance> findByName(String name);
 }
