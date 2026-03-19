@@ -13,6 +13,13 @@ import org.springframework.data.jpa.repository.Query;
 public interface InstanceEntityTagRepository extends JpaRepository<InstanceEntityTag, InstanceEntityTagId> {
   void deleteByInstance(Instance instance);
 
-  @Query("SELECT iet.entityTag.identifier AS identifier, iet.entityTag.tag AS name FROM  InstanceEntityTag iet WHERE iet.instance.identifier = :instanceIdentifier")
+  @Query("SELECT iet.entityTag.identifier AS identifier, iet.entityTag.tag AS name FROM  "
+      + "InstanceEntityTag iet WHERE iet.instance.identifier = :instanceIdentifier")
   List<IdentifierNameProjection> getDatasetsIdNamesByInstance(UUID instanceIdentifier);
+
+  @Query("SELECT et.identifier AS identifier, et.tag AS name " +
+      "FROM InstanceEntityTag iet " +
+      "JOIN iet.entityTag et " +
+      "WHERE iet.instance.identifier IN :instanceIds")
+  List<IdentifierNameProjection> findDatasetTagsByInstanceIds(List<UUID> instanceIds);
 }

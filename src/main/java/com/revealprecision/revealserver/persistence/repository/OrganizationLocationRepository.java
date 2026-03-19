@@ -26,4 +26,14 @@ public interface OrganizationLocationRepository extends
   @Modifying
   @Query("DELETE FROM OrganizationLocation ol WHERE ol.organization.identifier = :organizationId")
   void deleteByOrganizationIdentifier(UUID organizationId);
+
+  @Query(value = "SELECT DISTINCT ol.location_id " +
+      "FROM organization_location ol " +
+      "JOIN user_organization uo ON uo.organization_identifier = ol.organization_id " +
+      "JOIN organization o ON o.identifier = ol.organization_id " +
+      "WHERE uo.user_identifier = :userId " +
+      "AND o.instance_id IN :instanceIds " +
+      "AND o.entity_status = 'ACTIVE'",
+      nativeQuery = true)
+  List<UUID> findAllLocationIdentifiersByUserIdAndInstanceIds(UUID userId, List<UUID> instanceIds);
 }

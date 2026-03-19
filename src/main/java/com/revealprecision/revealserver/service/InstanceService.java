@@ -11,6 +11,7 @@ import com.revealprecision.revealserver.api.v1.dto.response.InstanceResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceUserListResponse;
 import com.revealprecision.revealserver.config.InstanceContext;
 import com.revealprecision.revealserver.enums.EntityStatus;
+import com.revealprecision.revealserver.enums.InstanceRoleEnum;
 import com.revealprecision.revealserver.exceptions.ConflictException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.exceptions.constant.Error;
@@ -30,13 +31,17 @@ import com.revealprecision.revealserver.persistence.projection.IdentifierNamePro
 import com.revealprecision.revealserver.persistence.projection.InstanceEntityTagIdProjection;
 import com.revealprecision.revealserver.persistence.projection.InstanceListProjection;
 import com.revealprecision.revealserver.persistence.projection.UserIdInstanceNameProjection;
+import com.revealprecision.revealserver.persistence.repository.EntityTagAccGrantsOrganizationRepository;
 import com.revealprecision.revealserver.persistence.repository.InstanceEntityTagRepository;
 import com.revealprecision.revealserver.persistence.repository.InstanceLocationRepository;
 import com.revealprecision.revealserver.persistence.repository.InstanceRepository;
 import com.revealprecision.revealserver.persistence.repository.InstanceUserRepository;
+import com.revealprecision.revealserver.persistence.repository.OrganizationLocationRepository;
 import com.revealprecision.revealserver.persistence.repository.OrganizationRoleMappingRepository;
 import com.revealprecision.revealserver.persistence.repository.OrganizationRoleRepository;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -66,6 +71,8 @@ public class InstanceService {
   private final LocationHierarchyService locationHierarchyService;
   private final LocationRelationshipService locationRelationshipService;
   private final OrganizationRoleMappingRepository organizationRoleMappingRepository;
+  private final OrganizationLocationRepository organizationLocationRepository;
+  private final EntityTagAccGrantsOrganizationRepository entityTagAccGrantsOrganizationRepository;
 
   @Transactional
   public void create(InstanceRequest instanceRequest) {
@@ -352,5 +359,97 @@ public class InstanceService {
 
   public List<UserIdInstanceNameProjection> findInstanceNamesUserIdByUserIds(List<UUID> userIds) {
     return instanceUserRepository.getUserInstancesByUserIds(userIds);
+  }
+
+  public List<GeoTreeResponse> getLocationsByUserId(UUID userId) {
+
+    List<InstanceUser> instanceUsers = instanceUserRepository.findByUser(userId);
+
+    if (instanceUsers.isEmpty()) {
+      return List.of();
+    }
+
+    Map<InstanceRoleEnum, List<UUID>> partitionedInstanceIds = instanceUsers.stream()
+        .collect(Collectors.groupingBy(
+            iu -> InstanceRoleEnum.valueOf(iu.getRole().getName()),
+            Collectors.mapping(iu -> iu.getInstance().getIdentifier(), Collectors.toList())
+        ));
+
+    List<UUID> adminInstanceIds = partitionedInstanceIds
+        .getOrDefault(InstanceRoleEnum.ADMIN, List.of());
+    List<UUID> standardInstanceIds = partitionedInstanceIds
+        .getOrDefault(InstanceRoleEnum.STANDARD, List.of());
+
+    List<UUID> locationIds = new ArrayList<>();
+
+    if (!adminInstanceIds.isEmpty()) {
+      locationIds.addAll(
+          instanceLocationRepository.findLocationIdentifiersByInstanceIds(adminInstanceIds)
+      );
+    }
+
+    if (!standardInstanceIds.isEmpty()) {
+      locationIds.addAll(
+          organizationLocationRepository
+              .findAllLocationIdentifiersByUserIdAndInstanceIds(userId, standardInstanceIds)
+      );
+    }
+
+    if (locationIds.isEmpty()) {
+      return List.of();
+    }
+
+    return locationRelationshipService.getFilteredGeoTreeByLocationIds(
+        locationIds.stream()
+            .distinct()
+            .collect(Collectors.toList())
+    );
+
+  }
+
+  public List<IdentifierNameResponse> getDatasetsByUserId(UUID userId) {
+    List<InstanceUser> instanceUsers = instanceUserRepository.findByUser(userId);
+
+    if (instanceUsers.isEmpty()) {
+      return List.of();
+    }
+
+    Map<InstanceRoleEnum, List<UUID>> partitionedInstanceIds = instanceUsers.stream()
+        .collect(Collectors.groupingBy(
+            iu -> InstanceRoleEnum.valueOf(iu.getRole().getName()),
+            Collectors.mapping(iu -> iu.getInstance().getIdentifier(), Collectors.toList())
+        ));
+
+    List<UUID> adminInstanceIds = partitionedInstanceIds
+        .getOrDefault(InstanceRoleEnum.ADMIN, List.of());
+    List<UUID> standardInstanceIds = partitionedInstanceIds
+        .getOrDefault(InstanceRoleEnum.STANDARD, List.of());
+
+    List<IdentifierNameProjection> datasets = new ArrayList<>();
+
+    if (!adminInstanceIds.isEmpty()) {
+      datasets.addAll(
+          instanceEntityTagRepository.findDatasetTagsByInstanceIds(adminInstanceIds)
+      );
+    }
+
+    if (!standardInstanceIds.isEmpty()) {
+      datasets.addAll(
+          entityTagAccGrantsOrganizationRepository
+              .findDatasetsByUserIdAndInstanceIds(userId, standardInstanceIds)
+      );
+    }
+
+    return datasets.stream()
+        .collect(Collectors.toMap(
+            IdentifierNameProjection::getIdentifier,
+            p -> IdentifierNameResponse.builder()
+                .identifier(p.getIdentifier())
+                .name(p.getName())
+                .build(),
+            (a, b) -> a))
+        .values()
+        .stream()
+        .collect(Collectors.toList());
   }
 }

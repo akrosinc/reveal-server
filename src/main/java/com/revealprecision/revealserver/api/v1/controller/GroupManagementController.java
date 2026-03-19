@@ -2,6 +2,7 @@ package com.revealprecision.revealserver.api.v1.controller;
 
 import com.revealprecision.revealserver.api.v1.dto.request.AssignLocationsToTeamRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.GroupManagementRequest;
+import com.revealprecision.revealserver.api.v1.dto.request.OrganizationRoleRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.GeoTreeResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.GroupManagementResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.IdentifierNameResponse;
@@ -10,12 +11,14 @@ import com.revealprecision.revealserver.service.GroupManagementService;
 import io.swagger.v3.oas.annotations.Operation;
 import java.util.List;
 import java.util.UUID;
+import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -103,4 +106,29 @@ public class GroupManagementController {
   public ResponseEntity<List<IdentifierNameResponse>> getGroupRoles() {
     return ResponseEntity.status(HttpStatus.OK).body(groupManagementService.getGroupRoles());
   }
+
+  @Operation(summary = "Create organization role", tags = {"GroupManagement"})
+  @PostMapping(value = "/roles", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<IdentifierNameResponse> createOrganizationRole(
+      @RequestBody @Valid OrganizationRoleRequest request) {
+    return ResponseEntity.status(HttpStatus.CREATED)
+        .body(groupManagementService.createGroupRole(request));
+  }
+
+  @Operation(summary = "Update organization role", tags = {"GroupManagement"})
+  @PutMapping(value = "/roles/{identifier}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<IdentifierNameResponse> updateOrganizationRole(
+      @PathVariable UUID identifier,
+      @RequestBody @Valid OrganizationRoleRequest request) {
+    return ResponseEntity.ok(groupManagementService.updateGroupRole(identifier, request));
+  }
+
+  @Operation(summary = "Delete organization role", tags = {"GroupManagement"})
+  @DeleteMapping(value = "/roles/{identifier}")
+  public ResponseEntity<Void> deleteOrganizationRole(@PathVariable UUID identifier) {
+    groupManagementService.deleteGroupRole(identifier);
+    return ResponseEntity.noContent().build();
+  }
+
+
 }

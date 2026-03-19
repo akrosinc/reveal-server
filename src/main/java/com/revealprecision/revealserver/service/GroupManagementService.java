@@ -1,8 +1,8 @@
 package com.revealprecision.revealserver.service;
 
-import com.revealprecision.revealserver.api.v1.dto.factory.LocationHierarchyResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.AssignLocationsToTeamRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.GroupManagementRequest;
+import com.revealprecision.revealserver.api.v1.dto.request.OrganizationRoleRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.GeoTreeResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.GroupManagementResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.IdentifierNameResponse;
@@ -20,17 +20,20 @@ import com.revealprecision.revealserver.persistence.domain.Organization;
 import com.revealprecision.revealserver.persistence.domain.OrganizationLocation;
 import com.revealprecision.revealserver.persistence.domain.OrganizationRole;
 import com.revealprecision.revealserver.persistence.domain.OrganizationRoleMapping;
+import com.revealprecision.revealserver.persistence.domain.OrganizationRolePermission;
+import com.revealprecision.revealserver.persistence.domain.Permission;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.PlanAssignment;
 import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.persistence.projection.GroupManagementProjection;
 import com.revealprecision.revealserver.persistence.repository.EntityTagAccGrantsOrganizationRepository;
-import com.revealprecision.revealserver.persistence.repository.InstanceRepository;
 import com.revealprecision.revealserver.persistence.repository.InstanceUserRepository;
 import com.revealprecision.revealserver.persistence.repository.OrganizationLocationRepository;
 import com.revealprecision.revealserver.persistence.repository.OrganizationRepository;
 import com.revealprecision.revealserver.persistence.repository.OrganizationRoleMappingRepository;
+import com.revealprecision.revealserver.persistence.repository.OrganizationRolePermissionRepository;
 import com.revealprecision.revealserver.persistence.repository.OrganizationRoleRepository;
+import com.revealprecision.revealserver.persistence.repository.PermissionRepository;
 import com.revealprecision.revealserver.persistence.repository.PlanLocationsRepository;
 import com.revealprecision.revealserver.persistence.repository.UserRepository;
 import java.util.List;
@@ -41,8 +44,6 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -67,6 +68,8 @@ public class GroupManagementService {
   private final PlanLocationsRepository planLocationsRepository;
   private final InstanceRoleService instanceRoleService;
   private final InstanceUserRepository instanceUserRepository;
+  private final PermissionRepository permissionRepository;
+  private final OrganizationRolePermissionRepository organizationRolePermissionRepository;
 
   public void createGroup(GroupManagementRequest request) {
 
@@ -380,5 +383,61 @@ public class GroupManagementService {
             .name(role.getName())
             .build())
         .collect(Collectors.toList());
+  }
+
+  public IdentifierNameResponse createGroupRole(OrganizationRoleRequest request) {
+    OrganizationRole role = OrganizationRole.builder()
+        .name(request.getName())
+        .build();
+    OrganizationRole savedRole = organizationRoleRepository.save(role);
+
+    if (request.getPermissionIdentifiers() != null && !request.getPermissionIdentifiers().isEmpty()) {
+      List<Permission> permissions = permissionRepository.findAllById(request.getPermissionIdentifiers());
+      List<OrganizationRolePermission> rolePermissions = permissions.stream()
+          .map(permission -> {
+            OrganizationRolePermission mapping = new OrganizationRolePermission();
+            mapping.populate(savedRole, permission);
+            return mapping;
+          }).collect(Collectors.toList());
+      organizationRolePermissionRepository.saveAll(rolePermissions);
+    }
+
+    return IdentifierNameResponse.builder()
+        .identifier(savedRole.getIdentifier())
+        .name(savedRole.getName())
+        .build();
+  }
+
+  public IdentifierNameResponse updateGroupRole(UUID identifier,
+            OrganizationRoleRequest request) {
+    OrganizationRole role = organizationRoleRepository.findById(identifier)
+        .orElseThrow(() -> new NotFoundException("Role not found: " + identifier));
+
+    role.setName(request.getName());
+    organizationRoleRepository.save(role);
+
+    // Update permissions
+    organizationRolePermissionRepository.deleteByOrganizationRoleIdentifier(identifier);
+    if (request.getPermissionIdentifiers() != null && !request.getPermissionIdentifiers().isEmpty()) {
+      List<Permission> permissions = permissionRepository.findAllById(request.getPermissionIdentifiers());
+      List<OrganizationRolePermission> rolePermissions = permissions.stream()
+          .map(permission -> {
+            OrganizationRolePermission mapping = new OrganizationRolePermission();
+            mapping.populate(role, permission);
+            return mapping;
+          }).collect(Collectors.toList());
+      organizationRolePermissionRepository.saveAll(rolePermissions);
+    }
+
+    return IdentifierNameResponse.builder()
+        .identifier(role.getIdentifier())
+        .name(role.getName())
+        .build();
+  }
+
+  public void deleteGroupRole(UUID identifier) {
+    OrganizationRole role = organizationRoleRepository.findById(identifier)
+        .orElseThrow(() -> new NotFoundException("Role not found: " + identifier));
+    organizationRoleRepository.delete(role);
   }
 }
