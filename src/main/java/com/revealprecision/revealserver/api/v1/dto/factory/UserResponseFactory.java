@@ -66,6 +66,7 @@ public class UserResponseFactory {
             .username(user.getUsername())
             .email(user.getEmail())
             .instances(instanceUserMap.getOrDefault(user.getIdentifier(), List.of()))
+            .securityGroups(user.getSecurityGroups())
             .build())
         .collect(Collectors.toList());
 

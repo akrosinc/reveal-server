@@ -23,4 +23,5 @@ public class GlobalUserResponse {
   private String username;
   private String email;
   private List<String> instances;
+  private Set<String> securityGroups;
 }

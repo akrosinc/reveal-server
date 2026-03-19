@@ -6,6 +6,7 @@ import com.revealprecision.revealserver.api.v1.dto.response.IdentifierNameRespon
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceContextResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceUserListResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.UserRolesResponse;
 import com.revealprecision.revealserver.config.InstanceContext;
 import com.revealprecision.revealserver.persistence.projection.InstanceListProjection;
 import com.revealprecision.revealserver.service.InstanceService;
@@ -101,6 +102,11 @@ public class InstanceController {
   @GetMapping("/user/{userId}/datalist")
   public ResponseEntity<List<IdentifierNameResponse>> getDatasetsByUserId(@PathVariable UUID userId) {
     return ResponseEntity.status(HttpStatus.OK).body(instanceService.getDatasetsByUserId(userId));
+  }
+
+  @GetMapping("/user/{userId}/roles")
+  public ResponseEntity<UserRolesResponse> getRolesByUserId(@PathVariable UUID userId) {
+    return ResponseEntity.status(HttpStatus.OK).body(instanceService.getRolesByUserId(userId));
   }
 
 }

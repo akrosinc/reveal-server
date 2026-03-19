@@ -9,6 +9,7 @@ import com.revealprecision.revealserver.api.v1.dto.response.IdentifierNameRespon
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceContextResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceUserListResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.UserRolesResponse;
 import com.revealprecision.revealserver.config.InstanceContext;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.enums.InstanceRoleEnum;
@@ -23,6 +24,7 @@ import com.revealprecision.revealserver.persistence.domain.InstanceRole;
 import com.revealprecision.revealserver.persistence.domain.InstanceUser;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
+import com.revealprecision.revealserver.persistence.domain.Organization;
 import com.revealprecision.revealserver.persistence.domain.OrganizationRole;
 import com.revealprecision.revealserver.persistence.domain.OrganizationRoleMapping;
 import com.revealprecision.revealserver.persistence.domain.Plan;
@@ -39,6 +41,7 @@ import com.revealprecision.revealserver.persistence.repository.InstanceUserRepos
 import com.revealprecision.revealserver.persistence.repository.OrganizationLocationRepository;
 import com.revealprecision.revealserver.persistence.repository.OrganizationRoleMappingRepository;
 import com.revealprecision.revealserver.persistence.repository.OrganizationRoleRepository;
+import com.revealprecision.revealserver.persistence.repository.UserRepository;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -73,6 +76,7 @@ public class InstanceService {
   private final OrganizationRoleMappingRepository organizationRoleMappingRepository;
   private final OrganizationLocationRepository organizationLocationRepository;
   private final EntityTagAccGrantsOrganizationRepository entityTagAccGrantsOrganizationRepository;
+  private final UserRepository userRepository;
 
   @Transactional
   public void create(InstanceRequest instanceRequest) {
@@ -362,49 +366,7 @@ public class InstanceService {
   }
 
   public List<GeoTreeResponse> getLocationsByUserId(UUID userId) {
-
-    List<InstanceUser> instanceUsers = instanceUserRepository.findByUser(userId);
-
-    if (instanceUsers.isEmpty()) {
-      return List.of();
-    }
-
-    Map<InstanceRoleEnum, List<UUID>> partitionedInstanceIds = instanceUsers.stream()
-        .collect(Collectors.groupingBy(
-            iu -> InstanceRoleEnum.valueOf(iu.getRole().getName()),
-            Collectors.mapping(iu -> iu.getInstance().getIdentifier(), Collectors.toList())
-        ));
-
-    List<UUID> adminInstanceIds = partitionedInstanceIds
-        .getOrDefault(InstanceRoleEnum.ADMIN, List.of());
-    List<UUID> standardInstanceIds = partitionedInstanceIds
-        .getOrDefault(InstanceRoleEnum.STANDARD, List.of());
-
-    List<UUID> locationIds = new ArrayList<>();
-
-    if (!adminInstanceIds.isEmpty()) {
-      locationIds.addAll(
-          instanceLocationRepository.findLocationIdentifiersByInstanceIds(adminInstanceIds)
-      );
-    }
-
-    if (!standardInstanceIds.isEmpty()) {
-      locationIds.addAll(
-          organizationLocationRepository
-              .findAllLocationIdentifiersByUserIdAndInstanceIds(userId, standardInstanceIds)
-      );
-    }
-
-    if (locationIds.isEmpty()) {
-      return List.of();
-    }
-
-    return locationRelationshipService.getFilteredGeoTreeByLocationIds(
-        locationIds.stream()
-            .distinct()
-            .collect(Collectors.toList())
-    );
-
+    return null;
   }
 
   public List<IdentifierNameResponse> getDatasetsByUserId(UUID userId) {
@@ -451,5 +413,73 @@ public class InstanceService {
         .values()
         .stream()
         .collect(Collectors.toList());
+  }
+
+  public UserRolesResponse getRolesByUserId(UUID userId) {
+
+    List<InstanceUser> instanceUsers = instanceUserRepository.findByUser(userId);
+
+    if (instanceUsers.isEmpty()) {
+      return UserRolesResponse.builder()
+          .instanceInfos(List.of())
+          .build();
+    }
+
+    User userWithOrgs = userRepository.findByIdWithOrganizations(userId)
+        .stream()
+        .findFirst()
+        .orElseThrow(() -> new NotFoundException("User not found"));
+
+    // Group organizations by instance for quick lookup
+    Map<UUID, List<Organization>> orgsByInstance = userWithOrgs.getOrganizations()
+        .stream()
+        .collect(Collectors.groupingBy(
+            org -> org.getInstance().getIdentifier()
+        ));
+
+    List<UserRolesResponse.InstanceInfo> instanceInfos = instanceUsers.stream()
+        .map(instanceUser -> {
+          UUID instanceId = instanceUser.getInstance().getIdentifier();
+
+          // Instance role
+          IdentifierNameResponse instanceRole = IdentifierNameResponse.builder()
+              .identifier(instanceUser.getRole().getIdentifier())
+              .name(instanceUser.getRole().getName())
+              .build();
+
+          // Group roles within this instance
+          List<UserRolesResponse.GroupRoleInfo> groupRoles = orgsByInstance
+              .getOrDefault(instanceId, List.of())
+              .stream()
+              .map(org -> {
+                List<IdentifierNameResponse> roles = organizationRoleMappingRepository
+                    .findRolesByUserAndOrganization(userId, org.getIdentifier())
+                    .stream()
+                    .map(rm -> IdentifierNameResponse.builder()
+                        .identifier(rm.getOrganizationRole().getIdentifier())
+                        .name(rm.getOrganizationRole().getName())
+                        .build())
+                    .collect(Collectors.toList());
+
+                return UserRolesResponse.GroupRoleInfo.builder()
+                    .group(IdentifierNameResponse.builder()
+                        .identifier(org.getIdentifier())
+                        .name(org.getName())
+                        .build())
+                    .roles(roles)
+                    .build();
+              })
+              .collect(Collectors.toList());
+
+          return UserRolesResponse.InstanceInfo.builder()
+              .instanceRole(instanceRole)
+              .groupRoles(groupRoles)
+              .build();
+        })
+        .collect(Collectors.toList());
+
+    return UserRolesResponse.builder()
+        .instanceInfos(instanceInfos)
+        .build();
   }
 }

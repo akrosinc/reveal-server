@@ -26,4 +26,5 @@ public interface OrganizationRoleMappingRepository extends
       "JOIN u.organizations o " +
       "WHERE u.identifier = :userId)")
   List<OrganizationRoleMapping> findRolesByUserAndOrganization(UUID userId, UUID organizationId);
+
 }
