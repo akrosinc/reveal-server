@@ -53,5 +53,5 @@ public interface InstanceUserRepository  extends
   @Query("DELETE FROM InstanceUser iu " +
       "WHERE iu.user.identifier IN :userIds " +
       "AND iu.instance.identifier = :instanceId")
-  void deleteByUserIdsAndInstanceId(List<UUID> currentUserIds, UUID instanceIdentifier);
+  void deleteByUserIdsAndInstanceId(List<UUID> userIds, UUID instanceId);
 }

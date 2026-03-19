@@ -372,4 +372,13 @@ public class GroupManagementService {
       organizationRoleMappingRepository.saveAll(orgRoleMappings);
     }
   }
+
+  public List<IdentifierNameResponse> getGroupRoles() {
+    return organizationRoleRepository.findAll().stream()
+        .map(role -> IdentifierNameResponse.builder()
+            .identifier(role.getIdentifier())
+            .name(role.getName())
+            .build())
+        .collect(Collectors.toList());
+  }
 }

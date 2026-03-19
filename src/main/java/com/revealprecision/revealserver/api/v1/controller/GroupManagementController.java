@@ -4,6 +4,7 @@ import com.revealprecision.revealserver.api.v1.dto.request.AssignLocationsToTeam
 import com.revealprecision.revealserver.api.v1.dto.request.GroupManagementRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.GeoTreeResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.GroupManagementResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.IdentifierNameResponse;
 import com.revealprecision.revealserver.persistence.projection.GroupManagementProjection;
 import com.revealprecision.revealserver.service.GroupManagementService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -92,5 +93,14 @@ public class GroupManagementController {
   @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE , path = "/instance/locationassigments")
   public ResponseEntity<List<GeoTreeResponse>> getInstanceGroupsLocations() {
     return ResponseEntity.ok(groupManagementService.getInstanceGroupsLocations());
+  }
+
+  @Operation(
+      summary = "Get all group roles",
+      description = "Get all available group roles",
+      tags = {"GroupManagement"})
+  @GetMapping("/roles/list")
+  public ResponseEntity<List<IdentifierNameResponse>> getGroupRoles() {
+    return ResponseEntity.status(HttpStatus.OK).body(groupManagementService.getGroupRoles());
   }
 }
