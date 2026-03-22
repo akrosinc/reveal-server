@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.service;
 
 import com.revealprecision.revealserver.api.v1.dto.request.AssignLocationsToTeamRequest;
+import com.revealprecision.revealserver.api.v1.dto.request.GlobalUserRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.GroupManagementRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.OrganizationRoleRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.GeoTreeResponse;
@@ -41,7 +42,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.BooleanUtils;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -218,8 +222,7 @@ public class GroupManagementService {
   }
 
   public GroupManagementResponse getGroupById(UUID identifier) {
-    Organization org = organizationRepository.findById(identifier)
-        .orElseThrow(() -> new NotFoundException("Group not found: " + identifier));
+    Organization org = findById(identifier);
 
     // members
     List<IdentifierNameResponse> members = org.getUsers().stream()
@@ -298,8 +301,7 @@ public class GroupManagementService {
     UUID instanceIdentifier = InstanceContext.get();
     Instance instance = instanceService.findById(instanceIdentifier);
 
-    Organization org = organizationRepository.findById(identifier)
-        .orElseThrow(() -> new NotFoundException("Group not found: " + identifier));
+    Organization org = findById(identifier);
 
     // Update basic fields
     org.setName(request.getName());
@@ -439,5 +441,44 @@ public class GroupManagementService {
     OrganizationRole role = organizationRoleRepository.findById(identifier)
         .orElseThrow(() -> new NotFoundException("Role not found: " + identifier));
     organizationRoleRepository.delete(role);
+  }
+
+  @Transactional
+  public void addUser(GlobalUserRequest request) {
+    User user = userService.createGlobalUser(request);
+
+    if (request.getInstanceIdentifier() == null) {
+      throw new IllegalArgumentException("Instance identifier not provided");
+    }
+
+    if (request.getGroupIdentifier() == null ) {
+      throw new IllegalArgumentException("Group identifier not provided");
+    }
+
+    Instance instance = instanceService.findById(request.getInstanceIdentifier());
+
+    final InstanceRole instanceRole;
+    if (BooleanUtils.isTrue(request.getIsInstanceAdmin())){
+      instanceRole = instanceRoleService.getInstanceAdminRole();
+    } else {
+      instanceRole = instanceRoleService.getStandardRole();
+    }
+
+    InstanceUser instanceUser = new InstanceUser();
+    instanceUser.populate(instance, user);
+    instanceUser.setRole(instanceRole);
+
+    instanceUserRepository.save(instanceUser);
+
+    Organization org = findById(
+        request.getGroupIdentifier());
+
+    user.getOrganizations().add(org);
+    userService.saveAll(List.of(user));
+  }
+
+  private Organization findById(UUID request) {
+    return organizationRepository.findById(request)
+        .orElseThrow(() -> new NotFoundException("Group not found: " + request));
   }
 }

@@ -27,7 +27,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.RoleMappingResource;
@@ -39,6 +38,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import javax.validation.Valid;
@@ -199,7 +199,8 @@ public class UserService {
         return finalUsername;
     }
 
-    public User globalCreateUser(GlobalUserRequest userRequest) {
+    @Transactional
+    public User createGlobalUser(GlobalUserRequest userRequest) {
         if (userRequest.getEmail() == null) {
             if (userRepository.getByUsername(userRequest.getUsername()).isPresent()) {
                 throw new ConflictException(
@@ -209,7 +210,7 @@ public class UserService {
         } else if (userRepository.findByUserNameOrEmail(userRequest.getUsername(),
             userRequest.getEmail()).isPresent()) {
             throw new ConflictException(
-                "Username and email must be unique!"); //TODO This could be refactored to be prettier
+                "Username and email must be unique!");
         }
 
 

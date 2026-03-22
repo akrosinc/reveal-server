@@ -1,6 +1,8 @@
 package com.revealprecision.revealserver.api.v1.controller;
 
+import com.revealprecision.revealserver.api.v1.dto.request.GlobalUserRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.InstanceRequest;
+import com.revealprecision.revealserver.api.v1.dto.response.CountResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.GeoTreeResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.IdentifierNameResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceContextResponse;
@@ -10,6 +12,7 @@ import com.revealprecision.revealserver.api.v1.dto.response.UserRolesResponse;
 import com.revealprecision.revealserver.config.InstanceContext;
 import com.revealprecision.revealserver.persistence.projection.InstanceListProjection;
 import com.revealprecision.revealserver.service.InstanceService;
+import io.swagger.v3.oas.annotations.Operation;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -36,12 +39,26 @@ public class InstanceController {
   @PostMapping
   public ResponseEntity<Void> create(@RequestBody final InstanceRequest instanceRequest) {
     instanceService.create(instanceRequest);
-    return ResponseEntity.ok().build();
+    return ResponseEntity.status(HttpStatus.CREATED).build();
   }
 
+  @Operation(summary = "Fetch Instances",
+      description = "Fetch Instances",
+      tags = {"Instance"}
+  )
   @GetMapping
   public ResponseEntity<Page<InstanceListProjection>> get(@RequestParam(value = "",required = false) String searchParam, Pageable pageable) {
     return ResponseEntity.ok(instanceService.searchInstance(searchParam, pageable));
+  }
+
+  @Operation(summary = "Fetch Instances",
+      description = "Fetch Instances",
+      tags = {"Instance"}
+  )
+  @GetMapping("/count")
+  public ResponseEntity<CountResponse> getCount(@RequestParam(value = "",required = false) String searchParam) {
+    return ResponseEntity.status(HttpStatus.OK)
+        .body(new CountResponse(instanceService.getCountFindAll(searchParam)));
   }
 
   @GetMapping("/{identifier}")
@@ -107,6 +124,17 @@ public class InstanceController {
   @GetMapping("/user/{userId}/roles")
   public ResponseEntity<UserRolesResponse> getRolesByUserId(@PathVariable UUID userId) {
     return ResponseEntity.status(HttpStatus.OK).body(instanceService.getRolesByUserId(userId));
+  }
+
+  @GetMapping("/hierarchy")
+  public ResponseEntity<List<GeoTreeResponse>> getInstanceHierarchy(@RequestParam(value = "instanceIdentifier", required = false) UUID instanceIdentifier) {
+    return ResponseEntity.status(HttpStatus.OK).body(instanceService.getInstanceHierarchy(instanceIdentifier));
+  }
+
+  @PostMapping("/user")
+  public ResponseEntity<Void> addUser(@RequestBody final GlobalUserRequest globalUserRequest) {
+    instanceService.addUser(globalUserRequest);
+    return ResponseEntity.status(HttpStatus.CREATED).build();
   }
 
 }

@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.api.v1.controller;
 
 import com.revealprecision.revealserver.api.v1.dto.request.AssignLocationsToTeamRequest;
+import com.revealprecision.revealserver.api.v1.dto.request.GlobalUserRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.GroupManagementRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.OrganizationRoleRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.GeoTreeResponse;
@@ -130,5 +131,11 @@ public class GroupManagementController {
     return ResponseEntity.noContent().build();
   }
 
-
+  @Operation(summary = "Add organization user", tags = {"GroupManagement"})
+  @PostMapping(value = "/roles")
+  public ResponseEntity<Void> addUser(
+      @RequestBody @Valid GlobalUserRequest request) {
+    groupManagementService.addUser(request);
+    return ResponseEntity.status(HttpStatus.CREATED).build();
+  }
 }

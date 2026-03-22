@@ -22,4 +22,8 @@ public interface InstanceLocationRepository extends
   @Query("SELECT il.location.identifier FROM InstanceLocation il " +
       "WHERE il.instance.identifier IN :instanceIds")
   List<UUID> findLocationIdentifiersByInstanceIds(List<UUID> instanceIds);
+
+  @Query("SELECT il.location.identifier FROM InstanceLocation il " +
+      "WHERE il.instance.identifier = :instanceIdentifier")
+  List<UUID> findLocationIdentifiersByInstanceId(UUID instanceIdentifier);
 }

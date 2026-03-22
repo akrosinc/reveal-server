@@ -3,6 +3,7 @@ package com.revealprecision.revealserver.service;
 import com.revealprecision.revealserver.api.v1.dto.factory.IdentifierNameResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.InstanceContextResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.InstanceResponseFactory;
+import com.revealprecision.revealserver.api.v1.dto.request.GlobalUserRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.InstanceRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.GeoTreeResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.IdentifierNameResponse;
@@ -48,6 +49,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.BooleanUtils;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -481,5 +483,45 @@ public class InstanceService {
     return UserRolesResponse.builder()
         .instanceInfos(instanceInfos)
         .build();
+  }
+
+  public List<GeoTreeResponse> getInstanceHierarchy(UUID instanceIdentifier) {
+    if (instanceIdentifier == null) {
+      // Get base hierarchy and build full geo tree
+      LocationHierarchy baseHierarchy = locationHierarchyService.getBaseLocationHierarchy();
+      return locationHierarchyService.getGeoTreeFromLocationHierarchy(baseHierarchy, true);
+    }
+    Instance instance = findById(instanceIdentifier);
+    return getAssignedInstanceAreasTree(instanceIdentifier);
+  }
+
+  @Transactional
+  public void addUser(GlobalUserRequest globalUserRequest) {
+    User user = userService.createGlobalUser(globalUserRequest);
+
+    if (globalUserRequest.getInstanceIdentifier() == null) {
+      throw new IllegalArgumentException("Instance identifier not provided");
+    }
+
+    Instance instance = findById(globalUserRequest.getInstanceIdentifier());
+
+    final InstanceRole instanceRole;
+    if (BooleanUtils.isTrue(globalUserRequest.getIsInstanceAdmin())){
+      instanceRole = instanceRoleService.getInstanceAdminRole();
+    } else {
+      instanceRole = instanceRoleService.getStandardRole();
+    }
+
+    InstanceUser instanceUser = new InstanceUser();
+    instanceUser.populate(instance, user);
+    instanceUser.setRole(instanceRole);
+
+    instanceUserRepository.save(instanceUser);
+  }
+
+  public long getCountFindAll(String searchParam) {
+    return StringUtils.isBlank(searchParam)
+        ? instanceRepository.countAllInstances()
+        : instanceRepository.countInstanceListBySearch(searchParam);
   }
 }

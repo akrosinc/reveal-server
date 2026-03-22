@@ -56,4 +56,12 @@ public interface InstanceRepository extends JpaRepository<Instance, UUID> {
   );
 
   Optional<Instance> findByName(String name);
+
+  @Query("SELECT count (i)" +
+      "FROM Instance i " +
+      "WHERE LOWER(i.name) LIKE LOWER(CONCAT('%', :searchParam, '%'))")
+  long countInstanceListBySearch(String searchParam);
+
+  @Query("SELECT count (i) FROM Instance i ")
+  long countAllInstances();
 }

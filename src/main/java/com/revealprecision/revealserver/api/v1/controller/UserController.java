@@ -51,7 +51,7 @@ public class UserController {
 
   @PostMapping(path = "/global", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<Void> globalCreateUser(@Valid @RequestBody GlobalUserRequest userRequest) {
-    userService.globalCreateUser(userRequest);
+    userService.createGlobalUser(userRequest);
     return ResponseEntity.status(HttpStatus.CREATED).build();
   }
 

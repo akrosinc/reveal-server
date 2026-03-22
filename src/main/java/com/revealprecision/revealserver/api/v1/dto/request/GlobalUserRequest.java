@@ -48,4 +48,9 @@ public class GlobalUserRequest {
 
   @NotNull
   private Set<String> securityGroups;
+
+  private UUID instanceIdentifier;
+  private Boolean isInstanceAdmin;
+
+  private UUID groupIdentifier;
 }
