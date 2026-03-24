@@ -60,17 +60,12 @@ public class InstanceContextResponseFactory {
         .map(InstanceContextResponseFactory::toGroupRoleInfo)
         .collect(Collectors.toList());
 
-    Set<String> groupPermissions = orgRoles.stream()
-        .flatMap(role -> role.getPermissions().stream())
-        .map(p -> p.getPermission().getName())
-        .collect(Collectors.toSet());
 
     return InstanceContextResponse.GroupContextInfo.builder()
         .identifier(org.getIdentifier())
         .name(org.getName())
         .type(org.getType().name())
         .roles(groupRoleInfos)
-        .permissions(groupPermissions)
         .build();
   }
 

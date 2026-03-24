@@ -31,9 +31,12 @@ public interface PlanRepository extends EntityGraphJpaRepository<Plan, UUID> {
   @Query("select pl.location from Plan p inner join PlanLocations pl on pl.plan = p WHERE p.identifier = :planIdentifier")
   List<Location> findLocationsForPlan(UUID planIdentifier);
 
+  @Query(value = "select p from Plan p where p.status = 'ACTIVE' and (p.interventionType.code like :interventionType or :interventionType = '')")
+  Page<Plan> findPlansByInterventionType(String interventionType, Pageable pageable);
+
   @Query(value = "select p from Plan p where p.status = 'ACTIVE' and (p.interventionType.code like :interventionType or :interventionType = '')"
-      + " AND (:instanceIdentifier IS NULL OR p.instance.identifier = :instanceIdentifier)")
-  Page<Plan> findPlansByInterventionType(String interventionType,@Nullable UUID instanceIdentifier, Pageable pageable);
+      + " AND p.instance.identifier = :instanceIdentifier")
+  Page<Plan> findPlansByInterventionTypeAndInstance(String interventionType, UUID instanceIdentifier, Pageable pageable);
 
 
   Plan findPlanByIdentifier(UUID planIdentifier);

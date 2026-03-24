@@ -41,7 +41,6 @@ public class InstanceContextResponse {
     private String name;
     private String type;
     private List<GroupRoleInfo> roles;
-    private Set<String> permissions;
   }
 
 

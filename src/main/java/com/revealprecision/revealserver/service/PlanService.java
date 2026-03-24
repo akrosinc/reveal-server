@@ -88,7 +88,7 @@ public class PlanService {
   public Page<Plan> getPlansForReports(String reportType, Pageable pageable,
       UUID instanceIdentifier) {
     if (reportType.isBlank()) {
-      return planRepository.findPlansByInterventionType(reportType, instanceIdentifier, pageable);
+      return findPlansByInterventionTypeAndInstance(reportType, instanceIdentifier, pageable);
     } else {
       ApplicableReportsEnum applicableReportsEnum = null;
       for (ApplicableReportsEnum applicableReport : ApplicableReportsEnum.values()) {
@@ -97,7 +97,15 @@ public class PlanService {
           break;
         }
       }
-      return planRepository.findPlansByInterventionType(applicableReportsEnum.name(), instanceIdentifier, pageable);
+      return findPlansByInterventionTypeAndInstance(applicableReportsEnum.name(), instanceIdentifier, pageable);
+    }
+  }
+
+  private Page<Plan> findPlansByInterventionTypeAndInstance(String interventionType,UUID instanceIdentifier, Pageable pageable) {
+    if (instanceIdentifier == null) {
+      return planRepository.findPlansByInterventionType(interventionType, pageable);
+    } else {
+      return planRepository.findPlansByInterventionTypeAndInstance(interventionType, instanceIdentifier, pageable);
     }
   }
 
