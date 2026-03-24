@@ -92,9 +92,10 @@ public class PlanController {
     @GetMapping("/reports")
     public ResponseEntity<Page<PlanResponse>> getPlansForReports(@RequestParam(name = "reportType", defaultValue = "") String reportType,
                                                                  Pageable pageable,
-                                                                 @RequestParam(name = "_summary", defaultValue = "TRUE", required = false) SummaryEnum summary) {
+                                                                 @RequestParam(name = "_summary", defaultValue = "TRUE", required = false) SummaryEnum summary,
+                                                                 @RequestParam(name = "instanceIdentifier", required = false) UUID instanceIdentifier ) {
         return ResponseEntity.status(HttpStatus.OK)
-                .body(PlanResponseFactory.fromEntityPage(planService.getPlansForReports(reportType, pageable),
+                .body(PlanResponseFactory.fromEntityPage(planService.getPlansForReports(reportType, pageable ,instanceIdentifier),
                         pageable,
                         summary));
     }

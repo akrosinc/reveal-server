@@ -7,6 +7,7 @@ import java.util.UUID;
 public interface InstanceListProjection {
   UUID getIdentifier();
   String getInstanceName();
+  String getPlanIdentifier();
   String getPlanTitle();
   String getPlanStatus();
   String getInterventionType();

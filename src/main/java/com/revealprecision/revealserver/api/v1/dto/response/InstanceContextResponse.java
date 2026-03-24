@@ -16,6 +16,7 @@ import lombok.Setter;
 @Builder
 public class InstanceContextResponse {
   private IdentifierNameResponse selectedInstance;
+  private IdentifierNameResponse instancePlan;
   private InstanceRoleInfo role;
   private List<GroupContextInfo> groups;
 

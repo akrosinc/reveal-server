@@ -304,6 +304,8 @@ public class InstanceService {
         .findFirst()
         .orElseThrow(() -> new NotFoundException("User not found"));
 
+    Plan instancePlan = planService.findPlanByInstanceIdentifier(effectiveInstanceId).stream().findFirst().get();
+
     List<InstanceContextResponse.GroupContextInfo> groups = userWithOrganizations.getOrganizations()
         .stream()
         .filter(org -> org.getInstance().getIdentifier().equals(effectiveInstanceId))
@@ -318,7 +320,7 @@ public class InstanceService {
         })
         .collect(Collectors.toList());
 
-    return InstanceContextResponseFactory.buildInstanceContextResponse(instanceUser, groups);
+    return InstanceContextResponseFactory.buildInstanceContextResponse(instanceUser, groups, instancePlan);
   }
 
   public boolean isMember(UUID userId, UUID instanceId) {

@@ -2,11 +2,13 @@ package com.revealprecision.revealserver.api.v1.dto.factory;
 
 import com.revealprecision.revealserver.api.v1.dto.response.IdentifierNameResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceContextResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.InstanceContextResponse.GroupContextInfo;
 import com.revealprecision.revealserver.persistence.domain.Instance;
 import com.revealprecision.revealserver.persistence.domain.InstanceRole;
 import com.revealprecision.revealserver.persistence.domain.InstanceUser;
 import com.revealprecision.revealserver.persistence.domain.Organization;
 import com.revealprecision.revealserver.persistence.domain.OrganizationRole;
+import com.revealprecision.revealserver.persistence.domain.Plan;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -18,7 +20,7 @@ public class InstanceContextResponseFactory {
 
   public static InstanceContextResponse buildInstanceContextResponse(
       InstanceUser instanceUser,
-      List<InstanceContextResponse.GroupContextInfo> groups) {
+      List<GroupContextInfo> groups, Plan instancePlan) {
 
     Instance instance = instanceUser.getInstance();
     InstanceRole role = instanceUser.getRole();
@@ -38,8 +40,14 @@ public class InstanceContextResponseFactory {
         .name(instance.getName())
         .build();
 
+    IdentifierNameResponse selectedInstancePlan = IdentifierNameResponse.builder()
+        .identifier(instancePlan.getIdentifier())
+        .name(instancePlan.getName())
+        .build();
+
     return InstanceContextResponse.builder()
         .selectedInstance(selectedInstance)
+        .instancePlan(selectedInstancePlan)
         .role(roleInfo)
         .groups(groups)
         .build();

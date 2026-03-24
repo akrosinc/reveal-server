@@ -25,6 +25,7 @@ public interface InstanceRepository extends JpaRepository<Instance, UUID> {
   @Query("SELECT " +
       "i.identifier AS identifier, " +
       "i.name AS instanceName, " +
+      "p.identifier AS planIdentifier, " +
       "p.title AS planTitle, " +
       "CAST(p.status AS string) AS planStatus, " +
       "lit.name AS interventionType, " +
@@ -40,6 +41,7 @@ public interface InstanceRepository extends JpaRepository<Instance, UUID> {
   @Query("SELECT " +
       "i.identifier AS identifier, " +
       "i.name AS instanceName, " +
+      "p.identifier AS planIdentifier, " +
       "p.title AS planTitle, " +
       "CAST(p.status AS string) AS planStatus, " +
       "lit.name AS interventionType, " +
