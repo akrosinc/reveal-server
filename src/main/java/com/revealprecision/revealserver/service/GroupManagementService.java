@@ -481,4 +481,10 @@ public class GroupManagementService {
     return organizationRepository.findById(request)
         .orElseThrow(() -> new NotFoundException("Group not found: " + request));
   }
+
+
+  public List<GroupManagementProjection> getGroupsTeams() {
+    UUID instanceIdentifier = InstanceContext.get();
+    return organizationRepository.getGroupsByTypeEquals(instanceIdentifier, OrganizationTypeEnum.TEAM);
+  }
 }

@@ -7,6 +7,7 @@ import com.revealprecision.revealserver.api.v1.dto.response.GeoTreeResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationPropertyResponse;
 import com.revealprecision.revealserver.enums.BulkStatusEnum;
 import com.revealprecision.revealserver.enums.EntityStatus;
+import com.revealprecision.revealserver.enums.HierarchyStatus;
 import com.revealprecision.revealserver.exceptions.ConflictException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.exceptions.NotImplementedException;
@@ -48,6 +49,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -80,6 +82,7 @@ public class LocationHierarchyService {
                 .baseHierarchy(false)
                 .build();
         locationHierarchyToSave.setEntityStatus(EntityStatus.ACTIVE);
+        locationHierarchyToSave.setHierarchyStatus(HierarchyStatus.INACTIVE);
         return locationHierarchyRepository.save(locationHierarchyToSave);
     }
 
@@ -365,6 +368,7 @@ public class LocationHierarchyService {
             orElseThrow(() -> new NotFoundException("BASE hierarchy not found"));
     }
 
+    @Transactional
     public void activateLocationHierarchy(UUID identifier) {
 
        List<LocationBulk>  locationBulks = locationBulkService.getUnCompletedLocationBulk();
@@ -391,6 +395,9 @@ public class LocationHierarchyService {
                 locationBulkService.update(locationBulk);
             }
         }
+
+        locationHierarchy.setHierarchyStatus(HierarchyStatus.ACTIVE);
+        locationHierarchyRepository.save(locationHierarchy);
     }
 
     public LocationHierarchy getBaseLocationHierarchy() {

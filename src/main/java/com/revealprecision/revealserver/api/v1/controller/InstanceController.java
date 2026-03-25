@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.api.v1.controller;
 
+import com.revealprecision.revealserver.api.v1.dto.factory.LocationHierarchyResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.GlobalUserRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.InstanceRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.CountResponse;
@@ -8,11 +9,13 @@ import com.revealprecision.revealserver.api.v1.dto.response.IdentifierNameRespon
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceContextResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceUserListResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.LocationHierarchyResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.UserRolesResponse;
 import com.revealprecision.revealserver.config.InstanceContext;
 import com.revealprecision.revealserver.persistence.projection.InstanceListProjection;
 import com.revealprecision.revealserver.service.InstanceService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +39,10 @@ public class InstanceController {
 
   private final InstanceService instanceService;
 
+  @Operation(summary = "Create Instances",
+      description = "Create Instances",
+      tags = {"Instance"}
+  )
   @PostMapping
   public ResponseEntity<Void> create(@RequestBody final InstanceRequest instanceRequest) {
     instanceService.create(instanceRequest);
@@ -127,7 +134,7 @@ public class InstanceController {
   }
 
   @GetMapping("/hierarchy")
-  public ResponseEntity<List<GeoTreeResponse>> getInstanceHierarchy(@RequestParam(value = "instanceIdentifier", required = false) UUID instanceIdentifier) {
+  public ResponseEntity<LocationHierarchyResponse> getInstanceHierarchy(@RequestParam(value = "instanceIdentifier", required = false) UUID instanceIdentifier) {
     return ResponseEntity.status(HttpStatus.OK).body(instanceService.getInstanceHierarchy(instanceIdentifier));
   }
 
@@ -135,6 +142,13 @@ public class InstanceController {
   public ResponseEntity<Void> addUser(@RequestBody final GlobalUserRequest globalUserRequest) {
     instanceService.addUser(globalUserRequest);
     return ResponseEntity.status(HttpStatus.CREATED).build();
+  }
+
+
+  @PostMapping("/{instanceIdentifier}/plan/activate")
+  public ResponseEntity<Void> activateInstancePlan(@PathVariable UUID instanceIdentifier) {
+    instanceService.activateInstancePlan(instanceIdentifier);
+    return ResponseEntity.status(HttpStatus.OK).build();
   }
 
 }

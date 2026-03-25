@@ -138,4 +138,10 @@ public class GroupManagementController {
     groupManagementService.addUser(request);
     return ResponseEntity.status(HttpStatus.CREATED).build();
   }
+
+  @Operation(  summary = "Fetch all management groups teams", description = "Fetch all management Groups teams", tags = {"GroupManagement"})
+  @GetMapping(path = "/teams", produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<List<GroupManagementProjection>> getGroupsTeams() {
+    return ResponseEntity.ok(groupManagementService.getGroupsTeams());
+  }
 }

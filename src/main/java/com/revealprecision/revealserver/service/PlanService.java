@@ -162,21 +162,25 @@ public class PlanService {
   public void activatePlan(UUID planIdentifier) {
     Plan plan = findPlanByIdentifier(planIdentifier);
     if (locationBulkService.areRelationshipsGenerated()) {
-      plan.setStatus(PlanStatusEnum.ACTIVE);
-      savePlan(plan);
-      // Proceed with caution here as new updates / removals to the object will prevent rewind of the kafka listener application.
-      // In the event of new data being introduced, ensure that null pointers are catered in the kafka listener
-      // application if the event comes through, and it does not have the new fields populated
-      PlanUpdateMessage planUpdateMessage = new PlanUpdateMessage();
-      planUpdateMessage.setPlanIdentifier(plan.getIdentifier());
-      planUpdateMessage.setPlanUpdateType(PlanUpdateType.ACTIVATE);
-      planUpdateMessage.setOwnerId(UserUtils.getCurrentPrincipleName());
-
-      publisherService.send(kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_UPDATE),
-          planUpdateMessage);
+      activatePlan(plan);
     } else {
       throw new ConflictException("Relationships still generating for this plan.");
     }
+  }
+
+  public void activatePlan(Plan plan) {
+    plan.setStatus(PlanStatusEnum.ACTIVE);
+    savePlan(plan);
+    // Proceed with caution here as new updates / removals to the object will prevent rewind of the kafka listener application.
+    // In the event of new data being introduced, ensure that null pointers are catered in the kafka listener
+    // application if the event comes through, and it does not have the new fields populated
+    PlanUpdateMessage planUpdateMessage = new PlanUpdateMessage();
+    planUpdateMessage.setPlanIdentifier(plan.getIdentifier());
+    planUpdateMessage.setPlanUpdateType(PlanUpdateType.ACTIVATE);
+    planUpdateMessage.setOwnerId(UserUtils.getCurrentPrincipleName());
+
+    publisherService.send(kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_UPDATE),
+        planUpdateMessage);
   }
 
   public void updatePlan(PlanRequest request, UUID identifier) {

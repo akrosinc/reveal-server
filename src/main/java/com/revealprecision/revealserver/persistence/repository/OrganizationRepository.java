@@ -3,6 +3,7 @@ package com.revealprecision.revealserver.persistence.repository;
 import com.cosium.spring.data.jpa.entity.graph.domain.EntityGraph;
 import com.cosium.spring.data.jpa.entity.graph.repository.EntityGraphJpaRepository;
 import com.revealprecision.revealserver.api.v1.dto.response.GroupManagementResponse;
+import com.revealprecision.revealserver.enums.OrganizationTypeEnum;
 import com.revealprecision.revealserver.persistence.domain.Organization;
 import com.revealprecision.revealserver.persistence.projection.GroupManagementProjection;
 import com.revealprecision.revealserver.persistence.projection.OrganizationProjection;
@@ -103,7 +104,15 @@ public interface OrganizationRepository extends EntityGraphJpaRepository<Organiz
       "FROM Organization o " +
       "WHERE o.instance.identifier = :instanceIdentifier")
   Page<GroupManagementProjection> findByInstanceId(
-      @Param("instanceIdentifier") UUID instanceIdentifier,
+      UUID instanceIdentifier,
       Pageable pageable
   );
+
+  @Query("SELECT " +
+      "o.identifier AS identifier, " +
+      "o.name AS name, " +
+      "o.type AS organizationType " +
+      "FROM Organization o " +
+      "WHERE o.instance.identifier = :instanceIdentifier and o.type = :organizationType")
+  List<GroupManagementProjection> getGroupsByTypeEquals(UUID instanceIdentifier, OrganizationTypeEnum organizationType);
 }

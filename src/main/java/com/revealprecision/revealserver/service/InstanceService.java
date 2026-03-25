@@ -3,6 +3,7 @@ package com.revealprecision.revealserver.service;
 import com.revealprecision.revealserver.api.v1.dto.factory.IdentifierNameResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.InstanceContextResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.InstanceResponseFactory;
+import com.revealprecision.revealserver.api.v1.dto.factory.LocationHierarchyResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.GlobalUserRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.InstanceRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.GeoTreeResponse;
@@ -10,13 +11,19 @@ import com.revealprecision.revealserver.api.v1.dto.response.IdentifierNameRespon
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceContextResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceUserListResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.LocationHierarchyResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.UserRolesResponse;
 import com.revealprecision.revealserver.config.InstanceContext;
+import com.revealprecision.revealserver.constants.KafkaConstants;
 import com.revealprecision.revealserver.enums.EntityStatus;
+import com.revealprecision.revealserver.enums.HierarchyStatus;
 import com.revealprecision.revealserver.enums.InstanceRoleEnum;
+import com.revealprecision.revealserver.enums.PlanStatusEnum;
 import com.revealprecision.revealserver.exceptions.ConflictException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.exceptions.constant.Error;
+import com.revealprecision.revealserver.messaging.message.PlanUpdateMessage;
+import com.revealprecision.revealserver.messaging.message.PlanUpdateType;
 import com.revealprecision.revealserver.persistence.domain.EntityTag;
 import com.revealprecision.revealserver.persistence.domain.Instance;
 import com.revealprecision.revealserver.persistence.domain.InstanceEntityTag;
@@ -43,6 +50,7 @@ import com.revealprecision.revealserver.persistence.repository.OrganizationLocat
 import com.revealprecision.revealserver.persistence.repository.OrganizationRoleMappingRepository;
 import com.revealprecision.revealserver.persistence.repository.OrganizationRoleRepository;
 import com.revealprecision.revealserver.persistence.repository.UserRepository;
+import com.revealprecision.revealserver.util.UserUtils;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -78,6 +86,7 @@ public class InstanceService {
   private final OrganizationRoleMappingRepository organizationRoleMappingRepository;
   private final OrganizationLocationRepository organizationLocationRepository;
   private final EntityTagAccGrantsOrganizationRepository entityTagAccGrantsOrganizationRepository;
+  private final LocationBulkService locationBulkService;
   private final UserRepository userRepository;
 
   @Transactional
@@ -487,14 +496,28 @@ public class InstanceService {
         .build();
   }
 
-  public List<GeoTreeResponse> getInstanceHierarchy(UUID instanceIdentifier) {
+
+
+  public LocationHierarchyResponse getInstanceHierarchy(UUID instanceIdentifier) {
     if (instanceIdentifier == null) {
       // Get base hierarchy and build full geo tree
       LocationHierarchy baseHierarchy = locationHierarchyService.getBaseLocationHierarchy();
-      return locationHierarchyService.getGeoTreeFromLocationHierarchy(baseHierarchy, true);
+      List <GeoTreeResponse> hierarchyTree  = locationHierarchyService.getGeoTreeFromLocationHierarchy(baseHierarchy, true);
+
+      return LocationHierarchyResponse.builder().identifier(baseHierarchy.getIdentifier().toString())
+          .name(baseHierarchy.getName())
+          .geoTree(hierarchyTree)
+          .nodeOrder(baseHierarchy.getNodeOrder()).build();
     }
     Instance instance = findById(instanceIdentifier);
-    return getAssignedInstanceAreasTree(instanceIdentifier);
+
+    LocationHierarchy instanceLocationHierarchy =  instance.getLocationHierarchy();
+
+    List <GeoTreeResponse> hierarchyTree  =   getAssignedInstanceAreasTree(instanceIdentifier);
+    return LocationHierarchyResponse.builder().identifier(instanceLocationHierarchy.getIdentifier().toString())
+        .name(instanceLocationHierarchy.getName())
+        .geoTree(hierarchyTree)
+        .nodeOrder(instanceLocationHierarchy.getNodeOrder()).build();
   }
 
   @Transactional
@@ -525,5 +548,21 @@ public class InstanceService {
     return StringUtils.isBlank(searchParam)
         ? instanceRepository.countAllInstances()
         : instanceRepository.countInstanceListBySearch(searchParam);
+  }
+
+  public void activateInstancePlan(UUID instanceIdentifier) {
+
+    Instance instance = findById(instanceIdentifier);
+
+    Plan instancePlan = planService.findPlanByInstanceIdentifier(instanceIdentifier).stream().findFirst()
+            .orElseThrow(() -> new IllegalArgumentException("Insatnce Plan not found"));
+
+    Plan plan = planService.findPlanByIdentifier(instancePlan.getIdentifier());
+    LocationHierarchy  locationHierarchy = instance.getLocationHierarchy();
+
+    if(locationHierarchy.getHierarchyStatus().equals(HierarchyStatus.INACTIVE)){
+      throw new IllegalArgumentException("Location hierarchy is inactive, cannot activate instance plan");
+    }
+    planService.activatePlan(plan);
   }
 }

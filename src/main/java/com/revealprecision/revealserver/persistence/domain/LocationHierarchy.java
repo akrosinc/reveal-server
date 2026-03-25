@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.persistence.domain;
 
+import com.revealprecision.revealserver.enums.HierarchyStatus;
 import com.vladmihalcea.hibernate.type.array.ListArrayType;
 import java.util.List;
 import java.util.Set;
@@ -7,6 +8,8 @@ import java.util.UUID;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.OneToMany;
@@ -61,4 +64,8 @@ public class LocationHierarchy extends AbstractAuditableEntity {
 
   @Column(name = "is_base_hierarchy", nullable = false)
   private Boolean baseHierarchy = false;
+
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false)
+  private HierarchyStatus hierarchyStatus;
 }
