@@ -140,7 +140,7 @@ public class GroupManagementController {
   }
 
   @Operation(  summary = "Fetch all management groups teams", description = "Fetch all management Groups teams", tags = {"GroupManagement"})
-  @GetMapping(path = "/teams", produces = MediaType.APPLICATION_JSON_VALUE)
+  @GetMapping(path = "/bytype/teams", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<List<GroupManagementProjection>> getGroupsTeams() {
     return ResponseEntity.ok(groupManagementService.getGroupsTeams());
   }
