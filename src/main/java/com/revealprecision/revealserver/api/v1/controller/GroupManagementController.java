@@ -44,7 +44,7 @@ public class GroupManagementController {
   public ResponseEntity<?> getGroups(Pageable pageable,
       @Parameter(description = "Toggle summary data") @RequestParam(name = "_summary", defaultValue = "TRUE", required = false) SummaryEnum summary) {
 
-    if (!summary.equals(SummaryEnum.COUNT)) {
+    if (summary.equals(SummaryEnum.COUNT)) {
       return ResponseEntity.ok(groupManagementService.getGroupsCount());
     }
     else {
