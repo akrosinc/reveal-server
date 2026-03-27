@@ -46,10 +46,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.BooleanUtils;
-import org.checkerframework.checker.nullness.qual.NonNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -161,9 +159,18 @@ public class GroupManagementService {
     }
   }
 
-  public Page<GroupManagementProjection> getGroups(Pageable pageable) {
-    UUID instanceIdentifier = InstanceContext.get();
-    return organizationRepository.findByInstanceId(instanceIdentifier, pageable);
+  public Page<GroupManagementProjection> getGroups(UUID instanceIdentifier, Pageable pageable) {
+
+    final UUID computedInstanceIdentifier;
+
+    if(instanceIdentifier == null) {
+      computedInstanceIdentifier = InstanceContext.get();
+    }
+    else {
+      throw new IllegalArgumentException("No instance context provided");
+    }
+
+    return organizationRepository.findByInstanceId(computedInstanceIdentifier, pageable);
   }
 
   public List<GeoTreeResponse> getUserLocations(UUID userId) {

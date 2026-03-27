@@ -42,13 +42,14 @@ public class GroupManagementController {
   @Operation(summary = "Fetch all management groups", description = "Fetch all management Groups", tags = {"GroupManagement"})
   @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<?> getGroups(Pageable pageable,
-      @Parameter(description = "Toggle summary data") @RequestParam(name = "_summary", defaultValue = "TRUE", required = false) SummaryEnum summary) {
+      @Parameter(description = "Toggle summary data") @RequestParam(name = "_summary", defaultValue = "TRUE", required = false) SummaryEnum summary,
+      @Parameter(description = "Instance Identifier") @RequestParam(name = "instanceIdentifier",required = false) UUID instanceIdentifier) {
 
     if (summary.equals(SummaryEnum.COUNT)) {
       return ResponseEntity.ok(groupManagementService.getGroupsCount());
     }
     else {
-      return ResponseEntity.ok(groupManagementService.getGroups(pageable));
+      return ResponseEntity.ok(groupManagementService.getGroups(instanceIdentifier, pageable));
     }
   }
 
@@ -144,7 +145,7 @@ public class GroupManagementController {
   }
 
   @Operation(summary = "Add organization user", tags = {"GroupManagement"})
-  @PostMapping(value = "/roles")
+  @PostMapping(value = "/org/user")
   public ResponseEntity<Void> addUser(
       @RequestBody @Valid GlobalUserRequest request) {
     groupManagementService.addUser(request);
