@@ -115,4 +115,9 @@ public interface OrganizationRepository extends EntityGraphJpaRepository<Organiz
       "FROM Organization o " +
       "WHERE o.instance.identifier = :instanceIdentifier and o.type = :organizationType")
   List<GroupManagementProjection> getGroupsByTypeEquals(UUID instanceIdentifier, OrganizationTypeEnum organizationType);
+
+  @Query("SELECT count(*) " +
+      "FROM Organization o " +
+      "WHERE o.instance.identifier = :instanceIdentifier and o.type = :organizationType")
+  long getCountByTypeEquals(UUID instanceIdentifier, OrganizationTypeEnum organizationType);
 }

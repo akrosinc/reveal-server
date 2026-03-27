@@ -4,6 +4,7 @@ import com.revealprecision.revealserver.api.v1.dto.request.AssignLocationsToTeam
 import com.revealprecision.revealserver.api.v1.dto.request.GlobalUserRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.GroupManagementRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.OrganizationRoleRequest;
+import com.revealprecision.revealserver.api.v1.dto.response.CountResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.GeoTreeResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.GroupManagementResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.IdentifierNameResponse;
@@ -512,5 +513,11 @@ public class GroupManagementService {
   public List<GroupManagementProjection> getGroupsTeams() {
     UUID instanceIdentifier = InstanceContext.get();
     return organizationRepository.getGroupsByTypeEquals(instanceIdentifier, OrganizationTypeEnum.TEAM);
+  }
+
+  public CountResponse getGroupsCount() {
+    UUID instanceIdentifier = InstanceContext.get();
+    long count =  organizationRepository.getCountByTypeEquals(instanceIdentifier, OrganizationTypeEnum.TEAM);
+    return  new CountResponse(count);
   }
 }

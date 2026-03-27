@@ -4,13 +4,16 @@ import com.revealprecision.revealserver.api.v1.dto.request.AssignLocationsToTeam
 import com.revealprecision.revealserver.api.v1.dto.request.GlobalUserRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.GroupManagementRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.OrganizationRoleRequest;
+import com.revealprecision.revealserver.api.v1.dto.response.CountResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.GeoTreeResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.GroupManagementResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.IdentifierNameResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationHierarchyResponse;
+import com.revealprecision.revealserver.enums.SummaryEnum;
 import com.revealprecision.revealserver.persistence.projection.GroupManagementProjection;
 import com.revealprecision.revealserver.service.GroupManagementService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import java.util.List;
 import java.util.UUID;
 import javax.validation.Valid;
@@ -27,6 +30,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -37,8 +41,15 @@ public class GroupManagementController {
 
   @Operation(summary = "Fetch all management groups", description = "Fetch all management Groups", tags = {"GroupManagement"})
   @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<Page<GroupManagementProjection>> getGroups(Pageable pageable) {
-    return ResponseEntity.ok(groupManagementService.getGroups(pageable));
+  public ResponseEntity<?> getGroups(Pageable pageable,
+      @Parameter(description = "Toggle summary data") @RequestParam(name = "_summary", defaultValue = "TRUE", required = false) SummaryEnum summary) {
+
+    if (!summary.equals(SummaryEnum.COUNT)) {
+      return ResponseEntity.ok(groupManagementService.getGroupsCount());
+    }
+    else {
+      return ResponseEntity.ok(groupManagementService.getGroups(pageable));
+    }
   }
 
   @Operation(summary = "Create a management group", description = "Create a Management Group", tags = {"GroupManagement"})
