@@ -167,7 +167,7 @@ public class GroupManagementService {
       computedInstanceIdentifier = InstanceContext.get();
     }
     else {
-      throw new IllegalArgumentException("No instance context provided");
+      computedInstanceIdentifier = instanceIdentifier;
     }
 
     return organizationRepository.findByInstanceId(computedInstanceIdentifier, pageable);
