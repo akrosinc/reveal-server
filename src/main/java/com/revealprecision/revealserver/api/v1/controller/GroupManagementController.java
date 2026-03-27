@@ -7,6 +7,7 @@ import com.revealprecision.revealserver.api.v1.dto.request.OrganizationRoleReque
 import com.revealprecision.revealserver.api.v1.dto.response.GeoTreeResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.GroupManagementResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.IdentifierNameResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.LocationHierarchyResponse;
 import com.revealprecision.revealserver.persistence.projection.GroupManagementProjection;
 import com.revealprecision.revealserver.service.GroupManagementService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -95,8 +96,8 @@ public class GroupManagementController {
 
   @Operation(summary = "Fetch groups and location assignment of instance", description = "Fetch groups and location assignment of instance", tags = {"GroupManagement"})
   @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE , path = "/instance/locationassigments")
-  public ResponseEntity<List<GeoTreeResponse>> getInstanceGroupsLocations() {
-    return ResponseEntity.ok(groupManagementService.getInstanceGroupsLocations());
+  public ResponseEntity<LocationHierarchyResponse> getInstanceGroupsLocations() {
+    return ResponseEntity.ok(groupManagementService.getInstanceGroupsLocationsTree());
   }
 
   @Operation(

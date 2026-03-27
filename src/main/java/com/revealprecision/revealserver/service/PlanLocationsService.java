@@ -214,9 +214,16 @@ public class PlanLocationsService {
 
   public List<GeoTreeResponse> getHierarchyByPlanIdentifier(UUID identifier) {
     Plan plan = planService.findPlanByIdentifier((identifier));
+    return  getHierarchyByPlanIdentifier(plan);
+  }
+
+  public List<GeoTreeResponse> getHierarchyByPlanIdentifier(Plan plan){
     LocationHierarchy locationHierarchy = locationHierarchyService.findByIdentifier(
         plan.getLocationHierarchy().getIdentifier());
+    return  getHierarchyByPlanIdentifier(plan, locationHierarchy);
+  }
 
+  public List<GeoTreeResponse> getHierarchyByPlanIdentifier(Plan plan, LocationHierarchy locationHierarchy) {
     List<GeoTreeResponse> geoTreeResponses;
     if ((plan.getInterventionType().getCode().equals(PlanInterventionTypeEnum.IRS_LITE.name())
         || plan.getInterventionType()
@@ -243,7 +250,7 @@ public class PlanLocationsService {
     Map<UUID, Location> locationMap = locations.stream()
         .collect(Collectors.toMap(Location::getIdentifier, location -> location));
     List<PlanAssignment> planAssignments = planAssignmentService.getPlanAssignmentsByPlanIdentifier(
-        identifier);
+        plan.getIdentifier());
     Map<UUID, List<PlanAssignment>> planAssignmentMap = planAssignments.stream()
         .collect(Collectors.groupingBy(
             planAssignment -> planAssignment.getPlanLocations().getLocation().getIdentifier()));

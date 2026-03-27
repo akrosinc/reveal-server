@@ -338,11 +338,20 @@ public class InstanceService {
     return instanceOptional.isPresent();
   }
 
+  public List<GeoTreeResponse> getAssignedInstanceAreasTree(List<String> nodeList) {
+    return getAssignedInstanceAreasTree(null , nodeList);
+  }
+
   public List<GeoTreeResponse> getAssignedInstanceAreasTree() {
-    return getAssignedInstanceAreasTree(null);
+    return getAssignedInstanceAreasTree(null , null);
   }
 
   public List<GeoTreeResponse> getAssignedInstanceAreasTree(UUID instanceIdentifier) {
+    return getAssignedInstanceAreasTree(instanceIdentifier , null);
+  }
+
+
+  public List<GeoTreeResponse> getAssignedInstanceAreasTree(UUID instanceIdentifier , List<String> nodeList ) {
 
     List<IdentifierNameResponse> instancesAreas = null;
 
@@ -357,7 +366,7 @@ public class InstanceService {
         .collect(Collectors.toList());
 
     List<GeoTreeResponse> geoTreeResponses = locationRelationshipService.getFilteredGeoTreeByLocationIds(
-        instancesAreasIds);
+        instancesAreasIds , nodeList);
 
     return geoTreeResponses;
   }
@@ -496,9 +505,14 @@ public class InstanceService {
         .build();
   }
 
+  public LocationHierarchy getInstanceHierarchy(UUID instanceIdentifier) {
+    Instance instance = findById(instanceIdentifier);
+    LocationHierarchy instanceLocationHierarchy =  instance.getLocationHierarchy();
+    return instanceLocationHierarchy;
+  }
 
 
-  public LocationHierarchyResponse getInstanceHierarchy(UUID instanceIdentifier) {
+  public LocationHierarchyResponse getInstanceHierarchyTreeResponse(UUID instanceIdentifier) {
     if (instanceIdentifier == null) {
       // Get base hierarchy and build full geo tree
       LocationHierarchy baseHierarchy = locationHierarchyService.getBaseLocationHierarchy();
@@ -513,7 +527,7 @@ public class InstanceService {
 
     LocationHierarchy instanceLocationHierarchy =  instance.getLocationHierarchy();
 
-    List <GeoTreeResponse> hierarchyTree  =   getAssignedInstanceAreasTree(instanceIdentifier);
+    List <GeoTreeResponse> hierarchyTree  =   getAssignedInstanceAreasTree(instanceIdentifier );
     return LocationHierarchyResponse.builder().identifier(instanceLocationHierarchy.getIdentifier().toString())
         .name(instanceLocationHierarchy.getName())
         .geoTree(hierarchyTree)
@@ -564,5 +578,28 @@ public class InstanceService {
       throw new IllegalArgumentException("Location hierarchy is inactive, cannot activate instance plan");
     }
     planService.activatePlan(plan);
+  }
+
+  public LocationHierarchyResponse getInstanceHierarchyWithGroups(UUID instanceIdentifier) {
+    if (instanceIdentifier == null) {
+      // Get base hierarchy and build full geo tree
+      LocationHierarchy baseHierarchy = locationHierarchyService.getBaseLocationHierarchy();
+      List <GeoTreeResponse> hierarchyTree  = locationHierarchyService.getGeoTreeFromLocationHierarchy(baseHierarchy, true);
+
+      return LocationHierarchyResponse.builder().identifier(baseHierarchy.getIdentifier().toString())
+          .name(baseHierarchy.getName())
+          .geoTree(hierarchyTree)
+          .nodeOrder(baseHierarchy.getNodeOrder()).build();
+    }
+    Instance instance = findById(instanceIdentifier);
+
+    LocationHierarchy instanceLocationHierarchy =  instance.getLocationHierarchy();
+
+    List <GeoTreeResponse> hierarchyTree  =   getAssignedInstanceAreasTree(instanceIdentifier);
+    return LocationHierarchyResponse.builder().identifier(instanceLocationHierarchy.getIdentifier().toString())
+        .name(instanceLocationHierarchy.getName())
+        .geoTree(hierarchyTree)
+        .nodeOrder(instanceLocationHierarchy.getNodeOrder()).build();
+
   }
 }

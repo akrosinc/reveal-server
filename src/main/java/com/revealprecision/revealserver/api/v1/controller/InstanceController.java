@@ -135,7 +135,7 @@ public class InstanceController {
 
   @GetMapping("/hierarchy")
   public ResponseEntity<LocationHierarchyResponse> getInstanceHierarchy(@RequestParam(value = "instanceIdentifier", required = false) UUID instanceIdentifier) {
-    return ResponseEntity.status(HttpStatus.OK).body(instanceService.getInstanceHierarchy(instanceIdentifier));
+    return ResponseEntity.status(HttpStatus.OK).body(instanceService.getInstanceHierarchyTreeResponse(instanceIdentifier));
   }
 
   @PostMapping("/user")
@@ -144,11 +144,15 @@ public class InstanceController {
     return ResponseEntity.status(HttpStatus.CREATED).build();
   }
 
-
   @PostMapping("/{instanceIdentifier}/plan/activate")
   public ResponseEntity<Void> activateInstancePlan(@PathVariable UUID instanceIdentifier) {
     instanceService.activateInstancePlan(instanceIdentifier);
     return ResponseEntity.status(HttpStatus.OK).build();
+  }
+
+  @GetMapping("/hierarchy/withgroups")
+  public ResponseEntity<LocationHierarchyResponse> getInstanceHierarchyWithGroups(@RequestParam(value = "instanceIdentifier", required = false) UUID instanceIdentifier) {
+    return ResponseEntity.status(HttpStatus.OK).body(instanceService.getInstanceHierarchyWithGroups(instanceIdentifier));
   }
 
 }

@@ -14,6 +14,7 @@ import com.revealprecision.revealserver.persistence.domain.LocationRelationship;
 import com.revealprecision.revealserver.persistence.projection.LocationAndHigherParentProjection;
 import com.revealprecision.revealserver.persistence.projection.LocationChildrenCountProjection;
 import com.revealprecision.revealserver.persistence.projection.LocationMainData;
+import com.revealprecision.revealserver.persistence.projection.LocationRelationshipAncestryIdentifierProjection;
 import com.revealprecision.revealserver.persistence.projection.LocationRelationshipAncestryProjection;
 import com.revealprecision.revealserver.persistence.projection.LocationRelationshipProjection;
 import com.revealprecision.revealserver.persistence.projection.LocationWithParentProjection;
@@ -36,6 +37,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.data.util.Pair;
@@ -418,14 +420,22 @@ public class LocationRelationshipService {
         locationIdentifier, locationHierarchyIdentifier, parentGeographicLevelName);
   }
 
-  public List<GeoTreeResponse> getFilteredGeoTreeByLocationIds(List<UUID> locationIds) {
+  private List<LocationRelationshipAncestryIdentifierProjection> getRelationshipsByLocationIds(List<UUID> locationIds, List<String> nodeList ) {
+    if(CollectionUtils.isEmpty(nodeList)){
+      return  locationRelationshipRepository.getRelationshipsByLocationIds(locationIds);
+    }
+    else {
+      return  locationRelationshipRepository.getRelationshipsByLocationIdsAndNodeListNotIn(locationIds, nodeList);
+    }
+  }
+
+  public List<GeoTreeResponse> getFilteredGeoTreeByLocationIds(List<UUID> locationIds, List<String> nodeList ) {
 
     if (locationIds == null || locationIds.isEmpty()) {
       return new ArrayList<>();
     }
 
-    List<LocationRelationship> directRelationships =
-        locationRelationshipRepository.getRelationshipsByLocationIds(locationIds);
+    List<LocationRelationshipAncestryIdentifierProjection> directRelationships = getRelationshipsByLocationIds(locationIds , nodeList);
 
     if (directRelationships.isEmpty()) {
       log.warn("No relationships found for provided locationIds");
@@ -433,7 +443,7 @@ public class LocationRelationshipService {
     }
 
     Set<UUID> directIds = directRelationships.stream()
-        .map(lr -> lr.getLocation().getIdentifier())
+        .map(lr -> lr.getLocationIdentifier())
         .collect(Collectors.toSet());
 
     Set<UUID> ancestorIds = directRelationships.stream()
@@ -443,19 +453,22 @@ public class LocationRelationshipService {
         .collect(Collectors.toSet());
 
 
-    List<LocationRelationship> ancestorRelationships = ancestorIds.isEmpty()
+    List<LocationRelationshipAncestryIdentifierProjection> ancestorRelationships = ancestorIds.isEmpty()
         ? new ArrayList<>()
-        : locationRelationshipRepository.getRelationshipsByLocationIds(
-            new ArrayList<>(ancestorIds));
+        : getRelationshipsByLocationIds( new ArrayList<>(ancestorIds) , nodeList);
 
 
-    Map<UUID, LocationRelationship> relationshipMap = new LinkedHashMap<>();
+    Set <UUID> locationRelationshipIds = new HashSet<>();
+
     ancestorRelationships.forEach(lr ->
-        relationshipMap.put(lr.getLocation().getIdentifier(), lr));
-    directRelationships.forEach(lr ->
-        relationshipMap.put(lr.getLocation().getIdentifier(), lr));
+        locationRelationshipIds.add(lr.getLocationIdentifier()));
 
-    return LocationHierarchyResponseFactory.generateLocationTreeResponseWithoutGeom( new ArrayList<>(relationshipMap.values()));
+    directRelationships.forEach(lr ->
+        locationRelationshipIds.add(lr.getLocationIdentifier()));
+
+    List<LocationRelationship> locationRelationshipsList = locationRelationshipRepository.findAllByLocationIds(new ArrayList<>(locationRelationshipIds));
+
+    return LocationHierarchyResponseFactory.generateLocationTreeResponseWithoutGeom( locationRelationshipsList);
   }
 }
 

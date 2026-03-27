@@ -7,9 +7,11 @@ import com.revealprecision.revealserver.api.v1.dto.request.OrganizationRoleReque
 import com.revealprecision.revealserver.api.v1.dto.response.GeoTreeResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.GroupManagementResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.IdentifierNameResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.LocationHierarchyResponse;
 import com.revealprecision.revealserver.config.InstanceContext;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.enums.OrganizationTypeEnum;
+import com.revealprecision.revealserver.enums.PlanInterventionTypeEnum;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.EntityTag;
 import com.revealprecision.revealserver.persistence.domain.EntityTagAccGrantsOrganization;
@@ -17,6 +19,7 @@ import com.revealprecision.revealserver.persistence.domain.Instance;
 import com.revealprecision.revealserver.persistence.domain.InstanceRole;
 import com.revealprecision.revealserver.persistence.domain.InstanceUser;
 import com.revealprecision.revealserver.persistence.domain.Location;
+import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.Organization;
 import com.revealprecision.revealserver.persistence.domain.OrganizationLocation;
 import com.revealprecision.revealserver.persistence.domain.OrganizationRole;
@@ -168,7 +171,7 @@ public class GroupManagementService {
     List<UUID> userLocationsIds = organizationLocationRepository.findLocationIdentifiersByInstanceAndUser(
         instanceIdentifier, userId);
 
-    List<GeoTreeResponse>  geoTreeResponses = locationRelationshipService.getFilteredGeoTreeByLocationIds(userLocationsIds);
+    List<GeoTreeResponse>  geoTreeResponses = locationRelationshipService.getFilteredGeoTreeByLocationIds(userLocationsIds , null);
     return  geoTreeResponses;
   }
 
@@ -195,30 +198,53 @@ public class GroupManagementService {
     planLocationsService.assignLocationsToTeam(selectedPlan.getIdentifier(), assignLocationsToTeamRequest);
   }
 
-  public List<GeoTreeResponse> getInstanceGroupsLocations() {
+  public LocationHierarchyResponse getInstanceGroupsLocationsTree() {
 
     UUID instanceIdentifier = InstanceContext.get();
 
     List<Plan> plans =  planService.findPlanByInstanceIdentifier(instanceIdentifier);
 
     ///  as there is one plan only so assign a location to that plan
-    Plan selectedPlan = plans.get(0);
+    Plan plan = plans.get(0);
 
-    List<GeoTreeResponse> geoTreeResponses =  instanceService.getAssignedInstanceAreasTree();
+    LocationHierarchy locationHierarchy = instanceService.getInstanceHierarchy(instanceIdentifier);
+
+    List<GeoTreeResponse> geoTreeResponses;
+
+    if ((plan.getInterventionType().getCode().equals(PlanInterventionTypeEnum.IRS_LITE.name())
+        || plan.getInterventionType()
+        .getCode()
+        .equals(PlanInterventionTypeEnum.MDA_LITE.name()))) {
+      int i = locationHierarchy.getNodeOrder()
+          .indexOf(plan.getPlanTargetType().getGeographicLevel().getName());
+      List<String> elList = locationHierarchy.getNodeOrder()
+          .subList(i + 1, locationHierarchy.getNodeOrder().size());
+      if (elList.isEmpty()) {
+        geoTreeResponses = instanceService.getAssignedInstanceAreasTree(instanceIdentifier);
+      } else {
+        geoTreeResponses = instanceService.getAssignedInstanceAreasTree(instanceIdentifier, elList);
+      }
+    } else {
+      geoTreeResponses = instanceService.getAssignedInstanceAreasTree(instanceIdentifier);
+    }
 
     Set<Location> locations = planLocationsRepository.findLocationsByPlan_Identifier(
-        selectedPlan.getIdentifier());
+        plan.getIdentifier());
 
     Map<UUID, Location> locationMap = locations.stream()
         .collect(Collectors.toMap(Location::getIdentifier, location -> location));
 
-    List<PlanAssignment> planAssignments = planAssignmentService.getPlanAssignmentsByPlanIdentifier(selectedPlan.getIdentifier());
+    List<PlanAssignment> planAssignments = planAssignmentService.getPlanAssignmentsByPlanIdentifier(plan.getIdentifier());
 
     Map<UUID, List<PlanAssignment>> planAssignmentMap = planAssignments.stream()
         .collect(Collectors.groupingBy(
             planAssignment -> planAssignment.getPlanLocations().getLocation().getIdentifier()));
     geoTreeResponses.forEach(el -> planLocationsService.assignLocations(locationMap, el, planAssignmentMap));
-    return geoTreeResponses;
+
+    return LocationHierarchyResponse.builder().identifier(locationHierarchy.getIdentifier().toString())
+        .name(locationHierarchy.getName())
+        .geoTree(geoTreeResponses)
+        .nodeOrder(locationHierarchy.getNodeOrder()).build();
   }
 
   public GroupManagementResponse getGroupById(UUID identifier) {
