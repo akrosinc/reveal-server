@@ -14,6 +14,7 @@ import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.enums.OrganizationTypeEnum;
 import com.revealprecision.revealserver.enums.PlanInterventionTypeEnum;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
+import com.revealprecision.revealserver.exceptions.handler.BadRequestException;
 import com.revealprecision.revealserver.persistence.domain.EntityTag;
 import com.revealprecision.revealserver.persistence.domain.EntityTagAccGrantsOrganization;
 import com.revealprecision.revealserver.persistence.domain.Instance;
@@ -30,6 +31,9 @@ import com.revealprecision.revealserver.persistence.domain.Permission;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.PlanAssignment;
 import com.revealprecision.revealserver.persistence.domain.User;
+import com.revealprecision.revealserver.persistence.domain.id.InstanceUserId;
+import com.revealprecision.revealserver.persistence.domain.id.OrganizationLocationId;
+import com.revealprecision.revealserver.persistence.domain.id.OrganizationRoleMappingId;
 import com.revealprecision.revealserver.persistence.projection.GroupManagementProjection;
 import com.revealprecision.revealserver.persistence.repository.EntityTagAccGrantsOrganizationRepository;
 import com.revealprecision.revealserver.persistence.repository.InstanceUserRepository;
@@ -78,6 +82,8 @@ public class GroupManagementService {
   private final OrganizationRolePermissionRepository organizationRolePermissionRepository;
 
   public void createGroup(GroupManagementRequest request) {
+
+    validateGroupRequest(request, null, null);
 
     UUID instanceIdentifier = InstanceContext.get();
 
@@ -320,6 +326,38 @@ public class GroupManagementService {
   }
 
 
+  private void validateGroupRequest(GroupManagementRequest request, String currentName,
+      UUID identifier) {
+
+    UUID instanceIdentifier = InstanceContext.get();
+
+    boolean exists = false;
+    if (identifier == null) {
+      exists = organizationRepository.existsByNameAndInstance_Identifier(request.getName(),
+          instanceIdentifier);
+    } else if (currentName == null || !currentName.equals(request.getName())) {
+      exists = organizationRepository.existsByNameAndInstance_IdentifierAndIdentifierNot(
+          request.getName(), instanceIdentifier, identifier);
+    }
+
+    if (exists) {
+      throw new BadRequestException("Group/Team with the same name already exists");
+    }
+
+    if (request.getMembersIdentifiers() == null || request.getMembersIdentifiers().isEmpty()) {
+      throw new BadRequestException("At least one member is required");
+    }
+
+    if (!BooleanUtils.isTrue(request.getIsTeam())) {
+      if (request.getAreasIdentifiers() == null || request.getAreasIdentifiers().isEmpty()) {
+        throw new BadRequestException("At least one area is required");
+      }
+      if (request.getRolesIdentifiers() == null || request.getRolesIdentifiers().isEmpty()) {
+        throw new BadRequestException("At least one role is required");
+      }
+    }
+  }
+
   private void markSelectedAreas(List<GeoTreeResponse> areas, Set<UUID> selectedIds) {
     if (areas == null) return;
     areas.forEach(area -> {
@@ -332,10 +370,11 @@ public class GroupManagementService {
   @Transactional
   public void updateGroup(UUID identifier, GroupManagementRequest request) {
 
+    Organization org = findById(identifier);
+    validateGroupRequest(request, org.getName(), identifier);
+
     UUID instanceIdentifier = InstanceContext.get();
     Instance instance = instanceService.findById(instanceIdentifier);
-
-    Organization org = findById(identifier);
 
     // Update basic fields
     org.setName(request.getName());
@@ -345,70 +384,144 @@ public class GroupManagementService {
     organizationRepository.save(org);
 
     // Update members
+    List<UUID> incomingMemberIds = request.getMembersIdentifiers();
     List<User> currentUsers = userRepository.findByOrganizationId(identifier);
-    currentUsers.forEach(user -> user.getOrganizations().remove(org));
-    userService.saveAll(currentUsers);
+    Set<UUID> currentMemberIds = currentUsers.stream().map(User::getIdentifier)
+        .collect(Collectors.toSet());
 
-    // Remove instance users for current members
-    List<UUID> currentUserIds = currentUsers.stream()
-        .map(User::getIdentifier)
+    List<User> membersToRemove = currentUsers.stream()
+        .filter(user -> !incomingMemberIds.contains(user.getIdentifier()))
         .collect(Collectors.toList());
-    instanceUserRepository.deleteByUserIdsAndInstanceId(currentUserIds, instanceIdentifier);
 
-    // Add new members
-    List<User> newUsers = userService.findAllById(request.getMembersIdentifiers());
-    newUsers.forEach(user -> user.getOrganizations().add(org));
-    userService.saveAll(newUsers);
+    List<UUID> membersToAddIds = incomingMemberIds.stream()
+        .filter(memberId -> !currentMemberIds.contains(memberId))
+        .collect(Collectors.toList());
 
-    // Add instance users for new members
-    InstanceRole standardRole = instanceRoleService.getStandardRole();
-    List<InstanceUser> instanceUsers = newUsers.stream()
-        .map(user -> {
-          InstanceUser instanceUser = new InstanceUser();
-          instanceUser.setRole(standardRole);
-          instanceUser.populate(instance, user);
-          return instanceUser;
-        }).collect(Collectors.toList());
-    instanceUserRepository.saveAll(instanceUsers);
+    if (!membersToRemove.isEmpty()) {
+      membersToRemove.forEach(user -> user.getOrganizations().remove(org));
+      userService.saveAll(membersToRemove);
 
-    if (!request.getIsTeam()) {
+      List<InstanceUserId> instanceUserIdsToRemove = membersToRemove.stream()
+          .map(user -> new InstanceUserId(instanceIdentifier, user.getIdentifier()))
+          .collect(Collectors.toList());
+      instanceUserRepository.deleteAllById(instanceUserIdsToRemove);
+    }
+
+    if (!membersToAddIds.isEmpty()) {
+      List<User> membersToAdd = userService.findAllById(membersToAddIds);
+      membersToAdd.forEach(user -> user.getOrganizations().add(org));
+      userService.saveAll(membersToAdd);
+
+      InstanceRole standardRole = instanceRoleService.getStandardRole();
+      List<InstanceUser> instanceUsersToAdd = membersToAdd.stream()
+          .map(user -> {
+            InstanceUser instanceUser = new InstanceUser();
+            instanceUser.setRole(standardRole);
+            instanceUser.populate(instance, user);
+            return instanceUser;
+          }).collect(Collectors.toList());
+      instanceUserRepository.saveAll(instanceUsersToAdd);
+    }
+
+    if (!BooleanUtils.isTrue(request.getIsTeam())) {
 
       // Update datasets
-      entityTagAccGrantsOrganizationRepository.deleteByOrganizationId(identifier);
-      List<EntityTag> tags = entityTagService.findEntityTagsByIdentifierIn(
-          request.getDatasetsIdentifiers());
-      List<EntityTagAccGrantsOrganization> entityTagAccGrantsOrganizations = tags.stream()
-          .map(entityTag -> {
-            EntityTagAccGrantsOrganization mapping = new EntityTagAccGrantsOrganization();
-            mapping.setEntityTag(entityTag);
-            mapping.setOrganizationId(identifier);
-            return mapping;
-          }).collect(Collectors.toList());
-      entityTagAccGrantsOrganizationRepository.saveAll(entityTagAccGrantsOrganizations);
+      List<UUID> incomingDatasetIds =
+          request.getDatasetsIdentifiers() != null ? request.getDatasetsIdentifiers()
+              : new java.util.ArrayList<>();
+      List<EntityTagAccGrantsOrganization> currentDatasets = entityTagAccGrantsOrganizationRepository.findByOrganizationId(
+          identifier);
+      Set<UUID> currentDatasetTagIds = currentDatasets.stream()
+          .map(mapping -> mapping.getEntityTag().getIdentifier()).collect(Collectors.toSet());
+
+      List<EntityTagAccGrantsOrganization> datasetsToRemove = currentDatasets.stream()
+          .filter(mapping -> !incomingDatasetIds.contains(mapping.getEntityTag().getIdentifier()))
+          .collect(Collectors.toList());
+
+      List<UUID> datasetsToAddIds = incomingDatasetIds.stream()
+          .filter(tagId -> !currentDatasetTagIds.contains(tagId))
+          .collect(Collectors.toList());
+
+      if (!datasetsToRemove.isEmpty()) {
+        entityTagAccGrantsOrganizationRepository.deleteAll(datasetsToRemove);
+      }
+
+      if (!datasetsToAddIds.isEmpty()) {
+        List<EntityTag> tags = entityTagService.findEntityTagsByIdentifierIn(datasetsToAddIds);
+        List<EntityTagAccGrantsOrganization> datasetsToAdd = tags.stream()
+            .map(entityTag -> {
+              EntityTagAccGrantsOrganization mapping = new EntityTagAccGrantsOrganization();
+              mapping.setEntityTag(entityTag);
+              mapping.setOrganizationId(identifier);
+              return mapping;
+            }).collect(Collectors.toList());
+        entityTagAccGrantsOrganizationRepository.saveAll(datasetsToAdd);
+      }
 
       // Update locations
-      organizationLocationRepository.deleteByOrganizationIdentifier(identifier);
-      List<Location> locations = locationService.findAllIdentifiersWithoutStructureAndGeoJSON(
-          request.getAreasIdentifiers());
-      List<OrganizationLocation> areas = locations.stream()
-          .map(location -> {
-            OrganizationLocation mapping = new OrganizationLocation();
-            mapping.populate(org, location);
-            return mapping;
-          }).collect(Collectors.toList());
-      organizationLocationRepository.saveAll(areas);
+      List<UUID> incomingAreaIds = request.getAreasIdentifiers();
+      List<OrganizationLocation> currentLocations = organizationLocationRepository.findByOrganizationIdentifier(
+          identifier);
+      Set<UUID> currentAreaIds = currentLocations.stream()
+          .map(mapping -> mapping.getLocation().getIdentifier()).collect(Collectors.toSet());
+
+      List<OrganizationLocationId> areasToRemoveIds = currentAreaIds.stream()
+          .filter(areaId -> !incomingAreaIds.contains(areaId))
+          .map(areaId -> new OrganizationLocationId(identifier, areaId))
+          .collect(Collectors.toList());
+
+      List<UUID> areasToAddIds = incomingAreaIds.stream()
+          .filter(areaId -> !currentAreaIds.contains(areaId))
+          .collect(Collectors.toList());
+
+      if (!areasToRemoveIds.isEmpty()) {
+        organizationLocationRepository.deleteAllById(areasToRemoveIds);
+      }
+
+      if (!areasToAddIds.isEmpty()) {
+        List<Location> locations = locationService.findAllIdentifiersWithoutStructureAndGeoJSON(
+            areasToAddIds);
+        List<OrganizationLocation> areasToAdd = locations.stream()
+            .map(location -> {
+              OrganizationLocation mapping = new OrganizationLocation();
+              mapping.populate(org, location);
+              return mapping;
+            }).collect(Collectors.toList());
+        organizationLocationRepository.saveAll(areasToAdd);
+      }
 
       // Update roles
-      organizationRoleMappingRepository.deleteByOrganizationIdentifier(identifier);
-      List<OrganizationRole> roles = organizationRoleRepository.findAllById(
-          request.getRolesIdentifiers());
-      List<OrganizationRoleMapping> orgRoleMappings = roles.stream()
-          .map(role -> {
-            OrganizationRoleMapping mapping = new OrganizationRoleMapping();
-            mapping.populate(org, role);
-            return mapping;
-          }).collect(Collectors.toList());
-      organizationRoleMappingRepository.saveAll(orgRoleMappings);
+      List<UUID> incomingRoleIds = request.getRolesIdentifiers();
+      List<OrganizationRoleMapping> currentRoleMappings = organizationRoleMappingRepository.findAll()
+          .stream()
+          .filter(mapping -> mapping.getOrganization().getIdentifier().equals(identifier))
+          .collect(Collectors.toList());
+      Set<UUID> currentRoleIds = currentRoleMappings.stream()
+          .map(mapping -> mapping.getOrganizationRole().getIdentifier()).collect(Collectors.toSet());
+
+      List<OrganizationRoleMappingId> rolesToRemoveIds = currentRoleIds.stream()
+          .filter(roleId -> !incomingRoleIds.contains(roleId))
+          .map(roleId -> new OrganizationRoleMappingId(roleId, identifier))
+          .collect(Collectors.toList());
+
+      List<UUID> rolesToAddIds = incomingRoleIds.stream()
+          .filter(roleId -> !currentRoleIds.contains(roleId))
+          .collect(Collectors.toList());
+
+      if (!rolesToRemoveIds.isEmpty()) {
+        organizationRoleMappingRepository.deleteAllById(rolesToRemoveIds);
+      }
+
+      if (!rolesToAddIds.isEmpty()) {
+        List<OrganizationRole> rolesToAdd = organizationRoleRepository.findAllById(rolesToAddIds);
+        List<OrganizationRoleMapping> mappingsToAdd = rolesToAdd.stream()
+            .map(role -> {
+              OrganizationRoleMapping mapping = new OrganizationRoleMapping();
+              mapping.populate(org, role);
+              return mapping;
+            }).collect(Collectors.toList());
+        organizationRoleMappingRepository.saveAll(mappingsToAdd);
+      }
     }
   }
 

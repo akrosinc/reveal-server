@@ -58,6 +58,8 @@ public interface InstanceRepository extends JpaRepository<Instance, UUID> {
   );
 
   Optional<Instance> findByName(String name);
+  boolean existsByName(String name);
+  boolean existsByNameAndIdentifierNot(String name, UUID identifier);
 
   @Query("SELECT count (i)" +
       "FROM Instance i " +

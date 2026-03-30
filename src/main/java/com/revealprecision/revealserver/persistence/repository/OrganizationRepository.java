@@ -97,6 +97,10 @@ public interface OrganizationRepository extends EntityGraphJpaRepository<Organiz
 
   List<Organization> findByNameIn(List<String> names);
 
+  boolean existsByNameAndInstance_Identifier(String name, UUID instanceIdentifier);
+
+  boolean existsByNameAndInstance_IdentifierAndIdentifierNot(String name, UUID instanceIdentifier, UUID identifier);
+
   @Query("SELECT " +
       "o.identifier AS identifier, " +
       "o.name AS name, " +

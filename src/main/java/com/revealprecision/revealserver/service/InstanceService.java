@@ -22,6 +22,7 @@ import com.revealprecision.revealserver.enums.PlanStatusEnum;
 import com.revealprecision.revealserver.exceptions.ConflictException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.exceptions.constant.Error;
+import com.revealprecision.revealserver.exceptions.handler.BadRequestException;
 import com.revealprecision.revealserver.messaging.message.PlanUpdateMessage;
 import com.revealprecision.revealserver.messaging.message.PlanUpdateType;
 import com.revealprecision.revealserver.persistence.domain.EntityTag;
@@ -37,6 +38,9 @@ import com.revealprecision.revealserver.persistence.domain.OrganizationRole;
 import com.revealprecision.revealserver.persistence.domain.OrganizationRoleMapping;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.User;
+import com.revealprecision.revealserver.persistence.domain.id.InstanceEntityTagId;
+import com.revealprecision.revealserver.persistence.domain.id.InstanceLocationId;
+import com.revealprecision.revealserver.persistence.domain.id.InstanceUserId;
 import com.revealprecision.revealserver.persistence.projection.IdentifierNameProjection;
 import com.revealprecision.revealserver.persistence.projection.InstanceEntityTagIdProjection;
 import com.revealprecision.revealserver.persistence.projection.InstanceListProjection;
@@ -55,6 +59,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.BooleanUtils;
@@ -92,10 +97,7 @@ public class InstanceService {
   @Transactional
   public void create(InstanceRequest instanceRequest) {
 
-    instanceRepository.findByName(instanceRequest.getInstanceName()).ifPresent(instance -> {
-      throw new ConflictException(
-          String.format(Error.NON_UNIQUE, "Instance name", instanceRequest.getInstanceName()));
-    });
+    validateInstanceRequest(instanceRequest, null, null);
 
     Instance instance = new Instance();
     instance.setName(instanceRequest.getInstanceName());
@@ -160,6 +162,30 @@ public class InstanceService {
 
   }
 
+  private void validateInstanceRequest(InstanceRequest instanceRequest, String currentName,
+      UUID identifier) {
+    if (instanceRequest.getInstanceName() != null && !instanceRequest.getInstanceName()
+        .equals(currentName)) {
+      boolean exists;
+      if (identifier != null) {
+        exists = instanceRepository.existsByNameAndIdentifierNot(instanceRequest.getInstanceName(),
+            identifier);
+      } else {
+        exists = instanceRepository.existsByName(instanceRequest.getInstanceName());
+      }
+      if (exists) {
+        throw new ConflictException(
+            String.format(Error.NON_UNIQUE, "Instance name", instanceRequest.getInstanceName()));
+      }
+    }
+    if (instanceRequest.getMembers() == null || instanceRequest.getMembers().isEmpty()) {
+      throw new BadRequestException("At least one member is required");
+    }
+    if (instanceRequest.getAreas() == null || instanceRequest.getAreas().isEmpty()) {
+      throw new BadRequestException("At least one area is required");
+    }
+  }
+
   public Page<InstanceListProjection> searchInstance(String searchParam, Pageable pageable) {
     Page<InstanceListProjection> projectionPage = StringUtils.isBlank(searchParam)
         ? instanceRepository.findAllInstances(pageable)
@@ -192,17 +218,10 @@ public class InstanceService {
 
   @Transactional
   public void update(UUID identifier, InstanceRequest instanceRequest) {
+
     Instance instance = findById(identifier);
 
-    if (instanceRequest.getInstanceName() != null && !instance.getName()
-        .equals(instanceRequest.getInstanceName())) {
-      instanceRepository.findByName(instanceRequest.getInstanceName()).ifPresent(instance1 -> {
-        if (!instance1.getIdentifier().equals(instance.getIdentifier())) {
-          throw new ConflictException(
-              String.format(Error.NON_UNIQUE, "Instance name", instanceRequest.getInstanceName()));
-        }
-      });
-    }
+    validateInstanceRequest(instanceRequest, instance.getName(), identifier);
 
     instance.setName(instanceRequest.getInstanceName());
     LocationHierarchy locationHierarchy = locationHierarchyService.findByIdentifier(
@@ -212,10 +231,29 @@ public class InstanceService {
     instanceRepository.save(instance);
 
     // Update tags
-    instanceEntityTagRepository.deleteByInstance(instance);
-    if (instanceRequest.getDatasets_tags() != null) {
-      List<EntityTag> tags = entityTagService.findEntityTagsByIdentifierIn(
-          instanceRequest.getDatasets_tags());
+    List<UUID> incomingTagIds =
+        instanceRequest.getDatasets_tags() != null ? instanceRequest.getDatasets_tags()
+            : new ArrayList<>();
+    List<IdentifierNameProjection> currentTags = instanceEntityTagRepository.getDatasetsIdNamesByInstance(
+        identifier);
+    Set<UUID> currentTagIds = currentTags.stream().map(IdentifierNameProjection::getIdentifier)
+        .collect(Collectors.toSet());
+
+    List<InstanceEntityTagId> tagsToDelete = currentTagIds.stream()
+        .filter(tagId -> !incomingTagIds.contains(tagId))
+        .map(tagId -> new InstanceEntityTagId(identifier, tagId))
+        .collect(Collectors.toList());
+
+    List<UUID> tagsToAdd = incomingTagIds.stream()
+        .filter(tagId -> !currentTagIds.contains(tagId))
+        .collect(Collectors.toList());
+
+    if (!tagsToDelete.isEmpty()) {
+      instanceEntityTagRepository.deleteAllById(tagsToDelete);
+    }
+
+    if (!tagsToAdd.isEmpty()) {
+      List<EntityTag> tags = entityTagService.findEntityTagsByIdentifierIn(tagsToAdd);
       List<InstanceEntityTag> instanceEntityTags = tags.stream().distinct().map(tag -> {
         InstanceEntityTag mapping = new InstanceEntityTag();
         mapping.populate(instance, tag);
@@ -225,9 +263,27 @@ public class InstanceService {
     }
 
     // Update users
-    instanceUserRepository.deleteByInstance(instance);
-    if (instanceRequest.getMembers() != null) {
-      List<User> users = userService.findAllById(instanceRequest.getMembers());
+    List<UUID> incomingMemberIds = instanceRequest.getMembers();
+    List<IdentifierNameProjection> currentMembers = instanceUserRepository.getInstancesUsers(
+        identifier);
+    Set<UUID> currentMemberIds = currentMembers.stream().map(IdentifierNameProjection::getIdentifier)
+        .collect(Collectors.toSet());
+
+    List<InstanceUserId> membersToDelete = currentMemberIds.stream()
+        .filter(memberId -> !incomingMemberIds.contains(memberId))
+        .map(memberId -> new InstanceUserId(identifier, memberId))
+        .collect(Collectors.toList());
+
+    List<UUID> membersToAdd = incomingMemberIds.stream()
+        .filter(memberId -> !currentMemberIds.contains(memberId))
+        .collect(Collectors.toList());
+
+    if (!membersToDelete.isEmpty()) {
+      instanceUserRepository.deleteAllById(membersToDelete);
+    }
+
+    if (!membersToAdd.isEmpty()) {
+      List<User> users = userService.findAllById(membersToAdd);
       InstanceRole adminRole = instanceRoleService.getInstanceAdminRole();
       List<InstanceUser> instanceUsers = users.stream().distinct().map(user -> {
         InstanceUser mapping = new InstanceUser();
@@ -239,10 +295,27 @@ public class InstanceService {
     }
 
     // Update locations
-    instanceLocationRepository.deleteByInstance(instance);
-    if (instanceRequest.getAreas() != null) {
+    List<UUID> incomingAreaIds = instanceRequest.getAreas();
+    List<UUID> currentAreaIdsList = instanceLocationRepository.findLocationIdentifiersByInstanceId(
+        identifier);
+    Set<UUID> currentAreaIds = new java.util.HashSet<>(currentAreaIdsList);
+
+    List<InstanceLocationId> areasToDelete = currentAreaIds.stream()
+        .filter(areaId -> !incomingAreaIds.contains(areaId))
+        .map(areaId -> new InstanceLocationId(identifier, areaId))
+        .collect(Collectors.toList());
+
+    List<UUID> areasToAdd = incomingAreaIds.stream()
+        .filter(areaId -> !currentAreaIds.contains(areaId))
+        .collect(Collectors.toList());
+
+    if (!areasToDelete.isEmpty()) {
+      instanceLocationRepository.deleteAllById(areasToDelete);
+    }
+
+    if (!areasToAdd.isEmpty()) {
       List<Location> locations = locationService.findAllIdentifiersWithoutStructureAndGeoJSON(
-          instanceRequest.getAreas());
+          areasToAdd);
       List<InstanceLocation> areas = locations.stream().distinct().map(location -> {
         InstanceLocation mapping = new InstanceLocation();
         mapping.populate(instance, location);
