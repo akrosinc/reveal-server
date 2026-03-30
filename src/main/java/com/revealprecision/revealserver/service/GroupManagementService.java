@@ -45,6 +45,7 @@ import com.revealprecision.revealserver.persistence.repository.OrganizationRoleR
 import com.revealprecision.revealserver.persistence.repository.PermissionRepository;
 import com.revealprecision.revealserver.persistence.repository.PlanLocationsRepository;
 import com.revealprecision.revealserver.persistence.repository.UserRepository;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -619,6 +620,11 @@ public class GroupManagementService {
 
     Organization org = findById(
         request.getGroupIdentifier());
+
+
+    if(user.getOrganizations() == null){
+      user.setOrganizations(new HashSet<>());
+    }
 
     user.getOrganizations().add(org);
     userService.saveAll(List.of(user));
