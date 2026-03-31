@@ -23,6 +23,7 @@ public class LocationHierarchyResponseFactory {
       LocationHierarchy locationHierarchy) {
     return LocationHierarchyResponse.builder().identifier(locationHierarchy.getIdentifier().toString())
         .name(locationHierarchy.getName())
+        .hierarchyStatus(locationHierarchy.getHierarchyStatus())
         .nodeOrder(locationHierarchy.getNodeOrder()).build();
   }
 

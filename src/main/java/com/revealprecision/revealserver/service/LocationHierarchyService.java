@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.lucene.search.join.ScoreMode;
 import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -306,7 +307,14 @@ public class LocationHierarchyService {
         SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
 
         BoolQueryBuilder boolQuery = QueryBuilders.boolQuery()
-                .mustNot(QueryBuilders.termQuery("level", "structure"));
+            .mustNot(QueryBuilders.termQuery("level", "structure"))
+            .must(QueryBuilders.nestedQuery(
+                "hierarchyDetailsElastic",
+                QueryBuilders.existsQuery(
+                    "hierarchyDetailsElastic." + hierarchyId.toString()
+                ),
+                ScoreMode.None
+            ));
         sourceBuilder.query(boolQuery);
 
         String parentField  = "hierarchyDetailsElastic." + hierarchyId + ".parent";
@@ -371,7 +379,7 @@ public class LocationHierarchyService {
     @Transactional
     public void activateLocationHierarchy(UUID identifier) {
 
-       List<LocationBulk>  locationBulks = locationBulkService.getUnCompletedLocationBulk();
+       List<LocationBulk>  locationBulks = locationBulkService.getCompletedLocationBulk();
 
        LocationHierarchy locationHierarchy = findByIdentifier(identifier);
 

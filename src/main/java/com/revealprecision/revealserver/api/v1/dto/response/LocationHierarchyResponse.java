@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.api.v1.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.revealprecision.revealserver.enums.HierarchyStatus;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -25,4 +26,6 @@ public class LocationHierarchyResponse {
   private List<String> nodeOrder;
 
   private List<GeoTreeResponse> geoTree;
+
+  private HierarchyStatus hierarchyStatus;
 }

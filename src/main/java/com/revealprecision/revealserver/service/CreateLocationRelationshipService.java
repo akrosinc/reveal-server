@@ -193,9 +193,6 @@ public class CreateLocationRelationshipService {
   public void createRelationshipForImportedLocationAndHierarchy(Location location, int index,
       int locationListSize, LocationBulk bulk, LocationHierarchy locationHierarchy) throws IOException {
 
-    List<LocationHierarchy> locationHierarchies = locationHierarchyRepository
-        .findLocationHierarchiesByNodeOrderContaining(location.getGeographicLevel().getName());
-
     Integer nodePosition =
         locationHierarchy.getNodeOrder().indexOf(location.getGeographicLevel().getName()) - 1;
     if (nodePosition < locationHierarchy.getNodeOrder().size() && nodePosition >= 0) {
@@ -240,7 +237,10 @@ public class CreateLocationRelationshipService {
 
         try {
           parentIds = locationHierarchy.getNodeOrder().stream()
-              .takeWhile(node -> !node.equals(location.getGeographicLevel().getName()))
+              .takeWhile(node ->
+                  location.getGeographicLevel() != null &&
+                      !node.equals(location.getGeographicLevel().getName())
+              )
               .map(parents::get)
               .map(node -> UUID.fromString((String) node))
               .collect(Collectors.toList());

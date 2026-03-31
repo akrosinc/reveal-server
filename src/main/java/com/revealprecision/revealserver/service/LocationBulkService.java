@@ -70,7 +70,7 @@ public class LocationBulkService {
     return locationBulkRepository.countByStatusNot(BulkStatusEnum.COMPLETE) == 0;
   }
 
-  public List<LocationBulk> getUnCompletedLocationBulk() {
+  public List<LocationBulk> getCompletedLocationBulk() {
     return locationBulkRepository.findBulkByStatus(BulkStatusEnum.COMPLETE);
   }
 
