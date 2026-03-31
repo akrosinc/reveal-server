@@ -186,7 +186,9 @@ public class GroupManagementService {
     List<UUID> userLocationsIds = organizationLocationRepository.findLocationIdentifiersByInstanceAndUser(
         instanceIdentifier, userId);
 
-    List<GeoTreeResponse>  geoTreeResponses = locationRelationshipService.getFilteredGeoTreeByLocationIds(userLocationsIds , null);
+    Instance instance = instanceService.findById(instanceIdentifier);
+
+    List<GeoTreeResponse>  geoTreeResponses = locationRelationshipService.getFilteredGeoTreeByLocationIds(instance.getLocationHierarchy(), userLocationsIds , null);
     return  geoTreeResponses;
   }
 

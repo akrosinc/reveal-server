@@ -428,6 +428,8 @@ public class InstanceService {
 
     List<IdentifierNameResponse> instancesAreas = null;
 
+    Instance instance = findById(instanceIdentifier);
+
     if (instanceIdentifier == null) {
       instancesAreas = getAssignedInstanceAreas();
     } else {
@@ -438,7 +440,7 @@ public class InstanceService {
         .map(IdentifierNameResponse::getIdentifier)
         .collect(Collectors.toList());
 
-    List<GeoTreeResponse> geoTreeResponses = locationRelationshipService.getFilteredGeoTreeByLocationIds(
+    List<GeoTreeResponse> geoTreeResponses = locationRelationshipService.getFilteredGeoTreeByLocationIds(instance.getLocationHierarchy(),
         instancesAreasIds , nodeList);
 
     return geoTreeResponses;

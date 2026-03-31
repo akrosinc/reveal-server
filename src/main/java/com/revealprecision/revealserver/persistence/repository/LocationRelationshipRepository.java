@@ -244,8 +244,8 @@ public interface LocationRelationshipRepository extends JpaRepository<LocationRe
             "JOIN  lr.location l " +
             "JOIN  l.geographicLevel gl " +
             "LEFT JOIN  lr.parentLocation " +
-            "WHERE lr.location.identifier IN :locationIds")
-    List<LocationRelationshipAncestryIdentifierProjection> getRelationshipsByLocationIds(List<UUID> locationIds);
+            "WHERE lr.location.identifier IN :locationIds and lr.locationHierarchy.identifier  = :locationHierarchy")
+    List<LocationRelationshipAncestryIdentifierProjection> getRelationshipsByLocationIdsAndLocationHierarchy(List<UUID> locationIds, UUID locationHierarchy);
 
     @Query("SELECT lr.identifier as identifier,l.name as  locationName,l.identifier as locationIdentifier , "
         + "lr.parentLocation as parentIdentifier, gl.name as  geographicLevelName , lr.ancestry as ancestry "
@@ -253,14 +253,15 @@ public interface LocationRelationshipRepository extends JpaRepository<LocationRe
         "JOIN  lr.location l " +
         "JOIN  l.geographicLevel gl " +
         "LEFT JOIN  lr.parentLocation " +
-        "WHERE lr.location.identifier IN :locationIds AND gl.name NOT IN :nodeList")
+        "WHERE lr.location.identifier IN :locationIds AND gl.name NOT IN :nodeList  and lr.locationHierarchy.identifier  = :locationHierarchy")
     List<LocationRelationshipAncestryIdentifierProjection> getRelationshipsByLocationIdsAndNodeListNotIn(
-        List<UUID> locationIds, List<String> nodeList);
+        List<UUID> locationIds, List<String> nodeList, UUID locationHierarchy);
 
     @Query("SELECT lr FROM LocationRelationship lr " +
         "JOIN  lr.location l " +
         "JOIN  l.geographicLevel gl " +
-        "LEFT JOIN  lr.parentLocation " +
-        "WHERE lr.location.identifier IN :locationIds")
-    List<LocationRelationship> findAllByLocationIds(List<UUID> locationIds);
+        "LEFT JOIN  lr.parentLocation pl " +
+        "WHERE lr.location.identifier IN :locationIds and  lr.entityStatus = 'ACTIVE' and  "
+        + "l.entityStatus = 'ACTIVE' and  gl.entityStatus = 'ACTIVE'  and lr.locationHierarchy.identifier  = :locationHierarchy")
+    List<LocationRelationship> findAllByLocationIds(List<UUID> locationIds, UUID locationHierarchy);
 }

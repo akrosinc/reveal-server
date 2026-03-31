@@ -420,22 +420,22 @@ public class LocationRelationshipService {
         locationIdentifier, locationHierarchyIdentifier, parentGeographicLevelName);
   }
 
-  private List<LocationRelationshipAncestryIdentifierProjection> getRelationshipsByLocationIds(List<UUID> locationIds, List<String> nodeList ) {
+  private List<LocationRelationshipAncestryIdentifierProjection> getRelationshipsByLocationIds(UUID locationHierarchy ,  List<UUID> locationIds, List<String> nodeList ) {
     if(CollectionUtils.isEmpty(nodeList)){
-      return  locationRelationshipRepository.getRelationshipsByLocationIds(locationIds);
+      return  locationRelationshipRepository.getRelationshipsByLocationIdsAndLocationHierarchy(locationIds, locationHierarchy);
     }
     else {
-      return  locationRelationshipRepository.getRelationshipsByLocationIdsAndNodeListNotIn(locationIds, nodeList);
+      return  locationRelationshipRepository.getRelationshipsByLocationIdsAndNodeListNotIn(locationIds, nodeList, locationHierarchy);
     }
   }
 
-  public List<GeoTreeResponse> getFilteredGeoTreeByLocationIds(List<UUID> locationIds, List<String> nodeList ) {
+  public List<GeoTreeResponse> getFilteredGeoTreeByLocationIds(LocationHierarchy locationHierarchy, List<UUID> locationIds, List<String> nodeList ) {
 
     if (locationIds == null || locationIds.isEmpty()) {
       return new ArrayList<>();
     }
 
-    List<LocationRelationshipAncestryIdentifierProjection> directRelationships = getRelationshipsByLocationIds(locationIds , nodeList);
+    List<LocationRelationshipAncestryIdentifierProjection> directRelationships = getRelationshipsByLocationIds(locationHierarchy.getIdentifier(), locationIds , nodeList);
 
     if (directRelationships.isEmpty()) {
       log.warn("No relationships found for provided locationIds");
@@ -455,7 +455,7 @@ public class LocationRelationshipService {
 
     List<LocationRelationshipAncestryIdentifierProjection> ancestorRelationships = ancestorIds.isEmpty()
         ? new ArrayList<>()
-        : getRelationshipsByLocationIds( new ArrayList<>(ancestorIds) , nodeList);
+        : getRelationshipsByLocationIds(locationHierarchy.getIdentifier(), new ArrayList<>(ancestorIds) , nodeList);
 
 
     Set <UUID> locationRelationshipIds = new HashSet<>();
@@ -466,7 +466,7 @@ public class LocationRelationshipService {
     directRelationships.forEach(lr ->
         locationRelationshipIds.add(lr.getLocationIdentifier()));
 
-    List<LocationRelationship> locationRelationshipsList = locationRelationshipRepository.findAllByLocationIds(new ArrayList<>(locationRelationshipIds));
+    List<LocationRelationship> locationRelationshipsList = locationRelationshipRepository.findAllByLocationIds(new ArrayList<>(locationRelationshipIds), locationHierarchy.getIdentifier());
 
     return LocationHierarchyResponseFactory.generateLocationTreeResponseWithoutGeom( locationRelationshipsList);
   }
