@@ -383,6 +383,11 @@ public class LocationHierarchyService {
 
        LocationHierarchy locationHierarchy = findByIdentifier(identifier);
 
+       if(locationHierarchy.getHierarchyStatus() != null &&
+                        locationHierarchy.getHierarchyStatus().equals(HierarchyStatus.ACTIVE) ){
+           throw new IllegalArgumentException("Hierarchy already active.");
+       }
+
         for(LocationBulk locationBulk : locationBulks){
 
             List<Location> addedLocations = locationBulkService.getAllCreatedInBulk(

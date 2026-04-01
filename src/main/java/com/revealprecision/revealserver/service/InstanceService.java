@@ -671,7 +671,12 @@ public class InstanceService {
     Instance instance = findById(instanceIdentifier);
 
     Plan instancePlan = planService.findPlanByInstanceIdentifier(instanceIdentifier).stream().findFirst()
-        .orElseThrow(() -> new IllegalArgumentException("Insatnce Plan not found"));
+        .orElseThrow(() -> new IllegalArgumentException("Instance Plan not found"));
+
+    if(instancePlan.getStatus() != null && instancePlan.getStatus().equals(PlanStatusEnum.ACTIVE)){
+      throw new IllegalArgumentException("Instance plan is already activated");
+    }
+
 
     boolean hasLocations = planLocationsRepository.countByPlan_Identifier(instancePlan.getIdentifier()) > 0;
     if (!hasLocations) {
