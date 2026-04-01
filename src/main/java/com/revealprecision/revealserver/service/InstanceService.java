@@ -53,6 +53,8 @@ import com.revealprecision.revealserver.persistence.repository.InstanceUserRepos
 import com.revealprecision.revealserver.persistence.repository.OrganizationLocationRepository;
 import com.revealprecision.revealserver.persistence.repository.OrganizationRoleMappingRepository;
 import com.revealprecision.revealserver.persistence.repository.OrganizationRoleRepository;
+import com.revealprecision.revealserver.persistence.repository.PlanAssignmentRepository;
+import com.revealprecision.revealserver.persistence.repository.PlanLocationsRepository;
 import com.revealprecision.revealserver.persistence.repository.UserRepository;
 import com.revealprecision.revealserver.util.UserUtils;
 import java.util.ArrayList;
@@ -93,6 +95,8 @@ public class InstanceService {
   private final EntityTagAccGrantsOrganizationRepository entityTagAccGrantsOrganizationRepository;
   private final LocationBulkService locationBulkService;
   private final UserRepository userRepository;
+  private final PlanLocationsRepository planLocationsRepository;
+  private final PlanAssignmentRepository planAssignmentRepository;
 
   @Transactional
   public void create(InstanceRequest instanceRequest) {
@@ -639,21 +643,6 @@ public class InstanceService {
         : instanceRepository.countInstanceListBySearch(searchParam);
   }
 
-  public void activateInstancePlan(UUID instanceIdentifier) {
-
-    Instance instance = findById(instanceIdentifier);
-
-    Plan instancePlan = planService.findPlanByInstanceIdentifier(instanceIdentifier).stream().findFirst()
-            .orElseThrow(() -> new IllegalArgumentException("Insatnce Plan not found"));
-
-    Plan plan = planService.findPlanByIdentifier(instancePlan.getIdentifier());
-    LocationHierarchy  locationHierarchy = instance.getLocationHierarchy();
-
-    if(locationHierarchy.getHierarchyStatus().equals(HierarchyStatus.INACTIVE)){
-      throw new IllegalArgumentException("Location hierarchy is inactive, cannot activate instance plan");
-    }
-    planService.activatePlan(plan);
-  }
 
   public LocationHierarchyResponse getInstanceHierarchyWithGroups(UUID instanceIdentifier) {
     if (instanceIdentifier == null) {
@@ -676,5 +665,37 @@ public class InstanceService {
         .geoTree(hierarchyTree)
         .nodeOrder(instanceLocationHierarchy.getNodeOrder()).build();
 
+  }
+
+  public void activateInstancePlan(UUID instanceIdentifier) {
+    Instance instance = findById(instanceIdentifier);
+
+    Plan instancePlan = planService.findPlanByInstanceIdentifier(instanceIdentifier).stream().findFirst()
+        .orElseThrow(() -> new IllegalArgumentException("Insatnce Plan not found"));
+
+    boolean hasLocations = planLocationsRepository.countByPlan_Identifier(instancePlan.getIdentifier()) > 0;
+    if (!hasLocations) {
+      throw new IllegalArgumentException(
+          "Cannot activate plan - no locations assigned to plan. " +
+              "Please assign at least one location before activating."
+      );
+    }
+
+    // Check 3 - at least one team assigned
+    boolean hasTeams = planAssignmentRepository
+        .existsByPlanIdentifier(instancePlan.getIdentifier());
+    if (!hasTeams) {
+      throw new IllegalArgumentException(
+          "Cannot activate plan - no teams assigned to plan. " +
+              "Please assign at least one team before activating."
+      );
+    }
+
+    LocationHierarchy  locationHierarchy = instance.getLocationHierarchy();
+
+    if(locationHierarchy.getHierarchyStatus().equals(HierarchyStatus.INACTIVE)){
+      throw new IllegalArgumentException("Location hierarchy is inactive, cannot activate instance plan");
+    }
+    planService.activatePlan(instancePlan);
   }
 }

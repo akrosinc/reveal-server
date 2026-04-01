@@ -62,4 +62,7 @@ public interface PlanAssignmentRepository extends EntityGraphJpaRepository<PlanA
       + "and pl.plan_identifier = :planIdentifier", nativeQuery = true)
   void deleteAllByPlanIdentifierAndLocationIdentifiers(List<UUID> locationIdentifier,
       UUID planIdentifier);
+
+  @Query("SELECT COUNT(pa) > 0 FROM PlanAssignment pa WHERE pa.planLocations.plan.identifier = :planIdentifier")
+  boolean existsByPlanIdentifier(UUID planIdentifier);
 }
