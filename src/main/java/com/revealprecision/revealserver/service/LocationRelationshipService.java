@@ -468,7 +468,17 @@ public class LocationRelationshipService {
 
     List<LocationRelationship> locationRelationshipsList = locationRelationshipRepository.findAllByLocationIds(new ArrayList<>(locationRelationshipIds), locationHierarchy.getIdentifier());
 
-    return LocationHierarchyResponseFactory.generateLocationTreeResponseWithoutGeom( locationRelationshipsList);
+    List<LocationRelationship> uniqueLocationRelationshipsList =  locationRelationshipsList.stream()
+                                                                .collect(Collectors.toMap(
+                                                                    lr -> lr.getLocation().getIdentifier(),
+                                                                    lr -> lr,
+                                                                    (existing, replacement) -> existing
+                                                                ))
+                                                                .values()
+                                                                .stream()
+                                                                .collect(Collectors.toList());
+
+    return LocationHierarchyResponseFactory.generateLocationTreeResponseWithoutGeom( uniqueLocationRelationshipsList);
   }
 }
 
