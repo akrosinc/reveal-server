@@ -90,23 +90,23 @@ public class LocationHierarchyController {
         return ResponseEntity.status(HttpStatus.OK).body(pageableGeoTreeResponse);
     }
 
-    @Operation(
-            summary = "Get Locations and their children for default Hierarchy",
-            description = "Get Locations and their children for default Hierarchy",
-            tags = {"Location Hierarchy"}
-    )
-    @GetMapping("/default/location")
-    public ResponseEntity<List<GeoTreeResponse>> getDefaultHierarchyLocations() throws IOException {
-        LocationHierarchy locationHierarchy = locationHierarchyService.getDefaultHierarchy();
-        List<GeoTreeResponse> geoTreeResponses = locationHierarchyService.getGeoTreeWithoutStructuresES(locationHierarchy.getIdentifier());
-        return ResponseEntity.status(HttpStatus.OK).body(geoTreeResponses);
-    }
-
-    @GetMapping("/default")
-    public ResponseEntity<LocationHierarchyResponse> getDefaultHierarchy() {
-        LocationHierarchy locationHierarchy = locationHierarchyService.getDefaultHierarchy();
-        return ResponseEntity.status(HttpStatus.OK).body(LocationHierarchyResponseFactory.fromEntityWithoutTree(locationHierarchy));
-    }
+//    @Operation(
+//            summary = "Get Locations and their children for default Hierarchy",
+//            description = "Get Locations and their children for default Hierarchy",
+//            tags = {"Location Hierarchy"}
+//    )
+//    @GetMapping("/default/location")
+//    public ResponseEntity<List<GeoTreeResponse>> getDefaultHierarchyLocations() throws IOException {
+//        LocationHierarchy locationHierarchy = locationHierarchyService.getDefaultHierarchy();
+//        List<GeoTreeResponse> geoTreeResponses = locationHierarchyService.getGeoTreeWithoutStructuresES(locationHierarchy.getIdentifier());
+//        return ResponseEntity.status(HttpStatus.OK).body(geoTreeResponses);
+//    }
+//
+//    @GetMapping("/default")
+//    public ResponseEntity<LocationHierarchyResponse> getDefaultHierarchy() {
+//        LocationHierarchy locationHierarchy = locationHierarchyService.getDefaultHierarchy();
+//        return ResponseEntity.status(HttpStatus.OK).body(LocationHierarchyResponseFactory.fromEntityWithoutTree(locationHierarchy));
+//    }
 
     @GetMapping("/{identifier}/location/{locationIdentifier}")
     public ResponseEntity<List<LocationResponse>> getChildLocations(@Parameter(description = "LocationHierarchy identifier") @PathVariable UUID identifier,

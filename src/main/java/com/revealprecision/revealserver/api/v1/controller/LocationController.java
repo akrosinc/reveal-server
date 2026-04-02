@@ -75,8 +75,9 @@ public class LocationController {
     @GetMapping(value = "/{identifier}/children-included", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Page<LocationResponse>> findLocationWithChildrenById(
             Pageable pageable,
-            @Parameter(description = "Location Identifier") @PathVariable UUID identifier) {
-        List<UUID> locationChildrenIds = locationService.getAllLocationDirectChildren(identifier);
+            @Parameter(description = "Location Identifier") @PathVariable UUID identifier,
+            @Parameter(description = "Location Hierarchy Identifier") @RequestParam UUID locationHierarchyIdentifier) {
+        List<UUID> locationChildrenIds = locationService.getAllLocationDirectChildren(identifier, locationHierarchyIdentifier);
         locationChildrenIds.add(identifier);
         Page<LocationWithChildrenCountProjection> pages = locationService.findAllPageableById(locationChildrenIds, pageable);
         Page<LocationResponse> locations = LocationResponseFactory.fromEntityWithChildrenCountToPage(pages, pageable);

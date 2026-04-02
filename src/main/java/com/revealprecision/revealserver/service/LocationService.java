@@ -84,6 +84,7 @@ public class LocationService {
   private final LocationHierarchyService locationHierarchyService;
   private final PopulationClient populationClient;
   private final ObjectMapper objectMapper;
+  private final PlanService planService;
 
   public Location createLocation(LocationRequest locationRequest, UUID parentLocationId,
           boolean buildHierarchy)
@@ -229,10 +230,10 @@ public class LocationService {
     return locationRepository.getAllLocationChildren(locationIdentifier, hierarchyIdentifier);
   }
 
-  public List<UUID> getAllLocationDirectChildren(UUID locationIdentifier) {
-    UUID defaultHierarchyId = locationHierarchyService.getDefaultHierarchy().getIdentifier();
+  public List<UUID> getAllLocationDirectChildren(UUID locationIdentifier, UUID locationHierarchyIdentifier) {
+//    UUID defaultHierarchyId = locationHierarchyService.getDefaultHierarchy().getIdentifier();
     return locationRepository.getAllDirectDescendantsOfLocation(locationIdentifier,
-        defaultHierarchyId);
+        locationHierarchyIdentifier);
   }
 
   public List<LocationDetailsProjection> getAllLocationDirectChildrenWithDetails(
@@ -502,9 +503,13 @@ public class LocationService {
 
   public List<LocationWithAncestryProjection> getAllTargetAreasOfPlan(UUID planId,
       String planTargetLevelName) {
-    LocationHierarchy defaultHierarchy = locationHierarchyService.getDefaultHierarchy();
-    int idx = defaultHierarchy.getNodeOrder().indexOf(planTargetLevelName);
-    String targetAreaLevel = idx > 0 ? defaultHierarchy.getNodeOrder().get(idx - 1) : null;
+
+    Plan plan  = planService.getPlanByIdentifier(planId);
+    LocationHierarchy locationHierarchy = plan.getLocationHierarchy();
+
+//    LocationHierarchy defaultHierarchy = locationHierarchyService.getDefaultHierarchy();
+    int idx = locationHierarchy.getNodeOrder().indexOf(planTargetLevelName);
+    String targetAreaLevel = idx > 0 ? locationHierarchy.getNodeOrder().get(idx - 1) : null;
     return locationRepository.getAllTargetAreasOfPlan(planId, targetAreaLevel);
   }
 

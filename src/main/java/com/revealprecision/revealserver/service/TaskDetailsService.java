@@ -3,6 +3,8 @@ package com.revealprecision.revealserver.service;
 import com.revealprecision.revealserver.api.v1.dto.TaskDetailsResponse;
 import com.revealprecision.revealserver.constants.FormConstants;
 import com.revealprecision.revealserver.constants.LocationConstants;
+import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
+import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.projection.LocationBusinessStateCount;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -15,12 +17,16 @@ import java.util.stream.Collectors;
 public class TaskDetailsService {
     private final LocationBusinessStatusService locationBusinessStatusService;
     private final LocationHierarchyService locationHierarchyService;
+    private final PlanService planService;
 
     public TaskDetailsResponse getReportDataForLocation(UUID planId, UUID parentLocationId) {
-        UUID defaultHierarchyId = locationHierarchyService.getDefaultHierarchy().getIdentifier();
-    
+//        UUID defaultHierarchyId = locationHierarchyService.getDefaultHierarchy().getIdentifier();
+
+        Plan plan = planService.getPlanByIdentifier(planId);
+        LocationHierarchy locationHierarchy = plan.getLocationHierarchy();
+
         Set<LocationBusinessStateCount> businessStateCounts = locationBusinessStatusService.getLocationBusinessStateObjPerGeoLevel
-                (planId, parentLocationId, LocationConstants.STRUCTURE, defaultHierarchyId);
+                (planId, parentLocationId, LocationConstants.STRUCTURE, locationHierarchy.getIdentifier());
 
         Map<String, Long> statusCounts = businessStateCounts.stream()
                 .collect(Collectors.groupingBy(

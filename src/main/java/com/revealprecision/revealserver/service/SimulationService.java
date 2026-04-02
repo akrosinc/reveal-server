@@ -111,10 +111,14 @@ public class SimulationService {
     public SseEmitter getDatasetDataForLocations(String requestId) {
         SimulationRequest simulationRequest = filterEsService.getSimulationRequestById(requestId).orElseThrow(() -> new NotFoundException("x"));
         SimulationDatasetRequest request = simulationRequest.getDatasetRequest();
-        UUID defaultHierarchyId = locationHierarchyService.getDefaultHierarchy().getIdentifier();
+//        UUID defaultHierarchyId = locationHierarchyService.getDefaultHierarchy().getIdentifier();
         //TODO: check if this ID exists, if not throw exception
         Simulation simulation = simulationRepository.findById(request.getSimulationId()).orElseThrow(() -> new NotFoundException("Simulation not found with ID: " + request.getSimulationId()));
-        List<LocationDetailsProjection> locationDetailsProjections = locationService.getLocationsWithPropertiesForAdminLevel(request.getParentAdminLevel(), defaultHierarchyId, simulation.getPlan().getIdentifier());
+
+        LocationHierarchy locationHierarchy = simulation.getPlan().getLocationHierarchy();
+        List<LocationDetailsProjection> locationDetailsProjections = locationService.getLocationsWithPropertiesForAdminLevel(request.getParentAdminLevel(),
+                                                locationHierarchy.getIdentifier(), simulation.getPlan().getIdentifier());
+
         List<String> locationsIds = locationDetailsProjections.stream().map(LocationDetailsProjection::getLocationId).collect(Collectors.toList());
         List<UUID> tagsIds = simulation.getDatasets()
                 .stream()
@@ -146,8 +150,8 @@ public class SimulationService {
                 List<List<String>> batches = getBatches(locationsIds, BATCH_SIZE);
 
                 for (List<String> batch : batches) {
-                    SearchSourceBuilder query = buildLocationWithoutMetadataQuery(batch, defaultHierarchyId, new ArrayList<String>());
-                    List<LocationResponse> results = executeSearch(query, defaultHierarchyId);
+                    SearchSourceBuilder query = buildLocationWithoutMetadataQuery(batch, locationHierarchy.getIdentifier(), new ArrayList<String>());
+                    List<LocationResponse> results = executeSearch(query, locationHierarchy.getIdentifier());
                     List<LocationResponse> locationsTransformed = results.stream().peek(locationResponse -> {
                         var locationId = locationResponse != null ? locationResponse.getIdentifier() : null;
 
@@ -193,12 +197,14 @@ public class SimulationService {
     // Used only for polygons, structures need to be fetched by bbox
     public List<LocationResponse> getDatasetDataForLocations(DatasetLocationsRequest request) {
 
-        UUID defaultHierarchyId = locationHierarchyService.getDefaultHierarchy().getIdentifier();
+//        UUID defaultHierarchyId = locationHierarchyService.getDefaultHierarchy().getIdentifier();
         Simulation simulation = simulationRepository.findById(request.getSimulationId())
                 .orElseThrow(() -> new NotFoundException("Simulation not found with ID: " + request.getSimulationId()));
 
+        LocationHierarchy locationHierarchy = simulation.getPlan().getLocationHierarchy();
+
         List<LocationDetailsProjection> locationDetailsProjections = locationService.getAllLocationDirectChildrenWithDetails(
-                request.getParentLocationId(), defaultHierarchyId, simulation.getPlan().getIdentifier());
+                request.getParentLocationId(), locationHierarchy.getIdentifier(), simulation.getPlan().getIdentifier());
 
         List<String> locationsIds = locationDetailsProjections.stream()
                 .map(LocationDetailsProjection::getLocationId)
@@ -212,7 +218,7 @@ public class SimulationService {
 
         List<LocationResponse> locations;
         if (request.getIncludeGeometry()) {
-            locations = fetchLocationsWithGeometry(defaultHierarchyId, tagsMap, locationsIds);
+            locations = fetchLocationsWithGeometry(locationHierarchy.getIdentifier(), tagsMap, locationsIds);
         } else {
             locations = new ArrayList<>();
         }
@@ -234,10 +240,10 @@ public class SimulationService {
         List<CompletableFuture<Void>> tasks = new ArrayList<>();
         if (request.getCampaignManagementFeatures()) {
             tasks.add(CompletableFuture.runAsync(() -> applyPlanAssignments(locations, simulation)));
-            tasks.add(CompletableFuture.runAsync(() -> applyBusinessStatus(locations, defaultHierarchyId, simulation)));
+            tasks.add(CompletableFuture.runAsync(() -> applyBusinessStatus(locations, locationHierarchy.getIdentifier(), simulation)));
         } else {
             tasks.add(CompletableFuture.runAsync(() -> applyMetadataAndPopulationData(locations, metadataMap, locationDetailsProjections)));
-            tasks.add(CompletableFuture.runAsync(() -> applyStructureCounts(locations, defaultHierarchyId)));
+            tasks.add(CompletableFuture.runAsync(() -> applyStructureCounts(locations, locationHierarchy.getIdentifier())));
         }
         CompletableFuture.allOf(tasks.toArray(new CompletableFuture[0])).join();
 
@@ -250,11 +256,15 @@ public class SimulationService {
         Simulation simulation = simulationRepository.findById(request.getSimulationId())
                 .orElseThrow(() -> new NotFoundException("Simulation not found with ID: " + request.getSimulationId()));
 
+
+        LocationHierarchy locationHierarchy = simulation.getPlan().getLocationHierarchy();
+
         boolean returnLocationData = request.getParentLocationId() != null;
         EntityTag tagForDataset;
         List<AggregateWithTagProjection> tags = Collections.emptyList();
         if (returnLocationData) {
-            List<String> locationsIds = locationService.getAllLocationDirectChildren(request.getParentLocationId()).stream().map(UUID::toString).collect(Collectors.toList());
+            List<String> locationsIds = locationService.getAllLocationDirectChildren(request.getParentLocationId(), locationHierarchy.getIdentifier())
+                                    .stream().map(UUID::toString).collect(Collectors.toList());
             tags = entityTagService.getValuesForTagAndLocations(
                     Collections.singletonList(request.getTagId()), locationsIds);
             if (tags.isEmpty()) {
@@ -564,8 +574,12 @@ public class SimulationService {
     }
 
     public List<LocationResponse> getStructuresWithinBoundingBox(double topLeftLon, double topLeftLat, double bottomRightLon, double bottomRightLat) {
-        UUID defaultHierarchyId = locationHierarchyService.getDefaultHierarchy().getIdentifier();
+//        UUID defaultHierarchyId = locationHierarchyService.getDefaultHierarchy().getIdentifier();
         List<LocationResponse> structures = new ArrayList<>();
+
+//        LocationHierarchy locationHierarchy = simulation.getPlan().getLocationHierarchy();
+
+        UUID locationHierarchyIdentifier = UUID.randomUUID();
 
         try {
             EnvelopeBuilder envelopeBuilder = new EnvelopeBuilder(
@@ -591,7 +605,7 @@ public class SimulationService {
             SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
 
             for (SearchHit hit : searchResponse.getHits().getHits()) {
-                structures.add(LocationResponseFactory.fromSearchHit(hit, null, defaultHierarchyId.toString()));
+                structures.add(LocationResponseFactory.fromSearchHit(hit, null, locationHierarchyIdentifier.toString()));
             }
         } catch (Exception e) {
             e.printStackTrace();

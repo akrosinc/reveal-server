@@ -159,9 +159,9 @@ public class LocationHierarchyService {
         return locationHierarchyRepository.findLocationHierarchyByName(hierarchyName);
     }
 
-    public LocationHierarchy getDefaultHierarchy() {
-        return locationHierarchyRepository.findByName(AppConstants.DEFAULT_KEYWORD).orElseThrow(() -> new NotFoundException("Default hierarchy not found"));
-    }
+//    public LocationHierarchy getDefaultHierarchy() {
+//        return locationHierarchyRepository.findByName(AppConstants.DEFAULT_KEYWORD).orElseThrow(() -> new NotFoundException("Default hierarchy not found"));
+//    }
 
     public UUID findNativeById(UUID hierarchyIdentifier) {
         return locationHierarchyRepository.findLocationHierarchyByIdentifier(hierarchyIdentifier);
