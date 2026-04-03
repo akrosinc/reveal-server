@@ -49,6 +49,10 @@ public interface InstanceUserRepository  extends
       + " FROM InstanceUser iu WHERE iu.user.identifier in (:userIds) ")
   List<UserIdInstanceNameProjection> getUserInstancesByUserIds(List<UUID> userIds);
 
+  @Query("SELECT iu.instance.name as instanceName,iu.user.identifier as userIdentifier "
+      + " FROM InstanceUser iu WHERE iu.user.identifier = :userId")
+  List<UserIdInstanceNameProjection> getUserInstancesByUserId(UUID userId);
+
   @Modifying
   @Query("DELETE FROM InstanceUser iu " +
       "WHERE iu.user.identifier IN :userIds " +

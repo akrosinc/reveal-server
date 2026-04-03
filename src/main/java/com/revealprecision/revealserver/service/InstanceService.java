@@ -178,15 +178,15 @@ public class InstanceService {
         exists = instanceRepository.existsByName(instanceRequest.getInstanceName());
       }
       if (exists) {
-        throw new ConflictException(
+        throw new IllegalArgumentException(
             String.format(Error.NON_UNIQUE, "Instance name", instanceRequest.getInstanceName()));
       }
     }
     if (instanceRequest.getMembers() == null || instanceRequest.getMembers().isEmpty()) {
-      throw new BadRequestException("At least one member is required");
+      throw new IllegalArgumentException("At least one member is required");
     }
     if (instanceRequest.getAreas() == null || instanceRequest.getAreas().isEmpty()) {
-      throw new BadRequestException("At least one area is required");
+      throw new IllegalArgumentException("At least one area is required");
     }
   }
 

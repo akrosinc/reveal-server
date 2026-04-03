@@ -8,6 +8,7 @@ import com.revealprecision.revealserver.api.v1.dto.request.UserPasswordRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.UserRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.UserUpdateRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.CountResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.GlobalUserResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.UserResponse;
 import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.service.UserService;
@@ -92,6 +93,12 @@ public class UserController {
       return ResponseEntity.status(HttpStatus.OK).body(new CountResponse(
           userService.getUsersNumber()));
     }
+  }
+
+  @GetMapping(path = "/global/{identifier}", produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<GlobalUserResponse> getGlobalUsers(@PathVariable("identifier") UUID identifier) {
+    return ResponseEntity.status(HttpStatus.OK)
+        .body(userService.getGLobalUserByIdentifier(identifier));
   }
 
   @GetMapping(value = "/{identifier}", produces = MediaType.APPLICATION_JSON_VALUE)

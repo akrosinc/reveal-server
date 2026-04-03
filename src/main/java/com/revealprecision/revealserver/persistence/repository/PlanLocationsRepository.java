@@ -4,6 +4,7 @@ import com.cosium.spring.data.jpa.entity.graph.repository.EntityGraphJpaReposito
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.PlanLocations;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationsAssigned;
+import com.revealprecision.revealserver.persistence.projection.PopulationSummaryProjection;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -164,5 +165,37 @@ public interface PlanLocationsRepository extends EntityGraphJpaRepository<PlanLo
       + "and  p.identifier = :planIdentifier) "
       + "and jsonb_exists_any(l.location_property,ARRAY['surveyLocationType'])=false", nativeQuery = true)
   List<String> getPlanLocationsForHouseholdSurvey(UUID planIdentifier);
+
+  @Query(value = "SELECT COUNT(DISTINCT location_identifier) " +
+      "FROM assigned_structure_counts " +
+      "WHERE plan_identifier = :planId",
+      nativeQuery = true)
+  Long countTargetAreasByPlanId(UUID planId);
+
+  @Query(value = "SELECT COALESCE(SUM(structure_count), 0) " +
+      "FROM assigned_structure_counts " +
+      "WHERE plan_identifier = :planId",
+      nativeQuery = true)
+  Long sumStructuresByPlanId(UUID planId);
+
+  @Query(value =
+      "SELECT " +
+          "  COALESCE(CAST(SUM(CAST(l.population_data->>'sum' AS DOUBLE PRECISION)) AS INTEGER), 0) AS totalPopulation, " +
+          "  COALESCE(CAST(SUM(CAST(l.population_data->>'male' AS DOUBLE PRECISION)) AS INTEGER), 0) AS malePopulation, " +
+          "  COALESCE(CAST(SUM(CAST(l.population_data->>'female' AS DOUBLE PRECISION)) AS INTEGER), 0) AS femalePopulation " +
+          "FROM plan_locations pl " +
+          "JOIN location l ON l.identifier = pl.location_identifier " +
+          "WHERE pl.plan_identifier = :planId " +
+          "AND pl.location_identifier NOT IN ( " +
+          "    SELECT DISTINCT lr.parent_identifier " +
+          "    FROM location_relationship lr " +
+          "    WHERE lr.location_identifier IN ( " +
+          "        SELECT location_identifier FROM plan_locations " +
+          "        WHERE plan_identifier = :planId " +
+          "    ) " +
+          "    AND lr.parent_identifier IS NOT NULL " +
+          ")",
+      nativeQuery = true)
+  PopulationSummaryProjection getLeafLocationPopulationByPlanId(UUID planId);
 
 }

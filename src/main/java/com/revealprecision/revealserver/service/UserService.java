@@ -255,4 +255,22 @@ public class UserService {
 
         return UserResponseFactory.toGlobalUserResponsePage(users, pageable, instanceUserMap);
     }
+
+  public GlobalUserResponse getGLobalUserByIdentifier(UUID userIdentifier) {
+      User user =  userRepository.findByIdentifier(userIdentifier).orElseThrow(
+          () -> new NotFoundException(Pair.of(Fields.identifier, userIdentifier), User.class));
+
+      List<UserIdInstanceNameProjection> instanceNames = instanceUserRepository.getUserInstancesByUserId(userIdentifier);
+
+      return   GlobalUserResponse.builder()
+          .identifier(user.getIdentifier())
+          .sid(user.getSid())
+          .firstName(user.getFirstName())
+          .lastName(user.getLastName())
+          .username(user.getUsername())
+          .email(user.getEmail())
+          .instances(instanceNames.stream().map( i -> i.getInstanceName() ).collect(Collectors.toList()))
+          .securityGroups(user.getSecurityGroups())
+          .build();
+  }
 }

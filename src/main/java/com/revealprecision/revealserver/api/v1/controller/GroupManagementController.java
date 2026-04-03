@@ -7,6 +7,7 @@ import com.revealprecision.revealserver.api.v1.dto.request.OrganizationRoleReque
 import com.revealprecision.revealserver.api.v1.dto.response.CountResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.GeoTreeResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.GroupManagementResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.GroupStatsResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.IdentifierNameResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationHierarchyResponse;
 import com.revealprecision.revealserver.enums.SummaryEnum;
@@ -156,5 +157,11 @@ public class GroupManagementController {
   @GetMapping(path = "/bytype/teams", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<List<GroupManagementProjection>> getGroupsTeams() {
     return ResponseEntity.ok(groupManagementService.getGroupsTeams());
+  }
+
+  @Operation( summary = "Fetch management groups stats", description = "Fetch management groups stats", tags = {"GroupManagement"})
+  @GetMapping(path = "/stats", produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<GroupStatsResponse> getGroupsStats() {
+    return ResponseEntity.ok(groupManagementService.getGroupsStats());
   }
 }

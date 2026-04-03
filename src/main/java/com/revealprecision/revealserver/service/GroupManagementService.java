@@ -7,6 +7,7 @@ import com.revealprecision.revealserver.api.v1.dto.request.OrganizationRoleReque
 import com.revealprecision.revealserver.api.v1.dto.response.CountResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.GeoTreeResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.GroupManagementResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.GroupStatsResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.IdentifierNameResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationHierarchyResponse;
 import com.revealprecision.revealserver.config.InstanceContext;
@@ -35,6 +36,7 @@ import com.revealprecision.revealserver.persistence.domain.id.InstanceUserId;
 import com.revealprecision.revealserver.persistence.domain.id.OrganizationLocationId;
 import com.revealprecision.revealserver.persistence.domain.id.OrganizationRoleMappingId;
 import com.revealprecision.revealserver.persistence.projection.GroupManagementProjection;
+import com.revealprecision.revealserver.persistence.projection.PopulationSummaryProjection;
 import com.revealprecision.revealserver.persistence.repository.EntityTagAccGrantsOrganizationRepository;
 import com.revealprecision.revealserver.persistence.repository.InstanceUserRepository;
 import com.revealprecision.revealserver.persistence.repository.OrganizationLocationRepository;
@@ -44,6 +46,7 @@ import com.revealprecision.revealserver.persistence.repository.OrganizationRoleP
 import com.revealprecision.revealserver.persistence.repository.OrganizationRoleRepository;
 import com.revealprecision.revealserver.persistence.repository.PermissionRepository;
 import com.revealprecision.revealserver.persistence.repository.PlanLocationsRepository;
+import com.revealprecision.revealserver.persistence.repository.TaskRepository;
 import com.revealprecision.revealserver.persistence.repository.UserRepository;
 import java.util.HashSet;
 import java.util.List;
@@ -81,6 +84,7 @@ public class GroupManagementService {
   private final InstanceUserRepository instanceUserRepository;
   private final PermissionRepository permissionRepository;
   private final OrganizationRolePermissionRepository organizationRolePermissionRepository;
+  private final TaskRepository taskRepository;
 
   public void createGroup(GroupManagementRequest request) {
 
@@ -344,19 +348,18 @@ public class GroupManagementService {
     }
 
     if (exists) {
-      throw new BadRequestException("Group/Team with the same name already exists");
+      throw new IllegalArgumentException("Group/Team with the same name already exists");
     }
 
     if (request.getMembersIdentifiers() == null || request.getMembersIdentifiers().isEmpty()) {
-      throw new BadRequestException("At least one member is required");
+      throw new IllegalArgumentException("At least one member is required");
     }
 
     if (!BooleanUtils.isTrue(request.getIsTeam())) {
       if (request.getAreasIdentifiers() == null || request.getAreasIdentifiers().isEmpty()) {
-        throw new BadRequestException("At least one area is required");
+        throw new IllegalArgumentException("At least one area is required");
       }
       if (request.getRolesIdentifiers() == null || request.getRolesIdentifiers().isEmpty()) {
-        throw new BadRequestException("At least one role is required");
       }
     }
   }
@@ -647,5 +650,45 @@ public class GroupManagementService {
     UUID instanceIdentifier = InstanceContext.get();
     long count =  organizationRepository.getCountByTypeEquals(instanceIdentifier, OrganizationTypeEnum.TEAM);
     return  new CountResponse(count);
+  }
+
+  private Plan getInstancePlan(Instance instance){
+    return instance.getPlans().stream().findFirst().orElseThrow(
+                    () -> new IllegalArgumentException("Instance plan not found"));
+  }
+
+  public GroupStatsResponse getGroupsStats() {
+
+    UUID instanceIdentifier = InstanceContext.get();
+    Instance instance = instanceService.findById(instanceIdentifier);
+
+    Plan plan = getInstancePlan(instance);
+
+    Long targetAreas = planLocationsRepository.countByPlan_Identifier(plan.getIdentifier());
+
+    PopulationSummaryProjection populationStats = planLocationsRepository
+        .getLeafLocationPopulationByPlanId(plan.getIdentifier());
+
+    // 2. Total structures from materialized view
+    Long totalStructures = planLocationsRepository.sumStructuresByPlanId(plan.getIdentifier());
+
+    Long totalTaskLocations = taskRepository
+        .countTotalTaskLocationsByPlanId(plan.getIdentifier());
+    Long completedTaskLocations = taskRepository
+        .countCompletedTaskLocationsByPlanId(plan.getIdentifier());
+
+    Double completionPercentage = 0.0;
+    if (totalTaskLocations != null && totalTaskLocations > 0) {
+      completionPercentage = Math.round(
+          (completedTaskLocations.doubleValue() / totalTaskLocations.doubleValue())
+              * 100 * 100.0) / 100.0;
+    }
+
+    return GroupStatsResponse.builder()
+        .targetAreas(targetAreas != null ? targetAreas : 0L)
+        .totalStructures(totalStructures != null ? totalStructures : 0L)
+        .totalPopulation(populationStats.getTotalPopulation())
+        .completionPercentage(completionPercentage)
+        .build();
   }
 }

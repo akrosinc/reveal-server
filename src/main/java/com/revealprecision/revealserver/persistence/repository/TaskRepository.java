@@ -76,5 +76,24 @@ public interface TaskRepository extends JpaRepository<Task, UUID>,
       + "WHERE t.business_status != 'Not Visited' and tbst.identifier is null", nativeQuery = true)
   List<String> findTasksByNotPresentInTaskBusinessStateTracker();
 
+  @Query(value =
+      "SELECT COUNT(tl.location_identifier) " +
+          "FROM task t " +
+          "JOIN task_location tl ON tl.task_identifier = t.identifier " +
+          "WHERE t.plan_identifier = :planId " +
+          "AND t.entity_status = 'ACTIVE'",
+      nativeQuery = true)
+  Long countTotalTaskLocationsByPlanId(@Param("planId") UUID planId);
+
+  @Query(value =
+      "SELECT COUNT(tl.location_identifier) " +
+          "FROM task t " +
+          "JOIN task_location tl ON tl.task_identifier = t.identifier " +
+          "JOIN lookup_task_status lts ON lts.identifier = t.lookup_task_status_identifier " +
+          "WHERE t.plan_identifier = :planId " +
+          "AND lts.code = 'COMPLETED' " +
+          "AND t.entity_status = 'ACTIVE'",
+      nativeQuery = true)
+  Long countCompletedTaskLocationsByPlanId(@Param("planId") UUID planId);
 
 }
