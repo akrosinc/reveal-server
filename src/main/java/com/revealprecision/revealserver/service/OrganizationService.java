@@ -7,7 +7,9 @@ import com.revealprecision.revealserver.api.v1.dto.request.OrganizationCriteria;
 import com.revealprecision.revealserver.api.v1.dto.request.OrganizationRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.OrganizationResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.UserResponse;
+import com.revealprecision.revealserver.config.InstanceContext;
 import com.revealprecision.revealserver.enums.EntityStatus;
+import com.revealprecision.revealserver.enums.OrganizationTypeEnum;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.exceptions.handler.BadRequestException;
 import com.revealprecision.revealserver.persistence.domain.Organization;
@@ -97,7 +99,16 @@ public class OrganizationService {
     }
 
     public List<OrganizationResponse> getAllOrganizationsWithMembers() {
+
         List<Organization> organizations = organizationRepository.findAll();
+        return organizations.stream().map(OrganizationResponseFactory::fromEntityWithMembers).collect(Collectors.toList());
+    }
+
+    public List<OrganizationResponse> getInstanceOrganizationsWithMembers() {
+        UUID  instanceIdentifier = InstanceContext.get();
+
+        List<Organization> organizations = organizationRepository.findAllByInstanceAndTypeEquals(instanceIdentifier,
+            OrganizationTypeEnum.TEAM);
         return organizations.stream().map(OrganizationResponseFactory::fromEntityWithMembers).collect(Collectors.toList());
     }
 

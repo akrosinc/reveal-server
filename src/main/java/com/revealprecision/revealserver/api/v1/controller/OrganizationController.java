@@ -83,8 +83,17 @@ public class OrganizationController {
     )
     @GetMapping(value = "/members", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<OrganizationResponse>> getOrganizationsWithMembers() {
-
         return ResponseEntity.status(HttpStatus.OK).body(organizationService.getAllOrganizationsWithMembers());
+    }
+
+
+    @Operation(summary = "Fetch organizations with members",
+        description = "Fetch organizations with members",
+        tags = {"Organization"}
+    )
+    @GetMapping(value = "/instance-members", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<List<OrganizationResponse>> getInstanceOrganizationsWithMembers() {
+        return ResponseEntity.status(HttpStatus.OK).body(organizationService.getInstanceOrganizationsWithMembers());
     }
 
     @GetMapping(value = "/search", produces = MediaType.APPLICATION_JSON_VALUE)
