@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.persistence.repository;
 
+import com.revealprecision.revealserver.persistence.domain.EntityTag;
 import com.revealprecision.revealserver.persistence.domain.EntityTagAccGrantsOrganization;
 import com.revealprecision.revealserver.persistence.projection.IdentifierNameProjection;
 import java.util.List;
@@ -34,4 +35,13 @@ public interface EntityTagAccGrantsOrganizationRepository extends JpaRepository<
       "WHERE u.identifier = :userId " +
       "AND o.instance.identifier IN :instanceIds)")
   List<IdentifierNameProjection> findDatasetsByUserIdAndInstanceIds(UUID userId, List<UUID> instanceIds);
+
+  @Query("SELECT DISTINCT etago.entityTag " +
+      "FROM EntityTagAccGrantsOrganization etago " +
+      "WHERE etago.organizationId IN (" +
+      "SELECT o.identifier FROM User u " +
+      "JOIN u.organizations o " +
+      "WHERE u.identifier = :userId " +
+      "AND o.instance.identifier = :instanceId)")
+  List<EntityTag> findByUserIdAndInstanceId(UUID userId, UUID instanceId);
 }

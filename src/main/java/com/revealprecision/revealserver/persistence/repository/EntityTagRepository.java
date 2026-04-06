@@ -1,6 +1,8 @@
 package com.revealprecision.revealserver.persistence.repository;
 
 import com.revealprecision.revealserver.persistence.domain.EntityTag;
+import com.revealprecision.revealserver.persistence.projection.IdentifierNameProjection;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -53,4 +55,8 @@ public interface EntityTagRepository extends JpaRepository<EntityTag, UUID> {
   List<EntityTag> findEntityTagsByMetadataImport_IdentifierAndIsPublicAndIsAggregate(UUID id, boolean isPublic, boolean isAggregate);
 
   List<EntityTag> findEntityTagsByMetadataImport_IdentifierAndIsAggregate(UUID id, boolean isAggregate);
+
+  @Query(value = "select et from EntityTag et Inner join InstanceEntityTag insTag on insTag.entityTag.identifier =  et.identifier"
+      + " where  insTag.instance.identifier = :instanceIdentifier ")
+  List<EntityTag> findByInstanceId(UUID instanceIdentifier);
 }

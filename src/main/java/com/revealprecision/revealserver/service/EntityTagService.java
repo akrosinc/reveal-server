@@ -24,6 +24,7 @@ import com.revealprecision.revealserver.api.v1.dto.response.ComplexTagDto;
 import com.revealprecision.revealserver.api.v1.dto.response.EntityTagResponse;
 import com.revealprecision.revealserver.config.InstanceContext;
 import com.revealprecision.revealserver.constants.EntityTagFieldTypes;
+import com.revealprecision.revealserver.enums.InstanceRoleEnum;
 import com.revealprecision.revealserver.exceptions.DuplicateCreationException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.messaging.message.EntityTagEvent;
@@ -39,6 +40,7 @@ import com.revealprecision.revealserver.persistence.domain.EntityTagAccGrantsOrg
 import com.revealprecision.revealserver.persistence.domain.EntityTagAccGrantsUser;
 import com.revealprecision.revealserver.persistence.domain.EntityTagOwnership;
 import com.revealprecision.revealserver.persistence.domain.GeographicLevel;
+import com.revealprecision.revealserver.persistence.domain.InstanceUser;
 import com.revealprecision.revealserver.persistence.domain.Organization;
 import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.persistence.domain.User.Fields;
@@ -46,6 +48,7 @@ import com.revealprecision.revealserver.persistence.domain.aggregation.ImportAgg
 import com.revealprecision.revealserver.persistence.projection.AggregateWithTagProjection;
 import com.revealprecision.revealserver.persistence.projection.EntityTagWithGeoLevelAndEntityTypeProjection;
 import com.revealprecision.revealserver.persistence.projection.EntityTagWithGeoLevelProjection;
+import com.revealprecision.revealserver.persistence.projection.IdentifierNameProjection;
 import com.revealprecision.revealserver.persistence.repository.ComplexTagAccGrantsOrganizationRepository;
 import com.revealprecision.revealserver.persistence.repository.ComplexTagAccGrantsUserRepository;
 import com.revealprecision.revealserver.persistence.repository.ComplexTagRepository;
@@ -56,6 +59,8 @@ import com.revealprecision.revealserver.persistence.repository.EntityTagReposito
 import com.revealprecision.revealserver.persistence.repository.GeneratedHierarchyMetadataRepository;
 import com.revealprecision.revealserver.persistence.repository.ImportAggregateRepository;
 import com.revealprecision.revealserver.persistence.repository.ImportAggregationNumericRepository;
+import com.revealprecision.revealserver.persistence.repository.InstanceEntityTagRepository;
+import com.revealprecision.revealserver.persistence.repository.InstanceUserRepository;
 import com.revealprecision.revealserver.persistence.repository.LocationHierarchyRepository;
 import com.revealprecision.revealserver.persistence.repository.OrganizationRepository;
 import com.revealprecision.revealserver.persistence.repository.ResourceAggregateRepository;
@@ -118,6 +123,9 @@ public class EntityTagService {
   private final RestHighLevelClient client;
   private final ImportAggregationNumericRepository importAggregationNumericRepository;
   private final LocationHierarchyRepository locationHierarchyRepository;
+  private final InstanceUserRepository instanceUserRepository;
+  private final InstanceEntityTagRepository instanceEntityTagRepository;
+
 
   @Value("${reveal.elastic.index-name}")
   String elasticIndex;
@@ -933,16 +941,39 @@ public class EntityTagService {
                   .subType("Import")
                   .isAggregate(true).tag(tag).valueType(DOUBLE).build();
             }).collect(Collectors.toList());
+
     User currentUser = userService.getCurrentUser();
 
-    Set<UUID> currentUserOrgs = currentUser.getOrganizations().stream()
-        .map(Organization::getIdentifier)
-        .collect(Collectors.toSet());
+    List<InstanceUser> instanceUsers = instanceUserRepository.findByUserAndInstance(currentUser.getIdentifier(), instanceIdentifier);
 
-    Map<String, EntityTagResponse> tagsWithAccess = entityTagRepository.findEntityTagsByTagIn(
-            resourceTags.stream().map(EntityTagResponse::getTag).collect(Collectors.toSet()))
+    Map<InstanceRoleEnum, List<UUID>> partitionedInstanceIds = instanceUsers.stream()
+        .collect(Collectors.groupingBy(
+            iu -> InstanceRoleEnum.valueOf(iu.getRole().getName()),
+            Collectors.mapping(iu -> iu.getInstance().getIdentifier(), Collectors.toList())
+        ));
+
+    List<UUID> adminInstanceIds = partitionedInstanceIds
+        .getOrDefault(InstanceRoleEnum.ADMIN, List.of());
+    List<UUID> standardInstanceIds = partitionedInstanceIds
+        .getOrDefault(InstanceRoleEnum.STANDARD, List.of());
+
+    List<EntityTag> datasets = new ArrayList<>();
+
+    if (!adminInstanceIds.isEmpty()) {
+      datasets.addAll(
+          entityTagRepository.findByInstanceId(instanceIdentifier)
+      );
+    } else if (!standardInstanceIds.isEmpty()) {
+      datasets.addAll(
+          entityTagAccGrantsOrganizationRepository
+              .findByUserIdAndInstanceId(currentUser.getIdentifier(), instanceIdentifier)
+      );
+    }
+
+
+
+    Map<String, EntityTagResponse> tagsWithAccess = datasets
         .stream()
-        .filter(entityTag -> checkAccess(entityTag, currentUserOrgs, currentUser))
         .map(
             entityTag -> EntityTagResponse.builder()
                 .identifier(String.valueOf(entityTag.getIdentifier()))
