@@ -1,6 +1,8 @@
 package com.revealprecision.revealserver.api.v1.controller;
 
+import com.revealprecision.revealserver.api.v1.dto.factory.InstanceResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.LocationHierarchyResponseFactory;
+import com.revealprecision.revealserver.api.v1.dto.factory.PlanResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.GlobalUserRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.InstanceRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.CountResponse;
@@ -10,8 +12,10 @@ import com.revealprecision.revealserver.api.v1.dto.response.InstanceContextRespo
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceUserListResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationHierarchyResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.PlanResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.UserRolesResponse;
 import com.revealprecision.revealserver.config.InstanceContext;
+import com.revealprecision.revealserver.enums.SummaryEnum;
 import com.revealprecision.revealserver.persistence.projection.InstanceListProjection;
 import com.revealprecision.revealserver.service.InstanceService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -154,5 +158,12 @@ public class InstanceController {
   @GetMapping("/hierarchy/withgroups")
   public ResponseEntity<LocationHierarchyResponse> getInstanceHierarchyWithGroups(@RequestParam(value = "instanceIdentifier", required = false) UUID instanceIdentifier) {
     return ResponseEntity.status(HttpStatus.OK).body(instanceService.getInstanceHierarchyWithGroups(instanceIdentifier));
+  }
+
+  @GetMapping("/reports")
+  public ResponseEntity<Page<InstanceListProjection>> getInstancesForReports(@RequestParam(name = "reportType", defaultValue = "") String reportType,
+      Pageable pageable ) {
+    return ResponseEntity.status(HttpStatus.OK)
+        .body(instanceService.getInstanceForReports(reportType, pageable));
   }
 }

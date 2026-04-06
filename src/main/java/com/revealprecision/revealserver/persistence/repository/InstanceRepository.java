@@ -68,4 +68,20 @@ public interface InstanceRepository extends JpaRepository<Instance, UUID> {
 
   @Query("SELECT count (i) FROM Instance i ")
   long countAllInstances();
+
+  @Query("SELECT " +
+      "i.identifier AS identifier, " +
+      "i.name AS instanceName, " +
+      "p.identifier AS planIdentifier, " +
+      "p.title AS planTitle, " +
+      "CAST(p.status AS string) AS planStatus, " +
+      "lit.name AS interventionType, " +
+      "i.createdDatetime AS createdDatetime, " +
+      "p.effectivePeriodStart AS startDate, " +
+      "p.effectivePeriodEnd AS endDate " +
+      "FROM Instance i " +
+      "INNER JOIN i.plans p " +
+      "LEFT JOIN p.interventionType lit " +
+      "WHERE (p.interventionType.code like :interventionType or :interventionType = '')")
+  Page<InstanceListProjection> findByInterventionType(String interventionType, Pageable pageable);
 }

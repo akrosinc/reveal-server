@@ -5,6 +5,7 @@ import com.revealprecision.revealserver.api.v1.dto.response.IdentifierNameRespon
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationHierarchyResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.PlanResponse;
+import com.revealprecision.revealserver.enums.SummaryEnum;
 import com.revealprecision.revealserver.persistence.domain.Instance;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import java.util.List;

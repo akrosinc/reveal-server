@@ -15,6 +15,7 @@ import com.revealprecision.revealserver.api.v1.dto.response.LocationHierarchyRes
 import com.revealprecision.revealserver.api.v1.dto.response.UserRolesResponse;
 import com.revealprecision.revealserver.config.InstanceContext;
 import com.revealprecision.revealserver.constants.KafkaConstants;
+import com.revealprecision.revealserver.enums.ApplicableReportsEnum;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.enums.HierarchyStatus;
 import com.revealprecision.revealserver.enums.InstanceRoleEnum;
@@ -216,7 +217,7 @@ public class InstanceService {
         identifier);
     List<GeoTreeResponse> areas = getAssignedInstanceAreasTree(instance.getIdentifier());
 
-    Plan instancePlan = instance.getPlans().stream().findFirst().orElse(null);
+    Plan instancePlan = getInstancePlan(instance);
 
     List<UUID> assignedLocationsIds = assignedLocations.stream()
         .map(IdentifierNameProjection::getIdentifier)
@@ -712,5 +713,24 @@ public class InstanceService {
       throw new IllegalArgumentException("Location hierarchy is inactive, cannot activate instance plan");
     }
     planService.activatePlan(instancePlan);
+  }
+
+  public Page<InstanceListProjection> getInstanceForReports(String reportType, Pageable pageable) {
+    if (reportType.isBlank()) {
+      return findInstanceByInterventionType(reportType, pageable);
+    } else {
+      ApplicableReportsEnum applicableReportsEnum = null;
+      for (ApplicableReportsEnum applicableReport : ApplicableReportsEnum.values()) {
+        if (applicableReport.getReportName().contains(reportType)) {
+          applicableReportsEnum = applicableReport;
+          break;
+        }
+      }
+      return findInstanceByInterventionType(applicableReportsEnum.name(), pageable);
+    }
+  }
+
+  private Page<InstanceListProjection> findInstanceByInterventionType(String interventionType, Pageable pageable) {
+    return instanceRepository.findByInterventionType(interventionType, pageable);
   }
 }
