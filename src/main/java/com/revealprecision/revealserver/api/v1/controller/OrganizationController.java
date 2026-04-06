@@ -87,8 +87,8 @@ public class OrganizationController {
     }
 
 
-    @Operation(summary = "Fetch organizations with members",
-        description = "Fetch organizations with members",
+    @Operation(summary = "Fetch Instance organizations with members",
+        description = "Fetch Instance organizations with members",
         tags = {"Organization"}
     )
     @GetMapping(value = "/instance-members", produces = MediaType.APPLICATION_JSON_VALUE)

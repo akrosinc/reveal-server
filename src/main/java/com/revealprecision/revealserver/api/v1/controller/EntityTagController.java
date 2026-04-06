@@ -206,9 +206,9 @@ public class EntityTagController {
   }
 
   @GetMapping(value = "/instance-hierarchy", produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<TagResponse> getEntityTagsForInstanceHierarchy() {
+  public ResponseEntity<TagResponse> getEntityTagsForInstanceHierarchy(@RequestParam("instanceIdentifier") UUID instanceIdentifier) {
     return ResponseEntity.status(HttpStatus.OK)
-        .body(entityTagService.getAllInstanceAggregateEntityTagsAssociatedToData());
+        .body(entityTagService.getAllInstanceAggregateEntityTagsAssociatedToData(instanceIdentifier));
   }
 
 

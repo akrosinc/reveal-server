@@ -914,9 +914,11 @@ public class EntityTagService {
     return complexTagRepository.save(complexTag);
   }
 
-  public TagResponse getAllInstanceAggregateEntityTagsAssociatedToData() {
+  public TagResponse getAllInstanceAggregateEntityTagsAssociatedToData( UUID instanceIdentifier) {
 
-    UUID instanceIdentifier = InstanceContext.get();
+    if(instanceIdentifier == null){
+      instanceIdentifier = InstanceContext.get();
+    }
 
     UUID locationHierarchyIdentifier = locationHierarchyRepository.findLocationHierarchyByInstanceIdentifier(instanceIdentifier)
                 .orElseThrow(() -> new IllegalArgumentException("Cannot find instance hierarchy")).getIdentifier();
