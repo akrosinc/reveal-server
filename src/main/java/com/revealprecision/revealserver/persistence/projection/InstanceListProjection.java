@@ -14,4 +14,5 @@ public interface InstanceListProjection {
   LocalDateTime getCreatedDatetime();
   LocalDate getStartDate();
   LocalDate getEndDate();
+  String getPlanTargetType();
 }

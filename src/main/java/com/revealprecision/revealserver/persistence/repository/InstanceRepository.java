@@ -31,10 +31,12 @@ public interface InstanceRepository extends JpaRepository<Instance, UUID> {
       "lit.name AS interventionType, " +
       "i.createdDatetime AS createdDatetime, " +
       "p.effectivePeriodStart AS startDate, " +
-      "p.effectivePeriodEnd AS endDate " +
+      "p.effectivePeriodEnd AS endDate, " +
+      "ptt.geographicLevel.name AS planTargetType " +
       "FROM Instance i " +
       "LEFT JOIN i.plans p " +
-      "LEFT JOIN p.interventionType lit")
+      "LEFT JOIN p.interventionType lit " +
+      "LEFT JOIN p.planTargetType ptt ")
   Page<InstanceListProjection> findAllInstances(Pageable pageable);
 
 
@@ -47,10 +49,12 @@ public interface InstanceRepository extends JpaRepository<Instance, UUID> {
       "lit.name AS interventionType, " +
       "i.createdDatetime AS createdDatetime, " +
       "p.effectivePeriodStart AS startDate, " +
-      "p.effectivePeriodEnd AS endDate " +
+      "p.effectivePeriodEnd AS endDate, " +
+      "ptt.geographicLevel.name AS planTargetType " +
       "FROM Instance i " +
       "LEFT JOIN i.plans p " +
       "LEFT JOIN p.interventionType lit " +
+      "LEFT JOIN p.planTargetType ptt " +
       "WHERE LOWER(i.name) LIKE LOWER(CONCAT('%', :searchParam, '%'))")
   Page<InstanceListProjection> findInstanceListBySearch(
       String searchParam,
@@ -78,10 +82,12 @@ public interface InstanceRepository extends JpaRepository<Instance, UUID> {
       "lit.name AS interventionType, " +
       "i.createdDatetime AS createdDatetime, " +
       "p.effectivePeriodStart AS startDate, " +
-      "p.effectivePeriodEnd AS endDate " +
+      "p.effectivePeriodEnd AS endDate, " +
+      "ptt.geographicLevel.name AS planTargetType " +
       "FROM Instance i " +
       "INNER JOIN i.plans p " +
       "LEFT JOIN p.interventionType lit " +
+      "LEFT JOIN p.planTargetType ptt " +
       "WHERE (p.interventionType.code like :interventionType or :interventionType = '')")
   Page<InstanceListProjection> findByInterventionType(String interventionType, Pageable pageable);
 }
