@@ -360,6 +360,7 @@ public class LocationHierarchyService {
         var locationHierarchyToSave = LocationHierarchy.builder()
             .nodeOrder(locationHierarchyRequest.getNodeOrder()).name(AppConstants.BASE_HIERARCHY_KEYWORD)
             .baseHierarchy(true)
+            .hierarchyStatus(HierarchyStatus.ACTIVE)
             .build();
         locationHierarchyToSave.setEntityStatus(EntityStatus.ACTIVE);
         return locationHierarchyRepository.save(locationHierarchyToSave);
