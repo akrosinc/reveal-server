@@ -53,4 +53,7 @@ LocationHierarchyRepository extends JpaRepository<LocationHierarchy, UUID> {
 
   @Query(value = "SELECT  lh FROM LocationHierarchy lh where lh.baseHierarchy = false")
   Page<LocationHierarchy> findAllWithoutBaseHierarchy(Pageable pageable);
+
+  @Query("SELECT inst.locationHierarchy from Instance inst   WHERE inst.identifier = :instanceIdentifier")
+  Optional<LocationHierarchy> findLocationHierarchyByInstanceIdentifier(UUID instanceIdentifier);
 }

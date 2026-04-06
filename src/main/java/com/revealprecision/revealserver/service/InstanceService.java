@@ -204,6 +204,11 @@ public class InstanceService {
             () -> new NotFoundException(Pair.of("identifier", identifier), Instance.class));
   }
 
+  private Plan getInstancePlan(Instance instance){
+    return instance.getPlans().stream().findFirst().orElseThrow(
+        () -> new IllegalArgumentException("Instance plan not found"));
+  }
+
   public InstanceResponse getInstanceResponse(UUID identifier) {
     Instance instance = findById(identifier);
 
@@ -233,6 +238,11 @@ public class InstanceService {
     instance.setLocationHierarchy(locationHierarchy);
 
     instanceRepository.save(instance);
+
+    Plan plan = getInstancePlan(instance);
+
+
+    planService.updatePlan(instanceRequest.getPlanRequest(), plan.getIdentifier());
 
     // Update tags
     List<UUID> incomingTagIds =

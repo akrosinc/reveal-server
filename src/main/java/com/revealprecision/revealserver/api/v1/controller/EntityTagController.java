@@ -205,6 +205,12 @@ public class EntityTagController {
         .body(entityTagService.getAllAggregateEntityTagsAssociatedToData());
   }
 
+  @GetMapping(value = "/instance-hierarchy", produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<TagResponse> getEntityTagsForInstanceHierarchy() {
+    return ResponseEntity.status(HttpStatus.OK)
+        .body(entityTagService.getAllInstanceAggregateEntityTagsAssociatedToData());
+  }
+
 
 
   @AllArgsConstructor

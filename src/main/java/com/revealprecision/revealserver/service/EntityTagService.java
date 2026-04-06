@@ -22,6 +22,7 @@ import com.revealprecision.revealserver.api.v1.dto.request.EntityTagRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.UpdateEntityTagRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.ComplexTagDto;
 import com.revealprecision.revealserver.api.v1.dto.response.EntityTagResponse;
+import com.revealprecision.revealserver.config.InstanceContext;
 import com.revealprecision.revealserver.constants.EntityTagFieldTypes;
 import com.revealprecision.revealserver.exceptions.DuplicateCreationException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
@@ -162,50 +163,7 @@ public class EntityTagService {
   }
 
   public TagResponse getAllAggregateEntityTagsAssociatedToData() {
-    log.info("reaching here 1");
-    UUID aDefault = locationHierarchyRepository.findLocationHierarchyByName("default");
-    log.info("reaching here 1.1");
-    List<String> uniqueTagsAggregatesForHierarchy = importAggregateRepository.getUniqueTagsAggregatesForHierarchy(
-        aDefault.toString());
-    log.info("reaching here 2.1");
-    List<EntityTagResponse> resourceTags =
-        uniqueTagsAggregatesForHierarchy.stream()
-            .map(tag -> {
-              return EntityTagResponse.builder().fieldType(EntityTagFieldTypes.IMPORT)
-                  .subType("Import")
-                  .isAggregate(true).tag(tag).valueType(DOUBLE).build();
-            }).collect(Collectors.toList());
-    log.info("reaching here 3");
-    User currentUser = userService.getCurrentUser();
-
-    Set<UUID> currentUserOrgs = currentUser.getOrganizations().stream()
-        .map(Organization::getIdentifier)
-        .collect(Collectors.toSet());
-
-    Map<String, EntityTagResponse> tagsWithAccess = entityTagRepository.findEntityTagsByTagIn(
-            resourceTags.stream().map(EntityTagResponse::getTag).collect(Collectors.toSet()))
-        .stream()
-        .filter(entityTag -> checkAccess(entityTag, currentUserOrgs, currentUser))
-        .map(
-            entityTag -> EntityTagResponse.builder()
-                .identifier(String.valueOf(entityTag.getIdentifier()))
-                .isAggregate(entityTag.isAggregate())
-                .simulationDisplay(entityTag.isSimulationDisplay())
-                .tag(entityTag.getTag())
-                .build()
-        )
-        .collect(Collectors.toMap(EntityTagResponse::getTag, a -> a, (a, b) -> b));
-
-    List<EntityTagResponse> collect1 = resourceTags.stream()
-        .filter(allTag -> tagsWithAccess.get(allTag.getTag()) != null)
-        .peek(allTag -> {
-          allTag.setIdentifier(tagsWithAccess.get(allTag.getTag()).getIdentifier());
-          allTag.setAggregate(tagsWithAccess.get(allTag.getTag()).isAggregate());
-          allTag.setSimulationDisplay(tagsWithAccess.get(allTag.getTag()).isSimulationDisplay());
-          allTag.setLevels(allTag.getLevels());
-        }).collect(Collectors.toList());
-
-    return new TagResponse(collect1, null);
+    return null;
   }
 
 
@@ -956,4 +914,52 @@ public class EntityTagService {
     return complexTagRepository.save(complexTag);
   }
 
+  public TagResponse getAllInstanceAggregateEntityTagsAssociatedToData() {
+
+    UUID instanceIdentifier = InstanceContext.get();
+
+    UUID locationHierarchyIdentifier = locationHierarchyRepository.findLocationHierarchyByInstanceIdentifier(instanceIdentifier)
+                .orElseThrow(() -> new IllegalArgumentException("Cannot find instance hierarchy")).getIdentifier();
+
+    List<String> uniqueTagsAggregatesForHierarchy = importAggregateRepository.getUniqueTagsAggregatesForHierarchy(
+        locationHierarchyIdentifier.toString());
+
+    List<EntityTagResponse> resourceTags =
+        uniqueTagsAggregatesForHierarchy.stream()
+            .map(tag -> {
+              return EntityTagResponse.builder().fieldType(EntityTagFieldTypes.IMPORT)
+                  .subType("Import")
+                  .isAggregate(true).tag(tag).valueType(DOUBLE).build();
+            }).collect(Collectors.toList());
+    User currentUser = userService.getCurrentUser();
+
+    Set<UUID> currentUserOrgs = currentUser.getOrganizations().stream()
+        .map(Organization::getIdentifier)
+        .collect(Collectors.toSet());
+
+    Map<String, EntityTagResponse> tagsWithAccess = entityTagRepository.findEntityTagsByTagIn(
+            resourceTags.stream().map(EntityTagResponse::getTag).collect(Collectors.toSet()))
+        .stream()
+        .filter(entityTag -> checkAccess(entityTag, currentUserOrgs, currentUser))
+        .map(
+            entityTag -> EntityTagResponse.builder()
+                .identifier(String.valueOf(entityTag.getIdentifier()))
+                .isAggregate(entityTag.isAggregate())
+                .simulationDisplay(entityTag.isSimulationDisplay())
+                .tag(entityTag.getTag())
+                .build()
+        )
+        .collect(Collectors.toMap(EntityTagResponse::getTag, a -> a, (a, b) -> b));
+
+    List<EntityTagResponse> collect1 = resourceTags.stream()
+        .filter(allTag -> tagsWithAccess.get(allTag.getTag()) != null)
+        .peek(allTag -> {
+          allTag.setIdentifier(tagsWithAccess.get(allTag.getTag()).getIdentifier());
+          allTag.setAggregate(tagsWithAccess.get(allTag.getTag()).isAggregate());
+          allTag.setSimulationDisplay(tagsWithAccess.get(allTag.getTag()).isSimulationDisplay());
+          allTag.setLevels(allTag.getLevels());
+        }).collect(Collectors.toList());
+
+    return new TagResponse(collect1, null);
+  }
 }
