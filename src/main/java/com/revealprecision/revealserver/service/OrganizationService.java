@@ -104,8 +104,10 @@ public class OrganizationService {
         return organizations.stream().map(OrganizationResponseFactory::fromEntityWithMembers).collect(Collectors.toList());
     }
 
-    public List<OrganizationResponse> getInstanceOrganizationsWithMembers() {
-        UUID  instanceIdentifier = InstanceContext.get();
+    public List<OrganizationResponse> getInstanceOrganizationsWithMembers(UUID instanceIdentifier) {
+        if(instanceIdentifier == null){
+            instanceIdentifier = InstanceContext.get();
+        }
 
         List<Organization> organizations = organizationRepository.findAllByInstanceAndTypeEquals(instanceIdentifier,
             OrganizationTypeEnum.TEAM);

@@ -92,8 +92,8 @@ public class OrganizationController {
         tags = {"Organization"}
     )
     @GetMapping(value = "/instance-members", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<List<OrganizationResponse>> getInstanceOrganizationsWithMembers() {
-        return ResponseEntity.status(HttpStatus.OK).body(organizationService.getInstanceOrganizationsWithMembers());
+    public ResponseEntity<List<OrganizationResponse>> getInstanceOrganizationsWithMembers(@RequestParam("instanceIdentifier") UUID instanceIdentifier ) {
+        return ResponseEntity.status(HttpStatus.OK).body(organizationService.getInstanceOrganizationsWithMembers(instanceIdentifier));
     }
 
     @GetMapping(value = "/search", produces = MediaType.APPLICATION_JSON_VALUE)
