@@ -3,6 +3,7 @@ package com.revealprecision.revealserver.api.v1.dto.factory;
 import com.revealprecision.revealserver.api.v1.dto.response.IdentifierNameResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceContextResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceContextResponse.GroupContextInfo;
+import com.revealprecision.revealserver.api.v1.dto.response.InstanceContextResponse.InstancePlanContextResponse;
 import com.revealprecision.revealserver.persistence.domain.Instance;
 import com.revealprecision.revealserver.persistence.domain.InstanceRole;
 import com.revealprecision.revealserver.persistence.domain.InstanceUser;
@@ -40,9 +41,12 @@ public class InstanceContextResponseFactory {
         .name(instance.getName())
         .build();
 
-    IdentifierNameResponse selectedInstancePlan = IdentifierNameResponse.builder()
+    InstancePlanContextResponse selectedInstancePlan = InstancePlanContextResponse.builder()
         .identifier(instancePlan.getIdentifier())
         .name(instancePlan.getName())
+        .planStatus(instancePlan.getStatus().name())
+        .interventionType(instancePlan.getInterventionType().getName())
+        .planTargetType(instancePlan.getPlanTargetType().getGeographicLevel().getName())
         .build();
 
     return InstanceContextResponse.builder()
