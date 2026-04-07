@@ -442,12 +442,12 @@ public class InstanceService {
   public List<GeoTreeResponse> getAssignedInstanceAreasTree(UUID instanceIdentifier , List<String> nodeList ) {
 
     List<IdentifierNameResponse> instancesAreas = null;
-
-    Instance instance = findById(instanceIdentifier);
-
+    Instance instance;
     if (instanceIdentifier == null) {
+      instance = findById(InstanceContext.get());
       instancesAreas = getAssignedInstanceAreas();
     } else {
+      instance = findById(instanceIdentifier);
       instancesAreas = getAssignedInstanceAreas(instanceIdentifier);
     }
 
