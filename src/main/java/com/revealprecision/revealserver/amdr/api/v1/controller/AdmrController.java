@@ -7,6 +7,7 @@ import com.revealprecision.revealserver.exceptions.FileFormatException;
 import com.revealprecision.revealserver.service.StorageService;
 import java.io.IOException;
 import java.util.UUID;
+import javax.annotation.Nullable;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -74,7 +75,7 @@ public class AdmrController {
 
   @GetMapping(value = "/importResults")
   public AdmrImportResultsResponse importAmdrRawData(
-      @RequestParam("importId") UUID importId) throws FileFormatException, IOException {
+      @RequestParam(value = "importId", required = false) @Nullable UUID importId) throws FileFormatException, IOException {
      return amdrService.getImportResults(importId);
   }
 

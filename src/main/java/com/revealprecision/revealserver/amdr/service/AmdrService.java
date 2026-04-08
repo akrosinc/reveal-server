@@ -2,11 +2,13 @@ package com.revealprecision.revealserver.amdr.service;
 
 import com.revealprecision.revealserver.amdr.api.v1.dto.response.AdmrImportResultsResponse;
 import com.revealprecision.revealserver.amdr.api.v1.dto.response.AmdrImportResponse;
+import com.revealprecision.revealserver.amdr.model.AmdrImportStatus;
 import com.revealprecision.revealserver.amdr.model.KeyValue;
 import com.revealprecision.revealserver.amdr.persistence.domain.AmdrData;
 import com.revealprecision.revealserver.amdr.persistence.domain.AmdrImport;
 import com.revealprecision.revealserver.amdr.persistence.domain.AmdrProcessingStatus;
 import com.revealprecision.revealserver.amdr.persistence.domain.AmdrSampleData;
+import com.revealprecision.revealserver.amdr.persistence.projection.AmdrImportStatusProjection;
 import com.revealprecision.revealserver.amdr.persistence.projection.AmdrPassiveEventProjection;
 import com.revealprecision.revealserver.amdr.persistence.repository.AmdrImportRepository;
 import com.revealprecision.revealserver.amdr.persistence.repository.AmdrMappingsRepository;
@@ -471,11 +473,24 @@ public class AmdrService {
 
   public AdmrImportResultsResponse getImportResults(UUID importId){
 
-    int sampleIds = amdrSampleDataRepository.countByImportId(importId);
+    if (importId == null){
+      List<AmdrImportStatusProjection> sampleIds = amdrSampleDataRepository.countStatus();
 
-    return AdmrImportResultsResponse.builder()
-        .sampleIds(sampleIds)
-        .build();
+      return AdmrImportResultsResponse.builder()
+          .statuses(sampleIds.stream()
+              .map(item -> new AmdrImportStatus(item.getStatus(), item.getCount())).collect(
+                  Collectors.toList()))
+          .build();
+    } else {
+      List<AmdrImportStatusProjection> sampleIds = amdrSampleDataRepository.countStatusByImportId(
+          importId);
+
+      return AdmrImportResultsResponse.builder()
+          .statuses(sampleIds.stream()
+              .map(item -> new AmdrImportStatus(item.getStatus(), item.getCount())).collect(
+                  Collectors.toList()))
+          .build();
+    }
   }
 
   private void getDateAndLocationForSample() {
