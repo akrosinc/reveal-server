@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.persistence.domain;
 
 import com.revealprecision.revealserver.api.v1.dto.request.DataFilterRequest;
+import com.revealprecision.revealserver.api.v1.dto.request.SimulationDatasetRequest;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import java.util.UUID;
 import javax.persistence.Column;
@@ -36,5 +37,10 @@ public class SimulationRequest {
   @Type(type = "jsonb")
   @Column(columnDefinition = "jsonb")
   private DataFilterRequest request;
+
+
+  @Type(type = "jsonb")
+  @Column(columnDefinition = "jsonb")
+  private SimulationDatasetRequest datasetRequest;
 
 }

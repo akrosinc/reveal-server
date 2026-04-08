@@ -2,6 +2,7 @@ package com.revealprecision.revealserver.api.v1.dto.factory;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
 import com.revealprecision.revealserver.api.v1.dto.response.EntityMetadataResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationPropertyResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationResponse;
@@ -9,13 +10,10 @@ import com.revealprecision.revealserver.enums.SummaryEnum;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.es.HierarchyDetailsElastic;
 import com.revealprecision.revealserver.persistence.es.LocationElastic;
+import com.revealprecision.revealserver.persistence.projection.LocationWithChildrenCountProjection;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+
+import java.util.*;
 import java.util.stream.Collectors;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -38,6 +36,30 @@ public class LocationResponseFactory {
                 .geographicLevel(location.getGeographicLevel().getName()).build()).build();
   }
 
+  public static LocationResponse fromEntityWithPopulationAndAncestry(Location location, String ancestryString, Long numberOfTeams) {
+    List<String> ancestry = Collections.emptyList();
+    if(ancestryString != null && !ancestryString.isEmpty()) {
+      Gson gson = new Gson();
+      String[] ancestryArray = gson.fromJson(ancestryString, String[].class);
+      ancestry = Arrays.asList(ancestryArray);
+    }
+    return LocationResponse.builder()
+            .identifier(location.getIdentifier())
+            .type(location.getType())
+            .geometry(location.getGeometry())
+            .ancestry(ancestry)
+            .properties(
+                    LocationPropertyResponse.builder()
+                            .name(location.getName())
+                            .status(location.getStatus())
+                            .externalId(location.getExternalId())
+                            .population(location.getPopulationData())
+                            .geographicLevel(location.getGeographicLevel().getName())
+                            .numberOfTeams(numberOfTeams)
+                            .build()
+            ).build();
+  }
+
   public static LocationResponse fromEntityWithChildCount(Location location, Long childrenNumber) {
     return LocationResponse.builder()
         .identifier(location.getIdentifier())
@@ -52,6 +74,23 @@ public class LocationResponseFactory {
                 .childrenNumber(childrenNumber)
                 .build())
         .build();
+  }
+
+  public static LocationResponse fromEntityWithChildCountAndParent(Location location, Long childrenNumber, UUID parentIdentifier) {
+    return LocationResponse.builder()
+            .identifier(location.getIdentifier())
+            .type(location.getType())
+            .geometry(location.getGeometry())
+            .properties(
+                    LocationPropertyResponse.builder()
+                            .name(location.getName())
+                            .status(location.getStatus())
+                            .externalId(location.getExternalId())
+                            .geographicLevel(location.getGeographicLevel().getName())
+                            .childrenNumber(childrenNumber)
+                            .parentIdentifier(parentIdentifier)
+                            .build())
+            .build();
   }
 
   public static LocationResponse fromEntitySummary(Location location) {
@@ -69,6 +108,13 @@ public class LocationResponseFactory {
             : LocationResponseFactory::fromEntity).collect(
             Collectors.toList());
     return new PageImpl<>(locationsResponseContent, pageable, locations.getTotalElements());
+  }
+
+  public static Page<LocationResponse> fromEntityWithChildrenCountToPage(Page<LocationWithChildrenCountProjection> locationsWithCount, Pageable pageable){
+    var locations = locationsWithCount.getContent().stream().map(
+            locationWithCount -> LocationResponseFactory.fromEntityWithChildCountAndParent(locationWithCount.getLocation(), locationWithCount.getChildrenCount(), locationWithCount.getParentIdentifier())
+    ).collect(Collectors.toList());
+    return new PageImpl<>(locations, pageable, locationsWithCount.getTotalElements());
   }
 
   public static LocationResponse fromPlanLocationDetails(PlanLocationDetails planLocationDetails,

@@ -18,6 +18,7 @@ import com.revealprecision.revealserver.persistence.domain.Condition;
 import com.revealprecision.revealserver.persistence.domain.Form;
 import com.revealprecision.revealserver.persistence.domain.GeographicLevel;
 import com.revealprecision.revealserver.persistence.domain.Goal;
+import com.revealprecision.revealserver.persistence.domain.Instance;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.LookupEntityType;
@@ -37,6 +38,7 @@ import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
@@ -83,9 +85,10 @@ public class PlanService {
     return planRepository.getAllCount(search);
   }
 
-  public Page<Plan> getPlansForReports(String reportType, Pageable pageable) {
+  public Page<Plan> getPlansForReports(String reportType, Pageable pageable,
+      UUID instanceIdentifier) {
     if (reportType.isBlank()) {
-      return planRepository.findPlansByInterventionType(reportType, pageable);
+      return findPlansByInterventionTypeAndInstance(reportType, instanceIdentifier, pageable);
     } else {
       ApplicableReportsEnum applicableReportsEnum = null;
       for (ApplicableReportsEnum applicableReport : ApplicableReportsEnum.values()) {
@@ -94,11 +97,19 @@ public class PlanService {
           break;
         }
       }
-      return planRepository.findPlansByInterventionType(applicableReportsEnum.name(), pageable);
+      return findPlansByInterventionTypeAndInstance(applicableReportsEnum.name(), instanceIdentifier, pageable);
     }
   }
 
-  public void createPlan(PlanRequest planRequest) {
+  private Page<Plan> findPlansByInterventionTypeAndInstance(String interventionType,UUID instanceIdentifier, Pageable pageable) {
+    if (instanceIdentifier == null) {
+      return planRepository.findPlansByInterventionType(interventionType, pageable);
+    } else {
+      return planRepository.findPlansByInterventionTypeAndInstance(interventionType, instanceIdentifier, pageable);
+    }
+  }
+
+  public Plan createPlan(PlanRequest planRequest, Instance instance) {
 
     LookupInterventionType interventionType = lookupInterventionTypeService.findByIdentifier(
         planRequest.getInterventionType());
@@ -128,7 +139,7 @@ public class PlanService {
         .equals(PlanInterventionTypeEnum.MDA_LITE.name())) {
       geographicLevel = geographicLevelService.findByName(LocationConstants.STRUCTURE);
     } else {
-      if (planRequest.getHierarchyLevelTarget() == null) {
+      if (StringUtils.isEmpty(planRequest.getHierarchyLevelTarget())) {
         geographicLevel = geographicLevelService.findByName(LocationConstants.OPERATIONAL);
       } else {
         geographicLevel = geographicLevelService.findByName(planRequest.getHierarchyLevelTarget());
@@ -141,27 +152,35 @@ public class PlanService {
 
     plan.setEntityStatus(EntityStatus.ACTIVE);
 
-    savePlan(plan);
+    if(instance != null) {
+      plan.setInstance(instance);
+    }
+
+    return savePlan(plan);
   }
 
   public void activatePlan(UUID planIdentifier) {
     Plan plan = findPlanByIdentifier(planIdentifier);
     if (locationBulkService.areRelationshipsGenerated()) {
-      plan.setStatus(PlanStatusEnum.ACTIVE);
-      savePlan(plan);
-      // Proceed with caution here as new updates / removals to the object will prevent rewind of the kafka listener application.
-      // In the event of new data being introduced, ensure that null pointers are catered in the kafka listener
-      // application if the event comes through, and it does not have the new fields populated
-      PlanUpdateMessage planUpdateMessage = new PlanUpdateMessage();
-      planUpdateMessage.setPlanIdentifier(plan.getIdentifier());
-      planUpdateMessage.setPlanUpdateType(PlanUpdateType.ACTIVATE);
-      planUpdateMessage.setOwnerId(UserUtils.getCurrentPrincipleName());
-
-      publisherService.send(kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_UPDATE),
-          planUpdateMessage);
+      activatePlan(plan);
     } else {
       throw new ConflictException("Relationships still generating for this plan.");
     }
+  }
+
+  public void activatePlan(Plan plan) {
+    plan.setStatus(PlanStatusEnum.ACTIVE);
+    savePlan(plan);
+    // Proceed with caution here as new updates / removals to the object will prevent rewind of the kafka listener application.
+    // In the event of new data being introduced, ensure that null pointers are catered in the kafka listener
+    // application if the event comes through, and it does not have the new fields populated
+    PlanUpdateMessage planUpdateMessage = new PlanUpdateMessage();
+    planUpdateMessage.setPlanIdentifier(plan.getIdentifier());
+    planUpdateMessage.setPlanUpdateType(PlanUpdateType.ACTIVATE);
+    planUpdateMessage.setOwnerId(UserUtils.getCurrentPrincipleName());
+
+    publisherService.send(kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_UPDATE),
+        planUpdateMessage);
   }
 
   public void updatePlan(PlanRequest request, UUID identifier) {
@@ -174,7 +193,11 @@ public class PlanService {
     savePlan(plan);
   }
 
-  private void savePlan(Plan plan) {
-    Plan savedPlan = planRepository.save(plan);
+  private Plan savePlan(Plan plan) {
+    return planRepository.save(plan);
+  }
+
+  public List<Plan> findPlanByInstanceIdentifier(UUID instanceIdentifier) {
+    return planRepository.findAllByInstanceIdentifier(instanceIdentifier);
   }
 }

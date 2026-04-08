@@ -22,7 +22,9 @@ import com.revealprecision.revealserver.api.v1.dto.request.EntityTagRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.UpdateEntityTagRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.ComplexTagDto;
 import com.revealprecision.revealserver.api.v1.dto.response.EntityTagResponse;
+import com.revealprecision.revealserver.config.InstanceContext;
 import com.revealprecision.revealserver.constants.EntityTagFieldTypes;
+import com.revealprecision.revealserver.enums.InstanceRoleEnum;
 import com.revealprecision.revealserver.exceptions.DuplicateCreationException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.messaging.message.EntityTagEvent;
@@ -38,12 +40,15 @@ import com.revealprecision.revealserver.persistence.domain.EntityTagAccGrantsOrg
 import com.revealprecision.revealserver.persistence.domain.EntityTagAccGrantsUser;
 import com.revealprecision.revealserver.persistence.domain.EntityTagOwnership;
 import com.revealprecision.revealserver.persistence.domain.GeographicLevel;
+import com.revealprecision.revealserver.persistence.domain.InstanceUser;
 import com.revealprecision.revealserver.persistence.domain.Organization;
 import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.persistence.domain.User.Fields;
 import com.revealprecision.revealserver.persistence.domain.aggregation.ImportAggregationNumeric;
+import com.revealprecision.revealserver.persistence.projection.AggregateWithTagProjection;
 import com.revealprecision.revealserver.persistence.projection.EntityTagWithGeoLevelAndEntityTypeProjection;
 import com.revealprecision.revealserver.persistence.projection.EntityTagWithGeoLevelProjection;
+import com.revealprecision.revealserver.persistence.projection.IdentifierNameProjection;
 import com.revealprecision.revealserver.persistence.repository.ComplexTagAccGrantsOrganizationRepository;
 import com.revealprecision.revealserver.persistence.repository.ComplexTagAccGrantsUserRepository;
 import com.revealprecision.revealserver.persistence.repository.ComplexTagRepository;
@@ -54,6 +59,9 @@ import com.revealprecision.revealserver.persistence.repository.EntityTagReposito
 import com.revealprecision.revealserver.persistence.repository.GeneratedHierarchyMetadataRepository;
 import com.revealprecision.revealserver.persistence.repository.ImportAggregateRepository;
 import com.revealprecision.revealserver.persistence.repository.ImportAggregationNumericRepository;
+import com.revealprecision.revealserver.persistence.repository.InstanceEntityTagRepository;
+import com.revealprecision.revealserver.persistence.repository.InstanceUserRepository;
+import com.revealprecision.revealserver.persistence.repository.LocationHierarchyRepository;
 import com.revealprecision.revealserver.persistence.repository.OrganizationRepository;
 import com.revealprecision.revealserver.persistence.repository.ResourceAggregateRepository;
 import com.revealprecision.revealserver.persistence.repository.UserRepository;
@@ -114,6 +122,10 @@ public class EntityTagService {
   private final SecurityProperties securityProperties;
   private final RestHighLevelClient client;
   private final ImportAggregationNumericRepository importAggregationNumericRepository;
+  private final LocationHierarchyRepository locationHierarchyRepository;
+  private final InstanceUserRepository instanceUserRepository;
+  private final InstanceEntityTagRepository instanceEntityTagRepository;
+
 
   @Value("${reveal.elastic.index-name}")
   String elasticIndex;
@@ -127,6 +139,15 @@ public class EntityTagService {
     return entityTagRepository.findAll();
   }
 
+  public EntityTag getEntityTagById(UUID id) {
+    return entityTagRepository.findById(id)
+        .orElseThrow(() -> new NotFoundException("No tag found for ID: " + id));
+  }
+
+  public List<AggregateWithTagProjection> getValuesForTagAndLocations(List<UUID> tags,
+      List<String> locationsIds) {
+    return importAggregateRepository.getValuesForTagAndLocations(tags, locationsIds);
+  }
 
   public Page<EntityTag> getOrSearchAllEntityTagsPaged(Pageable pageable, String search) {
     return entityTagRepository.findOrSearchEntityTags(pageable, search);
@@ -149,27 +170,30 @@ public class EntityTagService {
     return entityTagRepository.findEntityTagsByIsAggregate(false);
   }
 
+  public TagResponse getAllAggregateEntityTagsAssociatedToData() {
+    return null;
+  }
+
+
   public TagResponse getAllAggregateEntityTagsAssociatedToData(
       String hierarchyIdentifier) {
-
-
     List<EntityTagResponse> resourceTags =
         resourceAggregateRepository.getUniqueDataTagsAssociatedWithDataWithLevels(
-            hierarchyIdentifier).stream()
-        .collect(Collectors.groupingBy(item->
-            //create a unique name for the key for the map
-            item.getEventType().concat(":").concat(item.getTagName())))
+                hierarchyIdentifier).stream()
+            .collect(Collectors.groupingBy(item ->
+                //create a unique name for the key for the map
+                item.getEventType().concat(":").concat(item.getTagName())))
             .entrySet()
             .stream().map(resourceEntityTagWithGeoLevelProjections -> EntityTagResponse.builder()
                 .fieldType(EntityTagFieldTypes.RESOURCE_PLANNING).isAggregate(true)
                 .tag(resourceEntityTagWithGeoLevelProjections.getKey().split(":")[1])
-                .subType(resourceEntityTagWithGeoLevelProjections.getKey().split(":")[0]).valueType(DOUBLE)
+                .subType(resourceEntityTagWithGeoLevelProjections.getKey().split(":")[0])
+                .valueType(DOUBLE)
                 .levels(resourceEntityTagWithGeoLevelProjections.getValue().stream()
                     .map(EntityTagWithGeoLevelAndEntityTypeProjection::getGeoName).collect(
                         Collectors.toList()))
                 .build()
-        ).collect(Collectors.toList());
-
+            ).collect(Collectors.toList());
 
     Map<String, List<EntityTagWithGeoLevelProjection>> currentImportDataTags =
         importAggregateRepository.getUniqueDataTagsAndLevelsListAssociatedWithData(
@@ -177,10 +201,11 @@ public class EntityTagService {
             .stream().collect(Collectors.groupingBy(EntityTagWithGeoLevelProjection::getTagName));
 
     List<EntityTagResponse> importTags = currentImportDataTags.entrySet().stream().map(entry ->
-      EntityTagResponse.builder().fieldType(EntityTagFieldTypes.IMPORT).subType("Import")
-          .isAggregate(true).tag(entry.getKey()).valueType(DOUBLE).levels(entry.getValue().stream()
-              .map(EntityTagWithGeoLevelProjection::getGeoName).collect(
-                  Collectors.toList())).build()
+        EntityTagResponse.builder().fieldType(EntityTagFieldTypes.IMPORT).subType("Import")
+            .isAggregate(true).tag(entry.getKey()).valueType(DOUBLE)
+            .levels(entry.getValue().stream()
+                .map(EntityTagWithGeoLevelProjection::getGeoName).collect(
+                    Collectors.toList())).build()
     ).collect(Collectors.toList());
 
     List<EntityTagResponse> generated = generatedHierarchyMetadataRepository.getUniqueDataTagsAndLevelsListAssociatedWithData(
@@ -190,7 +215,8 @@ public class EntityTagService {
         .map(generatedEntityTagWithGeoLevelProjections -> EntityTagResponse.builder()
             .fieldType(EntityTagFieldTypes.RESOURCE_PLANNING).isAggregate(true)
             .tag(generatedEntityTagWithGeoLevelProjections.getKey().split(":")[1])
-            .subType(generatedEntityTagWithGeoLevelProjections.getKey().split(":")[0]).valueType(DOUBLE)
+            .subType(generatedEntityTagWithGeoLevelProjections.getKey().split(":")[0])
+            .valueType(DOUBLE)
             .levels(generatedEntityTagWithGeoLevelProjections.getValue().stream()
                 .map(EntityTagWithGeoLevelAndEntityTypeProjection::getGeoName).collect(
                     Collectors.toList()))
@@ -472,7 +498,7 @@ public class EntityTagService {
                         save.getTag());
                     entityTagRequest1.setReferencedTag(save.getIdentifier());
                     return createAggregateEntityTag(
-                        entityTagRequest1, aggregationMethod, true,geographicLevel);
+                        entityTagRequest1, aggregationMethod, true, geographicLevel);
                   })
 
       ).collect(Collectors.toList());
@@ -879,6 +905,15 @@ public class EntityTagService {
     return entityTagRepository.findEntityTagsByMetadataImport_Identifier(id);
   }
 
+  public List<EntityTag> findEntityTagsByMetadataImportIsNotAggregate(UUID id) {
+    return entityTagRepository.findEntityTagsByMetadataImport_IdentifierAndIsAggregate(id,false);
+  }
+
+  public List<EntityTag> findEntityTagsByMetadataImportAndIsPublicAndIsNotAggregate(UUID id, boolean isPublic) {
+    return entityTagRepository.findEntityTagsByMetadataImport_IdentifierAndIsPublicAndIsAggregate(id, isPublic,false);
+  }
+
+
   public List<ComplexTag> getAllComplexTags() {
     return complexTagRepository.findAll();
   }
@@ -887,4 +922,123 @@ public class EntityTagService {
     return complexTagRepository.save(complexTag);
   }
 
+  public TagResponse getAllInstanceAggregateEntityTagsAssociatedToData( UUID instanceIdentifier) {
+
+    if(instanceIdentifier == null){
+      instanceIdentifier = InstanceContext.get();
+    }
+
+    UUID hierarchyIdentifier = locationHierarchyRepository.findLocationHierarchyByInstanceIdentifier(instanceIdentifier)
+                .orElseThrow(() -> new IllegalArgumentException("Cannot find instance hierarchy")).getIdentifier();
+
+
+//    List<EntityTagResponse> resourceTags =
+//        resourceAggregateRepository.getUniqueDataTagsAssociatedWithDataWithLevels(
+//                hierarchyIdentifier.toString()).stream()
+//            .collect(Collectors.groupingBy(item ->
+//                //create a unique name for the key for the map
+//                item.getEventType().concat(":").concat(item.getTagName())))
+//            .entrySet()
+//            .stream().map(resourceEntityTagWithGeoLevelProjections -> EntityTagResponse.builder()
+//                .fieldType(EntityTagFieldTypes.RESOURCE_PLANNING).isAggregate(true)
+//                .tag(resourceEntityTagWithGeoLevelProjections.getKey().split(":")[1])
+//                .subType(resourceEntityTagWithGeoLevelProjections.getKey().split(":")[0])
+//                .valueType(DOUBLE)
+//                .levels(resourceEntityTagWithGeoLevelProjections.getValue().stream()
+//                    .map(EntityTagWithGeoLevelAndEntityTypeProjection::getGeoName).collect(
+//                        Collectors.toList()))
+//                .build()
+//            ).collect(Collectors.toList());
+
+    Map<String, List<EntityTagWithGeoLevelProjection>> currentImportDataTags =
+        importAggregateRepository.getUniqueDataTagsAndLevelsListAssociatedWithData(
+                hierarchyIdentifier.toString())
+            .stream().collect(Collectors.groupingBy(EntityTagWithGeoLevelProjection::getTagName));
+
+    List<EntityTagResponse> importTags = currentImportDataTags.entrySet().stream().map(entry ->
+        EntityTagResponse.builder().fieldType(EntityTagFieldTypes.IMPORT).subType("Import")
+            .isAggregate(true).tag(entry.getKey()).valueType(DOUBLE)
+            .levels(entry.getValue().stream()
+                .map(EntityTagWithGeoLevelProjection::getGeoName).collect(
+                    Collectors.toList())).build()
+    ).collect(Collectors.toList());
+
+    List<EntityTagResponse> generated = generatedHierarchyMetadataRepository.getUniqueDataTagsAndLevelsListAssociatedWithData(
+            hierarchyIdentifier.toString()).stream().collect(Collectors.groupingBy(item ->
+            item.getEventType().concat(":").concat(item.getTag())))
+        .entrySet().stream()
+        .map(generatedEntityTagWithGeoLevelProjections -> EntityTagResponse.builder()
+            .fieldType(EntityTagFieldTypes.RESOURCE_PLANNING).isAggregate(true)
+            .tag(generatedEntityTagWithGeoLevelProjections.getKey().split(":")[1])
+            .subType(generatedEntityTagWithGeoLevelProjections.getKey().split(":")[0])
+            .valueType(DOUBLE)
+            .levels(generatedEntityTagWithGeoLevelProjections.getValue().stream()
+                .map(EntityTagWithGeoLevelAndEntityTypeProjection::getGeoName).collect(
+                    Collectors.toList()))
+            .build())
+        .collect(Collectors.toList());
+
+    User currentUser = userService.getCurrentUser();
+
+    List<InstanceUser> instanceUsers = instanceUserRepository.findByUserAndInstance(currentUser.getIdentifier(), instanceIdentifier);
+
+    Map<InstanceRoleEnum, List<UUID>> partitionedInstanceIds = instanceUsers.stream()
+        .collect(Collectors.groupingBy(
+            iu -> InstanceRoleEnum.valueOf(iu.getRole().getName()),
+            Collectors.mapping(iu -> iu.getInstance().getIdentifier(), Collectors.toList())
+        ));
+
+    List<UUID> adminInstanceIds = partitionedInstanceIds
+        .getOrDefault(InstanceRoleEnum.ADMIN, List.of());
+    List<UUID> standardInstanceIds = partitionedInstanceIds
+        .getOrDefault(InstanceRoleEnum.STANDARD, List.of());
+
+    List<UUID> datasetsIds = new ArrayList<>();
+
+    if (!adminInstanceIds.isEmpty()) {
+      datasetsIds.addAll(
+          entityTagRepository.findByInstanceId(instanceIdentifier).stream().map( et -> et.getIdentifier()).collect(
+              Collectors.toList())
+      );
+    } else if (!standardInstanceIds.isEmpty()) {
+      datasetsIds.addAll(
+          entityTagAccGrantsOrganizationRepository
+              .findByUserIdAndInstanceId(currentUser.getIdentifier(), instanceIdentifier).stream().map( et -> et.getIdentifier()).collect(
+                  Collectors.toList())
+      );
+    }
+
+    List<EntityTagResponse> allTags = new ArrayList<>();
+//    allTags.addAll(resourceTags);
+    allTags.addAll(importTags);
+    allTags.addAll(generated);
+
+
+
+//    Map<String, EntityTagResponse> tagsWithAccess
+        List <EntityTagResponse>  tagsWithAccess = entityTagRepository.findEntityTagsByTagIn(
+            allTags.stream().map(EntityTagResponse::getTag).collect(Collectors.toSet()))
+        .stream()
+        .filter(entityTag -> datasetsIds.contains(entityTag.getReferencedTag()))
+        .map(
+            entityTag -> EntityTagResponse.builder()
+                .identifier(String.valueOf(entityTag.getIdentifier()))
+                .isAggregate(entityTag.isAggregate())
+                .simulationDisplay(entityTag.isSimulationDisplay())
+                .tag(entityTag.getTag())
+                .build()
+        ).collect(Collectors.toList());
+//        .collect(Collectors.toMap(EntityTagResponse::getTag, a -> a, (a, b) -> b));
+
+//    List<EntityTagResponse> collect1 = resourceTags.stream()
+//        .filter(allTag -> tagsWithAccess.get(allTag.getTag()) != null)
+//        .peek(allTag -> {
+//          allTag.setIdentifier(tagsWithAccess.get(allTag.getTag()).getIdentifier());
+//          allTag.setAggregate(tagsWithAccess.get(allTag.getTag()).isAggregate());
+//          allTag.setSimulationDisplay(tagsWithAccess.get(allTag.getTag()).isSimulationDisplay());
+//          allTag.setLevels(allTag.getLevels());
+//        }).collect(Collectors.toList());
+
+    return new TagResponse(tagsWithAccess, null);
+  }
 }

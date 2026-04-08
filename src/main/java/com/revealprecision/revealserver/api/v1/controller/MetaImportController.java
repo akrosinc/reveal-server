@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.api.v1.controller;
 
+import com.revealprecision.revealserver.api.v1.dto.response.DatasetResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.MetadataFileImportResponse;
 import com.revealprecision.revealserver.exceptions.FileFormatException;
 import com.revealprecision.revealserver.persistence.domain.metadata.metadataImport.fieldMapper.MetaFieldSetMapper.ValidatedTagMap;
@@ -36,13 +37,13 @@ public class MetaImportController {
       tags = {"MetaData import"}
   )
   @PostMapping()
-  public ResponseEntity<?> importMetaData(
+  public ResponseEntity<?> importMetaData( @RequestParam(value = "name" , required = false) String metaDataName,
       @RequestParam("file") MultipartFile file) throws FileFormatException {
     ValidatedTagMap booleanMapMap;
     try {
       String path = storageService.saveXlsx(file);
       booleanMapMap = metadataService.saveImportFile(path,
-          file.getOriginalFilename());
+          file.getOriginalFilename(), metaDataName);
     } catch (FileFormatException e){
       return ResponseEntity.badRequest().body(e.getMessage());
     }
@@ -66,5 +67,16 @@ public class MetaImportController {
   public ResponseEntity<?> getMetadataImportByIdentifier(@PathVariable UUID metaImportIdentifier) {
     return ResponseEntity.status(HttpStatus.OK)
         .body(metadataService.getMetadataImportDetails(metaImportIdentifier));
+  }
+
+  @Operation(summary = "Get List of Datasets by access type",
+      description = "Get List of of Datasets by access type",
+      tags = {"Metadata import"})
+  @GetMapping( path = "/dataset",
+              produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<Page<DatasetResponse>> getDatasetList(Pageable pageable,
+        @RequestParam(value = "isPublic" , required = false) Boolean isPublic) {
+    return ResponseEntity.status(HttpStatus.OK)
+        .body(metadataService.getDatasetList(pageable, isPublic));
   }
 }

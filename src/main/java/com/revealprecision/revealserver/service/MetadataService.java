@@ -5,8 +5,10 @@ import static com.revealprecision.revealserver.constants.EntityTagDataTypes.DOUB
 import static com.revealprecision.revealserver.constants.EntityTagDataTypes.INTEGER;
 import static com.revealprecision.revealserver.constants.EntityTagDataTypes.STRING;
 
+import com.revealprecision.revealserver.api.v1.dto.factory.DatasetImportResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.LocationMetadataImportFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.MetadataImportResponseFactory;
+import com.revealprecision.revealserver.api.v1.dto.response.DatasetResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationMetadataImport;
 import com.revealprecision.revealserver.api.v1.dto.response.MetadataFileImportResponse;
 import com.revealprecision.revealserver.constants.EntityTagFieldTypes;
@@ -33,6 +35,7 @@ import com.revealprecision.revealserver.persistence.domain.metadata.SaveHierarch
 import com.revealprecision.revealserver.persistence.domain.metadata.metadataImport.MetaImportDTO;
 import com.revealprecision.revealserver.persistence.domain.metadata.metadataImport.fieldMapper.MetaFieldSetMapper;
 import com.revealprecision.revealserver.persistence.domain.metadata.metadataImport.fieldMapper.MetaFieldSetMapper.ValidatedTagMap;
+import com.revealprecision.revealserver.persistence.projection.InstanceEntityTagIdProjection;
 import com.revealprecision.revealserver.persistence.repository.ImportAggregationNumericRepository;
 import com.revealprecision.revealserver.persistence.repository.ImportAggregationStringRepository;
 import com.revealprecision.revealserver.persistence.repository.MetadataImportRepository;
@@ -84,9 +87,10 @@ public class MetadataService {
   private final ImportAggregationProperties importAggregationProperties;
   private final OrganizationRepository organizationRepository;
   private final UserRepository userRepository;
+  private final InstanceService  instanceService;
 
   @Transactional(rollbackOn = Exception.class)
-  public ValidatedTagMap saveImportFile(String file, String fileName)
+  public ValidatedTagMap saveImportFile(String file, String fileName ,String dataSetName)
       throws FileFormatException {
 
     User currentUser = userService.getCurrentUser();
@@ -100,6 +104,8 @@ public class MetadataService {
         .userSid(currentUser.getSid())
         .build();
     metadataImport.setOwners(List.of(metadataImportOwnership));
+
+    metadataImport.setMetadataName(dataSetName);
 
     Principal principal = UserUtils.getCurrentPrinciple();
     User user;
@@ -118,6 +124,12 @@ public class MetadataService {
 
       int cellCount = metaFieldSetMapper.getPhysicalNumberOfCells(tagNameRow);
 
+      XSSFRow colIdentifierRow = sheet.getRow(2);
+
+      int startingColForTags = metaFieldSetMapper.getStartingColForTags(colIdentifierRow);
+
+      int endingColForTags = metaFieldSetMapper.getEndingColForTags(startingColForTags, tagNameRow);
+
       int fileRowsCount = metaFieldSetMapper.getFileRowsCount(sheet);
 
       Set<UUID> locationList = metaFieldSetMapper.extractIdsFor(sheet, fileRowsCount, 1,
@@ -134,9 +146,9 @@ public class MetadataService {
           hierarchyList);
 
       ValidatedTagMap validatedTagMap = metaFieldSetMapper.getTagsMap(
-          sheet, currentMetaImport, tagNameRow, cellCount, currentUser,
+          sheet, currentMetaImport, tagNameRow, endingColForTags, currentUser,
           geoLevels.stream().findFirst().orElseThrow(
-              () -> new FileFormatException("Geographic Levels passed in file is invalid")));
+              () -> new FileFormatException("Geographic Levels passed in file is invalid")),startingColForTags);
 
       metaFieldSetMapper.validateGeographicLevels(geoLevels, validatedTagMap);
 
@@ -144,7 +156,7 @@ public class MetadataService {
 
       List<MetaImportDTO> metaImportDTOS = metaFieldSetMapper.mapMetaFieldsDB(validatedTagMap,
           sheet,
-          locationMap, hierarchyMap, rowCount);
+          locationMap, hierarchyMap, rowCount,startingColForTags);
 
       if (metaImportDTOS.stream().map(metaImportDTO -> metaImportDTO.getSheetData().getErrors())
           .map(Map::size).reduce(0, Integer::sum) > 1) {
@@ -383,5 +395,39 @@ public class MetadataService {
   }
 
 
+  public Page<DatasetResponse> getDatasetList(final Pageable pageable,final Boolean isPublic) {
+    Page<MetadataImport> all = metadataImportRepository.findAll(pageable);
+
+    Map<UUID, List<EntityTag>> collect = all.get().flatMap(metadataImport -> {
+      
+          if(isPublic == null){
+            return entityTagService
+                .findEntityTagsByMetadataImportIsNotAggregate(
+                    metadataImport.getIdentifier())
+                .stream();
+          } else if (isPublic) {
+            return entityTagService
+                .findEntityTagsByMetadataImportAndIsPublicAndIsNotAggregate(
+                    metadataImport.getIdentifier(),true)
+                .stream();
+          }
+          else {
+            return entityTagService
+                .findEntityTagsByMetadataImportAndIsPublicAndIsNotAggregate(
+                    metadataImport.getIdentifier(),false)
+                .stream();
+          }
+        }).filter(entityTag -> entityTag.getMetadataImport() != null)
+        .collect(Collectors.groupingBy(entityTag -> entityTag.getMetadataImport().getIdentifier()));
+
+
+    List<UUID> entityTagtIdList = collect.entrySet()
+        .stream().flatMap(entityTagListEntry ->
+            entityTagListEntry.getValue().stream().map(EntityTag::getIdentifier)).collect(Collectors.toList());
+
+    List<InstanceEntityTagIdProjection> instances = instanceService.findInstancesNamesByEntityIds(entityTagtIdList);
+
+    return DatasetImportResponseFactory.fromEntityPage(all, collect,instances, pageable);
+  }
 }
 

@@ -1,8 +1,12 @@
 package com.revealprecision.revealserver.api.v1.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+
+import com.revealprecision.revealserver.persistence.domain.User;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -23,4 +27,5 @@ public class OrganizationResponse {
   private boolean active;
   private UUID partOf;
   private Set<OrganizationResponse> headOf;
+  private List<UserResponse> members;
 }

@@ -23,6 +23,7 @@ public class LocationHierarchyResponseFactory {
       LocationHierarchy locationHierarchy) {
     return LocationHierarchyResponse.builder().identifier(locationHierarchy.getIdentifier().toString())
         .name(locationHierarchy.getName())
+        .hierarchyStatus(locationHierarchy.getHierarchyStatus())
         .nodeOrder(locationHierarchy.getNodeOrder()).build();
   }
 
@@ -46,6 +47,10 @@ public class LocationHierarchyResponseFactory {
         .name(locationHierarchy.getName())
         .geoTree(geoTree)
         .nodeOrder(locationHierarchy.getNodeOrder()).build();
+  }
+
+  public static List<GeoTreeResponse> generateLocationTreeResponseWithoutGeom(List<LocationRelationship> locationRelationships){
+    return generateLocationTreeResponse(locationRelationships, false);
   }
 
   private static List<GeoTreeResponse> generateLocationTreeResponse(

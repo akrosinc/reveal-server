@@ -59,7 +59,10 @@ public class LocationImportListener extends Listener {
             ElasticModelUtil.toMapFromHierarchyDetailsElastic(hierarchyDetailsElastic)));
 
     Script inline = new Script(ScriptType.INLINE, "painless",
-        "ctx._source.hierarchyDetailsElastic = params.hierarchyDetailsElastic;",
+        "if (ctx._source.hierarchyDetailsElastic == null) { " +
+            "ctx._source.hierarchyDetailsElastic = new HashMap(); " +
+            "} " +
+            "ctx._source.hierarchyDetailsElastic.putAll(params.hierarchyDetailsElastic);",
         parameters);
 
     UpdateRequest request = new UpdateRequest(

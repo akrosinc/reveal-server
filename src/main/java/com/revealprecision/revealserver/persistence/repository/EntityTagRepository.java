@@ -1,6 +1,8 @@
 package com.revealprecision.revealserver.persistence.repository;
 
 import com.revealprecision.revealserver.persistence.domain.EntityTag;
+import com.revealprecision.revealserver.persistence.projection.IdentifierNameProjection;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -37,6 +39,9 @@ public interface EntityTagRepository extends JpaRepository<EntityTag, UUID> {
   Page<EntityTag> findEntityTagsByIsAggregate(
       boolean isAggregate,Pageable pageable);
 
+  @Query(value = "select et from EntityTag et where et.isAggregate = true ")
+  List<EntityTag> findAggregateTags();
+
   Set<EntityTag> findEntityTagsByTagIn(Set<String> tags);
 
   Set<EntityTag> findEntityTagsByReferencedTagIn(List<UUID> id);
@@ -45,4 +50,13 @@ public interface EntityTagRepository extends JpaRepository<EntityTag, UUID> {
 
   List<EntityTag> findEntityTagsByIdentifierIn(List<UUID> ids);
 
+  List<EntityTag> findEntityTagsByMetadataImport_IdentifierAndIsPublic(UUID id, boolean isPublic);
+
+  List<EntityTag> findEntityTagsByMetadataImport_IdentifierAndIsPublicAndIsAggregate(UUID id, boolean isPublic, boolean isAggregate);
+
+  List<EntityTag> findEntityTagsByMetadataImport_IdentifierAndIsAggregate(UUID id, boolean isAggregate);
+
+  @Query(value = "select et from EntityTag et Inner join InstanceEntityTag insTag on insTag.entityTag.identifier =  et.identifier"
+      + " where  insTag.instance.identifier = :instanceIdentifier ")
+  List<EntityTag> findByInstanceId(UUID instanceIdentifier);
 }

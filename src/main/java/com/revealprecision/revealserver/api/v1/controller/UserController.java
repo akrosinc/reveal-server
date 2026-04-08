@@ -2,11 +2,15 @@ package com.revealprecision.revealserver.api.v1.controller;
 
 import com.revealprecision.revealserver.annotation.AllowedSortProperties;
 import com.revealprecision.revealserver.api.v1.dto.factory.UserResponseFactory;
+import com.revealprecision.revealserver.api.v1.dto.request.GlobalUserRequest;
+import com.revealprecision.revealserver.api.v1.dto.request.RegisterUserRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.UserPasswordRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.UserRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.UserUpdateRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.CountResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.GlobalUserResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.UserResponse;
+import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.service.UserService;
 import java.util.UUID;
 import javax.validation.Valid;
@@ -45,6 +49,19 @@ public class UserController {
     return ResponseEntity.status(HttpStatus.CREATED).build();
   }
 
+
+  @PostMapping(path = "/global", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<Void> globalCreateUser(@Valid @RequestBody GlobalUserRequest userRequest) {
+    userService.createGlobalUser(userRequest);
+    return ResponseEntity.status(HttpStatus.CREATED).build();
+  }
+
+  @PostMapping(value = "/invitation", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<UserResponse> inviteUser(@Valid @RequestBody RegisterUserRequest request) {
+    User createdUser = userService.createUserForInvitation(request);
+    return ResponseEntity.status(HttpStatus.CREATED).body(UserResponseFactory.fromEntity(createdUser));
+  }
+
   @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<?> getUsers(
       @RequestParam(value = "search", defaultValue = "") String search,
@@ -60,6 +77,28 @@ public class UserController {
       return ResponseEntity.status(HttpStatus.OK).body(new CountResponse(
           userService.getUsersNumber()));
     }
+  }
+
+  @GetMapping(path = "/global", produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<?> getGlobalUsers(
+      @RequestParam(value = "search", defaultValue = "") String search,
+      @RequestParam(value = "count", defaultValue = "false", required = false) boolean count,
+      @AllowedSortProperties(value = {
+          "username", "firstName", "lastName"}) Pageable pageable) {
+    if (!count) {
+      return ResponseEntity.status(HttpStatus.OK)
+          .body(userService.getGlobalUsers(search, pageable));
+    }
+    {
+      return ResponseEntity.status(HttpStatus.OK).body(new CountResponse(
+          userService.getUsersNumber()));
+    }
+  }
+
+  @GetMapping(path = "/global/{identifier}", produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<GlobalUserResponse> getGlobalUsers(@PathVariable("identifier") UUID identifier) {
+    return ResponseEntity.status(HttpStatus.OK)
+        .body(userService.getGLobalUserByIdentifier(identifier));
   }
 
   @GetMapping(value = "/{identifier}", produces = MediaType.APPLICATION_JSON_VALUE)

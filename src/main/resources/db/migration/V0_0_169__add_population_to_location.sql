@@ -1,0 +1,5 @@
+ALTER TABLE IF EXISTS location
+ADD COLUMN IF NOT EXISTS population_data JSONB;
+
+ALTER TABLE IF EXISTS location_aud
+ADD COLUMN IF NOT EXISTS population_data JSONB;

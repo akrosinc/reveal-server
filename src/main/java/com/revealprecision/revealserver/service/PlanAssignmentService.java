@@ -49,6 +49,10 @@ public class PlanAssignmentService {
         planIdentifier);
   }
 
+  public List<UUID> findSelectedLocationsAssignedForOrganization(UUID planId, UUID organizationId) {
+    return planAssignmentRepository.findSelectedLocationsAssignedForOrganization(planId, organizationId);
+  }
+
   public List<PlanAssignment> getPlanAssignmentByPlanLocationIdentifier(UUID planIdentifier,
       UUID locationIdentifier) {
     return planAssignmentRepository.findPlanAssignmentsByPlanLocations_Plan_IdentifierAndPlanLocations_Location_Identifier(

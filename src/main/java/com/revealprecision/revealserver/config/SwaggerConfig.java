@@ -53,11 +53,13 @@ public class SwaggerConfig {
             // Add the security requirement
             .addSecurityItem(new SecurityRequirement().addList("keycloakauth"))
             .components(new Components()
-            .addSecuritySchemes("keycloakauth", new SecurityScheme()
-                .type(SecurityScheme.Type.APIKEY)  // Specify the security type as API key
-                .in(SecurityScheme.In.HEADER)      // Token will be passed in the "Authorization" header
-                .name("Authorization")             // The name of the header
-                .description("Enter your Bearer token")));
+                .addSecuritySchemes("keycloakauth",
+                    new SecurityScheme()
+                        .name("Authorization")
+                        .type(SecurityScheme.Type.HTTP)
+                        .scheme("bearer")
+                        .bearerFormat("JWT") // Optional, helps Swagger UI understand the format
+                ));
     }
 
 }

@@ -4,6 +4,7 @@ package com.revealprecision.revealserver.service;
 import com.revealprecision.revealserver.enums.BulkStatusEnum;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
+import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationBulk;
 import com.revealprecision.revealserver.persistence.domain.UserBulk;
 import com.revealprecision.revealserver.persistence.projection.LocationBulkProjection;
@@ -11,6 +12,7 @@ import com.revealprecision.revealserver.persistence.repository.LocationBulkExcep
 import com.revealprecision.revealserver.persistence.repository.LocationBulkRepository;
 import com.revealprecision.revealserver.util.UserUtils;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -68,4 +70,15 @@ public class LocationBulkService {
     return locationBulkRepository.countByStatusNot(BulkStatusEnum.COMPLETE) == 0;
   }
 
+  public List<LocationBulk> getCompletedLocationBulk() {
+    return locationBulkRepository.findBulkByStatus(BulkStatusEnum.COMPLETE);
+  }
+
+  public List<Location> getAllCreatedInBulk(UUID identifier) {
+    return locationBulkRepository.getAllCreatedInBulk(identifier);
+  }
+
+  public LocationBulk update(LocationBulk locationBulk) {
+    return locationBulkRepository.save(locationBulk);
+  }
 }

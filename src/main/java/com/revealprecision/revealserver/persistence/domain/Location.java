@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.persistence.domain;
 
 import com.revealprecision.revealserver.api.v1.dto.request.LocationRequest;
+import com.revealprecision.revealserver.api.v1.dto.response.PopulationResponseData;
 import com.revealprecision.revealserver.enums.LocationStatus;
 import com.revealprecision.revealserver.persistence.generator.LocationServerVersionGenerator;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
@@ -82,6 +83,10 @@ public class Location extends AbstractAuditableEntity {
   @Type(type = "jsonb")
   @Column(columnDefinition = "jsonb")
   private LocationProperty locationProperty;
+
+  @Type(type = "jsonb")
+  @Column(name = "population_data", columnDefinition = "jsonb")
+  private PopulationResponseData populationData;
 
   public Location(UUID identifier, String type, String name, LocationStatus status, UUID externalId,
       GeographicLevel geographicLevel,

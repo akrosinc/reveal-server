@@ -24,11 +24,13 @@ import com.revealprecision.revealserver.persistence.domain.EntityTagOwnership;
 import com.revealprecision.revealserver.persistence.domain.Organization;
 import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.persistence.repository.OrganizationRepository;
+import com.revealprecision.revealserver.persistence.repository.PlanRepository;
 import com.revealprecision.revealserver.persistence.repository.UserRepository;
 import com.revealprecision.revealserver.service.EntityFilterEsService;
 import com.revealprecision.revealserver.service.EntityTagService;
 import com.revealprecision.revealserver.service.EventAggregationService;
 import com.revealprecision.revealserver.service.KeycloakService;
+import com.revealprecision.revealserver.service.LocationHierarchyService;
 import com.revealprecision.revealserver.service.LookupEntityTypeService;
 import com.revealprecision.revealserver.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -83,6 +85,8 @@ public class EntityTagController {
   private final UserRepository userRepository;
   private final UserService userService;
   private final KeycloakService keycloakService;
+  private final LocationHierarchyService locationHierarchyService;
+  private final PlanRepository planRepository;
 
 
   @Operation(summary = "Create Tag", description = "Create Tag", tags = {"Entity Tags"})
@@ -194,6 +198,21 @@ public class EntityTagController {
 
   }
 
+
+  @GetMapping(value = "/default-hierarchy", produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<TagResponse> getEntityTagsForDefaultHierarchy() {
+    return ResponseEntity.status(HttpStatus.OK)
+        .body(entityTagService.getAllAggregateEntityTagsAssociatedToData());
+  }
+
+  @GetMapping(value = "/instance-hierarchy", produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<TagResponse> getEntityTagsForInstanceHierarchy(@RequestParam(value = "instanceIdentifier", required = false) UUID instanceIdentifier) {
+    return ResponseEntity.status(HttpStatus.OK)
+        .body(entityTagService.getAllInstanceAggregateEntityTagsAssociatedToData(instanceIdentifier));
+  }
+
+
+
   @AllArgsConstructor
   @NoArgsConstructor
   @Setter
@@ -271,10 +290,8 @@ public class EntityTagController {
   @GetMapping("/filter-sse")
   public SseEmitter filterEntities(
       @RequestParam("simulationRequestId") String simulationRequestId) {
-//    keycloakService.generateTokenForUser(token);
     return entityFilterService.getSseEmitter(simulationRequestId);
   }
-
 
   @GetMapping("/inactive-locations")
   public SseEmitter inactiveLocations(
@@ -324,7 +341,6 @@ public class EntityTagController {
 
     return ResponseEntity.ok(collect);
   }
-
 
   @PostMapping("/complex")
   public ResponseEntity<ComplexTagDto> getComplexTag(@RequestBody ComplexTagDto request) {

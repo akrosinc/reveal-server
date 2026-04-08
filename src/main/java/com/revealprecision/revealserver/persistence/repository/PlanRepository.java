@@ -10,6 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -33,6 +34,13 @@ public interface PlanRepository extends EntityGraphJpaRepository<Plan, UUID> {
   @Query(value = "select p from Plan p where p.status = 'ACTIVE' and (p.interventionType.code like :interventionType or :interventionType = '')")
   Page<Plan> findPlansByInterventionType(String interventionType, Pageable pageable);
 
+  @Query(value = "select p from Plan p where p.status = 'ACTIVE' and (p.interventionType.code like :interventionType or :interventionType = '')"
+      + " AND p.instance.identifier = :instanceIdentifier")
+  Page<Plan> findPlansByInterventionTypeAndInstance(String interventionType, UUID instanceIdentifier, Pageable pageable);
+
+
   Plan findPlanByIdentifier(UUID planIdentifier);
 
+  @Query("select p from Plan p where p.instance.identifier = :instanceIdentifier")
+  List<Plan> findAllByInstanceIdentifier(UUID instanceIdentifier);
 }

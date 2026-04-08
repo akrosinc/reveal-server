@@ -133,4 +133,25 @@ public class CustomExceptionHandler {
         .message(ex.getMessage()).build();
     return new ResponseEntity<>(response, HttpStatus.NOT_IMPLEMENTED);
   }
+
+  @ExceptionHandler(BadRequestException.class)
+  protected ResponseEntity<ApiErrorResponse> handleBadRequestException(
+          ConstraintViolationException ex) {
+    ApiErrorResponse response = ApiErrorResponse.builder()
+            .statusCode(HttpStatus.BAD_REQUEST.value())
+            .timestamp(LocalDateTime.now())
+            .message(ex.getMessage().split(":")[1].trim()).build();
+    return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+  }
+
+  @ExceptionHandler(IllegalArgumentException.class)
+  protected ResponseEntity<ApiErrorResponse> handleBadRequestException(
+      IllegalArgumentException ex) {
+    ApiErrorResponse response = ApiErrorResponse.builder()
+        .statusCode(HttpStatus.BAD_REQUEST.value())
+        .timestamp(LocalDateTime.now())
+        .message(ex.getMessage())
+        .build();
+    return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+  }
 }

@@ -22,7 +22,6 @@ import lombok.ToString;
 @JsonInclude(Include.NON_NULL)
 @ToString
 public class LocationResponse {
-
   private UUID identifier;
   private String type;
   private Geometry geometry;
@@ -30,4 +29,5 @@ public class LocationResponse {
   private LocationPropertyResponse properties;
   List<String> ancestry;
   Map<String,Object> aggregates;
+  private List<OrganizationResponse> teams;
 }

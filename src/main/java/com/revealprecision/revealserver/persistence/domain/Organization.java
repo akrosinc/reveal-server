@@ -2,8 +2,10 @@ package com.revealprecision.revealserver.persistence.domain;
 
 import com.revealprecision.revealserver.api.v1.dto.request.OrganizationRequest;
 import com.revealprecision.revealserver.enums.OrganizationTypeEnum;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
@@ -65,6 +67,17 @@ public class Organization extends AbstractAuditableEntity {
 
   @OneToMany(mappedBy = "organization")
   private Set<PlanAssignment> planAssignments;
+
+  @ManyToOne(fetch = FetchType.LAZY, optional = false)
+  @JoinColumn(name = "instance_id", nullable = false)
+  private Instance instance;
+
+  @OneToMany(mappedBy = "organization", cascade = CascadeType.REMOVE)
+  private Set<OrganizationLocation> locations = new HashSet<>();
+
+  @OneToMany(mappedBy = "organization", cascade = CascadeType.ALL, orphanRemoval = true)
+  private Set<OrganizationRoleMapping> roleMappings = new HashSet<>();
+
 
   public Organization update(OrganizationRequest organizationRequest, Organization parent) {
     this.name = organizationRequest.getName();

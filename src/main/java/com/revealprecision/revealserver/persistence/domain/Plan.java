@@ -42,57 +42,61 @@ import org.hibernate.envers.Audited;
 @Where(clause = "entity_status='ACTIVE'")
 public class Plan extends AbstractAuditableEntity {
 
-  @Id
-  @GeneratedValue
-  private UUID identifier;
-  private String name;
-  private String title;
-  private LocalDate date;
-  private LocalDate effectivePeriodStart;
-  private LocalDate effectivePeriodEnd;
+    @Id
+    @GeneratedValue
+    private UUID identifier;
+    private String name;
+    private String title;
+    private LocalDate date;
+    private LocalDate effectivePeriodStart;
+    private LocalDate effectivePeriodEnd;
 
-  @GeneratorType(type = PlanServerVersionGenerator.class, when = GenerationTime.ALWAYS)
-  private Long serverVersion;
+    @GeneratorType(type = PlanServerVersionGenerator.class, when = GenerationTime.ALWAYS)
+    private Long serverVersion;
 
-  @ManyToOne
-  @JoinColumn(name = "hierarchy_identifier")
-  private LocationHierarchy locationHierarchy;
+    @ManyToOne
+    @JoinColumn(name = "hierarchy_identifier")
+    private LocationHierarchy locationHierarchy;
 
-  @OneToMany(mappedBy = "plan", cascade = CascadeType.ALL,fetch = FetchType.LAZY, orphanRemoval = true)
-  private Set<PlanLocations> planLocations;
+    @OneToMany(mappedBy = "plan", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    private Set<PlanLocations> planLocations;
 
-  @OneToMany(mappedBy = "plan", cascade = CascadeType.ALL)
-  private Set<Goal> goals;
+    @OneToMany(mappedBy = "plan", cascade = CascadeType.ALL)
+    private Set<Goal> goals;
 
-  @NotNull
-  @Enumerated(EnumType.STRING)
-  private PlanStatusEnum status;
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    private PlanStatusEnum status;
 
-  @OneToOne(mappedBy = "plan", fetch = FetchType.EAGER,  cascade = CascadeType.ALL)
-  private PlanTargetType planTargetType;
+    @OneToOne(mappedBy = "plan", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+    private PlanTargetType planTargetType;
 
-  @ManyToOne
-  @JoinColumn(name = "lookup_intervention_type_identifier")
-  private LookupInterventionType interventionType;
+    @ManyToOne
+    @JoinColumn(name = "lookup_intervention_type_identifier")
+    private LookupInterventionType interventionType;
 
-  public void addLocation(PlanLocations planLocations) {
-    this.planLocations.add(planLocations);
-  }
+    @ManyToOne()
+    @JoinColumn(name = "instance_identifier")
+    private Instance instance;
 
-  public void removeLocation(PlanLocations planLocations) {
-    this.planLocations.remove(planLocations);
-  }
+    public void addLocation(PlanLocations planLocations) {
+        this.planLocations.add(planLocations);
+    }
 
-  public Plan update(PlanRequest request, LocationHierarchy hierarchy,
-      LookupInterventionType interventionType) {
-    this.title = request.getTitle();
-    this.name = request.getName();
-    this.date = LocalDate.now();
-    this.effectivePeriodStart = request.getEffectivePeriod().getStart();
-    this.effectivePeriodEnd = request.getEffectivePeriod().getEnd();
-    this.locationHierarchy = hierarchy;
-    this.interventionType = interventionType;
-    return this;
-  }
+    public void removeLocation(PlanLocations planLocations) {
+        this.planLocations.remove(planLocations);
+    }
+
+    public Plan update(PlanRequest request, LocationHierarchy hierarchy,
+                       LookupInterventionType interventionType) {
+        this.title = request.getTitle();
+        this.name = request.getName();
+        this.date = LocalDate.now();
+        this.effectivePeriodStart = request.getEffectivePeriod().getStart();
+        this.effectivePeriodEnd = request.getEffectivePeriod().getEnd();
+        this.locationHierarchy = hierarchy;
+        this.interventionType = interventionType;
+        return this;
+    }
 
 }

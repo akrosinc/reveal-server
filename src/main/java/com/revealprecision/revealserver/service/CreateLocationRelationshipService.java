@@ -189,4 +189,123 @@ public class CreateLocationRelationshipService {
   }
 
 
+  @Async("getAsyncExecutor")
+  public void createRelationshipForImportedLocationAndHierarchy(Location location, int index,
+      int locationListSize, LocationBulk bulk, LocationHierarchy locationHierarchy) throws IOException {
+
+    Integer nodePosition =
+        locationHierarchy.getNodeOrder().indexOf(location.getGeographicLevel().getName()) - 1;
+    if (nodePosition < locationHierarchy.getNodeOrder().size() && nodePosition >= 0) {
+      String parentGeographicLevelName = locationHierarchy.getNodeOrder()
+          .get(nodePosition);
+
+      String centroid = locationRepository.getCentroid(location.getIdentifier());
+      centroid = centroid.substring(6).replace(")", "");
+      double x = Double.parseDouble(centroid.split(" ")[0]);
+      double y = Double.parseDouble(centroid.split(" ")[1]);
+      BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
+      boolQuery.filter(QueryBuilders.geoShapeQuery("geometry", new Point(x, y)).relation(
+          ShapeRelation.CONTAINS));
+      SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+      sourceBuilder.query(boolQuery);
+      SearchRequest searchRequest = new SearchRequest(elasticLocationIndexName);
+      searchRequest.source(sourceBuilder);
+      SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+      if (searchResponse.getHits().getHits().length == 0) {
+        return;
+      } else {
+        Map<String, Object> parents = Arrays.stream(
+                searchResponse.getHits().getHits())
+            .filter(SearchHit::hasSource).map(SearchHit::getSourceAsMap)
+            .map(sourceMap -> new SimpleEntry<String, Object>(
+                String.valueOf(sourceMap.get("level")), sourceMap.get("id")))
+            .collect(Collectors.toMap(Entry::getKey, Entry::getValue, (a, b) -> {
+              importLog.info("Duplicate Key - Results from Elastic Search - {}",
+                  Arrays.stream(searchResponse.getHits().getHits()).map(SearchHit::getSourceAsMap)
+                      .map(sourceMap -> sourceMap.get("externalId") + " -> " + sourceMap.get(
+                          "level"))
+                      .collect(Collectors.joining(","))
+                      .concat(" for ")
+                      .concat(location.getExternalId().toString())
+                      .concat(" -> ")
+                      .concat(location.getName())
+                      .concat(" - ")
+                      .concat(location.getGeographicLevel().getName()));
+              return b;
+            }));
+        List<UUID> parentIds = new ArrayList<>();
+
+        try {
+          parentIds = locationHierarchy.getNodeOrder().stream()
+              .takeWhile(node ->
+                  location.getGeographicLevel() != null &&
+                      !node.equals(location.getGeographicLevel().getName())
+              )
+              .map(parents::get)
+              .map(node -> UUID.fromString((String) node))
+              .collect(Collectors.toList());
+          Collections.reverse(parentIds);
+        } catch (NullPointerException e) {
+          e.printStackTrace();
+          log.error("Error building ancestry - {}", e.getMessage(), e);
+          importLog.debug("Current Ancestry: {}", parents.entrySet().stream()
+              .map(entry -> entry.getValue() + " - > " + entry.getKey())
+              .collect(Collectors.joining(","))
+              .concat(" for ")
+              .concat(location.getExternalId().toString())
+              .concat(" -> ")
+              .concat(location.getName())
+              .concat(" - ")
+              .concat(location.getGeographicLevel().getName()));
+        }
+
+        Optional<SearchHit> immediateParent = Arrays.stream(searchResponse.getHits().getHits())
+            .filter(hit -> hit.getSourceAsMap().get("level").equals(parentGeographicLevelName))
+            .findFirst();
+
+        LocationRelationshipMessage locationRelationshipMessage = new LocationRelationshipMessage();
+        locationRelationshipMessage.setGeoNameLevelNumber(
+            locationHierarchy.getNodeOrder().indexOf(
+                location.getGeographicLevel().getName()));
+        locationRelationshipMessage.setLocationIdentifier(
+            location.getIdentifier());
+        locationRelationshipMessage.setGeoName(
+            location.getGeographicLevel().getName());
+
+        if (immediateParent.isPresent()) {
+          Location parentLoc = Location.builder()
+              .identifier(UUID.fromString(immediateParent.get().getId())).build();
+          LocationRelationship locationRelationshipToSave = LocationRelationship.builder()
+              .parentLocation(parentLoc)
+              .location(location)
+              .ancestry(parentIds)
+              .locationHierarchy(locationHierarchy)
+              .build();
+          locationRelationshipToSave.setEntityStatus(EntityStatus.ACTIVE);
+          locationRelationshipRepository.save(locationRelationshipToSave);
+          locationRelationshipMessage.setParentLocationIdentifier(
+              locationRelationshipToSave.getParentLocation().getIdentifier());
+          locationRelationshipMessage.setAncestry(locationRelationshipToSave.getAncestry());
+        }
+
+        locationRelationshipMessage.setLocationName(location.getName());
+        locationRelationshipMessage.setLocationHierarchyIdentifier(
+            locationHierarchy.getIdentifier());
+        publisherService.send(kafkaProperties.getTopicMap().get(KafkaConstants.LOCATIONS_IMPORTED),
+            locationRelationshipMessage);
+
+
+      }
+    } else if (nodePosition == -1) {
+      locationUtilService.createRelationshipForRoot(location, locationHierarchy);
+    }
+
+    if (index == locationListSize - 1) {
+      LocationBulk locationBulk = bulk;
+      locationBulk.setStatus(BulkStatusEnum.COMPLETE);
+      locationBulkRepository.save(locationBulk);
+
+    }
+  }
+
 }

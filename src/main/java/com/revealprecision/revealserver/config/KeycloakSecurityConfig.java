@@ -6,6 +6,7 @@ import org.keycloak.adapters.KeycloakConfigResolver;
 import org.keycloak.adapters.springboot.KeycloakSpringBootConfigResolver;
 import org.keycloak.adapters.springsecurity.authentication.KeycloakAuthenticationProvider;
 import org.keycloak.adapters.springsecurity.config.KeycloakWebSecurityConfigurerAdapter;
+import org.keycloak.adapters.springsecurity.filter.KeycloakAuthenticationProcessingFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,6 +18,7 @@ import org.springframework.security.core.authority.mapping.SimpleAuthorityMapper
 import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.web.authentication.session.RegisterSessionAuthenticationStrategy;
 import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
+import org.springframework.security.web.context.SecurityContextPersistenceFilter;
 import org.springframework.web.cors.CorsConfiguration;
 
 @Configuration
@@ -25,7 +27,7 @@ import org.springframework.web.cors.CorsConfiguration;
 @RequiredArgsConstructor
 public class   KeycloakSecurityConfig extends KeycloakWebSecurityConfigurerAdapter {
 
-
+  private final InstanceContextFilter instanceContextFilter;
 //  private final HeaderAddingFilter headerAddingFilter;
 
   @Override
@@ -40,7 +42,7 @@ public class   KeycloakSecurityConfig extends KeycloakWebSecurityConfigurerAdapt
 
     CorsConfiguration corsConfiguration = new CorsConfiguration();
     corsConfiguration.setAllowedHeaders(
-        List.of("Authorization", "Cache-Control", "Content-Type"));
+        List.of("Authorization", "Cache-Control", "Content-Type",InstanceContextFilter.INSTANCE_HEADER_KEY));
     corsConfiguration.setAllowedOriginPatterns(List.of("*"));
     corsConfiguration.setAllowedMethods(
         List.of("GET", "POST", "PUT", "DELETE", "PUT", "OPTIONS", "PATCH", "DELETE"));
@@ -49,6 +51,9 @@ public class   KeycloakSecurityConfig extends KeycloakWebSecurityConfigurerAdapt
     corsConfiguration.setMaxAge(3600L);
     http.cors().configurationSource(request -> corsConfiguration);
     http.csrf().disable();
+
+    http
+        .addFilterAfter(instanceContextFilter, KeycloakAuthenticationProcessingFilter.class);
 
     //TODO update configuration for production env
   }
