@@ -5,6 +5,7 @@ import com.revealprecision.revealserver.persistence.projection.AggregateWithTagP
 import com.revealprecision.revealserver.persistence.projection.EntityTagWithGeoLevelProjection;
 import com.revealprecision.revealserver.persistence.projection.ImportAggregateNumericProjection;
 import com.revealprecision.revealserver.persistence.projection.ImportAggregateStringCountProjection;
+import com.revealprecision.revealserver.persistence.projection.UniqueTagAggregateProjection;
 import java.util.List;
 import java.util.UUID;
 import javax.transaction.Transactional;
@@ -175,6 +176,21 @@ public interface ImportAggregateRepository extends JpaRepository<ImportAggregati
             "FROM distinct_fieldcodes d\n" +
             "CROSS JOIN suffixes s", nativeQuery = true)
     List<String> getUniqueTagsAggregatesForHierarchy(String hierarchyId);
+
+    @Query(value = "WITH distinct_fieldcodes AS (\n" +
+        "  SELECT DISTINCT fieldcode\n" +
+        "  FROM import_aggregate_numeric \n" +
+        "  WHERE hierarchyidentifier = :hierarchyId\n" +
+        "\n" +
+        "),\n" +
+        "suffixes AS (\n" +
+        "  SELECT unnest(ARRAY['-sum','-min','-max','-median','-average','-count']) AS suffix\n" +
+        ")\n" +
+        "SELECT CONCAT(d.fieldcode, s.suffix) AS tagName,d.fieldcode as fieldCode " +
+        "FROM distinct_fieldcodes d\n" +
+        "CROSS JOIN suffixes s", nativeQuery = true)
+    List<UniqueTagAggregateProjection> getUniqueTagProjectionAggregatesForHierarchy(String hierarchyId);
+
 
 
 }
