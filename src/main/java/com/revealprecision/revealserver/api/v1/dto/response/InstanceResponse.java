@@ -27,4 +27,6 @@ public class InstanceResponse {
   private List<LocationHierarchyResponse> locationHierarchy;
 
   private List<IdentifierNameResponse> datasets;
+
+  private List<IdNameResponse> complexTags;
 }
