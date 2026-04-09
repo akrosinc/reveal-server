@@ -35,7 +35,9 @@ import com.revealprecision.revealserver.persistence.domain.metadata.SaveHierarch
 import com.revealprecision.revealserver.persistence.domain.metadata.metadataImport.MetaImportDTO;
 import com.revealprecision.revealserver.persistence.domain.metadata.metadataImport.fieldMapper.MetaFieldSetMapper;
 import com.revealprecision.revealserver.persistence.domain.metadata.metadataImport.fieldMapper.MetaFieldSetMapper.ValidatedTagMap;
+import com.revealprecision.revealserver.persistence.projection.EntityTagWithGeoLevelProjection;
 import com.revealprecision.revealserver.persistence.projection.InstanceEntityTagIdProjection;
+import com.revealprecision.revealserver.persistence.repository.ImportAggregateRepository;
 import com.revealprecision.revealserver.persistence.repository.ImportAggregationNumericRepository;
 import com.revealprecision.revealserver.persistence.repository.ImportAggregationStringRepository;
 import com.revealprecision.revealserver.persistence.repository.MetadataImportRepository;
@@ -88,6 +90,7 @@ public class MetadataService {
   private final OrganizationRepository organizationRepository;
   private final UserRepository userRepository;
   private final InstanceService  instanceService;
+  private final ImportAggregateRepository importAggregateRepository;
 
   @Transactional(rollbackOn = Exception.class)
   public ValidatedTagMap saveImportFile(String file, String fileName ,String dataSetName)
@@ -395,7 +398,12 @@ public class MetadataService {
   }
 
 
-  public Page<DatasetResponse> getDatasetList(final Pageable pageable,final Boolean isPublic) {
+  public Page<DatasetResponse> getDatasetList(final Pageable pageable,final Boolean isPublic,
+      UUID hierarchyIdentifier) {
+
+    List <String> uniqueTags  = importAggregateRepository.getUniqueTagProjectionAggregatesForHierarchy(
+                hierarchyIdentifier.toString());
+
     Page<MetadataImport> all = metadataImportRepository.findAll(pageable);
 
     Map<UUID, List<EntityTag>> collect = all.get().flatMap(metadataImport -> {
@@ -418,6 +426,7 @@ public class MetadataService {
                 .stream();
           }
         }).filter(entityTag -> entityTag.getMetadataImport() != null)
+        .filter( entityTag -> hierarchyIdentifier == null || uniqueTags.contains(entityTag.getTag())  )
         .collect(Collectors.groupingBy(entityTag -> entityTag.getMetadataImport().getIdentifier()));
 
 

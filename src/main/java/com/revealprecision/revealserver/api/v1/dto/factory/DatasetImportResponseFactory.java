@@ -14,6 +14,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -35,9 +36,10 @@ public class DatasetImportResponseFactory {
             metadataImport,
             entityTagsByMetadataId,
             entityTagIdToInstanceName))
+        .filter(datasetResponse -> CollectionUtils.isNotEmpty(datasetResponse.getDatasetEntityTags()))
         .collect(Collectors.toList());
 
-    return new PageImpl<>(responses, pageable, metadataImportPage.getTotalElements());
+    return new PageImpl<>(responses, pageable, responses.size());
   }
 
   private static DatasetResponse buildDatasetResponse(

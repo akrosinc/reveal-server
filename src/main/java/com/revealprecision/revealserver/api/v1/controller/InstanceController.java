@@ -5,6 +5,8 @@ import com.revealprecision.revealserver.api.v1.dto.factory.LocationHierarchyResp
 import com.revealprecision.revealserver.api.v1.dto.factory.PlanResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.GlobalUserRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.InstanceRequest;
+import com.revealprecision.revealserver.api.v1.dto.response.ComplexTagDto;
+import com.revealprecision.revealserver.api.v1.dto.response.ComplexTagResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.CountResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.GeoTreeResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.IdentifierNameResponse;
@@ -118,6 +120,11 @@ public class InstanceController {
     return ResponseEntity.status(HttpStatus.OK).body(instanceService.getAssignedInstanceDatasets());
   }
 
+  @GetMapping("/assigned/complextags/list")
+  public ResponseEntity<List<ComplexTagResponse>> getAssignedInstanceComplexTags() {
+    return ResponseEntity.status(HttpStatus.OK).body(instanceService.getAssignedInstanceComplexTags());
+  }
+
   @PostMapping("/instances/{instanceId}/select")
   public  ResponseEntity<InstanceContextResponse> selectInstance(@PathVariable UUID instanceId) {
     return ResponseEntity.ok(instanceService.instanceContext(instanceId));
@@ -165,5 +172,13 @@ public class InstanceController {
       Pageable pageable ) {
     return ResponseEntity.status(HttpStatus.OK)
         .body(instanceService.getInstanceForReports(reportType, pageable));
+  }
+
+  @GetMapping("/tags/complex")
+  public ResponseEntity<Page<ComplexTagResponse>> getComplexTags(Pageable pageable,
+      @RequestParam(value = "isPublic" , required = false) Boolean isPublic,
+      @RequestParam(value = "hierarchyIdentifier" , required = false) UUID hierarchyIdentifier) {
+    return ResponseEntity.status(HttpStatus.OK)
+        .body(instanceService.getComplexTags(isPublic, hierarchyIdentifier, pageable));
   }
 }

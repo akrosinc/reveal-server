@@ -21,5 +21,8 @@ public class GroupManagementRequest {
   private List<UUID> datasetsIdentifiers;
 
   @NotNull
+  private Set<Integer> complexTagIdentifiers;
+
+  @NotNull
   private List<UUID> membersIdentifiers;
 }

@@ -75,8 +75,9 @@ public class MetaImportController {
   @GetMapping( path = "/dataset",
               produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<Page<DatasetResponse>> getDatasetList(Pageable pageable,
-        @RequestParam(value = "isPublic" , required = false) Boolean isPublic) {
+        @RequestParam(value = "isPublic" , required = false) Boolean isPublic,
+        @RequestParam(value = "hierarchyIdentifier" , required = false) UUID hierarchyIdentifier) {
     return ResponseEntity.status(HttpStatus.OK)
-        .body(metadataService.getDatasetList(pageable, isPublic));
+        .body(metadataService.getDatasetList(pageable, isPublic,hierarchyIdentifier));
   }
 }

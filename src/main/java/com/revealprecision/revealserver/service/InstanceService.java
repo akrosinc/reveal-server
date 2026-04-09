@@ -3,9 +3,9 @@ package com.revealprecision.revealserver.service;
 import com.revealprecision.revealserver.api.v1.dto.factory.IdentifierNameResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.InstanceContextResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.InstanceResponseFactory;
-import com.revealprecision.revealserver.api.v1.dto.factory.LocationHierarchyResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.GlobalUserRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.InstanceRequest;
+import com.revealprecision.revealserver.api.v1.dto.response.ComplexTagResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.GeoTreeResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.IdentifierNameResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceContextResponse;
@@ -14,18 +14,15 @@ import com.revealprecision.revealserver.api.v1.dto.response.InstanceUserListResp
 import com.revealprecision.revealserver.api.v1.dto.response.LocationHierarchyResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.UserRolesResponse;
 import com.revealprecision.revealserver.config.InstanceContext;
-import com.revealprecision.revealserver.constants.KafkaConstants;
 import com.revealprecision.revealserver.enums.ApplicableReportsEnum;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.enums.HierarchyStatus;
 import com.revealprecision.revealserver.enums.InstanceRoleEnum;
 import com.revealprecision.revealserver.enums.PlanStatusEnum;
-import com.revealprecision.revealserver.exceptions.ConflictException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.exceptions.constant.Error;
-import com.revealprecision.revealserver.exceptions.handler.BadRequestException;
-import com.revealprecision.revealserver.messaging.message.PlanUpdateMessage;
-import com.revealprecision.revealserver.messaging.message.PlanUpdateType;
+import com.revealprecision.revealserver.persistence.domain.InstanceComplexTag;
+import com.revealprecision.revealserver.persistence.domain.ComplexTag;
 import com.revealprecision.revealserver.persistence.domain.EntityTag;
 import com.revealprecision.revealserver.persistence.domain.Instance;
 import com.revealprecision.revealserver.persistence.domain.InstanceEntityTag;
@@ -39,6 +36,7 @@ import com.revealprecision.revealserver.persistence.domain.OrganizationRole;
 import com.revealprecision.revealserver.persistence.domain.OrganizationRoleMapping;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.User;
+import com.revealprecision.revealserver.persistence.domain.id.InstanceComplexTagId;
 import com.revealprecision.revealserver.persistence.domain.id.InstanceEntityTagId;
 import com.revealprecision.revealserver.persistence.domain.id.InstanceLocationId;
 import com.revealprecision.revealserver.persistence.domain.id.InstanceUserId;
@@ -47,24 +45,25 @@ import com.revealprecision.revealserver.persistence.projection.InstanceEntityTag
 import com.revealprecision.revealserver.persistence.projection.InstanceListProjection;
 import com.revealprecision.revealserver.persistence.projection.UserIdInstanceNameProjection;
 import com.revealprecision.revealserver.persistence.repository.EntityTagAccGrantsOrganizationRepository;
+import com.revealprecision.revealserver.persistence.repository.InstanceComplexTagRepository;
 import com.revealprecision.revealserver.persistence.repository.InstanceEntityTagRepository;
 import com.revealprecision.revealserver.persistence.repository.InstanceLocationRepository;
 import com.revealprecision.revealserver.persistence.repository.InstanceRepository;
 import com.revealprecision.revealserver.persistence.repository.InstanceUserRepository;
 import com.revealprecision.revealserver.persistence.repository.OrganizationLocationRepository;
 import com.revealprecision.revealserver.persistence.repository.OrganizationRoleMappingRepository;
-import com.revealprecision.revealserver.persistence.repository.OrganizationRoleRepository;
 import com.revealprecision.revealserver.persistence.repository.PlanAssignmentRepository;
 import com.revealprecision.revealserver.persistence.repository.PlanLocationsRepository;
 import com.revealprecision.revealserver.persistence.repository.UserRepository;
-import com.revealprecision.revealserver.util.UserUtils;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -86,6 +85,7 @@ public class InstanceService {
   private final LocationService locationService;
   private final InstanceRepository instanceRepository;
   private final InstanceEntityTagRepository instanceEntityTagRepository;
+  private final InstanceComplexTagRepository instanceComplexTagRepository;
   private final InstanceRoleService instanceRoleService;
   private final InstanceUserRepository instanceUserRepository;
   private final InstanceLocationRepository instanceLocationRepository;
@@ -131,6 +131,21 @@ public class InstanceService {
       }).collect(Collectors.toList());
 
       instanceEntityTagRepository.saveAll(instanceEntityTags);
+    }
+
+
+    if (CollectionUtils.isNotEmpty(instanceRequest.getComplexTags())) {
+      Set<ComplexTag> tags = entityTagService.findComplexTagsByIdentifierIn(instanceRequest.getComplexTags());
+
+      List<InstanceComplexTag> instanceEntityTags = tags.stream().distinct().map(tag -> {
+        InstanceComplexTag mapping = new InstanceComplexTag();
+
+        mapping.populate(savedInstance, tag);
+
+        return mapping;
+      }).collect(Collectors.toList());
+
+      instanceComplexTagRepository.saveAll(instanceEntityTags);
     }
 
     //Adding instance users
@@ -275,6 +290,41 @@ public class InstanceService {
         return mapping;
       }).collect(Collectors.toList());
       instanceEntityTagRepository.saveAll(instanceEntityTags);
+    }
+
+
+    Set<Integer> incomingComplexTagIds =
+        instanceRequest.getComplexTags() != null ? instanceRequest.getComplexTags()
+            : new HashSet<>();
+
+    List<Integer> currentComplexTagIds = instanceComplexTagRepository
+        .findComplexTagIdsByInstanceId(identifier);
+
+    Set<Integer> currentComplexTagIdSet = new HashSet<>(currentComplexTagIds);
+
+    List<InstanceComplexTagId> complexTagsToDelete = currentComplexTagIdSet.stream()
+        .filter(tagId -> !incomingComplexTagIds.contains(tagId))
+        .map(tagId -> new InstanceComplexTagId(identifier, tagId))
+        .collect(Collectors.toList());
+
+    Set<Integer> complexTagsToAdd = incomingComplexTagIds.stream()
+        .filter(tagId -> !currentComplexTagIdSet.contains(tagId))
+        .collect(Collectors.toSet());
+
+    if (!complexTagsToDelete.isEmpty()) {
+      instanceComplexTagRepository.deleteAllById(complexTagsToDelete);
+    }
+
+    if (!complexTagsToAdd.isEmpty()) {
+      Set<ComplexTag> complexTags = entityTagService.findComplexTagsByIdentifierIn(complexTagsToAdd);
+      List<InstanceComplexTag> instanceComplexTags = complexTags.stream()
+          .distinct()
+          .map(complexTag -> {
+            InstanceComplexTag mapping = new InstanceComplexTag();
+            mapping.populate(instance, complexTag);
+            return mapping;
+          }).collect(Collectors.toList());
+      instanceComplexTagRepository.saveAll(instanceComplexTags);
     }
 
     // Update users
@@ -732,5 +782,14 @@ public class InstanceService {
 
   private Page<InstanceListProjection> findInstanceByInterventionType(String interventionType, Pageable pageable) {
     return instanceRepository.findByInterventionType(interventionType, pageable);
+  }
+
+  public Page<ComplexTagResponse> getComplexTags(Boolean isPublic, UUID hierarchyIdentifier, Pageable pageable) {
+    return  entityTagService.getComplexTags(isPublic, hierarchyIdentifier, pageable);
+  }
+
+  public List<ComplexTagResponse> getAssignedInstanceComplexTags() {
+    UUID instanceIdentifier = InstanceContext.get();
+    return  entityTagService.getInstanceComplexTags(instanceIdentifier);
   }
 }

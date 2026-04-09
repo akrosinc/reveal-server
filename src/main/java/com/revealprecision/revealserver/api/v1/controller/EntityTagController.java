@@ -344,20 +344,8 @@ public class EntityTagController {
 
   @PostMapping("/complex")
   public ResponseEntity<ComplexTagDto> getComplexTag(@RequestBody ComplexTagDto request) {
-    ComplexTagOwnership complexTagOwnership = ComplexTagOwnership.builder()
-        .userSid(userService.getCurrentUser().getSid())
-        .build();
 
-    ComplexTag complexTag1 = ComplexTag.builder()
-        .formula(request.getFormula())
-        .hierarchyId(request.getHierarchyId())
-        .hierarchyType(request.getHierarchyType())
-        .tagName(request.getTagName())
-        .tags(request.getTags())
-        .build();
-    complexTagOwnership.setComplexTag(complexTag1);
-    complexTag1.setOwners(List.of(complexTagOwnership));
-    ComplexTag complexTag = entityTagService.saveComplexTag(complexTag1);
+    ComplexTag complexTag = entityTagService.saveComplexTag(request);
     return ResponseEntity.ok(
         ComplexTagDto.builder()
             .id(String.valueOf(complexTag.getId()))
