@@ -22,4 +22,5 @@ public class GroupManagementResponse {
   private List<IdentifierNameResponse> datasets;
   private List<IdentifierNameResponse> roles;
   private List<GeoTreeResponse> areas;
+  private List<IdNameResponse> complexTags;
 }

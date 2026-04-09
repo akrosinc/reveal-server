@@ -8,6 +8,7 @@ import com.revealprecision.revealserver.api.v1.dto.response.CountResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.GeoTreeResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.GroupManagementResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.GroupStatsResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.IdNameResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.IdentifierNameResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationHierarchyResponse;
 import com.revealprecision.revealserver.config.InstanceContext;
@@ -318,6 +319,18 @@ public class GroupManagementService {
             .build())
         .collect(Collectors.toList());
 
+
+    List<ComplexTagAccGrantsOrganization> complexTagAccGrantsOrganizations = complexTagAccGrantsOrganizationRepository
+        .findByOrganizationId(identifier);
+
+    List<IdNameResponse> complexTags = complexTagAccGrantsOrganizations.stream()
+        .map(ct -> IdNameResponse.builder()
+            .id(ct.getComplexTag().getId())
+            .name(ct.getComplexTag().getTagName())
+            .build())
+        .collect(Collectors.toList());
+
+
     // roles
     List<IdentifierNameResponse> roles = organizationRoleRepository
         .findByOrganizationId(identifier).stream()
@@ -347,6 +360,7 @@ public class GroupManagementService {
         .datasets(datasets)
         .roles(roles)
         .areas(areas)
+        .complexTags(complexTags)
         .build();
   }
 
