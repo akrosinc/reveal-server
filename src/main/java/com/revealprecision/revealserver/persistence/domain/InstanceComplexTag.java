@@ -2,6 +2,7 @@
 package com.revealprecision.revealserver.persistence.domain;
 
 import com.revealprecision.revealserver.persistence.domain.id.InstanceComplexTagId;
+import com.revealprecision.revealserver.persistence.domain.id.InstanceEntityTagId;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
@@ -42,5 +43,6 @@ public class InstanceComplexTag {
     public void populate(Instance instance, ComplexTag complexTag) {
         this.instance = instance;
         this.complexTag = complexTag;
+        this.id = new InstanceComplexTagId(instance.getIdentifier(), complexTag.getId());
     }
 }

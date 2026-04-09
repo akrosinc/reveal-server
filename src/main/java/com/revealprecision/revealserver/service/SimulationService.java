@@ -166,7 +166,9 @@ public class SimulationService {
                                 properties.setAssigned(locationDetailsProjection.getAssigned());
                                 properties.setMetadata(metadata);
                                 try {
-                                    properties.setPopulation(objectMapper.readValue(locationDetailsProjection.getPopulationData(), PopulationResponseData.class));
+                                    if(locationDetailsProjection.getPopulationData() != null){
+                                        properties.setPopulation(objectMapper.readValue(locationDetailsProjection.getPopulationData(), PopulationResponseData.class));
+                                    }
                                 } catch (JsonProcessingException e) {
                                     properties.setPopulation(null);
                                 }
