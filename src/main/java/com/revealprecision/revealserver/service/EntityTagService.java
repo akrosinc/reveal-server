@@ -21,6 +21,7 @@ import com.revealprecision.revealserver.api.v1.dto.request.EntityTagItem;
 import com.revealprecision.revealserver.api.v1.dto.request.EntityTagRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.UpdateEntityTagRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.ComplexTagDto;
+import com.revealprecision.revealserver.api.v1.dto.response.ComplexTagResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.EntityTagResponse;
 import com.revealprecision.revealserver.config.InstanceContext;
 import com.revealprecision.revealserver.constants.EntityTagFieldTypes;
@@ -72,6 +73,7 @@ import java.security.Principal;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -79,6 +81,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -124,8 +127,6 @@ public class EntityTagService {
   private final ImportAggregationNumericRepository importAggregationNumericRepository;
   private final LocationHierarchyRepository locationHierarchyRepository;
   private final InstanceUserRepository instanceUserRepository;
-  private final InstanceEntityTagRepository instanceEntityTagRepository;
-
 
   @Value("${reveal.elastic.index-name}")
   String elasticIndex;
@@ -420,6 +421,11 @@ public class EntityTagService {
 
   public List<EntityTag> findEntityTagsByIdentifierIn(List<UUID> ids) {
     return entityTagRepository.findEntityTagsByIdentifierIn(ids);
+  }
+
+
+  public Set<ComplexTag> findComplexTagsByIdentifierIn(Set<Integer> ids) {
+    return complexTagRepository.findComplexTagsByIdIn(ids);
   }
 
   public void deleteSimpleTags(List<SimpleTagToDelete> tagsToDelete) throws IOException {
@@ -918,7 +924,22 @@ public class EntityTagService {
     return complexTagRepository.findAll();
   }
 
-  public ComplexTag saveComplexTag(ComplexTag complexTag) {
+  public ComplexTag saveComplexTag(ComplexTagDto request) {
+    ComplexTagOwnership complexTagOwnership = ComplexTagOwnership.builder()
+        .userSid(userService.getCurrentUser().getSid())
+        .build();
+
+    ComplexTag complexTag = ComplexTag.builder()
+        .formula(request.getFormula())
+        .hierarchyId(request.getHierarchyId())
+        .hierarchyType(request.getHierarchyType())
+        .tagName(request.getTagName())
+        .tags(request.getTags())
+        .build();
+    complexTagOwnership.setComplexTag(complexTag);
+    complexTag.setOwners(List.of(complexTagOwnership));
+
+
     return complexTagRepository.save(complexTag);
   }
 
@@ -995,15 +1016,32 @@ public class EntityTagService {
 
     List<UUID> datasetsIds = new ArrayList<>();
 
+    Set<Integer> complexTagsIds = new HashSet<>();
+
     if (!adminInstanceIds.isEmpty()) {
       datasetsIds.addAll(
-          entityTagRepository.findByInstanceId(instanceIdentifier).stream().map( et -> et.getIdentifier()).collect(
+          entityTagRepository.findByInstanceId(instanceIdentifier).stream()
+              .map( et -> et.getIdentifier()).collect(
+              Collectors.toList())
+      );
+
+      complexTagsIds.addAll(
+          complexTagRepository.findByInstanceId(instanceIdentifier).stream()
+              .map( et -> et.getId()).collect(
               Collectors.toList())
       );
     } else if (!standardInstanceIds.isEmpty()) {
       datasetsIds.addAll(
           entityTagAccGrantsOrganizationRepository
-              .findByUserIdAndInstanceId(currentUser.getIdentifier(), instanceIdentifier).stream().map( et -> et.getIdentifier()).collect(
+              .findByUserIdAndInstanceId(currentUser.getIdentifier(), instanceIdentifier)
+              .stream().map( et -> et.getIdentifier()).collect(
+                  Collectors.toList())
+      );
+
+      complexTagsIds.addAll(
+          complexTagAccGrantsOrganizationRepository
+              .findByUserIdAndInstanceId(currentUser.getIdentifier(), instanceIdentifier)
+              .stream().map( ct -> ct.getId()).collect(
                   Collectors.toList())
       );
     }
@@ -1015,8 +1053,7 @@ public class EntityTagService {
 
 
 
-//    Map<String, EntityTagResponse> tagsWithAccess
-        List <EntityTagResponse>  tagsWithAccess = entityTagRepository.findEntityTagsByTagIn(
+    Map<String, EntityTagResponse> tagsWithAccess  = entityTagRepository.findEntityTagsByTagIn(
             allTags.stream().map(EntityTagResponse::getTag).collect(Collectors.toSet()))
         .stream()
         .filter(entityTag -> datasetsIds.contains(entityTag.getReferencedTag()))
@@ -1027,8 +1064,8 @@ public class EntityTagService {
                 .simulationDisplay(entityTag.isSimulationDisplay())
                 .tag(entityTag.getTag())
                 .build()
-        ).collect(Collectors.toList());
-//        .collect(Collectors.toMap(EntityTagResponse::getTag, a -> a, (a, b) -> b));
+        )
+        .collect(Collectors.toMap(EntityTagResponse::getTag, a -> a, (a, b) -> b));
 
 //    List<EntityTagResponse> collect1 = resourceTags.stream()
 //        .filter(allTag -> tagsWithAccess.get(allTag.getTag()) != null)
@@ -1039,6 +1076,62 @@ public class EntityTagService {
 //          allTag.setLevels(allTag.getLevels());
 //        }).collect(Collectors.toList());
 
-    return new TagResponse(tagsWithAccess, null);
+    Set<Integer> complexTagIdByTagNamesIn = complexTagRepository.findComplexTagIdByTagNamesIn(
+        allTags.stream().map(EntityTagResponse::getTag).collect(Collectors.toSet()));
+
+
+    Set<ComplexTag> complexTags = complexTagRepository.findComplexTagsByIdIn(
+        complexTagIdByTagNamesIn);
+
+    Map<String, ComplexTagDto> collect2 = complexTags
+
+        .stream()
+        .filter(complexTag ->
+            complexTag.getTags().stream()
+                .filter(tagWithFormulaSymbol -> tagsWithAccess.containsKey(
+                    tagWithFormulaSymbol.getName())).count() < complexTag.getTags().size()
+        )
+        .filter(complexTag -> complexTagsIds.contains(complexTag.getId()))
+        .map(
+            this::getComplexTagDto)
+        .collect(Collectors.toMap(ComplexTagDto::getTagName, a -> a));
+
+
+    return new TagResponse(new ArrayList<>(tagsWithAccess.values()), new ArrayList<>(collect2.values()));
+  }
+
+  public Page<ComplexTagResponse> getComplexTags(Boolean isPublic, UUID hierarchyIdentifier, Pageable pageable) {
+    Page<ComplexTag> complexTagPage;
+
+    if(isPublic == null){
+      complexTagPage = complexTagRepository
+          .findTagsByHierarchyId(hierarchyIdentifier.toString(), pageable);
+    } else if (isPublic) {
+      complexTagPage = complexTagRepository
+          .findTagsByHierarchyIdAndIsPublicEquals(hierarchyIdentifier.toString() ,true, pageable);
+    }
+    else {
+      complexTagPage = complexTagRepository
+          .findTagsByHierarchyIdAndIsPublicEquals(hierarchyIdentifier.toString() ,false, pageable);
+    }
+
+    return complexTagPage.map( complexTag -> ComplexTagResponse.builder()
+        .id(complexTag.getId())
+        .isPublic(complexTag.isPublic())
+        .tagName(complexTag.getTagName())
+        .formula(complexTag.getFormula())
+        .build());
+
+  }
+
+  public List<ComplexTagResponse> getInstanceComplexTags(UUID instanceIdentifier) {
+    Set<ComplexTag> complexTags = complexTagRepository.findByInstanceId(instanceIdentifier);
+
+    return complexTags.stream().map( complexTag -> ComplexTagResponse.builder()
+        .id(complexTag.getId())
+        .isPublic(complexTag.isPublic())
+        .tagName(complexTag.getTagName())
+        .formula(complexTag.getFormula())
+        .build()).collect(Collectors.toList());
   }
 }

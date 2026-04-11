@@ -57,4 +57,7 @@ public class Instance extends AbstractAuditableEntity{
   @OneToMany(mappedBy = "instance", cascade = CascadeType.REMOVE, orphanRemoval = true)
   private Set<Organization> organizations = new HashSet<>();
 
+  @OneToMany(mappedBy = "instance", cascade = CascadeType.REMOVE)
+  private Set<InstanceComplexTag> complexTags = new HashSet<>();
+
 }

@@ -8,6 +8,7 @@ import com.revealprecision.revealserver.api.v1.dto.response.CountResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.GeoTreeResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.GroupManagementResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.GroupStatsResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.IdNameResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.IdentifierNameResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationHierarchyResponse;
 import com.revealprecision.revealserver.config.InstanceContext;
@@ -16,6 +17,8 @@ import com.revealprecision.revealserver.enums.OrganizationTypeEnum;
 import com.revealprecision.revealserver.enums.PlanInterventionTypeEnum;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.exceptions.handler.BadRequestException;
+import com.revealprecision.revealserver.persistence.domain.ComplexTag;
+import com.revealprecision.revealserver.persistence.domain.ComplexTagAccGrantsOrganization;
 import com.revealprecision.revealserver.persistence.domain.EntityTag;
 import com.revealprecision.revealserver.persistence.domain.EntityTagAccGrantsOrganization;
 import com.revealprecision.revealserver.persistence.domain.Instance;
@@ -37,6 +40,7 @@ import com.revealprecision.revealserver.persistence.domain.id.OrganizationLocati
 import com.revealprecision.revealserver.persistence.domain.id.OrganizationRoleMappingId;
 import com.revealprecision.revealserver.persistence.projection.GroupManagementProjection;
 import com.revealprecision.revealserver.persistence.projection.PopulationSummaryProjection;
+import com.revealprecision.revealserver.persistence.repository.ComplexTagAccGrantsOrganizationRepository;
 import com.revealprecision.revealserver.persistence.repository.EntityTagAccGrantsOrganizationRepository;
 import com.revealprecision.revealserver.persistence.repository.InstanceUserRepository;
 import com.revealprecision.revealserver.persistence.repository.OrganizationLocationRepository;
@@ -85,6 +89,7 @@ public class GroupManagementService {
   private final PermissionRepository permissionRepository;
   private final OrganizationRolePermissionRepository organizationRolePermissionRepository;
   private final TaskRepository taskRepository;
+  private final ComplexTagAccGrantsOrganizationRepository complexTagAccGrantsOrganizationRepository;
 
   public void createGroup(GroupManagementRequest request) {
 
@@ -141,6 +146,20 @@ public class GroupManagementService {
           }).collect(Collectors.toList());
 
       entityTagAccGrantsOrganizationRepository.saveAll(entityTagAccGrantsOrganizations);
+
+
+      Set<ComplexTag> complexTags = entityTagService.findComplexTagsByIdentifierIn(
+          request.getComplexTagIdentifiers());
+
+      List<ComplexTagAccGrantsOrganization> complexTagAccGrantsOrganizations = complexTags.stream()
+          .map(complexTag -> {
+            ComplexTagAccGrantsOrganization complexTagAccGrantsOrganization = new ComplexTagAccGrantsOrganization();
+            complexTagAccGrantsOrganization.setComplexTag(complexTag);
+            complexTagAccGrantsOrganization.setOrganizationId(savedOrg.getIdentifier());
+            return complexTagAccGrantsOrganization;
+          }).collect(Collectors.toList());
+
+      complexTagAccGrantsOrganizationRepository.saveAll(complexTagAccGrantsOrganizations);
 
       //Adding Areas
       List<Location> locations = locationService.findAllIdentifiersWithoutStructureAndGeoJSON(
@@ -300,6 +319,18 @@ public class GroupManagementService {
             .build())
         .collect(Collectors.toList());
 
+
+    List<ComplexTagAccGrantsOrganization> complexTagAccGrantsOrganizations = complexTagAccGrantsOrganizationRepository
+        .findByOrganizationId(identifier);
+
+    List<IdNameResponse> complexTags = complexTagAccGrantsOrganizations.stream()
+        .map(ct -> IdNameResponse.builder()
+            .id(ct.getComplexTag().getId())
+            .name(ct.getComplexTag().getTagName())
+            .build())
+        .collect(Collectors.toList());
+
+
     // roles
     List<IdentifierNameResponse> roles = organizationRoleRepository
         .findByOrganizationId(identifier).stream()
@@ -329,6 +360,7 @@ public class GroupManagementService {
         .datasets(datasets)
         .roles(roles)
         .areas(areas)
+        .complexTags(complexTags)
         .build();
   }
 
@@ -463,6 +495,43 @@ public class GroupManagementService {
             }).collect(Collectors.toList());
         entityTagAccGrantsOrganizationRepository.saveAll(datasetsToAdd);
       }
+
+
+
+      Set<Integer> incomingComplexTagsIds =
+          request.getDatasetsIdentifiers() != null ? request.getComplexTagIdentifiers()
+              : new java.util.HashSet<>();
+
+      List<ComplexTagAccGrantsOrganization> currentComplexTags = complexTagAccGrantsOrganizationRepository.findByOrganizationId(
+          identifier);
+
+      Set<Integer> currentComplexTagIds = currentComplexTags.stream()
+          .map(mapping -> mapping.getComplexTag().getId()).collect(Collectors.toSet());
+
+      Set<ComplexTagAccGrantsOrganization> complexTagsToRemove = currentComplexTags.stream()
+          .filter(mapping -> !incomingComplexTagsIds.contains(mapping.getComplexTag().getId()))
+          .collect(Collectors.toSet());
+
+      Set<Integer> complexTagAddIds = incomingComplexTagsIds.stream()
+          .filter(tagId -> !currentComplexTagIds.contains(tagId))
+          .collect(Collectors.toSet());
+
+      if (!complexTagsToRemove.isEmpty()) {
+        complexTagAccGrantsOrganizationRepository.deleteAll(complexTagsToRemove);
+      }
+
+      if (!complexTagAddIds.isEmpty()) {
+        Set<ComplexTag> tags = entityTagService.findComplexTagsByIdentifierIn(complexTagAddIds);
+        List<ComplexTagAccGrantsOrganization> complexTagsToAdd = tags.stream()
+            .map(complexTag -> {
+              ComplexTagAccGrantsOrganization mapping = new ComplexTagAccGrantsOrganization();
+              mapping.setComplexTag(complexTag);
+              mapping.setOrganizationId(identifier);
+              return mapping;
+            }).collect(Collectors.toList());
+        complexTagAccGrantsOrganizationRepository.saveAll(complexTagsToAdd);
+      }
+
 
       // Update locations
       List<UUID> incomingAreaIds = request.getAreasIdentifiers();

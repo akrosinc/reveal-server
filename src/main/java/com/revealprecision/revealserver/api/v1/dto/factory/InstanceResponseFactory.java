@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.api.v1.dto.factory;
 
 import com.revealprecision.revealserver.api.v1.dto.response.GeoTreeResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.IdNameResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.IdentifierNameResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationHierarchyResponse;
@@ -37,6 +38,11 @@ public class InstanceResponseFactory {
                     .getLastName()).build())
             .collect(Collectors.toList()))
         .areas(areas)
+        .complexTags(instance.getComplexTags().stream().map(insComplexTag -> IdNameResponse.builder()
+            .id(insComplexTag.getComplexTag().getId())
+            .name(insComplexTag.getComplexTag().getTagName())
+            .build())
+        .collect(Collectors.toList()))
         .datasets(instance.getEntityTags().stream()
             .map(instanceEntityTag -> IdentifierNameResponse.builder()
                 .identifier(instanceEntityTag.getEntityTag().getIdentifier())

@@ -14,6 +14,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.FieldNameConstants;
+import org.hibernate.envers.Audited;
+import org.hibernate.envers.RelationTargetAuditMode;
 
 @FieldNameConstants
 @Entity
@@ -23,6 +25,7 @@ import lombok.experimental.FieldNameConstants;
 @AllArgsConstructor
 @NoArgsConstructor
 @Table(uniqueConstraints = @UniqueConstraint(columnNames = {"complex_tag_id","userSid"}))
+@Audited(targetAuditMode = RelationTargetAuditMode.NOT_AUDITED)
 public class ComplexTagAccGrantsUser {
 
   @Id
