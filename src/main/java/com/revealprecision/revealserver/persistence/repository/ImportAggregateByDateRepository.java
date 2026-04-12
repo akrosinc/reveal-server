@@ -48,14 +48,14 @@ public interface ImportAggregateByDateRepository extends JpaRepository<ImportAgg
             "INNER JOIN entity_tag et on ian.fieldcode = et.definition " +
             "WHERE CAST(l.identifier AS VARCHAR) IN :locationIds " +
             "AND ian.hierarchyidentifier = :hierarchyId " +
-            "AND et.identifier IN (:tagIds ) " +
+            "AND CAST(et.identifier AS VARCHAR) IN (:tagIds ) " +
             "AND (ian.year = :year) " +
             "AND l.entity_status = 'ACTIVE'",
         nativeQuery = true)
     List<LocationWithMetadataProjection> findLocationsWithGeometryAndMetadata(
         @Param("locationIds") List<String> locationIds,
         @Param("hierarchyId") String hierarchyId,
-        @Param("tagIds") List<UUID> tagIds,
+        @Param("tagIds") List<String> tagIds,
         @Param("year") Integer year
     );
 
@@ -65,12 +65,12 @@ public interface ImportAggregateByDateRepository extends JpaRepository<ImportAgg
             "FROM mw_import_aggregate_numeric_by_date ian " +
             "INNER JOIN entity_tag et ON ian.fieldcode = et.definition " +
             "WHERE ian.hierarchyidentifier = :hierarchyId " +
-            "AND et.identifier IN (:tagIds) " +
+            "AND CAST(et.identifier AS VARCHAR) IN (:tagIds) " +
             "GROUP BY et.identifier,ian.fieldcode",
         nativeQuery = true)
     List<TagYearAggregateDateProjection> findLatestYearPerTag(
         @Param("hierarchyId") String hierarchyId,
-        @Param("tagIds") List<UUID> tagIds
+        @Param("tagIds") List<String> tagIds
     );
 
     @Query(value =
@@ -82,8 +82,8 @@ public interface ImportAggregateByDateRepository extends JpaRepository<ImportAgg
             "FROM mw_import_aggregate_numeric_by_date ian " +
             "INNER JOIN entity_tag et ON ian.fieldcode = et.definition " +
             "WHERE ian.hierarchyidentifier = :hierarchyId " +
-            "AND et.identifier IN (:tagIds) " +
+            "AND CAST(et.identifier AS VARCHAR) IN (:tagIds) " +
             "GROUP BY et.identifier",
         nativeQuery = true)
-    List<TagYearRangeAggregateDateProjection> findYearRangePerTag(String hierarchyId, List<UUID> tagIds);
+    List<TagYearRangeAggregateDateProjection> findYearRangePerTag(String hierarchyId, List<String> tagIds);
 }

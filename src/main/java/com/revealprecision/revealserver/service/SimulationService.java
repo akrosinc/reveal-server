@@ -119,8 +119,8 @@ public class SimulationService {
                 importAggregateByDateRepository
                     .findYearRangePerTag(
                         s.getPlan().getLocationHierarchy().getIdentifier().toString(),
-                        entityTagIds
-                    )
+                        entityTagIds.stream().map(UUID::toString).collect(Collectors.toList())
+                        )
                     .stream()
                     .collect(Collectors.toMap(
                         p -> UUID.fromString(p.getTagIdentifier()),
@@ -288,19 +288,43 @@ public class SimulationService {
                 (a, b) -> a
             ));
 
-        Map<String,Integer> latestDataYearByTags = getLatestDataYearByTagName( locationHierarchy.getIdentifier().toString(),
+        Map<UUID, UUID> dataSetETagIdMap = simulation.getDatasets().stream()
+            .collect(Collectors.toMap(
+                dataset -> dataset.getIdentifier(),
+                dataset -> {
+                    EntityTag et = dataset.getEntityTag();
+                    if(et.isAggregate()){
+                        return  et.getReferencedTag();
+                    }
+                    else {
+                        return et.getIdentifier();
+                    }
+                },
+                (a, b) -> a
+            ));
+
+
+        Map<UUID,Integer> latestDataYearByTags = getLatestDataYearByTagsID( locationHierarchy.getIdentifier().toString(),
             new ArrayList<>(tagsMap.values()));
 
+        Map<UUID, Integer> dataSetYearFilter = new HashMap<>();
 
-        Map<String, Integer> dataSetYearFilter = request.getDataSetYearFilter() != null
-            ? request.getDataSetYearFilter()
-            : latestDataYearByTags;
+        if(request.getDataSetYearFilter() != null){
+            for(var entry : request.getDataSetYearFilter().entrySet()){
+                dataSetYearFilter.put(dataSetETagIdMap.get(UUID.fromString(entry.getKey())), entry.getValue());
+            }
+        }
+        else {
+            dataSetYearFilter  = latestDataYearByTags;
+        }
 
         // Group tags by year so we can batch queries
         // tags with no year filter go under null key
-        Map<Integer, List<String>> tagsByYear = tagsMap.keySet().stream()
+        Map<Integer, List<UUID>> tagsByYear = dataSetYearFilter.entrySet()
+            .stream()
             .collect(Collectors.groupingBy(
-                tag -> dataSetYearFilter.getOrDefault(tag, -1) // -1 = no year filter
+                Map.Entry::getValue,
+                Collectors.mapping(Map.Entry::getKey, Collectors.toList())
             ));
 
         SseEmitter emitter = new SseEmitter(180000L);
@@ -317,16 +341,15 @@ public class SimulationService {
                     Map<String, List<LocationWithMetadataProjection>> groupedByLocation =
                         new HashMap<>();
 
-                    for (Map.Entry<Integer, List<String>> yearEntry : tagsByYear.entrySet()) {
+                    for (Map.Entry<Integer, List<UUID>> yearEntry : tagsByYear.entrySet()) {
                         Integer year = yearEntry.getKey() == -1 ? 0 : yearEntry.getKey();
-                        List<String> tagsForYear = yearEntry.getValue();
+                        List<UUID> tagsForYear = yearEntry.getValue();
 
                         List<LocationWithMetadataProjection> results =
                             importAggregateByDateRepository.findLocationsWithGeometryAndMetadata(
                                 batch,
                                 locationHierarchy.getIdentifier().toString(),
-                                tagsForYear.stream().map(tagsMap::get).collect(
-                                    Collectors.toList()),
+                                tagsForYear.stream().map(UUID::toString).collect(Collectors.toList()),
                                 year
                             );
 
@@ -460,7 +483,7 @@ public class SimulationService {
 
                             return locationResponse;
                         })
-                        .filter( locationResponse -> locationResponse.getType() != null )
+                        .filter( locationResponse -> locationResponse.getType() != null &&  locationResponse.getGeometry() != null)
                         .collect(Collectors.toList());
 
                     emitter.send(SseEmitter.event()
@@ -661,7 +684,7 @@ public class SimulationService {
 
 
         return locations.stream().filter(
-            l -> l.getType() != null
+            l -> l.getType() != null && l.getGeometry() != null
         ).collect(Collectors.toList());
     }
 
@@ -931,7 +954,7 @@ public class SimulationService {
                 importAggregateByDateRepository.findLocationsWithGeometryAndMetadata(
                     locationsIds,
                     locationHierarchyId.toString(),
-                    tagIds,
+                    tagIds.stream().map(UUID::toString).collect(Collectors.toList()),
                     year
                 );
             allResults.addAll(results);
@@ -1088,7 +1111,7 @@ public class SimulationService {
 
     private Map<UUID,Integer> getLatestDataYearByTagsID(String hierarchyId, List<UUID> tagIds){
         List<TagYearAggregateDateProjection> latestYears =
-            importAggregateByDateRepository.findLatestYearPerTag(hierarchyId, tagIds );
+            importAggregateByDateRepository.findLatestYearPerTag(hierarchyId,  tagIds.stream().map(UUID::toString).collect(Collectors.toList()) );
 
         Map<UUID, Integer> resultMap = latestYears.stream()
             .collect(Collectors.toMap(
@@ -1108,7 +1131,7 @@ public class SimulationService {
 
     private Map<String,Integer> getLatestDataYearByTagName(String hierarchyId, List<UUID> tagIds){
         List<TagYearAggregateDateProjection> latestYears =
-            importAggregateByDateRepository.findLatestYearPerTag(hierarchyId, tagIds );
+            importAggregateByDateRepository.findLatestYearPerTag(hierarchyId,  tagIds.stream().map(UUID::toString).collect(Collectors.toList()));
 
         Map<UUID, TagYearAggregateDateProjection> resultMap = latestYears.stream()
             .collect(Collectors.toMap(
