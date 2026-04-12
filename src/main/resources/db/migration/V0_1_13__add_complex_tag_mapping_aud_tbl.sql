@@ -2,11 +2,11 @@
 -- ComplexTag Audit Table
 -- =========================================
 CREATE TABLE IF NOT EXISTS complex_tag_aud (
-   id INTEGER NOT NULL,
-   rev INTEGER NOT NULL,
-   revtype SMALLINT,
+                                               id INTEGER NOT NULL,
+                                               rev INTEGER NOT NULL,
+                                               revtype SMALLINT,
 
-   hierarchy_id VARCHAR(255),
+                                               hierarchy_id VARCHAR(255),
     hierarchy_type VARCHAR(255),
     tag_name VARCHAR(255),
 
@@ -20,11 +20,20 @@ CREATE TABLE IF NOT EXISTS complex_tag_aud (
 -- =========================================
 -- Foreign Key to Revision Table
 -- =========================================
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'fk_complex_tag_aud_rev'
+    ) THEN
 ALTER TABLE complex_tag_aud
     ADD CONSTRAINT fk_complex_tag_aud_rev
         FOREIGN KEY (rev) REFERENCES revinfo(rev);
+END IF;
+END $$;
 
 -- =========================================
--- Indexes (Recommended)
+-- Indexes
 -- =========================================
-CREATE INDEX idx_complex_tag_aud_rev ON complex_tag_aud(rev);
+CREATE INDEX IF NOT EXISTS idx_complex_tag_aud_rev
+    ON complex_tag_aud(rev);

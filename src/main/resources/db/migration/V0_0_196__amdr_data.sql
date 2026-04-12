@@ -1,9 +1,9 @@
 INSERT INTO amdr.amdr_header_names (key, name)
-VALUES ('kelch13'::text, 'Artemisinin [Kelch13]'::text)
+VALUES ('kelch13'::text, 'Artemisinin(Kelch)'::text)
 ON CONFLICT DO NOTHING;
 
 INSERT INTO amdr.amdr_header_names (key, name)
-VALUES ('pfcrt'::text, 'Chloroquine Resistance [PfCRT]'::text)
+VALUES ('pfcrt'::text, 'Chlor(CRT)'::text)
     ON CONFLICT DO NOTHING;
 
 INSERT INTO amdr.amdr_header_names (key, name)
@@ -23,7 +23,7 @@ VALUES ('pfcrt_76'::text, 'CRT K76T'::text)
     ON CONFLICT DO NOTHING;
 
 INSERT INTO amdr.amdr_header_names (key, name)
-VALUES ('pfmdr1'::text, 'Multidrug PfMDR1'::text)
+VALUES ('pfmdr1'::text, 'Amodi (MDR)'::text)
     ON CONFLICT DO NOTHING;
 
 INSERT INTO amdr.amdr_header_names (key, name)
@@ -39,11 +39,11 @@ VALUES ('pfmdr1_1246'::text, 'MDR1 D1246Y'::text)
     ON CONFLICT DO NOTHING;
 
 INSERT INTO amdr.amdr_header_names (key, name)
-VALUES ('crt_mdr1'::text, 'Partner drug Resistance'::text)
+VALUES ('crt_mdr1'::text, 'Lumef(MDR+CRT)'::text)
     ON CONFLICT DO NOTHING;
 
 INSERT INTO amdr.amdr_header_names (key, name)
-VALUES ('pfdhfr'::text, 'Pyrimethamine Resistance [PfDHFR]'::text)
+VALUES ('pfdhfr'::text, 'Pyrme(DHFR)'::text)
     ON CONFLICT DO NOTHING;
 
 INSERT INTO amdr.amdr_header_names (key, name)
@@ -63,11 +63,11 @@ VALUES ('pfdhfr_164'::text, 'DHFR I164L'::text)
     ON CONFLICT DO NOTHING;
 
 INSERT INTO amdr.amdr_header_names (key, name)
-VALUES ('dhfr'::text, 'SP Resistance [DHFR]'::text)
+VALUES ('dhfr'::text, 'SP'::text)
     ON CONFLICT DO NOTHING;
 
 INSERT INTO amdr.amdr_header_names (key, name)
-VALUES ('pfdhps'::text, 'Sulfadoxine Resistance [PfDHPS]'::text)
+VALUES ('pfdhps'::text, 'Sulfa(PfDHPS)'::text)
     ON CONFLICT DO NOTHING;
 
 INSERT INTO amdr.amdr_header_names (key, name)
@@ -91,7 +91,7 @@ VALUES ('pfdhps_613'::text, 'DHPS A613S'::text)
     ON CONFLICT DO NOTHING;
 
 INSERT INTO amdr.amdr_header_names (key, name)
-VALUES ('dhfr_dhps'::text, 'SP-IPTp Resistance [DHFR+DHPS]'::text)
+VALUES ('dhfr_dhps'::text, 'SP-IPTp'::text)
     ON CONFLICT DO NOTHING;
 
 
