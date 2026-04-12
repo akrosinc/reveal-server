@@ -555,6 +555,9 @@ public class SimulationService {
         List<LocationResponse> locations;
         if (request.getIncludeGeometry()) {
             locations = fetchLocationsWithGeometryES(locationHierarchy.getIdentifier(), tagsMap, locationsIds);
+
+
+
         } else {
             locations = new ArrayList<>();
         }
@@ -605,15 +608,11 @@ public class SimulationService {
 
         Map<String, UUID> tagsMap = buildTagsMap(simulation, request.getDatasetsIds());
 
-        Map<String, List<EntityMetadataResponse>> metadataMap = request.getCampaignManagementFeatures()
-                ? Collections.emptyMap()
-                : fetchMetadata(simulation, request.getDatasetsIds(), locationsIds);
-
-
+//        Map<String, List<EntityMetadataResponse>> metadataMap = request.getCampaignManagementFeatures()
+//                ? Collections.emptyMap()
+//                : fetchMetadata(simulation, request.getDatasetsIds(), locationsIds);
 
         List<LocationResponse> locations;
-
-
 
         if(MapUtils.isEmpty( request.getDataSetYearFilter())){
             List<UUID> tagsIds = simulation.getDatasets()
@@ -651,10 +650,27 @@ public class SimulationService {
             request.setDataSetYearFilter(eTagYearMap);
         }
 
+        final Map<String, List<EntityMetadataResponse>> metadataMap;
+
         if (request.getIncludeGeometry()) {
             locations = fetchLocationsWithGeometry(locationHierarchy.getIdentifier(), tagsMap, locationsIds, simulation,
                 request.getDataSetYearFilter());
+
+            metadataMap = locations.stream()  // ✅ avoid null keys
+                .collect(Collectors.toMap(
+                    l -> l.getIdentifier().toString(),
+                    l -> {
+                        List<EntityMetadataResponse> metadata = l.getProperties().getMetadata();
+                        return metadata != null ? metadata : new ArrayList<>();
+                    },
+                    (existing, replacement) -> {
+                        existing.addAll(replacement);
+                        return existing;
+                    }
+                ));
+
         } else {
+            metadataMap = new HashMap<>();
             locations = new ArrayList<>();
         }
 
@@ -677,7 +693,7 @@ public class SimulationService {
             tasks.add(CompletableFuture.runAsync(() -> applyPlanAssignments(locations, simulation)));
             tasks.add(CompletableFuture.runAsync(() -> applyBusinessStatus(locations, locationHierarchy.getIdentifier(), simulation)));
         } else {
-            tasks.add(CompletableFuture.runAsync(() -> applyMetadataAndPopulationData(locations, metadataMap, locationDetailsProjections)));
+            tasks.add(CompletableFuture.runAsync(() -> applyMetadataAndPopulationData(locations,metadataMap, locationDetailsProjections)));
             tasks.add(CompletableFuture.runAsync(() -> applyStructureCounts(locations, locationHierarchy.getIdentifier())));
         }
         CompletableFuture.allOf(tasks.toArray(new CompletableFuture[0])).join();
@@ -1018,6 +1034,23 @@ public class SimulationService {
         locations.forEach(loc -> {
             String locationId = loc.getIdentifier().toString();
             loc.getProperties().setMetadata(metadataMap.getOrDefault(locationId, new ArrayList<>()));
+
+            if (loc.getProperties().getPopulation() == null) {
+                try {
+                    Optional<LocationDetailsProjection> projection = projections.stream().filter(p -> p.getLocationId().equals(loc.getIdentifier().toString())).findFirst();
+                    if (projection.isPresent() && projection.get().getPopulationData() != null) {
+                        loc.getProperties().setPopulation(objectMapper.readValue(projection.get().getPopulationData(), PopulationResponseData.class));
+                    }
+                } catch (JsonProcessingException e) {
+                    loc.getProperties().setPopulation(null);
+                }
+            }
+        });
+    }
+
+    private void applyPopulationData(List<LocationResponse> locations, List<LocationDetailsProjection> projections) {
+        locations.forEach(loc -> {
+            String locationId = loc.getIdentifier().toString();
 
             if (loc.getProperties().getPopulation() == null) {
                 try {
