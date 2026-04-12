@@ -460,6 +460,7 @@ public class SimulationService {
 
                             return locationResponse;
                         })
+                        .filter( locationResponse -> locationResponse.getType() != null )
                         .collect(Collectors.toList());
 
                     emitter.send(SseEmitter.event()
