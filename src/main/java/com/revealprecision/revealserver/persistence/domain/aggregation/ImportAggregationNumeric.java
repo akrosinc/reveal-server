@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.persistence.domain.aggregation;
 
 
+import java.time.LocalDate;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
@@ -38,5 +39,5 @@ public class ImportAggregationNumeric  {
 
   private Double val;
 
-
+  private LocalDate  dataCaptureDate;
 }

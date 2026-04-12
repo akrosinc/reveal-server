@@ -52,6 +52,7 @@ import com.revealprecision.revealserver.persistence.repository.PermissionReposit
 import com.revealprecision.revealserver.persistence.repository.PlanLocationsRepository;
 import com.revealprecision.revealserver.persistence.repository.TaskRepository;
 import com.revealprecision.revealserver.persistence.repository.UserRepository;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -226,7 +227,7 @@ public class GroupManagementService {
   }
 
   @Transactional
-  public void assignLocations(AssignLocationsToTeamRequest assignLocationsToTeamRequest) {
+  public void assignTeams(AssignLocationsToTeamRequest assignLocationsToTeamRequest) {
 
     UUID instanceIdentifier = InstanceContext.get();
 
@@ -759,5 +760,40 @@ public class GroupManagementService {
         .totalPopulation(populationStats.getTotalPopulation())
         .completionPercentage(completionPercentage)
         .build();
+  }
+
+
+  public LocationHierarchyResponse getAssignedLocationsForTeams() {
+    UUID instanceIdentifier = InstanceContext.get();
+
+
+    List<Plan> plans =  planService.findPlanByInstanceIdentifier(instanceIdentifier);
+
+    ///  as there is one plan only so assign a location to that plan
+    Plan plan = plans.get(0);
+
+    LocationHierarchy locationHierarchy = instanceService.getInstanceHierarchy(instanceIdentifier);
+
+    Set<Location> locations = planLocationsRepository.findLocationsByPlan_Identifier(
+        plan.getIdentifier());
+
+    Map<UUID, Location> locationMap = locations.stream()
+        .collect(Collectors.toMap(Location::getIdentifier, location -> location));
+
+
+    List<GeoTreeResponse> geoTreeResponses = locationRelationshipService.getFilteredGeoTreeByLocationIds(locationHierarchy,
+        new ArrayList<>(locationMap.keySet()) , null);
+
+    List<PlanAssignment> planAssignments = planAssignmentService.getPlanAssignmentsByPlanIdentifier(plan.getIdentifier());
+
+    Map<UUID, List<PlanAssignment>> planAssignmentMap = planAssignments.stream()
+        .collect(Collectors.groupingBy(
+            planAssignment -> planAssignment.getPlanLocations().getLocation().getIdentifier()));
+    geoTreeResponses.forEach(el -> planLocationsService.assignLocations(locationMap, el, planAssignmentMap));
+
+    return LocationHierarchyResponse.builder().identifier(locationHierarchy.getIdentifier().toString())
+        .name(locationHierarchy.getName())
+        .geoTree(geoTreeResponses)
+        .nodeOrder(locationHierarchy.getNodeOrder()).build();
   }
 }

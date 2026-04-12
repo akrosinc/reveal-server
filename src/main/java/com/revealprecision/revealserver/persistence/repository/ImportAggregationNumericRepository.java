@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.persistence.repository;
 
 import com.revealprecision.revealserver.persistence.domain.aggregation.ImportAggregationNumeric;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -21,4 +22,8 @@ public interface ImportAggregationNumericRepository extends
   List<ImportAggregationNumeric> findAllByFieldCodeIn(List<String> fieldCodes);
 
   void removeAllByFieldCodeIn(List<String> fieldCodes);
+
+  Optional<ImportAggregationNumeric> findByNameAndAncestorAndFieldCodeAndHierarchyIdentifierAndDataCaptureDate(
+      String name,
+      String locId, String tag, String hierarchyIdentifier, LocalDate dataCaptureDate);
 }

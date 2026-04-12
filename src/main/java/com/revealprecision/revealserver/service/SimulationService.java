@@ -3,6 +3,7 @@ package com.revealprecision.revealserver.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.revealprecision.revealserver.api.v1.dto.factory.LocationResponseFactory;
+import com.revealprecision.revealserver.api.v1.dto.factory.LocationResponsesFromProjectionsFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.OrganizationResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.DatasetLocationsRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.UpdateDatasetRequest;
@@ -10,13 +11,19 @@ import com.revealprecision.revealserver.api.v1.dto.request.SimulationDatasetRequ
 import com.revealprecision.revealserver.api.v1.dto.response.*;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.*;
+import com.revealprecision.revealserver.persistence.domain.Geometry;
 import com.revealprecision.revealserver.persistence.projection.AggregateWithTagProjection;
 import com.revealprecision.revealserver.persistence.projection.LocationDetailsProjection;
 import com.revealprecision.revealserver.persistence.projection.LocationWithAncestryProjection;
-import com.revealprecision.revealserver.persistence.repository.PlanLocationsRepository;
+import com.revealprecision.revealserver.persistence.projection.LocationWithMetadataProjection;
+import com.revealprecision.revealserver.persistence.projection.TagYearAggregateDateProjection;
+import com.revealprecision.revealserver.persistence.projection.TagYearRangeAggregateDateProjection;
+import com.revealprecision.revealserver.persistence.repository.ImportAggregateByDateRepository;
 import com.revealprecision.revealserver.persistence.repository.PlanRepository;
 import com.revealprecision.revealserver.persistence.repository.SimulationRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.lucene.search.join.ScoreMode;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -24,7 +31,6 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.geo.ShapeRelation;
 import org.elasticsearch.common.geo.builders.EnvelopeBuilder;
-import org.elasticsearch.geometry.Point;
 import org.elasticsearch.index.query.*;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
@@ -32,7 +38,6 @@ import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.locationtech.jts.geom.Coordinate;
 import org.springframework.beans.factory.annotation.Value;
-import org.elasticsearch.geometry.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -46,6 +51,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class SimulationService {
 
     private final SimulationRepository simulationRepository;
@@ -58,6 +64,7 @@ public class SimulationService {
     private final ObjectMapper objectMapper;
     private final PlanAssignmentService planAssignmentService;
     private final LocationBusinessStatusService locationBusinessStatusService;
+    private final ImportAggregateByDateRepository importAggregateByDateRepository;
 
     @Value("${reveal.elastic.index-name}")
     private final String elasticIndex;
@@ -84,10 +91,59 @@ public class SimulationService {
 
     public SimulationResponse getSimulationWithTargetAreas(UUID planId) {
         Simulation s = getOrCreateSimulationByPlanId(planId);
-        List<LocationWithAncestryProjection> l = locationService.getAllTargetAreasOfPlan(planId, s.getPlan().getPlanTargetType().getGeographicLevel().getName());
+
+        List<LocationWithAncestryProjection> l =
+            locationService.getAllTargetAreasOfPlan(planId, s.getPlan().getPlanTargetType().getGeographicLevel().getName());
+
         List<LocationResponse> locationsResponse = l.stream()
-                .map(loc -> LocationResponseFactory.fromEntityWithPopulationAndAncestry(loc.getLocation(), loc.getAncestry().toString(), loc.getNumberOfTeams())).collect(Collectors.toList());
-        return new SimulationResponse(s.getIdentifier(), s.getDatasets(), locationsResponse);
+                .map(loc ->
+                    LocationResponseFactory.fromEntityWithPopulationAndAncestry(loc.getLocation(), loc.getAncestry().toString(),
+                        loc.getNumberOfTeams())).collect(Collectors.toList());
+
+        Map<UUID, UUID> datasetToEntityTagMap = s.getDatasets().stream()
+            .collect(Collectors.toMap(
+                Dataset::getIdentifier,
+                d -> d.getEntityTag().getIdentifier(),
+                (a, b) -> a
+            ));
+
+        // Get year ranges per entityTag
+        List<UUID> entityTagIds = new ArrayList<>(datasetToEntityTagMap.values());
+
+        List<DataSetYearRangeResponse> dataSetYearRange = new ArrayList<>();
+
+        if (!entityTagIds.isEmpty()) {
+
+            // entityTagId -> TagYearRangeProjection
+            Map<UUID, TagYearRangeAggregateDateProjection> yearRangeByEntityTagId =
+                importAggregateByDateRepository
+                    .findYearRangePerTag(
+                        s.getPlan().getLocationHierarchy().getIdentifier().toString(),
+                        entityTagIds
+                    )
+                    .stream()
+                    .collect(Collectors.toMap(
+                        p -> UUID.fromString(p.getTagIdentifier()),
+                        p -> p,
+                        (a, b) -> a
+                    ));
+
+            // Build List<DataSetYearRangeResponse> with datasetId
+            dataSetYearRange = s.getDatasets().stream()
+                .map(dataset -> {
+                    UUID entityTagId = datasetToEntityTagMap.get(dataset.getIdentifier());
+                    TagYearRangeAggregateDateProjection projection = yearRangeByEntityTagId.get(entityTagId);
+
+                    return DataSetYearRangeResponse.builder()
+                        .datasetId(dataset.getIdentifier())
+                        .maxYear(projection != null ? projection.getMaxYear() : null)
+                        .minYear(projection != null ? projection.getMinYear() : null)
+                        .build();
+                })
+                .collect(Collectors.toList());
+        }
+
+        return new SimulationResponse(s.getIdentifier(), s.getDatasets(), locationsResponse, dataSetYearRange);
     }
 
     public Simulation updateSimulationDataset(UpdateDatasetRequest request) {
@@ -108,7 +164,7 @@ public class SimulationService {
 
     }
 
-    public SseEmitter getDatasetDataForLocations(String requestId) {
+    public SseEmitter getDatasetDataForLocationsES(String requestId) {
         SimulationRequest simulationRequest = filterEsService.getSimulationRequestById(requestId).orElseThrow(() -> new NotFoundException("x"));
         SimulationDatasetRequest request = simulationRequest.getDatasetRequest();
 //        UUID defaultHierarchyId = locationHierarchyService.getDefaultHierarchy().getIdentifier();
@@ -117,28 +173,28 @@ public class SimulationService {
 
         LocationHierarchy locationHierarchy = simulation.getPlan().getLocationHierarchy();
         List<LocationDetailsProjection> locationDetailsProjections = locationService.getLocationsWithPropertiesForAdminLevel(request.getParentAdminLevel(),
-                                                locationHierarchy.getIdentifier(), simulation.getPlan().getIdentifier());
+            locationHierarchy.getIdentifier(), simulation.getPlan().getIdentifier());
 
         List<String> locationsIds = locationDetailsProjections.stream().map(LocationDetailsProjection::getLocationId).collect(Collectors.toList());
         List<UUID> tagsIds = simulation.getDatasets()
-                .stream()
-                .filter(dataset -> simulation.getDatasets().stream().map(Dataset::getIdentifier).collect(Collectors.toList()).contains(dataset.getIdentifier()))
-                .map(dataset -> dataset.getEntityTag().getIdentifier())
-                .collect(Collectors.toList());
+            .stream()
+            .filter(dataset -> simulation.getDatasets().stream().map(Dataset::getIdentifier).collect(Collectors.toList()).contains(dataset.getIdentifier()))
+            .map(dataset -> dataset.getEntityTag().getIdentifier())
+            .collect(Collectors.toList());
         List<AggregateWithTagProjection> tags = entityTagService.getValuesForTagAndLocations(tagsIds, locationsIds);
         Map<String, List<EntityMetadataResponse>> metadataMap = tags.stream()
-                .collect(Collectors.groupingBy(
-                        AggregateWithTagProjection::getLocationIdentifier,
-                        Collectors.mapping(
-                                tag -> new EntityMetadataResponse(
-                                        getRequestedValue(tag),
-                                        tag.getTag().getTag(),
-                                        tag.getEventType(),
-                                        simulation.getDatasets().stream().filter(dataset -> dataset.getEntityTag().getIdentifier().equals(tag.getTag().getIdentifier())).findFirst().get().getIdentifier()
-                                ),
-                                Collectors.toList()
-                        )
-                ));
+            .collect(Collectors.groupingBy(
+                AggregateWithTagProjection::getLocationIdentifier,
+                Collectors.mapping(
+                    tag -> new EntityMetadataResponse(
+                        getRequestedValue(tag),
+                        tag.getTag().getTag(),
+                        tag.getEventType(),
+                        simulation.getDatasets().stream().filter(dataset -> dataset.getEntityTag().getIdentifier().equals(tag.getTag().getIdentifier())).findFirst().get().getIdentifier()
+                    ),
+                    Collectors.toList()
+                )
+            ));
 
         SseEmitter emitter = new SseEmitter(180000L);
         ExecutorService sseExecutor = Executors.newScheduledThreadPool(2);
@@ -179,9 +235,9 @@ public class SimulationService {
                     }).collect(Collectors.toList());
 
                     emitter.send(SseEmitter.event()
-                            .name("message")
-                            .data(locationsTransformed)
-                            .reconnectTime(3000L));
+                        .name("message")
+                        .data(locationsTransformed)
+                        .reconnectTime(3000L));
 
                     Thread.sleep(100);
                 }
@@ -194,6 +250,317 @@ public class SimulationService {
         });
 
         return emitter;
+    }
+
+    public SseEmitter getDatasetDataForLocations(String requestId) {
+        SimulationRequest simulationRequest = filterEsService.getSimulationRequestById(requestId).orElseThrow(() -> new NotFoundException("x"));
+        SimulationDatasetRequest request = simulationRequest.getDatasetRequest();
+//        UUID defaultHierarchyId = locationHierarchyService.getDefaultHierarchy().getIdentifier();
+        //TODO: check if this ID exists, if not throw exception
+        Simulation simulation = simulationRepository.findById(request.getSimulationId()).orElseThrow(() -> new NotFoundException("Simulation not found with ID: " + request.getSimulationId()));
+
+        LocationHierarchy locationHierarchy = simulation.getPlan().getLocationHierarchy();
+        List<LocationDetailsProjection> locationDetailsProjections = locationService.getLocationsWithPropertiesForAdminLevel(request.getParentAdminLevel(),
+                                                locationHierarchy.getIdentifier(), simulation.getPlan().getIdentifier());
+
+        List<String> locationsIds = locationDetailsProjections.stream().map(LocationDetailsProjection::getLocationId).collect(Collectors.toList());
+
+        Map<String, LocationDetailsProjection> locationDetailsMap = locationDetailsProjections
+            .stream()
+            .collect(Collectors.toMap(
+                LocationDetailsProjection::getLocationId,
+                projection -> projection,
+                (a, b) -> a
+            ));
+
+
+        Map<String, UUID> datasetTagMap = simulation.getDatasets().stream()
+            .collect(Collectors.toMap(
+                dataset -> dataset.getEntityTag().getTag(),
+                Dataset::getIdentifier,
+                (a, b) -> a
+            ));
+
+        Map<String, UUID> tagsMap = simulation.getDatasets().stream()
+            .collect(Collectors.toMap(
+                dataset -> dataset.getEntityTag().getTag(),
+                dataset -> dataset.getEntityTag().getIdentifier(),
+                (a, b) -> a
+            ));
+
+        Map<String,Integer> latestDataYearByTags = getLatestDataYearByTagName( locationHierarchy.getIdentifier().toString(),
+            new ArrayList<>(tagsMap.values()));
+
+
+        Map<String, Integer> dataSetYearFilter = request.getDataSetYearFilter() != null
+            ? request.getDataSetYearFilter()
+            : latestDataYearByTags;
+
+        // Group tags by year so we can batch queries
+        // tags with no year filter go under null key
+        Map<Integer, List<String>> tagsByYear = tagsMap.keySet().stream()
+            .collect(Collectors.groupingBy(
+                tag -> dataSetYearFilter.getOrDefault(tag, -1) // -1 = no year filter
+            ));
+
+        SseEmitter emitter = new SseEmitter(180000L);
+        ExecutorService sseExecutor = Executors.newScheduledThreadPool(2);
+
+        sseExecutor.execute(() -> {
+            try {
+                final int BATCH_SIZE = 100;
+
+                List<List<String>> batches = getBatches(locationsIds, BATCH_SIZE);
+
+                for (List<String> batch : batches) {
+
+                    Map<String, List<LocationWithMetadataProjection>> groupedByLocation =
+                        new HashMap<>();
+
+                    for (Map.Entry<Integer, List<String>> yearEntry : tagsByYear.entrySet()) {
+                        Integer year = yearEntry.getKey() == -1 ? 0 : yearEntry.getKey();
+                        List<String> tagsForYear = yearEntry.getValue();
+
+                        List<LocationWithMetadataProjection> results =
+                            importAggregateByDateRepository.findLocationsWithGeometryAndMetadata(
+                                batch,
+                                locationHierarchy.getIdentifier().toString(),
+                                tagsForYear.stream().map(tagsMap::get).collect(
+                                    Collectors.toList()),
+                                year
+                            );
+
+                        // Merge into groupedByLocation
+                        results.forEach(row ->
+                            groupedByLocation
+                                .computeIfAbsent(row.getId(), k -> new ArrayList<>())
+                                .add(row)
+                        );
+                    }
+
+                    List<LocationResponse> locationsTransformed = batch.stream()
+                        .map(locationId -> {
+
+                            List<LocationWithMetadataProjection> locationRows =
+                                groupedByLocation.get(locationId);
+
+//                            if(CollectionUtils.isEmpty(locationRows)) {
+//                                return null;
+//                            }
+
+//                            List<EntityMetadataResponse> metadata = metadataMap.getOrDefault(locationId.toString(), new ArrayList<>());
+
+                            LocationResponse locationResponse = new LocationResponse();
+                            locationResponse.setIdentifier(UUID.fromString(locationId));
+
+                            if (locationRows != null && !locationRows.isEmpty()) {
+                                LocationWithMetadataProjection firstRow = locationRows.get(0);
+
+                                locationResponse.setType(
+                                    firstRow.getType() != null ? firstRow.getType() : "Feature");
+
+                                try {
+                                    locationResponse.setGeometry(objectMapper.readValue(firstRow.getGeometry(),
+                                        Geometry.class));
+
+                                } catch (JsonProcessingException e) {
+                                    log.error("Cannot create geometry obj from string {}",
+                                        firstRow.getId(), e);
+                                }
+
+                                Map<String, LocationWithMetadataProjection> rowByTag = locationRows != null
+                                    ? locationRows.stream()
+                                      .filter(row -> row.getTag() != null)
+                                      .collect(Collectors.toMap(
+                                          LocationWithMetadataProjection::getTag,
+                                          row -> row,
+                                          (a, b) -> a
+                                      ))
+                                    : Collections.emptyMap();
+
+
+
+                                // Build metadata - each row is one tag
+                                // correct year already applied per tag via query
+
+                                List<EntityMetadataResponse> metadata = datasetTagMap.entrySet().stream()
+                                    .map(entry -> {
+                                        String tagName = entry.getKey();
+                                        UUID datasetId = entry.getValue();
+                                        LocationWithMetadataProjection row = rowByTag.get(getRefenceTagName(tagName));
+
+                                        Double value = row != null
+                                            ? getValueByAggregationType(tagName, row)
+                                            : null; // no data for this tag
+
+                                        return new EntityMetadataResponse(
+                                            value,
+                                            tagName,
+                                            "IMPORT",
+                                            datasetId
+                                        );
+                                    })
+                                    .collect(Collectors.toList());
+//                                List<EntityMetadataResponse> metadata = locationRows.stream()
+//                                    .filter(row -> row.getTag() != null)
+//                                    .map(row -> new EntityMetadataResponse(
+//                                        getValueByAggregationType(row.getTag(), row),
+//                                        row.getTag(),
+//                                        "IMPORT",
+//                                        datasetTagMap.get(row.getTag())
+//                                    ))
+//                                    .collect(Collectors.toList());
+
+                                LocationPropertyResponse properties = new LocationPropertyResponse();
+                                properties.setName(firstRow.getName());
+                                properties.setGeographicLevel(firstRow.getGeographicLevel());
+                                properties.setMetadata(metadata);
+                                locationResponse.setProperties(properties);
+
+                            } else {
+                                locationResponse.setType("Feature");
+                                LocationPropertyResponse properties =
+                                    new LocationPropertyResponse();
+                                properties.setMetadata(new ArrayList<>());
+                                locationResponse.setProperties(properties);
+                            }
+
+
+
+                            // Enrich with location details
+                            LocationDetailsProjection projection =
+                                locationDetailsMap.get(locationId);
+
+                            if (projection != null) {
+
+                                locationResponse.setAncestry(projection.getAncestry());
+
+                                LocationPropertyResponse properties =
+                                    locationResponse.getProperties();
+                                properties.setChildrenNumber(projection.getChildrenCount());
+                                properties.setParentIdentifier(
+                                    UUID.fromString(projection.getParentLocationId()));
+                                properties.setParent(
+                                    UUID.fromString(projection.getParentLocationId()));
+                                properties.setId(projection.getLocationId());
+                                properties.setAssigned(projection.getAssigned());
+
+                                try {
+                                    if (projection.getPopulationData() != null) {
+                                        properties.setPopulation(
+                                            objectMapper.readValue(
+                                                projection.getPopulationData(),
+                                                PopulationResponseData.class));
+                                    }
+                                } catch (JsonProcessingException e) {
+                                    properties.setPopulation(null);
+                                }
+                                locationResponse.setProperties(properties);
+                            }
+
+                            return locationResponse;
+                        })
+                        .collect(Collectors.toList());
+
+                    emitter.send(SseEmitter.event()
+                        .name("message")
+                        .data(locationsTransformed)
+                        .reconnectTime(3000L));
+
+                    Thread.sleep(100);
+                }
+
+                emitter.send(SseEmitter.event()
+                    .name("complete")
+                    .data("done"));
+
+                emitter.complete();
+
+            } catch (Exception e) {
+                log.error("SSE error for requestId: {}", requestId, e);
+                emitter.completeWithError(e);
+            } finally {
+                sseExecutor.shutdown();
+            }
+        });
+
+        return emitter;
+    }
+
+    private String getRefenceTagName(String aggregateTagName) {
+        String[] parts = aggregateTagName.split("-(?=[^-]+$)");
+        return parts[0].toLowerCase();
+    }
+
+
+    private Double getValueByAggregationType(String tagName, LocationWithMetadataProjection row) {
+        String[] parts = tagName.split("-(?=[^-]+$)");
+        if (parts.length != 2) return row.getSum();
+
+        switch (parts[1].toLowerCase()) {
+            case "sum":    return row.getSum();
+            case "avg":    return row.getAvg();
+            case "median": return row.getMedian();
+            case "min":    return row.getMin();
+            case "max":    return row.getMax();
+            default:       return row.getSum();
+        }
+    }
+
+    public List<LocationResponse> getDatasetDataForLocationsES(DatasetLocationsRequest request) {
+
+//        UUID defaultHierarchyId = locationHierarchyService.getDefaultHierarchy().getIdentifier();
+        Simulation simulation = simulationRepository.findById(request.getSimulationId())
+            .orElseThrow(() -> new NotFoundException("Simulation not found with ID: " + request.getSimulationId()));
+
+        LocationHierarchy locationHierarchy = simulation.getPlan().getLocationHierarchy();
+
+        List<LocationDetailsProjection> locationDetailsProjections = locationService.getAllLocationDirectChildrenWithDetails(
+            request.getParentLocationId(), locationHierarchy.getIdentifier(), simulation.getPlan().getIdentifier());
+
+        List<String> locationsIds = locationDetailsProjections.stream()
+            .map(LocationDetailsProjection::getLocationId)
+            .collect(Collectors.toList());
+
+        Map<String, UUID> tagsMap = buildTagsMap(simulation, request.getDatasetsIds());
+
+        Map<String, List<EntityMetadataResponse>> metadataMap = request.getCampaignManagementFeatures()
+            ? Collections.emptyMap()
+            : fetchMetadata(simulation, request.getDatasetsIds(), locationsIds);
+
+        List<LocationResponse> locations;
+        if (request.getIncludeGeometry()) {
+            locations = fetchLocationsWithGeometryES(locationHierarchy.getIdentifier(), tagsMap, locationsIds);
+        } else {
+            locations = new ArrayList<>();
+        }
+
+        Map<String, LocationResponse> locationsMap = locations.stream()
+            .collect(Collectors.toMap(loc -> loc.getIdentifier().toString(), loc -> loc));
+
+        setLocationProperties(locationDetailsProjections).forEach(locationWithoutGeometry -> {
+            LocationResponse location = locationsMap.get(locationWithoutGeometry.getIdentifier().toString());
+            if (location != null) {
+                String locationName = location.getProperties() != null ? location.getProperties().getName() : null;
+                location.setProperties(locationWithoutGeometry.getProperties());
+                location.getProperties().setName(locationName);
+            } else {
+                locations.add(locationWithoutGeometry);
+            }
+        });
+
+        List<CompletableFuture<Void>> tasks = new ArrayList<>();
+        if (request.getCampaignManagementFeatures()) {
+            tasks.add(CompletableFuture.runAsync(() -> applyPlanAssignments(locations, simulation)));
+            tasks.add(CompletableFuture.runAsync(() -> applyBusinessStatus(locations, locationHierarchy.getIdentifier(), simulation)));
+        } else {
+            tasks.add(CompletableFuture.runAsync(() -> applyMetadataAndPopulationData(locations, metadataMap, locationDetailsProjections)));
+            tasks.add(CompletableFuture.runAsync(() -> applyStructureCounts(locations, locationHierarchy.getIdentifier())));
+        }
+        CompletableFuture.allOf(tasks.toArray(new CompletableFuture[0])).join();
+
+
+        return locations;
     }
 
     // Used only for polygons, structures need to be fetched by bbox
@@ -219,8 +586,15 @@ public class SimulationService {
                 : fetchMetadata(simulation, request.getDatasetsIds(), locationsIds);
 
         List<LocationResponse> locations;
+
+        if(MapUtils.isEmpty( request.getDataSetYearFilter())){
+            request.setDataSetYearFilter(getLatestDataYearByTagsID(locationHierarchy.getIdentifier().toString(),
+                new ArrayList<>(tagsMap.values())));
+        }
+
         if (request.getIncludeGeometry()) {
-            locations = fetchLocationsWithGeometry(locationHierarchy.getIdentifier(), tagsMap, locationsIds);
+            locations = fetchLocationsWithGeometry(locationHierarchy.getIdentifier(), tagsMap, locationsIds, simulation,
+                request.getDataSetYearFilter());
         } else {
             locations = new ArrayList<>();
         }
@@ -448,8 +822,8 @@ public class SimulationService {
         ));
     }
 
-    private List<LocationResponse> fetchLocationsWithGeometry(
-            UUID defaultHierarchyId, Map<String, UUID> tagsMap, List<String> locationsIds) {
+    private List<LocationResponse> fetchLocationsWithGeometryES(
+        UUID defaultHierarchyId, Map<String, UUID> tagsMap, List<String> locationsIds) {
 
         SearchRequest searchRequest = new SearchRequest(elasticIndex);
         searchRequest.source(buildLocationWithoutMetadataQuery(locationsIds, defaultHierarchyId, tagsMap.keySet()));
@@ -457,18 +831,65 @@ public class SimulationService {
         try {
             SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
             return Arrays.stream(searchResponse.getHits().getHits())
-                    .filter(Objects::nonNull).map(hit -> {
-                        try {
-                            return LocationResponseFactory.fromSearchHit(hit, null,
-                                    defaultHierarchyId.toString());
-                        } catch (JsonProcessingException e) {
-                            e.printStackTrace();
-                            return null;
-                        }
-                    }).collect(Collectors.toList());
+                .filter(Objects::nonNull).map(hit -> {
+                    try {
+                        return LocationResponseFactory.fromSearchHit(hit, null,
+                            defaultHierarchyId.toString());
+                    } catch (JsonProcessingException e) {
+                        e.printStackTrace();
+                        return null;
+                    }
+                }).collect(Collectors.toList());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private List<LocationResponse> fetchLocationsWithGeometry(
+            UUID locationHierarchyId, Map<String, UUID> tagsMap, List<String> locationsIds, Simulation simulation,
+        Map<UUID, Integer> dataSetYearFilter) {
+
+        // Build entityTag UUID list from simulation datasets
+        // filtered to only requested datasets (those in tagsMap values)
+        Set<UUID> requestedDatasetIds = new HashSet<>(tagsMap.values());
+
+        Map<UUID, Integer> entityTagYearMap = simulation.getDatasets().stream()
+            .filter(d -> requestedDatasetIds.contains(d.getIdentifier()))
+            .filter(d -> dataSetYearFilter != null
+                && dataSetYearFilter.containsKey(d.getIdentifier()))
+            .collect(Collectors.toMap(
+                d -> d.getEntityTag().getIdentifier(),
+                d -> dataSetYearFilter.get(d.getIdentifier())
+            ));
+
+        Map<Integer, List<UUID>> entityTagIdsByYear = simulation.getDatasets().stream()
+            .filter(d -> requestedDatasetIds.contains(d.getIdentifier()))
+            .collect(Collectors.groupingBy(
+                d -> dataSetYearFilter != null && dataSetYearFilter.containsKey(d.getIdentifier())
+                    ? dataSetYearFilter.get(d.getIdentifier())
+                    : -1, // -1 = no year filter
+                Collectors.mapping(
+                    d -> d.getEntityTag().getIdentifier(),
+                    Collectors.toList()
+                )
+            ));
+
+        List<LocationWithMetadataProjection> allResults = new ArrayList<>();
+        for (Map.Entry<Integer, List<UUID>> entry : entityTagIdsByYear.entrySet()) {
+            Integer year = entry.getKey() == -1 ? 0 : entry.getKey();
+            List<UUID> tagIds = entry.getValue();
+
+            List<LocationWithMetadataProjection> results =
+                importAggregateByDateRepository.findLocationsWithGeometryAndMetadata(
+                    locationsIds,
+                    locationHierarchyId.toString(),
+                    tagIds,
+                    year
+                );
+            allResults.addAll(results);
+        }
+
+        return LocationResponsesFromProjectionsFactory.buildLocationResponsesFromProjections(allResults, tagsMap , objectMapper);
     }
 
     private List<LocationResponse> setLocationProperties(List<LocationDetailsProjection> locationDetailsProjections) {
@@ -614,5 +1035,51 @@ public class SimulationService {
         }
 
         return structures;
+    }
+
+
+    private Map<UUID,Integer> getLatestDataYearByTagsID(String hierarchyId, List<UUID> tagIds){
+        List<TagYearAggregateDateProjection> latestYears =
+            importAggregateByDateRepository.findLatestYearPerTag(hierarchyId, tagIds );
+
+        Map<UUID, Integer> resultMap = latestYears.stream()
+            .collect(Collectors.toMap(
+                p -> UUID.fromString(p.getTagIdentifier()),
+                p -> p.getYear() != null ? p.getYear() : 0,
+                (existing, replacement) -> existing
+            ));
+
+        Map<UUID, Integer> tagYearMap = new HashMap<>();
+
+        for (UUID tagId : tagIds) {
+            tagYearMap.put(tagId, resultMap.getOrDefault(tagId, 0));
+        }
+
+        return tagYearMap;
+    }
+
+    private Map<String,Integer> getLatestDataYearByTagName(String hierarchyId, List<UUID> tagIds){
+        List<TagYearAggregateDateProjection> latestYears =
+            importAggregateByDateRepository.findLatestYearPerTag(hierarchyId, tagIds );
+
+        Map<UUID, TagYearAggregateDateProjection> resultMap = latestYears.stream()
+            .collect(Collectors.toMap(
+                p -> UUID.fromString(p.getTagIdentifier()) ,
+                p -> p,
+                (existing, replacement) -> existing
+            ));
+
+        Map<String, Integer> tagYearMap = new HashMap<>();
+
+        for (UUID tagId : tagIds) {
+            TagYearAggregateDateProjection projection = resultMap.get(tagId);
+            Integer year = (projection != null && projection.getYear() != null)
+                ? projection.getYear()
+                : 0;
+
+            tagYearMap.put(tagId.toString(), year);
+        }
+
+        return tagYearMap;
     }
 }

@@ -36,6 +36,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
+import java.time.LocalDate;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -272,7 +273,7 @@ public class LocationService {
   }
 
   public ByteArrayResource downloadLocations(UUID hierarchyIdentifier, String geographicLevelName,
-      UUID userId, ArrayList<UUID> entityTags)
+      UUID userId, ArrayList<UUID> entityTags, LocalDate captureDate)
       throws IOException {
     List<String> nodeOrder = locationHierarchyService.findNodeOrderByIdentifier(
         hierarchyIdentifier);
@@ -281,6 +282,9 @@ public class LocationService {
         geographicLevel.getIdentifier());
 
     List<List<Location>> locationBatches = batchList(locationList, 1000);
+
+    if(captureDate == null)
+      captureDate = LocalDate.now();
 
     Map<String, ParentMap> collect = locationBatches.stream().flatMap(
             locationBatch -> locationRelationshipService.getParentMap(hierarchyIdentifier,
@@ -395,6 +399,11 @@ public class LocationService {
       headerCell.setCellStyle(headerStyle);
 
       headerCell = header.createCell(headerCnt++);
+      headerCell.setCellValue("Date");
+      headerCell.setCellStyle(headerStyle);
+
+
+      headerCell = header.createCell(headerCnt++);
       headerCell.setCellValue("Name");
       headerCell.setCellStyle(headerStyle);
 
@@ -440,6 +449,10 @@ public class LocationService {
 
         cell = row.createCell(colCount++);
         cell.setCellValue(location.getIdentifier().toString());
+        cell.setCellStyle(style);
+
+        cell = row.createCell(colCount++);
+        cell.setCellValue(captureDate.toString());
         cell.setCellStyle(style);
 
         cell = row.createCell(colCount++);

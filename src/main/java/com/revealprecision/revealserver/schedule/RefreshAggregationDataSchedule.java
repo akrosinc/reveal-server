@@ -6,6 +6,7 @@ import com.revealprecision.revealserver.persistence.domain.AggregationStaging;
 import com.revealprecision.revealserver.persistence.repository.AggregationStagingRepository;
 import com.revealprecision.revealserver.persistence.repository.EventAggregateRepository;
 import com.revealprecision.revealserver.persistence.repository.ImportAggregateRepository;
+import com.revealprecision.revealserver.persistence.repository.ImportAggregateByDateRepository;
 import com.revealprecision.revealserver.persistence.repository.ResourceAggregateRepository;
 import com.revealprecision.revealserver.props.ImportAggregationProperties;
 import com.revealprecision.revealserver.props.KafkaProperties;
@@ -30,6 +31,7 @@ public class RefreshAggregationDataSchedule {
   private final KafkaProperties kafkaProperties;
   private final ImportAggregationProperties importAggregationProperties;
   private final ResourceAggregateRepository resourceAggregateRepository;
+  private final ImportAggregateByDateRepository importAggregateByDateRepository;
 
   @Scheduled(cron = "#{importAggregationProperties.cron}")
   public void refreshImportAggregateMaterializedView() {
@@ -40,6 +42,8 @@ public class RefreshAggregationDataSchedule {
       eventAggregateRepository.refreshImportAggregateNumericMaterializedView();
       eventAggregateRepository.refreshImportAggregateStringCountMaterializedView();
       resourceAggregateRepository.refreshResourceAggregateNumericMaterializedView();
+      importAggregateRepository.refreshImportAggregateNumericMaterializedView();
+      importAggregateByDateRepository.refreshMW_import_aggregate_numeric_by_date();
 
       List<AggregationStaging> aggregateStagingList = aggregationStagingRepository.findAll();
 

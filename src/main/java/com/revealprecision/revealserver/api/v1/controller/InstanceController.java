@@ -61,7 +61,7 @@ public class InstanceController {
       tags = {"Instance"}
   )
   @GetMapping
-  public ResponseEntity<Page<InstanceListProjection>> get(@RequestParam(value = "",required = false) String searchParam, Pageable pageable) {
+  public ResponseEntity<Page<InstanceListProjection>> get(@RequestParam(value = "searchParam",required = false) String searchParam, Pageable pageable) {
     return ResponseEntity.ok(instanceService.searchInstance(searchParam, pageable));
   }
 

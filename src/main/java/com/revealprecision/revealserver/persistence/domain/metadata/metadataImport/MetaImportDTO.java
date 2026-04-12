@@ -2,6 +2,7 @@ package com.revealprecision.revealserver.persistence.domain.metadata.metadataImp
 
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
+import java.time.LocalDate;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -23,4 +24,5 @@ public class MetaImportDTO {
 
   SheetData sheetData ;
 
+  private LocalDate dataCaptureDate;
 }

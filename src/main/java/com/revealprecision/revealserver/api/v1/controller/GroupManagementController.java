@@ -100,10 +100,16 @@ public class GroupManagementController {
   }
 
   @Operation(summary = "Assign Location to Group(Team)", description = "Assign Location to Group(Team)", tags = {"GroupManagement"})
-  @PostMapping(path = "/assignlocation", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<Void> assignLocations(@RequestBody AssignLocationsToTeamRequest assignLocationsToTeamRequest) {
-    groupManagementService.assignLocations(assignLocationsToTeamRequest);
+  @PostMapping(path = "/assign/teams", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<Void> assignTeams(@RequestBody AssignLocationsToTeamRequest assignLocationsToTeamRequest) {
+    groupManagementService.assignTeams(assignLocationsToTeamRequest);
     return ResponseEntity.ok().build();
+  }
+
+  @Operation(summary = "Get Location with team", description = "Get Location with team", tags = {"GroupManagement"})
+  @GetMapping(path = "/assign/teams", produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<LocationHierarchyResponse> getAssignedLocationsForTeams() {
+    return ResponseEntity.ok(groupManagementService.getAssignedLocationsForTeams());
   }
 
 

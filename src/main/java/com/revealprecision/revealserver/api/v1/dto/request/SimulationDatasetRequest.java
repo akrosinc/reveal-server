@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.api.v1.dto.request;
 
+import java.util.Map;
 import lombok.*;
 
 import java.util.List;
@@ -17,4 +18,5 @@ public class SimulationDatasetRequest {
     private String borderColor;
     private UUID parentLocationId;
     private String parentAdminLevel;
+    private Map<String, Integer> dataSetYearFilter;
 }
