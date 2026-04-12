@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.persistence.repository;
 
 import com.revealprecision.revealserver.persistence.domain.aggregation.ImportAggregationNumeric;
+import com.revealprecision.revealserver.persistence.projection.AggregateWithTagProjection;
 import com.revealprecision.revealserver.persistence.projection.LocationWithMetadataProjection;
 import com.revealprecision.revealserver.persistence.projection.TagYearAggregateDateProjection;
 import com.revealprecision.revealserver.persistence.projection.TagYearRangeAggregateDateProjection;
@@ -60,7 +61,7 @@ public interface ImportAggregateByDateRepository extends JpaRepository<ImportAgg
 
 
     @Query(value =
-        "SELECT ian.fieldcode AS tag, MAX(ian.year) AS latestYear,CAST(et.identifier AS VARCHAR)  as tagIdentifier " +
+        "SELECT ian.fieldcode AS tag, MAX(ian.year) AS year,CAST(et.identifier AS VARCHAR)  as tagIdentifier " +
             "FROM mw_import_aggregate_numeric_by_date ian " +
             "INNER JOIN entity_tag et ON ian.fieldcode = et.definition " +
             "WHERE ian.hierarchyidentifier = :hierarchyId " +

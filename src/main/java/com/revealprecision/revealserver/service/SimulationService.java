@@ -585,11 +585,46 @@ public class SimulationService {
                 ? Collections.emptyMap()
                 : fetchMetadata(simulation, request.getDatasetsIds(), locationsIds);
 
+
+
         List<LocationResponse> locations;
 
+
+
         if(MapUtils.isEmpty( request.getDataSetYearFilter())){
+            List<UUID> tagsIds = simulation.getDatasets()
+                .stream()
+                .map( ds -> {
+                    EntityTag et = ds.getEntityTag();
+                    if (et.isAggregate()) {
+                        return ds.getEntityTag().getReferencedTag();
+                    } else {
+                        return ds.getEntityTag().getIdentifier();
+                    }
+                })
+                .collect(Collectors.toList());
             request.setDataSetYearFilter(getLatestDataYearByTagsID(locationHierarchy.getIdentifier().toString(),
-                new ArrayList<>(tagsMap.values())));
+                tagsIds));
+        }
+        else{
+            Map<UUID,UUID> datasetTagIdMap = new HashMap<>();
+
+            simulation.getDatasets()
+                .forEach( ds -> {
+                    EntityTag et = ds.getEntityTag();
+                    if (et.isAggregate()) {
+                        datasetTagIdMap.put(ds.getIdentifier() , ds.getEntityTag().getReferencedTag());
+                    } else {
+                        datasetTagIdMap.put(ds.getIdentifier() , ds.getEntityTag().getIdentifier());
+                    }
+                });
+
+            Map<UUID,Integer> eTagYearMap = new HashMap<>();
+
+            for (Map.Entry<UUID, Integer> entry : request.getDataSetYearFilter().entrySet()) {
+                eTagYearMap.put(datasetTagIdMap.get(entry.getKey()), entry.getValue() );
+            }
+            request.setDataSetYearFilter(eTagYearMap);
         }
 
         if (request.getIncludeGeometry()) {
@@ -624,7 +659,9 @@ public class SimulationService {
         CompletableFuture.allOf(tasks.toArray(new CompletableFuture[0])).join();
 
 
-        return locations;
+        return locations.stream().filter(
+            l -> l.getType() != null
+        ).collect(Collectors.toList());
     }
 
     @Transactional
@@ -641,8 +678,11 @@ public class SimulationService {
         if (returnLocationData) {
             List<String> locationsIds = locationService.getAllLocationDirectChildren(request.getParentLocationId(), locationHierarchy.getIdentifier())
                                     .stream().map(UUID::toString).collect(Collectors.toList());
-            tags = entityTagService.getValuesForTagAndLocations(
-                    Collections.singletonList(request.getTagId()), locationsIds);
+
+            Map<String, Integer> latestYearMap = getLatestDataYearByTagName(locationHierarchy.getIdentifier().toString(), Collections.singletonList(request.getTagId()));
+
+            tags = entityTagService.getValuesForTagAndLocationsLatest(
+                request.getTagId(), locationsIds , latestYearMap.get(request.getTagId()));
             if (tags.isEmpty()) {
                 throw new NotFoundException("No tags found for Tag ID: " + request.getTagId());
             }
@@ -852,26 +892,33 @@ public class SimulationService {
         // Build entityTag UUID list from simulation datasets
         // filtered to only requested datasets (those in tagsMap values)
         Set<UUID> requestedDatasetIds = new HashSet<>(tagsMap.values());
+//
+//        Map<UUID, Integer> entityTagYearMap = simulation.getDatasets().stream()
+//            .filter(d -> requestedDatasetIds.contains(d.getIdentifier()))
+//            .filter(d -> dataSetYearFilter != null
+//                && dataSetYearFilter.containsKey(d.getIdentifier()))
+//            .collect(Collectors.toMap(
+//                d -> d.getEntityTag().getIdentifier(),
+//                d -> dataSetYearFilter.get(d.getIdentifier())
+//            ));
 
-        Map<UUID, Integer> entityTagYearMap = simulation.getDatasets().stream()
-            .filter(d -> requestedDatasetIds.contains(d.getIdentifier()))
-            .filter(d -> dataSetYearFilter != null
-                && dataSetYearFilter.containsKey(d.getIdentifier()))
-            .collect(Collectors.toMap(
-                d -> d.getEntityTag().getIdentifier(),
-                d -> dataSetYearFilter.get(d.getIdentifier())
-            ));
+//        Map<Integer, List<UUID>> entityTagIdsByYear = simulation.getDatasets().stream()
+//            .filter(d -> requestedDatasetIds.contains(d.getIdentifier()))
+//            .collect(Collectors.groupingBy(
+//                d -> dataSetYearFilter != null && dataSetYearFilter.containsKey(d.getIdentifier())
+//                    ? dataSetYearFilter.get(d.getIdentifier())
+//                    : -1, // -1 = no year filter
+//                Collectors.mapping(
+//                    d -> d.getEntityTag().getIdentifier(),
+//                    Collectors.toList()
+//                )
+//            ));
 
-        Map<Integer, List<UUID>> entityTagIdsByYear = simulation.getDatasets().stream()
-            .filter(d -> requestedDatasetIds.contains(d.getIdentifier()))
+        Map<Integer, List<UUID>> entityTagIdsByYear = dataSetYearFilter.entrySet()
+            .stream()
             .collect(Collectors.groupingBy(
-                d -> dataSetYearFilter != null && dataSetYearFilter.containsKey(d.getIdentifier())
-                    ? dataSetYearFilter.get(d.getIdentifier())
-                    : -1, // -1 = no year filter
-                Collectors.mapping(
-                    d -> d.getEntityTag().getIdentifier(),
-                    Collectors.toList()
-                )
+                Map.Entry::getValue, // group by year
+                Collectors.mapping(Map.Entry::getKey, Collectors.toList()) // collect UUIDs
             ));
 
         List<LocationWithMetadataProjection> allResults = new ArrayList<>();

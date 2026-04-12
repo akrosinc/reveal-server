@@ -77,6 +77,7 @@ public class LocationResponsesFromProjectionsFactory {
 
       LocationPropertyResponse properties = new LocationPropertyResponse();
       properties.setName(firstRow.getName());
+      locationResponse.setType("Feature");
       properties.setGeographicLevel(firstRow.getGeographicLevel());
       properties.setMetadata(metadata);
       locationResponse.setProperties(properties);

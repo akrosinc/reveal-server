@@ -181,4 +181,20 @@ public interface ImportAggregateRepository extends JpaRepository<ImportAggregati
         "  WHERE hierarchyidentifier = :hierarchyId "
         , nativeQuery = true)
     List<String> getUniqueTagProjectionAggregatesForHierarchy(String hierarchyId);
+
+    @Query("SELECT et as tag, " +
+        "SUM(ag.val) as sum, " +
+        "AVG(ag.val) as avg, " +
+        "AVG(ag.val) as median, " +
+        "MIN(ag.val) as min, " +
+        "MAX(ag.val) as max, " +
+        "ag.ancestor as locationIdentifier, " +
+        "ag.eventType as eventType " +
+        "FROM ImportAggregationNumeric ag " +
+        "JOIN EntityTag et ON ag.fieldCode = et.definition " +
+        "WHERE ag.ancestor IN :locationIds " +
+        "AND et.identifier = :tagId " +
+        "AND COALESCE(FUNCTION('YEAR', ag.dataCaptureDate), 0) = :year " +
+        "GROUP BY et.identifier, ag.ancestor, ag.eventType")
+    List<AggregateWithTagProjection> getValuesForTagAndLocationsAndYear(UUID tagId, List<String> locationIds, Integer year);
 }

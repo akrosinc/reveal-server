@@ -49,7 +49,6 @@ import com.revealprecision.revealserver.persistence.domain.aggregation.ImportAgg
 import com.revealprecision.revealserver.persistence.projection.AggregateWithTagProjection;
 import com.revealprecision.revealserver.persistence.projection.EntityTagWithGeoLevelAndEntityTypeProjection;
 import com.revealprecision.revealserver.persistence.projection.EntityTagWithGeoLevelProjection;
-import com.revealprecision.revealserver.persistence.projection.IdentifierNameProjection;
 import com.revealprecision.revealserver.persistence.repository.ComplexTagAccGrantsOrganizationRepository;
 import com.revealprecision.revealserver.persistence.repository.ComplexTagAccGrantsUserRepository;
 import com.revealprecision.revealserver.persistence.repository.ComplexTagRepository;
@@ -58,9 +57,9 @@ import com.revealprecision.revealserver.persistence.repository.EntityTagAccGrant
 import com.revealprecision.revealserver.persistence.repository.EntityTagOwnershipRepository;
 import com.revealprecision.revealserver.persistence.repository.EntityTagRepository;
 import com.revealprecision.revealserver.persistence.repository.GeneratedHierarchyMetadataRepository;
+import com.revealprecision.revealserver.persistence.repository.ImportAggregateByDateRepository;
 import com.revealprecision.revealserver.persistence.repository.ImportAggregateRepository;
 import com.revealprecision.revealserver.persistence.repository.ImportAggregationNumericRepository;
-import com.revealprecision.revealserver.persistence.repository.InstanceEntityTagRepository;
 import com.revealprecision.revealserver.persistence.repository.InstanceUserRepository;
 import com.revealprecision.revealserver.persistence.repository.LocationHierarchyRepository;
 import com.revealprecision.revealserver.persistence.repository.OrganizationRepository;
@@ -81,7 +80,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -127,6 +125,7 @@ public class EntityTagService {
   private final ImportAggregationNumericRepository importAggregationNumericRepository;
   private final LocationHierarchyRepository locationHierarchyRepository;
   private final InstanceUserRepository instanceUserRepository;
+  private final ImportAggregateByDateRepository importAggregateByDateRepository;
 
   @Value("${reveal.elastic.index-name}")
   String elasticIndex;
@@ -148,6 +147,11 @@ public class EntityTagService {
   public List<AggregateWithTagProjection> getValuesForTagAndLocations(List<UUID> tags,
       List<String> locationsIds) {
     return importAggregateRepository.getValuesForTagAndLocations(tags, locationsIds);
+  }
+
+  public List<AggregateWithTagProjection> getValuesForTagAndLocationsLatest(UUID tagId,
+      List<String> locationsIds, Integer year) {
+    return importAggregateRepository.getValuesForTagAndLocationsAndYear(tagId, locationsIds, year);
   }
 
   public Page<EntityTag> getOrSearchAllEntityTagsPaged(Pageable pageable, String search) {
