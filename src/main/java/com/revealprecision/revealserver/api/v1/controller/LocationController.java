@@ -153,7 +153,7 @@ public class LocationController {
     public ResponseEntity<?> downloadLocations(@PathVariable UUID hierarchyIdentifier,
                                                @PathVariable String geographicLevelName, @RequestParam ArrayList<UUID> entityTags,
                                                 @RequestParam(name = "captureDate" , required = false)
-                                                @DateTimeFormat(iso = ISO.DATE_TIME) LocalDate captureDate)
+                                                @DateTimeFormat(iso = ISO.DATE) LocalDate captureDate)
             throws IOException {
         UUID userId = UUID.fromString(UserUtils.getCurrentPrinciple().getName());
         return ResponseEntity.status(HttpStatus.OK)
