@@ -988,20 +988,20 @@ public class EntityTagService {
                     Collectors.toList())).build()
     ).collect(Collectors.toList());
 
-    List<EntityTagResponse> generated = generatedHierarchyMetadataRepository.getUniqueDataTagsAndLevelsListAssociatedWithData(
-            hierarchyIdentifier.toString()).stream().collect(Collectors.groupingBy(item ->
-            item.getEventType().concat(":").concat(item.getTag())))
-        .entrySet().stream()
-        .map(generatedEntityTagWithGeoLevelProjections -> EntityTagResponse.builder()
-            .fieldType(EntityTagFieldTypes.RESOURCE_PLANNING).isAggregate(true)
-            .tag(generatedEntityTagWithGeoLevelProjections.getKey().split(":")[1])
-            .subType(generatedEntityTagWithGeoLevelProjections.getKey().split(":")[0])
-            .valueType(DOUBLE)
-            .levels(generatedEntityTagWithGeoLevelProjections.getValue().stream()
-                .map(EntityTagWithGeoLevelAndEntityTypeProjection::getGeoName).collect(
-                    Collectors.toList()))
-            .build())
-        .collect(Collectors.toList());
+//    List<EntityTagResponse> generated = generatedHierarchyMetadataRepository.getUniqueDataTagsAndLevelsListAssociatedWithData(
+//            hierarchyIdentifier.toString()).stream().collect(Collectors.groupingBy(item ->
+//            item.getEventType().concat(":").concat(item.getTag())))
+//        .entrySet().stream()
+//        .map(generatedEntityTagWithGeoLevelProjections -> EntityTagResponse.builder()
+//            .fieldType(EntityTagFieldTypes.RESOURCE_PLANNING).isAggregate(true)
+//            .tag(generatedEntityTagWithGeoLevelProjections.getKey().split(":")[1])
+//            .subType(generatedEntityTagWithGeoLevelProjections.getKey().split(":")[0])
+//            .valueType(DOUBLE)
+//            .levels(generatedEntityTagWithGeoLevelProjections.getValue().stream()
+//                .map(EntityTagWithGeoLevelAndEntityTypeProjection::getGeoName).collect(
+//                    Collectors.toList()))
+//            .build())
+//        .collect(Collectors.toList());
 
     User currentUser = userService.getCurrentUser();
 
@@ -1024,15 +1024,11 @@ public class EntityTagService {
 
     if (!adminInstanceIds.isEmpty()) {
       datasetsIds.addAll(
-          entityTagRepository.findByInstanceId(instanceIdentifier).stream()
-              .map( et -> et.getIdentifier()).collect(
-              Collectors.toList())
+          new ArrayList<>(entityTagRepository.findUUIDByInstanceId(instanceIdentifier))
       );
 
       complexTagsIds.addAll(
-          complexTagRepository.findByInstanceId(instanceIdentifier).stream()
-              .map( et -> et.getId()).collect(
-              Collectors.toList())
+          new ArrayList<>(complexTagRepository.findUUIDByInstanceId(instanceIdentifier))
       );
     } else if (!standardInstanceIds.isEmpty()) {
       datasetsIds.addAll(
@@ -1053,7 +1049,7 @@ public class EntityTagService {
     List<EntityTagResponse> allTags = new ArrayList<>();
 //    allTags.addAll(resourceTags);
     allTags.addAll(importTags);
-    allTags.addAll(generated);
+//    allTags.addAll(generated);
 
 
 

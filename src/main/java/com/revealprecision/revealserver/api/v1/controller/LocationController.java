@@ -25,6 +25,8 @@ import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.format.annotation.DateTimeFormat.ISO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -150,7 +152,8 @@ public class LocationController {
     @GetMapping("/download/{hierarchyIdentifier}/{geographicLevelName}")
     public ResponseEntity<?> downloadLocations(@PathVariable UUID hierarchyIdentifier,
                                                @PathVariable String geographicLevelName, @RequestParam ArrayList<UUID> entityTags,
-                                                @RequestParam(name = "captureDate" , required = false) LocalDate captureDate)
+                                                @RequestParam(name = "captureDate" , required = false)
+                                                @DateTimeFormat(iso = ISO.DATE_TIME) LocalDate captureDate)
             throws IOException {
         UUID userId = UUID.fromString(UserUtils.getCurrentPrinciple().getName());
         return ResponseEntity.status(HttpStatus.OK)
