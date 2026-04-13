@@ -976,7 +976,7 @@ public class EntityTagService {
 //            ).collect(Collectors.toList());
 
     Map<String, List<EntityTagWithGeoLevelProjection>> currentImportDataTags =
-        importAggregateRepository.getUniqueDataTagsAndLevelsListAssociatedWithData(
+        importAggregateRepository.getUniqueDataTagsAndLevelsListAssociatedWithDataFromDateMView(
                 hierarchyIdentifier.toString())
             .stream().collect(Collectors.groupingBy(EntityTagWithGeoLevelProjection::getTagName));
 
