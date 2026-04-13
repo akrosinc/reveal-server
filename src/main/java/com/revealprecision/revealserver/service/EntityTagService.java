@@ -1027,9 +1027,9 @@ public class EntityTagService {
           new ArrayList<>(entityTagRepository.findUUIDByInstanceId(instanceIdentifier))
       );
 
-      complexTagsIds.addAll(
-          new ArrayList<>(complexTagRepository.findUUIDByInstanceId(instanceIdentifier))
-      );
+//      complexTagsIds.addAll(
+//          new ArrayList<>(complexTagRepository.findUUIDByInstanceId(instanceIdentifier))
+//      );
     } else if (!standardInstanceIds.isEmpty()) {
       datasetsIds.addAll(
           entityTagAccGrantsOrganizationRepository
@@ -1038,12 +1038,12 @@ public class EntityTagService {
                   Collectors.toList())
       );
 
-      complexTagsIds.addAll(
-          complexTagAccGrantsOrganizationRepository
-              .findByUserIdAndInstanceId(currentUser.getIdentifier(), instanceIdentifier)
-              .stream().map( ct -> ct.getId()).collect(
-                  Collectors.toList())
-      );
+//      complexTagsIds.addAll(
+//          complexTagAccGrantsOrganizationRepository
+//              .findByUserIdAndInstanceId(currentUser.getIdentifier(), instanceIdentifier)
+//              .stream().map( ct -> ct.getId()).collect(
+//                  Collectors.toList())
+//      );
     }
 
     List<EntityTagResponse> allTags = new ArrayList<>();
@@ -1053,8 +1053,7 @@ public class EntityTagService {
 
 
 
-    Map<String, EntityTagResponse> tagsWithAccess  = entityTagRepository.findEntityTagsByTagIn(
-            allTags.stream().map(EntityTagResponse::getTag).collect(Collectors.toSet()))
+    Map<String, EntityTagResponse> tagsWithAccess  = entityTagRepository.findEntityTagsByIdentifierIn(datasetsIds)
         .stream()
         .filter(entityTag -> datasetsIds.contains(entityTag.getReferencedTag()))
         .map(
@@ -1082,19 +1081,19 @@ public class EntityTagService {
 
     Set<ComplexTag> complexTags = complexTagRepository.findComplexTagsByIdIn(
         complexTagIdByTagNamesIn);
-
-    Map<String, ComplexTagDto> collect2 = complexTags
-
-        .stream()
-        .filter(complexTag ->
-            complexTag.getTags().stream()
-                .filter(tagWithFormulaSymbol -> tagsWithAccess.containsKey(
-                    tagWithFormulaSymbol.getName())).count() < complexTag.getTags().size()
-        )
-        .filter(complexTag -> complexTagsIds.contains(complexTag.getId()))
-        .map(
-            this::getComplexTagDto)
-        .collect(Collectors.toMap(ComplexTagDto::getTagName, a -> a));
+    Map<String, ComplexTagDto> collect2 = new HashMap<>();
+//    Map<String, ComplexTagDto> collect2 = complexTags
+//
+//        .stream()
+//        .filter(complexTag ->
+//            complexTag.getTags().stream()
+//                .filter(tagWithFormulaSymbol -> tagsWithAccess.containsKey(
+//                    tagWithFormulaSymbol.getName())).count() < complexTag.getTags().size()
+//        )
+//        .filter(complexTag -> complexTagsIds.contains(complexTag.getId()))
+//        .map(
+//            this::getComplexTagDto)
+//        .collect(Collectors.toMap(ComplexTagDto::getTagName, a -> a));
 
 
     return new TagResponse(new ArrayList<>(tagsWithAccess.values()), new ArrayList<>(collect2.values()));
