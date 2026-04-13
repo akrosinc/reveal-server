@@ -1020,7 +1020,7 @@ public class EntityTagService {
 
     List<UUID> datasetsIds = new ArrayList<>();
 
-    Set<Integer> complexTagsIds = new HashSet<>();
+//    Set<Integer> complexTagsIds = new HashSet<>();
 
     if (!adminInstanceIds.isEmpty()) {
       datasetsIds.addAll(
@@ -1053,7 +1053,8 @@ public class EntityTagService {
 
 
 
-    Map<String, EntityTagResponse> tagsWithAccess  = entityTagRepository.findEntityTagsByIdentifierIn(datasetsIds)
+    Map<String, EntityTagResponse> tagsWithAccess  = entityTagRepository.findEntityTagsByTagIn(
+            allTags.stream().map(EntityTagResponse::getTag).collect(Collectors.toSet()))
         .stream()
         .filter(entityTag -> datasetsIds.contains(entityTag.getReferencedTag()))
         .map(
@@ -1075,12 +1076,12 @@ public class EntityTagService {
 //          allTag.setLevels(allTag.getLevels());
 //        }).collect(Collectors.toList());
 
-    Set<Integer> complexTagIdByTagNamesIn = complexTagRepository.findComplexTagIdByTagNamesIn(
-        allTags.stream().map(EntityTagResponse::getTag).collect(Collectors.toSet()));
+//    Set<Integer> complexTagIdByTagNamesIn = complexTagRepository.findComplexTagIdByTagNamesIn(
+//        allTags.stream().map(EntityTagResponse::getTag).collect(Collectors.toSet()));
 
 
-    Set<ComplexTag> complexTags = complexTagRepository.findComplexTagsByIdIn(
-        complexTagIdByTagNamesIn);
+//    Set<ComplexTag> complexTags = complexTagRepository.findComplexTagsByIdIn(
+//        complexTagIdByTagNamesIn);
     Map<String, ComplexTagDto> collect2 = new HashMap<>();
 //    Map<String, ComplexTagDto> collect2 = complexTags
 //
