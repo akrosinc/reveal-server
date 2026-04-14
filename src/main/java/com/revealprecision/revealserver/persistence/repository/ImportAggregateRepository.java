@@ -234,7 +234,7 @@ public interface ImportAggregateRepository extends JpaRepository<ImportAggregati
     List<String> getUniqueTagsAggregatesForHierarchy(String hierarchyId);
 
     @Query(value = "SELECT DISTINCT fieldcode " +
-        "  FROM import_aggregate_numeric " +
+        "  FROM mw_import_aggregate_numeric_by_date " +
         "  WHERE hierarchyidentifier = :hierarchyId "
         , nativeQuery = true)
     List<String> getUniqueTagProjectionAggregatesForHierarchy(String hierarchyId);
