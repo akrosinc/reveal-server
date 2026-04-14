@@ -22,6 +22,7 @@ public class MetadataFileImportResponse {
 
   private UUID identifier;
   private String filename;
+  private String datasetName;
   private LocalDateTime uploadDatetime;
   private BulkEntryStatus status;
   private String uploadedBy;
