@@ -528,7 +528,7 @@ public class InstanceService {
   }
 
   public List<GeoTreeResponse> getLocationsByUserId(UUID userId) {
-    return null;
+    return null;   // TODO: as user can be assigned to muliple isnatnce and each isnatnce can have multiple hierarchy
   }
 
   public List<IdentifierNameResponse> getDatasetsByUserId(UUID userId) {

@@ -29,7 +29,7 @@ public interface InstanceUserRepository  extends
   @Query("SELECT iu.user.identifier AS identifier, iu.user.username AS name FROM  InstanceUser iu WHERE iu.instance.identifier = :instanceIdentifier")
   List<IdentifierNameProjection> getInstancesUsers(UUID instanceIdentifier);
 
-  @Query("SELECT iu FROM InstanceUser iu " +
+  @Query("SELECT DISTINCT iu FROM InstanceUser iu " +
       "JOIN FETCH iu.instance i " +
       "JOIN FETCH iu.user u " +
       "JOIN FETCH iu.role r " +
