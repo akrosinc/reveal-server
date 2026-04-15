@@ -5,7 +5,7 @@ DROP MATERIALIZED VIEW IF EXISTS public.mw_import_aggregate_numeric_by_date;
 CREATE MATERIALIZED VIEW IF NOT EXISTS public.mw_import_aggregate_numeric_by_date
 TABLESPACE pg_default
 AS
-SELECT gen_random_uuid() AS id,
+SELECT uuid_generate_v4() AS id,
        ean2.ancestor                                                                    AS name,
        ean2.ancestor                                                                    AS locationidentifier,
        ean2.hierarchy_identifier                                                        AS hierarchyidentifier,
