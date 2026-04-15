@@ -31,7 +31,7 @@ public class UserRolesResponse {
   @NoArgsConstructor
   @AllArgsConstructor
   public static class GroupRoleInfo {
-    private IdentifierNameResponse group;
+    private GroupIdentifierNameTypeResponse group;
     private List<IdentifierNameResponse> roles;
   }
 }

@@ -7,6 +7,7 @@ import com.revealprecision.revealserver.api.v1.dto.request.GlobalUserRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.InstanceRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.ComplexTagResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.GeoTreeResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.GroupIdentifierNameTypeResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.IdentifierNameResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceContextResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceResponse;
@@ -528,7 +529,7 @@ public class InstanceService {
   }
 
   public List<GeoTreeResponse> getLocationsByUserId(UUID userId) {
-    return null;
+    return null;   // TODO: as user can be assigned to muliple isnatnce and each isnatnce can have multiple hierarchy
   }
 
   public List<IdentifierNameResponse> getDatasetsByUserId(UUID userId) {
@@ -624,9 +625,10 @@ public class InstanceService {
                     .collect(Collectors.toList());
 
                 return UserRolesResponse.GroupRoleInfo.builder()
-                    .group(IdentifierNameResponse.builder()
+                    .group(GroupIdentifierNameTypeResponse.builder()
                         .identifier(org.getIdentifier())
                         .name(org.getName())
+                        .type(org.getType())
                         .build())
                     .roles(roles)
                     .build();

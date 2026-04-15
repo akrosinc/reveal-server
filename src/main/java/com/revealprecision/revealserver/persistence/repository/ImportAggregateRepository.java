@@ -162,6 +162,63 @@ public interface ImportAggregateRepository extends JpaRepository<ImportAggregati
             + "", nativeQuery = true)
     List<EntityTagWithGeoLevelProjection> getUniqueDataTagsAndLevelsListAssociatedWithData(String hierarchyIdentifier);
 
+
+    @Query(value = "SELECT DISTINCT\n"
+        + "    concat(ian.fieldcode,'-sum') as tagName,\n"
+        + "    gl.name as geoName,\n"
+        + "    cast(gl.identifier as varchar ) as geoIdentifier\n"
+        + "from mw_import_aggregate_numeric_by_date ian\n"
+        + "         left join location l on cast(l.identifier as varchar) = ian.locationidentifier\n"
+        + "         left join geographic_level gl on gl.identifier = l.geographic_level_identifier\n"
+        + "WHERE ian.hierarchyidentifier = :hierarchyIdentifier\n"
+        + "UNION ALL\n"
+        + "SELECT DISTINCT\n"
+        + "    concat(ian.fieldcode,'-min') as tagName,\n"
+        + "    gl.name as geoName,\n"
+        + "    cast(gl.identifier as varchar ) as geoIdentifier\n"
+        + "from mw_import_aggregate_numeric_by_date ian\n"
+        + "         left join location l on cast(l.identifier as varchar) = ian.locationidentifier\n"
+        + "         left join geographic_level gl on gl.identifier = l.geographic_level_identifier\n"
+        + "WHERE ian.hierarchyidentifier = :hierarchyIdentifier\n"
+        + "UNION ALL\n"
+        + "SELECT DISTINCT\n"
+        + "    concat(ian.fieldcode,'-max') as tagName,\n"
+        + "    gl.name as geoName,\n"
+        + "    cast(gl.identifier as varchar ) as geoIdentifier\n"
+        + "from mw_import_aggregate_numeric_by_date ian\n"
+        + "         left join location l on cast(l.identifier as varchar) = ian.locationidentifier\n"
+        + "         left join geographic_level gl on gl.identifier = l.geographic_level_identifier\n"
+        + "WHERE ian.hierarchyidentifier = :hierarchyIdentifier\n"
+        + "UNION ALL\n"
+        + "SELECT DISTINCT\n"
+        + "    concat(ian.fieldcode,'-median') as tagName,\n"
+        + "    gl.name as geoName,\n"
+        + "    cast(gl.identifier as varchar ) as geoIdentifier\n"
+        + "from mw_import_aggregate_numeric_by_date ian\n"
+        + "         left join location l on cast(l.identifier as varchar) = ian.locationidentifier\n"
+        + "         left join geographic_level gl on gl.identifier = l.geographic_level_identifier\n"
+        + "WHERE ian.hierarchyidentifier = :hierarchyIdentifier\n"
+        + "UNION ALL\n"
+        + "SELECT DISTINCT\n"
+        + "    concat(ian.fieldcode,'-average') as tagName,\n"
+        + "    gl.name as geoName,\n"
+        + "    cast(gl.identifier as varchar ) as geoIdentifier\n"
+        + "from mw_import_aggregate_numeric_by_date ian\n"
+        + "         left join location l on cast(l.identifier as varchar) = ian.locationidentifier\n"
+        + "         left join geographic_level gl on gl.identifier = l.geographic_level_identifier\n"
+        + "WHERE ian.hierarchyidentifier = :hierarchyIdentifier \n"
+        + "UNION ALL \n"
+        + "SELECT DISTINCT\n"
+        + "    concat(ian.fieldcode,'-count') as tagName,\n"
+        + "    gl.name as geoName,\n"
+        + "    cast(gl.identifier as varchar ) as geoIdentifier\n"
+        + "from import_aggregate_string_count ian\n"
+        + "         left join location l on cast(l.identifier as varchar) = ian.locationidentifier\n"
+        + "         left join geographic_level gl on gl.identifier = l.geographic_level_identifier\n"
+        + "WHERE ian.hierarchyidentifier = :hierarchyIdentifier"
+        + "", nativeQuery = true)
+    List<EntityTagWithGeoLevelProjection> getUniqueDataTagsAndLevelsListAssociatedWithDataFromDateMView(String hierarchyIdentifier);
+
     @Query(value = "WITH distinct_fieldcodes AS (\n" +
             "  SELECT DISTINCT fieldcode\n" +
             "  FROM import_aggregate_numeric \n" +
@@ -177,8 +234,24 @@ public interface ImportAggregateRepository extends JpaRepository<ImportAggregati
     List<String> getUniqueTagsAggregatesForHierarchy(String hierarchyId);
 
     @Query(value = "SELECT DISTINCT fieldcode " +
-        "  FROM import_aggregate_numeric " +
+        "  FROM mw_import_aggregate_numeric_by_date " +
         "  WHERE hierarchyidentifier = :hierarchyId "
         , nativeQuery = true)
     List<String> getUniqueTagProjectionAggregatesForHierarchy(String hierarchyId);
+
+    @Query("SELECT et as tag, " +
+        "SUM(ag.val) as sum, " +
+        "AVG(ag.val) as avg, " +
+        "AVG(ag.val) as median, " +
+        "MIN(ag.val) as min, " +
+        "MAX(ag.val) as max, " +
+        "ag.ancestor as locationIdentifier, " +
+        "ag.eventType as eventType " +
+        "FROM ImportAggregationNumeric ag " +
+        "JOIN EntityTag et ON ag.fieldCode = et.definition " +
+        "WHERE ag.ancestor IN :locationIds " +
+        "AND et.identifier = :tagId " +
+        "AND COALESCE(FUNCTION('YEAR', ag.dataCaptureDate), 0) = :year " +
+        "GROUP BY et.identifier, ag.ancestor, ag.eventType")
+    List<AggregateWithTagProjection> getValuesForTagAndLocationsAndYear(UUID tagId, List<String> locationIds, Integer year);
 }

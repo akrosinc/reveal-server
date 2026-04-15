@@ -45,6 +45,7 @@ public class MetadataImportResponseFactory {
         .uploadedBy(metadataImport.getUploadedBy())
         .owners(owners1)
         .isOwner(owners1.stream().anyMatch(owner -> owner.getId().equals(currentUser.getSid())))
+        .datasetName(metadataImport.getMetadataName())
         .build();
 
     if (entityMap != null && entityMap.containsKey(metadataImport.getIdentifier())) {

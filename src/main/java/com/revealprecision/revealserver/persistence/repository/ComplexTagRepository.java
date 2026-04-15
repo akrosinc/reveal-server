@@ -26,6 +26,10 @@ public interface ComplexTagRepository extends JpaRepository<ComplexTag, Integer>
       + " where  insTag.instance.identifier = :instanceIdentifier ")
   Set<ComplexTag> findByInstanceId(UUID instanceIdentifier);
 
+  @Query(value = "select ct.id from ComplexTag ct Inner join InstanceComplexTag insTag on insTag.complexTag.id =  ct.id"
+      + " where  insTag.instance.identifier = :instanceIdentifier ")
+  Set<Integer> findUUIDByInstanceId(UUID instanceIdentifier);
+
   Page<ComplexTag> findTagsByHierarchyId(String hierarchyId, Pageable pageable);
 
   Page<ComplexTag> findTagsByHierarchyIdAndIsPublicEquals(String hierarchyId, boolean isPublic, Pageable pageable);

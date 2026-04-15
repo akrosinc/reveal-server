@@ -44,6 +44,7 @@ public interface EntityTagRepository extends JpaRepository<EntityTag, UUID> {
 
   Set<EntityTag> findEntityTagsByTagIn(Set<String> tags);
 
+
   Set<EntityTag> findEntityTagsByReferencedTagIn(List<UUID> id);
 
   List<EntityTag> findEntityTagsByMetadataImport_Identifier(UUID id);
@@ -59,4 +60,9 @@ public interface EntityTagRepository extends JpaRepository<EntityTag, UUID> {
   @Query(value = "select et from EntityTag et Inner join InstanceEntityTag insTag on insTag.entityTag.identifier =  et.identifier"
       + " where  insTag.instance.identifier = :instanceIdentifier ")
   List<EntityTag> findByInstanceId(UUID instanceIdentifier);
+
+  @Query(value = "select et.identifier from EntityTag et Inner join InstanceEntityTag insTag on insTag.entityTag.identifier =  et.identifier"
+      + " where  insTag.instance.identifier = :instanceIdentifier ")
+  List<UUID> findUUIDByInstanceId(UUID instanceIdentifier);
+
 }

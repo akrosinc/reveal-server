@@ -49,7 +49,6 @@ import com.revealprecision.revealserver.persistence.domain.aggregation.ImportAgg
 import com.revealprecision.revealserver.persistence.projection.AggregateWithTagProjection;
 import com.revealprecision.revealserver.persistence.projection.EntityTagWithGeoLevelAndEntityTypeProjection;
 import com.revealprecision.revealserver.persistence.projection.EntityTagWithGeoLevelProjection;
-import com.revealprecision.revealserver.persistence.projection.IdentifierNameProjection;
 import com.revealprecision.revealserver.persistence.repository.ComplexTagAccGrantsOrganizationRepository;
 import com.revealprecision.revealserver.persistence.repository.ComplexTagAccGrantsUserRepository;
 import com.revealprecision.revealserver.persistence.repository.ComplexTagRepository;
@@ -58,9 +57,9 @@ import com.revealprecision.revealserver.persistence.repository.EntityTagAccGrant
 import com.revealprecision.revealserver.persistence.repository.EntityTagOwnershipRepository;
 import com.revealprecision.revealserver.persistence.repository.EntityTagRepository;
 import com.revealprecision.revealserver.persistence.repository.GeneratedHierarchyMetadataRepository;
+import com.revealprecision.revealserver.persistence.repository.ImportAggregateByDateRepository;
 import com.revealprecision.revealserver.persistence.repository.ImportAggregateRepository;
 import com.revealprecision.revealserver.persistence.repository.ImportAggregationNumericRepository;
-import com.revealprecision.revealserver.persistence.repository.InstanceEntityTagRepository;
 import com.revealprecision.revealserver.persistence.repository.InstanceUserRepository;
 import com.revealprecision.revealserver.persistence.repository.LocationHierarchyRepository;
 import com.revealprecision.revealserver.persistence.repository.OrganizationRepository;
@@ -81,7 +80,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -127,6 +125,7 @@ public class EntityTagService {
   private final ImportAggregationNumericRepository importAggregationNumericRepository;
   private final LocationHierarchyRepository locationHierarchyRepository;
   private final InstanceUserRepository instanceUserRepository;
+  private final ImportAggregateByDateRepository importAggregateByDateRepository;
 
   @Value("${reveal.elastic.index-name}")
   String elasticIndex;
@@ -148,6 +147,11 @@ public class EntityTagService {
   public List<AggregateWithTagProjection> getValuesForTagAndLocations(List<UUID> tags,
       List<String> locationsIds) {
     return importAggregateRepository.getValuesForTagAndLocations(tags, locationsIds);
+  }
+
+  public List<AggregateWithTagProjection> getValuesForTagAndLocationsLatest(UUID tagId,
+      List<String> locationsIds, Integer year) {
+    return importAggregateRepository.getValuesForTagAndLocationsAndYear(tagId, locationsIds, year);
   }
 
   public Page<EntityTag> getOrSearchAllEntityTagsPaged(Pageable pageable, String search) {
@@ -972,7 +976,7 @@ public class EntityTagService {
 //            ).collect(Collectors.toList());
 
     Map<String, List<EntityTagWithGeoLevelProjection>> currentImportDataTags =
-        importAggregateRepository.getUniqueDataTagsAndLevelsListAssociatedWithData(
+        importAggregateRepository.getUniqueDataTagsAndLevelsListAssociatedWithDataFromDateMView(
                 hierarchyIdentifier.toString())
             .stream().collect(Collectors.groupingBy(EntityTagWithGeoLevelProjection::getTagName));
 
@@ -984,20 +988,20 @@ public class EntityTagService {
                     Collectors.toList())).build()
     ).collect(Collectors.toList());
 
-    List<EntityTagResponse> generated = generatedHierarchyMetadataRepository.getUniqueDataTagsAndLevelsListAssociatedWithData(
-            hierarchyIdentifier.toString()).stream().collect(Collectors.groupingBy(item ->
-            item.getEventType().concat(":").concat(item.getTag())))
-        .entrySet().stream()
-        .map(generatedEntityTagWithGeoLevelProjections -> EntityTagResponse.builder()
-            .fieldType(EntityTagFieldTypes.RESOURCE_PLANNING).isAggregate(true)
-            .tag(generatedEntityTagWithGeoLevelProjections.getKey().split(":")[1])
-            .subType(generatedEntityTagWithGeoLevelProjections.getKey().split(":")[0])
-            .valueType(DOUBLE)
-            .levels(generatedEntityTagWithGeoLevelProjections.getValue().stream()
-                .map(EntityTagWithGeoLevelAndEntityTypeProjection::getGeoName).collect(
-                    Collectors.toList()))
-            .build())
-        .collect(Collectors.toList());
+//    List<EntityTagResponse> generated = generatedHierarchyMetadataRepository.getUniqueDataTagsAndLevelsListAssociatedWithData(
+//            hierarchyIdentifier.toString()).stream().collect(Collectors.groupingBy(item ->
+//            item.getEventType().concat(":").concat(item.getTag())))
+//        .entrySet().stream()
+//        .map(generatedEntityTagWithGeoLevelProjections -> EntityTagResponse.builder()
+//            .fieldType(EntityTagFieldTypes.RESOURCE_PLANNING).isAggregate(true)
+//            .tag(generatedEntityTagWithGeoLevelProjections.getKey().split(":")[1])
+//            .subType(generatedEntityTagWithGeoLevelProjections.getKey().split(":")[0])
+//            .valueType(DOUBLE)
+//            .levels(generatedEntityTagWithGeoLevelProjections.getValue().stream()
+//                .map(EntityTagWithGeoLevelAndEntityTypeProjection::getGeoName).collect(
+//                    Collectors.toList()))
+//            .build())
+//        .collect(Collectors.toList());
 
     User currentUser = userService.getCurrentUser();
 
@@ -1016,20 +1020,16 @@ public class EntityTagService {
 
     List<UUID> datasetsIds = new ArrayList<>();
 
-    Set<Integer> complexTagsIds = new HashSet<>();
+//    Set<Integer> complexTagsIds = new HashSet<>();
 
     if (!adminInstanceIds.isEmpty()) {
       datasetsIds.addAll(
-          entityTagRepository.findByInstanceId(instanceIdentifier).stream()
-              .map( et -> et.getIdentifier()).collect(
-              Collectors.toList())
+          new ArrayList<>(entityTagRepository.findUUIDByInstanceId(instanceIdentifier))
       );
 
-      complexTagsIds.addAll(
-          complexTagRepository.findByInstanceId(instanceIdentifier).stream()
-              .map( et -> et.getId()).collect(
-              Collectors.toList())
-      );
+//      complexTagsIds.addAll(
+//          new ArrayList<>(complexTagRepository.findUUIDByInstanceId(instanceIdentifier))
+//      );
     } else if (!standardInstanceIds.isEmpty()) {
       datasetsIds.addAll(
           entityTagAccGrantsOrganizationRepository
@@ -1038,18 +1038,18 @@ public class EntityTagService {
                   Collectors.toList())
       );
 
-      complexTagsIds.addAll(
-          complexTagAccGrantsOrganizationRepository
-              .findByUserIdAndInstanceId(currentUser.getIdentifier(), instanceIdentifier)
-              .stream().map( ct -> ct.getId()).collect(
-                  Collectors.toList())
-      );
+//      complexTagsIds.addAll(
+//          complexTagAccGrantsOrganizationRepository
+//              .findByUserIdAndInstanceId(currentUser.getIdentifier(), instanceIdentifier)
+//              .stream().map( ct -> ct.getId()).collect(
+//                  Collectors.toList())
+//      );
     }
 
     List<EntityTagResponse> allTags = new ArrayList<>();
 //    allTags.addAll(resourceTags);
     allTags.addAll(importTags);
-    allTags.addAll(generated);
+//    allTags.addAll(generated);
 
 
 
@@ -1076,25 +1076,25 @@ public class EntityTagService {
 //          allTag.setLevels(allTag.getLevels());
 //        }).collect(Collectors.toList());
 
-    Set<Integer> complexTagIdByTagNamesIn = complexTagRepository.findComplexTagIdByTagNamesIn(
-        allTags.stream().map(EntityTagResponse::getTag).collect(Collectors.toSet()));
+//    Set<Integer> complexTagIdByTagNamesIn = complexTagRepository.findComplexTagIdByTagNamesIn(
+//        allTags.stream().map(EntityTagResponse::getTag).collect(Collectors.toSet()));
 
 
-    Set<ComplexTag> complexTags = complexTagRepository.findComplexTagsByIdIn(
-        complexTagIdByTagNamesIn);
-
-    Map<String, ComplexTagDto> collect2 = complexTags
-
-        .stream()
-        .filter(complexTag ->
-            complexTag.getTags().stream()
-                .filter(tagWithFormulaSymbol -> tagsWithAccess.containsKey(
-                    tagWithFormulaSymbol.getName())).count() < complexTag.getTags().size()
-        )
-        .filter(complexTag -> complexTagsIds.contains(complexTag.getId()))
-        .map(
-            this::getComplexTagDto)
-        .collect(Collectors.toMap(ComplexTagDto::getTagName, a -> a));
+//    Set<ComplexTag> complexTags = complexTagRepository.findComplexTagsByIdIn(
+//        complexTagIdByTagNamesIn);
+    Map<String, ComplexTagDto> collect2 = new HashMap<>();
+//    Map<String, ComplexTagDto> collect2 = complexTags
+//
+//        .stream()
+//        .filter(complexTag ->
+//            complexTag.getTags().stream()
+//                .filter(tagWithFormulaSymbol -> tagsWithAccess.containsKey(
+//                    tagWithFormulaSymbol.getName())).count() < complexTag.getTags().size()
+//        )
+//        .filter(complexTag -> complexTagsIds.contains(complexTag.getId()))
+//        .map(
+//            this::getComplexTagDto)
+//        .collect(Collectors.toMap(ComplexTagDto::getTagName, a -> a));
 
 
     return new TagResponse(new ArrayList<>(tagsWithAccess.values()), new ArrayList<>(collect2.values()));

@@ -26,6 +26,9 @@ import com.revealprecision.revealserver.service.LocationHierarchyService;
 import com.revealprecision.revealserver.service.LocationService;
 import com.revealprecision.revealserver.util.UserUtils;
 import java.security.Principal;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -45,6 +48,8 @@ import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.DateUtil;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFRow;
@@ -141,6 +146,9 @@ public class MetaFieldSetMapper {
         metaImportDTO.setLocation(getLocation(locationMap, i,
             dataRow, 1));
 
+        metaImportDTO.setDataCaptureDate(getDataCaptureDate(dataRow, i, 2));
+
+
         SheetData sheetData = setMetadata(tagNameRow, validatedTagMap, dataRow, startingColForTags);
         metaImportDTO.setSheetData(sheetData);
 
@@ -201,7 +209,47 @@ public class MetaFieldSetMapper {
     return loc;
   }
 
+  private LocalDate getDataCaptureDate(XSSFRow dataRow,int i, int colIndex) {
+    try {
+      XSSFCell cell = dataRow.getCell(colIndex);
+      if (cell == null) return null;
+      if (cell.getCellType() == CellType.NUMERIC && DateUtil.isCellDateFormatted(cell)) {
+        return cell.getLocalDateTimeCellValue().toLocalDate();
+      } else if (cell.getCellType() == CellType.STRING) {
+        String dateStr = cell.getStringCellValue();
+        if (dateStr != null && !dateStr.isBlank()) {
+          for (DateTimeFormatter formatter : List.of(
+              DateTimeFormatter.ofPattern("yyyy-MM-dd"),
+              DateTimeFormatter.ofPattern("dd/MM/yyyy"),
+              DateTimeFormatter.ofPattern("MM/dd/yyyy"),
+              DateTimeFormatter.ofPattern("dd-MM-yyyy")
+          )) {
+            try { return LocalDate.parse(dateStr.trim(), formatter); }
+            catch (DateTimeParseException ignored) {}
+          }
+        }
+      }
+    } catch (Exception e) {
+      log.warn("Error reading date at col {}: {}", colIndex, e.getMessage());
+    }
+    return null;
+  }
+
+
   private LocationHierarchy getLocationHierarchy(Map<UUID, LocationHierarchy> hierarchyMap, int i,
+      XSSFRow dataRow, int j) {
+    LocationHierarchy locationHierarchy = null;
+    try {
+      locationHierarchy = hierarchyMap.get(
+          UUID.fromString(dataRow.getCell(j).toString()));
+
+    } catch (NotFoundException | IllegalArgumentException exception) {
+      log.warn("locationHierarchy not found or not uuid coord: {},{}", i, j);
+    }
+    return locationHierarchy;
+  }
+
+  private LocationHierarchy getDataCaptureDate(Map<UUID, LocationHierarchy> hierarchyMap, int i,
       XSSFRow dataRow, int j) {
     LocationHierarchy locationHierarchy = null;
     try {

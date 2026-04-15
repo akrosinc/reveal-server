@@ -47,6 +47,7 @@ import com.revealprecision.revealserver.props.ImportAggregationProperties;
 import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.util.UserUtils;
 import java.security.Principal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -139,7 +140,7 @@ public class MetadataService {
           "Location");
       Set<UUID> hierarchyList = metaFieldSetMapper.extractIdsFor(sheet, fileRowsCount, 0,
           "Hierarchy");
-      Set<String> geoLevels = metaFieldSetMapper.extractStringsFor(sheet, fileRowsCount, 3,
+      Set<String> geoLevels = metaFieldSetMapper.extractStringsFor(sheet, fileRowsCount, 4,
           "GeographicLevel");
 
       Map<UUID, Location> locationMap = metaFieldSetMapper.validateLocationsAndReturnLocationMapAndGetLocationMap(
@@ -178,12 +179,12 @@ public class MetadataService {
       //send data to kafka listener
       if (!metaImportDTOS.isEmpty()) {
         saveToDB(metaImportDTOS, ancestryMap, currentMetaImport);
-        publishToMessagingGen(metaImportDTOS.stream().map(
-                metaImportDTO -> new SaveHierarchyMetadata(
-                    metaImportDTO.getLocation().getIdentifier().toString(),
-                    metaImportDTO.getLocationHierarchy().getIdentifier().toString(),
-                    metaImportDTO.getLocationHierarchy().getNodeOrder())).collect(Collectors.toList()),
-            ancestryMap);
+//        publishToMessagingGen(metaImportDTOS.stream().map(
+//                metaImportDTO -> new SaveHierarchyMetadata(
+//                    metaImportDTO.getLocation().getIdentifier().toString(),
+//                    metaImportDTO.getLocationHierarchy().getIdentifier().toString(),
+//                    metaImportDTO.getLocationHierarchy().getNodeOrder())).collect(Collectors.toList()),
+//            ancestryMap);
       }
 
       entityTagService.saveEntityTags(validatedTagMap.getEntityTags().stream()
@@ -236,7 +237,8 @@ public class MetadataService {
                         (key, value) ->
                             updateDB(metaImportDTO.getLocation().getName(), ancestor, value,
                                 key.getTag(), key.getValueType(),
-                                metaImportDTO.getLocationHierarchy().getIdentifier().toString())
+                                metaImportDTO.getLocationHierarchy().getIdentifier().toString()
+                                ,metaImportDTO.getDataCaptureDate())
                     )));
 
     List<Entry<EntityTagEvent, Object>> string = metaImportDTOS.stream().flatMap(
@@ -288,13 +290,14 @@ public class MetadataService {
   }
 
   public void updateDB(String name, String locId, Object importEntityTagValue, String tag,
-      String type, String hierarchyIdentifier) {
+      String type, String hierarchyIdentifier, LocalDate dataCaptureDate) {
     try {
       switch (type) {
         case STRING:
         case BOOLEAN:
-          Optional<ImportAggregationString> importAggregationStringOptional = importAggregationStringRepository.findByNameAndAncestorAndFieldCodeAndHierarchyIdentifier(
-              name, locId, tag, hierarchyIdentifier);
+          Optional<ImportAggregationString> importAggregationStringOptional =
+              importAggregationStringRepository.findByNameAndAncestorAndFieldCodeAndHierarchyIdentifierAndDataCaptureDate(
+                                      name, locId, tag, hierarchyIdentifier,dataCaptureDate);
           ImportAggregationString importAggregationString;
           if (importAggregationStringOptional.isPresent()) {
             importAggregationString = importAggregationStringOptional.get();
@@ -305,15 +308,18 @@ public class MetadataService {
                 .eventType(EntityTagFieldTypes.IMPORT)
                 .fieldCode(tag)
                 .hierarchyIdentifier(hierarchyIdentifier)
-                .name(name).planIdentifier(null).build();
+                .name(name).planIdentifier(null)
+                .dataCaptureDate(dataCaptureDate)
+                .build();
           }
           importAggregationStringRepository.save(importAggregationString);
 
           break;
         case DOUBLE:
         case INTEGER:
-          Optional<ImportAggregationNumeric> importAggregationNumericOptional = importAggregationNumericRepository.findByNameAndAncestorAndFieldCodeAndHierarchyIdentifier(
-              name, locId, tag, hierarchyIdentifier);
+          Optional<ImportAggregationNumeric> importAggregationNumericOptional =
+              importAggregationNumericRepository.findByNameAndAncestorAndFieldCodeAndHierarchyIdentifierAndDataCaptureDate(
+              name, locId, tag, hierarchyIdentifier, dataCaptureDate);
           ImportAggregationNumeric importAggregationNumeric;
           if (importAggregationNumericOptional.isPresent()) {
             importAggregationNumeric = importAggregationNumericOptional.get();
@@ -323,6 +329,7 @@ public class MetadataService {
                 .val((Double) importEntityTagValue).ancestor(locId)
                 .hierarchyIdentifier(hierarchyIdentifier)
                 .eventType(EntityTagFieldTypes.IMPORT).fieldCode(tag).name(name)
+                .dataCaptureDate(dataCaptureDate)
                 .planIdentifier(null).build();
           }
 

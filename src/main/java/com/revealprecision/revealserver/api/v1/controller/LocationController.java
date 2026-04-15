@@ -16,6 +16,7 @@ import com.revealprecision.revealserver.util.UserUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -24,6 +25,8 @@ import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.format.annotation.DateTimeFormat.ISO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -148,14 +151,16 @@ public class LocationController {
 
     @GetMapping("/download/{hierarchyIdentifier}/{geographicLevelName}")
     public ResponseEntity<?> downloadLocations(@PathVariable UUID hierarchyIdentifier,
-                                               @PathVariable String geographicLevelName, @RequestParam ArrayList<UUID> entityTags)
+                                               @PathVariable String geographicLevelName, @RequestParam ArrayList<UUID> entityTags,
+                                                @RequestParam(name = "captureDate" , required = false)
+                                                @DateTimeFormat(iso = ISO.DATE) LocalDate captureDate)
             throws IOException {
         UUID userId = UUID.fromString(UserUtils.getCurrentPrinciple().getName());
         return ResponseEntity.status(HttpStatus.OK)
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .header("Content-disposition", "attachment;filename=Location.xlsx")
                 .body(locationService.downloadLocations(hierarchyIdentifier, geographicLevelName, userId,
-                        entityTags));
+                        entityTags, captureDate));
     }
 
     @GetMapping("/refresh-counts")
