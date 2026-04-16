@@ -5,14 +5,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.revealprecision.revealserver.api.v1.dto.response.EntityMetadataResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationPropertyResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationResponse;
-import com.revealprecision.revealserver.persistence.domain.Dataset;
 import com.revealprecision.revealserver.persistence.domain.Geometry;
-import com.revealprecision.revealserver.persistence.domain.Simulation;
 import com.revealprecision.revealserver.persistence.projection.LocationWithMetadataProjection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.AccessLevel;
@@ -89,7 +85,7 @@ public class LocationResponsesFromProjectionsFactory {
 
   public static  String getRefenceTagName(String aggregateTagName) {
     String[] parts = aggregateTagName.split("-(?=[^-]+$)");
-    return parts[0].toLowerCase();
+    return parts[0];
   }
 
 
