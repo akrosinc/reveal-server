@@ -478,29 +478,37 @@ public class InstanceService {
   }
 
   public List<GeoTreeResponse> getAssignedInstanceAreasTree(List<String> nodeList) {
-    return getAssignedInstanceAreasTree(null , nodeList);
+    return getAssignedInstanceAreasTree((UUID)null , nodeList);
   }
 
   public List<GeoTreeResponse> getAssignedInstanceAreasTree() {
-    return getAssignedInstanceAreasTree(null , null);
+    return getAssignedInstanceAreasTree((UUID)null , null);
   }
 
   public List<GeoTreeResponse> getAssignedInstanceAreasTree(UUID instanceIdentifier) {
     return getAssignedInstanceAreasTree(instanceIdentifier , null);
   }
 
+  public List<GeoTreeResponse> getAssignedInstanceAreasTree(Instance instance) {
+    return getAssignedInstanceAreasTree(instance , null);
+  }
 
   public List<GeoTreeResponse> getAssignedInstanceAreasTree(UUID instanceIdentifier , List<String> nodeList ) {
-
-    List<IdentifierNameResponse> instancesAreas = null;
     Instance instance;
+
     if (instanceIdentifier == null) {
-      instance = findById(InstanceContext.get());
-      instancesAreas = getAssignedInstanceAreas();
-    } else {
-      instance = findById(instanceIdentifier);
-      instancesAreas = getAssignedInstanceAreas(instanceIdentifier);
+      instanceIdentifier = InstanceContext.get();
     }
+
+    instance = findById(instanceIdentifier);
+
+    return  getAssignedInstanceAreasTree(instance, nodeList);
+
+  }
+
+  public List<GeoTreeResponse> getAssignedInstanceAreasTree(Instance instance , List<String> nodeList ) {
+
+    List<IdentifierNameResponse> instancesAreas = getAssignedInstanceAreas(instance.getIdentifier());
 
     List<UUID> instancesAreasIds = instancesAreas.stream()
         .map(IdentifierNameResponse::getIdentifier)
@@ -669,7 +677,7 @@ public class InstanceService {
 
     LocationHierarchy instanceLocationHierarchy =  instance.getLocationHierarchy();
 
-    List <GeoTreeResponse> hierarchyTree  =   getAssignedInstanceAreasTree(instanceIdentifier );
+    List <GeoTreeResponse> hierarchyTree  =   getAssignedInstanceAreasTree(instance );
     return LocationHierarchyResponse.builder().identifier(instanceLocationHierarchy.getIdentifier().toString())
         .name(instanceLocationHierarchy.getName())
         .geoTree(hierarchyTree)

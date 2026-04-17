@@ -432,6 +432,7 @@ public class LocationRelationshipService {
       return  locationRelationshipRepository.getRelationshipsByLocationIdsAndNodeListNotIn(locationIds, nodeList, locationHierarchy);
     }
   }
+  
 
   public List<GeoTreeResponse> getFilteredGeoTreeByLocationIds(LocationHierarchy locationHierarchy, List<UUID> locationIds, List<String> nodeList ) {
 

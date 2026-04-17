@@ -6,6 +6,7 @@ import com.revealprecision.revealserver.api.v1.dto.factory.LocationResponseFacto
 import com.revealprecision.revealserver.api.v1.dto.factory.LocationResponsesFromProjectionsFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.OrganizationResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.DatasetLocationsRequest;
+import com.revealprecision.revealserver.api.v1.dto.request.DeleteDatasetRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.UpdateDatasetRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.SimulationDatasetRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.*;
@@ -156,12 +157,12 @@ public class SimulationService {
         return simulationRepository.save(simulation);
     }
 
-    public Simulation deleteSimulationDataset(UpdateDatasetRequest request) {
+    public Simulation deleteSimulationDataset(DeleteDatasetRequest request) {
         Simulation simulation = simulationRepository.findById(request.getSimulationId()).orElseThrow(() -> new NotFoundException("Simulation not found with ID: " + request.getSimulationId()));
-        Dataset datasetToRemove = simulation.getDatasets().stream().filter(d -> d.getIdentifier().equals(request.getDatasetId())).findFirst().orElseThrow(() -> new NotFoundException("Dataset not found with ID: " + request.getDatasetId()));
-        simulation.getDatasets().remove(datasetToRemove);
-        return simulationRepository.save(simulation);
 
+        Set<UUID> datasetsToRemove = new HashSet<>(request.getDatasetId());
+        simulation.getDatasets().removeIf(d -> datasetsToRemove.contains(d.getIdentifier()));
+        return simulationRepository.save(simulation);
     }
 
     public SseEmitter getDatasetDataForLocationsES(String requestId) {
@@ -719,7 +720,8 @@ public class SimulationService {
             List<String> locationsIds = locationService.getAllLocationDirectChildren(request.getParentLocationId(), locationHierarchy.getIdentifier())
                                     .stream().map(UUID::toString).collect(Collectors.toList());
 
-            Map<String, Integer> latestYearMap = getLatestDataYearByTagName(locationHierarchy.getIdentifier().toString(), Collections.singletonList(request.getTagId()));
+            Map<UUID, Integer> latestYearMap =
+                getLatestDataYearByTagsID(locationHierarchy.getIdentifier().toString(), Collections.singletonList(request.getTagId()));
 
             tags = entityTagService.getValuesForTagAndLocationsLatest(
                 request.getTagId(), locationsIds , latestYearMap.get(request.getTagId()));
