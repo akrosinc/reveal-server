@@ -54,27 +54,33 @@ public class LocationHierarchyResponseFactory {
   }
 
   private static List<GeoTreeResponse> generateLocationTreeResponse(
-      List<LocationRelationship> locationRelationships,Boolean includeGeometry) {
-    var rootLocations = locationRelationships.stream()
-        .filter(locationRelationship -> locationRelationship.getParentLocation() == null)
-        .map(locationRelationship -> locationRelationship.getLocation()).collect(
-            Collectors.toList());
+      List<LocationRelationship> locationRelationships, Boolean includeGeometry) {
 
-    List<GeoTreeResponse> locationHierarchies = new ArrayList<>();
-    for (var location : rootLocations) {
-      GeoTree geoTree = new GeoTree();
-      var locationRelationshipsSplitByRootLocation = locationRelationships.stream().filter(
-          locationRelationship -> locationRelationship.getLocation().equals(location)
-              || locationRelationship.getAncestry().contains(location.getIdentifier())).collect(
-          Collectors.toList());
-      geoTree.buildTreeFromList(locationRelationshipsSplitByRootLocation);
-      List<GeoTreeResponse> geoTreeResponse = generateGeoTreeResponseFromTree(
-          geoTree.getLocationsHierarchy(),includeGeometry);
-      if (!geoTreeResponse.isEmpty()) {
-        locationHierarchies.add(geoTreeResponse.get(0));
-      }
-    }
-    return locationHierarchies;
+    UUID rootParentId = UUID.fromString("00000000-0000-0000-0000-000000000000");
+
+    List<GeoTreeResponse> geoTreeResponses = locationRelationships.stream()
+        .map(lr -> GeoTreeResponse.builder()
+            .identifier(lr.getLocation().getIdentifier())
+            .geometry(includeGeometry ? lr.getLocation().getGeometry() : null)
+            .properties(LocationPropertyResponse.builder()
+                .parentIdentifier((lr.getParentLocation() == null) ? rootParentId
+                    : lr.getParentLocation().getIdentifier())
+                .name(lr.getLocation().getName())
+                .externalId(lr.getLocation().getExternalId())
+                .status(lr.getLocation().getStatus())
+                .geographicLevel(lr.getLocation().getGeographicLevel().getName())
+                .build())
+            .build()).collect(Collectors.toList());
+
+    Map<UUID, List<GeoTreeResponse>> geoTreeHierarchy = geoTreeResponses.stream()
+        .collect(Collectors.groupingBy(lr -> lr.getProperties().getParentIdentifier(),
+            Collectors.mapping(lr -> lr, Collectors.toList())));
+
+    geoTreeResponses.forEach(gt -> gt.setChildren(
+        geoTreeHierarchy.get(gt.getIdentifier()) == null ? new ArrayList<>()
+            : geoTreeHierarchy.get(gt.getIdentifier())));
+
+    return geoTreeHierarchy.getOrDefault(rootParentId, new ArrayList<>());
   }
 
 

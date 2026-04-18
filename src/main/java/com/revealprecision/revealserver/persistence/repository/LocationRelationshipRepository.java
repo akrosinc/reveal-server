@@ -257,11 +257,11 @@ public interface LocationRelationshipRepository extends JpaRepository<LocationRe
     List<LocationRelationshipAncestryIdentifierProjection> getRelationshipsByLocationIdsAndNodeListNotIn(
         List<UUID> locationIds, List<String> nodeList, UUID locationHierarchy);
 
-    @Query("SELECT lr FROM LocationRelationship lr " +
-        "JOIN  lr.location l " +
-        "JOIN  l.geographicLevel gl " +
-        "LEFT JOIN  lr.parentLocation pl " +
-        "WHERE lr.location.identifier IN :locationIds and  lr.entityStatus = 'ACTIVE' and  "
-        + "l.entityStatus = 'ACTIVE' and  gl.entityStatus = 'ACTIVE'  and lr.locationHierarchy.identifier  = :locationHierarchy")
-    List<LocationRelationship> findAllByLocationIds(List<UUID> locationIds, UUID locationHierarchy);
+  @Query("SELECT lr FROM LocationRelationship lr " +
+      "JOIN FETCH lr.location l " +
+      "JOIN FETCH l.geographicLevel gl " +
+      "LEFT JOIN FETCH lr.parentLocation pl " +
+      "WHERE lr.location.identifier IN :locationIds and  lr.entityStatus = 'ACTIVE' and  "
+      + "l.entityStatus = 'ACTIVE' and  gl.entityStatus = 'ACTIVE'  and lr.locationHierarchy.identifier  = :locationHierarchy")
+  List<LocationRelationship> findAllByLocationIds(List<UUID> locationIds, UUID locationHierarchy);
 }

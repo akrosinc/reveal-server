@@ -49,6 +49,7 @@ import com.revealprecision.revealserver.persistence.domain.aggregation.ImportAgg
 import com.revealprecision.revealserver.persistence.projection.AggregateWithTagProjection;
 import com.revealprecision.revealserver.persistence.projection.EntityTagWithGeoLevelAndEntityTypeProjection;
 import com.revealprecision.revealserver.persistence.projection.EntityTagWithGeoLevelProjection;
+import com.revealprecision.revealserver.persistence.projection.IdentifierNameProjection;
 import com.revealprecision.revealserver.persistence.repository.ComplexTagAccGrantsOrganizationRepository;
 import com.revealprecision.revealserver.persistence.repository.ComplexTagAccGrantsUserRepository;
 import com.revealprecision.revealserver.persistence.repository.ComplexTagRepository;
@@ -1133,5 +1134,9 @@ public class EntityTagService {
         .tagName(complexTag.getTagName())
         .formula(complexTag.getFormula())
         .build()).collect(Collectors.toList());
+  }
+
+  public List<IdentifierNameProjection> getTagsIDNameByIdIn(List<UUID> tagsIds) {
+      return  entityTagRepository.getTagsIDNameByIdIn(tagsIds);
   }
 }

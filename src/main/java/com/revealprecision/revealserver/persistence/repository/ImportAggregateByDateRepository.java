@@ -6,6 +6,7 @@ import com.revealprecision.revealserver.persistence.projection.LocationWithMetad
 import com.revealprecision.revealserver.persistence.projection.TagYearAggregateDateProjection;
 import com.revealprecision.revealserver.persistence.projection.TagYearRangeAggregateDateProjection;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import javax.transaction.Transactional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -86,4 +87,18 @@ public interface ImportAggregateByDateRepository extends JpaRepository<ImportAgg
             "GROUP BY et.identifier",
         nativeQuery = true)
     List<TagYearRangeAggregateDateProjection> findYearRangePerTag(String hierarchyId, List<String> tagIds);
+
+    @Query(value =
+        "SELECT " +
+            "    CAST(et.identifier AS VARCHAR) AS tagIdentifier,"
+            + " et.definition as tag, " +
+            "    MAX(ian.year) AS maxYear, " +
+            "    MIN(ian.year) AS minYear " +
+            "FROM mw_import_aggregate_numeric_by_date ian " +
+            "INNER JOIN entity_tag et ON ian.fieldcode = et.definition " +
+            "WHERE ian.hierarchyidentifier = :hierarchyId " +
+            "AND CAST(et.identifier AS VARCHAR) = :tagId " +
+            "GROUP BY et.identifier",
+        nativeQuery = true)
+    Optional<TagYearRangeAggregateDateProjection> findYearRangePerTag(String hierarchyId, String tagId);
 }

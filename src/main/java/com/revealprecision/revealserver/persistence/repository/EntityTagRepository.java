@@ -65,4 +65,6 @@ public interface EntityTagRepository extends JpaRepository<EntityTag, UUID> {
       + " where  insTag.instance.identifier = :instanceIdentifier ")
   List<UUID> findUUIDByInstanceId(UUID instanceIdentifier);
 
+  @Query(value = "select et.identifier as identifier , et.tag as name  from EntityTag et where  et.identifier in (:tagsIds)")
+  List<IdentifierNameProjection> getTagsIDNameByIdIn(List<UUID> tagsIds);
 }

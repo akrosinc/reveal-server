@@ -19,4 +19,6 @@ public class SimulationDatasetRequest {
     private UUID parentLocationId;
     private String parentAdminLevel;
     private Map<String, Integer> dataSetYearFilter;
+    private Boolean addToSimulation;
+    private List<UUID> userDatasetIds;
 }

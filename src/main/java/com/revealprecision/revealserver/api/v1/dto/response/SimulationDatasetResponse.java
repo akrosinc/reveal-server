@@ -19,4 +19,5 @@ public class SimulationDatasetResponse {
     private String borderColor;
     private Integer lineWidth;
     private Map<String, EntityMetadataResponse> locationWithMetadata;
+    private DataSetYearRangeResponse dataSetYearRange;
 }

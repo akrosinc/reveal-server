@@ -24,7 +24,9 @@ import com.revealprecision.revealserver.persistence.repository.PlanRepository;
 import com.revealprecision.revealserver.persistence.repository.SimulationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.lucene.search.join.ScoreMode;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -275,6 +277,9 @@ public class SimulationService {
             ));
 
 
+
+
+
         Map<String, UUID> datasetTagMap = simulation.getDatasets().stream()
             .collect(Collectors.toMap(
                 dataset -> dataset.getEntityTag().getTag(),
@@ -305,6 +310,23 @@ public class SimulationService {
             ));
 
 
+        if(CollectionUtils.isNotEmpty(request.getUserDatasetIds())){
+            List<EntityTag> entityTags = entityTagService.findEntityTagsByIdentifierIn(request.getUserDatasetIds());
+
+            entityTags.forEach( entityTag -> {
+                tagsMap.put(entityTag.getTag(),entityTag.getIdentifier());
+
+                Dataset tmp = new  Dataset();
+                tmp.setIdentifier(entityTag.getIdentifier());
+                tmp.setIdentifier(entityTag.getIdentifier());
+                tmp.setEntityTag(entityTag);
+                simulation.getDatasets().add(tmp);
+
+                datasetTagMap.put(entityTag.getTag(),entityTag.getIdentifier());
+
+            });
+        }
+
         Map<UUID,Integer> latestDataYearByTags = getLatestDataYearByTagsID( locationHierarchy.getIdentifier().toString(),
             new ArrayList<>(tagsMap.values()));
 
@@ -312,7 +334,9 @@ public class SimulationService {
 
         if(request.getDataSetYearFilter() != null){
             for(var entry : request.getDataSetYearFilter().entrySet()){
-                dataSetYearFilter.put(dataSetETagIdMap.get(UUID.fromString(entry.getKey())), entry.getValue());
+                if(dataSetETagIdMap.containsKey(UUID.fromString(entry.getKey()))){
+                    dataSetYearFilter.put(dataSetETagIdMap.get(UUID.fromString(entry.getKey())), entry.getValue());
+                }
             }
         }
         else {
@@ -609,6 +633,21 @@ public class SimulationService {
 
         Map<String, UUID> tagsMap = buildTagsMap(simulation, request.getDatasetsIds());
 
+        if(CollectionUtils.isNotEmpty(request.getUserDatasetIds())){
+            List<EntityTag> entityTags = entityTagService.findEntityTagsByIdentifierIn(request.getUserDatasetIds());
+
+            entityTags.forEach( entityTag -> {
+                tagsMap.put(entityTag.getTag(),entityTag.getIdentifier());
+
+                Dataset tmp = new  Dataset();
+                tmp.setIdentifier(entityTag.getIdentifier());
+                tmp.setIdentifier(entityTag.getIdentifier());
+                tmp.setEntityTag(entityTag);
+                simulation.getDatasets().add(tmp);
+
+            });
+        }
+
 //        Map<String, List<EntityMetadataResponse>> metadataMap = request.getCampaignManagementFeatures()
 //                ? Collections.emptyMap()
 //                : fetchMetadata(simulation, request.getDatasetsIds(), locationsIds);
@@ -646,7 +685,9 @@ public class SimulationService {
             Map<UUID,Integer> eTagYearMap = new HashMap<>();
 
             for (Map.Entry<UUID, Integer> entry : request.getDataSetYearFilter().entrySet()) {
-                eTagYearMap.put(datasetTagIdMap.get(entry.getKey()), entry.getValue() );
+                if(datasetTagIdMap.containsKey(entry.getKey())){
+                  eTagYearMap.put(datasetTagIdMap.get(entry.getKey()), entry.getValue() );
+                }
             }
             request.setDataSetYearFilter(eTagYearMap);
         }
@@ -705,6 +746,23 @@ public class SimulationService {
         ).collect(Collectors.toList());
     }
 
+    private DataSetYearRangeResponse getYearRangeByTagId(String locationHierarchyId,String tagId, Dataset dataset ) {
+        DataSetYearRangeResponse dataSetYearRange = importAggregateByDateRepository.findYearRangePerTag(locationHierarchyId,
+                tagId)
+            .map(tag ->  DataSetYearRangeResponse.builder()
+                .datasetId( dataset.getIdentifier())
+                .minYear(tag.getMinYear())
+                .maxYear(tag.getMaxYear())
+                .build()  )
+            .orElseGet( () -> DataSetYearRangeResponse.builder()
+                .datasetId( dataset.getIdentifier())
+                .minYear(0)
+                .maxYear(0)
+                .build() );
+
+        return dataSetYearRange;
+    }
+
     @Transactional
     public SimulationDatasetResponse addDatasetToSimulation(SimulationDatasetRequest request) {
         Simulation simulation = simulationRepository.findById(request.getSimulationId())
@@ -733,13 +791,17 @@ public class SimulationService {
             tagForDataset = entityTagService.getEntityTagById(request.getTagId());
         }
 
-        Dataset dataset = createDataset(request, tagForDataset);
-        simulation.getDatasets().add(dataset);
-        Simulation savedSimulation = simulationRepository.save(simulation);
+        if(!BooleanUtils.isFalse(request.getAddToSimulation())){
+            Dataset dataset = createDataset(request, tagForDataset);
+            simulation.getDatasets().add(dataset);
+            Simulation savedSimulation = simulationRepository.save(simulation);
 
-        Dataset savedDataset = findSavedDataset(savedSimulation, tagForDataset.getIdentifier());
+            Dataset savedDataset = findSavedDataset(savedSimulation, tagForDataset.getIdentifier());
 
-        return new SimulationDatasetResponse(
+            DataSetYearRangeResponse dataSetYearRange  = getYearRangeByTagId(locationHierarchy.getIdentifier().toString(),
+                                                                request.getTagId().toString(), savedDataset);
+
+            return new SimulationDatasetResponse(
                 savedSimulation.getIdentifier(),
                 request.getTagId(),
                 savedDataset.getIdentifier(),
@@ -747,8 +809,30 @@ public class SimulationService {
                 savedDataset.getHexColor(),
                 savedDataset.getBorderColor(),
                 savedDataset.getLineWidth(),
-                returnLocationData ? buildMetadataMap(tags, savedDataset) : Collections.emptyMap()
-        );
+                returnLocationData ? buildMetadataMap(tags, savedDataset) : Collections.emptyMap(),
+                dataSetYearRange
+            );
+        }
+        else{
+
+            Dataset tmpDateSet = new Dataset();
+            tmpDateSet.setIdentifier(request.getTagId());
+
+            DataSetYearRangeResponse dataSetYearRange  = getYearRangeByTagId(locationHierarchy.getIdentifier().toString(),
+                request.getTagId().toString(), tmpDateSet);
+
+            return new SimulationDatasetResponse(
+                simulation.getIdentifier(),
+                request.getTagId(),
+                request.getTagId(),
+                "custom-" + request.getTagId(),
+                request.getHexColor(),
+                request.getBorderColor(),
+                request.getLineWidth(),
+                returnLocationData ? buildMetadataMap(tags, tmpDateSet) : Collections.emptyMap(),
+                dataSetYearRange
+            );
+        }
     }
 
     private Dataset createDataset(SimulationDatasetRequest request, EntityTag tag) {
