@@ -10,6 +10,7 @@ import com.revealprecision.revealserver.enums.SummaryEnum;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.es.HierarchyDetailsElastic;
 import com.revealprecision.revealserver.persistence.es.LocationElastic;
+import com.revealprecision.revealserver.persistence.projection.LocationWithAncestryProjection;
 import com.revealprecision.revealserver.persistence.projection.LocationWithChildrenCountProjection;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
 
@@ -34,6 +35,11 @@ public class LocationResponseFactory {
             LocationPropertyResponse.builder().name(location.getName()).status(location.getStatus())
                 .externalId(location.getExternalId())
                 .geographicLevel(location.getGeographicLevel().getName()).build()).build();
+  }
+
+  public static List<LocationResponse> fromEntityList(List<Location> locations) {
+    return locations.stream().map(LocationResponseFactory::fromEntity)
+        .collect(Collectors.toList());
   }
 
   public static LocationResponse fromEntityWithPopulationAndAncestry(Location location, String ancestryString, Long numberOfTeams) {
@@ -226,5 +232,34 @@ public class LocationResponseFactory {
       log.trace("fromSearchHit returning response");
       return fromElasticModel(locationElastic, null,collect);
     }
+  }
+
+  public static List<LocationResponse> fromLocationWithAncestryProjectionList(
+      List<LocationWithAncestryProjection> locations) {
+    return locations.stream().map(LocationResponseFactory::fromLocationWithAncestryProjection).collect(
+        Collectors.toList());
+  }
+
+  public static LocationResponse fromLocationWithAncestryProjection(
+      LocationWithAncestryProjection locationWithAncestryProjection) {
+
+    List<String> ancestry = Collections.emptyList();
+
+    String  ancestryString = locationWithAncestryProjection.getAncestry().toString();
+
+    if(ancestryString != null && !ancestryString.isEmpty()) {
+      Gson gson = new Gson();
+      String[] ancestryArray = gson.fromJson(ancestryString, String[].class);
+      ancestry = Arrays.asList(ancestryArray);
+    }
+
+    return LocationResponse.builder().identifier(locationWithAncestryProjection.getLocation().getIdentifier())
+        .type(locationWithAncestryProjection.getLocation().getType()).geometry(locationWithAncestryProjection.getLocation().getGeometry()).properties(
+            LocationPropertyResponse.builder().name(locationWithAncestryProjection.getLocation().getName())
+                .status(locationWithAncestryProjection.getLocation().getStatus())
+                .externalId(locationWithAncestryProjection.getLocation().getExternalId())
+                .geographicLevel(locationWithAncestryProjection.getLocation().getGeographicLevel().getName()).build())
+        .ancestry(ancestry)
+        .build();
   }
 }

@@ -16,4 +16,9 @@ public class LocationWithAncestryProjection {
     Location location;
     Object ancestry;
     Long numberOfTeams;
+
+    public LocationWithAncestryProjection(Location location, Object ancestry) {
+        this.location = location;
+        this.ancestry = ancestry;
+    }
 }

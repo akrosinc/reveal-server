@@ -580,4 +580,9 @@ public class LocationService {
   List<Location> findAllIdentifiersWithoutStructureAndGeoJSON(List<UUID> identifiers){
     return locationRepository.findAllIdentifiersWithoutStructureAndGeoJSON(identifiers);
   }
+
+  public List<LocationWithAncestryProjection> getLocationWithAncestryProjection(List<UUID> identifiers, UUID locationHierarchyId) {
+    return locationRepository.getLocationWithAncestryProjection(identifiers, locationHierarchyId);
+  }
+
 }

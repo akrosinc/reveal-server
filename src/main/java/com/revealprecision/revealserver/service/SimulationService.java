@@ -69,6 +69,8 @@ public class SimulationService {
     private final LocationBusinessStatusService locationBusinessStatusService;
     private final ImportAggregateByDateRepository importAggregateByDateRepository;
 
+    private final String DEFAULT_BORDER_COLOR = "#000000";
+
     @Value("${reveal.elastic.index-name}")
     private final String elasticIndex;
 
@@ -615,7 +617,7 @@ public class SimulationService {
         return locations;
     }
 
-    // Used only for polygons, structures need to be fetched by bbox
+      // Used only for polygons, structures need to be fetched by bbox
     public List<LocationResponse> getDatasetDataForLocations(DatasetLocationsRequest request) {
 
 //        UUID defaultHierarchyId = locationHierarchyService.getDefaultHierarchy().getIdentifier();
@@ -648,9 +650,7 @@ public class SimulationService {
             });
         }
 
-//        Map<String, List<EntityMetadataResponse>> metadataMap = request.getCampaignManagementFeatures()
-//                ? Collections.emptyMap()
-//                : fetchMetadata(simulation, request.getDatasetsIds(), locationsIds);
+
 
         List<LocationResponse> locations;
 
@@ -692,27 +692,30 @@ public class SimulationService {
             request.setDataSetYearFilter(eTagYearMap);
         }
 
-        final Map<String, List<EntityMetadataResponse>> metadataMap;
+        Map<String, List<EntityMetadataResponse>> metadataMap = request.getCampaignManagementFeatures()
+              ? Collections.emptyMap()
+              : fetchLocationsMetaData(locationHierarchy.getIdentifier(),
+                  tagsMap, locationsIds, request.getDataSetYearFilter() );
 
         if (request.getIncludeGeometry()) {
-            locations = fetchLocationsWithGeometry(locationHierarchy.getIdentifier(), tagsMap, locationsIds, simulation,
-                request.getDataSetYearFilter());
+            locations = fetchLocationsWithGeometry(locationsIds, locationHierarchy.getIdentifier());
 
-            metadataMap = locations.stream()  // ✅ avoid null keys
-                .collect(Collectors.toMap(
-                    l -> l.getIdentifier().toString(),
-                    l -> {
-                        List<EntityMetadataResponse> metadata = l.getProperties().getMetadata();
-                        return metadata != null ? metadata : new ArrayList<>();
-                    },
-                    (existing, replacement) -> {
-                        existing.addAll(replacement);
-                        return existing;
-                    }
-                ));
+
+            Map<String, LocationResponse> locationsMap = locations.stream()
+                .collect(Collectors.toMap(loc -> loc.getIdentifier().toString(), loc -> loc));
+
+            setLocationProperties(locationDetailsProjections).forEach(locationWithoutGeometry -> {
+                LocationResponse location = locationsMap.get(locationWithoutGeometry.getIdentifier().toString());
+                if (location != null) {
+                    String locationName = location.getProperties() != null ? location.getProperties().getName() : null;
+                    location.setProperties(locationWithoutGeometry.getProperties());
+                    location.getProperties().setName(locationName);
+                } else {
+                    locations.add(locationWithoutGeometry);
+                }
+            });
 
         } else {
-            metadataMap = new HashMap<>();
             locations = new ArrayList<>();
         }
 
@@ -827,7 +830,7 @@ public class SimulationService {
                 request.getTagId(),
                 "custom-" + request.getTagId(),
                 request.getHexColor(),
-                request.getBorderColor(),
+                (request.getBorderColor() != null ? request.getBorderColor() : DEFAULT_BORDER_COLOR),
                 request.getLineWidth(),
                 returnLocationData ? buildMetadataMap(tags, tmpDateSet) : Collections.emptyMap(),
                 dataSetYearRange
@@ -836,7 +839,7 @@ public class SimulationService {
     }
 
     private Dataset createDataset(SimulationDatasetRequest request, EntityTag tag) {
-        final String DEFAULT_BORDER_COLOR = "#000000";
+
         return Dataset.builder()
                 .entityTag(tag)
                 .hexColor(request.getHexColor())
@@ -1011,34 +1014,16 @@ public class SimulationService {
         }
     }
 
-    private List<LocationResponse> fetchLocationsWithGeometry(
-            UUID locationHierarchyId, Map<String, UUID> tagsMap, List<String> locationsIds, Simulation simulation,
+    private List<LocationResponse> fetchLocationsWithGeometry(List<String> locationsIds, UUID locationHierarchyId) {
+        List<LocationWithAncestryProjection> locations = locationService.getLocationWithAncestryProjection(
+            locationsIds.stream().map(UUID::fromString).collect(Collectors.toList()),locationHierarchyId
+        );
+        return LocationResponseFactory.fromLocationWithAncestryProjectionList(locations);
+    }
+
+    private Map<String, List<EntityMetadataResponse>> fetchLocationsMetaData(
+        UUID locationHierarchyId, Map<String, UUID> tagsMap, List<String> locationsIds,
         Map<UUID, Integer> dataSetYearFilter) {
-
-        // Build entityTag UUID list from simulation datasets
-        // filtered to only requested datasets (those in tagsMap values)
-        Set<UUID> requestedDatasetIds = new HashSet<>(tagsMap.values());
-//
-//        Map<UUID, Integer> entityTagYearMap = simulation.getDatasets().stream()
-//            .filter(d -> requestedDatasetIds.contains(d.getIdentifier()))
-//            .filter(d -> dataSetYearFilter != null
-//                && dataSetYearFilter.containsKey(d.getIdentifier()))
-//            .collect(Collectors.toMap(
-//                d -> d.getEntityTag().getIdentifier(),
-//                d -> dataSetYearFilter.get(d.getIdentifier())
-//            ));
-
-//        Map<Integer, List<UUID>> entityTagIdsByYear = simulation.getDatasets().stream()
-//            .filter(d -> requestedDatasetIds.contains(d.getIdentifier()))
-//            .collect(Collectors.groupingBy(
-//                d -> dataSetYearFilter != null && dataSetYearFilter.containsKey(d.getIdentifier())
-//                    ? dataSetYearFilter.get(d.getIdentifier())
-//                    : -1, // -1 = no year filter
-//                Collectors.mapping(
-//                    d -> d.getEntityTag().getIdentifier(),
-//                    Collectors.toList()
-//                )
-//            ));
 
         Map<Integer, List<UUID>> entityTagIdsByYear = dataSetYearFilter.entrySet()
             .stream()
@@ -1053,7 +1038,7 @@ public class SimulationService {
             List<UUID> tagIds = entry.getValue();
 
             List<LocationWithMetadataProjection> results =
-                importAggregateByDateRepository.findLocationsWithGeometryAndMetadata(
+                importAggregateByDateRepository.findLocationsWithMetadata(
                     locationsIds,
                     locationHierarchyId.toString(),
                     tagIds.stream().map(UUID::toString).collect(Collectors.toList()),
@@ -1062,8 +1047,9 @@ public class SimulationService {
             allResults.addAll(results);
         }
 
-        return LocationResponsesFromProjectionsFactory.buildLocationResponsesFromProjections(allResults, tagsMap , objectMapper);
+        return LocationResponsesFromProjectionsFactory.buildEntityMetadataResponseMapFromProjectionsWithoutGeom(allResults, tagsMap);
     }
+
 
     private List<LocationResponse> setLocationProperties(List<LocationDetailsProjection> locationDetailsProjections) {
         return locationDetailsProjections.stream().map(projection -> {

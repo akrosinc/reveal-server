@@ -345,6 +345,13 @@ public interface LocationRepository extends JpaRepository<Location, UUID> {
 
     @Query("select new com.revealprecision.revealserver.persistence.domain.Location"
         + " (l.identifier, l.type, l.name, l.status, l.externalId, l.geographicLevel, l.locationBulk)"
-        + " from Location l where l.geographicLevel.name != 'structure' and l.identifier in :identifiers")
+        + " from Location l where l.geographicLevel.name != 'structure' and l.identifier in (:identifiers)")
     List<Location> findAllIdentifiersWithoutStructureAndGeoJSON(List<UUID> identifiers);
+
+  @Query("select new com.revealprecision.revealserver.persistence.projection.LocationWithAncestryProjection(l, lr.ancestry) " +
+      "from Location l " +
+      "left join LocationRelationship lr on lr.location.identifier = l.identifier " +
+      " where  l.identifier in (:identifiers) and lr.locationHierarchy.identifier = :locationHierarchyId")
+  List<LocationWithAncestryProjection> getLocationWithAncestryProjection(List<UUID> identifiers ,UUID locationHierarchyId);
+
 }

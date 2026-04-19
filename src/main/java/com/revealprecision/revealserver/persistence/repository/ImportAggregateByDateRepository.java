@@ -60,6 +60,40 @@ public interface ImportAggregateByDateRepository extends JpaRepository<ImportAgg
         @Param("year") Integer year
     );
 
+    @Query(value =
+        "SELECT " +
+            "    CAST(l.identifier AS VARCHAR) AS id, " +
+            "    l.name AS name, " +
+            "    l.type AS type, " +
+            "    gl.name AS geographicLevel, " +
+            "    ian.fieldcode AS tag, " +
+            "    ian.sum AS sum, " +
+            "    ian.avg AS avg, " +
+            "    ian.median AS median, " +
+            "    ian.min AS min, " +
+            "    ian.max AS max, " +
+            "    ian.count AS count, " +
+            "    ian.datacapturedate AS dataCaptureDate, " +
+            "    ian.year AS year " +
+            "FROM location l " +
+            "INNER JOIN geographic_level gl ON gl.identifier = l.geographic_level_identifier " +
+            "INNER JOIN mw_import_aggregate_numeric_by_date ian " +
+            "    ON ian.locationidentifier = CAST(l.identifier AS VARCHAR) " +
+            "INNER JOIN entity_tag et on ian.fieldcode = et.definition " +
+            "WHERE CAST(l.identifier AS VARCHAR) IN :locationIds " +
+            "AND ian.hierarchyidentifier = :hierarchyId " +
+            "AND CAST(et.identifier AS VARCHAR) IN (:tagIds ) " +
+            "AND (ian.year = :year) " +
+            "AND l.entity_status = 'ACTIVE'",
+        nativeQuery = true)
+    List<LocationWithMetadataProjection> findLocationsWithMetadata(
+        @Param("locationIds") List<String> locationIds,
+        @Param("hierarchyId") String hierarchyId,
+        @Param("tagIds") List<String> tagIds,
+        @Param("year") Integer year
+    );
+
+
 
     @Query(value =
         "SELECT ian.fieldcode AS tag, MAX(ian.year) AS year,CAST(et.identifier AS VARCHAR)  as tagIdentifier " +

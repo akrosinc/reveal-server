@@ -7,6 +7,7 @@ import com.revealprecision.revealserver.api.v1.dto.response.LocationPropertyResp
 import com.revealprecision.revealserver.api.v1.dto.response.LocationResponse;
 import com.revealprecision.revealserver.persistence.domain.Geometry;
 import com.revealprecision.revealserver.persistence.projection.LocationWithMetadataProjection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -80,6 +81,46 @@ public class LocationResponsesFromProjectionsFactory {
 
       return locationResponse;
     }).collect(Collectors.toList());
+  }
+
+
+  public static  Map<String,List<EntityMetadataResponse>> buildEntityMetadataResponseMapFromProjectionsWithoutGeom(
+      List<LocationWithMetadataProjection> projections,Map<String, UUID> datasetTagMap) {
+
+    Map<String, List<LocationWithMetadataProjection>> groupedByLocation = projections.stream()
+        .collect(Collectors.groupingBy(LocationWithMetadataProjection::getId));
+
+    return groupedByLocation.entrySet().stream()
+        .collect(Collectors.toMap(
+            Map.Entry::getKey,
+            entry -> {
+              List<LocationWithMetadataProjection> locationRows = entry.getValue();
+
+              // rowByTag: fieldcode -> projection row
+              Map<String, LocationWithMetadataProjection> rowByTag = locationRows.stream()
+                  .filter(row -> row.getTag() != null)
+                  .collect(Collectors.toMap(
+                      LocationWithMetadataProjection::getTag,
+                      row -> row,
+                      (a, b) -> a
+                  ));
+
+              // Build metadata from datasetTagMap - all datasets represented
+              return datasetTagMap.entrySet().stream()
+                  .map(e -> {
+                    String tagName = e.getKey();
+                    UUID datasetId = e.getValue();
+                    LocationWithMetadataProjection row = rowByTag.get(
+                        getRefenceTagName(tagName));
+                    Double value = row != null
+                        ? getValueByAggregationType(tagName, row)
+                        : null;
+                    return new EntityMetadataResponse(
+                        value, tagName, "IMPORT", datasetId);
+                  })
+                  .collect(Collectors.toList());
+            }
+        ));
   }
 
 
