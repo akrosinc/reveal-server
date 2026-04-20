@@ -245,13 +245,17 @@ public class LocationResponseFactory {
 
     List<String> ancestry = Collections.emptyList();
 
-    String  ancestryString = locationWithAncestryProjection.getAncestry().toString();
+    if(locationWithAncestryProjection.getAncestry() != null){
+      String  ancestryString = locationWithAncestryProjection.getAncestry().toString();
 
-    if(ancestryString != null && !ancestryString.isEmpty()) {
-      Gson gson = new Gson();
-      String[] ancestryArray = gson.fromJson(ancestryString, String[].class);
-      ancestry = Arrays.asList(ancestryArray);
+      if(ancestryString != null && !ancestryString.isEmpty()) {
+        Gson gson = new Gson();
+        String[] ancestryArray = gson.fromJson(ancestryString, String[].class);
+        ancestry = Arrays.asList(ancestryArray);
+      }
     }
+
+
 
     return LocationResponse.builder().identifier(locationWithAncestryProjection.getLocation().getIdentifier())
         .type(locationWithAncestryProjection.getLocation().getType()).geometry(locationWithAncestryProjection.getLocation().getGeometry()).properties(
