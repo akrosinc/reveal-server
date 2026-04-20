@@ -21,6 +21,7 @@ import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.persistence.domain.metadata.metadataImport.MetaImportDTO;
 import com.revealprecision.revealserver.persistence.domain.metadata.metadataImport.SheetData;
 import com.revealprecision.revealserver.persistence.repository.GeographicLevelRepository;
+import com.revealprecision.revealserver.props.SecurityProperties;
 import com.revealprecision.revealserver.service.EntityTagService;
 import com.revealprecision.revealserver.service.LocationHierarchyService;
 import com.revealprecision.revealserver.service.LocationService;
@@ -33,6 +34,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -65,6 +67,7 @@ public class MetaFieldSetMapper {
   private final LocationService locationService;
   private final LocationHierarchyService locationHierarchyService;
   private final GeographicLevelRepository geographicLevelRepository;
+  private final SecurityProperties securityProperties;
 
 //  public List<MetaImportDTO> mapMetaFieldsDB(Map<String, EntityTagEvent> entityTagMap,
 //      XSSFSheet sheet, MetadataImport currentMetaImport) throws FileFormatException {
@@ -328,6 +331,22 @@ public class MetaFieldSetMapper {
     newGeographicLevel = byName.orElseThrow(
         () -> new FileFormatException("Geographic Level passed does not exist"));
 
+    if (metadataTagNames.keySet().stream()
+        .anyMatch(item -> item.matches(".*[^a-zA-Z0-9].*"))) {
+      throw new FileFormatException("Tag Names must not contain special characters");
+    }
+
+    if (metadataTagNames.values().stream()
+        .anyMatch(item -> item.getDataType() == null)) {
+      throw new FileFormatException("Tag Datatypes must be captured");
+
+    } else {
+      if (metadataTagNames.values().stream()
+          .anyMatch(item -> !"number".equals(item.getDataType().toLowerCase(Locale.ENGLISH)))){
+        throw new FileFormatException("Tag Datatypes can only be \"number\"");
+      }
+    }
+
     Set<EntityTag> entityTagsByTags = entityTagService.getEntityTagsByTagNames(
         metadataTagNames.keySet());
 
@@ -336,11 +355,13 @@ public class MetaFieldSetMapper {
             .noneMatch(owner -> owner.getUserSid().equals(currentUser.getSid()))).collect(
         Collectors.toList());
 
-    if (tagsNotOwnerOf.size() > 0) {
+    boolean isGlobalAdmin = securityProperties.getGlobalAdminSecurityGroups().stream().anyMatch(UserUtils::hasGroup);
+
+    if (tagsNotOwnerOf.size() > 0 && !isGlobalAdmin) {
 
       throw new RuntimeException(
           "You cannot import data to tags " + tagsNotOwnerOf.stream().map(EntityTag::getTag)
-              .collect(Collectors.joining(",")) + " as you are not the owner of it"
+              .collect(Collectors.joining(",")) + " as you are not the owner of the tag or you are the global admin"
       );
     }
 

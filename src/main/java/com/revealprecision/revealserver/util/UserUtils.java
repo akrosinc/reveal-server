@@ -1,6 +1,12 @@
 package com.revealprecision.revealserver.util;
 
 import java.security.Principal;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import org.apache.kafka.common.security.auth.KafkaPrincipal;
 import org.keycloak.KeycloakPrincipal;
 import org.springframework.security.core.Authentication;
@@ -32,6 +38,37 @@ public class UserUtils {
 
     return false;
   }
+
+  public static boolean hasGroup(String group){
+    Principal currentPrinciple = getCurrentPrinciple();
+
+    if (currentPrinciple instanceof KeycloakPrincipal){
+      KeycloakPrincipal keycloakPrincipal = (KeycloakPrincipal) currentPrinciple;
+
+      Map<String, Object> otherClaims = keycloakPrincipal.getKeycloakSecurityContext().getToken()
+          .getOtherClaims();
+
+      if (otherClaims != null && otherClaims.containsKey("groups")){
+
+        Object groupsObj = otherClaims.get("groups");
+        List<String> groupsList = Collections.emptyList();
+
+        if (groupsObj instanceof Collection<?>) {
+          groupsList = ((Collection<?>) groupsObj).stream()
+              .filter(Objects::nonNull)
+              .map(Object::toString)
+              .map(item -> item.substring(1)) //remove first char
+              .collect(Collectors.toList());
+        }
+
+        if (!groupsList.isEmpty() && groupsList.contains(group)){
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
 
   public static String getCurrentPrincipleName() {
     return getCurrentPrinciple() == null ? null : getCurrentPrinciple().getName();

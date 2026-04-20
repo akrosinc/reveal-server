@@ -423,7 +423,7 @@ public class LocationService {
       CellRangeAddressList addressList = new CellRangeAddressList(1, 1, entityTagIndex, 1000);
       DataValidationConstraint dvConstraint = dvHelper.createFormulaListConstraint("DATA_TYPES");
       dvConstraint.setExplicitListValues(
-          List.of("string", "number", "boolean").toArray(String[]::new));
+          List.of("number").toArray(String[]::new));
       DataValidation dataValidation = dvHelper.createValidation(dvConstraint, addressList);
       sheet.addValidationData(dataValidation);
 
@@ -435,8 +435,7 @@ public class LocationService {
         tagNameRowCell.setCellStyle(rowHeaderStyle);
         Cell tagDataTypeDropDownCell = tagDataTypeRow.createCell(entityTagIndex);
         tagDataTypeDropDownCell.setCellStyle(rowHeaderStyle);
-        tagDataTypeDropDownCell.setCellValue(
-            entityTag.getValueType().equals("double") ? "number" : entityTag.getValueType());
+        tagDataTypeDropDownCell.setCellValue("number");
         entityTagIndex++;
       }
 

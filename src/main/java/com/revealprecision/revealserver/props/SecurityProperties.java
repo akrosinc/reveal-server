@@ -21,5 +21,7 @@ import org.springframework.validation.annotation.Validated;
 public class SecurityProperties {
   private List<String> adminSecurityGroups = List.of("tech_team");
 
+  private List<String> globalAdminSecurityGroups = List.of("global_admin");
+
   private String tagAccessOverride = "tag_access_override";
 }

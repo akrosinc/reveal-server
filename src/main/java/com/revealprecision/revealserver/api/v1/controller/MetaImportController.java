@@ -7,6 +7,7 @@ import com.revealprecision.revealserver.persistence.domain.metadata.metadataImpo
 import com.revealprecision.revealserver.service.MetadataService;
 import com.revealprecision.revealserver.service.StorageService;
 import io.swagger.v3.oas.annotations.Operation;
+import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
@@ -45,7 +46,9 @@ public class MetaImportController {
       booleanMapMap = metadataService.saveImportFile(path,
           file.getOriginalFilename(), metaDataName);
     } catch (FileFormatException e){
-      return ResponseEntity.badRequest().body(e.getMessage());
+      return ResponseEntity
+          .badRequest()
+          .body(Map.of("message", e.getMessage()));
     }
     return ResponseEntity.status(HttpStatus.CREATED)
         .body(booleanMapMap.getEntityTagEventMap());
