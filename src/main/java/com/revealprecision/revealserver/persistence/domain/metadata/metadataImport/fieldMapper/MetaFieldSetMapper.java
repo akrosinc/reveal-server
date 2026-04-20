@@ -333,7 +333,7 @@ public class MetaFieldSetMapper {
 
     if (metadataTagNames.keySet().stream()
         .anyMatch(item -> item.matches(".*[^a-zA-Z0-9].*"))) {
-      throw new FileFormatException("Tag Names must not contain special characters");
+      throw new FileFormatException("Tag Names must not contain special characters including spaces");
     }
 
     if (metadataTagNames.values().stream()
@@ -342,7 +342,7 @@ public class MetaFieldSetMapper {
 
     } else {
       if (metadataTagNames.values().stream()
-          .anyMatch(item -> !"number".equals(item.getDataType().toLowerCase(Locale.ENGLISH)))){
+          .anyMatch(item -> !"number".equals(item.getDataType().toLowerCase(Locale.ROOT)))){
         throw new FileFormatException("Tag Datatypes can only be \"number\"");
       }
     }
@@ -380,7 +380,7 @@ public class MetaFieldSetMapper {
     List<EntityTag> createdTags = toCreate.entrySet().stream().flatMap(tag -> {
 
       String valueType = "";
-      switch (tag.getValue().getDataType()) {
+      switch (tag.getValue().getDataType().toLowerCase(Locale.ROOT)) {
         case "string": {
           valueType = STRING;
           break;
