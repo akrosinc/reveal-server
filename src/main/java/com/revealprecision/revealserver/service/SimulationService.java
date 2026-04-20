@@ -278,10 +278,6 @@ public class SimulationService {
                 (a, b) -> a
             ));
 
-
-
-
-
         Map<String, UUID> datasetTagMap = simulation.getDatasets().stream()
             .collect(Collectors.toMap(
                 dataset -> dataset.getEntityTag().getTag(),
@@ -298,19 +294,10 @@ public class SimulationService {
 
         Map<UUID, UUID> dataSetETagIdMap = simulation.getDatasets().stream()
             .collect(Collectors.toMap(
-                dataset -> dataset.getIdentifier(),
-                dataset -> {
-                    EntityTag et = dataset.getEntityTag();
-                    if(et.isAggregate()){
-                        return  et.getReferencedTag();
-                    }
-                    else {
-                        return et.getIdentifier();
-                    }
-                },
+                Dataset::getIdentifier,
+                dataset -> dataset.getEntityTag().getIdentifier(),
                 (a, b) -> a
             ));
-
 
         if(CollectionUtils.isNotEmpty(request.getUserDatasetIds())){
             List<EntityTag> entityTags = entityTagService.findEntityTagsByIdentifierIn(request.getUserDatasetIds());
@@ -345,14 +332,10 @@ public class SimulationService {
             dataSetYearFilter  = latestDataYearByTags;
         }
 
-        // Group tags by year so we can batch queries
-        // tags with no year filter go under null key
-        Map<Integer, List<UUID>> tagsByYear = dataSetYearFilter.entrySet()
-            .stream()
-            .collect(Collectors.groupingBy(
-                Map.Entry::getValue,
-                Collectors.mapping(Map.Entry::getKey, Collectors.toList())
-            ));
+        final Map<UUID, Integer> computedDataSetYearFilter = dataSetYearFilter;
+
+        Map<String, List<EntityMetadataResponse>> metadataMap =
+            fetchLocationsMetaData( locationHierarchy.getIdentifier(), datasetTagMap, locationsIds, computedDataSetYearFilter);
 
         SseEmitter emitter = new SseEmitter(180000L);
         ExecutorService sseExecutor = Executors.newScheduledThreadPool(2);
@@ -365,153 +348,184 @@ public class SimulationService {
 
                 for (List<String> batch : batches) {
 
-                    Map<String, List<LocationWithMetadataProjection>> groupedByLocation =
-                        new HashMap<>();
+                    List<LocationResponse> results = fetchLocationsWithGeometry(batch, locationHierarchy.getIdentifier());
 
-                    for (Map.Entry<Integer, List<UUID>> yearEntry : tagsByYear.entrySet()) {
-                        Integer year = yearEntry.getKey() == -1 ? 0 : yearEntry.getKey();
-                        List<UUID> tagsForYear = yearEntry.getValue();
+                    List<LocationResponse> locationsTransformed = results.stream().peek(locationResponse -> {
+                            var locationId = locationResponse != null ? locationResponse.getIdentifier() : null;
 
-                        List<LocationWithMetadataProjection> results =
-                            importAggregateByDateRepository.findLocationsWithGeometryAndMetadata(
-                                batch,
-                                locationHierarchy.getIdentifier().toString(),
-                                tagsForYear.stream().map(UUID::toString).collect(Collectors.toList()),
-                                year
-                            );
+                            if (locationId != null) {
+                                List<EntityMetadataResponse> metadata = metadataMap.getOrDefault(locationId.toString(), new ArrayList<>());
+                                var properties = locationResponse.getProperties();
 
-                        // Merge into groupedByLocation
-                        results.forEach(row ->
-                            groupedByLocation
-                                .computeIfAbsent(row.getId(), k -> new ArrayList<>())
-                                .add(row)
-                        );
-                    }
+                                if(locationDetailsMap.containsKey(locationId.toString())){
+                                    LocationDetailsProjection locationDetailsProjection = locationDetailsMap.get(locationId.toString());
 
-                    List<LocationResponse> locationsTransformed = batch.stream()
-                        .map(locationId -> {
-
-                            List<LocationWithMetadataProjection> locationRows =
-                                groupedByLocation.get(locationId);
-
-//                            if(CollectionUtils.isEmpty(locationRows)) {
-//                                return null;
-//                            }
-
-//                            List<EntityMetadataResponse> metadata = metadataMap.getOrDefault(locationId.toString(), new ArrayList<>());
-
-                            LocationResponse locationResponse = new LocationResponse();
-                            locationResponse.setIdentifier(UUID.fromString(locationId));
-
-                            if (locationRows != null && !locationRows.isEmpty()) {
-                                LocationWithMetadataProjection firstRow = locationRows.get(0);
-
-                                locationResponse.setType(
-                                    firstRow.getType() != null ? firstRow.getType() : "Feature");
-
-                                try {
-                                    locationResponse.setGeometry(objectMapper.readValue(firstRow.getGeometry(),
-                                        Geometry.class));
-
-                                } catch (JsonProcessingException e) {
-                                    log.error("Cannot create geometry obj from string {}",
-                                        firstRow.getId(), e);
-                                }
-
-                                Map<String, LocationWithMetadataProjection> rowByTag = locationRows != null
-                                    ? locationRows.stream()
-                                      .filter(row -> row.getTag() != null)
-                                      .collect(Collectors.toMap(
-                                          LocationWithMetadataProjection::getTag,
-                                          row -> row,
-                                          (a, b) -> a
-                                      ))
-                                    : Collections.emptyMap();
-
-
-
-                                // Build metadata - each row is one tag
-                                // correct year already applied per tag via query
-
-                                List<EntityMetadataResponse> metadata = datasetTagMap.entrySet().stream()
-                                    .map(entry -> {
-                                        String tagName = entry.getKey();
-                                        UUID datasetId = entry.getValue();
-                                        LocationWithMetadataProjection row = rowByTag.get(getRefenceTagName(tagName));
-
-                                        Double value = row != null
-                                            ? getValueByAggregationType(tagName, row)
-                                            : null; // no data for this tag
-
-                                        return new EntityMetadataResponse(
-                                            value,
-                                            tagName,
-                                            "IMPORT",
-                                            datasetId
-                                        );
-                                    })
-                                    .collect(Collectors.toList());
-//                                List<EntityMetadataResponse> metadata = locationRows.stream()
-//                                    .filter(row -> row.getTag() != null)
-//                                    .map(row -> new EntityMetadataResponse(
-//                                        getValueByAggregationType(row.getTag(), row),
-//                                        row.getTag(),
-//                                        "IMPORT",
-//                                        datasetTagMap.get(row.getTag())
-//                                    ))
-//                                    .collect(Collectors.toList());
-
-                                LocationPropertyResponse properties = new LocationPropertyResponse();
-                                properties.setName(firstRow.getName());
-                                properties.setGeographicLevel(firstRow.getGeographicLevel());
-                                properties.setMetadata(metadata);
-                                locationResponse.setProperties(properties);
-
-                            } else {
-                                locationResponse.setType("Feature");
-                                LocationPropertyResponse properties =
-                                    new LocationPropertyResponse();
-                                properties.setMetadata(new ArrayList<>());
-                                locationResponse.setProperties(properties);
-                            }
-
-
-
-                            // Enrich with location details
-                            LocationDetailsProjection projection =
-                                locationDetailsMap.get(locationId);
-
-                            if (projection != null) {
-
-                                locationResponse.setAncestry(projection.getAncestry());
-
-                                LocationPropertyResponse properties =
-                                    locationResponse.getProperties();
-                                properties.setChildrenNumber(projection.getChildrenCount());
-                                properties.setParentIdentifier(
-                                    UUID.fromString(projection.getParentLocationId()));
-                                properties.setParent(
-                                    UUID.fromString(projection.getParentLocationId()));
-                                properties.setId(projection.getLocationId());
-                                properties.setAssigned(projection.getAssigned());
-
-                                try {
-                                    if (projection.getPopulationData() != null) {
-                                        properties.setPopulation(
-                                            objectMapper.readValue(
-                                                projection.getPopulationData(),
-                                                PopulationResponseData.class));
+                                    properties.setChildrenNumber(locationDetailsProjection.getChildrenCount());
+                                    properties.setParentIdentifier(UUID.fromString(locationDetailsProjection.getParentLocationId()));
+                                    properties.setId(locationDetailsProjection.getLocationId());
+                                    properties.setAssigned(locationDetailsProjection.getAssigned());
+                                    properties.setMetadata(metadata);
+                                    try {
+                                        if(locationDetailsProjection.getPopulationData() != null){
+                                            properties.setPopulation(objectMapper.readValue(locationDetailsProjection.getPopulationData(), PopulationResponseData.class));
+                                        }
+                                    } catch (JsonProcessingException e) {
+                                        properties.setPopulation(null);
                                     }
-                                } catch (JsonProcessingException e) {
-                                    properties.setPopulation(null);
                                 }
                                 locationResponse.setProperties(properties);
                             }
 
-                            return locationResponse;
-                        })
-                        .filter( locationResponse -> locationResponse.getType() != null &&  locationResponse.getGeometry() != null)
-                        .collect(Collectors.toList());
+                    }).collect(Collectors.toList());
+
+
+//                    for (Map.Entry<Integer, List<UUID>> yearEntry : tagsByYear.entrySet()) {
+//                        Integer year = yearEntry.getKey() == -1 ? 0 : yearEntry.getKey();
+//                        List<UUID> tagsForYear = yearEntry.getValue();
+//
+//                        List<LocationWithMetadataProjection> results =
+//
+//                            fetchLocationsMetaData(  )
+//
+//                            importAggregateByDateRepository.findLocationsWithMetadata(
+//                                batch,
+//                                locationHierarchy.getIdentifier().toString(),
+//                                tagsForYear.stream().map(UUID::toString).collect(Collectors.toList()),
+//                                year
+//                            );
+//
+//                        // Merge into groupedByLocation
+//                        results.forEach(row ->
+//                            groupedByLocation
+//                                .computeIfAbsent(row.getId(), k -> new ArrayList<>())
+//                                .add(row)
+//                        );
+//                    }
+
+//                    List<LocationResponse> locationsTransformed = batch.stream()
+//                        .map(locationId -> {
+//
+//                            List<LocationWithMetadataProjection> locationRows =
+//                                groupedByLocation.get(locationId);
+//
+////                            if(CollectionUtils.isEmpty(locationRows)) {
+////                                return null;
+////                            }
+//
+////                            List<EntityMetadataResponse> metadata = metadataMap.getOrDefault(locationId.toString(), new ArrayList<>());
+//
+//                            LocationResponse locationResponse = new LocationResponse();
+//                            locationResponse.setIdentifier(UUID.fromString(locationId));
+//
+//                            if (locationRows != null && !locationRows.isEmpty()) {
+//                                LocationWithMetadataProjection firstRow = locationRows.get(0);
+//
+//                                locationResponse.setType(
+//                                    firstRow.getType() != null ? firstRow.getType() : "Feature");
+//
+//                                try {
+//                                    locationResponse.setGeometry(objectMapper.readValue(firstRow.getGeometry(),
+//                                        Geometry.class));
+//
+//                                } catch (JsonProcessingException e) {
+//                                    log.error("Cannot create geometry obj from string {}",
+//                                        firstRow.getId(), e);
+//                                }
+//
+//                                Map<String, LocationWithMetadataProjection> rowByTag = locationRows != null
+//                                    ? locationRows.stream()
+//                                      .filter(row -> row.getTag() != null)
+//                                      .collect(Collectors.toMap(
+//                                          LocationWithMetadataProjection::getTag,
+//                                          row -> row,
+//                                          (a, b) -> a
+//                                      ))
+//                                    : Collections.emptyMap();
+//
+//
+//
+//                                // Build metadata - each row is one tag
+//                                // correct year already applied per tag via query
+//
+//                                List<EntityMetadataResponse> metadata = datasetTagMap.entrySet().stream()
+//                                    .map(entry -> {
+//                                        String tagName = entry.getKey();
+//                                        UUID datasetId = entry.getValue();
+//                                        LocationWithMetadataProjection row = rowByTag.get(getRefenceTagName(tagName));
+//
+//                                        Double value = row != null
+//                                            ? getValueByAggregationType(tagName, row)
+//                                            : null; // no data for this tag
+//
+//                                        return new EntityMetadataResponse(
+//                                            value,
+//                                            tagName,
+//                                            "IMPORT",
+//                                            datasetId
+//                                        );
+//                                    })
+//                                    .collect(Collectors.toList());
+////                                List<EntityMetadataResponse> metadata = locationRows.stream()
+////                                    .filter(row -> row.getTag() != null)
+////                                    .map(row -> new EntityMetadataResponse(
+////                                        getValueByAggregationType(row.getTag(), row),
+////                                        row.getTag(),
+////                                        "IMPORT",
+////                                        datasetTagMap.get(row.getTag())
+////                                    ))
+////                                    .collect(Collectors.toList());
+//
+//                                LocationPropertyResponse properties = new LocationPropertyResponse();
+//                                properties.setName(firstRow.getName());
+//                                properties.setGeographicLevel(firstRow.getGeographicLevel());
+//                                properties.setMetadata(metadata);
+//                                locationResponse.setProperties(properties);
+//
+//                            } else {
+//                                locationResponse.setType("Feature");
+//                                LocationPropertyResponse properties =
+//                                    new LocationPropertyResponse();
+//                                properties.setMetadata(new ArrayList<>());
+//                                locationResponse.setProperties(properties);
+//                            }
+//
+//
+//
+//                            // Enrich with location details
+//                            LocationDetailsProjection projection =
+//                                locationDetailsMap.get(locationId);
+//
+//                            if (projection != null) {
+//
+//                                locationResponse.setAncestry(projection.getAncestry());
+//
+//                                LocationPropertyResponse properties =
+//                                    locationResponse.getProperties();
+//                                properties.setChildrenNumber(projection.getChildrenCount());
+//                                properties.setParentIdentifier(
+//                                    UUID.fromString(projection.getParentLocationId()));
+//                                properties.setParent(
+//                                    UUID.fromString(projection.getParentLocationId()));
+//                                properties.setId(projection.getLocationId());
+//                                properties.setAssigned(projection.getAssigned());
+//
+//                                try {
+//                                    if (projection.getPopulationData() != null) {
+//                                        properties.setPopulation(
+//                                            objectMapper.readValue(
+//                                                projection.getPopulationData(),
+//                                                PopulationResponseData.class));
+//                                    }
+//                                } catch (JsonProcessingException e) {
+//                                    properties.setPopulation(null);
+//                                }
+//                                locationResponse.setProperties(properties);
+//                            }
+//
+//                            return locationResponse;
+//                        })
+//                        .filter( locationResponse -> locationResponse.getType() != null &&  locationResponse.getGeometry() != null)
+//                        .collect(Collectors.toList());
 
                     emitter.send(SseEmitter.event()
                         .name("message")
@@ -650,6 +664,17 @@ public class SimulationService {
             });
         }
 
+        Map<UUID,UUID> datasetTagIdMap = new HashMap<>();
+
+        simulation.getDatasets()
+            .forEach( ds -> {
+                EntityTag et = ds.getEntityTag();
+                if (et.isAggregate()) {
+                    datasetTagIdMap.put(ds.getIdentifier() , ds.getEntityTag().getReferencedTag());
+                } else {
+                    datasetTagIdMap.put(ds.getIdentifier() , ds.getEntityTag().getIdentifier());
+                }
+            });
 
 
         List<LocationResponse> locations;
@@ -670,17 +695,7 @@ public class SimulationService {
                 tagsIds));
         }
         else{
-            Map<UUID,UUID> datasetTagIdMap = new HashMap<>();
 
-            simulation.getDatasets()
-                .forEach( ds -> {
-                    EntityTag et = ds.getEntityTag();
-                    if (et.isAggregate()) {
-                        datasetTagIdMap.put(ds.getIdentifier() , ds.getEntityTag().getReferencedTag());
-                    } else {
-                        datasetTagIdMap.put(ds.getIdentifier() , ds.getEntityTag().getIdentifier());
-                    }
-                });
 
             Map<UUID,Integer> eTagYearMap = new HashMap<>();
 
