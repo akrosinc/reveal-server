@@ -307,11 +307,12 @@ public class SimulationService {
 
                 Dataset tmp = new  Dataset();
                 tmp.setIdentifier(entityTag.getIdentifier());
-                tmp.setIdentifier(entityTag.getIdentifier());
                 tmp.setEntityTag(entityTag);
                 simulation.getDatasets().add(tmp);
 
                 datasetTagMap.put(entityTag.getTag(),entityTag.getIdentifier());
+
+                dataSetETagIdMap.put(entityTag.getIdentifier(),entityTag.getIdentifier());
 
             });
         }
