@@ -66,6 +66,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.BooleanUtils;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -243,6 +245,9 @@ public class InstanceService {
   }
 
   @Transactional
+  @CacheEvict(value = {
+      "instance-hierarchy-tree"
+  }, key = "#identifier")
   public void update(UUID identifier, InstanceRequest instanceRequest) {
 
     Instance instance = findById(identifier);
@@ -661,7 +666,7 @@ public class InstanceService {
     return instanceLocationHierarchy;
   }
 
-
+  @Cacheable(value = "instance-hierarchy-tree", key = "#instanceIdentifier")
   public LocationHierarchyResponse getInstanceHierarchyTreeResponse(UUID instanceIdentifier) {
     if (instanceIdentifier == null) {
       // Get base hierarchy and build full geo tree

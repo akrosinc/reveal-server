@@ -1,0 +1,20 @@
+<config xmlns="http://www.ehcache.org/v3"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+  <!-- Disk storage -->
+  <persistence directory="cache-data"/>
+
+  <cache alias="instance-hierarchy-tree">
+    <key-type>java.util.UUID</key-type>
+    <value-type>com.revealprecision.revealserver.api.v1.dto.response.LocationHierarchyResponse</value-type>
+
+    <expiry>
+      <ttl unit="hours">12</ttl>
+    </expiry>
+
+    <resources>
+      <disk unit="MB" persistent="true">300</disk>
+    </resources>
+  </cache>
+
+</config>

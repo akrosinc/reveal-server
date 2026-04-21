@@ -9,6 +9,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.web.servlet.ServletComponentScan;
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
@@ -25,6 +26,7 @@ import org.springframework.validation.beanvalidation.MethodValidationPostProcess
 @ServletComponentScan
 @EnableScheduling
 @RequiredArgsConstructor
+@EnableCaching
 @EnableJpaRepositories(basePackages =
     {
         "com.revealprecision.revealserver.persistence.repository",
