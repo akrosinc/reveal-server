@@ -94,8 +94,8 @@ public class TaskService {
   private final EntityFilterService entityFilterService;
   private final BusinessStatusProperties businessStatusProperties;
   private final BusinessStatusService businessStatusService;
-  private final KafkaTemplate<String, Message> kafkaTemplate;
-  private final KafkaProperties kafkaProperties;
+  private final Optional<KafkaTemplate<String, Message>> kafkaTemplate;
+  private final Optional<KafkaProperties> kafkaProperties;
   private final TaskProcessStageRepository taskProcessStageRepository;
   private final ProcessTrackerService processTrackerService;
   private final TaskGenerationProperties taskGenerationProperties;
@@ -418,19 +418,25 @@ public class TaskService {
 
           switch (taskProcessStage.getTaskProcess()) {
             case CANCEL:
-              kafkaTemplate.send(
-                  kafkaProperties.getTopicMap().get(KafkaConstants.TASK_CANDIDATE_CANCEL),
-                  taskProcessEvent);
+              kafkaTemplate.ifPresent(template ->
+                  kafkaProperties.ifPresent(properties ->
+                      template.send(
+                          properties.getTopicMap().get(KafkaConstants.TASK_CANDIDATE_CANCEL),
+                          taskProcessEvent)));
               break;
             case GENERATE:
-              kafkaTemplate.send(
-                  kafkaProperties.getTopicMap().get(KafkaConstants.TASK_CANDIDATE_GENERATE),
-                  taskProcessEvent);
+              kafkaTemplate.ifPresent(template ->
+                  kafkaProperties.ifPresent(properties ->
+                      template.send(
+                          properties.getTopicMap().get(KafkaConstants.TASK_CANDIDATE_GENERATE),
+                          taskProcessEvent)));
               break;
             case REACTIVATE:
-              kafkaTemplate.send(
-                  kafkaProperties.getTopicMap().get(KafkaConstants.TASK_CANDIDATE_REACTIVATE),
-                  taskProcessEvent);
+              kafkaTemplate.ifPresent(template ->
+                  kafkaProperties.ifPresent(properties ->
+                      template.send(
+                          properties.getTopicMap().get(KafkaConstants.TASK_CANDIDATE_REACTIVATE),
+                          taskProcessEvent)));
               break;
           }
         }
@@ -692,7 +698,9 @@ public class TaskService {
       businessStatusService.activateBusinessStatus(savedTask);
     }
 
-    kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.TASK), taskEvent);
+    kafkaTemplate.ifPresent(template ->
+        kafkaProperties.ifPresent(properties ->
+            template.send(properties.getTopicMap().get(KafkaConstants.TASK), taskEvent)));
 
     return savedTask;
   }

@@ -72,8 +72,8 @@ public class LocationRelationshipService {
   private final LocationRepository locationRepository;
   private final LocationHierarchyRepository locationHierarchyRepository;
   private final RestHighLevelClient client;
-  private final KafkaTemplate<String, LocationRelationshipMessage> kafkaTemplate;
-  private final KafkaProperties kafkaProperties;
+  private final Optional<KafkaTemplate<String, LocationRelationshipMessage>> kafkaTemplate;
+  private final Optional<KafkaProperties> kafkaProperties;
   private final LocationBulkRepository locationBulkRepository;
   private final Logger importLog = LoggerFactory.getLogger("location-import-file");
 
@@ -86,12 +86,12 @@ public class LocationRelationshipService {
 
   @Autowired
   public LocationRelationshipService(LocationRelationshipRepository locationRelationshipRepository,
-      GeographicLevelRepository geographicLevelRepository, LocationRepository locationRepository,
-      LocationHierarchyRepository locationHierarchyRepository, RestHighLevelClient client,
-      KafkaTemplate<String, LocationRelationshipMessage> kafkaTemplate,
-      KafkaProperties kafkaProperties, LocationBulkRepository locationBulkRepository,
-      Environment env, LocationCountsRepository locationCountsRepository,
-      LiteStructureCountRepository liteStructureCountRepository) {
+                                     GeographicLevelRepository geographicLevelRepository, LocationRepository locationRepository,
+                                     LocationHierarchyRepository locationHierarchyRepository, RestHighLevelClient client,
+                                     Optional<KafkaTemplate<String, LocationRelationshipMessage>> kafkaTemplate,
+                                     Optional<KafkaProperties> kafkaProperties, LocationBulkRepository locationBulkRepository,
+                                     Environment env, LocationCountsRepository locationCountsRepository,
+                                     LiteStructureCountRepository liteStructureCountRepository) {
     this.locationRelationshipRepository = locationRelationshipRepository;
     this.geographicLevelRepository = geographicLevelRepository;
     this.locationRepository = locationRepository;
@@ -425,8 +425,11 @@ public class LocationRelationshipService {
             locationRelationshipMessage.setLocationName(location.getName());
             locationRelationshipMessage.setLocationHierarchyIdentifier(
                 locationHierarchy.getIdentifier());
-            kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.LOCATIONS_IMPORTED),
-                locationRelationshipMessage);
+            kafkaTemplate.ifPresent(template ->
+                kafkaProperties.ifPresent(properties ->
+                    template.send(properties.getTopicMap().get(KafkaConstants.LOCATIONS_IMPORTED),
+                        locationRelationshipMessage)));
+
 
           }
         }

@@ -24,14 +24,17 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Profile;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
-@Profile("Listening | task-listener")
+@ConditionalOnProperty(
+    name = "reveal.kafka.enabled",
+    havingValue = "true"
+)
 public class TaskListener extends Listener {
 
   private final TaskBusinessStateTrackerRepository taskBusinessStateTrackerRepository;

@@ -33,11 +33,11 @@ import org.springframework.web.bind.annotation.RestController;
 @Profile("cleanup")
 public class KafkaEventManipulateController {
 
-  private final KafkaProperties kafkaProperties;
+  private final Optional<KafkaProperties> kafkaProperties;
   private final EventService eventService;
   private final TaskService taskService;
   private final FormDataProcessorService formDataProcessorService;
-  private final KafkaTemplate<String, Message> kafkaTemplate;
+  private final Optional<KafkaTemplate<String, Message>> kafkaTemplate;
   private final CleanupRepository cleanupRepository;
   private final TaskFacadeService taskFacadeService;
   private final EventClientFacadeService eventClientFacadeService;
@@ -81,10 +81,13 @@ public class KafkaEventManipulateController {
   void processTasksNotSameAsTaskBusinessStateTrackerAsync() {
     List<String> allTasks = taskService.getAllTasksNotSameAsTaskBusinessStateTracker();
 
-    allTasks.stream().map(UUID::fromString).map(taskService::getTaskByIdentifier).map(TaskEventFactory::getTaskEventFromTask)
+    allTasks.stream().map(UUID::fromString).map(taskService::getTaskByIdentifier)
+        .map(TaskEventFactory::getTaskEventFromTask)
         .forEach(taskEvent ->
-            kafkaTemplate.send(kafkaProperties.getTopicMap().get(
-                KafkaConstants.TASK), taskEvent));
+            kafkaTemplate.ifPresent(template ->
+                kafkaProperties.ifPresent(properties ->
+                    template.send(properties.getTopicMap().get(
+                        KafkaConstants.TASK), taskEvent))));
 
     log.info("Completed sending tasks");
   }
@@ -93,10 +96,13 @@ public class KafkaEventManipulateController {
   void processTasksNotInTaskBusinessStateTrackerAsync() {
     List<String> allTasks = taskService.getAllTasksNotInTaskBusinessStateTracker();
 
-    allTasks.stream().map(UUID::fromString).map(taskService::getTaskByIdentifier).map(TaskEventFactory::getTaskEventFromTask)
+    allTasks.stream().map(UUID::fromString).map(taskService::getTaskByIdentifier)
+        .map(TaskEventFactory::getTaskEventFromTask)
         .forEach(taskEvent ->
-            kafkaTemplate.send(kafkaProperties.getTopicMap().get(
-                KafkaConstants.TASK), taskEvent));
+            kafkaTemplate.ifPresent(template ->
+                kafkaProperties.ifPresent(properties ->
+                    template.send(properties.getTopicMap().get(
+                        KafkaConstants.TASK), taskEvent))));
 
     log.info("Completed sending tasks");
   }

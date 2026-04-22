@@ -87,14 +87,14 @@ public class MetadataService {
 
   private final LocationMetadataRepository locationMetadataRepository;
   private final PersonMetadataRepository personMetadataRepository;
-  private final KafkaTemplate<String, LocationMetadataEvent> locationMetadataKafkaTemplate;
-  private final KafkaTemplate<String, PersonMetadataEvent> personMetadataKafkaTemplate;
-  private final KafkaProperties kafkaProperties;
+  private final Optional<KafkaTemplate<String, LocationMetadataEvent>> locationMetadataKafkaTemplate;
+  private final Optional<KafkaTemplate<String, PersonMetadataEvent>> personMetadataKafkaTemplate;
+  private final Optional<KafkaProperties> kafkaProperties;
   private final LocationService locationService;
   private final MetadataImportRepository metadataImportRepository;
   private final UserService userService;
   private final StorageService storageService;
-  private final KafkaTemplate<String, Message> kafkaTemplate;
+  private final Optional<KafkaTemplate<String, Message>> kafkaTemplate;
   private final MetaFieldSetMapper metaFieldSetMapper;
 
   private final RestHighLevelClient client;
@@ -199,9 +199,11 @@ public class MetadataService {
     PersonMetadataEvent personMetadataEvent = PersonMetadataEventFactory.getPersonMetadataEvent(
         plan, locationList, savedPersonMetadata);
 
-    personMetadataKafkaTemplate.send(
-        kafkaProperties.getTopicMap().get(KafkaConstants.PERSON_METADATA_UPDATE),
-        personMetadataEvent);
+    personMetadataKafkaTemplate.ifPresent(template ->
+        kafkaProperties.ifPresent(properties ->
+            template.send(
+                properties.getTopicMap().get(KafkaConstants.PERSON_METADATA_UPDATE),
+                personMetadataEvent)));
 
     return savedPersonMetadata;
   }
@@ -312,9 +314,11 @@ public class MetadataService {
         getLocationMetadataEvent(
             plan, location, savedLocationMetadata);
 
-    locationMetadataKafkaTemplate.send(
-        kafkaProperties.getTopicMap().get(KafkaConstants.LOCATION_METADATA_UPDATE),
-        locationMetadataEvent);
+    locationMetadataKafkaTemplate.ifPresent(template ->
+        kafkaProperties.ifPresent(properties ->
+            template.send(
+                properties.getTopicMap().get(KafkaConstants.LOCATION_METADATA_UPDATE),
+                locationMetadataEvent)));
     return savedLocationMetadata;
   }
 
@@ -360,9 +364,11 @@ public class MetadataService {
             getLocationMetadataEvent(
                 plan, null, savedLocationMetadata);
 
-        locationMetadataKafkaTemplate.send(
-            kafkaProperties.getTopicMap().get(KafkaConstants.LOCATION_METADATA_UPDATE),
-            locationMetadataEvent);
+        locationMetadataKafkaTemplate.ifPresent(template ->
+            kafkaProperties.ifPresent(properties ->
+                template.send(
+                    properties.getTopicMap().get(KafkaConstants.LOCATION_METADATA_UPDATE),
+                    locationMetadataEvent)));
         return savedLocationMetadata;
       } else {
         // tag does not exist in list
@@ -423,9 +429,11 @@ public class MetadataService {
             locationsByPeople.stream().map(Location::getIdentifier).collect(Collectors.toList()),
             savedPersonMetadata);
 
-        personMetadataKafkaTemplate.send(
-            kafkaProperties.getTopicMap().get(KafkaConstants.PERSON_METADATA_UPDATE),
-            personMetadataEvent);
+        personMetadataKafkaTemplate.ifPresent(template ->
+            kafkaProperties.ifPresent(properties ->
+                template.send(
+                    properties.getTopicMap().get(KafkaConstants.PERSON_METADATA_UPDATE),
+                    personMetadataEvent)));
         return savedPersonMetadata;
       } else {
         // tag does not exist in list
@@ -606,10 +614,12 @@ public class MetadataService {
           loc.getGeographicLevel().getName(),
           null, null, null, loc, entityTagEvent, importEntityTagValue, null);
 
-      kafkaTemplate.send(
-          kafkaProperties.getTopicMap()
-              .get(KafkaConstants.FORM_EVENT_CONSUMPTION),
-          entity);
+      kafkaTemplate.ifPresent(template ->
+          kafkaProperties.ifPresent(properties ->
+              template.send(
+                  properties.getTopicMap()
+                      .get(KafkaConstants.FORM_EVENT_CONSUMPTION),
+                  entity)));
 
       // check if there is an existing metadata event already created
       // than just update the metaDataEvent list instead of creating a duplicate

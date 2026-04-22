@@ -63,8 +63,8 @@ public class TaskFacadeService {
   private final PersonService personService;
   private final LocationService locationService;
   private final BusinessStatusService businessStatusService;
-  private final KafkaTemplate<String, Message> kafkaTemplate;
-  private final KafkaProperties kafkaProperties;
+  private final Optional<KafkaTemplate<String, Message>> kafkaTemplate;
+  private final Optional<KafkaProperties> kafkaProperties;
   private final MetadataService metadataService;
   private final Environment env;
   private final UserService userService;
@@ -186,7 +186,9 @@ public class TaskFacadeService {
 
         taskService.saveTask(task);
 
-        kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.TASK), taskEvent);
+        kafkaTemplate.ifPresent(template ->
+            kafkaProperties.ifPresent(properties ->
+                template.send(properties.getTopicMap().get(KafkaConstants.TASK), taskEvent)));
 
       } else {
         log.error("Unknown task state in task update: {}", updateFacade.getStatus());
@@ -312,7 +314,9 @@ public class TaskFacadeService {
       Task taskSaved = taskService.saveTask(task);
       businessStatusService.setBusinessStatus(taskSaved, taskDto.getBusinessStatus());
 
-      kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.TASK), taskEvent);
+      kafkaTemplate.ifPresent(template ->
+          kafkaProperties.ifPresent(properties ->
+              template.send(properties.getTopicMap().get(KafkaConstants.TASK), taskEvent)));
       return taskSaved;
     } else {
       log.error("Unknown task state in sync: {}", taskDto.getStatus().name());

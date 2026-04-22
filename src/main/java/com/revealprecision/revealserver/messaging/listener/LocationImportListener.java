@@ -7,20 +7,24 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
+
+import lombok.AllArgsConstructor;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
-import org.springframework.context.annotation.Profile;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
 @Service
-@RequiredArgsConstructor
-@Profile("Simulation & (Listening | location-import-listener))")
-public class LocationImportListener extends Listener{
+@ConditionalOnProperty(
+    name =  {"reveal.elastic.enabled", "reveal.kafka.enabled"},
+    havingValue = "true"
+)
+@AllArgsConstructor
+public class LocationImportListener extends Listener {
 
   private final RestHighLevelClient client;
 

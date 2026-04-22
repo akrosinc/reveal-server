@@ -29,7 +29,7 @@ import static com.revealprecision.revealserver.constants.FormConstants.YES;
 
 import com.revealprecision.revealserver.api.v1.facade.models.EventFacade;
 import com.revealprecision.revealserver.api.v1.facade.models.Obs;
-import com.revealprecision.revealserver.constants.FormConstants.BusinessStatus;
+import com.revealprecision.revealserver.constants.FormConstants.*;
 import com.revealprecision.revealserver.constants.KafkaConstants;
 import com.revealprecision.revealserver.enums.PlanInterventionTypeEnum;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
@@ -42,22 +42,28 @@ import com.revealprecision.revealserver.persistence.repository.ReportRepository;
 import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.service.LocationService;
 import com.revealprecision.revealserver.service.PlanService;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.context.annotation.Profile;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+
+import static com.revealprecision.revealserver.constants.EventClientConstants.RESET_TASK;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
-@Profile("Listening | raw-form-submission-listener")
+@ConditionalOnProperty(
+    name = "reveal.kafka.enabled",
+    havingValue = "true"
+)
 public class RawFormSubmissionListener extends Listener {
 
 

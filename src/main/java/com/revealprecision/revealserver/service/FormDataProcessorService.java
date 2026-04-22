@@ -116,21 +116,21 @@ public class FormDataProcessorService {
 
 
   private final ObjectMapper objectMapper;
-  private final KafkaProperties kafkaProperties;
+  private final Optional<KafkaProperties> kafkaProperties;
   private final PlanService planService;
   private final UserService userService;
-  private final KafkaTemplate<String, FormDataEntityTagEvent> eventConsumptionTemplate;
+  private final Optional<KafkaTemplate<String, FormDataEntityTagEvent>> eventConsumptionTemplate;
 
 
   private final FormFieldService formFieldService;
   private final EntityTagService entityTagService;
   private final LocationService locationService;
 
-  private final KafkaTemplate<String, UserData> userDataTemplate;
-  private final KafkaTemplate<String, MDALiteLocationSupervisorCddEvent> mdaliteSupervisorTemplate;
+  private final Optional<KafkaTemplate<String, UserData>> userDataTemplate;
+  private final Optional<KafkaTemplate<String, MDALiteLocationSupervisorCddEvent>> mdaliteSupervisorTemplate;
 
-  private final KafkaTemplate<String, FormCaptureEvent> formSubmissionKafkaTemplate;
-  private final KafkaTemplate<String, EventTrackerMessage> eventTrackerKafkaTemplate;
+  private final Optional<KafkaTemplate<String, FormCaptureEvent>> formSubmissionKafkaTemplate;
+  private final Optional<KafkaTemplate<String, EventTrackerMessage>> eventTrackerKafkaTemplate;
   private final LocationRelationshipService locationRelationshipService;
 
   @Async
@@ -207,8 +207,9 @@ public class FormDataProcessorService {
             if (!areAnyEmptyOrNull(dateString, supervisorName, cdd, baseEntityIdentifier,
                 formSubmissionIdString)) {
 
-              eventTrackerKafkaTemplate.send(kafkaProperties.getTopicMap().get(EVENT_TRACKER),
-                  EventTrackerMessageFactory.getEntity(savedEvent, eventFacade, plan, dateString,
+              sendIfKafkaEnabled(eventTrackerKafkaTemplate, EVENT_TRACKER,
+                  EventTrackerMessageFactory.getEntity(savedEvent, eventFacade, plan,
+                      dateString,
                       supervisorName,
                       cdd,
                       baseEntityIdentifier,
@@ -237,8 +238,9 @@ public class FormDataProcessorService {
               String aggregationKey =
                   baseEntityIdentifier + "-" + supervisorName + "-" + cdd + "-" + drugDistributed;
 
-              eventTrackerKafkaTemplate.send(kafkaProperties.getTopicMap().get(EVENT_TRACKER),
-                  EventTrackerMessageFactory.getEntity(savedEvent, eventFacade, plan, dateString,
+              sendIfKafkaEnabled(eventTrackerKafkaTemplate, EVENT_TRACKER,
+                  EventTrackerMessageFactory.getEntity(savedEvent, eventFacade, plan,
+                      dateString,
                       supervisorName,
                       cdd,
                       baseEntityIdentifier,
@@ -263,8 +265,9 @@ public class FormDataProcessorService {
             if (!areAnyEmptyOrNull(dateString, baseEntityIdentifier, supervisorName, cdd,
                 formSubmissionIdString)) {
 
-              eventTrackerKafkaTemplate.send(kafkaProperties.getTopicMap().get(EVENT_TRACKER),
-                  EventTrackerMessageFactory.getEntity(savedEvent, eventFacade, plan, dateString,
+              sendIfKafkaEnabled(eventTrackerKafkaTemplate, EVENT_TRACKER,
+                  EventTrackerMessageFactory.getEntity(savedEvent, eventFacade, plan,
+                      dateString,
                       supervisorName,
                       cdd,
                       baseEntityIdentifier,
@@ -306,8 +309,9 @@ public class FormDataProcessorService {
                     formSubmissionIdString;
               }
 
-              eventTrackerKafkaTemplate.send(kafkaProperties.getTopicMap().get(EVENT_TRACKER),
-                  EventTrackerMessageFactory.getEntity(savedEvent, eventFacade, plan, dateString,
+              sendIfKafkaEnabled(eventTrackerKafkaTemplate, EVENT_TRACKER,
+                  EventTrackerMessageFactory.getEntity(savedEvent, eventFacade, plan,
+                      dateString,
                       supervisorName,
                       cdd,
                       baseEntityIdentifier,
@@ -364,8 +368,8 @@ public class FormDataProcessorService {
             formDataEntityTagValueEvents, plan, baseEntityIdentifier, dateString, cdd,
             supervisorName, additionalKey);
 
-        eventConsumptionTemplate.send(
-            kafkaProperties.getTopicMap().get(KafkaConstants.EVENT_CONSUMPTION), entityTagEvent);
+        sendIfKafkaEnabled(eventConsumptionTemplate, KafkaConstants.EVENT_CONSUMPTION,
+            entityTagEvent);
 
         User deviceUser = savedEvent.getUser();
         String fieldWorker = null;
@@ -540,10 +544,12 @@ public class FormDataProcessorService {
 
         }
 
-        userDataTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.USER_DATA),
+        sendIfKafkaEnabled(userDataTemplate, KafkaConstants.USER_DATA,
             new UserData(submissionId, savedEvent.getPlanIdentifier(),
-                new DeviceUser(deviceUser.getIdentifier(), deviceUser.getUsername()), userLabel,
-                fieldWorker, fieldWorkerLabel, district, districtLabel, captureDatetime, collect,
+                new DeviceUser(deviceUser.getIdentifier(), deviceUser.getUsername()),
+                userLabel,
+                fieldWorker, fieldWorkerLabel, district, districtLabel, captureDatetime,
+                collect,
                 orgLabel,
                 fields));
 
@@ -554,10 +560,8 @@ public class FormDataProcessorService {
 
 
   private void publishFormObservations(FormCaptureEvent event) {
-    formSubmissionKafkaTemplate.send(
-        kafkaProperties.getTopicMap().get(KafkaConstants.FORM_SUBMISSIONS),
-        event.getPlanId().toString(),
-        event);
+    sendIfKafkaEnabled(formSubmissionKafkaTemplate, KafkaConstants.FORM_SUBMISSIONS,
+        event.getPlanId().toString(), event);
   }
 
 
@@ -580,9 +584,9 @@ public class FormDataProcessorService {
   private void submitSupervisorCddToMessaging(String supervisorName, String cdd,
       UUID baseEntityIdentifier, Plan plan) {
     if (supervisorName != null && cdd != null) {
-      mdaliteSupervisorTemplate.send(
-          kafkaProperties.getTopicMap().get(KafkaConstants.LOCATION_SUPERVISOR_CDD),
-          MDALiteLocationSupervisorCddEvent.builder().cddName(cdd).supervisorName(supervisorName)
+      sendIfKafkaEnabled(mdaliteSupervisorTemplate, KafkaConstants.LOCATION_SUPERVISOR_CDD,
+          MDALiteLocationSupervisorCddEvent.builder().cddName(cdd)
+              .supervisorName(supervisorName)
               .locationIdentifier(baseEntityIdentifier)
               .locationHierarchyIdentifier(plan.getLocationHierarchy().getIdentifier())
               .planIdentifier(plan.getIdentifier()).build());
@@ -618,6 +622,26 @@ public class FormDataProcessorService {
   private static boolean areAnyEmptyOrNull(Object... strings) {
     return Arrays.stream(strings).anyMatch(Objects::isNull) || Arrays.stream(strings)
         .map(Object::toString).anyMatch(String::isEmpty);
+  }
+
+  private <T> void sendIfKafkaEnabled(Optional<KafkaTemplate<String, T>> kafkaTemplateOptional,
+      String topicKey, T message) {
+    if (kafkaTemplateOptional.isPresent() && kafkaProperties.isPresent()) {
+      String topic = kafkaProperties.get().getTopicMap().get(topicKey);
+      if (topic != null) {
+        kafkaTemplateOptional.get().send(topic, message);
+      }
+    }
+  }
+
+  private <T> void sendIfKafkaEnabled(Optional<KafkaTemplate<String, T>> kafkaTemplateOptional,
+      String topicKey, String key, T message) {
+    if (kafkaTemplateOptional.isPresent() && kafkaProperties.isPresent()) {
+      String topic = kafkaProperties.get().getTopicMap().get(topicKey);
+      if (topic != null) {
+        kafkaTemplateOptional.get().send(topic, key, message);
+      }
+    }
   }
 
 }

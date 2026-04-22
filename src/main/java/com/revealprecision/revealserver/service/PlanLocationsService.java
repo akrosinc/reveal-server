@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -46,8 +47,8 @@ public class PlanLocationsService {
   private final LocationHierarchyService locationHierarchyService;
   private final PlanAssignmentService planAssignmentService;
   private final PlanAssignmentRepository planAssignmentRepository;
-  private final KafkaTemplate<String, PlanLocationAssignMessage> kafkaTemplate;
-  private final KafkaProperties kafkaProperties;
+  private final Optional<KafkaTemplate<String, PlanLocationAssignMessage>> kafkaTemplate;
+  private final Optional<KafkaProperties> kafkaProperties;
   private final OrganizationService organizationService;
 
   @Autowired
@@ -55,8 +56,8 @@ public class PlanLocationsService {
       @Lazy PlanService planService, LocationService locationService,
       LocationHierarchyService locationHierarchyService,
       @Lazy PlanAssignmentService planAssignmentService,
-      KafkaTemplate<String, PlanLocationAssignMessage> kafkaTemplate,
-      KafkaProperties kafkaProperties,
+      Optional<KafkaTemplate<String, PlanLocationAssignMessage>> kafkaTemplate,
+      Optional<KafkaProperties> kafkaProperties,
       OrganizationService organizationService,
       PlanAssignmentRepository planAssignmentRepository) {
     this.planLocationsRepository = planLocationsRepository;
@@ -135,8 +136,10 @@ public class PlanLocationsService {
     planLocationAssignMessage.setOwnerId(UserUtils.getCurrentPrincipleName());
     planLocationAssignMessage.setLocationsRemoved(new ArrayList<>());
 
-    kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_LOCATION_ASSIGNED),
-        planLocationAssignMessage);
+    kafkaTemplate.ifPresent(template ->
+        kafkaProperties.ifPresent(properties ->
+            template.send(properties.getTopicMap().get(KafkaConstants.PLAN_LOCATION_ASSIGNED),
+                planLocationAssignMessage)));
     log.info("sent plan location");
 
   }
@@ -169,8 +172,10 @@ public class PlanLocationsService {
       planLocationAssignMessage.setDeleteByPlan(deleteByPlan);
       planLocationAssignMessage.setDeleteByPlanAndLocation(deleteByPlanAndLocation);
       planLocationAssignMessage.setSaveAll(saveAll);
-      kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_LOCATION_ASSIGNED),
-          planLocationAssignMessage);
+      kafkaTemplate.ifPresent(template ->
+          kafkaProperties.ifPresent(properties ->
+              template.send(properties.getTopicMap().get(KafkaConstants.PLAN_LOCATION_ASSIGNED),
+                  planLocationAssignMessage)));
     } else {
       Set<UUID> currentLocation = planLocationsRepository.findByPlan_Identifier(planIdentifier)
           .stream()
@@ -196,8 +201,10 @@ public class PlanLocationsService {
       planLocationAssignMessage.setDeleteByPlan(deleteByPlan);
       planLocationAssignMessage.setDeleteByPlanAndLocation(deleteByPlanAndLocation);
       planLocationAssignMessage.setSaveAll(saveAll);
-      kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_LOCATION_ASSIGNED),
-          planLocationAssignMessage);
+      kafkaTemplate.ifPresent(template ->
+          kafkaProperties.ifPresent(properties ->
+              template.send(properties.getTopicMap().get(KafkaConstants.PLAN_LOCATION_ASSIGNED),
+                  planLocationAssignMessage)));
       log.info("sent plan location");
     }
 

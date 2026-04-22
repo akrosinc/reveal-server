@@ -34,6 +34,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -55,8 +56,8 @@ public class PlanService {
   private final LocationHierarchyService locationHierarchyService;
   private final LookupInterventionTypeService lookupInterventionTypeService;
   private final LookupEntityTypeService lookupEntityTypeService;
-  private final KafkaTemplate<String, Message> kafkaTemplate;
-  private final KafkaProperties kafkaProperties;
+  private final Optional<KafkaTemplate<String, Message>> kafkaTemplate;
+  private final Optional<KafkaProperties> kafkaProperties;
   private final GeographicLevelService geographicLevelService;
 
   public static boolean isNullOrEmpty(final Collection<?> c) {
@@ -159,8 +160,10 @@ public class PlanService {
       planUpdateMessage.setPlanUpdateType(PlanUpdateType.ACTIVATE);
       planUpdateMessage.setOwnerId(UserUtils.getCurrentPrincipleName());
 
-      kafkaTemplate.send(kafkaProperties.getTopicMap().get(KafkaConstants.PLAN_UPDATE),
-          planUpdateMessage);
+      kafkaTemplate.ifPresent(template ->
+          kafkaProperties.ifPresent(properties ->
+              template.send(properties.getTopicMap().get(KafkaConstants.PLAN_UPDATE),
+                  planUpdateMessage)));
     } else {
       throw new ConflictException("Relationships still generating for this plan.");
     }

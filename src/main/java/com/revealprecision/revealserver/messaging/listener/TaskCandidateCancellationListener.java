@@ -9,14 +9,17 @@ import com.revealprecision.revealserver.service.TaskService;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Profile;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
-@Profile("Listening | task-candidate-cancellation-listener")
+@ConditionalOnProperty(
+    name = "reveal.kafka.enabled",
+    havingValue = "true"
+)
 public class TaskCandidateCancellationListener extends Listener {
 
   private final TaskService taskService;
