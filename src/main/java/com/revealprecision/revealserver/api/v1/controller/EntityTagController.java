@@ -9,17 +9,10 @@ import com.revealprecision.revealserver.api.v1.dto.response.FeatureSetResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LookupEntityTypeResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.PersonMainData;
 import com.revealprecision.revealserver.persistence.domain.LookupEntityType;
-import com.revealprecision.revealserver.persistence.repository.LocationElasticRepository;
 import com.revealprecision.revealserver.service.EntityFilterService;
 import com.revealprecision.revealserver.service.EntityTagService;
 import com.revealprecision.revealserver.service.LookupEntityTypeService;
 import io.swagger.v3.oas.annotations.Operation;
-import java.io.IOException;
-import java.text.ParseException;
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
-import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.data.domain.Page;
@@ -27,23 +20,23 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import javax.validation.Valid;
+import java.io.IOException;
+import java.text.ParseException;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/v1/entityTag")
-public class EntityTagController {
+public class  EntityTagController {
 
   private final EntityTagService entityTagService;
   private final EntityFilterService entityFilterService;
   private final LookupEntityTypeService lookupEntityTypeService;
-  private final LocationElasticRepository locationElasticRepository;
   private final RestHighLevelClient client;
 
   @Operation(summary = "Create Tag", description = "Create Tag", tags = {"Entity Tags"})

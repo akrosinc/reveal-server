@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
@@ -14,6 +15,10 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "kafka.config")
 @Setter
 @Getter
+@ConditionalOnProperty(
+    name = "reveal.kafka.enabled",
+    havingValue = "true"
+)
 public class KafkaProperties {
 
   private String suffix;

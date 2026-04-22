@@ -2,6 +2,7 @@ package com.revealprecision.revealserver.config;
 
 import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.elasticsearch.client.ClientConfiguration;
@@ -11,6 +12,10 @@ import org.springframework.data.elasticsearch.core.ElasticsearchRestTemplate;
 import org.springframework.data.elasticsearch.repository.config.EnableElasticsearchRepositories;
 
 @Configuration
+@ConditionalOnProperty(
+    name = "reveal.elastic.enabled",
+    havingValue = "true"
+)
 @EnableElasticsearchRepositories(basePackages = "com.revealprecision.revealserver.persistence.repository")
 public class ElasticConfig {
 

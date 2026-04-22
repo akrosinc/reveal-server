@@ -7,12 +7,17 @@ import com.revealprecision.revealserver.persistence.repository.EventTrackerRepos
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@ConditionalOnProperty(
+    name = "reveal.kafka.enabled",
+    havingValue = "true"
+)
 public class EventTrackerListener extends Listener {
 
   private final EventTrackerRepository eventTrackerRepository;
