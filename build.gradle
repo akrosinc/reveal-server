@@ -104,6 +104,7 @@ dependencies {
 
     implementation 'org.springframework.boot:spring-boot-starter-cache'
     implementation 'org.ehcache:ehcache'
+    implementation 'javax.cache:cache-api'
 }
 dependencyManagement {
     imports {

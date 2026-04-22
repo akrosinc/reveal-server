@@ -2,19 +2,21 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 
   <!-- Disk storage -->
-  <persistence directory="cache-data"/>
+  <persistence directory="${java.io.tmpdir}/reveal-app-cache"/>
 
   <cache alias="instance-hierarchy-tree">
     <key-type>java.util.UUID</key-type>
-    <value-type>com.revealprecision.revealserver.api.v1.dto.response.LocationHierarchyResponse</value-type>
+    <value-type serializer="com.revealprecision.revealserver.util.JacksonSerializer">com.revealprecision.revealserver.api.v1.dto.response.LocationHierarchyResponse</value-type>
 
     <expiry>
       <ttl unit="hours">12</ttl>
     </expiry>
 
     <resources>
-      <disk unit="MB" persistent="true">300</disk>
+      <disk unit="MB" persistent="true">200</disk>
     </resources>
+
+
   </cache>
 
 </config>
