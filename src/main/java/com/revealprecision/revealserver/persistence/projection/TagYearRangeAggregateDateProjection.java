@@ -5,4 +5,5 @@ public interface TagYearRangeAggregateDateProjection {
     String getTag();
     Integer getMinYear();
     Integer getMaxYear();
+    String getYears();
 }

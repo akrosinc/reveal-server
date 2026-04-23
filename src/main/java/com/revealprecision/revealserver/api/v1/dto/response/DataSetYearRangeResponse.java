@@ -21,4 +21,5 @@ public class DataSetYearRangeResponse {
    private UUID datasetId;
    private Integer maxYear;
    private Integer minYear;
+   private List<Integer> years;
 }

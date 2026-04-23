@@ -21,6 +21,7 @@ import com.revealprecision.revealserver.persistence.projection.TagYearRangeAggre
 import com.revealprecision.revealserver.persistence.repository.ImportAggregateByDateRepository;
 import com.revealprecision.revealserver.persistence.repository.PlanRepository;
 import com.revealprecision.revealserver.persistence.repository.SimulationRepository;
+import com.revealprecision.revealserver.util.Utils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -142,6 +143,7 @@ public class SimulationService {
                         .datasetId(dataset.getIdentifier())
                         .maxYear(projection != null ? projection.getMaxYear() : null)
                         .minYear(projection != null ? projection.getMinYear() : null)
+                        .years(projection != null ? Utils.getYearsFromString(projection.getYears()) : null)
                         .build();
                 })
                 .collect(Collectors.toList());
