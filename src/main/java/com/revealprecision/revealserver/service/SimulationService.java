@@ -626,11 +626,13 @@ public class SimulationService {
                 .datasetId( dataset.getIdentifier())
                 .minYear(tag.getMinYear())
                 .maxYear(tag.getMaxYear())
+                .years(Utils.getYearsFromString(tag.getYears()))
                 .build()  )
             .orElseGet( () -> DataSetYearRangeResponse.builder()
                 .datasetId( dataset.getIdentifier())
                 .minYear(0)
                 .maxYear(0)
+                .years(List.of(0))
                 .build() );
 
         return dataSetYearRange;

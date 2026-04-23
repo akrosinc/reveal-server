@@ -128,7 +128,8 @@ public interface ImportAggregateByDateRepository extends JpaRepository<ImportAgg
             "    CAST(et.identifier AS VARCHAR) AS tagIdentifier,"
             + " et.definition as tag, " +
             "    MAX(ian.year) AS maxYear, " +
-            "    MIN(ian.year) AS minYear " +
+            "    MIN(ian.year) AS minYear, " +
+            " STRING_AGG(DISTINCT CAST(ian.year AS VARCHAR), ',' ORDER BY CAST(ian.year AS VARCHAR)) AS years " +
             "FROM mw_import_aggregate_numeric_by_date ian " +
             "INNER JOIN entity_tag et ON ian.fieldcode = et.definition " +
             "WHERE ian.hierarchyidentifier = :hierarchyId " +
