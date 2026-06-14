@@ -231,7 +231,8 @@ public class TaskService {
             .flatMap(Collection::stream)
             .filter(action -> !Stream.of(ActionTitleEnum.RCD, ActionTitleEnum.INDEX_CASE,
                 ActionTitleEnum.SECONDARY_INDEX_CASE, ActionTitleEnum.INDEX_CASE_MEMBER,
-                ActionTitleEnum.SECONDARY_INDEX_CASE_MEMBER,ActionTitleEnum.RCD_MEMBER).map(
+                ActionTitleEnum.SECONDARY_INDEX_CASE_MEMBER,ActionTitleEnum.RCD_MEMBER,
+                ActionTitleEnum.STRUCTURE_SURVEY).map(
                 ActionTitleEnum::getActionTitle).collect(
                 Collectors.toList()).contains(action.getTitle()))
             .forEach((action) -> processPlanUpdatePerActionForTasks(action, plan, ownerId,
