@@ -29,4 +29,6 @@ public class DataExtractQuery {
   private String queryLabel;
 
   private String query;
+
+  private boolean custom;
 }
