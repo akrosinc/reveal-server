@@ -362,7 +362,11 @@ public class DataExtractService {
       Map<String, String> values = group.getValue();
 
       for (String col : repeatingColumns) {
-        result.add(col.concat("-").concat(uuid).concat("=").concat(values.getOrDefault(col, "")));
+        result.add(
+            String.valueOf(col) + "-" +
+                String.valueOf(uuid) + "=" +
+                (values != null ? String.valueOf(values.getOrDefault(col, "")) : "")
+        );
       }
     }
 
