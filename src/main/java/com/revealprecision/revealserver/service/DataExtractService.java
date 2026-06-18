@@ -44,9 +44,6 @@ public class DataExtractService {
 
   public InputStreamResource extract(UUID planIdentifier, String queryLabel) throws IOException {
 
-
-
-
     List<DataExtractQuery> firstByPlanIdentifier = dataExtractQueryRepository.findByPlanIdentifierAndQueryLabel(
         planIdentifier, queryLabel);
 
@@ -268,9 +265,18 @@ public class DataExtractService {
         "al_not_given_reason_other"
     );
 
+    List<String> CHECKBOX_COLUMNS = List.of(
+        "type_of_structure_room_no_sleep"
+        ,"spend_time_outside_compound_selection"
+        ,"spend_time_outside_compound_morning_selection"
+        ,"another_location_mosquito_bite_prevention"
+    );
+
     List<String> reportColumns = new ArrayList<>(FIXED_COLUMNS);
 
     List<String> repeatingColumns = new ArrayList<>(REPEATING_COLUMNS);
+
+    List<String> checkboxColumns = new ArrayList<>(CHECKBOX_COLUMNS);
 
     DbDataObj dbDataObj = new DbDataObj();
     List<String[]> cols = new ArrayList<>();
@@ -280,11 +286,10 @@ public class DataExtractService {
       List<String> simpleCols = getProcessSimpleCols(reportColumns, dbRow);
       combined.addAll(simpleCols);
 
-
       List<String> repeatingCols = getProcessRepeatingCols(repeatingColumns, dbRow);
       combined.addAll(repeatingCols);
 
-      List<String> checkboxCols = getProcessCheckboxCols(repeatingColumns, dbRow);
+      List<String> checkboxCols = getProcessCheckboxCols(checkboxColumns, dbRow);
       combined.addAll(checkboxCols);
 
       if (simpleCols.size() + repeatingCols.size() + checkboxCols.size()> maxCol){
