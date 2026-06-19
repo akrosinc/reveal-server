@@ -38,7 +38,7 @@ public class DataExtractController {
     InputStreamResource resource = dataExtractService.extract(planIdentifier,queryLabel);
 
     return ResponseEntity.status(HttpStatus.OK).contentType(MediaType.APPLICATION_OCTET_STREAM)
-        .header("Content-disposition", "attachment;filename=" + "trev.csv").body(resource);
+        .header("Content-disposition", "attachment;filename=" + "extract.csv").body(resource);
   }
 
 

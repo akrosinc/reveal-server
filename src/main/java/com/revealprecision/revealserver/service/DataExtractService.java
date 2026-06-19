@@ -287,24 +287,19 @@ public class DataExtractService {
         ,"another_location_mosquito_bite_prevention"
     );
 
-    List<String> reportColumns = new ArrayList<>(FIXED_COLUMNS);
-
-    List<String> repeatingColumns = new ArrayList<>(REPEATING_COLUMNS);
-
-    List<String> checkboxColumns = new ArrayList<>(CHECKBOX_COLUMNS);
 
     DbDataObj dbDataObj = new DbDataObj();
     List<String[]> cols = new ArrayList<>();
     int maxCol = 0;
     for (DbRow dbRow: rows) {
       List<String> combined = new ArrayList<>();
-      List<String> simpleCols = getProcessSimpleCols(reportColumns, dbRow);
+      List<String> simpleCols = getProcessSimpleCols(FIXED_COLUMNS, dbRow);
       combined.addAll(simpleCols);
 
-      List<String> repeatingCols = getProcessRepeatingCols(repeatingColumns, dbRow);
+      List<String> repeatingCols = getProcessRepeatingCols(REPEATING_COLUMNS, dbRow);
       combined.addAll(repeatingCols);
 
-      List<String> checkboxCols = getProcessCheckboxCols(checkboxColumns, dbRow);
+      List<String> checkboxCols = getProcessCheckboxCols(CHECKBOX_COLUMNS, dbRow);
       combined.addAll(checkboxCols);
 
       if (simpleCols.size() + repeatingCols.size() + checkboxCols.size()> maxCol){
@@ -314,7 +309,7 @@ public class DataExtractService {
       cols.add( combined.toArray(new String[0]));
     }
     dbDataObj.setData(cols);
-    dbDataObj.setHeader(reportColumns);
+    dbDataObj.setHeader(new ArrayList<>(FIXED_COLUMNS));
     dbDataObj.setMaxCol(maxCol);
     return dbDataObj;
   }
@@ -330,7 +325,7 @@ public class DataExtractService {
     Map<String, Map<String, String>> grouped = new HashMap<>();
 
     for (Map.Entry<String, String> entry : row.getRepeatingCols().entrySet()) {
-      log.debug("getProcessRepeatingCols {}",entry);
+      log.debug("getProcessRepeatingCols {}", entry);
       String[] parts = entry.getKey().split("\\|"); // IMPORTANT
 
       String key = parts[0];
@@ -340,6 +335,7 @@ public class DataExtractService {
       grouped
           .computeIfAbsent(uuid, k -> new HashMap<>())
           .put(key, value);
+
     }
     List<String> result = new ArrayList<>();
     for (Map.Entry<String, Map<String, String>> group : grouped.entrySet()) {
@@ -348,11 +344,15 @@ public class DataExtractService {
       Map<String, String> values = group.getValue();
 
       for (String col : repeatingColumns) {
-        result.add(
-            String.valueOf(col) + "-" +
-                String.valueOf(uuid) + "=" +
-                (values != null ? String.valueOf(values.getOrDefault(col, "")) : "")
-        );      }
+        String value = values.get(col);
+        if (value != null && !value.isEmpty()) {
+          result.add(
+              String.valueOf(col) + "-" +
+                  String.valueOf(uuid) + "=" +
+                  (values != null ? String.valueOf(values.getOrDefault(col, "")) : "")
+          );
+        }
+      }
     }
 
     return result;
@@ -380,11 +380,14 @@ public class DataExtractService {
       Map<String, String> values = group.getValue();
 
       for (String col : repeatingColumns) {
-        result.add(
-            String.valueOf(col) + "-" +
-                String.valueOf(uuid) + "=" +
-                (values != null ? String.valueOf(values.getOrDefault(col, "")) : "")
-        );
+        String value = values.get(col);
+        if (value != null && !value.isEmpty()) {
+          result.add(
+              String.valueOf(col) + "-" +
+                  String.valueOf(uuid) + "=" +
+                  (values != null ? String.valueOf(values.getOrDefault(col, "")) : "")
+          );
+        }
       }
     }
 
