@@ -146,8 +146,19 @@ public class DataExtractService {
   private DbDataObj processDbRowData(List<DbRow> rows) {
 
     List<String> FIXED_COLUMNS = List.of(
+        "event_identifier",
+        "created_datetime",
+        "country",
+        "province",
+        "district",
+        "catchment",
+        "cluster",
+        "structure",
         "eligible_structure",
         "supervisor",
+        "event_position_lat",
+        "event_position_lon",
+        "app_version",
         "household_id",
         "household_id_value",
         "date",
@@ -163,9 +174,11 @@ public class DataExtractService {
         "any_windows",
         "window_type",
         "calculated_total_people",
+        "children_under_5_count",
         "children_5_to_17",
         "adults",
         "total_people",
+        "additional_people_count",
         "hoh_m_or_f",
         "hoh_age",
         "hoh_attend_school",
@@ -183,6 +196,7 @@ public class DataExtractService {
         "outside_sleep_location_have_cover",
         "outside_sleep_location",
         "have_any_mosquito_net",
+        "mosquito_nets_count",
         "anyone_use_mosquito_net",
         "under_five_under_net",
         "school_age_under_net",
@@ -230,6 +244,7 @@ public class DataExtractService {
         "bed_nets_another_location",
         "who_uses_bed_nets_another_location",
         "who_uses_bed_nets_another_location_other",
+        "rdt_results_number_count",
         "have_comments",
         "comments",
         "business_status"
@@ -315,7 +330,7 @@ public class DataExtractService {
     Map<String, Map<String, String>> grouped = new HashMap<>();
 
     for (Map.Entry<String, String> entry : row.getRepeatingCols().entrySet()) {
-
+      log.debug("getProcessRepeatingCols {}",entry);
       String[] parts = entry.getKey().split("\\|"); // IMPORTANT
 
       String key = parts[0];
@@ -333,8 +348,11 @@ public class DataExtractService {
       Map<String, String> values = group.getValue();
 
       for (String col : repeatingColumns) {
-        result.add(col.concat("-").concat(uuid).concat("=").concat(values.getOrDefault(col, "")));
-      }
+        result.add(
+            String.valueOf(col) + "-" +
+                String.valueOf(uuid) + "=" +
+                (values != null ? String.valueOf(values.getOrDefault(col, "")) : "")
+        );      }
     }
 
     return result;
@@ -344,7 +362,7 @@ public class DataExtractService {
     Map<String, Map<String, String>> grouped = new HashMap<>();
 
     for (Map.Entry<String, String> entry : row.getCheckboxCols().entrySet()) {
-
+      log.debug("getProcessCheckboxCols {}",entry);
       String[] parts = entry.getKey().split("\\|"); // IMPORTANT
 
       String key = parts[0];
