@@ -25,6 +25,8 @@ import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.csveed.row.RowInstructions;
+import org.csveed.row.RowInstructionsImpl;
 import org.csveed.row.RowWriter;
 import org.csveed.row.RowWriterImpl;
 import org.springframework.core.io.InputStreamResource;
@@ -91,7 +93,9 @@ public class DataExtractService {
 
   private InputStream processData(DbDataObj data) throws IOException {
     StringWriter stringWriter = new StringWriter();
-    RowWriter rowWriter = new RowWriterImpl(stringWriter);
+    RowInstructions instructions = new RowInstructionsImpl();
+    instructions.setSeparator('|');
+    RowWriter rowWriter = new RowWriterImpl(stringWriter,instructions);
 
     rowWriter.writeHeader(data.getHeader().toArray(new String[0]));
 
