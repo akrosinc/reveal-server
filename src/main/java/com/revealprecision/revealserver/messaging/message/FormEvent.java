@@ -20,5 +20,7 @@ public class FormEvent extends Message  {
 
   private String name;
 
-  private String template;
+  private String title;
+
+  private boolean template;
 }

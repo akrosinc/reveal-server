@@ -137,10 +137,13 @@ public class TaskEventFactory {
         .build();
 
     if (action.getForm()!=null){
-      build.setForm(FormEvent.builder()
+      FormEvent build1 = FormEvent.builder()
           .identifier(action.getForm().getIdentifier())
           .name(action.getForm().getName())
-          .template(action.getForm().getTitle()).build());
+          .title(action.getForm().getTitle())
+          .template(action.getForm().isTemplate()).build();
+
+      build.setForm(build1);
     }
     return build;
   }
