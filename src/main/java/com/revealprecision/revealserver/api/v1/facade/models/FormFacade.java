@@ -17,5 +17,7 @@ public class FormFacade {
   @NotBlank
   private String name;
   @NotBlank
-  private String template;
+  private String title;
+  @NotBlank
+  private boolean template;
 }

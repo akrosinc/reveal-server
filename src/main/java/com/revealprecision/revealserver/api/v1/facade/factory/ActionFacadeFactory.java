@@ -30,13 +30,12 @@ public class ActionFacadeFactory {
     if (action.getForm() != null ){
       FormFacade build1 = FormFacade.builder()
           .name(action.getForm().getName())
+          .template(action.getForm().isTemplate())
+          .title(action.getForm().getTitle())
           .build();
-      if (action.getForm().isTemplate()){
-        build1.setTemplate(action.getForm().getTitle());
-      }
       build.setForm(
           build1);
-    }
+      }
 
     return build;
 
