@@ -7,6 +7,7 @@ import com.revealprecision.revealserver.persistence.generator.TaskServerVersionG
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import javax.persistence.CascadeType;
@@ -21,6 +22,7 @@ import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
 import javax.persistence.OneToOne;
 import javax.validation.constraints.NotNull;
 import lombok.AccessLevel;
@@ -133,6 +135,13 @@ public class Task extends AbstractAuditableEntity {
   @Type(type = "jsonb")
   @Column(columnDefinition = "jsonb")
   private TaskEvent taskFacade;
+
+  @OneToMany(mappedBy = "parentTaskIdentifier", fetch = FetchType.LAZY)
+  private List<Task> childTasks = new ArrayList<>();
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "parent_task_identifier")
+  private Task parentTaskIdentifier;
 
   public Task(UUID identifier, UUID planIdentifier, long serverVersion, Object taskFacade,
       UUID parentLocation) {

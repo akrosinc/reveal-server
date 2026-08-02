@@ -35,6 +35,7 @@ public class TaskFacadeFactory {
         .requester(requester)
         .groupIdentifier(groupId)
         .structureId(task.getBaseEntityIdentifier().toString())
+        .parentTaskId(task.getParentTaskId()!=null?task.getParentTaskId().toString():null)
         .serverVersion(task.getServerVersion() == null ? 0 : task.getServerVersion())
         .build();
 

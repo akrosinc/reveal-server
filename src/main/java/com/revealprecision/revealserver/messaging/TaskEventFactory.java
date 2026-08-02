@@ -111,6 +111,10 @@ public class TaskEventFactory {
     if (ActionUtils.isActionForLocation(taskSaved.getAction())){
       taskEvent.setLocationId(taskSaved.getLocation().getIdentifier().toString());
     }
+    if (taskSaved.getParentTaskIdentifier()!=null){
+      taskEvent.setParentTaskId(taskSaved.getParentTaskIdentifier().getIdentifier());
+    }
+
     return taskEvent;
   }
 
@@ -200,109 +204,6 @@ public class TaskEventFactory {
         .build();
   }
 
-  public static TaskEvent copyTaskEvent(TaskEvent taskEventOriginal) {
-    TaskEvent taskEvent = TaskEvent.builder()
-        .baseLocationIds(taskEventOriginal.getBaseLocationIds())
-        .locationName(taskEventOriginal.getLocationName())
-        .action(getActionEvent(taskEventOriginal.getAction()))
-        .businessStatus(taskEventOriginal.getBusinessStatus())
-        .authoredOn(taskEventOriginal.getAuthoredOn())
-        .baseEntityIdentifier(taskEventOriginal.getBaseEntityIdentifier())
-        .executionPeriodStart(taskEventOriginal.getExecutionPeriodStart())
-        .executionPeriodEnd(taskEventOriginal.getExecutionPeriodEnd())
-        .description(taskEventOriginal.getDescription())
-        .serverVersion(taskEventOriginal.getServerVersion())
-        .lookupTaskStatus(getLookupTaskStatusEvent(taskEventOriginal.getLookupTaskStatus()))
-        .lastModified(taskEventOriginal.getLastModified())
-        .identifier(taskEventOriginal.getIdentifier())
-        .priority(taskEventOriginal.getPriority())
-        .owner(taskEventOriginal.getOwner())
-        .ownerId(taskEventOriginal.getOwnerId())
-        .build();
-    if (taskEventOriginal.getLocationId()!=null){
-      taskEvent.setLocationId(taskEventOriginal.getLocationId());
-    }
-    if (taskEventOriginal.getPersonId()!=null){
-      taskEvent.setPersonId(taskEventOriginal.getPersonId());
-    }
-    return taskEvent;
-  }
 
-  private static LookupTaskStatusEvent getLookupTaskStatusEvent(LookupTaskStatusEvent lookupTaskStatusEvent) {
-    return LookupTaskStatusEvent.builder()
-        .code(lookupTaskStatusEvent.getCode())
-        .identifier(lookupTaskStatusEvent.getIdentifier())
-        .name(lookupTaskStatusEvent.getName())
-        .build();
-  }
-
-  private static ActionEvent getActionEvent(ActionEvent actionEvent) {
-    return ActionEvent.builder()
-        .goal(getGoalEvent(actionEvent.getGoal()))
-        .description(actionEvent.getDescription())
-        .lookupEntityType(actionEvent.getLookupEntityType())
-        .timingPeriodEnd(actionEvent.getTimingPeriodEnd())
-        .timingPeriodStart(actionEvent.getTimingPeriodStart())
-        .type(actionEvent.getType())
-        .identifier(actionEvent.getIdentifier())
-        .title(actionEvent.getTitle())
-        .build();
-  }
-
-  private static GoalEvent getGoalEvent(GoalEvent goalEvent) {
-    return GoalEvent.builder()
-        .plan(getPlanEvent(goalEvent.getPlan()))
-        .description(goalEvent.getDescription())
-        .identifier(goalEvent.getIdentifier())
-        .priority(goalEvent.getPriority())
-        .build();
-  }
-
-  private static PlanEvent getPlanEvent(PlanEvent planEvent) {
-    return PlanEvent.builder()
-        .locationHierarchy(getLocationHierarchyEvent(planEvent.getLocationHierarchy()))
-        .interventionType(getInterventionTypeEvent(planEvent.getInterventionType()))
-        .date(planEvent.getDate())
-        .effectivePeriodEnd(
-            planEvent.getEffectivePeriodEnd())
-        .effectivePeriodStart(
-            planEvent.getEffectivePeriodStart())
-        .status(planEvent.getStatus())
-        .title(planEvent.getTitle())
-        .name(planEvent.getName())
-        .identifier(planEvent.getIdentifier())
-        .planTargetTypeEvent(PlanTargetTypeEvent.builder()
-            .geographicLevelName(planEvent.getName())
-            .build())
-        .build();
-  }
-
-  private static LookupInterventionTypeEvent getInterventionTypeEvent(LookupInterventionTypeEvent lookupInterventionTypeEvent) {
-    return LookupInterventionTypeEvent.builder()
-        .code(
-            lookupInterventionTypeEvent
-                .getCode())
-        .name(
-            lookupInterventionTypeEvent
-                .getName())
-        .identifier(
-            lookupInterventionTypeEvent
-                .getIdentifier())
-        .build();
-  }
-
-  private static LocationHierarchyEvent getLocationHierarchyEvent(LocationHierarchyEvent locationHierarchyEvent) {
-    return LocationHierarchyEvent.builder()
-        .name(
-            locationHierarchyEvent
-                .getName())
-        .nodeOrder(
-            locationHierarchyEvent
-                .getNodeOrder())
-        .identifier(
-            locationHierarchyEvent
-                .getIdentifier())
-        .build();
-  }
 
 }

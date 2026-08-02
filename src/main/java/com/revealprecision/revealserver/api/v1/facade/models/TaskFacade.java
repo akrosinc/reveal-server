@@ -143,6 +143,8 @@ public class TaskFacade implements Serializable {
 
   private Restriction restriction;
 
+  private String parentTaskId;
+
   @Data
   @NoArgsConstructor
   @AllArgsConstructor
