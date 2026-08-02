@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.api.v1.facade.factory;
 
 import com.revealprecision.revealserver.api.v1.dto.request.EffectivePeriod;
+import com.revealprecision.revealserver.api.v1.facade.models.FormFacade;
 import com.revealprecision.revealserver.api.v1.dto.request.SubjectCodableConcept;
 import com.revealprecision.revealserver.api.v1.facade.models.ActionFacade;
 import com.revealprecision.revealserver.persistence.domain.Action;
@@ -11,11 +12,11 @@ import lombok.NoArgsConstructor;
 public class ActionFacadeFactory {
 
   public static ActionFacade fromEntity(Action action) {
-    return ActionFacade.builder()
+    ActionFacade build = ActionFacade.builder()
         .identifier(action.getIdentifier().toString())
         .title(action.getTitle())
         .description(action.getDescription())
-        .code("") //addCode
+        .code(action.getTitle()) //addCode
         .timingPeriod(EffectivePeriod.builder()
             .start(action.getTimingPeriodStart())
             .end(action.getTimingPeriodEnd()).build())
@@ -25,6 +26,19 @@ public class ActionFacadeFactory {
             SubjectCodableConcept.builder().text("").build())//addSubject
         .type(action.getType())
         .build();
+
+    if (action.getForm() != null ){
+      FormFacade build1 = FormFacade.builder()
+          .name(action.getForm().getName())
+          .build();
+      if (action.getForm().isTemplate()){
+        build1.setTemplate(action.getForm().getTitle());
+      }
+      build.setForm(
+          build1);
+    }
+
+    return build;
 
   }
 }

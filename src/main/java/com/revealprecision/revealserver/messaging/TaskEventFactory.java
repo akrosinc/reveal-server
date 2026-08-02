@@ -2,6 +2,7 @@ package com.revealprecision.revealserver.messaging;
 
 import com.revealprecision.revealserver.api.v1.dto.factory.LookupEntityTypeEventFactory;
 import com.revealprecision.revealserver.messaging.message.ActionEvent;
+import com.revealprecision.revealserver.messaging.message.FormEvent;
 import com.revealprecision.revealserver.messaging.message.GoalEvent;
 import com.revealprecision.revealserver.messaging.message.LocationHierarchyEvent;
 import com.revealprecision.revealserver.messaging.message.LookupInterventionTypeEvent;
@@ -124,7 +125,7 @@ public class TaskEventFactory {
   public static ActionEvent getActionEventFromAction(Action action, Goal goal, Plan plan,
       LocationHierarchy locationHierarchy, LookupInterventionType interventionType,
       LookupEntityType lookupEntityType) {
-    return ActionEvent.builder()
+    ActionEvent build = ActionEvent.builder()
         .goal(getGoalEventFromGoal(goal, plan, locationHierarchy, interventionType))
         .description(action.getDescription())
         .lookupEntityType(LookupEntityTypeEventFactory.getLookupEntityTypeEvent(lookupEntityType))
@@ -134,6 +135,14 @@ public class TaskEventFactory {
         .identifier(action.getIdentifier())
         .title(action.getTitle())
         .build();
+
+    if (action.getForm()!=null){
+      build.setForm(FormEvent.builder()
+          .identifier(action.getForm().getIdentifier())
+          .name(action.getForm().getName())
+          .template(action.getForm().getTitle()).build());
+    }
+    return build;
   }
 
   private static GoalEvent getGoalEventFromGoal(Goal goal, Plan plan, LocationHierarchy locationHierarchy,

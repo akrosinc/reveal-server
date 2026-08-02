@@ -1,15 +1,18 @@
 package com.revealprecision.revealserver.api.v1.facade.factory;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.revealprecision.revealserver.api.v1.facade.models.Period;
 import com.revealprecision.revealserver.api.v1.facade.models.TaskFacade;
 import com.revealprecision.revealserver.api.v1.facade.models.TaskFacade.TaskPriority;
 import com.revealprecision.revealserver.api.v1.facade.models.TaskFacade.TaskStatus;
 import com.revealprecision.revealserver.api.v1.facade.util.DateTimeFormatter;
 import com.revealprecision.revealserver.messaging.message.TaskEvent;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class TaskFacadeFactory {
-  public static TaskFacade getTaskFacadeObj(String requester, String groupId, TaskEvent task) {
-    return TaskFacade.builder()
+  public static TaskFacade getTaskFacadeObj(String requester, String groupId, TaskEvent task, ObjectMapper objectMapper ) {
+    TaskFacade build = TaskFacade.builder()
         .code(task.getAction().getTitle())
         .authoredOn(
             DateTimeFormatter.getDateTimeFacadeStringFromLocalDateTime(task.getAuthoredOn()))
@@ -34,5 +37,7 @@ public class TaskFacadeFactory {
         .structureId(task.getBaseEntityIdentifier().toString())
         .serverVersion(task.getServerVersion() == null ? 0 : task.getServerVersion())
         .build();
+
+    return build;
   }
 }

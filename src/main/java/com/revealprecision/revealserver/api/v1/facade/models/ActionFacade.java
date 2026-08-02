@@ -24,6 +24,7 @@ public class ActionFacade {
   private String title;
   private String description;
   private String code;
+  private FormFacade form;
   private EffectivePeriod timingPeriod;
   private String reason;
   private String goalId;

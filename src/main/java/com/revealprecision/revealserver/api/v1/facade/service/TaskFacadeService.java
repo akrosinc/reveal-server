@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.api.v1.facade.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.revealprecision.revealserver.api.v1.dto.request.LocationRequest;
 import com.revealprecision.revealserver.api.v1.facade.factory.TaskFacadeFactory;
 import com.revealprecision.revealserver.api.v1.facade.models.TaskDto;
@@ -66,6 +67,7 @@ public class TaskFacadeService {
   private final Environment env;
   private final UserService userService;
   private final MetadataEsService metadataEsService;
+  private final ObjectMapper objectMapper;
 
 
   public List<TaskFacade> syncTasks(List<String> planIdentifiers,
@@ -98,7 +100,7 @@ public class TaskFacadeService {
             .map(task -> {
               TaskFacade taskFacadeObj = TaskFacadeFactory.getTaskFacadeObj(requester,
                   task.getTaskFacade().getParentLocation().toString()
-                  , task.getTaskFacade());
+                  , task.getTaskFacade(), objectMapper);
               taskFacadeObj.setServerVersion(task.getServerVersion());
               return taskFacadeObj;
             });
@@ -113,7 +115,7 @@ public class TaskFacadeService {
             .map(task -> {
               TaskFacade taskFacadeObj = TaskFacadeFactory.getTaskFacadeObj(requester,
                   task.getTaskFacade().getParentLocation().toString()
-                  , task.getTaskFacade());
+                  , task.getTaskFacade(), objectMapper);
               taskFacadeObj.setServerVersion(task.getServerVersion());
               return taskFacadeObj;
             });
@@ -185,6 +187,7 @@ public class TaskFacadeService {
         identifier = identifierUuid.toString();
 
         TaskEvent taskEvent = TaskEventFactory.getTaskEventFromTask(task);
+
         taskEvent.setOwnerId(UserUtils.getCurrentPrincipleName());
         taskEvent.setOwner(owner);
 
