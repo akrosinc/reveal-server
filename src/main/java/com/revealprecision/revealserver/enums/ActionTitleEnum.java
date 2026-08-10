@@ -30,7 +30,8 @@ public enum ActionTitleEnum {
   MDA_ONCHOCERCIASIS_SURVEY("MDA Onchocerciasis Survey", LookupEntityTypeCodeEnum.LOCATION_CODE),
   FAMILY_REGISTRATION("Family Registration", LookupEntityTypeCodeEnum.LOCATION_CODE),
   INDIVIDUAL_REGISTRATION("Individual Registration", LookupEntityTypeCodeEnum.PERSON_CODE),
-  RAPID_COVERAGE("Rapid Coverage",LookupEntityTypeCodeEnum.LOCATION_CODE);
+  RAPID_COVERAGE("Rapid Coverage",LookupEntityTypeCodeEnum.LOCATION_CODE),
+  RAPID_COVERAGE_STRUCTURE("Rapid Coverage Structure",LookupEntityTypeCodeEnum.LOCATION_CODE);
 
   private final String actionTitle;
   private final LookupEntityTypeCodeEnum entityType;
