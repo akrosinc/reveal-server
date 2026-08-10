@@ -41,6 +41,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -210,11 +211,29 @@ public class TaskFacadeService {
   }
 
   public List<TaskDto> addTaskDtos(List<TaskDto> taskDtos) {
+
+    List<UUID> parentTaskIds = taskDtos.stream().map(TaskFacade::getParentTaskId)
+        .map(str->{
+          try {
+            return UUID.fromString(str);
+          } catch (IllegalArgumentException e){
+            return null;
+          }
+        })
+        .filter(Objects::nonNull)
+        .collect(Collectors.toList());
+
+    List<Task> parentTasksByIdentifierList = taskService.getTasksByIdentifierList(parentTaskIds);
+
+    Map<UUID, Task> parentTaskMap = parentTasksByIdentifierList.stream()
+        .map(task -> new SimpleEntry<>(task.getIdentifier(), task))
+        .collect(Collectors.toMap(Entry::getKey, Entry::getValue, (a, b) -> b));
+
     List<TaskDto> unprocessedTaskIds = new ArrayList<>();
 
     taskDtos.forEach(taskDto -> {
       try {
-        saveTaskDto(taskDto,getOwner());
+        saveTaskDto(taskDto,getOwner(),parentTaskMap);
       } catch (Exception e) {
         log.error("Exception adding tasks {}",e.getMessage(), e);
         e.printStackTrace();
@@ -225,7 +244,7 @@ public class TaskFacadeService {
     return unprocessedTaskIds;
   }
 
-  private void saveTaskDto(TaskDto taskDto, String owner) throws Exception {
+  private void saveTaskDto(TaskDto taskDto, String owner, Map<UUID, Task> parentTaskMap) throws Exception {
 
     String taskCode = taskDto.getCode();
     Plan plan = planService.findPlanByIdentifier(UUID.fromString(taskDto.getPlanIdentifier()));
@@ -235,11 +254,11 @@ public class TaskFacadeService {
     Optional<LookupTaskStatus> taskStatus = lookupTaskStatuses.stream().filter(
             lookupTaskStatus -> lookupTaskStatus.getCode().equalsIgnoreCase(taskDto.getStatus().name()))
         .findFirst();
-    saveTask(taskDto, plan, action, taskStatus,owner);
+    saveTask(taskDto, plan, action, taskStatus,owner,parentTaskMap);
   }
 
   private Task saveTask(TaskDto taskDto, Plan plan, Action action,
-      Optional<LookupTaskStatus> taskStatus, String owner) throws Exception {
+      Optional<LookupTaskStatus> taskStatus, String owner, Map<UUID, Task> parentTaskMap) throws Exception {
     Task task;
     try {
       task = taskService.getTaskByIdentifier(UUID.fromString(taskDto.getIdentifier()));
@@ -313,6 +332,14 @@ public class TaskFacadeService {
           }
         }
         task.setPerson(person);
+      }
+      if (taskDto.getParentTaskId()!=null){
+        Task parentTask = parentTaskMap.get(UUID.fromString(taskDto.getParentTaskId()));
+        if (parentTask != null) {
+          task.setParentTaskIdentifier(parentTask);
+        } else {
+          throw new NotFoundException("Parent task: "+taskDto.getParentTaskId()+" not found");
+        }
       }
       TaskEvent taskEvent = TaskEventFactory.getTaskEventFromTask(task);
       taskEvent.setOwnerId(UserUtils.getCurrentPrincipleName());

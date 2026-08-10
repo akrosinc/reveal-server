@@ -194,6 +194,9 @@ public class TaskService {
     return taskRepository.findByIdentifier(identifier).orElseThrow(
         () -> new NotFoundException(Pair.of(Fields.identifier, identifier), Task.class));
   }
+  public List<Task> getTasksByIdentifierList(List<UUID> identifiers) {
+    return taskRepository.findByIdentifierIn(identifiers);
+  }
 
   public Task updateTask(UUID identifier, TaskUpdateRequest taskUpdateRequest) {
 
