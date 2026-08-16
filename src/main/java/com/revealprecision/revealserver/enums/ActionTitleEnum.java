@@ -36,7 +36,7 @@ public enum ActionTitleEnum {
   ENROLMENT_STRUCTURE("Enrolment Structure",LookupEntityTypeCodeEnum.LOCATION_CODE),
   FOLLOWUP("Followup",LookupEntityTypeCodeEnum.LOCATION_CODE),
   FOLLOWUP_STRUCTURE("Followup Structure",LookupEntityTypeCodeEnum.LOCATION_CODE),
-  DESTRUCTION("DESTRUCTION",LookupEntityTypeCodeEnum.LOCATION_CODE);
+  DESTRUCTION("Destruction",LookupEntityTypeCodeEnum.LOCATION_CODE);
 
 
   private final String actionTitle;
