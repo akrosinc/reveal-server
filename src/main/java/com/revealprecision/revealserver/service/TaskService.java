@@ -235,7 +235,10 @@ public class TaskService {
             .filter(action -> !Stream.of(ActionTitleEnum.RCD, ActionTitleEnum.INDEX_CASE,
                 ActionTitleEnum.SECONDARY_INDEX_CASE, ActionTitleEnum.INDEX_CASE_MEMBER,
                 ActionTitleEnum.SECONDARY_INDEX_CASE_MEMBER,ActionTitleEnum.RCD_MEMBER,
-                ActionTitleEnum.STRUCTURE_SURVEY).map(
+                ActionTitleEnum.STRUCTURE_SURVEY,
+                ActionTitleEnum.ENROLMENT,ActionTitleEnum.ENROLMENT_STRUCTURE,
+                ActionTitleEnum.FOLLOWUP_STRUCTURE,ActionTitleEnum.FOLLOWUP,ActionTitleEnum.DESTRUCTION,
+            ActionTitleEnum.RAPID_COVERAGE_STRUCTURE).map(
                 ActionTitleEnum::getActionTitle).collect(
                 Collectors.toList()).contains(action.getTitle()))
             .forEach((action) -> processPlanUpdatePerActionForTasks(action, plan, ownerId,
