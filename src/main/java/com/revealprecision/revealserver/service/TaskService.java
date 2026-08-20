@@ -238,7 +238,7 @@ public class TaskService {
                 ActionTitleEnum.STRUCTURE_SURVEY,
                 ActionTitleEnum.ENROLMENT,ActionTitleEnum.ENROLMENT_STRUCTURE,
                 ActionTitleEnum.FOLLOWUP_STRUCTURE,ActionTitleEnum.FOLLOWUP,ActionTitleEnum.DESTRUCTION,
-            ActionTitleEnum.RAPID_COVERAGE_STRUCTURE).map(
+            ActionTitleEnum.RAPID_COVERAGE_STRUCTURE, ActionTitleEnum.RAPID_COVERAGE).map(
                 ActionTitleEnum::getActionTitle).collect(
                 Collectors.toList()).contains(action.getTitle()))
             .forEach((action) -> processPlanUpdatePerActionForTasks(action, plan, ownerId,
