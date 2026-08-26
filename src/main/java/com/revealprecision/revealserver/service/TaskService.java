@@ -47,6 +47,7 @@ import com.revealprecision.revealserver.persistence.repository.TaskRepository;
 import com.revealprecision.revealserver.persistence.specification.TaskSpec;
 import com.revealprecision.revealserver.props.BusinessStatusProperties;
 import com.revealprecision.revealserver.props.KafkaProperties;
+import com.revealprecision.revealserver.props.NoTaskActionProperties;
 import com.revealprecision.revealserver.props.TaskGenerationProperties;
 import com.revealprecision.revealserver.service.models.TaskSearchCriteria;
 import com.revealprecision.revealserver.util.ActionUtils;
@@ -58,6 +59,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -102,6 +104,7 @@ public class TaskService {
   private final TaskGenerationProperties taskGenerationProperties;
   private final PlanLocationsService planLocationsService;
 
+  private final NoTaskActionProperties noTaskActionProperties;
 
   @Getter
   private LookupTaskStatus cancelledLookupTaskStatus;
@@ -230,17 +233,12 @@ public class TaskService {
 
       if (processTrackerList.size() >= 1) {
         ProcessTracker processTracker = processTrackerList.get(0);
+        Set<String> excludedActionTitles = noTaskActionProperties.getActions().stream().map(
+            ActionTitleEnum::getActionTitle).collect(
+            Collectors.toSet());
         goals.stream().map(goal -> actionService.getActionsByGoalIdentifier(goal.getIdentifier()))
             .flatMap(Collection::stream)
-            .filter(action -> !Stream.of(ActionTitleEnum.RCD, ActionTitleEnum.INDEX_CASE,
-                ActionTitleEnum.SECONDARY_INDEX_CASE, ActionTitleEnum.INDEX_CASE_MEMBER,
-                ActionTitleEnum.SECONDARY_INDEX_CASE_MEMBER,ActionTitleEnum.RCD_MEMBER,
-                ActionTitleEnum.STRUCTURE_SURVEY,
-                ActionTitleEnum.ENROLMENT_STRUCTURE,
-                ActionTitleEnum.FOLLOWUP_STRUCTURE,ActionTitleEnum.FOLLOWUP,ActionTitleEnum.DESTRUCTION,
-            ActionTitleEnum.RAPID_COVERAGE_STRUCTURE, ActionTitleEnum.RAPID_COVERAGE).map(
-                ActionTitleEnum::getActionTitle).collect(
-                Collectors.toList()).contains(action.getTitle()))
+            .filter(action -> !excludedActionTitles.contains(action.getTitle()))
             .forEach((action) -> processPlanUpdatePerActionForTasks(action, plan, ownerId,
                 processTracker));
 
