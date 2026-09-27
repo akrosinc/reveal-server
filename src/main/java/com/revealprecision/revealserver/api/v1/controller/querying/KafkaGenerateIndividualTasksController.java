@@ -44,9 +44,12 @@ public class KafkaGenerateIndividualTasksController {
 
   @PostMapping("/generate-individual-tasks")
   public Pair<String,Map<TaskGenerateRequestValidationStateEnum, List<UUID>>> generate(@RequestParam("planIdentifier") UUID planIdentifier,
-      @RequestParam("actionIdentifier") UUID actionIdentifier, @RequestBody ListObj uuidsObj) {
+      @RequestParam("actionIdentifier") UUID actionIdentifier,
+      @RequestParam(value = "parentTaskIdentifier", required = false) UUID parentTaskIdentifier,
+      @RequestBody ListObj uuidsObj) {
 
-    return taskService.generateIndividualTask(planIdentifier, actionIdentifier,uuidsObj);
+    return taskService.generateIndividualTask(planIdentifier, actionIdentifier, uuidsObj,
+        parentTaskIdentifier);
   }
 
   @Data

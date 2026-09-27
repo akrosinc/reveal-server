@@ -370,13 +370,25 @@ public class TaskService {
   public Pair<String, Map<TaskGenerateRequestValidationStateEnum, List<UUID>>> generateIndividualTask(
       UUID planIdentifier,
       UUID actionIdentifier, ListObj uuidsObj) {
+    return generateIndividualTask(planIdentifier, actionIdentifier, uuidsObj, null);
+  }
+
+  public Pair<String, Map<TaskGenerateRequestValidationStateEnum, List<UUID>>> generateIndividualTask(
+      UUID planIdentifier,
+      UUID actionIdentifier, ListObj uuidsObj, UUID parentTaskIdentifier) {
     return generateIndividualTaskWithOwner(planIdentifier, actionIdentifier, uuidsObj,
-        UserUtils.getCurrentPrincipleName());
+        UserUtils.getCurrentPrincipleName(), parentTaskIdentifier);
   }
 
   public Pair<String, Map<TaskGenerateRequestValidationStateEnum, List<UUID>>> generateIndividualTaskWithOwner(
       UUID planIdentifier,
       UUID actionIdentifier, ListObj uuidsObj, String owner) {
+    return generateIndividualTaskWithOwner(planIdentifier, actionIdentifier, uuidsObj, owner, null);
+  }
+
+  public Pair<String, Map<TaskGenerateRequestValidationStateEnum, List<UUID>>> generateIndividualTaskWithOwner(
+      UUID planIdentifier,
+      UUID actionIdentifier, ListObj uuidsObj, String owner, UUID parentTaskIdentifier) {
     Action action = actionService.getByIdentifier(actionIdentifier);
 
     Plan plan = action.getGoal().getPlan();
@@ -420,7 +432,7 @@ public class TaskService {
           processLocationListForTasks(action, plan, owner,
               newProcessTracker,
               validatedMap.get(TaskGenerateRequestValidationStateEnum.CAN_GENERATE), true, false,
-              false);
+              false, parentTaskIdentifier);
 
           return Pair.of("No action taken as validation indicates entities should not be generated",
               validatedMap);
@@ -470,6 +482,13 @@ public class TaskService {
   public void processLocationListForTasks(Action action, Plan plan, String ownerId,
       ProcessTracker processTracker, List<UUID> uuids, boolean generate, boolean reactivate,
       boolean cancel) {
+    processLocationListForTasks(action, plan, ownerId, processTracker, uuids, generate, reactivate,
+        cancel, null);
+  }
+
+  public void processLocationListForTasks(Action action, Plan plan, String ownerId,
+      ProcessTracker processTracker, List<UUID> uuids, boolean generate, boolean reactivate,
+      boolean cancel, UUID parentTaskIdentifier) {
 
     List<TaskProjection> existingTasks = taskRepository.findUniqueByPlanAndActionidentifier(
         plan, action.getIdentifier());
@@ -509,7 +528,8 @@ public class TaskService {
     }
 
     List<TaskProcessStage> taskCandidatesToProcess = tasksToProcess.stream()
-        .map(taskGen -> getTaskProcessStage(processTracker, taskGen)).collect(Collectors.toList());
+        .map(taskGen -> getTaskProcessStage(processTracker, taskGen, parentTaskIdentifier))
+        .collect(Collectors.toList());
 
     List<TaskProcessStage> taskProcessStages = taskProcessStageRepository.saveAll(
         taskCandidatesToProcess);
@@ -518,12 +538,14 @@ public class TaskService {
     submitTaskCandidatesToKafka(action, plan, ownerId, taskProcessStages);
   }
 
-  private TaskProcessStage getTaskProcessStage(ProcessTracker processTracker, TaskGen taskGen) {
+  private TaskProcessStage getTaskProcessStage(ProcessTracker processTracker, TaskGen taskGen,
+      UUID parentTaskIdentifier) {
     TaskProcessStage taskGenerationStage = new TaskProcessStage();
     taskGenerationStage.setState(ProcessTrackerEnum.NEW);
     taskGenerationStage.setProcessTracker(processTracker);
     taskGenerationStage.setEntityStatus(EntityStatus.ACTIVE);
     taskGenerationStage.setTaskProcess(taskGen.getTaskProcessEnum());
+    taskGenerationStage.setParentTaskIdentifier(parentTaskIdentifier);
 
     if (taskGen.getBaseEntityIdentifier() != null) {
       taskGenerationStage.setBaseEntityIdentifier(taskGen.getBaseEntityIdentifier());
@@ -632,6 +654,7 @@ public class TaskService {
             .build()
         )
         .taskIdentifier(taskProcessStage.getTaskIdentifier())
+        .parentTaskIdentifier(taskProcessStage.getParentTaskIdentifier())
         .identifier(taskProcessStage.getIdentifier())
         .build();
     return taskProcessEvent;
@@ -710,7 +733,7 @@ public class TaskService {
         owner = "unknown";
       }
       task = createTaskObjectFromActionAndEntityId(action,
-          uuid, plan, owner);
+          uuid, plan, owner, taskProcessEvent.getParentTaskIdentifier());
 
       TaskProcessStage taskGenerationStage = taskGenerationStageOptional.get();
       taskGenerationStage.setState(ProcessTrackerEnum.DONE);
@@ -811,6 +834,11 @@ public class TaskService {
 
   private Task createTaskObjectFromActionAndEntityId(Action action,
       UUID entityUUID, Plan plan, String owner) {
+    return createTaskObjectFromActionAndEntityId(action, entityUUID, plan, owner, null);
+  }
+
+  private Task createTaskObjectFromActionAndEntityId(Action action,
+      UUID entityUUID, Plan plan, String owner, UUID parentTaskIdentifier) {
     log.debug("TASK_GENERATION  create individual task for plan: {} and action: {}",
         plan.getIdentifier(), action.getIdentifier());
 
@@ -831,6 +859,13 @@ public class TaskService {
     task.setBusinessStatus(businessStatusProperties.getDefaultBusinessStatus(action));
 
     task.setEntityStatus(EntityStatus.ACTIVE);
+
+    if (parentTaskIdentifier != null) {
+      Task parentTask = taskRepository.findById(parentTaskIdentifier).orElseThrow(
+          () -> new NotFoundException(Pair.of(Task.Fields.identifier, parentTaskIdentifier),
+              Task.class));
+      task.setParentTaskIdentifier(parentTask);
+    }
 
     if (isActionForLocation) {
       Location location = locationService.findByIdentifier(entityUUID);
