@@ -20,4 +20,6 @@ public class FormFacade {
   private String title;
   @NotBlank
   private boolean template;
+  @NotBlank
+  private String payload;
 }

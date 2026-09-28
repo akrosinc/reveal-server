@@ -7,8 +7,10 @@ import com.revealprecision.revealserver.api.v1.facade.models.ActionFacade;
 import com.revealprecision.revealserver.persistence.domain.Action;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
+@Slf4j
 public class ActionFacadeFactory {
 
   public static ActionFacade fromEntity(Action action) {
@@ -25,6 +27,7 @@ public class ActionFacadeFactory {
         .subjectCodableConcept(
             SubjectCodableConcept.builder().text("").build())//addSubject
         .type(action.getType())
+        .config(action.getConfig())
         .build();
 
     if (action.getForm() != null ){
@@ -33,6 +36,10 @@ public class ActionFacadeFactory {
           .template(action.getForm().isTemplate())
           .title(action.getForm().getTitle())
           .build();
+      if (action.getForm().getPayload()!=null && !action.getForm().getPayload().isEmpty()){
+        log.info("action payload has data");
+        build1.setPayload(action.getForm().getPayload().toString());
+      }
       build.setForm(
           build1);
       }

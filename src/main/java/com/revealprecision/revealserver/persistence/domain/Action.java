@@ -2,10 +2,13 @@ package com.revealprecision.revealserver.persistence.domain;
 
 import com.revealprecision.revealserver.api.v1.dto.request.ActionRequest;
 import com.revealprecision.revealserver.enums.ActionTypeEnum;
+import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import java.time.LocalDate;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import javax.persistence.CascadeType;
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
@@ -22,6 +25,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.FieldNameConstants;
 import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.Type;
+import org.hibernate.annotations.TypeDef;
 import org.hibernate.annotations.Where;
 import org.hibernate.envers.Audited;
 
@@ -35,6 +40,7 @@ import org.hibernate.envers.Audited;
 @Builder
 @SQLDelete(sql = "UPDATE action SET entity_status = 'DELETED' where identifier=?")
 @Where(clause = "entity_status='ACTIVE'")
+@TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
 public class Action extends AbstractAuditableEntity {
 
   @Id
@@ -71,6 +77,11 @@ public class Action extends AbstractAuditableEntity {
   @JoinColumn(name = "lookup_entity_type_identifier")
   private LookupEntityType lookupEntityType;
 
+
+  @Type(type = "jsonb")
+  @Column(columnDefinition = "jsonb")
+  private Map<ActionConfigEnum,ActionTaskConfig> config;
+
   public Action update(ActionRequest actionRequest, Form form) {
     this.title = actionRequest.getTitle();
     this.description = actionRequest.getDescription();
@@ -79,4 +90,15 @@ public class Action extends AbstractAuditableEntity {
     this.form = form;
     return this;
   }
+
+  public enum ActionConfigEnum{
+    TASK_COLOR_CONFIG
+  }
+
+  @Setter
+  @Getter
+  public static class ActionTaskConfig{
+    private Map<String, String> businessStatusMap;
+  }
+
 }
