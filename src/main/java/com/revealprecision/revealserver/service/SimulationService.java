@@ -155,6 +155,7 @@ public class SimulationService {
         return new SimulationResponse(s.getIdentifier(), s.getDatasets(), locationsResponse, dataSetYearRange);
     }
 
+    @Transactional
     public Simulation updateSimulationDataset(UpdateDatasetRequest request) {
         Simulation simulation = simulationRepository.findById(request.getSimulationId()).orElseThrow(() -> new NotFoundException("Simulation not found with ID: " + request.getSimulationId()));
 
@@ -187,6 +188,7 @@ public class SimulationService {
         }
     }
 
+    @Transactional
     public Simulation deleteSimulationDataset(DeleteDatasetRequest request) {
         Simulation simulation = simulationRepository.findById(request.getSimulationId())
             .orElseThrow(() -> new NotFoundException("Simulation not found with ID: " + request.getSimulationId()));

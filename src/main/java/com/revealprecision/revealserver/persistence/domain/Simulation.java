@@ -35,7 +35,7 @@ public class Simulation {
     private List<Dataset> datasets = new ArrayList<>();
 
 
-    @OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "simulation_identifier", nullable = false)
     @NotAudited
     private List<RasterDataset> rasterDatasets = new ArrayList<>();
