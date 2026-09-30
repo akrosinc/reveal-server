@@ -11,7 +11,6 @@ import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -20,41 +19,29 @@ public class RasterIngestionService {
 
   private final IngestionTaskRepository ingestionTaskRepository;
   private final TileGenerator tileGenerator;
-
+  private final IngestionTaskService ingestionTaskService;
 
   public void processIngestion(RasterIngestionMessage message) {
-    LocalDateTime startedAt = LocalDateTime.now();
     try {
-//      emitProgress(message, IngestionStage.STARTED, "Ingestion request received");
-//
-//      emitProgress(message, IngestionStage.VALIDATING, "Validating raster file and paths");
+      // emitProgress(message, IngestionStage.STARTED, "Ingestion request received");
+      // emitProgress(message, IngestionStage.VALIDATING, "Validating raster file and paths");
 
-      emitProgress(message, IngestionStage.PROCESSING, "Generating tiles");
-      tileGenerator.generateTiles(
-          message
-      );
+      tileGenerator.generateTiles(message);
 
-      emitProgress(message, IngestionStage.COMPLETED, "Tile generation completed successfully");
+      ingestionTaskService.stepCompleted(message.getRasterId());
     } catch (InvalidRasterEventException e) {
-      handleFailure(message, startedAt, e, IngestionStage.FAILED);
+      handleFailure(message, e);
       throw e;
     } catch (Exception e) {
-      handleFailure(message, startedAt, e, IngestionStage.FAILED);
+      handleFailure(message, e);
       throw new RasterProcessingException("Error during raster processing: " + e.getMessage(), e);
     }
   }
 
-  private void emitProgress(RasterIngestionMessage message, IngestionStage stage,
-      String logMessage) {
-    LocalDateTime now = LocalDateTime.now();
-    updateIngestionStatus(message.getRasterId(), stage, logMessage, now);
-  }
-
-  private void handleFailure(RasterIngestionMessage message, LocalDateTime startedAt, Exception e,
-      IngestionStage stage) {
+  private void handleFailure(RasterIngestionMessage message, Exception e) {
     log.error("Ingestion failed for taskIdentifier: {}. Error: {}", message.getRasterId(),
         e.getMessage());
-    emitProgress(message, stage, e.getMessage());
+    ingestionTaskService.stepFailed(message.getRasterId(), IngestionStage.FAILED, e.getMessage());
   }
 
   public void updateIngestionStatus(String rasterId, IngestionStage stage, String message,

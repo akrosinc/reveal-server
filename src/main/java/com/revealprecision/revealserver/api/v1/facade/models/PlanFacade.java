@@ -5,6 +5,7 @@ import com.revealprecision.revealserver.api.v1.dto.request.EffectivePeriod;
 import com.revealprecision.revealserver.enums.PlanStatusEnum;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -35,4 +36,6 @@ public class PlanFacade {
   private boolean experimental;
   private String targetGeographicLevel;
   private List<String> hierarchyGeographicLevels;
+  private UUID instanceIdentifier;
+  private String instanceName;
 }

@@ -61,6 +61,8 @@ public class PlanFacadeFactory {
         .serverVersion(plan.getServerVersion())
         .targetGeographicLevel(planTargetType.getGeographicLevel().getName())
         .hierarchyGeographicLevels(locationHierarchy.getNodeOrder())
+        .instanceIdentifier(plan.getInstance() != null ? plan.getInstance().getIdentifier() : null)
+        .instanceName(plan.getInstance() != null ? plan.getInstance().getName() : null)
         .build();
   }
 }

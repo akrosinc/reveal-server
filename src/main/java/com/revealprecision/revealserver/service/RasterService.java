@@ -44,8 +44,8 @@ public class RasterService {
   private final IngestionTaskRepository ingestionTaskRepository;
   private final MapLayerRepository mapLayerRepository;
   private final RasterIngestionProperties rasterIngestionProperties;
-
-
+  private final MapLayerService mapLayerService;
+  private final IngestionTaskService ingestionTaskService;
 
   @Transactional
   public void ingest(@Valid RasterIngestionRequest request) {
@@ -61,10 +61,14 @@ public class RasterService {
       cogBuilder.build(rasterFilePath, cogPath);
     }
 
-    RasterIngestionMessage rasterIngestionMessage = null;
-
     int minZoom = request.getMinZoom() != null ? request.getMinZoom() : 0;
     int maxZoom = request.getMaxZoom() != null ? request.getMaxZoom() : 14;
+    int totalSteps = maxZoom - minZoom + 1;
+
+    ingestionTaskService.initIngestionTask(request.getRasterId(), totalSteps);
+
+    RasterIngestionMessage rasterIngestionMessage = null;
+
     for (int zoom = minZoom; zoom <= maxZoom; zoom++) {
       rasterIngestionMessage =  RasterIngestionMessage.builder()
           .rasterId(request.getRasterId())
@@ -79,8 +83,6 @@ public class RasterService {
           request.getRasterId(),
           rasterIngestionMessage);
     }
-
-    activateMapLayer(request.getRasterId());
 
     RasterStatisticsCalculationRequest statsConfig = request.getStatisticsCalculation();
 
@@ -119,37 +121,16 @@ public class RasterService {
   }
 
   public MapLayer createMapLayer(RasterIngestionRequest request) {
-    String name = request.getName();
-    if (name == null || name.isBlank()) {
-      if (request.getMetadata() != null && request.getMetadata().get("name") != null) {
-        name = request.getMetadata().get("name").toString();
-      } else {
-        name = request.getRasterId();
-      }
-    }
-    return createMapLayer(request.getRasterId(), name);
+    return mapLayerService.createMapLayer(request);
   }
 
   public MapLayer createMapLayer(String rasterId, String name) {
-    RasterLocationPaths paths = RasterUtil.validateAndResolvePaths(rasterId, rasterIngestionProperties);
-    GeoEnvelope extent = RasterUtil.getRasterExtent(paths.getRasterFilePath());
-
-    MapLayer mapLayer = MapLayer.builder()
-        .name(name != null && !name.isBlank() ? name : rasterId)
-        .layerIdentifier(rasterId)
-        .type(LayerType.RASTER)
-        .extent(extent)
-        .build();
-    mapLayer.setEntityStatus(EntityStatus.CREATING);
-    return mapLayerRepository.save(mapLayer);
+    return mapLayerService.createMapLayer(rasterId, name);
   }
 
   @Transactional
   public void activateMapLayer(String rasterId) {
-    mapLayerRepository.getByLayerIdentifier(rasterId).ifPresent(mapLayer -> {
-      mapLayer.setEntityStatus(EntityStatus.ACTIVE);
-      mapLayerRepository.save(mapLayer);
-    });
+    mapLayerService.activateMapLayer(rasterId);
   }
 
   public byte[] getTile(String rasterId, int z, int x, int y) {
@@ -179,7 +160,6 @@ public class RasterService {
   }
 
   public List<MapLayerResponse> getActiveMapLayers() {
-    return MapLayerResponseFactory.fromEntityList(
-        mapLayerRepository.findByEntityStatus(EntityStatus.ACTIVE));
+    return mapLayerService.getActiveMapLayers();
   }
 }

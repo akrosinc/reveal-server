@@ -31,6 +31,12 @@ public class IngestionTask {
   @Enumerated(EnumType.STRING)
   private IngestionStage stage;
   private String message;
+  @Builder.Default
+  private int totalSteps = 0;
+  @Builder.Default
+  private int completedSteps = 0;
+  @Builder.Default
+  private boolean failed = false;
   private LocalDateTime lastUpdated;
 }
 

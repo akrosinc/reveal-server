@@ -4,6 +4,9 @@ CREATE TABLE IF NOT EXISTS  ingestion_task (
     type            VARCHAR(50),
     stage           VARCHAR(50),
     message         TEXT,
+    total_steps     INT NOT NULL DEFAULT 0,
+    completed_steps INT NOT NULL DEFAULT 0,
+    failed          BOOLEAN NOT NULL DEFAULT FALSE,
     last_updated    TIMESTAMP
 );
 
