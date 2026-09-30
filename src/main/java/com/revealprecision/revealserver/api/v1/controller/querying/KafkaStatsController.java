@@ -133,6 +133,9 @@ public class KafkaStatsController {
               case KafkaConstants.EVENT_AGGREGATION_LOCATION: {
                 return new SimpleEntry<>("Metadata Import", entry.getValue());
               }
+              case KafkaConstants.RASTER_INGESTION: {
+                return new SimpleEntry<>("Import Raster", entry.getValue());
+              }
               default:
                 return null;
             }

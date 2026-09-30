@@ -264,4 +264,13 @@ public interface LocationRelationshipRepository extends JpaRepository<LocationRe
       "WHERE lr.location.identifier IN :locationIds and  lr.entityStatus = 'ACTIVE' and  "
       + "l.entityStatus = 'ACTIVE' and  gl.entityStatus = 'ACTIVE'  and lr.locationHierarchy.identifier  = :locationHierarchy")
   List<LocationRelationship> findAllByLocationIds(List<UUID> locationIds, UUID locationHierarchy);
+
+    @Query("SELECT lr FROM LocationRelationship lr "
+        + "JOIN FETCH lr.location l "
+        + "LEFT JOIN FETCH lr.parentLocation pl "
+        + "WHERE lr.locationHierarchy.identifier = :hierarchyIdentifier "
+        + "AND lr.entityStatus = 'ACTIVE' "
+        + "AND l.entityStatus = 'ACTIVE'")
+    List<LocationRelationship> findAllByHierarchyIdentifierWithLocations(
+        @Param("hierarchyIdentifier") UUID hierarchyIdentifier);
 }

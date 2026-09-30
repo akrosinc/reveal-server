@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.api.v1.dto.request;
 
+import com.revealprecision.revealserver.enums.DatasetType;
 import java.util.Map;
 import lombok.*;
 
@@ -21,4 +22,5 @@ public class SimulationDatasetRequest {
     private Map<String, Integer> dataSetYearFilter;
     private Boolean addToSimulation;
     private List<UUID> userDatasetIds;
+    private DatasetType datasetType;
 }

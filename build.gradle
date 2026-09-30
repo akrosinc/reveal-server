@@ -8,7 +8,6 @@ buildscript {
     }
 }
 
-
 plugins {
     id "org.sonarqube" version "3.3"
     id 'org.owasp.dependencycheck' version '6.3.2'
@@ -23,7 +22,11 @@ apply plugin: 'jacoco'
 
 group = 'com.revealprecision'
 version = '0.0.1-SNAPSHOT'
-sourceCompatibility = '11'
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(11)
+    }
+}
 
 repositories {
 
@@ -104,6 +107,10 @@ dependencies {
 
     implementation 'org.springframework.boot:spring-boot-starter-cache'
     implementation 'org.ehcache:ehcache'
+
+    implementation 'org.gdal:gdal:3.12.0'
+    implementation 'org.locationtech.jts:jts-core:1.20.0'
+    implementation 'io.github.sebasbaumh:mapbox-vector-tile-java:23.1.0'
 }
 dependencyManagement {
     imports {
@@ -124,4 +131,3 @@ sonarqube {
 jacoco {
     toolVersion = "0.8.7"
 }
-

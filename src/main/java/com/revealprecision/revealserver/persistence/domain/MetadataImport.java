@@ -2,6 +2,7 @@ package com.revealprecision.revealserver.persistence.domain;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.revealprecision.revealserver.enums.BulkEntryStatus;
+import com.revealprecision.revealserver.enums.MetadataImportType;
 import com.revealprecision.revealserver.messaging.message.LocationMetadataEvent;
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -62,5 +63,10 @@ public class MetadataImport extends AbstractAuditableEntity {
 
   @Column(name = "metadata_name", nullable = true)
   private String metadataName;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "metadata_import_type", nullable = false)
+  @Builder.Default
+  private MetadataImportType metadataImportType = MetadataImportType.CSV;
 
 }

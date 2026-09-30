@@ -10,6 +10,7 @@ import com.revealprecision.revealserver.api.v1.dto.request.DeleteDatasetRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.UpdateDatasetRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.SimulationDatasetRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.*;
+import com.revealprecision.revealserver.enums.DatasetType;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.*;
 import com.revealprecision.revealserver.persistence.projection.AggregateWithTagProjection;
@@ -19,6 +20,7 @@ import com.revealprecision.revealserver.persistence.projection.LocationWithMetad
 import com.revealprecision.revealserver.persistence.projection.TagYearAggregateDateProjection;
 import com.revealprecision.revealserver.persistence.projection.TagYearRangeAggregateDateProjection;
 import com.revealprecision.revealserver.persistence.repository.ImportAggregateByDateRepository;
+import com.revealprecision.revealserver.persistence.repository.MapLayerRepository;
 import com.revealprecision.revealserver.persistence.repository.PlanRepository;
 import com.revealprecision.revealserver.persistence.repository.SimulationRepository;
 import lombok.RequiredArgsConstructor;
@@ -67,6 +69,7 @@ public class SimulationService {
     private final PlanAssignmentService planAssignmentService;
     private final LocationBusinessStatusService locationBusinessStatusService;
     private final ImportAggregateByDateRepository importAggregateByDateRepository;
+    private final MapLayerRepository mapLayerRepository;
 
     private final String DEFAULT_BORDER_COLOR = "#000000";
 
@@ -105,6 +108,7 @@ public class SimulationService {
                         loc.getNumberOfTeams())).collect(Collectors.toList());
 
         Map<UUID, UUID> datasetToEntityTagMap = s.getDatasets().stream()
+            .filter(d -> d.getEntityTag() != null)
             .collect(Collectors.toMap(
                 Dataset::getIdentifier,
                 d -> d.getEntityTag().getIdentifier(),
@@ -134,6 +138,7 @@ public class SimulationService {
 
             // Build List<DataSetYearRangeResponse> with datasetId
             dataSetYearRange = s.getDatasets().stream()
+                .filter(d -> d.getEntityTag() != null)
                 .map(dataset -> {
                     UUID entityTagId = datasetToEntityTagMap.get(dataset.getIdentifier());
                     TagYearRangeAggregateDateProjection projection = yearRangeByEntityTagId.get(entityTagId);
@@ -152,19 +157,43 @@ public class SimulationService {
 
     public Simulation updateSimulationDataset(UpdateDatasetRequest request) {
         Simulation simulation = simulationRepository.findById(request.getSimulationId()).orElseThrow(() -> new NotFoundException("Simulation not found with ID: " + request.getSimulationId()));
-        Dataset dataset = simulation.getDatasets().stream().filter(d -> d.getIdentifier().equals(request.getDatasetId())).findFirst().orElseThrow(() -> new NotFoundException("Dataset not found with ID: " + request.getDatasetId()));
-        dataset.setName(Objects.requireNonNullElse(request.getName(), dataset.getName()));
-        dataset.setHexColor(Objects.requireNonNullElse(request.getHexColor(), dataset.getHexColor()));
-        dataset.setLineWidth(Objects.requireNonNullElse(request.getLineWidth(), dataset.getLineWidth()));
-        dataset.setBorderColor(Objects.requireNonNullElse(request.getBorderColor(), dataset.getBorderColor()));
-        return simulationRepository.save(simulation);
+
+        if (request.getDatasetType() == null || request.getDatasetType() == DatasetType.JSON) {
+            Dataset dataset = simulation.getDatasets().stream()
+                .filter(d -> d.getIdentifier().equals(request.getDatasetId()))
+                .findFirst()
+                .orElseThrow(() -> new NotFoundException("Dataset not found with ID: " + request.getDatasetId()));
+
+            dataset.setName(Objects.requireNonNullElse(request.getName(), dataset.getName()));
+            dataset.setHexColor(Objects.requireNonNullElse(request.getHexColor(), dataset.getHexColor()));
+            dataset.setLineWidth(Objects.requireNonNullElse(request.getLineWidth(), dataset.getLineWidth()));
+            dataset.setBorderColor(Objects.requireNonNullElse(request.getBorderColor(), dataset.getBorderColor()));
+
+            return simulationRepository.save(simulation);
+
+        } else if (request.getDatasetType() == DatasetType.RASTER) {
+            RasterDataset rasterDataset = simulation.getRasterDatasets().stream()
+                .filter(d -> d.getIdentifier().equals(request.getDatasetId()))
+                .findFirst()
+                .orElseThrow(() -> new NotFoundException("Raster dataset not found with ID: " + request.getDatasetId()));
+
+            rasterDataset.setName(Objects.requireNonNullElse(request.getName(), rasterDataset.getName()));
+            rasterDataset.setColorRamp(Objects.requireNonNullElse(request.getHexColor(), rasterDataset.getColorRamp()));
+
+            return simulationRepository.save(simulation);
+
+        } else {
+            throw new IllegalArgumentException("Invalid dataset type");
+        }
     }
 
     public Simulation deleteSimulationDataset(DeleteDatasetRequest request) {
-        Simulation simulation = simulationRepository.findById(request.getSimulationId()).orElseThrow(() -> new NotFoundException("Simulation not found with ID: " + request.getSimulationId()));
+        Simulation simulation = simulationRepository.findById(request.getSimulationId())
+            .orElseThrow(() -> new NotFoundException("Simulation not found with ID: " + request.getSimulationId()));
 
         Set<UUID> datasetsToRemove = new HashSet<>(request.getDatasetId());
         simulation.getDatasets().removeIf(d -> datasetsToRemove.contains(d.getIdentifier()));
+        simulation.getRasterDatasets().removeIf(d -> datasetsToRemove.contains(d.getIdentifier()));
         return simulationRepository.save(simulation);
     }
 
@@ -182,7 +211,7 @@ public class SimulationService {
         List<String> locationsIds = locationDetailsProjections.stream().map(LocationDetailsProjection::getLocationId).collect(Collectors.toList());
         List<UUID> tagsIds = simulation.getDatasets()
             .stream()
-            .filter(dataset -> simulation.getDatasets().stream().map(Dataset::getIdentifier).collect(Collectors.toList()).contains(dataset.getIdentifier()))
+            .filter(dataset -> dataset.getEntityTag() != null && simulation.getDatasets().stream().map(Dataset::getIdentifier).collect(Collectors.toList()).contains(dataset.getIdentifier()))
             .map(dataset -> dataset.getEntityTag().getIdentifier())
             .collect(Collectors.toList());
         List<AggregateWithTagProjection> tags = entityTagService.getValuesForTagAndLocations(tagsIds, locationsIds);
@@ -194,7 +223,7 @@ public class SimulationService {
                         getRequestedValue(tag),
                         tag.getTag().getTag(),
                         tag.getEventType(),
-                        simulation.getDatasets().stream().filter(dataset -> dataset.getEntityTag().getIdentifier().equals(tag.getTag().getIdentifier())).findFirst().get().getIdentifier()
+                        simulation.getDatasets().stream().filter(dataset -> dataset.getEntityTag() != null && dataset.getEntityTag().getIdentifier().equals(tag.getTag().getIdentifier())).findFirst().get().getIdentifier()
                     ),
                     Collectors.toList()
                 )
@@ -278,6 +307,7 @@ public class SimulationService {
             ));
 
         Map<String, UUID> datasetTagMap = simulation.getDatasets().stream()
+            .filter(d -> d.getEntityTag() != null)
             .collect(Collectors.toMap(
                 dataset -> dataset.getEntityTag().getTag(),
                 Dataset::getIdentifier,
@@ -285,6 +315,7 @@ public class SimulationService {
             ));
 
         Map<String, UUID> tagsMap = simulation.getDatasets().stream()
+            .filter(d -> d.getEntityTag() != null)
             .collect(Collectors.toMap(
                 dataset -> dataset.getEntityTag().getTag(),
                 dataset -> dataset.getEntityTag().getIdentifier(),
@@ -292,6 +323,7 @@ public class SimulationService {
             ));
 
         Map<UUID, UUID> dataSetETagIdMap = simulation.getDatasets().stream()
+            .filter(d -> d.getEntityTag() != null)
             .collect(Collectors.toMap(
                 Dataset::getIdentifier,
                 dataset -> dataset.getEntityTag().getIdentifier(),
@@ -450,8 +482,6 @@ public class SimulationService {
         if (request.getIncludeGeometry()) {
             locations = fetchLocationsWithGeometryES(locationHierarchy.getIdentifier(), tagsMap, locationsIds);
 
-
-
         } else {
             locations = new ArrayList<>();
         }
@@ -520,6 +550,8 @@ public class SimulationService {
         Map<UUID,UUID> datasetTagIdMap = new HashMap<>();
 
         simulation.getDatasets()
+            .stream()
+            .filter(ds -> ds.getEntityTag() != null)
             .forEach( ds -> {
                 EntityTag et = ds.getEntityTag();
                 if (et.isAggregate()) {
@@ -535,6 +567,7 @@ public class SimulationService {
         if(MapUtils.isEmpty( request.getDataSetYearFilter())){
             List<UUID> tagsIds = simulation.getDatasets()
                 .stream()
+                .filter(ds -> ds.getEntityTag() != null)
                 .map( ds -> {
                     EntityTag et = ds.getEntityTag();
                     if (et.isAggregate()) {
@@ -640,69 +673,122 @@ public class SimulationService {
                 .orElseThrow(() -> new NotFoundException("Simulation not found with ID: " + request.getSimulationId()));
 
 
-        LocationHierarchy locationHierarchy = simulation.getPlan().getLocationHierarchy();
+        if(request.getDatasetType() == null || request.getDatasetType() == DatasetType.JSON){
+            LocationHierarchy locationHierarchy = simulation.getPlan().getLocationHierarchy();
+            boolean returnLocationData = request.getParentLocationId() != null;
+            EntityTag tagForDataset;
+            List<AggregateWithTagProjection> tags = Collections.emptyList();
+            if (returnLocationData) {
+                List<String> locationsIds = locationService.getAllLocationDirectChildren(request.getParentLocationId(), locationHierarchy.getIdentifier())
+                    .stream().map(UUID::toString).collect(Collectors.toList());
 
-        boolean returnLocationData = request.getParentLocationId() != null;
-        EntityTag tagForDataset;
-        List<AggregateWithTagProjection> tags = Collections.emptyList();
-        if (returnLocationData) {
-            List<String> locationsIds = locationService.getAllLocationDirectChildren(request.getParentLocationId(), locationHierarchy.getIdentifier())
-                                    .stream().map(UUID::toString).collect(Collectors.toList());
+                Map<UUID, Integer> latestYearMap =
+                    getLatestDataYearByTagsID(locationHierarchy.getIdentifier().toString(), Collections.singletonList(request.getTagId()));
 
-            Map<UUID, Integer> latestYearMap =
-                getLatestDataYearByTagsID(locationHierarchy.getIdentifier().toString(), Collections.singletonList(request.getTagId()));
-
-            tags = entityTagService.getValuesForTagAndLocationsLatest(
-                request.getTagId(), locationsIds , latestYearMap.get(request.getTagId()));
-            if (tags.isEmpty()) {
-                throw new NotFoundException("No tags found for Tag ID: " + request.getTagId());
+                tags = entityTagService.getValuesForTagAndLocationsLatest(
+                    request.getTagId(), locationsIds , latestYearMap.get(request.getTagId()));
+                if (tags.isEmpty()) {
+                    throw new NotFoundException("No tags found for Tag ID: " + request.getTagId());
+                }
+                tagForDataset = tags.get(0).getTag();
+            } else {
+                tagForDataset = entityTagService.getEntityTagById(request.getTagId());
             }
-            tagForDataset = tags.get(0).getTag();
-        } else {
-            tagForDataset = entityTagService.getEntityTagById(request.getTagId());
+
+            if(!BooleanUtils.isFalse(request.getAddToSimulation())){
+                Dataset dataset = createDataset(request, tagForDataset);
+                simulation.getDatasets().add(dataset);
+                Simulation savedSimulation = simulationRepository.save(simulation);
+
+                Dataset savedDataset = findSavedDataset(savedSimulation, tagForDataset.getIdentifier());
+
+                DataSetYearRangeResponse dataSetYearRange  = getYearRangeByTagId(locationHierarchy.getIdentifier().toString(),
+                    request.getTagId().toString(), savedDataset);
+
+                return SimulationDatasetResponse.builder()
+                    .simulationId(savedSimulation.getIdentifier())
+                    .tagId(request.getTagId())
+                    .datasetId(savedDataset.getIdentifier())
+                    .datasetName(savedDataset.getName())
+                    .datasetType(DatasetType.JSON)
+                    .hexColor(savedDataset.getHexColor())
+                    .borderColor(savedDataset.getBorderColor())
+                    .lineWidth(savedDataset.getLineWidth())
+                    .locationWithMetadata(returnLocationData ? buildMetadataMap(tags, savedDataset) : Collections.emptyMap())
+                    .dataSetYearRange(dataSetYearRange)
+                    .build();
+            }
+            else{
+
+                Dataset tmpDateSet = new Dataset();
+                tmpDateSet.setIdentifier(request.getTagId());
+
+                DataSetYearRangeResponse dataSetYearRange  = getYearRangeByTagId(locationHierarchy.getIdentifier().toString(),
+                    request.getTagId().toString(), tmpDateSet);
+
+                return SimulationDatasetResponse.builder()
+                    .simulationId(simulation.getIdentifier())
+                    .tagId(request.getTagId())
+                    .datasetId(request.getTagId())
+                    .datasetName("custom-" + request.getTagId())
+                    .datasetType(DatasetType.JSON)
+                    .hexColor(request.getHexColor())
+                    .borderColor(request.getBorderColor() != null ? request.getBorderColor() : DEFAULT_BORDER_COLOR)
+                    .lineWidth(request.getLineWidth())
+                    .locationWithMetadata(returnLocationData ? buildMetadataMap(tags, tmpDateSet) : Collections.emptyMap())
+                    .dataSetYearRange(dataSetYearRange)
+                    .build();
+            }
+        } else if (request.getDatasetType() == DatasetType.RASTER ) {
+            if(!BooleanUtils.isFalse(request.getAddToSimulation())){
+                MapLayer mapLayer = mapLayerRepository.findById(request.getTagId())
+                    .orElseGet(() -> mapLayerRepository.findByLayerIdentifier(request.getTagId().toString())
+                        .orElseThrow(() -> new NotFoundException("MapLayer not found with ID: " + request.getTagId())));
+
+                RasterDataset rasterDataset = RasterDataset.builder()
+                    .mapLayer(mapLayer)
+                    .datasetIdentifier(request.getTagId().toString())
+                    .name(mapLayer.getName())
+                    .colorRamp(request.getHexColor())
+                    .build();
+                simulation.getRasterDatasets().add(rasterDataset);
+                Simulation savedSimulation = simulationRepository.save(simulation);
+
+                RasterDataset savedRasterDataset = savedSimulation.getRasterDatasets().stream()
+                    .filter(d -> d.getMapLayer() != null && d.getMapLayer().getId().equals(mapLayer.getId()))
+                    .findFirst()
+                    .orElseThrow(() -> new NotFoundException("Could not retrieve raster dataset for MapLayer ID: " + mapLayer.getId()));
+
+                return SimulationDatasetResponse.builder()
+                    .simulationId(savedSimulation.getIdentifier())
+                    .tagId(request.getTagId())
+                    .datasetId(savedRasterDataset.getIdentifier())
+                    .datasetName(savedRasterDataset.getName())
+                    .datasetType(DatasetType.RASTER)
+                    .hexColor(savedRasterDataset.getColorRamp())
+                    .borderColor(null)
+                    .lineWidth(null)
+                    .locationWithMetadata(Collections.emptyMap())
+                    .dataSetYearRange(null)
+                    .build();
+            }
+            else {
+                return SimulationDatasetResponse.builder()
+                    .simulationId(simulation.getIdentifier())
+                    .tagId(request.getTagId())
+                    .datasetId(request.getTagId())
+                    .datasetName("custom-" + request.getTagId())
+                    .datasetType(DatasetType.RASTER)
+                    .hexColor(request.getHexColor())
+                    .borderColor(request.getBorderColor() != null ? request.getBorderColor() : DEFAULT_BORDER_COLOR)
+                    .lineWidth(request.getLineWidth())
+                    .locationWithMetadata(Collections.emptyMap())
+                    .dataSetYearRange(null)
+                    .build();
+            }
         }
-
-        if(!BooleanUtils.isFalse(request.getAddToSimulation())){
-            Dataset dataset = createDataset(request, tagForDataset);
-            simulation.getDatasets().add(dataset);
-            Simulation savedSimulation = simulationRepository.save(simulation);
-
-            Dataset savedDataset = findSavedDataset(savedSimulation, tagForDataset.getIdentifier());
-
-            DataSetYearRangeResponse dataSetYearRange  = getYearRangeByTagId(locationHierarchy.getIdentifier().toString(),
-                                                                request.getTagId().toString(), savedDataset);
-
-            return new SimulationDatasetResponse(
-                savedSimulation.getIdentifier(),
-                request.getTagId(),
-                savedDataset.getIdentifier(),
-                savedDataset.getName(),
-                savedDataset.getHexColor(),
-                savedDataset.getBorderColor(),
-                savedDataset.getLineWidth(),
-                returnLocationData ? buildMetadataMap(tags, savedDataset) : Collections.emptyMap(),
-                dataSetYearRange
-            );
-        }
-        else{
-
-            Dataset tmpDateSet = new Dataset();
-            tmpDateSet.setIdentifier(request.getTagId());
-
-            DataSetYearRangeResponse dataSetYearRange  = getYearRangeByTagId(locationHierarchy.getIdentifier().toString(),
-                request.getTagId().toString(), tmpDateSet);
-
-            return new SimulationDatasetResponse(
-                simulation.getIdentifier(),
-                request.getTagId(),
-                request.getTagId(),
-                "custom-" + request.getTagId(),
-                request.getHexColor(),
-                (request.getBorderColor() != null ? request.getBorderColor() : DEFAULT_BORDER_COLOR),
-                request.getLineWidth(),
-                returnLocationData ? buildMetadataMap(tags, tmpDateSet) : Collections.emptyMap(),
-                dataSetYearRange
-            );
+        else {
+            throw new IllegalArgumentException("Invalid dataset type");
         }
     }
 
@@ -719,7 +805,7 @@ public class SimulationService {
 
     private Dataset findSavedDataset(Simulation savedSimulation, UUID tagId) {
         return savedSimulation.getDatasets().stream()
-                .filter(dataset -> dataset.getEntityTag().getIdentifier().equals(tagId))
+                .filter(dataset -> dataset.getEntityTag() != null && dataset.getEntityTag().getIdentifier().equals(tagId))
                 .findFirst()
                 .orElseThrow(() -> new NotFoundException(
                         "Could not retrieve dataset for Tag ID: " + tagId));
@@ -826,7 +912,7 @@ public class SimulationService {
         Set<UUID> requestedIdsSet = new HashSet<>(requestedDatasetIds);
         return simulation.getDatasets()
                 .stream()
-                .filter(dataset -> requestedIdsSet.contains(dataset.getIdentifier()))
+                .filter(dataset -> dataset.getEntityTag() != null && requestedIdsSet.contains(dataset.getIdentifier()))
                 .collect(Collectors.toMap(
                         dataset -> dataset.getEntityTag().getTag(),
                         Dataset::getIdentifier
@@ -838,7 +924,7 @@ public class SimulationService {
 
         List<UUID> tagsIds = simulation.getDatasets()
                 .stream()
-                .filter(dataset -> requestedDatasetIds.contains(dataset.getIdentifier()))
+                .filter(dataset -> dataset.getEntityTag() != null && requestedDatasetIds.contains(dataset.getIdentifier()))
                 .map(dataset -> dataset.getEntityTag().getIdentifier())
                 .collect(Collectors.toList());
 
@@ -851,7 +937,7 @@ public class SimulationService {
                         tag.getTag().getTag(),
                         tag.getEventType(),
                         simulation.getDatasets().stream()
-                                .filter(dataset -> dataset.getEntityTag().getIdentifier().equals(tag.getTag().getIdentifier()))
+                                .filter(dataset -> dataset.getEntityTag() != null && dataset.getEntityTag().getIdentifier().equals(tag.getTag().getIdentifier()))
                                 .findFirst()
                                 .get()
                                 .getIdentifier()
