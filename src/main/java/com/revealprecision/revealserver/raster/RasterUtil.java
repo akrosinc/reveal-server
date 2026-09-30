@@ -15,6 +15,9 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.gdal.gdal.Dataset;
+import org.gdal.gdal.gdal;
+import org.gdal.gdalconst.gdalconstConstants;
 
 public class RasterUtil {
 
@@ -165,5 +168,27 @@ public class RasterUtil {
     String lower = filename.toLowerCase();
     return lower.endsWith(".tif") || lower.endsWith(".tiff") || lower.endsWith(".img") || lower
         .endsWith(".vrt");
+  }
+
+  public static GeoEnvelope getRasterExtent(String rasterFilePath) {
+    GdalBootstrap.init();
+
+    Dataset ds = gdal.Open(rasterFilePath, gdalconstConstants.GA_ReadOnly);
+    if (ds == null) {
+      throw new InvalidRasterEventException(
+          "Could not open raster: " + rasterFilePath + " - " + gdal.GetLastErrorMsg());
+    }
+
+    try {
+      double[] e = new double[4];
+      ds.GetExtent(e);
+
+      // ASSUMPTION: order is {minX, maxX, minY, maxY} (OGR-style).
+      // Verify against a known raster; if it is {minX, minY, maxX, maxY},
+      // change the constructor arguments below.
+      return new GeoEnvelope(e[0], e[2], e[1], e[3]);
+    } finally {
+      ds.delete();
+    }
   }
 }

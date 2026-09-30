@@ -17,4 +17,6 @@ public class PlanRequestFacade {
 
   List<UUID> organizations;
   Long serverVersion;
+  List<UUID> instances;
+  List<UUID> plans;
 }

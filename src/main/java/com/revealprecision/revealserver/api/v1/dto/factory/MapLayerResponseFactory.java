@@ -1,6 +1,7 @@
 package com.revealprecision.revealserver.api.v1.dto.factory;
 
 import com.revealprecision.revealserver.api.v1.dto.response.MapLayerResponse;
+import com.revealprecision.revealserver.model.GeoEnvelope;
 import com.revealprecision.revealserver.persistence.domain.MapLayer;
 import java.util.Collections;
 import java.util.List;
@@ -12,11 +13,13 @@ public class MapLayerResponseFactory {
     if (mapLayer == null) {
       return null;
     }
+
     return MapLayerResponse.builder()
         .id(mapLayer.getId())
         .name(mapLayer.getName())
         .layerIdentifier(mapLayer.getLayerIdentifier())
         .type(mapLayer.getType())
+        .extent(mapLayer.getExtent())
         .build();
   }
 

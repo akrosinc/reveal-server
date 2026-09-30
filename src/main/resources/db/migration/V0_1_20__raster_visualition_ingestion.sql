@@ -7,21 +7,13 @@ CREATE TABLE IF NOT EXISTS  ingestion_task (
     last_updated    TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS ingestion_task (
-    identifier      UUID PRIMARY KEY,
-    task_identifier VARCHAR(255),
-    type            VARCHAR(50),
-    stage           VARCHAR(50),
-    message         TEXT,
-    last_updated    TIMESTAMP
-);
-
 CREATE TABLE IF NOT EXISTS map_layer
 (
     id                UUID                     NOT NULL,
     name              VARCHAR(255)             NOT NULL,
     layer_identifier  VARCHAR(255)             NOT NULL,
     type              VARCHAR(50)              NOT NULL,
+    extent            JSONB,
     entity_status     VARCHAR(36)              NOT NULL,
     created_by        VARCHAR(36)              NOT NULL,
     created_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -38,6 +30,7 @@ CREATE TABLE IF NOT EXISTS map_layer_aud
     name              VARCHAR(255),
     layer_identifier  VARCHAR(255),
     type              VARCHAR(50),
+    extent            JSONB,
     active            BOOLEAN,
     entity_status     VARCHAR(36),
     created_by        VARCHAR(36),

@@ -1,9 +1,11 @@
 package com.revealprecision.revealserver.persistence.repository;
 
 import com.cosium.spring.data.jpa.entity.graph.repository.EntityGraphJpaRepository;
+import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.PlanAssignment;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationProjection;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import javax.transaction.Transactional;
 import org.springframework.data.jpa.repository.Modifying;
@@ -50,6 +52,46 @@ public interface PlanAssignmentRepository extends EntityGraphJpaRepository<PlanA
 
   @Query(value = "select pa from PlanAssignment pa where pa.organization.identifier in :identifiers")
   List<PlanAssignment> findPlansByOrganization(@Param("identifiers") List<UUID> identifiers);
+
+  @Query(value = "SELECT DISTINCT pa.planLocations.plan FROM PlanAssignment pa "
+      + "WHERE pa.organization.identifier IN :organizations "
+      + "AND pa.planLocations.plan.status = 'ACTIVE' "
+      + "AND pa.planLocations.plan.serverVersion >= :serverVersion")
+  Set<Plan> findPlansByOrganizationsAndServerVersion(
+      @Param("organizations") List<UUID> organizations,
+      @Param("serverVersion") Long serverVersion);
+
+  @Query(value = "SELECT DISTINCT pa.planLocations.plan FROM PlanAssignment pa "
+      + "WHERE pa.organization.identifier IN :organizations "
+      + "AND pa.planLocations.plan.status = 'ACTIVE' "
+      + "AND pa.planLocations.plan.serverVersion >= :serverVersion "
+      + "AND pa.planLocations.plan.instance.identifier IN :instances")
+  Set<Plan> findPlansByOrganizationsAndServerVersionAndInstances(
+      @Param("organizations") List<UUID> organizations,
+      @Param("serverVersion") Long serverVersion,
+      @Param("instances") List<UUID> instances);
+
+  @Query(value = "SELECT DISTINCT pa.planLocations.plan FROM PlanAssignment pa "
+      + "WHERE pa.organization.identifier IN :organizations "
+      + "AND pa.planLocations.plan.status = 'ACTIVE' "
+      + "AND pa.planLocations.plan.serverVersion >= :serverVersion "
+      + "AND pa.planLocations.plan.identifier IN :plans")
+  Set<Plan> findPlansByOrganizationsAndServerVersionAndPlans(
+      @Param("organizations") List<UUID> organizations,
+      @Param("serverVersion") Long serverVersion,
+      @Param("plans") List<UUID> plans);
+
+  @Query(value = "SELECT DISTINCT pa.planLocations.plan FROM PlanAssignment pa "
+      + "WHERE pa.organization.identifier IN :organizations "
+      + "AND pa.planLocations.plan.status = 'ACTIVE' "
+      + "AND pa.planLocations.plan.serverVersion >= :serverVersion "
+      + "AND pa.planLocations.plan.instance.identifier IN :instances "
+      + "AND pa.planLocations.plan.identifier IN :plans")
+  Set<Plan> findPlansByOrganizationsAndServerVersionAndInstancesAndPlans(
+      @Param("organizations") List<UUID> organizations,
+      @Param("serverVersion") Long serverVersion,
+      @Param("instances") List<UUID> instances,
+      @Param("plans") List<UUID> plans);
 
   @Query(value = "select pl.identifier as identifier,pl.location.identifier as locationIdentifier from PlanLocations pl where pl.plan.identifier = :planIdentifier")
   List<PlanLocationProjection> getPlanLocationsIdentifiers(UUID planIdentifier);

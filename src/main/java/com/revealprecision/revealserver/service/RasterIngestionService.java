@@ -21,18 +21,13 @@ public class RasterIngestionService {
   private final IngestionTaskRepository ingestionTaskRepository;
   private final TileGenerator tileGenerator;
 
-//  @Retryable(
-//      value = {RasterProcessingException.class},
-//      maxAttemptsExpression = "${reveal.raster.ingestion.max-retries:3}",
-//      backoff = @Backoff(delayExpression = "${reveal.raster.ingestion.retry-backoff-ms:1000}")
-//  )
+
   public void processIngestion(RasterIngestionMessage message) {
     LocalDateTime startedAt = LocalDateTime.now();
     try {
 //      emitProgress(message, IngestionStage.STARTED, "Ingestion request received");
 //
 //      emitProgress(message, IngestionStage.VALIDATING, "Validating raster file and paths");
-
 
       emitProgress(message, IngestionStage.PROCESSING, "Generating tiles");
       tileGenerator.generateTiles(

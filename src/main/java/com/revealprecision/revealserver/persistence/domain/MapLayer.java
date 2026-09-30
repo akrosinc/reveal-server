@@ -2,6 +2,8 @@ package com.revealprecision.revealserver.persistence.domain;
 
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.enums.LayerType;
+import com.revealprecision.revealserver.model.GeoEnvelope;
+import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import java.util.UUID;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -17,6 +19,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.FieldNameConstants;
 import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.Type;
+import org.hibernate.annotations.TypeDef;
 import org.hibernate.annotations.Where;
 import org.hibernate.envers.Audited;
 
@@ -31,6 +35,7 @@ import org.hibernate.envers.Audited;
 @Table(name = "map_layer")
 @SQLDelete(sql = "UPDATE map_layer SET entity_status = 'DELETED' where id=?")
 @Where(clause = "entity_status='ACTIVE' or entity_status='CREATING'")
+@TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
 public class MapLayer extends AbstractAuditableEntity {
 
   @Id
@@ -46,4 +51,8 @@ public class MapLayer extends AbstractAuditableEntity {
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
   private LayerType type;
+
+  @Type(type = "jsonb")
+  @Column(name = "extent", columnDefinition = "jsonb")
+  private GeoEnvelope extent;
 }

@@ -17,6 +17,7 @@ import com.revealprecision.revealserver.persistence.domain.IngestionTask;
 import com.revealprecision.revealserver.persistence.domain.MapLayer;
 import com.revealprecision.revealserver.persistence.repository.IngestionTaskRepository;
 import com.revealprecision.revealserver.persistence.repository.MapLayerRepository;
+import com.revealprecision.revealserver.model.GeoEnvelope;
 import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.props.RasterIngestionProperties;
 import com.revealprecision.revealserver.raster.CogBuilder;
@@ -43,6 +44,8 @@ public class RasterService {
   private final IngestionTaskRepository ingestionTaskRepository;
   private final MapLayerRepository mapLayerRepository;
   private final RasterIngestionProperties rasterIngestionProperties;
+
+
 
   @Transactional
   public void ingest(@Valid RasterIngestionRequest request) {
@@ -128,10 +131,14 @@ public class RasterService {
   }
 
   public MapLayer createMapLayer(String rasterId, String name) {
+    RasterLocationPaths paths = RasterUtil.validateAndResolvePaths(rasterId, rasterIngestionProperties);
+    GeoEnvelope extent = RasterUtil.getRasterExtent(paths.getRasterFilePath());
+
     MapLayer mapLayer = MapLayer.builder()
         .name(name != null && !name.isBlank() ? name : rasterId)
         .layerIdentifier(rasterId)
         .type(LayerType.RASTER)
+        .extent(extent)
         .build();
     mapLayer.setEntityStatus(EntityStatus.CREATING);
     return mapLayerRepository.save(mapLayer);
