@@ -58,8 +58,6 @@ FROM (
          WHERE r.entity_status = 'ACTIVE'
      ) u;
 
-ALTER MATERIALIZED VIEW public.mw_import_aggregate_numeric_by_date OWNER TO postgres;
-
 CREATE UNIQUE INDEX mw_import_aggregate_numeric_by_date_id_idx
     ON public.mw_import_aggregate_numeric_by_date (id);
 
