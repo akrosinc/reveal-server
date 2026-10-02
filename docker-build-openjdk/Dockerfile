@@ -10,7 +10,7 @@ ENV JAVA_HOME=/opt/java/openjdk
 ENV PATH="${JAVA_HOME}/bin:${PATH}"
 
 WORKDIR /
-COPY revealserver*-SNAPSHOT.jar reveal-server.jar
+COPY reveal-server.jar /
 
 # GDAL Paths for the OSGeo image
 ENV LD_LIBRARY_PATH=/usr/lib
