@@ -1,29 +1,35 @@
-# Use the official GDAL 3.12.0 image
+# Official GDAL 3.12.0 image with Java bindings
 FROM ghcr.io/osgeo/gdal:ubuntu-full-3.12.0
 
-# 1. Copy the pre-built JRE from the official Eclipse Temurin image
-# This takes ~1-2 seconds and requires zero internet downloads during build
+# Java 11 for Reveal Server
 COPY --from=eclipse-temurin:11-jre-jammy /opt/java/openjdk /opt/java/openjdk
 
-# 2. Add Java to the system PATH
 ENV JAVA_HOME=/opt/java/openjdk
 ENV PATH="${JAVA_HOME}/bin:${PATH}"
 
-WORKDIR /
-COPY reveal-server.jar /
-
-# GDAL Paths for the OSGeo image
-ENV LD_LIBRARY_PATH=/usr/lib
+# GDAL
 ENV GDAL_DATA=/usr/share/gdal
 ENV PROJ_LIB=/usr/share/proj
+
+# IMPORTANT:
+# GDAL native library + Java JNI library locations
+ENV LD_LIBRARY_PATH=/usr/lib/jni:/usr/lib/x86_64-linux-gnu:/usr/lib:/usr/local/lib
+
+WORKDIR /
+
+COPY reveal-server.jar /reveal-server.jar
 
 EXPOSE 8080
 
 ENTRYPOINT [ \
   "java", \
-  "-Djava.library.path=/usr/lib", \
+  "-Djava.library.path=/usr/lib/jni:/usr/lib/x86_64-linux-gnu:/usr/lib:/usr/local/lib", \
   "-XX:+UseG1GC", \
   "-XX:MaxRAMPercentage=75.0", \
   "-jar" \
 ]
-CMD [ "reveal-server.jar", "--spring.config.location=file:/application.properties" ]
+
+CMD [ \
+  "/reveal-server.jar", \
+  "--spring.config.location=file:/application.properties" \
+]
