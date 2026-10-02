@@ -14,19 +14,18 @@ COPY reveal-server.jar /reveal-server.jar
 ENV GDAL_DATA=/usr/share/gdal
 ENV PROJ_LIB=/usr/share/proj
 
-# IMPORTANT: actual GDAL JNI location
+# GDAL native + Java JNI libraries
 ENV LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/jni:/usr/lib/x86_64-linux-gnu:/usr/lib:/usr/local/lib
 
 EXPOSE 8080
 
-ENTRYPOINT [
-  "java",
-  "-Djava.library.path=/usr/lib/x86_64-linux-gnu/jni:/usr/lib/x86_64-linux-gnu:/usr/lib:/usr/local/lib",
-  "-XX:+UseG1GC",
-  "-XX:MaxRAMPercentage=75.0",
-  "-jar"
-]
+ENTRYPOINT ["java", \
+    "-Djava.library.path=/usr/lib/x86_64-linux-gnu/jni:/usr/lib/x86_64-linux-gnu:/usr/lib:/usr/local/lib", \
+    "-XX:+UseG1GC", \
+    "-XX:MaxRAMPercentage=75.0", \
+    "-jar"]
 
+CMD ["/reveal-server.jar", "--spring.config.location=file:/application.properties"]
 CMD [
   "/reveal-server.jar",
   "--spring.config.location=file:/application.properties"
