@@ -10,12 +10,15 @@ WORKDIR /
 
 COPY reveal-server.jar /reveal-server.jar
 
-# GDAL
+# GDAL data
 ENV GDAL_DATA=/usr/share/gdal
-ENV PROJ_LIB=/usr/share/proj
+
+# Leave PROJ_LIB and PROJ_DATA unset.
+# The base image resolves its matching PROJ database automatically.
 
 # GDAL native + Java JNI libraries
 ENV LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/jni:/usr/lib/x86_64-linux-gnu:/usr/lib:/usr/local/lib
+
 
 EXPOSE 8080
 
