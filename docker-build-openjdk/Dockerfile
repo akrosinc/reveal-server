@@ -1,5 +1,5 @@
 # Use the official GDAL 3.12.0 image
-FROM ghcr.io/osgeo/gdal:ubuntu-small-3.12.0
+FROM ghcr.io/osgeo/gdal:ubuntu-full-3.12.0
 
 # 1. Copy the pre-built JRE from the official Eclipse Temurin image
 # This takes ~1-2 seconds and requires zero internet downloads during build
