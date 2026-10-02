@@ -26,7 +26,3 @@ ENTRYPOINT ["java", \
     "-jar"]
 
 CMD ["/reveal-server.jar", "--spring.config.location=file:/application.properties"]
-CMD [
-  "/reveal-server.jar",
-  "--spring.config.location=file:/application.properties"
-]
