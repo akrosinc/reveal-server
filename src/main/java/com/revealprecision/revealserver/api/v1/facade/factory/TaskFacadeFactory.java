@@ -37,7 +37,7 @@ public class TaskFacadeFactory {
         .owner(task.getOwner())
         .requester(requester)
         .groupIdentifier(groupId)
-        .structureId(dbTask != null ? dbTask.getLocation().getIdentifier().toString()
+        .structureId(dbTask != null && dbTask.getLocation() != null? dbTask.getLocation().getIdentifier().toString()
             : task.getBaseEntityIdentifier() != null ? task.getBaseEntityIdentifier().toString()
                 : null)
         .parentTaskId(task.getParentTaskId() != null ? task.getParentTaskId().toString() : null)
