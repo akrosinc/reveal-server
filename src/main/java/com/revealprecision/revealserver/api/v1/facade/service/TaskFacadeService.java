@@ -99,7 +99,7 @@ public class TaskFacadeService {
         return structureTaskFacadesByLocationServerVersionAndPlan.stream()
             .filter(task -> task.getTaskFacade() != null)
             .map(task -> {
-              TaskFacade taskFacadeObj = TaskFacadeFactory.getTaskFacadeObj(requester,
+              TaskFacade taskFacadeObj = TaskFacadeFactory.getTaskFacadeObj(task,requester,
                   task.getTaskFacade().getParentLocation().toString()
                   , task.getTaskFacade(), objectMapper);
               taskFacadeObj.setServerVersion(task.getServerVersion());
@@ -114,7 +114,7 @@ public class TaskFacadeService {
             .stream()
             .filter(task -> task.getTaskFacade() != null)
             .map(task -> {
-              TaskFacade taskFacadeObj = TaskFacadeFactory.getTaskFacadeObj(requester,
+              TaskFacade taskFacadeObj = TaskFacadeFactory.getTaskFacadeObj(task,requester,
                   task.getTaskFacade().getParentLocation().toString()
                   , task.getTaskFacade(), objectMapper);
               taskFacadeObj.setServerVersion(task.getServerVersion());

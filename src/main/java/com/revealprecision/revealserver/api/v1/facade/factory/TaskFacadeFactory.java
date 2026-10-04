@@ -7,11 +7,14 @@ import com.revealprecision.revealserver.api.v1.facade.models.TaskFacade.TaskPrio
 import com.revealprecision.revealserver.api.v1.facade.models.TaskFacade.TaskStatus;
 import com.revealprecision.revealserver.api.v1.facade.util.DateTimeFormatter;
 import com.revealprecision.revealserver.messaging.message.TaskEvent;
+import com.revealprecision.revealserver.persistence.domain.Task;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class TaskFacadeFactory {
-  public static TaskFacade getTaskFacadeObj(String requester, String groupId, TaskEvent task, ObjectMapper objectMapper ) {
+
+  public static TaskFacade getTaskFacadeObj(Task dbTask, String requester, String groupId,
+      TaskEvent task, ObjectMapper objectMapper) {
     TaskFacade build = TaskFacade.builder()
         .code(task.getAction().getTitle())
         .authoredOn(
@@ -34,8 +37,10 @@ public class TaskFacadeFactory {
         .owner(task.getOwner())
         .requester(requester)
         .groupIdentifier(groupId)
-        .structureId(task.getBaseEntityIdentifier().toString())
-        .parentTaskId(task.getParentTaskId()!=null?task.getParentTaskId().toString():null)
+        .structureId(dbTask != null ? dbTask.getLocation().getIdentifier().toString()
+            : task.getBaseEntityIdentifier() != null ? task.getBaseEntityIdentifier().toString()
+                : null)
+        .parentTaskId(task.getParentTaskId() != null ? task.getParentTaskId().toString() : null)
         .serverVersion(task.getServerVersion() == null ? 0 : task.getServerVersion())
         .build();
 
