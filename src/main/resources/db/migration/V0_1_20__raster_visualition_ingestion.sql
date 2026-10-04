@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS  ingestion_task (
-    identifier      UUID PRIMARY KEY,
-    task_identifier VARCHAR(255),
+                                               identifier      UUID PRIMARY KEY,
+                                               task_identifier VARCHAR(255),
     type            VARCHAR(50),
     stage           VARCHAR(50),
     message         TEXT,
@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS  ingestion_task (
     completed_steps INT NOT NULL DEFAULT 0,
     failed          BOOLEAN NOT NULL DEFAULT FALSE,
     last_updated    TIMESTAMP
-);
+    );
 
 CREATE TABLE IF NOT EXISTS map_layer
 (
@@ -20,10 +20,10 @@ CREATE TABLE IF NOT EXISTS map_layer
     entity_status     VARCHAR(36)              NOT NULL,
     created_by        VARCHAR(36)              NOT NULL,
     created_datetime  TIMESTAMP WITH TIME ZONE NOT NULL,
-    modified_by       VARCHAR(36)              NOT NULL,
+                                    modified_by       VARCHAR(36)              NOT NULL,
     modified_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
-    PRIMARY KEY (id)
-);
+                                    PRIMARY KEY (id)
+    );
 
 CREATE TABLE IF NOT EXISTS map_layer_aud
 (
@@ -38,18 +38,21 @@ CREATE TABLE IF NOT EXISTS map_layer_aud
     entity_status     VARCHAR(36),
     created_by        VARCHAR(36),
     created_datetime  TIMESTAMP WITH TIME ZONE,
-    modified_by       VARCHAR(36),
+                                    modified_by       VARCHAR(36),
     modified_datetime TIMESTAMP WITH TIME ZONE,
-    PRIMARY KEY (id, rev)
-);
+                                    PRIMARY KEY (id, rev)
+    );
 
 ALTER TABLE IF EXISTS map_layer_aud
-    DROP CONSTRAINT IF EXISTS fk_map_layer_aud_rev;
+DROP CONSTRAINT IF EXISTS fk_map_layer_aud_rev;
 
 ALTER TABLE IF EXISTS map_layer_aud
-    ADD IF NOT EXISTS CONSTRAINT fk_map_layer_aud_rev
-        FOREIGN KEY (rev)
-            REFERENCES revinfo (rev);
+DROP CONSTRAINT IF EXISTS fk_map_layer_aud_rev;
+
+ALTER TABLE IF EXISTS map_layer_aud
+    ADD CONSTRAINT fk_map_layer_aud_rev
+    FOREIGN KEY (rev)
+    REFERENCES revinfo (rev);
 
 CREATE INDEX IF NOT EXISTS idx_map_layer_identifier
     ON map_layer(layer_identifier);
