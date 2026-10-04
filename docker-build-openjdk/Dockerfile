@@ -1,7 +1,31 @@
-FROM amazoncorretto:11.0.29
+FROM ghcr.io/osgeo/gdal:ubuntu-full-3.12.0
 
-COPY reveal-server.jar /
+# Java 11
+COPY --from=eclipse-temurin:11-jre-jammy /opt/java/openjdk /opt/java/openjdk
+
+ENV JAVA_HOME=/opt/java/openjdk
+ENV PATH="${JAVA_HOME}/bin:${PATH}"
+
+WORKDIR /
+
+COPY reveal-server.jar /reveal-server.jar
+
+# GDAL data
+ENV GDAL_DATA=/usr/share/gdal
+
+# Leave PROJ_LIB and PROJ_DATA unset.
+# The base image resolves its matching PROJ database automatically.
+
+# GDAL native + Java JNI libraries
+ENV LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/jni:/usr/lib/x86_64-linux-gnu:/usr/lib:/usr/local/lib
+
 
 EXPOSE 8080
 
-CMD ["/usr/local/openjdk-11/bin/java","-XX:-HeapDumpOnOutOfMemoryError","-XX:HeapDumpPath=/tmp/java_pid.hprof", "-XX:MaxRAMPercentage=80.0", "-jar", "/reveal-server.jar", "--spring.config.location=file:/application.properties" ]
+ENTRYPOINT ["java", \
+    "-Djava.library.path=/usr/lib/x86_64-linux-gnu/jni:/usr/lib/x86_64-linux-gnu:/usr/lib:/usr/local/lib", \
+    "-XX:+UseG1GC", \
+    "-XX:MaxRAMPercentage=75.0", \
+    "-jar"]
+
+CMD ["/reveal-server.jar", "--spring.config.location=file:/application.properties"]
