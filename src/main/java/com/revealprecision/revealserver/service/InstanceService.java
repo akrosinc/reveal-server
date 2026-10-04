@@ -13,8 +13,10 @@ import com.revealprecision.revealserver.api.v1.dto.response.InstanceContextRespo
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceUserListResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationHierarchyResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.RoleWithPermissionsResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.UserRolesResponse;
 import com.revealprecision.revealserver.config.InstanceContext;
+import com.revealprecision.revealserver.dto.KeycloakRole;
 import com.revealprecision.revealserver.enums.ApplicableReportsEnum;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.enums.HierarchyStatus;
@@ -28,12 +30,10 @@ import com.revealprecision.revealserver.persistence.domain.EntityTag;
 import com.revealprecision.revealserver.persistence.domain.Instance;
 import com.revealprecision.revealserver.persistence.domain.InstanceEntityTag;
 import com.revealprecision.revealserver.persistence.domain.InstanceLocation;
-import com.revealprecision.revealserver.persistence.domain.InstanceRole;
 import com.revealprecision.revealserver.persistence.domain.InstanceUser;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.Organization;
-import com.revealprecision.revealserver.persistence.domain.OrganizationRole;
 import com.revealprecision.revealserver.persistence.domain.OrganizationRoleMapping;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.User;
@@ -60,6 +60,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -89,7 +90,7 @@ public class InstanceService {
   private final InstanceRepository instanceRepository;
   private final InstanceEntityTagRepository instanceEntityTagRepository;
   private final InstanceComplexTagRepository instanceComplexTagRepository;
-  private final InstanceRoleService instanceRoleService;
+  private final KeycloakRoleCatalog keycloakRoleCatalog;
   private final InstanceUserRepository instanceUserRepository;
   private final InstanceLocationRepository instanceLocationRepository;
   private final LocationHierarchyService locationHierarchyService;
@@ -155,12 +156,12 @@ public class InstanceService {
     if (instanceRequest.getMembers() != null) {
       List<User> users = userService.findAllById(instanceRequest.getMembers());
 
-      InstanceRole adminRole = instanceRoleService.getInstanceAdminRole();
+      UUID adminRoleId = keycloakRoleCatalog.getInstanceAdminRole().getId();
 
       List<InstanceUser> instanceUsers = users.stream().distinct().map(user -> {
         InstanceUser mapping = new InstanceUser();
         mapping.populate(savedInstance, user);
-        mapping.setRole(adminRole);
+        mapping.setInstanceRoleId(adminRoleId);
         return mapping;
       }).collect(Collectors.toList());
 
@@ -355,11 +356,11 @@ public class InstanceService {
 
     if (!membersToAdd.isEmpty()) {
       List<User> users = userService.findAllById(membersToAdd);
-      InstanceRole adminRole = instanceRoleService.getInstanceAdminRole();
+      UUID adminRoleId = keycloakRoleCatalog.getInstanceAdminRole().getId();
       List<InstanceUser> instanceUsers = users.stream().distinct().map(user -> {
         InstanceUser mapping = new InstanceUser();
         mapping.populate(instance, user);
-        mapping.setRole(adminRole);
+        mapping.setInstanceRoleId(adminRoleId);
         return mapping;
       }).collect(Collectors.toList());
       instanceUserRepository.saveAll(instanceUsers);
@@ -459,21 +460,26 @@ public class InstanceService {
 
     Plan instancePlan = planService.findPlanByInstanceIdentifier(effectiveInstanceId).stream().findFirst().get();
 
+    KeycloakRole instanceRole = instanceUser.getInstanceRoleId() != null
+        ? keycloakRoleCatalog.findById(instanceUser.getInstanceRoleId()).orElse(null)
+        : null;
+
     List<InstanceContextResponse.GroupContextInfo> groups = userWithOrganizations.getOrganizations()
         .stream()
         .filter(org -> org.getInstance().getIdentifier().equals(effectiveInstanceId))
         .map(org -> {
-          List<OrganizationRole> orgRoles = organizationRoleMappingRepository
-              .findRolesByUserAndOrganization(userId, org.getIdentifier())
+          List<KeycloakRole> orgRoles = organizationRoleMappingRepository
+              .findRoleIdsByUserAndOrganization(userId, org.getIdentifier())
               .stream()
-              .map(OrganizationRoleMapping::getOrganizationRole)
+              .map(roleId -> keycloakRoleCatalog.findById(roleId).orElse(null))
+              .filter(Objects::nonNull)
               .collect(Collectors.toList());
 
           return InstanceContextResponseFactory.toGroupContextInfo(org, orgRoles);
         })
         .collect(Collectors.toList());
 
-    return InstanceContextResponseFactory.buildInstanceContextResponse(instanceUser, groups, instancePlan);
+    return InstanceContextResponseFactory.buildInstanceContextResponse(instanceUser, instanceRole, groups, instancePlan);
   }
 
   public boolean isMember(UUID userId, UUID instanceId) {
@@ -553,9 +559,25 @@ public class InstanceService {
     }
 
     Map<InstanceRoleEnum, List<UUID>> partitionedInstanceIds = instanceUsers.stream()
+        .map(iu -> {
+          if (iu.getInstanceRoleId() == null) {
+            return null;
+          }
+          Optional<KeycloakRole> roleOpt = keycloakRoleCatalog.findById(iu.getInstanceRoleId());
+          if (roleOpt.isEmpty()) {
+            return null;
+          }
+          try {
+            InstanceRoleEnum roleEnum = InstanceRoleEnum.valueOf(roleOpt.get().getName().toUpperCase());
+            return Pair.of(roleEnum, iu.getInstance().getIdentifier());
+          } catch (IllegalArgumentException e) {
+            return null;
+          }
+        })
+        .filter(Objects::nonNull)
         .collect(Collectors.groupingBy(
-            iu -> InstanceRoleEnum.valueOf(iu.getRole().getName()),
-            Collectors.mapping(iu -> iu.getInstance().getIdentifier(), Collectors.toList())
+            Pair::getFirst,
+            Collectors.mapping(Pair::getSecond, Collectors.toList())
         ));
 
     List<UUID> adminInstanceIds = partitionedInstanceIds
@@ -618,23 +640,33 @@ public class InstanceService {
           UUID instanceId = instanceUser.getInstance().getIdentifier();
 
           // Instance role
-          IdentifierNameResponse instanceRole = IdentifierNameResponse.builder()
-              .identifier(instanceUser.getRole().getIdentifier())
-              .name(instanceUser.getRole().getName())
-              .build();
+          RoleWithPermissionsResponse instanceRole = null;
+          if (instanceUser.getInstanceRoleId() != null) {
+            instanceRole = keycloakRoleCatalog.findById(instanceUser.getInstanceRoleId())
+                .map(kr -> RoleWithPermissionsResponse.builder()
+                    .identifier(kr.getId())
+                    .name(kr.getName())
+                    .permissions(kr.getPermissions())
+                    .build())
+                .orElse(null);
+          }
 
           // Group roles within this instance
           List<UserRolesResponse.GroupRoleInfo> groupRoles = orgsByInstance
               .getOrDefault(instanceId, List.of())
               .stream()
               .map(org -> {
-                List<IdentifierNameResponse> roles = organizationRoleMappingRepository
-                    .findRolesByUserAndOrganization(userId, org.getIdentifier())
+                List<RoleWithPermissionsResponse> roles = organizationRoleMappingRepository
+                    .findRoleIdsByUserAndOrganization(userId, org.getIdentifier())
                     .stream()
-                    .map(rm -> IdentifierNameResponse.builder()
-                        .identifier(rm.getOrganizationRole().getIdentifier())
-                        .name(rm.getOrganizationRole().getName())
-                        .build())
+                    .map(roleId -> keycloakRoleCatalog.findById(roleId)
+                        .map(kr -> RoleWithPermissionsResponse.builder()
+                            .identifier(kr.getId())
+                            .name(kr.getName())
+                            .permissions(kr.getPermissions())
+                            .build())
+                        .orElse(null))
+                    .filter(Objects::nonNull)
                     .collect(Collectors.toList());
 
                 return UserRolesResponse.GroupRoleInfo.builder()
@@ -699,16 +731,16 @@ public class InstanceService {
 
     Instance instance = findById(globalUserRequest.getInstanceIdentifier());
 
-    final InstanceRole instanceRole;
+    final UUID instanceRoleId;
     if (BooleanUtils.isTrue(globalUserRequest.getIsInstanceAdmin())){
-      instanceRole = instanceRoleService.getInstanceAdminRole();
+      instanceRoleId = keycloakRoleCatalog.getInstanceAdminRole().getId();
     } else {
-      instanceRole = instanceRoleService.getStandardRole();
+      instanceRoleId = keycloakRoleCatalog.getInstanceStandardRole().getId();
     }
 
     InstanceUser instanceUser = new InstanceUser();
     instanceUser.populate(instance, user);
-    instanceUser.setRole(instanceRole);
+    instanceUser.setInstanceRoleId(instanceRoleId);
 
     instanceUserRepository.save(instanceUser);
   }

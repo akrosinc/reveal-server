@@ -46,7 +46,7 @@ public class KeycloakService {
     @Value("${keycloak.realm}")
     private String realm;
 
-    @Value("{keycloak.auth-server-url}")
+    @Value("${keycloak.auth-server-url}")
     private String serverUrl;
 
     public static CredentialRepresentation createPasswordCredentials(String password,

@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.api.v1.dto.response;
 
+import com.revealprecision.revealserver.dto.KeycloakRole;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -19,19 +20,8 @@ import lombok.Setter;
 public class InstanceContextResponse {
   private IdentifierNameResponse selectedInstance;
   private InstancePlanContextResponse instancePlan;
-  private InstanceRoleInfo role;
+  private KeycloakRole role;
   private List<GroupContextInfo> groups;
-
-  @Getter
-  @Setter
-  @Builder
-  @NoArgsConstructor
-  @AllArgsConstructor
-  public static class InstanceRoleInfo {
-    private UUID identifier;
-    private String name;
-    private Set<String> permissions;
-  }
 
   @Getter
   @Setter
@@ -42,19 +32,7 @@ public class InstanceContextResponse {
     private UUID identifier;
     private String name;
     private String type;
-    private List<GroupRoleInfo> roles;
-  }
-
-
-  @Getter
-  @Setter
-  @Builder
-  @NoArgsConstructor
-  @AllArgsConstructor
-  public static class GroupRoleInfo {
-    private UUID identifier;
-    private String name;
-    private Set<String> permissions;
+    private List<KeycloakRole> roles;
   }
 
   @Getter

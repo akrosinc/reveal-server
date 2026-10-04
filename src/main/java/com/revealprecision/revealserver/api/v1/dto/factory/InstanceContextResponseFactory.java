@@ -4,15 +4,12 @@ import com.revealprecision.revealserver.api.v1.dto.response.IdentifierNameRespon
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceContextResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceContextResponse.GroupContextInfo;
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceContextResponse.InstancePlanContextResponse;
+import com.revealprecision.revealserver.dto.KeycloakRole;
 import com.revealprecision.revealserver.persistence.domain.Instance;
-import com.revealprecision.revealserver.persistence.domain.InstanceRole;
 import com.revealprecision.revealserver.persistence.domain.InstanceUser;
 import com.revealprecision.revealserver.persistence.domain.Organization;
-import com.revealprecision.revealserver.persistence.domain.OrganizationRole;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
@@ -21,20 +18,10 @@ public class InstanceContextResponseFactory {
 
   public static InstanceContextResponse buildInstanceContextResponse(
       InstanceUser instanceUser,
+      KeycloakRole instanceRole,
       List<GroupContextInfo> groups, Plan instancePlan) {
 
     Instance instance = instanceUser.getInstance();
-    InstanceRole role = instanceUser.getRole();
-
-    Set<String> instancePermissions = role.getPermissions().stream()
-        .map(p -> p.getPermission().getName())
-        .collect(Collectors.toSet());
-
-    InstanceContextResponse.InstanceRoleInfo roleInfo = InstanceContextResponse.InstanceRoleInfo.builder()
-        .identifier(role.getIdentifier())
-        .name(role.getName())
-        .permissions(instancePermissions)
-        .build();
 
     IdentifierNameResponse selectedInstance = IdentifierNameResponse.builder()
         .identifier(instance.getIdentifier())
@@ -52,34 +39,19 @@ public class InstanceContextResponseFactory {
     return InstanceContextResponse.builder()
         .selectedInstance(selectedInstance)
         .instancePlan(selectedInstancePlan)
-        .role(roleInfo)
+        .role(instanceRole)
         .groups(groups)
         .build();
   }
 
   public static InstanceContextResponse.GroupContextInfo toGroupContextInfo(
-      Organization org, List<OrganizationRole> orgRoles) {
-
-    List<InstanceContextResponse.GroupRoleInfo> groupRoleInfos = orgRoles.stream()
-        .map(InstanceContextResponseFactory::toGroupRoleInfo)
-        .collect(Collectors.toList());
-
+      Organization org, List<KeycloakRole> orgRoles) {
 
     return InstanceContextResponse.GroupContextInfo.builder()
         .identifier(org.getIdentifier())
         .name(org.getName())
         .type(org.getType().name())
-        .roles(groupRoleInfos)
-        .build();
-  }
-
-  private static InstanceContextResponse.GroupRoleInfo toGroupRoleInfo(OrganizationRole role) {
-    return InstanceContextResponse.GroupRoleInfo.builder()
-        .identifier(role.getIdentifier())
-        .name(role.getName())
-        .permissions(role.getPermissions().stream()
-            .map(p -> p.getPermission().getName())
-            .collect(Collectors.toSet()))
+        .roles(orgRoles)
         .build();
   }
 }

@@ -17,4 +17,22 @@
     </resources>
   </cache>
 
+  <cache alias="kc-role-list">
+    <expiry>
+      <ttl unit="minutes">5</ttl>
+    </expiry>
+    <resources>
+      <heap unit="entries">200</heap>
+    </resources>
+  </cache>
+
+  <cache alias="kc-role">
+    <expiry>
+      <ttl unit="minutes">5</ttl>
+    </expiry>
+    <resources>
+      <heap unit="entries">500</heap>
+    </resources>
+  </cache>
+
 </config>

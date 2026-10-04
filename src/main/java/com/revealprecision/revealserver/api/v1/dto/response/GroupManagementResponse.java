@@ -20,7 +20,7 @@ public class GroupManagementResponse {
   private boolean active;
   private List<IdentifierNameResponse> members;
   private List<IdentifierNameResponse> datasets;
-  private List<IdentifierNameResponse> roles;
+  private List<RoleWithPermissionsResponse> roles;
   private List<GeoTreeResponse> areas;
   private List<IdNameResponse> complexTags;
 }

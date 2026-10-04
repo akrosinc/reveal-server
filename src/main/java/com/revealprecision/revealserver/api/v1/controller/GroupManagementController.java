@@ -3,7 +3,6 @@ package com.revealprecision.revealserver.api.v1.controller;
 import com.revealprecision.revealserver.api.v1.dto.request.AssignLocationsToTeamRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.GlobalUserRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.GroupManagementRequest;
-import com.revealprecision.revealserver.api.v1.dto.request.OrganizationRoleRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.CountResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.GeoTreeResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.GroupManagementResponse;
@@ -24,7 +23,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -81,6 +79,15 @@ public class GroupManagementController {
   }
 
 
+  @Operation(
+      summary = "Get all group roles",
+      description = "Get all available group roles",
+      tags = {"GroupManagement"})
+  @GetMapping("/roles/list")
+  public ResponseEntity<List<IdentifierNameResponse>> getGroupRoles() {
+    return ResponseEntity.status(HttpStatus.OK).body(groupManagementService.getGroupRoles());
+  }
+
   @Operation(summary = "Fetch all locations associated to users", description = "Fetch all locations associated to users", tags = {"GroupManagement"})
   @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE , path = "/user/{userId}/locationstree")
   public ResponseEntity<List<GeoTreeResponse>> getUserLocations(@PathVariable UUID userId) {
@@ -117,38 +124,6 @@ public class GroupManagementController {
   @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE , path = "/instance/locationassigments")
   public ResponseEntity<LocationHierarchyResponse> getInstanceGroupsLocations() {
     return ResponseEntity.ok(groupManagementService.getInstanceGroupsLocationsTree());
-  }
-
-  @Operation(
-      summary = "Get all group roles",
-      description = "Get all available group roles",
-      tags = {"GroupManagement"})
-  @GetMapping("/roles/list")
-  public ResponseEntity<List<IdentifierNameResponse>> getGroupRoles() {
-    return ResponseEntity.status(HttpStatus.OK).body(groupManagementService.getGroupRoles());
-  }
-
-  @Operation(summary = "Create organization role", tags = {"GroupManagement"})
-  @PostMapping(value = "/roles", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<IdentifierNameResponse> createOrganizationRole(
-      @RequestBody @Valid OrganizationRoleRequest request) {
-    return ResponseEntity.status(HttpStatus.CREATED)
-        .body(groupManagementService.createGroupRole(request));
-  }
-
-  @Operation(summary = "Update organization role", tags = {"GroupManagement"})
-  @PutMapping(value = "/roles/{identifier}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<IdentifierNameResponse> updateOrganizationRole(
-      @PathVariable UUID identifier,
-      @RequestBody @Valid OrganizationRoleRequest request) {
-    return ResponseEntity.ok(groupManagementService.updateGroupRole(identifier, request));
-  }
-
-  @Operation(summary = "Delete organization role", tags = {"GroupManagement"})
-  @DeleteMapping(value = "/roles/{identifier}")
-  public ResponseEntity<Void> deleteOrganizationRole(@PathVariable UUID identifier) {
-    groupManagementService.deleteGroupRole(identifier);
-    return ResponseEntity.noContent().build();
   }
 
   @Operation(summary = "Add organization user", tags = {"GroupManagement"})

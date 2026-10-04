@@ -1,6 +1,8 @@
 package com.revealprecision.revealserver.persistence.domain;
 
 import com.revealprecision.revealserver.persistence.domain.id.OrganizationRoleMappingId;
+import java.util.UUID;
+import javax.persistence.Column;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
@@ -32,14 +34,12 @@ public class OrganizationRoleMapping {
   @JoinColumn(name = "organization_id")
   private Organization organization;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @MapsId("organizationRoleId")
-  @JoinColumn(name = "organization_role_id")
-  private OrganizationRole organizationRole;
+  @Column(name = "organization_role_id", insertable = false, updatable = false)
+  private UUID organizationRoleId;
 
-  public void populate(final Organization organization, final OrganizationRole organizationRole) {
+  public void populate(final Organization organization, final UUID organizationRoleId) {
     this.organization = organization;
-    this.organizationRole = organizationRole;
-    this.id = new OrganizationRoleMappingId(organizationRole.getIdentifier(), organization.getIdentifier());
+    this.organizationRoleId = organizationRoleId;
+    this.id = new OrganizationRoleMappingId(organizationRoleId, organization.getIdentifier());
   }
 }

@@ -25,6 +25,7 @@ import com.revealprecision.revealserver.api.v1.dto.response.ComplexTagResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.EntityTagResponse;
 import com.revealprecision.revealserver.config.InstanceContext;
 import com.revealprecision.revealserver.constants.EntityTagFieldTypes;
+import com.revealprecision.revealserver.dto.KeycloakRole;
 import com.revealprecision.revealserver.enums.InstanceRoleEnum;
 import com.revealprecision.revealserver.exceptions.DuplicateCreationException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
@@ -111,6 +112,7 @@ public class EntityTagService {
   private final EntityTagAccGrantsOrganizationRepository entityTagAccGrantsOrganizationRepository;
 
   private final ComplexTagAccGrantsUserRepository complexTagAccGrantsUserRepository;
+  private final KeycloakRoleCatalog keycloakRoleCatalog;
   private final ComplexTagAccGrantsOrganizationRepository complexTagAccGrantsOrganizationRepository;
   private final UserService userService;
   private final EntityTagOwnershipRepository entityTagOwnershipRepository;
@@ -1009,9 +1011,25 @@ public class EntityTagService {
     List<InstanceUser> instanceUsers = instanceUserRepository.findByUserAndInstance(currentUser.getIdentifier(), instanceIdentifier);
 
     Map<InstanceRoleEnum, List<UUID>> partitionedInstanceIds = instanceUsers.stream()
+        .map(iu -> {
+          if (iu.getInstanceRoleId() == null) {
+            return null;
+          }
+          Optional<KeycloakRole> roleOpt = keycloakRoleCatalog.findById(iu.getInstanceRoleId());
+          if (roleOpt.isEmpty()) {
+            return null;
+          }
+          try {
+            InstanceRoleEnum roleEnum = InstanceRoleEnum.valueOf(roleOpt.get().getName().toUpperCase());
+            return Pair.of(roleEnum, iu.getInstance().getIdentifier());
+          } catch (IllegalArgumentException e) {
+            return null;
+          }
+        })
+        .filter(Objects::nonNull)
         .collect(Collectors.groupingBy(
-            iu -> InstanceRoleEnum.valueOf(iu.getRole().getName()),
-            Collectors.mapping(iu -> iu.getInstance().getIdentifier(), Collectors.toList())
+            Pair::getFirst,
+            Collectors.mapping(Pair::getSecond, Collectors.toList())
         ));
 
     List<UUID> adminInstanceIds = partitionedInstanceIds

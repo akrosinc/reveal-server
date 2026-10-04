@@ -32,15 +32,11 @@ public interface InstanceUserRepository  extends
   @Query("SELECT DISTINCT iu FROM InstanceUser iu " +
       "JOIN FETCH iu.instance i " +
       "JOIN FETCH iu.user u " +
-      "JOIN FETCH iu.role r " +
-      "LEFT JOIN FETCH r.permissions p " +
-      "LEFT JOIN FETCH p.permission " +
       "WHERE u.identifier = :userIdentifier")
   List<InstanceUser> findByUser(UUID userIdentifier);
 
   @Query("SELECT iu FROM InstanceUser iu " +
       "JOIN FETCH iu.instance " +
-      "JOIN FETCH iu.role " +
       "WHERE iu.user.identifier = :userIdentifier " +
       "AND iu.instance.identifier = :instanceIdentifier")
   List<InstanceUser> findByUserAndInstance(UUID userIdentifier, UUID instanceIdentifier);

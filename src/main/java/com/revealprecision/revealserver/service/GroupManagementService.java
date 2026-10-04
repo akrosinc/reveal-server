@@ -3,7 +3,6 @@ package com.revealprecision.revealserver.service;
 import com.revealprecision.revealserver.api.v1.dto.request.AssignLocationsToTeamRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.GlobalUserRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.GroupManagementRequest;
-import com.revealprecision.revealserver.api.v1.dto.request.OrganizationRoleRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.CountResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.GeoTreeResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.GroupManagementResponse;
@@ -11,6 +10,7 @@ import com.revealprecision.revealserver.api.v1.dto.response.GroupStatsResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.IdNameResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.IdentifierNameResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationHierarchyResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.RoleWithPermissionsResponse;
 import com.revealprecision.revealserver.config.InstanceContext;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.enums.OrganizationTypeEnum;
@@ -22,16 +22,12 @@ import com.revealprecision.revealserver.persistence.domain.ComplexTagAccGrantsOr
 import com.revealprecision.revealserver.persistence.domain.EntityTag;
 import com.revealprecision.revealserver.persistence.domain.EntityTagAccGrantsOrganization;
 import com.revealprecision.revealserver.persistence.domain.Instance;
-import com.revealprecision.revealserver.persistence.domain.InstanceRole;
 import com.revealprecision.revealserver.persistence.domain.InstanceUser;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LocationHierarchy;
 import com.revealprecision.revealserver.persistence.domain.Organization;
 import com.revealprecision.revealserver.persistence.domain.OrganizationLocation;
-import com.revealprecision.revealserver.persistence.domain.OrganizationRole;
 import com.revealprecision.revealserver.persistence.domain.OrganizationRoleMapping;
-import com.revealprecision.revealserver.persistence.domain.OrganizationRolePermission;
-import com.revealprecision.revealserver.persistence.domain.Permission;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.PlanAssignment;
 import com.revealprecision.revealserver.persistence.domain.User;
@@ -46,16 +42,15 @@ import com.revealprecision.revealserver.persistence.repository.InstanceUserRepos
 import com.revealprecision.revealserver.persistence.repository.OrganizationLocationRepository;
 import com.revealprecision.revealserver.persistence.repository.OrganizationRepository;
 import com.revealprecision.revealserver.persistence.repository.OrganizationRoleMappingRepository;
-import com.revealprecision.revealserver.persistence.repository.OrganizationRolePermissionRepository;
-import com.revealprecision.revealserver.persistence.repository.OrganizationRoleRepository;
-import com.revealprecision.revealserver.persistence.repository.PermissionRepository;
 import com.revealprecision.revealserver.persistence.repository.PlanLocationsRepository;
 import com.revealprecision.revealserver.persistence.repository.TaskRepository;
 import com.revealprecision.revealserver.persistence.repository.UserRepository;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -77,7 +72,6 @@ public class GroupManagementService {
   private final OrganizationRepository organizationRepository;
   private final EntityTagAccGrantsOrganizationRepository entityTagAccGrantsOrganizationRepository;
   private final OrganizationLocationRepository organizationLocationRepository;
-  private final OrganizationRoleRepository organizationRoleRepository;
   private final OrganizationRoleMappingRepository organizationRoleMappingRepository;
   private final LocationRelationshipService locationRelationshipService;
   private final UserRepository userRepository;
@@ -85,12 +79,19 @@ public class GroupManagementService {
   private final PlanService planService;
   private final PlanAssignmentService planAssignmentService;
   private final PlanLocationsRepository planLocationsRepository;
-  private final InstanceRoleService instanceRoleService;
+  private final KeycloakRoleCatalog keycloakRoleCatalog;
   private final InstanceUserRepository instanceUserRepository;
-  private final PermissionRepository permissionRepository;
-  private final OrganizationRolePermissionRepository organizationRolePermissionRepository;
   private final TaskRepository taskRepository;
   private final ComplexTagAccGrantsOrganizationRepository complexTagAccGrantsOrganizationRepository;
+
+  public List<IdentifierNameResponse> getGroupRoles() {
+    return keycloakRoleCatalog.listOrganizationRoles().stream()
+        .map(role -> IdentifierNameResponse.builder()
+            .identifier(role.getId())
+            .name(role.getName())
+            .build())
+        .collect(Collectors.toList());
+  }
 
   public void createGroup(GroupManagementRequest request) {
 
@@ -121,12 +122,12 @@ public class GroupManagementService {
 
     userService.saveAll(users);
 
-    InstanceRole standardRole = instanceRoleService.getStandardRole();
+    UUID standardRole = keycloakRoleCatalog.getInstanceStandardRole().getId();
 
     List<InstanceUser> instanceUsers =  users.stream()
         .map(user -> {
           InstanceUser instanceUser = new InstanceUser();
-          instanceUser.setRole(standardRole);
+          instanceUser.setInstanceRoleId(standardRole);
           instanceUser.populate(instance, user);
           return instanceUser;
         })
@@ -176,17 +177,15 @@ public class GroupManagementService {
 
       organizationLocationRepository.saveAll(areas);
 
-      List<OrganizationRole> roles = organizationRoleRepository.findAllById(request.getRolesIdentifiers());
+      if (request.getRolesIdentifiers() != null) {
+        List<OrganizationRoleMapping> orgRoleMapping = request.getRolesIdentifiers().stream().map(roleId -> {
+          OrganizationRoleMapping mapping = new OrganizationRoleMapping();
+          mapping.populate(savedOrg, roleId);
+          return mapping;
+        }).collect(Collectors.toList());
 
-      List<OrganizationRoleMapping> orgRoleMapping = roles.stream().map(role -> {
-
-        OrganizationRoleMapping mapping = new OrganizationRoleMapping();
-        mapping.populate(savedOrg, role);
-
-        return mapping;
-      }).collect(Collectors.toList());
-
-      organizationRoleMappingRepository.saveAll(orgRoleMapping);
+        organizationRoleMappingRepository.saveAll(orgRoleMapping);
+      }
     }
   }
 
@@ -333,12 +332,16 @@ public class GroupManagementService {
 
 
     // roles
-    List<IdentifierNameResponse> roles = organizationRoleRepository
-        .findByOrganizationId(identifier).stream()
-        .map(role -> IdentifierNameResponse.builder()
-            .identifier(role.getIdentifier())
-            .name(role.getName())
-            .build())
+    List<RoleWithPermissionsResponse> roles = organizationRoleMappingRepository
+        .findByOrganization_Identifier(identifier).stream()
+        .map(mapping -> keycloakRoleCatalog.findById(mapping.getOrganizationRoleId())
+            .map(kr -> RoleWithPermissionsResponse.builder()
+                .identifier(kr.getId())
+                .name(kr.getName())
+                .permissions(kr.getPermissions())
+                .build())
+            .orElse(null))
+        .filter(Objects::nonNull)
         .collect(Collectors.toList());
 
 
@@ -451,11 +454,11 @@ public class GroupManagementService {
       membersToAdd.forEach(user -> user.getOrganizations().add(org));
       userService.saveAll(membersToAdd);
 
-      InstanceRole standardRole = instanceRoleService.getStandardRole();
+      UUID standardRoleId = keycloakRoleCatalog.getInstanceStandardRole().getId();
       List<InstanceUser> instanceUsersToAdd = membersToAdd.stream()
           .map(user -> {
             InstanceUser instanceUser = new InstanceUser();
-            instanceUser.setRole(standardRole);
+            instanceUser.setInstanceRoleId(standardRoleId);
             instanceUser.populate(instance, user);
             return instanceUser;
           }).collect(Collectors.toList());
@@ -567,13 +570,12 @@ public class GroupManagementService {
       }
 
       // Update roles
-      List<UUID> incomingRoleIds = request.getRolesIdentifiers();
-      List<OrganizationRoleMapping> currentRoleMappings = organizationRoleMappingRepository.findAll()
-          .stream()
-          .filter(mapping -> mapping.getOrganization().getIdentifier().equals(identifier))
-          .collect(Collectors.toList());
+      List<UUID> incomingRoleIds = request.getRolesIdentifiers() != null
+          ? request.getRolesIdentifiers()
+          : Collections.emptyList();
+      List<OrganizationRoleMapping> currentRoleMappings = organizationRoleMappingRepository.findByOrganization_Identifier(identifier);
       Set<UUID> currentRoleIds = currentRoleMappings.stream()
-          .map(mapping -> mapping.getOrganizationRole().getIdentifier()).collect(Collectors.toSet());
+          .map(OrganizationRoleMapping::getOrganizationRoleId).collect(Collectors.toSet());
 
       List<OrganizationRoleMappingId> rolesToRemoveIds = currentRoleIds.stream()
           .filter(roleId -> !incomingRoleIds.contains(roleId))
@@ -589,81 +591,15 @@ public class GroupManagementService {
       }
 
       if (!rolesToAddIds.isEmpty()) {
-        List<OrganizationRole> rolesToAdd = organizationRoleRepository.findAllById(rolesToAddIds);
-        List<OrganizationRoleMapping> mappingsToAdd = rolesToAdd.stream()
-            .map(role -> {
+        List<OrganizationRoleMapping> mappingsToAdd = rolesToAddIds.stream()
+            .map(roleId -> {
               OrganizationRoleMapping mapping = new OrganizationRoleMapping();
-              mapping.populate(org, role);
+              mapping.populate(org, roleId);
               return mapping;
             }).collect(Collectors.toList());
         organizationRoleMappingRepository.saveAll(mappingsToAdd);
       }
     }
-  }
-
-  public List<IdentifierNameResponse> getGroupRoles() {
-    return organizationRoleRepository.findAll().stream()
-        .map(role -> IdentifierNameResponse.builder()
-            .identifier(role.getIdentifier())
-            .name(role.getName())
-            .build())
-        .collect(Collectors.toList());
-  }
-
-  public IdentifierNameResponse createGroupRole(OrganizationRoleRequest request) {
-    OrganizationRole role = OrganizationRole.builder()
-        .name(request.getName())
-        .build();
-    OrganizationRole savedRole = organizationRoleRepository.save(role);
-
-    if (request.getPermissionIdentifiers() != null && !request.getPermissionIdentifiers().isEmpty()) {
-      List<Permission> permissions = permissionRepository.findAllById(request.getPermissionIdentifiers());
-      List<OrganizationRolePermission> rolePermissions = permissions.stream()
-          .map(permission -> {
-            OrganizationRolePermission mapping = new OrganizationRolePermission();
-            mapping.populate(savedRole, permission);
-            return mapping;
-          }).collect(Collectors.toList());
-      organizationRolePermissionRepository.saveAll(rolePermissions);
-    }
-
-    return IdentifierNameResponse.builder()
-        .identifier(savedRole.getIdentifier())
-        .name(savedRole.getName())
-        .build();
-  }
-
-  public IdentifierNameResponse updateGroupRole(UUID identifier,
-            OrganizationRoleRequest request) {
-    OrganizationRole role = organizationRoleRepository.findById(identifier)
-        .orElseThrow(() -> new NotFoundException("Role not found: " + identifier));
-
-    role.setName(request.getName());
-    organizationRoleRepository.save(role);
-
-    // Update permissions
-    organizationRolePermissionRepository.deleteByOrganizationRoleIdentifier(identifier);
-    if (request.getPermissionIdentifiers() != null && !request.getPermissionIdentifiers().isEmpty()) {
-      List<Permission> permissions = permissionRepository.findAllById(request.getPermissionIdentifiers());
-      List<OrganizationRolePermission> rolePermissions = permissions.stream()
-          .map(permission -> {
-            OrganizationRolePermission mapping = new OrganizationRolePermission();
-            mapping.populate(role, permission);
-            return mapping;
-          }).collect(Collectors.toList());
-      organizationRolePermissionRepository.saveAll(rolePermissions);
-    }
-
-    return IdentifierNameResponse.builder()
-        .identifier(role.getIdentifier())
-        .name(role.getName())
-        .build();
-  }
-
-  public void deleteGroupRole(UUID identifier) {
-    OrganizationRole role = organizationRoleRepository.findById(identifier)
-        .orElseThrow(() -> new NotFoundException("Role not found: " + identifier));
-    organizationRoleRepository.delete(role);
   }
 
   @Transactional
@@ -680,16 +616,16 @@ public class GroupManagementService {
 
     Instance instance = instanceService.findById(request.getInstanceIdentifier());
 
-    final InstanceRole instanceRole;
+    final UUID instanceRoleId;
     if (BooleanUtils.isTrue(request.getIsInstanceAdmin())){
-      instanceRole = instanceRoleService.getInstanceAdminRole();
+      instanceRoleId = keycloakRoleCatalog.getInstanceAdminRole().getId();
     } else {
-      instanceRole = instanceRoleService.getStandardRole();
+      instanceRoleId = keycloakRoleCatalog.getInstanceStandardRole().getId();
     }
 
     InstanceUser instanceUser = new InstanceUser();
     instanceUser.populate(instance, user);
-    instanceUser.setRole(instanceRole);
+    instanceUser.setInstanceRoleId(instanceRoleId);
 
     instanceUserRepository.save(instanceUser);
 
