@@ -38,4 +38,6 @@ public class TaskProcessEvent extends Message {
   private UUID taskIdentifier;
 
   private UUID parentTaskIdentifier;
+
+  private UUID locationIdentifier;
 }

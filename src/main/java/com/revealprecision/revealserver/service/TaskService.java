@@ -4,6 +4,7 @@ import com.revealprecision.revealserver.api.v1.controller.querying.KafkaGenerate
 import com.revealprecision.revealserver.api.v1.dto.factory.TaskEntityFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.TaskCreateRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.TaskUpdateRequest;
+import com.revealprecision.revealserver.constants.FormConstants;
 import com.revealprecision.revealserver.constants.KafkaConstants;
 import com.revealprecision.revealserver.constants.LocationConstants;
 import com.revealprecision.revealserver.enums.ActionTitleEnum;
@@ -29,6 +30,7 @@ import com.revealprecision.revealserver.messaging.message.TaskProcessEvent;
 import com.revealprecision.revealserver.messaging.message.TaskProjectionObj;
 import com.revealprecision.revealserver.persistence.domain.Action;
 import com.revealprecision.revealserver.persistence.domain.Condition;
+import com.revealprecision.revealserver.persistence.domain.EntityData;
 import com.revealprecision.revealserver.persistence.domain.Goal;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LookupTaskStatus;
@@ -41,6 +43,7 @@ import com.revealprecision.revealserver.persistence.domain.TaskProcessStage;
 import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.persistence.domain.actioncondition.Query;
 import com.revealprecision.revealserver.persistence.projection.TaskProjection;
+import com.revealprecision.revealserver.persistence.repository.EntityDataRepository;
 import com.revealprecision.revealserver.persistence.repository.LookupTaskStatusRepository;
 import com.revealprecision.revealserver.persistence.repository.TaskProcessStageRepository;
 import com.revealprecision.revealserver.persistence.repository.TaskRepository;
@@ -105,6 +108,8 @@ public class TaskService {
   private final PlanLocationsService planLocationsService;
 
   private final NoTaskActionProperties noTaskActionProperties;
+
+  private final EntityDataRepository entityDataRepository;
 
   @Getter
   private LookupTaskStatus cancelledLookupTaskStatus;
@@ -443,6 +448,170 @@ public class TaskService {
 
   }
 
+  /**
+   * Generates a single task against an {@code entity_data} record (for example an emanator).
+   *
+   * <p>Unlike {@link #generateIndividualTask}, the supplied identifier is NOT a location. It is an
+   * {@code entity_data} identifier that is stored on the resulting task's
+   * {@code baseEntityIdentifier} column. The task takes its locational grounding from the supplied
+   * parent task's location, and is created with the default {@code "Not Visited"} business status.
+   *
+   * <p>Because the entity is not a location, the location-centric validations in
+   * {@link #validateImportedLocationsForTaskGeneration} are not directly applicable. However the
+   * entity_data record is linked to a location, so we reuse the plan/assignment validation against
+   * that linked location to make sure the entity falls within the plan's eligible locations.
+   */
+  @Transactional
+  public Pair<String, Map<TaskGenerateRequestValidationStateEnum, List<UUID>>> generateIndividualTaskForEntityData(
+      UUID planIdentifier, UUID actionIdentifier, UUID entityDataIdentifier,
+      UUID parentTaskIdentifier) {
+    return generateIndividualTasksForEntityData(planIdentifier, actionIdentifier,
+        Map.of(parentTaskIdentifier, List.of(entityDataIdentifier)));
+  }
+
+  /**
+   * Generates many entity_data tasks in one request. The supplied map keys are parent task
+   * identifiers and the values are the lists of {@code entity_data} identifiers to generate against
+   * each parent. Every generated task stores its entity_data identifier in
+   * {@code baseEntityIdentifier}, inherits the parent task's location, and is created with the
+   * default {@code "Not Visited"} business status.
+   *
+   * <p>Task creation is routed through the {@code TASK_CANDIDATE_GENERATE} Kafka pipeline (process
+   * tracker + task process stages) for consistency with {@link #generateIndividualTask}. The
+   * returned validation map aggregates the per-entity outcomes across all parents.
+   */
+  @Transactional
+  public Pair<String, Map<TaskGenerateRequestValidationStateEnum, List<UUID>>> generateIndividualTasksForEntityData(
+      UUID planIdentifier, UUID actionIdentifier,
+      Map<UUID, List<UUID>> parentToEntityDataIdentifiers) {
+    return generateIndividualTasksForEntityDataWithOwner(planIdentifier, actionIdentifier,
+        parentToEntityDataIdentifiers, UserUtils.getCurrentPrincipleName());
+  }
+
+  @Transactional
+  public Pair<String, Map<TaskGenerateRequestValidationStateEnum, List<UUID>>> generateIndividualTasksForEntityDataWithOwner(
+      UUID planIdentifier, UUID actionIdentifier,
+      Map<UUID, List<UUID>> parentToEntityDataIdentifiers, String owner) {
+
+    Action action = actionService.getByIdentifier(actionIdentifier);
+    Plan plan = action.getGoal().getPlan();
+
+    List<UUID> alreadyExisting = new ArrayList<>();
+    List<UUID> notInPlan = new ArrayList<>();
+    List<UUID> canGenerate = new ArrayList<>();
+
+    List<EntityDataTaskCandidate> candidates = new ArrayList<>();
+
+    if (parentToEntityDataIdentifiers != null) {
+
+      // existing tasks already created for this plan+action, keyed on baseEntityIdentifier
+      List<UUID> existingTaskBaseEntityIds = taskRepository.findUniqueByPlanAndActionidentifier(
+              plan, action.getIdentifier())
+          .stream()
+          .map(existingTask -> new TaskProjectionObj(existingTask.getIdentifier(),
+              existingTask.getBaseEntityIdentifier()))
+          .map(TaskProjectionObj::getBaseIdentifier)
+          .filter(id -> id != null)
+          .map(UUID::fromString)
+          .collect(Collectors.toList());
+
+      // locations eligible (assigned/filtered) for this plan+action
+      List<UUID> eligibleLocationUuids = getUuidsForTaskGeneration(action, plan, null);
+
+      for (Map.Entry<UUID, List<UUID>> entry : parentToEntityDataIdentifiers.entrySet()) {
+        UUID parentTaskIdentifier = entry.getKey();
+        List<UUID> entityDataIdentifiers = entry.getValue();
+
+        if (parentTaskIdentifier == null || entityDataIdentifiers == null) {
+          continue;
+        }
+
+        Task parentTask = taskRepository.findById(parentTaskIdentifier).orElseThrow(
+            () -> new NotFoundException(Pair.of(Task.Fields.identifier, parentTaskIdentifier),
+                Task.class));
+
+        Location parentLocation = parentTask.getLocation();
+        if (parentLocation == null) {
+          throw new IllegalArgumentException(
+              "parent task " + parentTaskIdentifier + " has no location to inherit");
+        }
+
+        for (UUID entityDataIdentifier : entityDataIdentifiers) {
+
+          EntityData entityData = entityDataRepository.findByIdentifier(entityDataIdentifier)
+              .orElseThrow(() -> new NotFoundException(
+                  Pair.of(EntityData.Fields.identifier, entityDataIdentifier), EntityData.class));
+
+          // Validation against the plan/assignment is done using the entity_data's linked location,
+          // since the entity itself is not a location.
+          boolean exists = existingTaskBaseEntityIds.contains(entityDataIdentifier);
+          UUID entityLocation = entityData.getLocationIdentifier();
+          boolean locationInPlan =
+              entityLocation != null && eligibleLocationUuids.contains(entityLocation);
+
+          if (exists) {
+            alreadyExisting.add(entityDataIdentifier);
+          } else if (!locationInPlan) {
+            notInPlan.add(entityDataIdentifier);
+          } else {
+            canGenerate.add(entityDataIdentifier);
+            candidates.add(new EntityDataTaskCandidate(entityDataIdentifier, parentTaskIdentifier,
+                parentLocation.getIdentifier()));
+          }
+        }
+      }
+    }
+
+    Map<TaskGenerateRequestValidationStateEnum, List<UUID>> validatedMap = Map.of(
+        TaskGenerateRequestValidationStateEnum.ALREADY_EXISTING, alreadyExisting,
+        TaskGenerateRequestValidationStateEnum.CAN_GENERATE, canGenerate,
+        TaskGenerateRequestValidationStateEnum.NOT_IN_PLAN, notInPlan);
+
+    if (candidates.isEmpty()) {
+      return Pair.of("No action taken as validation indicates no eligible entity_data to generate",
+          validatedMap);
+    }
+
+    ProcessTracker newProcessTracker = processTrackerService.createProcessTracker(
+        UUID.randomUUID(), ProcessType.INDIVIDUAL_TASK_GENERATE, planIdentifier);
+
+    processEntityDataListForTasks(action, plan, owner, newProcessTracker, candidates);
+
+    return Pair.of("Submitted " + candidates.size() + " entity_data task(s) for generation",
+        validatedMap);
+  }
+
+  /**
+   * Builds {@link TaskProcessStage} rows for entity_data task candidates and submits them to the
+   * {@code TASK_CANDIDATE_GENERATE} Kafka topic, mirroring {@link #processLocationListForTasks} but
+   * carrying the inherited (parent) location and parent task on each candidate.
+   */
+  private void processEntityDataListForTasks(Action action, Plan plan, String ownerId,
+      ProcessTracker processTracker, List<EntityDataTaskCandidate> candidates) {
+
+    List<TaskProcessStage> taskCandidatesToProcess = candidates.stream()
+        .map(candidate -> {
+          TaskGen taskGen = TaskGen.forEntityData(candidate.getEntityDataIdentifier(),
+              candidate.getLocationIdentifier());
+          return getTaskProcessStage(processTracker, taskGen, candidate.getParentTaskIdentifier());
+        })
+        .collect(Collectors.toList());
+
+    List<TaskProcessStage> taskProcessStages = taskProcessStageRepository.saveAll(
+        taskCandidatesToProcess);
+
+    log.debug("submitting entity_data taskProcessStages");
+    submitTaskCandidatesToKafka(action, plan, ownerId, taskProcessStages);
+  }
+
+  @lombok.Value
+  private static class EntityDataTaskCandidate {
+
+    UUID entityDataIdentifier;
+    UUID parentTaskIdentifier;
+    UUID locationIdentifier;
+  }
+
   public void generateIndividualTaskWithOwnerDirect(
       UUID planIdentifier,
       UUID actionIdentifier, ListObj uuidsObj, String owner) {
@@ -546,6 +715,7 @@ public class TaskService {
     taskGenerationStage.setEntityStatus(EntityStatus.ACTIVE);
     taskGenerationStage.setTaskProcess(taskGen.getTaskProcessEnum());
     taskGenerationStage.setParentTaskIdentifier(parentTaskIdentifier);
+    taskGenerationStage.setLocationIdentifier(taskGen.getLocationIdentifier());
 
     if (taskGen.getBaseEntityIdentifier() != null) {
       taskGenerationStage.setBaseEntityIdentifier(taskGen.getBaseEntityIdentifier());
@@ -655,6 +825,7 @@ public class TaskService {
         )
         .taskIdentifier(taskProcessStage.getTaskIdentifier())
         .parentTaskIdentifier(taskProcessStage.getParentTaskIdentifier())
+        .locationIdentifier(taskProcessStage.getLocationIdentifier())
         .identifier(taskProcessStage.getIdentifier())
         .build();
     return taskProcessEvent;
@@ -733,7 +904,8 @@ public class TaskService {
         owner = "unknown";
       }
       task = createTaskObjectFromActionAndEntityId(action,
-          uuid, plan, owner, taskProcessEvent.getParentTaskIdentifier());
+          uuid, plan, owner, taskProcessEvent.getParentTaskIdentifier(),
+          taskProcessEvent.getLocationIdentifier());
 
       TaskProcessStage taskGenerationStage = taskGenerationStageOptional.get();
       taskGenerationStage.setState(ProcessTrackerEnum.DONE);
@@ -834,17 +1006,38 @@ public class TaskService {
 
   private Task createTaskObjectFromActionAndEntityId(Action action,
       UUID entityUUID, Plan plan, String owner) {
-    return createTaskObjectFromActionAndEntityId(action, entityUUID, plan, owner, null);
+    return createTaskObjectFromActionAndEntityId(action, entityUUID, plan, owner, null, null);
   }
 
   private Task createTaskObjectFromActionAndEntityId(Action action,
       UUID entityUUID, Plan plan, String owner, UUID parentTaskIdentifier) {
+    return createTaskObjectFromActionAndEntityId(action, entityUUID, plan, owner,
+        parentTaskIdentifier, null);
+  }
+
+  /**
+   * Creates and persists an individual task.
+   *
+   * <p>{@code entityUUID} is always stored as the task's {@code baseEntityIdentifier}. For location
+   * and person actions it is also resolved against the respective store and attached.
+   *
+   * <p>When {@code locationIdentifier} is supplied the method treats this as an
+   * <strong>entity_data</strong> task (for example an emanator): {@code entityUUID} is the
+   * entity_data identifier (not a location/person), the task inherits the supplied location as its
+   * locational grounding, and gets the default {@code "Not Visited"} business status. In that case
+   * the location/person lookups are skipped because {@code entityUUID} does not resolve to either.
+   */
+  private Task createTaskObjectFromActionAndEntityId(Action action,
+      UUID entityUUID, Plan plan, String owner, UUID parentTaskIdentifier,
+      UUID locationIdentifier) {
     log.debug("TASK_GENERATION  create individual task for plan: {} and action: {}",
         plan.getIdentifier(), action.getIdentifier());
 
-    boolean isActionForLocation = ActionUtils.isActionForLocation(action);
+    boolean isEntityDataTask = locationIdentifier != null;
 
-    boolean isActionForPerson = ActionUtils.isActionForPerson(action);
+    boolean isActionForLocation = !isEntityDataTask && ActionUtils.isActionForLocation(action);
+
+    boolean isActionForPerson = !isEntityDataTask && ActionUtils.isActionForPerson(action);
 
     Task task = Task.builder().lookupTaskStatus(
             lookupTaskStatusRepository.findByCode(TASK_STATUS_READY).orElseThrow(
@@ -867,6 +1060,15 @@ public class TaskService {
       task.setParentTaskIdentifier(parentTask);
     }
 
+    if (isEntityDataTask) {
+      // Entity_data (e.g. emanator) task: inherit the supplied (parent) location as the locational
+      // grounding, but keep baseEntityIdentifier pointing at the entity_data id. Note that
+      // Task.setLocation also overwrites baseEntityIdentifier, so we set it first then restore it.
+      Location location = locationService.findByIdentifier(locationIdentifier);
+      task.setLocation(location);
+      task.setBaseEntityIdentifier(entityUUID);
+      task.setBusinessStatus(FormConstants.BusinessStatus.NOT_VISITED);
+    }
     if (isActionForLocation) {
       Location location = locationService.findByIdentifier(entityUUID);
       task.setLocation(location);

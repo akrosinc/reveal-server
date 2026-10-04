@@ -52,9 +52,50 @@ public class KafkaGenerateIndividualTasksController {
         parentTaskIdentifier);
   }
 
+  /**
+   * Generates a single task against an {@code entity_data} record (for example an emanator).
+   *
+   * <p>The supplied {@code entityDataIdentifier} is stored on the task's
+   * {@code baseEntityIdentifier} column. The task inherits its location from the supplied parent
+   * task and is created with the default "Not Visited" business status. Validation against the
+   * plan/assignment is performed using the entity_data's linked location, since the entity itself
+   * is not a location.
+   */
+  @PostMapping("/generate-individual-task-for-entity-data")
+  public Pair<String, Map<TaskGenerateRequestValidationStateEnum, List<UUID>>> generateForEntityData(
+      @RequestParam("planIdentifier") UUID planIdentifier,
+      @RequestParam("actionIdentifier") UUID actionIdentifier,
+      @RequestParam("entityDataIdentifier") UUID entityDataIdentifier,
+      @RequestParam("parentTaskIdentifier") UUID parentTaskIdentifier) {
+
+    return taskService.generateIndividualTaskForEntityData(planIdentifier, actionIdentifier,
+        entityDataIdentifier, parentTaskIdentifier);
+  }
+
+  @PostMapping("/generate-individual-tasks-for-entity-data")
+  public Pair<String, Map<TaskGenerateRequestValidationStateEnum, List<UUID>>> generateForEntityDataBatch(
+      @RequestParam("planIdentifier") UUID planIdentifier,
+      @RequestParam("actionIdentifier") UUID actionIdentifier,
+      @RequestBody EntityDataTaskBatchRequest request) {
+
+    return taskService.generateIndividualTasksForEntityData(planIdentifier, actionIdentifier,
+        request.getParentToEntityData());
+  }
+
   @Data
   public static class ListObj implements Serializable {
     List<UUID> uuids;
+  }
+
+  @Data
+  public static class EntityDataTaskBatchRequest implements Serializable {
+    Map<UUID, List<UUID>> parentToEntityData;
+  }
+
+  @Data
+  public static class ChildObj implements Serializable {
+    UUID uuid;
+    int numberOrTasks;
   }
 
 }

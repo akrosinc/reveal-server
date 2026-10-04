@@ -43,6 +43,8 @@ public class TaskProcessStage extends AbstractAuditableEntity {
 
   private UUID parentTaskIdentifier;
 
+  private UUID locationIdentifier;
+
   @ManyToOne
   @JoinColumn(name = "process_tracker_identifier", referencedColumnName = "identifier")
   private ProcessTracker processTracker;
