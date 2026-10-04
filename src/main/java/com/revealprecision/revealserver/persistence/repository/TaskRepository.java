@@ -48,7 +48,7 @@ public interface TaskRepository extends JpaRepository<Task, UUID>,
       List<UUID> locationIdentifiers, Long serverVersion);
 
   @Query(
-      "SELECT new com.revealprecision.revealserver.persistence.domain.Task(t.identifier,t.plan.identifier,t.serverVersion,t.taskFacade, lr.parentLocation.identifier)from  Task t "
+      "SELECT new com.revealprecision.revealserver.persistence.domain.Task(t.identifier,t.plan.identifier,t.serverVersion,t.taskFacade, lr.parentLocation.identifier, t.location)from  Task t "
           + "left join Location l on l = t.location "
           + "left join Plan p on p = t.plan "
           + "left join LocationRelationship  lr on lr.location = l "
@@ -57,7 +57,7 @@ public interface TaskRepository extends JpaRepository<Task, UUID>,
       List<UUID> locationIdentifiers, Long serverVersion);
 
   @Query(
-      "SELECT new com.revealprecision.revealserver.persistence.domain.Task(t.identifier,t.plan.identifier,t.serverVersion,t.taskFacade, lr.parentLocation.identifier)from  Task t "
+      "SELECT new com.revealprecision.revealserver.persistence.domain.Task(t.identifier,t.plan.identifier,t.serverVersion,t.taskFacade, lr.parentLocation.identifier, t.location)from  Task t "
           + "inner join Person per on per.identifier = t.person.identifier "
           + "left join per.locations l "
           + "left join Plan p on p = t.plan "

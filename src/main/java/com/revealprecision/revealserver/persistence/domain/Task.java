@@ -155,4 +155,16 @@ public class Task extends AbstractAuditableEntity {
       this.taskFacade.setParentLocation(parentLocation);
     }
   }
+
+  public Task(UUID identifier, UUID planIdentifier, long serverVersion, Object taskFacade,
+      UUID parentLocation, Location location) {
+    this.identifier = identifier;
+    this.plan = Plan.builder().identifier(planIdentifier).build();
+    this.serverVersion = serverVersion;
+    if (taskFacade != null) {
+      this.taskFacade = (TaskEvent) taskFacade;
+      this.taskFacade.setParentLocation(parentLocation);
+    }
+    this.location = location;
+  }
 }
