@@ -47,7 +47,7 @@ ALTER TABLE IF EXISTS map_layer_aud
     DROP CONSTRAINT IF EXISTS fk_map_layer_aud_rev;
 
 ALTER TABLE IF EXISTS map_layer_aud
-    ADD CONSTRAINT fk_map_layer_aud_rev
+    ADD IF NOT EXISTS CONSTRAINT fk_map_layer_aud_rev
         FOREIGN KEY (rev)
             REFERENCES revinfo (rev);
 
@@ -55,4 +55,4 @@ CREATE INDEX IF NOT EXISTS idx_map_layer_identifier
     ON map_layer(layer_identifier);
 
 ALTER TABLE metadata_import
-    ADD COLUMN metadata_import_type VARCHAR(50) NOT NULL DEFAULT 'CSV';
+    ADD COLUMN IF NOT EXISTS metadata_import_type VARCHAR(50) NOT NULL DEFAULT 'CSV';
