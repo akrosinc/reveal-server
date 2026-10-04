@@ -77,6 +77,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 
 @Service
@@ -671,14 +673,31 @@ public class TaskService {
 
     List<UUID> stageIds = taskProcessStages.stream().map(TaskProcessStage::getIdentifier)
         .collect(Collectors.toList());
-    log.info(
-        "processEntityDataListForTasks: saved {} entity_data task_process_stage rows {} for processTracker {}; submitting to Kafka (note: these are published within the current transaction - consumers must tolerate not-yet-committed rows)",
-        taskProcessStages.size(), stageIds, processTracker.getIdentifier());
 
-    submitTaskCandidatesToKafka(action, plan, ownerId, taskProcessStages);
+    // The process_tracker and task_process_stage rows are written in the current transaction. The
+    // Kafka consumer reads them back by id, so publishing before commit causes a race where the
+    // consumer cannot see the rows yet (observed: "processTracker ... NOT found"). Defer the Kafka
+    // submission until after the transaction commits. If there is no active transaction, send now.
+    if (TransactionSynchronizationManager.isSynchronizationActive()) {
+      log.info(
+          "processEntityDataListForTasks: saved {} entity_data task_process_stage rows {} for processTracker {}; deferring Kafka submission until after commit",
+          taskProcessStages.size(), stageIds, processTracker.getIdentifier());
 
-    log.info("processEntityDataListForTasks: submitted {} entity_data stage(s) to Kafka",
-        taskProcessStages.size());
+      TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+        @Override
+        public void afterCommit() {
+          log.info(
+              "processEntityDataListForTasks: transaction committed - submitting {} entity_data stage(s) to Kafka for processTracker {}",
+              taskProcessStages.size(), processTracker.getIdentifier());
+          submitTaskCandidatesToKafka(action, plan, ownerId, taskProcessStages);
+        }
+      });
+    } else {
+      log.info(
+          "processEntityDataListForTasks: saved {} entity_data task_process_stage rows {} for processTracker {}; no active transaction - submitting to Kafka immediately",
+          taskProcessStages.size(), stageIds, processTracker.getIdentifier());
+      submitTaskCandidatesToKafka(action, plan, ownerId, taskProcessStages);
+    }
   }
 
   @lombok.Value
