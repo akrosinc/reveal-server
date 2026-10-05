@@ -4,9 +4,13 @@ import com.revealprecision.revealserver.enums.BulkEntryStatus;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.enums.MetadataImportType;
 import com.revealprecision.revealserver.messaging.message.RasterLocationZonalStatsMessage;
+import com.revealprecision.revealserver.persistence.domain.EntityTag;
+import com.revealprecision.revealserver.persistence.domain.EntityTagOwnership;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.MetadataImport;
+import com.revealprecision.revealserver.persistence.domain.MetadataImportOwnership;
 import com.revealprecision.revealserver.persistence.domain.User;
+import com.revealprecision.revealserver.persistence.repository.EntityTagRepository;
 import com.revealprecision.revealserver.persistence.repository.LocationRepository;
 import com.revealprecision.revealserver.persistence.repository.MetadataImportRepository;
 import com.revealprecision.revealserver.service.RasterLocationZonalStatsService;
@@ -27,6 +31,7 @@ public class RasterLocationZonalStatsListener {
   private final RasterLocationZonalStatsService rasterLocationZonalStatsService;
   private final LocationRepository locationRepository;
   private final MetadataImportRepository metadataImportRepository;
+  private final EntityTagRepository entityTagRepository;
   private final UserService userService;
 
   @KafkaListener(topics = "#{kafkaConfigProperties.topicMap.get('RASTER_LOCATION_ZONAL_STATS')}",
@@ -42,17 +47,54 @@ public class RasterLocationZonalStatsListener {
 
     User user = userService.getByKeycloakId(message.getKeycloakId());
 
-
     MetadataImport metadataImport = MetadataImport.builder()
         .filename(rasterId)
         .metadataName(rasterId)
         .metadataImportType(MetadataImportType.RASTER)
         .status(BulkEntryStatus.BUSY)
-        .uploadedBy(user.getUsername())
+        .uploadedBy(user != null ? user.getUsername() : null)
         .uploadedDatetime(LocalDateTime.now())
         .build();
+    if (user != null) {
+      MetadataImportOwnership metadataImportOwnership = MetadataImportOwnership.builder()
+          .metadataImport(metadataImport)
+          .userSid(user.getSid())
+          .build();
+      metadataImport.setOwners(List.of(metadataImportOwnership));
+    }
     metadataImport.setEntityStatus(EntityStatus.ACTIVE);
     metadataImport = metadataImportRepository.save(metadataImport);
+
+    if (message.getTagName() != null && !message.getTagName().isBlank()) {
+      List<EntityTagOwnership> owners = null;
+      if (metadataImport.getOwners() != null) {
+        owners = metadataImport.getOwners().stream()
+            .map(metadataImportOwnership -> EntityTagOwnership.builder()
+                .userSid(metadataImportOwnership.getUserSid())
+                .build())
+            .collect(Collectors.toList());
+      }
+
+      String valueType = (message.getValueType() != null && !message.getValueType().isBlank())
+          ? message.getValueType()
+          : "double";
+
+      EntityTag entityTag = EntityTag.builder()
+          .tag(message.getTagName())
+          .valueType(valueType)
+          .definition(message.getTagName())
+          .isPublic(false)
+          .simulationDisplay(false)
+          .isAggregate(false)
+          .isDeleting(false)
+          .metadataImport(metadataImport)
+          .owners(owners)
+          .build();
+      if (entityTag.getOwners() != null) {
+        entityTag.getOwners().forEach(owner -> owner.setEntityTag(entityTag));
+      }
+      entityTagRepository.save(entityTag);
+    }
 
     try {
       List<Location> locations = locationRepository.findAll();

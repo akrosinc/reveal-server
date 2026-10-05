@@ -16,6 +16,8 @@ import lombok.Setter;
 @AllArgsConstructor
 public class RasterLocationZonalStatsMessage extends Message {
   private String rasterId;
+  private String tagName;
+  private String valueType;
   private Boolean reprocess;
   private List<String> geographicLevels;
   private UUID keycloakId;

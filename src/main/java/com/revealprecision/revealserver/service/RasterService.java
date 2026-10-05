@@ -106,6 +106,8 @@ public class RasterService {
 
     RasterLocationZonalStatsMessage rasterLocationZonalStatsMessage = RasterLocationZonalStatsMessage.builder()
         .rasterId(request.getRasterId())
+        .tagName(request.getTagName())
+        .valueType(request.getValueType())
         .reprocess(request.getReprocess())
         .geographicLevels(request.getGeographicLevels())
         .keycloakId(keycloakId)
