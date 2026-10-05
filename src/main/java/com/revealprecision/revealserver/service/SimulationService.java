@@ -85,6 +85,7 @@ public class SimulationService {
             Simulation newSimulation = Simulation.builder()
                     .plan(plan)
                     .datasets(new ArrayList<>())
+                    .rasterDatasets(new ArrayList<>())
                     .build();
 
             return simulationRepository.save(newSimulation);
@@ -152,7 +153,13 @@ public class SimulationService {
                 .collect(Collectors.toList());
         }
 
-        return new SimulationResponse(s.getIdentifier(), s.getDatasets(), locationsResponse, dataSetYearRange);
+        return SimulationResponse.builder()
+            .identifier(s.getIdentifier())
+            .datasets(s.getDatasets())
+            .rasterDatasets(s.getRasterDatasets())
+            .targetAreas(locationsResponse)
+            .datSetYearRange(dataSetYearRange)
+            .build();
     }
 
     @Transactional
