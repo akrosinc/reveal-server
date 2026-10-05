@@ -24,7 +24,7 @@ public class RasterDataset {
     @Id
     @GeneratedValue
     private UUID identifier;
-    @OneToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "map_layer_identifier")
     @JsonBackReference
     private MapLayer mapLayer;

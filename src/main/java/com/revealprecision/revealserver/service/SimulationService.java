@@ -97,6 +97,7 @@ public class SimulationService {
         return saved.getIdentifier().toString();
     }
 
+    @Transactional
     public SimulationResponse getSimulationWithTargetAreas(UUID planId) {
         Simulation s = getOrCreateSimulationByPlanId(planId);
 
