@@ -23,4 +23,5 @@ public class SimulationDatasetRequest {
     private Boolean addToSimulation;
     private List<UUID> userDatasetIds;
     private DatasetType datasetType;
+    private String dataSetId;
 }

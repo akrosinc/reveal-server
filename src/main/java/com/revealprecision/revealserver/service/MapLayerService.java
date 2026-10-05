@@ -5,6 +5,8 @@ import com.revealprecision.revealserver.api.v1.dto.request.RasterIngestionReques
 import com.revealprecision.revealserver.api.v1.dto.response.MapLayerResponse;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.enums.LayerType;
+import com.revealprecision.revealserver.exceptions.ConflictException;
+import com.revealprecision.revealserver.exceptions.constant.Error;
 import com.revealprecision.revealserver.model.GeoEnvelope;
 import com.revealprecision.revealserver.persistence.domain.MapLayer;
 import com.revealprecision.revealserver.persistence.repository.MapLayerRepository;
@@ -38,11 +40,23 @@ public class MapLayerService {
   }
 
   public MapLayer createMapLayer(String rasterId, String name) {
+    String mapLayerName = name != null && !name.isBlank() ? name : rasterId;
+
+    if (mapLayerRepository.findByLayerIdentifier(rasterId).isPresent()) {
+      throw new ConflictException(
+          String.format(Error.NON_UNIQUE, MapLayer.Fields.layerIdentifier, rasterId));
+    }
+
+    if (mapLayerRepository.findByName(mapLayerName).isPresent()) {
+      throw new ConflictException(
+          String.format(Error.NON_UNIQUE, MapLayer.Fields.name, mapLayerName));
+    }
+
     RasterLocationPaths paths = RasterUtil.validateAndResolvePaths(rasterId, rasterIngestionProperties);
     GeoEnvelope extent = RasterUtil.getRasterExtent(paths.getRasterFilePath());
 
     MapLayer mapLayer = MapLayer.builder()
-        .name(name != null && !name.isBlank() ? name : rasterId)
+        .name(mapLayerName)
         .layerIdentifier(rasterId)
         .type(LayerType.RASTER)
         .extent(extent)

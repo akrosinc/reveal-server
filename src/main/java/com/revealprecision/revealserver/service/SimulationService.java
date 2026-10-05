@@ -743,13 +743,12 @@ public class SimulationService {
             }
         } else if (request.getDatasetType() == DatasetType.RASTER ) {
             if(!BooleanUtils.isFalse(request.getAddToSimulation())){
-                MapLayer mapLayer = mapLayerRepository.findById(request.getTagId())
-                    .orElseGet(() -> mapLayerRepository.findByLayerIdentifier(request.getTagId().toString())
-                        .orElseThrow(() -> new NotFoundException("MapLayer not found with ID: " + request.getTagId())));
+                MapLayer mapLayer = mapLayerRepository.findByLayerIdentifier(request.getDataSetId())
+                    .orElseThrow(() -> new NotFoundException("MapLayer not found with ID: " + request.getDataSetId()));
 
                 RasterDataset rasterDataset = RasterDataset.builder()
                     .mapLayer(mapLayer)
-                    .datasetIdentifier(request.getTagId().toString())
+                    .datasetIdentifier(request.getDataSetId())
                     .name(mapLayer.getName())
                     .colorRamp(request.getHexColor())
                     .build();
