@@ -6,9 +6,11 @@ import com.revealprecision.revealserver.enums.MetadataImportType;
 import com.revealprecision.revealserver.messaging.message.RasterLocationZonalStatsMessage;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.MetadataImport;
+import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.persistence.repository.LocationRepository;
 import com.revealprecision.revealserver.persistence.repository.MetadataImportRepository;
 import com.revealprecision.revealserver.service.RasterLocationZonalStatsService;
+import com.revealprecision.revealserver.service.UserService;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -25,6 +27,7 @@ public class RasterLocationZonalStatsListener {
   private final RasterLocationZonalStatsService rasterLocationZonalStatsService;
   private final LocationRepository locationRepository;
   private final MetadataImportRepository metadataImportRepository;
+  private final UserService userService;
 
   @KafkaListener(topics = "#{kafkaConfigProperties.topicMap.get('RASTER_LOCATION_ZONAL_STATS')}",
       groupId = "reveal_server_group")
@@ -37,12 +40,15 @@ public class RasterLocationZonalStatsListener {
 
     log.info("Received zonal stats request for rasterId: {}", rasterId);
 
+    User user = userService.getByKeycloakId(message.getKeycloakId());
+
+
     MetadataImport metadataImport = MetadataImport.builder()
         .filename(rasterId)
         .metadataName(rasterId)
         .metadataImportType(MetadataImportType.RASTER)
         .status(BulkEntryStatus.BUSY)
-        .uploadedBy(message.getUploadedBy())
+        .uploadedBy(user.getUsername())
         .uploadedDatetime(LocalDateTime.now())
         .build();
     metadataImport.setEntityStatus(EntityStatus.ACTIVE);

@@ -1,24 +1,18 @@
 package com.revealprecision.revealserver.service;
 
-import com.revealprecision.revealserver.api.v1.dto.factory.MapLayerResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.RasterIngestionRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.RasterStatisticsCalculationRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.MapLayerResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.RasterIngestionStatusResponse;
 import com.revealprecision.revealserver.constants.KafkaConstants;
-import com.revealprecision.revealserver.enums.EntityStatus;
-import com.revealprecision.revealserver.enums.LayerType;
 import com.revealprecision.revealserver.exceptions.InvalidRasterEventException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
-import com.revealprecision.revealserver.exceptions.RasterProcessingException;
 import com.revealprecision.revealserver.messaging.message.RasterIngestionMessage;
 import com.revealprecision.revealserver.messaging.message.RasterLocationZonalStatsMessage;
 import com.revealprecision.revealserver.persistence.domain.IngestionTask;
 import com.revealprecision.revealserver.persistence.domain.MapLayer;
-import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.persistence.repository.IngestionTaskRepository;
 import com.revealprecision.revealserver.persistence.repository.MapLayerRepository;
-import com.revealprecision.revealserver.model.GeoEnvelope;
 import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.props.RasterIngestionProperties;
 import com.revealprecision.revealserver.raster.CogBuilder;
@@ -51,7 +45,7 @@ public class RasterService {
   private final RasterIngestionProperties rasterIngestionProperties;
   private final MapLayerService mapLayerService;
   private final IngestionTaskService ingestionTaskService;
-  private final UserService userService;
+
 
   @Transactional
   public void ingest(@Valid RasterIngestionRequest request) {
@@ -104,18 +98,17 @@ public class RasterService {
       return;
 
     Principal principal = UserUtils.getCurrentPrinciple();
-    User user;
+
     UUID keycloakId = null;
     if (principal instanceof KeycloakPrincipal) {
       keycloakId = UUID.fromString(principal.getName());
     }
-    user = userService.getByKeycloakId(keycloakId);
 
     RasterLocationZonalStatsMessage rasterLocationZonalStatsMessage = RasterLocationZonalStatsMessage.builder()
         .rasterId(request.getRasterId())
         .reprocess(request.getReprocess())
         .geographicLevels(request.getGeographicLevels())
-        .uploadedBy(user.getUsername())
+        .keycloakId(keycloakId)
         .build();
 
     publisherService.send(kafkaProperties.getTopicMap().get(KafkaConstants.RASTER_LOCATION_ZONAL_STATS),

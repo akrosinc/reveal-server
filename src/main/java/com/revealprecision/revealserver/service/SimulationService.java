@@ -761,13 +761,17 @@ public class SimulationService {
                     .name(mapLayer.getName())
                     .colorRamp(request.getHexColor())
                     .build();
+
                 simulation.getRasterDatasets().add(rasterDataset);
                 Simulation savedSimulation = simulationRepository.save(simulation);
 
-                RasterDataset savedRasterDataset = savedSimulation.getRasterDatasets().stream()
-                    .filter(d -> d.getMapLayer() != null && d.getMapLayer().getId().equals(mapLayer.getId()))
-                    .findFirst()
-                    .orElseThrow(() -> new NotFoundException("Could not retrieve raster dataset for MapLayer ID: " + mapLayer.getId()));
+                RasterDataset savedRasterDataset = (savedSimulation.getRasterDatasets() != null && !savedSimulation.getRasterDatasets().isEmpty())
+                        ? savedSimulation.getRasterDatasets().get(savedSimulation.getRasterDatasets().size() - 1)
+                        : null;
+
+                if(savedRasterDataset == null) {
+                    throw new NotFoundException("Could not retrieve raster dataset for MapLayer ID: " + mapLayer.getId());
+                }
 
                 return SimulationDatasetResponse.builder()
                     .simulationId(savedSimulation.getIdentifier())
