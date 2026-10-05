@@ -61,6 +61,10 @@ public class RasterController {
       @PathVariable String rasterId) {
     log.info("Fetching tile for rasterId={}, z={}, x={}, y={}", rasterId, z, x, y);
     byte[] tile = rasterService.getTile(rasterId, z, x, y);
+
+    if(tile == null)
+      return ResponseEntity.notFound().build();
+
     return ResponseEntity.ok()
         .header(HttpHeaders.CONTENT_TYPE, "application/x-protobuf")
         .body(tile);

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.revealprecision.revealserver.api.v1.dto.factory.LocationResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.LocationResponsesFromProjectionsFactory;
 import com.revealprecision.revealserver.api.v1.dto.factory.OrganizationResponseFactory;
+import com.revealprecision.revealserver.api.v1.dto.factory.RasterDatasetResponseFactory;
 import com.revealprecision.revealserver.api.v1.dto.request.DatasetLocationsRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.DeleteDatasetRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.UpdateDatasetRequest;
@@ -157,7 +158,7 @@ public class SimulationService {
         return SimulationResponse.builder()
             .identifier(s.getIdentifier())
             .datasets(s.getDatasets())
-            .rasterDatasets(s.getRasterDatasets())
+            .rasterDatasets(RasterDatasetResponseFactory.fromEntityList(s.getRasterDatasets()))
             .targetAreas(locationsResponse)
             .datSetYearRange(dataSetYearRange)
             .build();

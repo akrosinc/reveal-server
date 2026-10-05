@@ -1,7 +1,6 @@
 package com.revealprecision.revealserver.api.v1.dto.response;
 
 import com.revealprecision.revealserver.persistence.domain.Dataset;
-import com.revealprecision.revealserver.persistence.domain.RasterDataset;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.*;
@@ -17,9 +16,13 @@ import java.util.UUID;
 @NoArgsConstructor
 public class SimulationResponse {
     private UUID identifier;
+    @Builder.Default
     private List<Dataset> datasets = new ArrayList<>();
-    private List<RasterDataset> rasterDatasets = new ArrayList<>();
+    @Builder.Default
+    private List<RasterDatasetResponse> rasterDatasets = new ArrayList<>();
+    @Builder.Default
     private List<LocationResponse> targetAreas = new ArrayList<>();
 
+    @Builder.Default
     private List<DataSetYearRangeResponse> datSetYearRange = new ArrayList<>();
 }

@@ -155,7 +155,8 @@ public class RasterService {
     try {
       return Files.readAllBytes(tileFile);
     } catch (IOException e) {
-      throw new RasterProcessingException("Failed to read tile file: " + tileFile, e);
+      return null;
+//      throw new RasterProcessingException("Failed to read tile file: " + tileFile, e);
     }
   }
 
