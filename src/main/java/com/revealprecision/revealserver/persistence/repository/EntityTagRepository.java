@@ -57,6 +57,11 @@ public interface EntityTagRepository extends JpaRepository<EntityTag, UUID> {
 
   List<EntityTag> findEntityTagsByMetadataImport_IdentifierAndIsAggregate(UUID id, boolean isAggregate);
 
+  @Query(value = "select et from EntityTag et inner join InstanceEntityTag insTag on insTag.entityTag.identifier = et.identifier "
+      + "where insTag.instance.identifier = :instanceIdentifier and et.metadataImport.metadataImportType = :metadataImportType")
+  List<EntityTag> findEntityTagsByMetadataImport_MetadataImportTypeAndInstanceId(
+      com.revealprecision.revealserver.enums.MetadataImportType metadataImportType, UUID instanceIdentifier);
+
   @Query(value = "select et from EntityTag et Inner join InstanceEntityTag insTag on insTag.entityTag.identifier =  et.identifier"
       + " where  insTag.instance.identifier = :instanceIdentifier ")
   List<EntityTag> findByInstanceId(UUID instanceIdentifier);

@@ -27,6 +27,7 @@ import com.revealprecision.revealserver.config.InstanceContext;
 import com.revealprecision.revealserver.constants.EntityTagFieldTypes;
 import com.revealprecision.revealserver.dto.KeycloakRole;
 import com.revealprecision.revealserver.enums.InstanceRoleEnum;
+import com.revealprecision.revealserver.enums.MetadataImportType;
 import com.revealprecision.revealserver.exceptions.DuplicateCreationException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.messaging.message.EntityTagEvent;
@@ -1085,6 +1086,20 @@ public class EntityTagService {
                 .build()
         )
         .collect(Collectors.toMap(EntityTagResponse::getTag, a -> a, (a, b) -> b));
+
+    List<EntityTag> rasterEntityTags = entityTagRepository.findEntityTagsByMetadataImport_MetadataImportTypeAndInstanceId(MetadataImportType.RASTER, instanceIdentifier);
+    Map<String, EntityTagResponse> rasterTags = rasterEntityTags.stream()
+        .map(
+            entityTag -> EntityTagResponse.builder()
+                .identifier(String.valueOf(entityTag.getIdentifier()))
+                .isAggregate(entityTag.isAggregate())
+                .simulationDisplay(entityTag.isSimulationDisplay())
+                .tag(entityTag.getTag())
+                .build()
+        )
+        .collect(Collectors.toMap(EntityTagResponse::getTag, a -> a, (a, b) -> b));
+
+    tagsWithAccess.putAll(rasterTags);
 
 //    List<EntityTagResponse> collect1 = resourceTags.stream()
 //        .filter(allTag -> tagsWithAccess.get(allTag.getTag()) != null)
