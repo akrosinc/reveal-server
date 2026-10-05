@@ -15,6 +15,7 @@ import com.revealprecision.revealserver.messaging.message.RasterIngestionMessage
 import com.revealprecision.revealserver.messaging.message.RasterLocationZonalStatsMessage;
 import com.revealprecision.revealserver.persistence.domain.IngestionTask;
 import com.revealprecision.revealserver.persistence.domain.MapLayer;
+import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.persistence.repository.IngestionTaskRepository;
 import com.revealprecision.revealserver.persistence.repository.MapLayerRepository;
 import com.revealprecision.revealserver.model.GeoEnvelope;
@@ -23,14 +24,18 @@ import com.revealprecision.revealserver.props.RasterIngestionProperties;
 import com.revealprecision.revealserver.raster.CogBuilder;
 import com.revealprecision.revealserver.service.models.RasterLocationPaths;
 import com.revealprecision.revealserver.raster.RasterUtil;
+import com.revealprecision.revealserver.util.UserUtils;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.Principal;
 import java.util.List;
+import java.util.UUID;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.keycloak.KeycloakPrincipal;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,6 +51,7 @@ public class RasterService {
   private final RasterIngestionProperties rasterIngestionProperties;
   private final MapLayerService mapLayerService;
   private final IngestionTaskService ingestionTaskService;
+  private final UserService userService;
 
   @Transactional
   public void ingest(@Valid RasterIngestionRequest request) {
@@ -97,10 +103,19 @@ public class RasterService {
     if(request == null)
       return;
 
+    Principal principal = UserUtils.getCurrentPrinciple();
+    User user;
+    UUID keycloakId = null;
+    if (principal instanceof KeycloakPrincipal) {
+      keycloakId = UUID.fromString(principal.getName());
+    }
+    user = userService.getByKeycloakId(keycloakId);
+
     RasterLocationZonalStatsMessage rasterLocationZonalStatsMessage = RasterLocationZonalStatsMessage.builder()
         .rasterId(request.getRasterId())
         .reprocess(request.getReprocess())
         .geographicLevels(request.getGeographicLevels())
+        .uploadedBy(user.getUsername())
         .build();
 
     publisherService.send(kafkaProperties.getTopicMap().get(KafkaConstants.RASTER_LOCATION_ZONAL_STATS),

@@ -42,6 +42,8 @@ public class RasterLocationZonalStatsListener {
         .metadataName(rasterId)
         .metadataImportType(MetadataImportType.RASTER)
         .status(BulkEntryStatus.BUSY)
+        .uploadedBy(message.getUploadedBy())
+        .uploadedDatetime(LocalDateTime.now())
         .build();
     metadataImport.setEntityStatus(EntityStatus.ACTIVE);
     metadataImport = metadataImportRepository.save(metadataImport);

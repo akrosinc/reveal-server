@@ -18,6 +18,7 @@ public class RasterLocationZonalStatsMessage extends Message {
   private String rasterId;
   private Boolean reprocess;
   private List<String> geographicLevels;
+  private String uploadedBy;
   public boolean isReprocess() {
     return Boolean.TRUE.equals(reprocess);
   }
