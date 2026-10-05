@@ -15,6 +15,7 @@ import com.revealprecision.revealserver.constants.EntityTagFieldTypes;
 import com.revealprecision.revealserver.constants.KafkaConstants;
 import com.revealprecision.revealserver.enums.BulkEntryStatus;
 import com.revealprecision.revealserver.enums.EntityStatus;
+import com.revealprecision.revealserver.enums.MetadataImportType;
 import com.revealprecision.revealserver.exceptions.FileFormatException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.messaging.message.EntityTagEvent;
@@ -433,7 +434,9 @@ public class MetadataService {
                 .stream();
           }
         }).filter(entityTag -> entityTag.getMetadataImport() != null)
-        .filter( entityTag -> hierarchyIdentifier == null || uniqueTags.contains(entityTag.getTag())  )
+        .filter(entityTag -> hierarchyIdentifier == null
+            || MetadataImportType.RASTER.equals(entityTag.getMetadataImport().getMetadataImportType())
+            || uniqueTags.contains(entityTag.getTag()))
         .collect(Collectors.groupingBy(entityTag -> entityTag.getMetadataImport().getIdentifier()));
 
 
