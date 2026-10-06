@@ -59,3 +59,10 @@ CREATE INDEX IF NOT EXISTS idx_map_layer_identifier
 
 ALTER TABLE metadata_import
     ADD COLUMN IF NOT EXISTS metadata_import_type VARCHAR(50) NOT NULL DEFAULT 'CSV';
+
+
+ALTER TABLE IF EXISTS raster_location_zonal_stats
+    ADD COLUMN IF NOT EXISTS tag VARCHAR(255);
+
+ALTER TABLE IF EXISTS raster_location_zonal_stats_aud
+    ADD COLUMN IF NOT EXISTS tag VARCHAR(255);
