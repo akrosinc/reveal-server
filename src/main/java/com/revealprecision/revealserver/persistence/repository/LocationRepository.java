@@ -354,4 +354,14 @@ public interface LocationRepository extends JpaRepository<Location, UUID> {
       " where  l.identifier in (:identifiers) and lr.locationHierarchy.identifier = :locationHierarchyId")
   List<LocationWithAncestryProjection> getLocationWithAncestryProjection(List<UUID> identifiers ,UUID locationHierarchyId);
 
+  @Query("select distinct lr.location from LocationRelationship lr "
+      + "where lr.locationHierarchy.hierarchyStatus = com.revealprecision.revealserver.enums.HierarchyStatus.ACTIVE "
+      + "and (lower(lr.location.geographicLevel.name) not in (:skipGeographicLevels) "
+      + "and lower(lr.location.geographicLevel.title) not in (:skipGeographicLevels))")
+  List<Location> findLocationsInActiveHierarchyAndGeographicLevelNotIn(@Param("skipGeographicLevels") List<String> skipGeographicLevels);
+
+  @Query("select distinct lr.location from LocationRelationship lr "
+      + "where lr.locationHierarchy.hierarchyStatus = com.revealprecision.revealserver.enums.HierarchyStatus.ACTIVE")
+  List<Location> findLocationsInActiveHierarchy();
+
 }

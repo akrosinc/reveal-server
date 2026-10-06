@@ -109,7 +109,7 @@ public class RasterService {
         .tagName(request.getTagName())
         .valueType(request.getValueType())
         .reprocess(request.getReprocess())
-        .geographicLevels(request.getGeographicLevels())
+        .skipGeographicLevels(request.getSkipGeographicLevels())
         .keycloakId(keycloakId)
         .build();
 

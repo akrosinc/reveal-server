@@ -39,6 +39,9 @@ public class RasterLocationZonalStats extends AbstractAuditableEntity {
   @Column(name = "raster_id", nullable = false)
   private String rasterId;
 
+  @Column(name = "tag")
+  private String tag;
+
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "location_identifier", referencedColumnName = "identifier", nullable = false)
   private Location location;

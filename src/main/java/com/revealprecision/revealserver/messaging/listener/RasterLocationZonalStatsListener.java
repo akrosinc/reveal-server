@@ -97,7 +97,10 @@ public class RasterLocationZonalStatsListener {
     }
 
     try {
-      List<Location> locations = locationRepository.findAll();
+      List<Location> locations = (message.getSkipGeographicLevels() != null && !message.getSkipGeographicLevels().isEmpty())
+          ? locationRepository.findLocationsInActiveHierarchyAndGeographicLevelNotIn(
+              message.getSkipGeographicLevels().stream().map(String::toLowerCase).collect(Collectors.toList()))
+          : locationRepository.findLocationsInActiveHierarchy();
       if (locations.isEmpty()) {
         log.warn("No locations found for zonal stats processing");
         return;
@@ -105,11 +108,11 @@ public class RasterLocationZonalStatsListener {
 
       List<Location> toBeProcessedLocations = locations.stream()
           .filter(location -> !rasterLocationZonalStatsService
-              .shouldSkipGeographicLevel(location, message.getGeographicLevels()))
+              .shouldSkipGeographicLevel(location, message.getSkipGeographicLevels()))
           .collect(Collectors.toList());
 
       rasterLocationZonalStatsService.calculateLocationZonalStats(
-          rasterId, toBeProcessedLocations, message.isReprocess());
+          rasterId, toBeProcessedLocations, message.isReprocess(), message.getTagName());
 
       metadataImport.setStatus(BulkEntryStatus.SUCCESSFUL);
       metadataImportRepository.save(metadataImport);

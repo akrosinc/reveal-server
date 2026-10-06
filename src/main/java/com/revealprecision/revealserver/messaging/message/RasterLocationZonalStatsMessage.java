@@ -19,7 +19,7 @@ public class RasterLocationZonalStatsMessage extends Message {
   private String tagName;
   private String valueType;
   private Boolean reprocess;
-  private List<String> geographicLevels;
+  private List<String> skipGeographicLevels;
   private UUID keycloakId;
   public boolean isReprocess() {
     return Boolean.TRUE.equals(reprocess);

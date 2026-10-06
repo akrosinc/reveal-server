@@ -37,7 +37,7 @@ public class RasterLocationZonalStatsService {
   private final RasterLocationZonalStatsRepository rasterLocationZonalStatsRepository;
   private final ObjectMapper objectMapper;
 
-  public void calculateLocationZonalStats(String rasterId, List<Location> locations, boolean reprocess) {
+  public void calculateLocationZonalStats(String rasterId, List<Location> locations, boolean reprocess, String tag) {
     if (locations == null || locations.isEmpty()) {
       return;
     }
@@ -88,7 +88,7 @@ public class RasterLocationZonalStatsService {
         try {
           GdalContext ctx = threadLocalContext.get();
           calculateSingleLocation(
-              rasterId, location, ctx.dataset, ctx.rasterSRS, ctx.toRasterCrs, ctx.rasterExtent)
+              rasterId, location, ctx.dataset, ctx.rasterSRS, ctx.toRasterCrs, ctx.rasterExtent, tag)
               .ifPresent(results::add);
         } catch (Exception e) {
           log.error("Error calculating zonal stats for location {}: {}",
@@ -152,7 +152,7 @@ public class RasterLocationZonalStatsService {
    */
   private Optional<RasterLocationZonalStats> calculateSingleLocation(String rasterId, Location location,
       Dataset dataset, SpatialReference rasterSRS, CoordinateTransformation toRasterCrs,
-      Geometry rasterExtent) throws Exception {
+      Geometry rasterExtent, String tag) throws Exception {
 
     if (location == null || location.getGeometry() == null) {
       log.debug("Location {} has no geometry. Skipping.",
@@ -198,6 +198,7 @@ public class RasterLocationZonalStatsService {
         return z;
       });
 
+      zonalStats.setTag(tag);
       zonalStats.setPixelCount(stats.getPixelCount());
       zonalStats.setMin(stats.getMin());
       zonalStats.setMax(stats.getMax());
@@ -212,13 +213,13 @@ public class RasterLocationZonalStatsService {
     }
   }
 
-  public boolean shouldSkipGeographicLevel(Location location, List<String> geographicLevels) {
-    if (geographicLevels == null || geographicLevels.isEmpty() || location.getGeographicLevel() == null) {
+  public boolean shouldSkipGeographicLevel(Location location, List<String> skipGeographicLevels) {
+    if (skipGeographicLevels == null || skipGeographicLevels.isEmpty() || location.getGeographicLevel() == null) {
       return false;
     }
     String levelName = location.getGeographicLevel().getName();
     String levelTitle = location.getGeographicLevel().getTitle();
-    return geographicLevels.stream().anyMatch(level ->
+    return skipGeographicLevels.stream().anyMatch(level ->
         (levelName != null && levelName.equalsIgnoreCase(level)) ||
             (levelTitle != null && levelTitle.equalsIgnoreCase(level))
     );
