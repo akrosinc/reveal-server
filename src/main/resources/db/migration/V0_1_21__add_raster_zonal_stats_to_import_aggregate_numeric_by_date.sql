@@ -58,7 +58,6 @@ FROM (SELECT ean2.ancestor                                                      
           AND lh.hierarchy_status = 'ACTIVE'
       WHERE r.entity_status::text = 'ACTIVE'::text) u;
 
-alter materialized view public.mw_import_aggregate_numeric_by_date owner to revealuser;
 
 create unique index mw_import_aggregate_numeric_by_date_id_idx
     on public.mw_import_aggregate_numeric_by_date (id);
