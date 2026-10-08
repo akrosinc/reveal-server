@@ -26,6 +26,9 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class KeycloakRoleCatalog {
 
+  public static final String ORGANIZATION_ROLES = "/ORGANIZATION_ROLES";
+  public static final String INSTANCE_ROLES = "/INSTANCE_ROLES";
+
   private final Keycloak keycloak;
 
   @Value("${keycloak.realm}")
@@ -33,20 +36,12 @@ public class KeycloakRoleCatalog {
 
   //  @Cacheable(value = "kc-role-list", key = "'org'")
   public List<KeycloakRole> listOrganizationRoles() {
-    List<KeycloakRole> roles = listRolesByParentPath("/ORGANIZATION_ROLES");
-    if (roles.isEmpty()) {
-      roles = listRolesByParentPath("/organization-roles");
-    }
-    return roles;
+    return listRolesByParentPath(ORGANIZATION_ROLES);
   }
 
   //  @Cacheable(value = "kc-role-list", key = "'instance'")
   public List<KeycloakRole> listInstanceRoles() {
-    List<KeycloakRole> roles = listRolesByParentPath("/INSTANCE_ROLES");
-    if (roles.isEmpty()) {
-      roles = listRolesByParentPath("/instance-roles");
-    }
-    return roles;
+    return listRolesByParentPath(INSTANCE_ROLES);
   }
 
   private List<KeycloakRole> listRolesByParentPath(String path) {
