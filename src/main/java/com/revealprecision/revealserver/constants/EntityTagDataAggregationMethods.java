@@ -10,6 +10,7 @@ public interface EntityTagDataAggregationMethods {
   String AVERAGE = "average";
   String SUM = "sum";
   String MEDIAN = "median";
+  String MEAN = "mean";
 
   String COUNT_ = DELIMITER + COUNT;
   String MAX_ = DELIMITER + MAX;
@@ -17,4 +18,6 @@ public interface EntityTagDataAggregationMethods {
   String AVERAGE_ = DELIMITER + AVERAGE;
   String SUM_ = DELIMITER + SUM;
   String MEDIAN_ = DELIMITER + MEDIAN;
+
+  String MEAN_ = DELIMITER + MEAN;
 }

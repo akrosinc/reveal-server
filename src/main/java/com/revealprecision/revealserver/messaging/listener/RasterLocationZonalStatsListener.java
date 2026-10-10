@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.messaging.listener;
 
+import com.revealprecision.revealserver.constants.EntityTagDataAggregationMethods;
 import com.revealprecision.revealserver.enums.BulkEntryStatus;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.enums.MetadataImportType;
@@ -63,12 +64,13 @@ public class RasterLocationZonalStatsListener {
       metadataImport.setOwners(List.of(metadataImportOwnership));
     }
     metadataImport.setEntityStatus(EntityStatus.ACTIVE);
-    metadataImport = metadataImportRepository.save(metadataImport);
+    metadataImport.setCreatedBy(metadataImport.getUploadedBy());
+    MetadataImport savedMetadataImport = metadataImportRepository.save(metadataImport);
 
     if (message.getTagName() != null && !message.getTagName().isBlank()) {
       List<EntityTagOwnership> owners = null;
-      if (metadataImport.getOwners() != null) {
-        owners = metadataImport.getOwners().stream()
+      if (savedMetadataImport.getOwners() != null) {
+        owners = savedMetadataImport.getOwners().stream()
             .map(metadataImportOwnership -> EntityTagOwnership.builder()
                 .userSid(metadataImportOwnership.getUserSid())
                 .build())
@@ -79,21 +81,61 @@ public class RasterLocationZonalStatsListener {
           ? message.getValueType()
           : "double";
 
+      List<String> aggregationMethods = List.of(
+          EntityTagDataAggregationMethods.MIN_,
+          EntityTagDataAggregationMethods.MAX_,
+          EntityTagDataAggregationMethods.SUM_,
+          EntityTagDataAggregationMethods.MEAN_
+      );
+
       EntityTag entityTag = EntityTag.builder()
           .tag(message.getTagName())
           .valueType(valueType)
           .definition(message.getTagName())
+          .aggregationMethod(aggregationMethods)
           .isPublic(false)
           .simulationDisplay(false)
           .isAggregate(false)
           .isDeleting(false)
-          .metadataImport(metadataImport)
+          .metadataImport(savedMetadataImport)
           .owners(owners)
           .build();
       if (entityTag.getOwners() != null) {
         entityTag.getOwners().forEach(owner -> owner.setEntityTag(entityTag));
       }
-      entityTagRepository.save(entityTag);
+      EntityTag savedEntityTag = entityTagRepository.save(entityTag);
+
+      List<EntityTag> aggregateEntityTags = aggregationMethods.stream()
+          .map(aggMethod -> {
+            List<EntityTagOwnership> aggregateOwners = null;
+            if (savedMetadataImport.getOwners() != null) {
+              aggregateOwners = savedMetadataImport.getOwners().stream()
+                  .map(metadataImportOwnership -> EntityTagOwnership.builder()
+                      .userSid(metadataImportOwnership.getUserSid())
+                      .build())
+                  .collect(Collectors.toList());
+            }
+
+            EntityTag aggregateTag = EntityTag.builder()
+                .tag(message.getTagName().concat(aggMethod))
+                .valueType(valueType)
+                .definition(message.getTagName().concat(aggMethod))
+                .isPublic(false)
+                .simulationDisplay(false)
+                .isAggregate(true)
+                .isDeleting(false)
+                .referencedTag(savedEntityTag.getIdentifier())
+                .metadataImport(savedMetadataImport)
+                .owners(aggregateOwners)
+                .build();
+            if (aggregateTag.getOwners() != null) {
+              aggregateTag.getOwners().forEach(owner -> owner.setEntityTag(aggregateTag));
+            }
+            return aggregateTag;
+          })
+          .collect(Collectors.toList());
+
+      entityTagRepository.saveAll(aggregateEntityTags);
     }
 
     try {
@@ -114,8 +156,8 @@ public class RasterLocationZonalStatsListener {
       rasterLocationZonalStatsService.calculateLocationZonalStats(
           rasterId, toBeProcessedLocations, message.isReprocess(), message.getTagName());
 
-      metadataImport.setStatus(BulkEntryStatus.SUCCESSFUL);
-      metadataImportRepository.save(metadataImport);
+      savedMetadataImport.setStatus(BulkEntryStatus.SUCCESSFUL);
+      metadataImportRepository.save(savedMetadataImport);
 
       log.info("Successfully calculated zonal stats for rasterId: {}", message.getRasterId());
     } catch (Exception e) {
