@@ -217,6 +217,26 @@ public interface ImportAggregateRepository extends JpaRepository<ImportAggregati
         + "         left join geographic_level gl on gl.identifier = l.geographic_level_identifier\n"
         + "WHERE ian.hierarchyidentifier = :hierarchyIdentifier"
         + "", nativeQuery = true)
+    List<EntityTagWithGeoLevelProjection> getUniqueDataTagsAndLevelsListAssociatedWithDataFromDateMViewOLd(String hierarchyIdentifier);
+
+
+    @Query(value = "WITH base AS ( "
+        + "  SELECT DISTINCT ian.fieldcode, gl.name AS geoName, CAST(gl.identifier AS varchar) AS geoIdentifier "
+        + "  FROM mw_import_aggregate_numeric_by_date ian "
+        + "  LEFT JOIN location l ON l.identifier = CAST(ian.locationidentifier AS uuid) "
+        + "  LEFT JOIN geographic_level gl ON gl.identifier = l.geographic_level_identifier "
+        + "  WHERE ian.hierarchyidentifier = :hierarchyIdentifier "
+        + "), suffixes AS ( "
+        + "  SELECT unnest(ARRAY['-sum','-min','-max','-median','-average','-mean']) AS suffix "
+        + ") "
+        + "SELECT CONCAT(b.fieldcode, s.suffix) AS tagName, b.geoName AS geoName, b.geoIdentifier AS geoIdentifier "
+        + "FROM base b CROSS JOIN suffixes s "
+        + "UNION ALL "
+        + "SELECT DISTINCT CONCAT(c.fieldcode,'-count') AS tagName, gl.name AS geoName, CAST(gl.identifier AS varchar) AS geoIdentifier "
+        + "FROM import_aggregate_string_count c "
+        + "LEFT JOIN location l ON l.identifier = CAST(c.locationidentifier AS uuid) "
+        + "LEFT JOIN geographic_level gl ON gl.identifier = l.geographic_level_identifier "
+        + "WHERE c.hierarchyidentifier = :hierarchyIdentifier", nativeQuery = true)
     List<EntityTagWithGeoLevelProjection> getUniqueDataTagsAndLevelsListAssociatedWithDataFromDateMView(String hierarchyIdentifier);
 
     @Query(value = "WITH distinct_fieldcodes AS (\n" +

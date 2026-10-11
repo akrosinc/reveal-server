@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.api.v1.dto.request;
 
+import java.time.LocalDate;
 import java.util.List;
 import javax.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -21,6 +22,7 @@ public class RasterStatisticsCalculationRequest {
   private String valueType;
   private Boolean reprocess;
   private List<String> skipGeographicLevels;
+  private LocalDate captureDate;
   public boolean isReprocess() {
     return Boolean.TRUE.equals(reprocess);
   }

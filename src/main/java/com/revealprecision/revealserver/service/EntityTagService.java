@@ -1038,7 +1038,7 @@ public class EntityTagService {
     List<UUID> standardInstanceIds = partitionedInstanceIds
         .getOrDefault(InstanceRoleEnum.STANDARD, List.of());
 
-    List<UUID> datasetsIds = new ArrayList<>();
+    Set<UUID> datasetsIds = new HashSet<>();
 
 //    Set<Integer> complexTagsIds = new HashSet<>();
 

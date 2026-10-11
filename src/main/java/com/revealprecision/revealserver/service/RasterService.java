@@ -110,6 +110,7 @@ public class RasterService {
         .valueType(request.getValueType())
         .reprocess(request.getReprocess())
         .skipGeographicLevels(request.getSkipGeographicLevels())
+        .captureDate(request.getCaptureDate())
         .keycloakId(keycloakId)
         .build();
 

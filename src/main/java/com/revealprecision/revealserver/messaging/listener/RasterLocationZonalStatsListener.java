@@ -67,7 +67,9 @@ public class RasterLocationZonalStatsListener {
     metadataImport.setCreatedBy(metadataImport.getUploadedBy());
     MetadataImport savedMetadataImport = metadataImportRepository.save(metadataImport);
 
-    if (message.getTagName() != null && !message.getTagName().isBlank()) {
+    boolean tagExists = entityTagRepository.existsByTag(message.getTagName());
+
+    if (message.getTagName() != null && !message.getTagName().isBlank() && !tagExists) {
       List<EntityTagOwnership> owners = null;
       if (savedMetadataImport.getOwners() != null) {
         owners = savedMetadataImport.getOwners().stream()
@@ -85,7 +87,7 @@ public class RasterLocationZonalStatsListener {
           EntityTagDataAggregationMethods.MIN_,
           EntityTagDataAggregationMethods.MAX_,
           EntityTagDataAggregationMethods.SUM_,
-          EntityTagDataAggregationMethods.MEAN_
+          EntityTagDataAggregationMethods.AVERAGE_
       );
 
       EntityTag entityTag = EntityTag.builder()
@@ -119,7 +121,7 @@ public class RasterLocationZonalStatsListener {
             EntityTag aggregateTag = EntityTag.builder()
                 .tag(message.getTagName().concat(aggMethod))
                 .valueType(valueType)
-                .definition(message.getTagName().concat(aggMethod))
+                .definition(savedEntityTag.getDefinition())
                 .isPublic(false)
                 .simulationDisplay(false)
                 .isAggregate(true)
@@ -154,7 +156,7 @@ public class RasterLocationZonalStatsListener {
           .collect(Collectors.toList());
 
       rasterLocationZonalStatsService.calculateLocationZonalStats(
-          rasterId, toBeProcessedLocations, message.isReprocess(), message.getTagName());
+          rasterId, toBeProcessedLocations, message.isReprocess(), message.getTagName(), message.getCaptureDate());
 
       savedMetadataImport.setStatus(BulkEntryStatus.SUCCESSFUL);
       metadataImportRepository.save(savedMetadataImport);

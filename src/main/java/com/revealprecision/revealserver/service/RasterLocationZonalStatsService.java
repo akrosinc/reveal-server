@@ -11,6 +11,7 @@ import com.revealprecision.revealserver.service.models.RasterLocationPaths;
 import com.revealprecision.revealserver.raster.GdalBootstrap;
 import com.revealprecision.revealserver.raster.RasterUtil;
 import com.revealprecision.revealserver.raster.ZonalStatsUtil;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -37,7 +38,7 @@ public class RasterLocationZonalStatsService {
   private final RasterLocationZonalStatsRepository rasterLocationZonalStatsRepository;
   private final ObjectMapper objectMapper;
 
-  public void calculateLocationZonalStats(String rasterId, List<Location> locations, boolean reprocess, String tag) {
+  public void calculateLocationZonalStats(String rasterId, List<Location> locations, boolean reprocess, String tag, LocalDate captureDate) {
     if (locations == null || locations.isEmpty()) {
       return;
     }
@@ -66,7 +67,7 @@ public class RasterLocationZonalStatsService {
 
     Set<GdalContext> openContexts = ConcurrentHashMap.newKeySet();
     ThreadLocal<GdalContext> threadLocalContext = ThreadLocal.withInitial(() -> {
-      GdalContext ctx = new GdalContext(rasterPath);
+      GdalContext ctx = new  GdalContext(rasterPath);
       openContexts.add(ctx);
       return ctx;
     });
@@ -88,7 +89,7 @@ public class RasterLocationZonalStatsService {
         try {
           GdalContext ctx = threadLocalContext.get();
           calculateSingleLocation(
-              rasterId, location, ctx.dataset, ctx.rasterSRS, ctx.toRasterCrs, ctx.rasterExtent, tag)
+              rasterId, location, ctx.dataset, ctx.rasterSRS, ctx.toRasterCrs, ctx.rasterExtent, tag, captureDate)
               .ifPresent(results::add);
         } catch (Exception e) {
           log.error("Error calculating zonal stats for location {}: {}",
@@ -152,7 +153,7 @@ public class RasterLocationZonalStatsService {
    */
   private Optional<RasterLocationZonalStats> calculateSingleLocation(String rasterId, Location location,
       Dataset dataset, SpatialReference rasterSRS, CoordinateTransformation toRasterCrs,
-      Geometry rasterExtent, String tag) throws Exception {
+      Geometry rasterExtent, String tag, LocalDate captureDate) throws Exception {
 
     if (location == null || location.getGeometry() == null) {
       log.debug("Location {} has no geometry. Skipping.",
@@ -199,6 +200,7 @@ public class RasterLocationZonalStatsService {
       });
 
       zonalStats.setTag(tag);
+      zonalStats.setCaptureDate(captureDate);
       zonalStats.setPixelCount(stats.getPixelCount());
       zonalStats.setMin(stats.getMin());
       zonalStats.setMax(stats.getMax());

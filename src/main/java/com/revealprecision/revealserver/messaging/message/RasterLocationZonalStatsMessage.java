@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.messaging.message;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -21,6 +22,7 @@ public class RasterLocationZonalStatsMessage extends Message {
   private Boolean reprocess;
   private List<String> skipGeographicLevels;
   private UUID keycloakId;
+  private LocalDate captureDate;
   public boolean isReprocess() {
     return Boolean.TRUE.equals(reprocess);
   }

@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.persistence.domain;
 
+import java.time.LocalDate;
 import java.util.UUID;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -41,6 +42,9 @@ public class RasterLocationZonalStats extends AbstractAuditableEntity {
 
   @Column(name = "tag")
   private String tag;
+
+  @Column(name = "capture_date")
+  private LocalDate captureDate;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "location_identifier", referencedColumnName = "identifier", nullable = false)

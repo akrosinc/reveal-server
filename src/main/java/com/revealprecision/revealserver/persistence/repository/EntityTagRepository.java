@@ -26,6 +26,8 @@ public interface EntityTagRepository extends JpaRepository<EntityTag, UUID> {
 
   Optional<EntityTag> getFirstByTag(String tag);
 
+  boolean existsByTag(String tag);
+
   @Query(value = "select et from EntityTag et where  lower(et.tag ) like concat('%', lower(:search) , '%') and et.isAggregate = :isAggregate")
   Page<EntityTag> findEntityTagsIsAggregate(boolean isAggregate,
       Pageable pageable, String search);
