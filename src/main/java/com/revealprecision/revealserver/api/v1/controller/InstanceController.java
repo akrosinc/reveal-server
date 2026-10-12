@@ -98,8 +98,10 @@ public class InstanceController {
   }
 
   @GetMapping("/user/list")
-  public ResponseEntity<List<InstanceUserRoleListResponse>> getUsersInstancesByRole(@RequestParam(value = "role", required = false) String role) {
-    return ResponseEntity.status(HttpStatus.OK).body(instanceService.getUsersInstancesByRole(role));
+  public ResponseEntity<List<InstanceUserRoleListResponse>> getUsersInstancesByRole(
+      @RequestParam(value = "instanceIdentifier", required = false) UUID instanceIdentifier,
+      @RequestParam(value = "role", required = false) String role) {
+    return ResponseEntity.status(HttpStatus.OK).body(instanceService.getUsersInstancesByRole(instanceIdentifier, role));
   }
 
   @GetMapping("/user/{userId}/instancelist")

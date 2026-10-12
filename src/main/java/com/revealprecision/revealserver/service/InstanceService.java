@@ -414,22 +414,20 @@ public class InstanceService {
     return getInstancesByUserId(currentUser.getIdentifier());
   }
 
-  public List<InstanceUserRoleListResponse> getUsersInstancesByRole(String role) {
-    UUID identifier = InstanceContext.get();
-    return getUsersInstancesByRole(identifier, role);
-  }
-
-  public List<InstanceUserRoleListResponse> getUsersInstancesByRole(UUID identifier, String role) {
+  public List<InstanceUserRoleListResponse> getUsersInstancesByRole(UUID instanceIdentifier, String role) {
+    if (instanceIdentifier == null) {
+      instanceIdentifier = InstanceContext.get();
+    }
     Map<UUID, String> roleMap = keycloakRoleCatalog.listInstanceRoles().stream()
         .collect(Collectors.toMap(KeycloakRole::getId, KeycloakRole::getName, (a, b) -> a));
 
     List<InstanceUser> members;
     if (StringUtils.isBlank(role)) {
-      members = instanceUserRepository.findByInstanceIdentifier(identifier);
+      members = instanceUserRepository.findByInstanceIdentifier(instanceIdentifier);
     } else {
       KeycloakRole keycloakRole = keycloakRoleCatalog.getInstanceRoleByName(role)
           .orElseThrow(() -> new NotFoundException(String.format("Role %s not found", role)));
-      members = instanceUserRepository.findByInstanceIdentifierAndInstanceRoleId(identifier, keycloakRole.getId());
+      members = instanceUserRepository.findByInstanceIdentifierAndInstanceRoleId(instanceIdentifier, keycloakRole.getId());
     }
     return members.stream()
         .map(member -> InstanceUserRoleListResponse.builder()
