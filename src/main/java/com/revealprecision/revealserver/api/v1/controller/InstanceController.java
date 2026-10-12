@@ -13,6 +13,7 @@ import com.revealprecision.revealserver.api.v1.dto.response.IdentifierNameRespon
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceContextResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceUserListResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.InstanceUserRoleListResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationHierarchyResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.PlanResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.UserRolesResponse;
@@ -94,6 +95,11 @@ public class InstanceController {
   @GetMapping("/user/instancelist")
   public ResponseEntity<List<InstanceUserListResponse>> getUsersInstances() {
     return ResponseEntity.status(HttpStatus.OK).body(instanceService.getUsersInstances());
+  }
+
+  @GetMapping("/user/list")
+  public ResponseEntity<List<InstanceUserRoleListResponse>> getUsersInstancesByRole(@RequestParam(value = "role", required = false) String role) {
+    return ResponseEntity.status(HttpStatus.OK).body(instanceService.getUsersInstancesByRole(role));
   }
 
   @GetMapping("/user/{userId}/instancelist")

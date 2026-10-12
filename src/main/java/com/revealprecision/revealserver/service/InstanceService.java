@@ -12,6 +12,7 @@ import com.revealprecision.revealserver.api.v1.dto.response.IdentifierNameRespon
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceContextResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.InstanceUserListResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.InstanceUserRoleListResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationHierarchyResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.RoleWithPermissionsResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.UserRolesResponse;
@@ -335,13 +336,20 @@ public class InstanceService {
     }
 
     // Update users
+    UUID adminRoleId = keycloakRoleCatalog.getInstanceAdminRole().getId();
     List<UUID> incomingMemberIds = instanceRequest.getMembers();
+    List<IdentifierNameProjection> currentAdminMembers = instanceUserRepository.getInstancesUsersByRole(
+        identifier, adminRoleId);
+    Set<UUID> currentAdminMemberIds = currentAdminMembers.stream()
+        .map(IdentifierNameProjection::getIdentifier)
+        .collect(Collectors.toSet());
+
     List<IdentifierNameProjection> currentMembers = instanceUserRepository.getInstancesUsers(
         identifier);
     Set<UUID> currentMemberIds = currentMembers.stream().map(IdentifierNameProjection::getIdentifier)
         .collect(Collectors.toSet());
 
-    List<InstanceUserId> membersToDelete = currentMemberIds.stream()
+    List<InstanceUserId> membersToDelete = currentAdminMemberIds.stream()
         .filter(memberId -> !incomingMemberIds.contains(memberId))
         .map(memberId -> new InstanceUserId(identifier, memberId))
         .collect(Collectors.toList());
@@ -356,7 +364,6 @@ public class InstanceService {
 
     if (!membersToAdd.isEmpty()) {
       List<User> users = userService.findAllById(membersToAdd);
-      UUID adminRoleId = keycloakRoleCatalog.getInstanceAdminRole().getId();
       List<InstanceUser> instanceUsers = users.stream().distinct().map(user -> {
         InstanceUser mapping = new InstanceUser();
         mapping.populate(instance, user);
@@ -405,6 +412,32 @@ public class InstanceService {
   public List<InstanceUserListResponse> getUsersInstances() {
     User currentUser = userService.getCurrentUser();
     return getInstancesByUserId(currentUser.getIdentifier());
+  }
+
+  public List<InstanceUserRoleListResponse> getUsersInstancesByRole(String role) {
+    UUID identifier = InstanceContext.get();
+    return getUsersInstancesByRole(identifier, role);
+  }
+
+  public List<InstanceUserRoleListResponse> getUsersInstancesByRole(UUID identifier, String role) {
+    Map<UUID, String> roleMap = keycloakRoleCatalog.listInstanceRoles().stream()
+        .collect(Collectors.toMap(KeycloakRole::getId, KeycloakRole::getName, (a, b) -> a));
+
+    List<InstanceUser> members;
+    if (StringUtils.isBlank(role)) {
+      members = instanceUserRepository.findByInstanceIdentifier(identifier);
+    } else {
+      KeycloakRole keycloakRole = keycloakRoleCatalog.getInstanceRoleByName(role)
+          .orElseThrow(() -> new NotFoundException(String.format("Role %s not found", role)));
+      members = instanceUserRepository.findByInstanceIdentifierAndInstanceRoleId(identifier, keycloakRole.getId());
+    }
+    return members.stream()
+        .map(member -> InstanceUserRoleListResponse.builder()
+            .identifier(member.getUser().getIdentifier())
+            .name(member.getUser().getUsername())
+            .role(member.getInstanceRoleId() != null ? roleMap.get(member.getInstanceRoleId()) : null)
+            .build())
+        .collect(Collectors.toList());
   }
 
   public List<IdentifierNameResponse> getAssignedInstanceUsers() {

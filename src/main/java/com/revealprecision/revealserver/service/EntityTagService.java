@@ -1097,6 +1097,7 @@ public class EntityTagService {
                 .tag(entityTag.getTag())
                 .build()
         )
+        .filter(EntityTagResponse::isAggregate)
         .collect(Collectors.toMap(EntityTagResponse::getTag, a -> a, (a, b) -> b));
 
     tagsWithAccess.putAll(rasterTags);

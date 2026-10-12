@@ -19,6 +19,16 @@ public interface InstanceUserRepository  extends
 
   void deleteByInstance(Instance instance);
 
+  @Query("SELECT iu FROM InstanceUser iu " +
+      "JOIN FETCH iu.user u " +
+      "WHERE iu.instance.identifier = :instanceIdentifier")
+  List<InstanceUser> findByInstanceIdentifier(UUID instanceIdentifier);
+
+  @Query("SELECT iu FROM InstanceUser iu " +
+      "JOIN FETCH iu.user u " +
+      "WHERE iu.instance.identifier = :instanceIdentifier AND iu.instanceRoleId = :roleId")
+  List<InstanceUser> findByInstanceIdentifierAndInstanceRoleId(UUID instanceIdentifier, UUID roleId);
+
   @Query("SELECT iu.instance FROM InstanceUser iu WHERE iu.user.identifier = :identifier")
   List<Instance> getUserInstances(UUID identifier);
 
@@ -28,6 +38,9 @@ public interface InstanceUserRepository  extends
 
   @Query("SELECT iu.user.identifier AS identifier, iu.user.username AS name FROM  InstanceUser iu WHERE iu.instance.identifier = :instanceIdentifier")
   List<IdentifierNameProjection> getInstancesUsers(UUID instanceIdentifier);
+
+  @Query("SELECT iu.user.identifier AS identifier, iu.user.username AS name FROM InstanceUser iu WHERE iu.instance.identifier = :instanceIdentifier AND iu.instanceRoleId = :roleId")
+  List<IdentifierNameProjection> getInstancesUsersByRole(UUID instanceIdentifier, UUID roleId);
 
   @Query("SELECT DISTINCT iu FROM InstanceUser iu " +
       "JOIN FETCH iu.instance i " +
