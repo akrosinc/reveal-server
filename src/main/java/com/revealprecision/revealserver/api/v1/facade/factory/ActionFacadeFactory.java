@@ -1,21 +1,24 @@
 package com.revealprecision.revealserver.api.v1.facade.factory;
 
 import com.revealprecision.revealserver.api.v1.dto.request.EffectivePeriod;
+import com.revealprecision.revealserver.api.v1.facade.models.FormFacade;
 import com.revealprecision.revealserver.api.v1.dto.request.SubjectCodableConcept;
 import com.revealprecision.revealserver.api.v1.facade.models.ActionFacade;
 import com.revealprecision.revealserver.persistence.domain.Action;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
+@Slf4j
 public class ActionFacadeFactory {
 
   public static ActionFacade fromEntity(Action action) {
-    return ActionFacade.builder()
+    ActionFacade build = ActionFacade.builder()
         .identifier(action.getIdentifier().toString())
         .title(action.getTitle())
         .description(action.getDescription())
-        .code("") //addCode
+        .code(action.getTitle()) //addCode
         .timingPeriod(EffectivePeriod.builder()
             .start(action.getTimingPeriodStart())
             .end(action.getTimingPeriodEnd()).build())
@@ -24,7 +27,24 @@ public class ActionFacadeFactory {
         .subjectCodableConcept(
             SubjectCodableConcept.builder().text("").build())//addSubject
         .type(action.getType())
+        .config(action.getConfig())
         .build();
+
+    if (action.getForm() != null ){
+      FormFacade build1 = FormFacade.builder()
+          .name(action.getForm().getName())
+          .template(action.getForm().isTemplate())
+          .title(action.getForm().getTitle())
+          .build();
+      if (action.getForm().getPayload()!=null && !action.getForm().getPayload().isEmpty()){
+        log.info("action payload has data");
+        build1.setPayload(action.getForm().getPayload().toString());
+      }
+      build.setForm(
+          build1);
+      }
+
+    return build;
 
   }
 }

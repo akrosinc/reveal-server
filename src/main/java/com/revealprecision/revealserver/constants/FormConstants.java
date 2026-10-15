@@ -1,8 +1,5 @@
 package com.revealprecision.revealserver.constants;
 
-import java.util.Arrays;
-import java.util.List;
-
 public interface FormConstants {
 
   String CDD_SUPERVISOR_DAILY_SUMMARY_HEALTH_WORKER_SUPERVISOR_FIELD = "health_worker_supervisor";
@@ -181,38 +178,6 @@ public interface FormConstants {
     String PARTIALLY_SPRAYED = "Partially Sprayed";
 
 
-    List<String> IRS_BUSINESS_STATUS = Arrays.asList(NOT_VISITED, NOT_SPRAYED,
-        SPRAYED, NOT_SPRAYABLE, COMPLETE, INCOMPLETE, NOT_ELIGIBLE, IN_PROGRESS);
-
-    List<String> FI_BUSINESS_STATUS = Arrays.asList(NOT_VISITED, FAMILY_REGISTERED,
-        BEDNET_DISTRIBUTED,
-        BLOOD_SCREENING_COMPLETE, COMPLETE, NOT_ELIGIBLE);
-
-    List<String> MDA_LITE_BUSINESS_STATUS = Arrays.asList(NOT_VISITED, IN_PROGRESS, COMPLETE);
-    List<String> MDA_BUSINESS_STATUS = Arrays.asList(NOT_VISITED, FULLY_RECEIVED, NONE_RECEIVED,
-        ADHERENCE_VISIT_DONE, PARTIALLY_RECEIVED, COMPLETE, NOT_ELIGIBLE, NOT_VISITED, SMC_COMPLETE,
-        INELIGIBLE,
-        TASKS_INCOMPLETE, COMPLETE, NOT_ELIGIBLE, FAMILY_NO_TASK_REGISTERED, ALL_TASKS_COMPLETE,
-        SPAQ_COMPLETE);
-  }
-  interface AboveStructureStatus {
-    String VISITED = "Visited";
-    String NOT_VISITED = "Not Visited";
-    String EFFECTIVELY = "Effectively";
-    String INEFFECTIVELY = "Ineffectively";
-    String TREATED = "Treated";
-    String NOT_TREATED = "Not Treated";
   }
 
-  interface Colors {
-
-    String grey = "#8B8B8B";
-    String red = "#EE0427";
-    String black = "#000000";
-
-    String orange = "#ED8231";
-
-    String green = "#6CBF0F";
-    String yellow = "#FFCA16";
-  }
 }

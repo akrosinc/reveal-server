@@ -62,4 +62,6 @@ public class TaskEvent  extends Message  {
   private LocalDate executionPeriodEnd;
 
   private UUID parentLocation;
+
+  private UUID parentTaskId;
 }

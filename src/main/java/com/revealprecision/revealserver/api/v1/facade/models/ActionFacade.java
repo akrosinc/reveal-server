@@ -4,6 +4,9 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.revealprecision.revealserver.api.v1.dto.request.EffectivePeriod;
 import com.revealprecision.revealserver.api.v1.dto.request.SubjectCodableConcept;
 import com.revealprecision.revealserver.enums.ActionTypeEnum;
+import com.revealprecision.revealserver.persistence.domain.Action.ActionConfigEnum;
+import com.revealprecision.revealserver.persistence.domain.Action.ActionTaskConfig;
+import java.util.Map;
 import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -24,6 +27,7 @@ public class ActionFacade {
   private String title;
   private String description;
   private String code;
+  private FormFacade form;
   private EffectivePeriod timingPeriod;
   private String reason;
   private String goalId;
@@ -34,4 +38,5 @@ public class ActionFacade {
   private String definitionUri;
   private Set<DynamicValueFacade> dynamicValue;
   private ActionTypeEnum type;
+  private Map<ActionConfigEnum, ActionTaskConfig> config;
 }

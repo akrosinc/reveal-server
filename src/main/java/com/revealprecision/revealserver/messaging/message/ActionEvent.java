@@ -28,6 +28,8 @@ public class ActionEvent extends Message {
 
   private LocalDate timingPeriodEnd;
 
+  private FormEvent form;
+
   private GoalEvent goal;
 
   private ActionTypeEnum type;

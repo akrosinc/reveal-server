@@ -9,6 +9,7 @@ import com.revealprecision.revealserver.service.TaskService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
@@ -32,18 +33,42 @@ public class TaskCandidateGenerateListener extends Listener {
     log.info("Received Message in group foo: {}", message.toString());
     init();
 
+    UUID processTrackerIdentifier = message.getProcessTracker().getIdentifier();
+
     Optional<ProcessTracker> processTracker = processTrackerService.findByIdentifier(
-        message.getProcessTracker().getIdentifier());
+        processTrackerIdentifier);
 
     if (processTracker.isPresent()) {
       ProcessTracker processTracker1 = processTracker.get();
+      log.info(
+          "TASK_CANDIDATE_GENERATE processTracker {} found with state {} for stage {} (baseEntity={}, parentTask={}, location={})",
+          processTrackerIdentifier, processTracker1.getState(), message.getIdentifier(),
+          message.getBaseEntityIdentifier(), message.getParentTaskIdentifier(),
+          message.getLocationIdentifier());
+
       if (processTracker1.getState().equals(ProcessTrackerEnum.NEW) || processTracker1.getState()
           .equals(ProcessTrackerEnum.BUSY)) {
-        Task task;
-        taskService.generateTaskForTaskProcess(message);
+        Task task = taskService.generateTaskForTaskProcess(message);
+        if (task != null) {
+          log.info(
+              "TASK_CANDIDATE_GENERATE created task {} for stage {} (baseEntity={}, location={})",
+              task.getIdentifier(), message.getIdentifier(), message.getBaseEntityIdentifier(),
+              message.getLocationIdentifier());
+        } else {
+          log.warn(
+              "TASK_CANDIDATE_GENERATE did NOT create a task for stage {} (baseEntity={}, parentTask={}, location={}) - stage missing or not in NEW state (possible uncommitted-producer race)",
+              message.getIdentifier(), message.getBaseEntityIdentifier(),
+              message.getParentTaskIdentifier(), message.getLocationIdentifier());
+        }
       } else {
-        log.info("this process request is no longer relevant and will be ignored");
+        log.info(
+            "TASK_CANDIDATE_GENERATE process request {} no longer relevant (state {}) and will be ignored",
+            processTrackerIdentifier, processTracker1.getState());
       }
+    } else {
+      log.warn(
+          "TASK_CANDIDATE_GENERATE processTracker {} NOT found for stage {} - ignoring message (possible uncommitted-producer race)",
+          processTrackerIdentifier, message.getIdentifier());
     }
   }
 }

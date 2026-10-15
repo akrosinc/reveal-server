@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.api.v1.facade.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.revealprecision.revealserver.api.v1.dto.request.LocationRequest;
 import com.revealprecision.revealserver.api.v1.facade.factory.TaskFacadeFactory;
 import com.revealprecision.revealserver.api.v1.facade.models.TaskDto;
@@ -40,6 +41,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -66,6 +68,7 @@ public class TaskFacadeService {
   private final Environment env;
   private final UserService userService;
   private final MetadataEsService metadataEsService;
+  private final ObjectMapper objectMapper;
 
 
   public List<TaskFacade> syncTasks(List<String> planIdentifiers,
@@ -96,9 +99,9 @@ public class TaskFacadeService {
         return structureTaskFacadesByLocationServerVersionAndPlan.stream()
             .filter(task -> task.getTaskFacade() != null)
             .map(task -> {
-              TaskFacade taskFacadeObj = TaskFacadeFactory.getTaskFacadeObj(requester,
+              TaskFacade taskFacadeObj = TaskFacadeFactory.getTaskFacadeObj(task,requester,
                   task.getTaskFacade().getParentLocation().toString()
-                  , task.getTaskFacade());
+                  , task.getTaskFacade(), objectMapper);
               taskFacadeObj.setServerVersion(task.getServerVersion());
               return taskFacadeObj;
             });
@@ -111,9 +114,9 @@ public class TaskFacadeService {
             .stream()
             .filter(task -> task.getTaskFacade() != null)
             .map(task -> {
-              TaskFacade taskFacadeObj = TaskFacadeFactory.getTaskFacadeObj(requester,
+              TaskFacade taskFacadeObj = TaskFacadeFactory.getTaskFacadeObj(task,requester,
                   task.getTaskFacade().getParentLocation().toString()
-                  , task.getTaskFacade());
+                  , task.getTaskFacade(), objectMapper);
               taskFacadeObj.setServerVersion(task.getServerVersion());
               return taskFacadeObj;
             });
@@ -185,6 +188,7 @@ public class TaskFacadeService {
         identifier = identifierUuid.toString();
 
         TaskEvent taskEvent = TaskEventFactory.getTaskEventFromTask(task);
+
         taskEvent.setOwnerId(UserUtils.getCurrentPrincipleName());
         taskEvent.setOwner(owner);
 
@@ -207,11 +211,29 @@ public class TaskFacadeService {
   }
 
   public List<TaskDto> addTaskDtos(List<TaskDto> taskDtos) {
+
+    List<UUID> parentTaskIds = taskDtos.stream().map(TaskFacade::getParentTaskId)
+        .map(str->{
+          try {
+            return UUID.fromString(str);
+          } catch (IllegalArgumentException e){
+            return null;
+          }
+        })
+        .filter(Objects::nonNull)
+        .collect(Collectors.toList());
+
+    List<Task> parentTasksByIdentifierList = taskService.getTasksByIdentifierList(parentTaskIds);
+
+    Map<UUID, Task> parentTaskMap = parentTasksByIdentifierList.stream()
+        .map(task -> new SimpleEntry<>(task.getIdentifier(), task))
+        .collect(Collectors.toMap(Entry::getKey, Entry::getValue, (a, b) -> b));
+
     List<TaskDto> unprocessedTaskIds = new ArrayList<>();
 
     taskDtos.forEach(taskDto -> {
       try {
-        saveTaskDto(taskDto,getOwner());
+        saveTaskDto(taskDto,getOwner(),parentTaskMap);
       } catch (Exception e) {
         log.error("Exception adding tasks {}",e.getMessage(), e);
         e.printStackTrace();
@@ -222,7 +244,7 @@ public class TaskFacadeService {
     return unprocessedTaskIds;
   }
 
-  private void saveTaskDto(TaskDto taskDto, String owner) throws Exception {
+  private void saveTaskDto(TaskDto taskDto, String owner, Map<UUID, Task> parentTaskMap) throws Exception {
 
     String taskCode = taskDto.getCode();
     Plan plan = planService.findPlanByIdentifier(UUID.fromString(taskDto.getPlanIdentifier()));
@@ -232,11 +254,11 @@ public class TaskFacadeService {
     Optional<LookupTaskStatus> taskStatus = lookupTaskStatuses.stream().filter(
             lookupTaskStatus -> lookupTaskStatus.getCode().equalsIgnoreCase(taskDto.getStatus().name()))
         .findFirst();
-    saveTask(taskDto, plan, action, taskStatus,owner);
+    saveTask(taskDto, plan, action, taskStatus,owner,parentTaskMap);
   }
 
   private Task saveTask(TaskDto taskDto, Plan plan, Action action,
-      Optional<LookupTaskStatus> taskStatus, String owner) throws Exception {
+      Optional<LookupTaskStatus> taskStatus, String owner, Map<UUID, Task> parentTaskMap) throws Exception {
     Task task;
     try {
       task = taskService.getTaskByIdentifier(UUID.fromString(taskDto.getIdentifier()));
@@ -310,6 +332,14 @@ public class TaskFacadeService {
           }
         }
         task.setPerson(person);
+      }
+      if (taskDto.getParentTaskId()!=null){
+        Task parentTask = parentTaskMap.get(UUID.fromString(taskDto.getParentTaskId()));
+        if (parentTask != null) {
+          task.setParentTaskIdentifier(parentTask);
+        } else {
+          throw new NotFoundException("Parent task: "+taskDto.getParentTaskId()+" not found");
+        }
       }
       TaskEvent taskEvent = TaskEventFactory.getTaskEventFromTask(task);
       taskEvent.setOwnerId(UserUtils.getCurrentPrincipleName());

@@ -1,4 +1,4 @@
-package com.revealprecision.revealserver.api.v1.facade;
+package com.revealprecision.revealserver.api.v1.facade.controller;
 
 import com.revealprecision.revealserver.api.v1.facade.factory.PlanFacadeFactory;
 import com.revealprecision.revealserver.api.v1.facade.models.PlanFacade;

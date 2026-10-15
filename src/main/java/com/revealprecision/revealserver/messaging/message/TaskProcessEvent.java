@@ -36,4 +36,8 @@ public class TaskProcessEvent extends Message {
   private TaskProcessEnum taskProcessEnum;
 
   private UUID taskIdentifier;
+
+  private UUID parentTaskIdentifier;
+
+  private UUID locationIdentifier;
 }
