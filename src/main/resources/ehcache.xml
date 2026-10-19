@@ -13,7 +13,8 @@
     </expiry>
 
     <resources>
-      <disk unit="MB" persistent="true">300</disk>
+<!--      <disk unit="MB" persistent="true">300</disk>-->
+      <heap unit="entries">10</heap>
     </resources>
   </cache>
 
