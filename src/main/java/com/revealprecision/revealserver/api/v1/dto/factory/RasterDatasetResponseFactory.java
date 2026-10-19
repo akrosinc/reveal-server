@@ -19,6 +19,7 @@ public class RasterDatasetResponseFactory {
         .name(rasterDataset.getName())
         .colorRamp(rasterDataset.getColorRamp())
         .mapLayer(MapLayerResponseFactory.fromEntity(rasterDataset.getMapLayer()))
+        .metadata(rasterDataset.getMetadata())
         .build();
   }
 

@@ -1,5 +1,6 @@
 package com.revealprecision.revealserver.api.v1.dto.response;
 
+import java.util.Map;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -19,4 +20,5 @@ public class RasterDatasetResponse {
   private String name;
   private String colorRamp;
   private MapLayerResponse mapLayer;
+  private Map<String, Object> metadata;
 }

@@ -24,4 +24,5 @@ public class SimulationDatasetRequest {
     private List<UUID> userDatasetIds;
     private DatasetType datasetType;
     private String dataSetId;
+    private Map<String,Object> metadata;
 }

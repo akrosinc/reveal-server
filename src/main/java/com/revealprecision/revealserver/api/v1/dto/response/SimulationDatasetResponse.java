@@ -23,22 +23,8 @@ public class SimulationDatasetResponse {
     private DataSetYearRangeResponse dataSetYearRange;
     private DatasetType datasetType;
     private String colorRamp;
+    private Map<String, Object> metadata;
 
-    public DatasetType getDatasetType() {
-        return this.datasetType;
-    }
-
-    public void setDatasetType(DatasetType datasetType) {
-        this.datasetType = datasetType;
-    }
-
-    public DatasetType getDataSetType() {
-        return this.datasetType;
-    }
-
-    public void setDataSetType(DatasetType datasetType) {
-        this.datasetType = datasetType;
-    }
 
     public SimulationDatasetResponse(UUID simulationId, UUID tagId, UUID datasetId, String datasetName,
                                      String hexColor, String borderColor, Integer lineWidth,

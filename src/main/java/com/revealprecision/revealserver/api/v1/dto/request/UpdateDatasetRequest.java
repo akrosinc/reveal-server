@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import javax.validation.constraints.NotNull;
+import java.util.Map;
 import java.util.UUID;
 
 @Getter
@@ -23,4 +24,5 @@ public class UpdateDatasetRequest {
     private Integer lineWidth;
     private String borderColor;
     private DatasetType datasetType;
+    private Map<String, Object> metadata;
 }

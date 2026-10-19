@@ -178,6 +178,7 @@ public class SimulationService {
             dataset.setHexColor(Objects.requireNonNullElse(request.getHexColor(), dataset.getHexColor()));
             dataset.setLineWidth(Objects.requireNonNullElse(request.getLineWidth(), dataset.getLineWidth()));
             dataset.setBorderColor(Objects.requireNonNullElse(request.getBorderColor(), dataset.getBorderColor()));
+            dataset.setMetadata(Objects.requireNonNullElse(request.getMetadata(), dataset.getMetadata()));
 
             return simulationRepository.save(simulation);
 
@@ -189,6 +190,7 @@ public class SimulationService {
 
             rasterDataset.setName(Objects.requireNonNullElse(request.getName(), rasterDataset.getName()));
             rasterDataset.setColorRamp(Objects.requireNonNullElse(request.getHexColor(), rasterDataset.getColorRamp()));
+            rasterDataset.setMetadata(Objects.requireNonNullElse(request.getMetadata(), rasterDataset.getMetadata()));
 
             return simulationRepository.save(simulation);
 
@@ -725,6 +727,7 @@ public class SimulationService {
                     .hexColor(savedDataset.getHexColor())
                     .borderColor(savedDataset.getBorderColor())
                     .lineWidth(savedDataset.getLineWidth())
+                    .metadata(savedDataset.getMetadata())
                     .locationWithMetadata(returnLocationData ? buildMetadataMap(tags, savedDataset) : Collections.emptyMap())
                     .dataSetYearRange(dataSetYearRange)
                     .build();
@@ -746,6 +749,7 @@ public class SimulationService {
                     .hexColor(request.getHexColor())
                     .borderColor(request.getBorderColor() != null ? request.getBorderColor() : DEFAULT_BORDER_COLOR)
                     .lineWidth(request.getLineWidth())
+                    .metadata(request.getMetadata())
                     .locationWithMetadata(returnLocationData ? buildMetadataMap(tags, tmpDateSet) : Collections.emptyMap())
                     .dataSetYearRange(dataSetYearRange)
                     .build();
@@ -760,6 +764,7 @@ public class SimulationService {
                     .datasetIdentifier(request.getDataSetId())
                     .name(mapLayer.getName())
                     .colorRamp(request.getHexColor())
+                    .metadata(request.getMetadata())
                     .build();
 
                 simulation.getRasterDatasets().add(rasterDataset);
@@ -782,6 +787,7 @@ public class SimulationService {
                     .hexColor(savedRasterDataset.getColorRamp())
                     .borderColor(null)
                     .lineWidth(null)
+                    .metadata(savedRasterDataset.getMetadata())
                     .locationWithMetadata(Collections.emptyMap())
                     .dataSetYearRange(null)
                     .build();
@@ -796,6 +802,7 @@ public class SimulationService {
                     .hexColor(request.getHexColor())
                     .borderColor(request.getBorderColor() != null ? request.getBorderColor() : DEFAULT_BORDER_COLOR)
                     .lineWidth(request.getLineWidth())
+                    .metadata(request.getMetadata())
                     .locationWithMetadata(Collections.emptyMap())
                     .dataSetYearRange(null)
                     .build();
@@ -814,6 +821,7 @@ public class SimulationService {
                 .lineWidth(request.getLineWidth())
                 .borderColor(request.getBorderColor() != null ? request.getBorderColor() : DEFAULT_BORDER_COLOR)
                 .name(tag.getTag())
+                .metadata(request.getMetadata())
                 .build();
     }
 

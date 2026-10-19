@@ -1,9 +1,13 @@
 package com.revealprecision.revealserver.persistence.domain;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import lombok.*;
+import org.hibernate.annotations.Type;
+import org.hibernate.annotations.TypeDef;
 
 import javax.persistence.*;
+import java.util.Map;
 import java.util.UUID;
 
 @Entity
@@ -12,6 +16,7 @@ import java.util.UUID;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
 public class Dataset {
 
     @Id
@@ -30,5 +35,9 @@ public class Dataset {
     private Integer lineWidth;
 
     private String borderColor;
+
+    @Type(type = "jsonb")
+    @Column(columnDefinition = "jsonb")
+    private Map<String, Object> metadata;
 
 }
