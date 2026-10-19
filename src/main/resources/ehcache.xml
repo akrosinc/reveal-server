@@ -2,7 +2,7 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 
   <!-- Disk storage -->
-  <persistence directory="cache-data"/>
+<!--  <persistence directory="cache-data"/>-->
 
   <cache alias="instance-hierarchy-tree">
     <key-type>java.util.UUID</key-type>
