@@ -34,12 +34,12 @@ public class KeycloakRoleCatalog {
   @Value("${keycloak.realm}")
   private String realm;
 
-  //  @Cacheable(value = "kc-role-list", key = "'org'")
+  @Cacheable(value = "kc-role-list", key = "'org'")
   public List<KeycloakRole> listOrganizationRoles() {
     return listRolesByParentPath(ORGANIZATION_ROLES);
   }
 
-  //  @Cacheable(value = "kc-role-list", key = "'instance'")
+  @Cacheable(value = "kc-role-list", key = "'instance'")
   public List<KeycloakRole> listInstanceRoles() {
     return listRolesByParentPath(INSTANCE_ROLES);
   }
@@ -70,7 +70,7 @@ public class KeycloakRoleCatalog {
         .collect(Collectors.toList());
   }
 
-  //  @Cacheable(value = "kc-role", key = "#groupId")
+  @Cacheable(value = "kc-role", key = "#groupId")
   public Optional<KeycloakRole> findById(UUID groupId) {
     if (groupId == null) {
       return Optional.empty();

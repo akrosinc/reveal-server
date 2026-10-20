@@ -94,12 +94,11 @@ public class InstanceService {
   private final KeycloakRoleCatalog keycloakRoleCatalog;
   private final InstanceUserRepository instanceUserRepository;
   private final InstanceLocationRepository instanceLocationRepository;
+  private final InstanceLocationService instanceLocationService;
   private final LocationHierarchyService locationHierarchyService;
   private final LocationRelationshipService locationRelationshipService;
   private final OrganizationRoleMappingRepository organizationRoleMappingRepository;
-  private final OrganizationLocationRepository organizationLocationRepository;
   private final EntityTagAccGrantsOrganizationRepository entityTagAccGrantsOrganizationRepository;
-  private final LocationBulkService locationBulkService;
   private final UserRepository userRepository;
   private final PlanLocationsRepository planLocationsRepository;
   private final PlanAssignmentRepository planAssignmentRepository;
@@ -235,7 +234,7 @@ public class InstanceService {
 
     List<IdentifierNameProjection> assignedLocations = instanceLocationRepository.getAreasIdNamesByInstance(
         identifier);
-    List<GeoTreeResponse> areas = getAssignedInstanceAreasTree(instance.getIdentifier());
+    List<GeoTreeResponse> areas = instanceLocationService.getAssignedInstanceAreasTree(instance.getIdentifier());
 
     Plan instancePlan = getInstancePlan(instance);
 
@@ -445,13 +444,11 @@ public class InstanceService {
   }
 
   public List<IdentifierNameResponse> getAssignedInstanceAreas() {
-    UUID instanceIdentifier = InstanceContext.get();
-    return getAssignedInstanceAreas(instanceIdentifier);
+    return instanceLocationService.getAssignedInstanceAreas();
   }
 
   public List<IdentifierNameResponse> getAssignedInstanceAreas(UUID instanceIdentifier) {
-    return instanceLocationRepository.getAreasIdNamesByInstance(instanceIdentifier).stream()
-        .map(IdentifierNameResponseFactory::toIdentifierNameResponse).collect(Collectors.toList());
+    return instanceLocationService.getAssignedInstanceAreas(instanceIdentifier);
   }
 
   public List<IdentifierNameResponse> getAssignedInstanceDatasets() {
@@ -520,46 +517,27 @@ public class InstanceService {
   }
 
   public List<GeoTreeResponse> getAssignedInstanceAreasTree(List<String> nodeList) {
-    return getAssignedInstanceAreasTree((UUID)null , nodeList);
+    return instanceLocationService.getAssignedInstanceAreasTree(nodeList);
   }
 
   public List<GeoTreeResponse> getAssignedInstanceAreasTree() {
-    return getAssignedInstanceAreasTree((UUID)null , null);
+    return instanceLocationService.getAssignedInstanceAreasTree();
   }
 
   public List<GeoTreeResponse> getAssignedInstanceAreasTree(UUID instanceIdentifier) {
-    return getAssignedInstanceAreasTree(instanceIdentifier , null);
+    return instanceLocationService.getAssignedInstanceAreasTree(instanceIdentifier);
   }
 
   public List<GeoTreeResponse> getAssignedInstanceAreasTree(Instance instance) {
-    return getAssignedInstanceAreasTree(instance , null);
+    return instanceLocationService.getAssignedInstanceAreasTree(instance);
   }
 
   public List<GeoTreeResponse> getAssignedInstanceAreasTree(UUID instanceIdentifier , List<String> nodeList ) {
-    Instance instance;
-
-    if (instanceIdentifier == null) {
-      instanceIdentifier = InstanceContext.get();
-    }
-
-    instance = findById(instanceIdentifier);
-
-    return  getAssignedInstanceAreasTree(instance, nodeList);
-
+    return instanceLocationService.getAssignedInstanceAreasTree(instanceIdentifier, nodeList);
   }
 
   public List<GeoTreeResponse> getAssignedInstanceAreasTree(Instance instance , List<String> nodeList ) {
-
-    List<IdentifierNameResponse> instancesAreas = getAssignedInstanceAreas(instance.getIdentifier());
-
-    List<UUID> instancesAreasIds = instancesAreas.stream()
-        .map(IdentifierNameResponse::getIdentifier)
-        .collect(Collectors.toList());
-
-    List<GeoTreeResponse> geoTreeResponses = locationRelationshipService.getFilteredGeoTreeByLocationIds(instance.getLocationHierarchy(),
-        instancesAreasIds , nodeList);
-
-    return geoTreeResponses;
+    return instanceLocationService.getAssignedInstanceAreasTree(instance, nodeList);
   }
 
   public List<InstanceUserListResponse> getInstancesByUserId(UUID userId) {
@@ -724,32 +702,11 @@ public class InstanceService {
   }
 
   public LocationHierarchy getInstanceHierarchy(UUID instanceIdentifier) {
-    Instance instance = findById(instanceIdentifier);
-    LocationHierarchy instanceLocationHierarchy =  instance.getLocationHierarchy();
-    return instanceLocationHierarchy;
+    return instanceLocationService.getInstanceHierarchy(instanceIdentifier);
   }
 
-  @Cacheable(value = "instance-hierarchy-tree", key = "#instanceIdentifier")
   public LocationHierarchyResponse getInstanceHierarchyTreeResponse(UUID instanceIdentifier) {
-    if (instanceIdentifier == null) {
-      // Get base hierarchy and build full geo tree
-      LocationHierarchy baseHierarchy = locationHierarchyService.getBaseLocationHierarchy();
-      List <GeoTreeResponse> hierarchyTree  = locationHierarchyService.getGeoTreeFromLocationHierarchy(baseHierarchy, true);
-
-      return LocationHierarchyResponse.builder().identifier(baseHierarchy.getIdentifier().toString())
-          .name(baseHierarchy.getName())
-          .geoTree(hierarchyTree)
-          .nodeOrder(baseHierarchy.getNodeOrder()).build();
-    }
-    Instance instance = findById(instanceIdentifier);
-
-    LocationHierarchy instanceLocationHierarchy =  instance.getLocationHierarchy();
-
-    List <GeoTreeResponse> hierarchyTree  =   getAssignedInstanceAreasTree(instance );
-    return LocationHierarchyResponse.builder().identifier(instanceLocationHierarchy.getIdentifier().toString())
-        .name(instanceLocationHierarchy.getName())
-        .geoTree(hierarchyTree)
-        .nodeOrder(instanceLocationHierarchy.getNodeOrder()).build();
+    return instanceLocationService.getInstanceHierarchyTreeResponse(instanceIdentifier);
   }
 
   @Transactional
@@ -784,26 +741,7 @@ public class InstanceService {
 
 
   public LocationHierarchyResponse getInstanceHierarchyWithGroups(UUID instanceIdentifier) {
-    if (instanceIdentifier == null) {
-      // Get base hierarchy and build full geo tree
-      LocationHierarchy baseHierarchy = locationHierarchyService.getBaseLocationHierarchy();
-      List <GeoTreeResponse> hierarchyTree  = locationHierarchyService.getGeoTreeFromLocationHierarchy(baseHierarchy, true);
-
-      return LocationHierarchyResponse.builder().identifier(baseHierarchy.getIdentifier().toString())
-          .name(baseHierarchy.getName())
-          .geoTree(hierarchyTree)
-          .nodeOrder(baseHierarchy.getNodeOrder()).build();
-    }
-    Instance instance = findById(instanceIdentifier);
-
-    LocationHierarchy instanceLocationHierarchy =  instance.getLocationHierarchy();
-
-    List <GeoTreeResponse> hierarchyTree  =   getAssignedInstanceAreasTree(instanceIdentifier);
-    return LocationHierarchyResponse.builder().identifier(instanceLocationHierarchy.getIdentifier().toString())
-        .name(instanceLocationHierarchy.getName())
-        .geoTree(hierarchyTree)
-        .nodeOrder(instanceLocationHierarchy.getNodeOrder()).build();
-
+    return instanceLocationService.getInstanceHierarchyWithGroups(instanceIdentifier);
   }
 
   public void activateInstancePlan(UUID instanceIdentifier) {
