@@ -234,7 +234,7 @@ public class InstanceService {
 
     List<IdentifierNameProjection> assignedLocations = instanceLocationRepository.getAreasIdNamesByInstance(
         identifier);
-    List<GeoTreeResponse> areas = instanceLocationService.getAssignedInstanceAreasTree(instance.getIdentifier());
+    LocationHierarchyResponse response = instanceLocationService.getInstanceHierarchyTreeResponse(instance.getIdentifier());
 
     Plan instancePlan = getInstancePlan(instance);
 
@@ -242,7 +242,7 @@ public class InstanceService {
         .map(IdentifierNameProjection::getIdentifier)
         .collect(Collectors.toList());
 
-    return InstanceResponseFactory.fromEntity(instance, areas, instancePlan, assignedLocationsIds);
+    return InstanceResponseFactory.fromEntity(instance, response.getGeoTree(), instancePlan, assignedLocationsIds);
   }
 
   @Transactional

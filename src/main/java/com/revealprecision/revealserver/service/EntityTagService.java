@@ -1039,10 +1039,10 @@ public class EntityTagService {
         .getOrDefault(InstanceRoleEnum.STANDARD, List.of());
 
     Set<UUID> datasetsIds = new HashSet<>();
-
+    boolean isGlobalAdmin = securityProperties.getGlobalAdminSecurityGroups().stream().anyMatch(UserUtils::hasGroup);
 //    Set<Integer> complexTagsIds = new HashSet<>();
 
-    if (!adminInstanceIds.isEmpty()) {
+    if (!adminInstanceIds.isEmpty() || isGlobalAdmin) {
       datasetsIds.addAll(
           new ArrayList<>(entityTagRepository.findUUIDByInstanceId(instanceIdentifier))
       );
