@@ -6,10 +6,9 @@ import com.revealprecision.revealserver.api.v1.dto.response.DataExtractQueryResp
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.DataExtractQuery;
 import com.revealprecision.revealserver.persistence.repository.DataExtractQueryRepository;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 import java.sql.ResultSetMetaData;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,7 +28,8 @@ import org.csveed.row.RowInstructions;
 import org.csveed.row.RowInstructionsImpl;
 import org.csveed.row.RowWriter;
 import org.csveed.row.RowWriterImpl;
-import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
@@ -44,8 +44,7 @@ public class DataExtractService {
 
   private final ObjectMapper objectMapper;
 
-  public InputStreamResource extract(UUID planIdentifier, String queryLabel) throws IOException {
-
+  public Resource extract(UUID planIdentifier, String queryLabel) throws IOException {
     List<DataExtractQuery> firstByPlanIdentifier = dataExtractQueryRepository.findByPlanIdentifierAndQueryLabel(
         planIdentifier, queryLabel);
 
@@ -65,8 +64,8 @@ public class DataExtractService {
 
       processHeader(processedData);
 
-      InputStream targetStream = processData(processedData);
-      return new InputStreamResource(targetStream);
+      byte[] bytes = processData(processedData);
+      return new ByteArrayResource(bytes);
     }
     throw new NotFoundException("No Query found for plan " + planIdentifier);
   }
@@ -91,24 +90,23 @@ public class DataExtractService {
     Integer maxCol = null;
   }
 
-  private InputStream processData(DbDataObj data) throws IOException {
+  private byte[] processData(DbDataObj data) throws IOException {
     StringWriter stringWriter = new StringWriter();
     RowInstructions instructions = new RowInstructionsImpl();
     instructions.setSeparator('|');
-    RowWriter rowWriter = new RowWriterImpl(stringWriter,instructions);
+    RowWriter rowWriter = new RowWriterImpl(stringWriter, instructions);
 
     rowWriter.writeHeader(data.getHeader().toArray(new String[0]));
 
     log.debug("data size {}", data.getData().size());
     for (String[] row : data.getData()) {
-
       List<String> strArr = new ArrayList<>(Arrays.asList(row));
-      log.debug("row size {}",strArr.size());
-
+      log.debug("row size {}", strArr.size());
       rowWriter.writeRow(strArr.toArray(new String[0]));
     }
     stringWriter.close();
-    return new ByteArrayInputStream(stringWriter.toString().getBytes());
+
+    return stringWriter.toString().getBytes(StandardCharsets.UTF_8);
   }
 
   private DbDataObj getDataFromDBCustom(UUID planIdentifier,
