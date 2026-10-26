@@ -44,7 +44,7 @@ public class DataExtractService {
 
   private final ObjectMapper objectMapper;
 
-  public Resource extract(UUID planIdentifier, String queryLabel) throws IOException {
+  public Resource extract(UUID planIdentifier, String queryLabel, DataExtractSeparator separator) throws IOException {
     List<DataExtractQuery> firstByPlanIdentifier = dataExtractQueryRepository.findByPlanIdentifierAndQueryLabel(
         planIdentifier, queryLabel);
 
@@ -64,7 +64,7 @@ public class DataExtractService {
 
       processHeader(processedData);
 
-      byte[] bytes = processData(processedData);
+      byte[] bytes = processData(processedData,separator);
       return new ByteArrayResource(bytes);
     }
     throw new NotFoundException("No Query found for plan " + planIdentifier);
@@ -88,12 +88,21 @@ public class DataExtractService {
     List<String> header;
     List<String[]> data;
     Integer maxCol = null;
+
   }
 
-  private byte[] processData(DbDataObj data) throws IOException {
+  @AllArgsConstructor
+  public enum DataExtractSeparator {
+    COMMA(','), SEMICOLON(';'), PIPE('|');
+
+    @Getter
+    private final char value;
+  }
+
+  private byte[] processData(DbDataObj data,DataExtractSeparator separator) throws IOException {
     StringWriter stringWriter = new StringWriter();
     RowInstructions instructions = new RowInstructionsImpl();
-    instructions.setSeparator('|');
+    instructions.setSeparator(separator.getValue());
     RowWriter rowWriter = new RowWriterImpl(stringWriter, instructions);
 
     rowWriter.writeHeader(data.getHeader().toArray(new String[0]));

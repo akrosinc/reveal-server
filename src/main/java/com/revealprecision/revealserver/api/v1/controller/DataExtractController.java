@@ -2,6 +2,7 @@ package com.revealprecision.revealserver.api.v1.controller;
 
 import com.revealprecision.revealserver.api.v1.dto.response.DataExtractQueryResponse;
 import com.revealprecision.revealserver.service.DataExtractService;
+import com.revealprecision.revealserver.service.DataExtractService.DataExtractSeparator;
 import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
@@ -29,12 +30,13 @@ public class DataExtractController {
     return ResponseEntity.status(HttpStatus.OK).body(queryLabels);
   }
 
-  @GetMapping("/extract/{planIdentifier}/{queryLabel}")
+  @GetMapping("/extract/{planIdentifier}/{queryLabel}/{separator}")
   public ResponseEntity<Resource> data(
        @PathVariable("planIdentifier") UUID planIdentifier,
-      @PathVariable("queryLabel") String queryLabel) throws IOException {
+      @PathVariable("queryLabel") String queryLabel,
+      @PathVariable("separator") DataExtractSeparator separator) throws IOException {
 
-    Resource resource = dataExtractService.extract(planIdentifier, queryLabel);
+    Resource resource = dataExtractService.extract(planIdentifier, queryLabel,separator);
 
     return ResponseEntity.status(HttpStatus.OK).contentType(MediaType.APPLICATION_OCTET_STREAM)
         .header("Content-disposition", "attachment;filename=" + "extract.csv").body(resource);
