@@ -155,7 +155,7 @@ public class EntityTagService {
 
   public List<AggregateWithTagProjection> getValuesForTagAndLocationsLatest(UUID tagId,
       List<String> locationsIds, Integer year) {
-    return importAggregateRepository.getValuesForTagAndLocationsAndYear(tagId, locationsIds, year);
+    return importAggregateRepository.getValuesForTagAndLocationsAndYearFromMW(tagId, locationsIds, year);
   }
 
   public Page<EntityTag> getOrSearchAllEntityTagsPaged(Pageable pageable, String search) {

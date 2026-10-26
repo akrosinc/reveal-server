@@ -53,8 +53,8 @@ FROM (SELECT ean2.ancestor                                                      
           NULL::double precision                                               AS median,
           r.min,
           r.max,
-          r.pixel_count                                                        AS count
-      FROM raster_location_zonal_stats r
+          r.item_count                                                         AS count
+      FROM location_stats r
           JOIN location_relationship lr ON lr.location_identifier = r.location_identifier
           JOIN location_hierarchy lh ON lh.identifier = lr.location_hierarchy_identifier
           AND lh.hierarchy_status = 'ACTIVE'
