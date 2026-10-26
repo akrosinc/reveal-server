@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -35,7 +34,7 @@ public class DataExtractController {
        @PathVariable("planIdentifier") UUID planIdentifier,
       @PathVariable("queryLabel") String queryLabel) throws IOException {
 
-    InputStreamResource resource = dataExtractService.extract(planIdentifier,queryLabel);
+    Resource resource = dataExtractService.extract(planIdentifier, queryLabel);
 
     return ResponseEntity.status(HttpStatus.OK).contentType(MediaType.APPLICATION_OCTET_STREAM)
         .header("Content-disposition", "attachment;filename=" + "extract.csv").body(resource);
