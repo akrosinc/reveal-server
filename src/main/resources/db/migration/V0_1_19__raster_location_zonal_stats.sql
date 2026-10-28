@@ -1,13 +1,14 @@
-CREATE TABLE IF NOT EXISTS raster_location_zonal_stats
+CREATE TABLE IF NOT EXISTS location_stats
 (
     identifier          UUID                     NOT NULL,
-    raster_id           VARCHAR(255)             NOT NULL,
+    dataset_id          VARCHAR(255)             NOT NULL,
     location_identifier UUID                     NOT NULL,
-    pixel_count         BIGINT,
+    item_count          BIGINT,
     min                 DOUBLE PRECISION,
     max                 DOUBLE PRECISION,
     sum                 DOUBLE PRECISION,
     mean                DOUBLE PRECISION,
+    metadata            JSONB,
     entity_status       VARCHAR(36)              NOT NULL,
     created_by          VARCHAR(36)              NOT NULL,
     created_datetime    TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -17,18 +18,19 @@ CREATE TABLE IF NOT EXISTS raster_location_zonal_stats
     FOREIGN KEY (location_identifier) REFERENCES location (identifier)
 );
 
-CREATE TABLE IF NOT EXISTS raster_location_zonal_stats_aud
+CREATE TABLE IF NOT EXISTS location_stats_aud
 (
     identifier          UUID                     NOT NULL,
     rev                 INTEGER                  NOT NULL,
     revtype             SMALLINT,
-    raster_id           VARCHAR(255),
+    dataset_id          VARCHAR(255),
     location_identifier UUID,
-    pixel_count         BIGINT,
+    item_count          BIGINT,
     min                 DOUBLE PRECISION,
     max                 DOUBLE PRECISION,
     sum                 DOUBLE PRECISION,
     mean                DOUBLE PRECISION,
+    metadata            JSONB,
     entity_status       VARCHAR(36),
     created_by          VARCHAR(36),
     created_datetime    TIMESTAMP WITH TIME ZONE,
@@ -37,19 +39,19 @@ CREATE TABLE IF NOT EXISTS raster_location_zonal_stats_aud
     PRIMARY KEY (identifier, rev)
 );
 
-ALTER TABLE IF EXISTS raster_location_zonal_stats_aud
-    DROP CONSTRAINT IF EXISTS fk_raster_location_zonal_stats_aud_rev;
+ALTER TABLE IF EXISTS location_stats_aud
+    DROP CONSTRAINT IF EXISTS fk_location_stats_aud_rev;
 
-ALTER TABLE IF EXISTS raster_location_zonal_stats_aud
-    ADD CONSTRAINT fk_raster_location_zonal_stats_aud_rev
+ALTER TABLE IF EXISTS location_stats_aud
+    ADD CONSTRAINT fk_location_stats_aud_rev
         FOREIGN KEY (rev)
             REFERENCES revinfo (rev);
 
-CREATE INDEX IF NOT EXISTS idx_raster_location_zonal_stats_raster_id
-    ON raster_location_zonal_stats(raster_id);
+CREATE INDEX IF NOT EXISTS idx_location_stats_dataset_id
+    ON location_stats(dataset_id);
 
-CREATE INDEX IF NOT EXISTS idx_raster_location_zonal_stats_location_identifier
-    ON raster_location_zonal_stats(location_identifier);
+CREATE INDEX IF NOT EXISTS idx_location_stats_location_identifier
+    ON location_stats(location_identifier);
 
-CREATE INDEX IF NOT EXISTS idx_raster_location_zonal_stats_raster_loc
-    ON raster_location_zonal_stats(raster_id, location_identifier);
+CREATE INDEX IF NOT EXISTS idx_location_stats_dataset_loc
+    ON location_stats(dataset_id, location_identifier);

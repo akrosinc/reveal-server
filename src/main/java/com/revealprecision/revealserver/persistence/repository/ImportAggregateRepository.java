@@ -274,4 +274,22 @@ public interface ImportAggregateRepository extends JpaRepository<ImportAggregati
         "AND COALESCE(FUNCTION('YEAR', ag.dataCaptureDate), 0) = :year " +
         "GROUP BY et.identifier, ag.ancestor, ag.eventType")
     List<AggregateWithTagProjection> getValuesForTagAndLocationsAndYear(UUID tagId, List<String> locationIds, Integer year);
+
+
+    @Query("SELECT et AS tag, " +
+        "SUM(m.sum) AS sum, " +
+        "SUM(m.sum) / NULLIF(SUM(m.count), 0) AS avg, " +
+        "SUM(m.sum) / NULLIF(SUM(m.count), 0) AS median, " +
+        "MIN(m.min) AS min, " +
+        "MAX(m.max) AS max, " +
+        "m.locationidentifier AS locationIdentifier, " +
+        "m.eventtype AS eventType " +
+        "FROM ImportAggregateNumericByDate m " +
+        "JOIN EntityTag et ON m.fieldcode = et.definition " +
+        "WHERE m.locationidentifier IN :locationIds " +
+        "AND et.identifier = :tagId " +
+        "AND m.year = :year " +
+        "GROUP BY et.identifier, m.locationidentifier, m.eventtype")
+    List<AggregateWithTagProjection> getValuesForTagAndLocationsAndYearFromMW(
+        UUID tagId, List<String> locationIds, Integer year);
 }

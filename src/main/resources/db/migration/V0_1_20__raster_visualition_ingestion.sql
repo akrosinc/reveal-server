@@ -61,16 +61,16 @@ ALTER TABLE metadata_import
     ADD COLUMN IF NOT EXISTS metadata_import_type VARCHAR(50) NOT NULL DEFAULT 'CSV';
 
 
-ALTER TABLE IF EXISTS raster_location_zonal_stats
+ALTER TABLE IF EXISTS location_stats
     ADD COLUMN IF NOT EXISTS tag VARCHAR(255);
 
-ALTER TABLE IF EXISTS raster_location_zonal_stats_aud
+ALTER TABLE IF EXISTS location_stats_aud
     ADD COLUMN IF NOT EXISTS tag VARCHAR(255);
 
 
 
-ALTER TABLE IF EXISTS raster_location_zonal_stats
+ALTER TABLE IF EXISTS location_stats
     ADD COLUMN IF NOT EXISTS capture_date DATE;
 
-ALTER TABLE IF EXISTS raster_location_zonal_stats_aud
+ALTER TABLE IF EXISTS location_stats_aud
     ADD COLUMN IF NOT EXISTS capture_date DATE;

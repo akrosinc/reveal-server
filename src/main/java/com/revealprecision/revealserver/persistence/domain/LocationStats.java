@@ -1,6 +1,8 @@
 package com.revealprecision.revealserver.persistence.domain;
 
+import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import java.time.LocalDate;
+import java.util.Map;
 import java.util.UUID;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -17,6 +19,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.FieldNameConstants;
 import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.Type;
+import org.hibernate.annotations.TypeDef;
 import org.hibernate.annotations.Where;
 import org.hibernate.envers.Audited;
 
@@ -28,17 +32,18 @@ import org.hibernate.envers.Audited;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name = "raster_location_zonal_stats")
-@SQLDelete(sql = "UPDATE raster_location_zonal_stats SET entity_status = 'DELETED' where identifier=?")
+@Table(name = "location_stats")
+@SQLDelete(sql = "UPDATE location_stats SET entity_status = 'DELETED' where identifier=?")
 @Where(clause = "entity_status='ACTIVE'")
-public class RasterLocationZonalStats extends AbstractAuditableEntity {
+@TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
+public class LocationStats extends AbstractAuditableEntity {
 
   @Id
   @GeneratedValue
   private UUID identifier;
 
-  @Column(name = "raster_id", nullable = false)
-  private String rasterId;
+  @Column(name = "dataset_id", nullable = false)
+  private String datasetId;
 
   @Column(name = "tag")
   private String tag;
@@ -50,8 +55,8 @@ public class RasterLocationZonalStats extends AbstractAuditableEntity {
   @JoinColumn(name = "location_identifier", referencedColumnName = "identifier", nullable = false)
   private Location location;
 
-  @Column(name = "pixel_count")
-  private Long pixelCount;
+  @Column(name = "item_count")
+  private Long itemCount;
 
   @Column(name = "min")
   private Double min;
@@ -64,4 +69,8 @@ public class RasterLocationZonalStats extends AbstractAuditableEntity {
 
   @Column(name = "mean")
   private Double mean;
+
+  @Type(type = "jsonb")
+  @Column(columnDefinition = "jsonb")
+  private Map<String, Object> metadata;
 }

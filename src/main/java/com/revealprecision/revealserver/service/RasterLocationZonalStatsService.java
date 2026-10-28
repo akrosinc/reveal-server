@@ -4,8 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.revealprecision.revealserver.enums.EntityStatus;
 import com.revealprecision.revealserver.model.ZonalStatistics;
 import com.revealprecision.revealserver.persistence.domain.Location;
-import com.revealprecision.revealserver.persistence.domain.RasterLocationZonalStats;
-import com.revealprecision.revealserver.persistence.repository.RasterLocationZonalStatsRepository;
+import com.revealprecision.revealserver.persistence.domain.LocationStats;
+import com.revealprecision.revealserver.persistence.repository.LocationStatsRepository;
 import com.revealprecision.revealserver.props.RasterIngestionProperties;
 import com.revealprecision.revealserver.service.models.RasterLocationPaths;
 import com.revealprecision.revealserver.raster.GdalBootstrap;
@@ -35,7 +35,7 @@ import org.springframework.stereotype.Service;
 public class RasterLocationZonalStatsService {
 
   private final RasterIngestionProperties properties;
-  private final RasterLocationZonalStatsRepository rasterLocationZonalStatsRepository;
+  private final LocationStatsRepository locationStatsRepository;
   private final ObjectMapper objectMapper;
 
   public void calculateLocationZonalStats(String rasterId, List<Location> locations, boolean reprocess, String tag, LocalDate captureDate) {
@@ -45,7 +45,7 @@ public class RasterLocationZonalStatsService {
 
     Set<UUID> existingLocationIds = null;
     if (!reprocess) {
-      existingLocationIds = rasterLocationZonalStatsRepository.findLocationIdentifiersByRasterId(rasterId);
+      existingLocationIds = locationStatsRepository.findLocationIdentifiersByDatasetId(rasterId);
     }
 
     RasterLocationPaths paths;
@@ -73,7 +73,7 @@ public class RasterLocationZonalStatsService {
     });
 
     final Set<UUID> finalExistingLocationIds = existingLocationIds;
-    ConcurrentLinkedQueue<RasterLocationZonalStats> results = new ConcurrentLinkedQueue<>();
+    ConcurrentLinkedQueue<LocationStats> results = new ConcurrentLinkedQueue<>();
 
     try {
       locations.parallelStream().forEach(location -> {
@@ -108,7 +108,7 @@ public class RasterLocationZonalStatsService {
     }
 
     if (!results.isEmpty()) {
-      rasterLocationZonalStatsRepository.saveAll(results);
+      locationStatsRepository.saveAll(results);
       log.info("Persisted zonal stats for {} location(s) for rasterId {}", results.size(), rasterId);
     }
   }
@@ -151,7 +151,7 @@ public class RasterLocationZonalStatsService {
    * Returns Optional.empty() when the location should not be persisted (missing/invalid
    * geometry, no intersection with the raster, or zero valid pixels within the polygon).
    */
-  private Optional<RasterLocationZonalStats> calculateSingleLocation(String rasterId, Location location,
+  private Optional<LocationStats> calculateSingleLocation(String rasterId, Location location,
       Dataset dataset, SpatialReference rasterSRS, CoordinateTransformation toRasterCrs,
       Geometry rasterExtent, String tag, LocalDate captureDate) throws Exception {
 
@@ -187,12 +187,12 @@ public class RasterLocationZonalStatsService {
         return Optional.empty();
       }
 
-      Optional<RasterLocationZonalStats> existing = rasterLocationZonalStatsRepository
-          .findByRasterIdAndLocation_Identifier(rasterId, location.getIdentifier());
+      Optional<LocationStats> existing = locationStatsRepository
+          .findByDatasetIdAndLocation_Identifier(rasterId, location.getIdentifier());
 
-      RasterLocationZonalStats zonalStats = existing.orElseGet(() -> {
-        RasterLocationZonalStats z = RasterLocationZonalStats.builder()
-            .rasterId(rasterId)
+      LocationStats zonalStats = existing.orElseGet(() -> {
+        LocationStats z = LocationStats.builder()
+            .datasetId(rasterId)
             .location(location)
             .build();
         z.setEntityStatus(EntityStatus.ACTIVE);
@@ -201,7 +201,7 @@ public class RasterLocationZonalStatsService {
 
       zonalStats.setTag(tag);
       zonalStats.setCaptureDate(captureDate);
-      zonalStats.setPixelCount(stats.getPixelCount());
+      zonalStats.setItemCount(stats.getPixelCount());
       zonalStats.setMin(stats.getMin());
       zonalStats.setMax(stats.getMax());
       zonalStats.setSum(stats.getSum());
