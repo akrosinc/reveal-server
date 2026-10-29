@@ -7,11 +7,13 @@ import com.revealprecision.revealserver.exceptions.ConflictException;
 import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.Action;
 import com.revealprecision.revealserver.persistence.domain.Action.Fields;
+import com.revealprecision.revealserver.persistence.domain.ActionTemplate;
 import com.revealprecision.revealserver.persistence.domain.Form;
 import com.revealprecision.revealserver.persistence.domain.Goal;
 import com.revealprecision.revealserver.persistence.domain.LookupEntityType;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.repository.ActionRepository;
+import com.revealprecision.revealserver.persistence.repository.ActionTemplateRepository;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +31,17 @@ public class ActionService {
   private final PlanService planService;
   private final FormService formService;
   private final LookupEntityTypeService lookupEntityTypeService;
+  private final ActionTemplateRepository actionTemplateRepository;
+
+  private ActionTemplate resolveActionTemplate(UUID actionTemplateIdentifier) {
+    if (actionTemplateIdentifier == null) {
+      return null;
+    }
+    return actionTemplateRepository.findById(actionTemplateIdentifier)
+        .orElseThrow(() -> new NotFoundException(
+            Pair.of(ActionTemplate.Fields.identifier, actionTemplateIdentifier),
+            ActionTemplate.class));
+  }
 
   public Action getByIdentifier(UUID identifier) {
     return actionRepository.findById(identifier).orElseThrow(() -> new NotFoundException(Pair.of(
@@ -43,6 +56,7 @@ public class ActionService {
         ActionTitleEnum.lookup(actionRequest.getTitle()).getEntityType().getLookupEntityType());
 
     Action action = ActionEntityFactory.toEntity(actionRequest, goal, form, lookupEntityTypeByCode);
+    action.setActionTemplate(resolveActionTemplate(actionRequest.getActionTemplateIdentifier()));
     actionRepository.save(action);
   }
 
@@ -51,6 +65,7 @@ public class ActionService {
     Form form = actionRequest.getFormIdentifier() != null ? formService.findById(actionRequest.getFormIdentifier()) : null;
     Action action = getByIdentifier(actionIdentifier);
     action.update(actionRequest, form);
+    action.setActionTemplate(resolveActionTemplate(actionRequest.getActionTemplateIdentifier()));
     actionRepository.save(action);
   }
 

@@ -28,4 +28,5 @@ public class ActionResponse {
   private ActionTypeEnum type;
   private Set<ConditionResponse> conditions;
   private UUID formIdentifier;
+  private ActionTemplateResponse actionTemplate;
 }

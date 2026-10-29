@@ -2,7 +2,9 @@ package com.revealprecision.revealserver.api.v1.dto.factory;
 
 import com.revealprecision.revealserver.api.v1.dto.request.EffectivePeriod;
 import com.revealprecision.revealserver.api.v1.dto.response.ActionResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.ActionTemplateResponse;
 import com.revealprecision.revealserver.persistence.domain.Action;
+import com.revealprecision.revealserver.persistence.domain.ActionTemplate;
 import java.util.stream.Collectors;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -30,6 +32,18 @@ public class ActionResponseFactory {
         .type(action.getType())
         .conditions(conditions)
         .formIdentifier(action.getForm() != null ? action.getForm().getIdentifier() : null)
+        .actionTemplate(toActionTemplateResponse(action.getActionTemplate()))
+        .build();
+  }
+
+  private static ActionTemplateResponse toActionTemplateResponse(ActionTemplate actionTemplate) {
+    if (actionTemplate == null) {
+      return null;
+    }
+    return ActionTemplateResponse.builder()
+        .identifier(actionTemplate.getIdentifier())
+        .name(actionTemplate.getName())
+        .actionTemplateConfig(actionTemplate.getActionTemplateConfig())
         .build();
   }
 

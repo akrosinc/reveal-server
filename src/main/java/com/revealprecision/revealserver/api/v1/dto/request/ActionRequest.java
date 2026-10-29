@@ -26,6 +26,8 @@ public class ActionRequest {
 
   private UUID formIdentifier;
 
+  private UUID actionTemplateIdentifier;
+
   private ActionTypeEnum type;
 
 //  @Valid

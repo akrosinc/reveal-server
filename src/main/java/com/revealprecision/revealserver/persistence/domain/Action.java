@@ -77,6 +77,10 @@ public class Action extends AbstractAuditableEntity {
   @JoinColumn(name = "lookup_entity_type_identifier")
   private LookupEntityType lookupEntityType;
 
+  @ManyToOne(fetch = FetchType.EAGER, optional = true)
+  @JoinColumn(name = "action_template_identifier")
+  private ActionTemplate actionTemplate;
+
 
   @Type(type = "jsonb")
   @Column(columnDefinition = "jsonb")

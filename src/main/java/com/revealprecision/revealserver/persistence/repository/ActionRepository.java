@@ -13,7 +13,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ActionRepository extends EntityGraphJpaRepository<Action, UUID> {
 
-  @Query(value = "select a from Action a where a.goal.identifier = :identifier")
+  @Query(value = "select a from Action a left join fetch a.actionTemplate where a.goal.identifier = :identifier")
   Page<Action> getActions(@Param("identifier") UUID identifier, Pageable pageable);
 
   List<Action> findActionsByGoal_Identifier(UUID goalIdentifier);
