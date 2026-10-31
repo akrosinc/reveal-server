@@ -67,4 +67,12 @@ public interface InstanceUserRepository  extends
       "WHERE iu.user.identifier IN :userIds " +
       "AND iu.instance.identifier = :instanceId")
   void deleteByUserIdsAndInstanceId(List<UUID> userIds, UUID instanceId);
+
+  @Query("SELECT COUNT(iu) > 0 FROM InstanceUser iu " +
+      "WHERE iu.user = :user AND iu.instanceRoleId = :instanceRoleId " +
+      "AND iu.instance.identifier = :instanceIdentifier")
+  boolean existsByUserAndInstanceRoleIdAndInstanceIdentifier(User user, UUID instanceRoleId, UUID instanceIdentifier);
+
+
+
 }

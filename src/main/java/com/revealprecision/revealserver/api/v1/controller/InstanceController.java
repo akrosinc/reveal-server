@@ -138,11 +138,6 @@ public class InstanceController {
     return ResponseEntity.ok(instanceService.instanceContext(instanceId));
   }
 
-  @GetMapping("/user/{userId}/arealist")
-  public ResponseEntity<List<GeoTreeResponse>> getLocationsByUserId(@PathVariable UUID userId) {
-    return ResponseEntity.status(HttpStatus.OK).body(instanceService.getLocationsByUserId(userId));
-  }
-
   @GetMapping("/user/{userId}/datalist")
   public ResponseEntity<List<IdentifierNameResponse>> getDatasetsByUserId(@PathVariable UUID userId) {
     return ResponseEntity.status(HttpStatus.OK).body(instanceService.getDatasetsByUserId(userId));
@@ -157,6 +152,13 @@ public class InstanceController {
   public ResponseEntity<LocationHierarchyResponse> getInstanceHierarchy(@RequestParam(value = "instanceIdentifier", required = false) UUID instanceIdentifier) {
     return ResponseEntity.status(HttpStatus.OK).body(instanceService.getInstanceHierarchyTreeResponse(instanceIdentifier));
   }
+
+
+  @GetMapping("/filtered-hierarchy")
+  public ResponseEntity<LocationHierarchyResponse> getUserHierarchy(@RequestParam(value = "instanceIdentifier", required = false) UUID instanceIdentifier) {
+    return ResponseEntity.status(HttpStatus.OK).body(instanceService.getUserLocationTreeByInstance(instanceIdentifier));
+  }
+
 
   @PostMapping("/user")
   public ResponseEntity<Void> addUser(@RequestBody final GlobalUserRequest globalUserRequest) {

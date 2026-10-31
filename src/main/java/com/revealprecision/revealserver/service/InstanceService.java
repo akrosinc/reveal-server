@@ -57,6 +57,8 @@ import com.revealprecision.revealserver.persistence.repository.OrganizationRoleM
 import com.revealprecision.revealserver.persistence.repository.PlanAssignmentRepository;
 import com.revealprecision.revealserver.persistence.repository.PlanLocationsRepository;
 import com.revealprecision.revealserver.persistence.repository.UserRepository;
+import com.revealprecision.revealserver.props.SecurityProperties;
+import com.revealprecision.revealserver.util.UserUtils;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -102,6 +104,8 @@ public class InstanceService {
   private final UserRepository userRepository;
   private final PlanLocationsRepository planLocationsRepository;
   private final PlanAssignmentRepository planAssignmentRepository;
+  private final OrganizationLocationRepository organizationLocationRepository;
+  private final SecurityProperties securityProperties;
 
   @Transactional
   public void create(InstanceRequest instanceRequest) {
@@ -556,8 +560,38 @@ public class InstanceService {
     return instanceUserRepository.getUserInstancesByUserIds(userIds);
   }
 
-  public List<GeoTreeResponse> getLocationsByUserId(UUID userId) {
-    return null;   // TODO: as user can be assigned to muliple isnatnce and each isnatnce can have multiple hierarchy
+  public LocationHierarchyResponse getUserLocationTreeByInstance(UUID instanceIdentifier) {
+    if (instanceIdentifier == null) {
+      instanceIdentifier = InstanceContext.get();
+    }
+    User currentUser = userService.getCurrentUser();
+
+    boolean isGlobalAdmin = securityProperties.getGlobalAdminSecurityGroups() != null
+        && securityProperties.getGlobalAdminSecurityGroups().stream().anyMatch(UserUtils::hasGroup);
+
+    KeycloakRole instanceAdmin = keycloakRoleCatalog.getInstanceAdminRole();
+
+    boolean isInstanceAdmin = instanceUserRepository.existsByUserAndInstanceRoleIdAndInstanceIdentifier(
+        currentUser, instanceAdmin.getId(), instanceIdentifier);
+
+    if (isGlobalAdmin || isInstanceAdmin) {
+      return instanceLocationService.getInstanceHierarchyTreeResponse(instanceIdentifier);
+    } else {
+      List<UUID> userLocationsIds = organizationLocationRepository.findLocationIdentifiersByInstanceAndUser(
+          instanceIdentifier, currentUser.getIdentifier());
+
+      Instance instance = findById(instanceIdentifier);
+
+      LocationHierarchy instanceLocationHierarchy = instance.getLocationHierarchy();
+
+      List<GeoTreeResponse> hierarchyTree = locationRelationshipService.getFilteredGeoTreeByLocationIds(
+          instance.getLocationHierarchy(), userLocationsIds, null);
+
+      return LocationHierarchyResponse.builder().identifier(instanceLocationHierarchy.getIdentifier().toString())
+          .name(instanceLocationHierarchy.getName())
+          .geoTree(hierarchyTree)
+          .nodeOrder(instanceLocationHierarchy.getNodeOrder()).build();
+    }
   }
 
   public List<IdentifierNameResponse> getDatasetsByUserId(UUID userId) {
