@@ -36,7 +36,14 @@ public enum ActionTitleEnum {
   ENROLMENT_STRUCTURE("Enrolment Structure",LookupEntityTypeCodeEnum.LOCATION_CODE),
   FOLLOWUP("Followup",LookupEntityTypeCodeEnum.LOCATION_CODE),
   FOLLOWUP_STRUCTURE("Followup Structure",LookupEntityTypeCodeEnum.LOCATION_CODE),
-  DESTRUCTION("Destruction",LookupEntityTypeCodeEnum.LOCATION_CODE);
+  DESTRUCTION("Destruction",LookupEntityTypeCodeEnum.LOCATION_CODE),
+
+  S1_PLANNING_AND_MANAGEMENT("S1 — Planning and management",LookupEntityTypeCodeEnum.LOCATION_CODE),
+  S2_LINKING_IMMUNISATION_SERVICES("S3 — Linking immunisation services",LookupEntityTypeCodeEnum.LOCATION_CODE),
+  S1_SUPPORTIVE_SUPERVISION("S4 — Supportive supervision",LookupEntityTypeCodeEnum.LOCATION_CODE),
+  S1_DATA_MONITORING("S5 — Data monitoring",LookupEntityTypeCodeEnum.LOCATION_CODE),
+  S1_SUPPLEMENTARY_OUTREACH("S6 — Supplementary outreach",LookupEntityTypeCodeEnum.LOCATION_CODE);
+
 
 
   private final String actionTitle;

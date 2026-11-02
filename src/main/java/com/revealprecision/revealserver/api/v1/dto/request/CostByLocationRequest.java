@@ -15,6 +15,9 @@ import lombok.Setter;
 public class CostByLocationRequest {
 
   @NotNull
+  private UUID instanceIdentifier;
+
+  @NotNull
   private UUID locationIdentifier;
 
   @NotNull

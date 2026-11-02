@@ -14,6 +14,14 @@ public interface CostByLocationRepository extends EntityGraphJpaRepository<CostB
 
   List<CostByLocation> findByAction_Identifier(UUID actionIdentifier);
 
+  List<CostByLocation> findByInstance_Identifier(UUID instanceIdentifier);
+
+  List<CostByLocation> findByInstance_IdentifierAndLocation_Identifier(UUID instanceIdentifier,
+      UUID locationIdentifier);
+
   Optional<CostByLocation> findByLocation_IdentifierAndAction_Identifier(UUID locationIdentifier,
       UUID actionIdentifier);
+
+  Optional<CostByLocation> findByInstance_IdentifierAndLocation_IdentifierAndAction_Identifier(
+      UUID instanceIdentifier, UUID locationIdentifier, UUID actionIdentifier);
 }

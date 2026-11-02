@@ -17,6 +17,9 @@ public interface ActionLocationRecaptureLimitRepository extends
 
   List<ActionLocationRecaptureLimit> findByAction_Identifier(UUID actionIdentifier);
 
+  List<ActionLocationRecaptureLimit> findByInstance_IdentifierAndLocation_Identifier(
+      UUID instanceIdentifier, UUID locationIdentifier);
+
   Optional<ActionLocationRecaptureLimit> findByInstance_IdentifierAndLocation_IdentifierAndAction_Identifier(
       UUID instanceIdentifier, UUID locationIdentifier, UUID actionIdentifier);
 }

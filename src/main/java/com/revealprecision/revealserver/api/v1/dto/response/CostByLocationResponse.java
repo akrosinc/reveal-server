@@ -19,6 +19,7 @@ import lombok.Setter;
 public class CostByLocationResponse {
 
   private UUID identifier;
+  private UUID instanceIdentifier;
   private UUID locationIdentifier;
   private UUID actionIdentifier;
   private CostContainer costContainer;
@@ -27,6 +28,8 @@ public class CostByLocationResponse {
   public static CostByLocationResponse fromEntity(CostByLocation entity) {
     return CostByLocationResponse.builder()
         .identifier(entity.getIdentifier())
+        .instanceIdentifier(
+            entity.getInstance() != null ? entity.getInstance().getIdentifier() : null)
         .locationIdentifier(
             entity.getLocation() != null ? entity.getLocation().getIdentifier() : null)
         .actionIdentifier(

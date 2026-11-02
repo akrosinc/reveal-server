@@ -75,6 +75,27 @@ public class ActionService {
     actionRepository.delete(action);
   }
 
+  /**
+   * Partially updates the form and/or action template references on an action, identified by its id
+   * alone.
+   *
+   * <p>Each reference is only touched when its {@code apply} flag is {@code true} (the field was
+   * present in the request). When applied, a {@code null} identifier clears the reference and a
+   * non-null one sets it (validated to exist).</p>
+   */
+  public Action updateReferences(UUID actionIdentifier,
+      boolean applyForm, UUID formIdentifier,
+      boolean applyActionTemplate, UUID actionTemplateIdentifier) {
+    Action action = getByIdentifier(actionIdentifier);
+    if (applyForm) {
+      action.setForm(formIdentifier != null ? formService.findById(formIdentifier) : null);
+    }
+    if (applyActionTemplate) {
+      action.setActionTemplate(resolveActionTemplate(actionTemplateIdentifier));
+    }
+    return actionRepository.save(action);
+  }
+
   public Page<Action> getActions(UUID planIdentifier, UUID goalIdentifier, Pageable pageable) {
     Plan plan = planService.findPlanByIdentifier(planIdentifier);
     Goal goal = goalService.findByIdentifier(goalIdentifier);

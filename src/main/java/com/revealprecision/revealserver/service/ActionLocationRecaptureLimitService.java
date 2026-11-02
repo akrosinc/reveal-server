@@ -40,18 +40,27 @@ public class ActionLocationRecaptureLimitService {
     return actionLocationRecaptureLimitRepository.findByAction_Identifier(actionIdentifier);
   }
 
+  public List<ActionLocationRecaptureLimit> getByInstanceAndLocation(UUID instanceIdentifier,
+      UUID locationIdentifier) {
+    return actionLocationRecaptureLimitRepository.findByInstance_IdentifierAndLocation_Identifier(
+        instanceIdentifier, locationIdentifier);
+  }
+
+  // Upserts by instance+location+action so a recapture limit is never duplicated for the same combination
   public ActionLocationRecaptureLimit create(UUID instanceIdentifier, UUID locationIdentifier,
       UUID actionIdentifier, Integer count) {
     Instance instance = instanceService.findById(instanceIdentifier);
     Location location = locationService.findByIdentifier(locationIdentifier);
     Action action = actionService.getByIdentifier(actionIdentifier);
 
-    ActionLocationRecaptureLimit limit = ActionLocationRecaptureLimit.builder()
-        .instance(instance)
-        .location(location)
-        .action(action)
-        .count(count)
-        .build();
+    ActionLocationRecaptureLimit limit = actionLocationRecaptureLimitRepository
+        .findByInstance_IdentifierAndLocation_IdentifierAndAction_Identifier(
+            instance.getIdentifier(), location.getIdentifier(), action.getIdentifier())
+        .orElseGet(ActionLocationRecaptureLimit::new);
+    limit.setInstance(instance);
+    limit.setLocation(location);
+    limit.setAction(action);
+    limit.setCount(count);
 
     return actionLocationRecaptureLimitRepository.save(limit);
   }

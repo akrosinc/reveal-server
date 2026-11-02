@@ -34,6 +34,10 @@ public class CostByLocation {
   private UUID identifier;
 
   @ManyToOne(fetch = FetchType.EAGER)
+  @JoinColumn(name = "instance_identifier")
+  private Instance instance;
+
+  @ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "location_identifier")
   private Location location;
 

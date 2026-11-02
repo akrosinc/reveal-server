@@ -37,10 +37,14 @@ public class CostByLocationController {
 
   @GetMapping
   public ResponseEntity<List<CostByLocationResponse>> search(
+      @Parameter(description = "Instance identifier") @RequestParam(name = "instanceIdentifier", required = false) UUID instanceIdentifier,
       @Parameter(description = "Location identifier") @RequestParam(name = "locationIdentifier", required = false) UUID locationIdentifier,
       @Parameter(description = "Action identifier") @RequestParam(name = "actionIdentifier", required = false) UUID actionIdentifier) {
     List<CostByLocationResponse> responses;
-    if (locationIdentifier != null) {
+    if (instanceIdentifier != null && locationIdentifier != null) {
+      responses = costByLocationService.getByInstanceAndLocation(instanceIdentifier, locationIdentifier)
+          .stream().map(CostByLocationResponse::fromEntity).collect(Collectors.toList());
+    } else if (locationIdentifier != null) {
       responses = costByLocationService.getByLocation(locationIdentifier).stream()
           .map(CostByLocationResponse::fromEntity).collect(Collectors.toList());
     } else if (actionIdentifier != null) {

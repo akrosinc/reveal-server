@@ -5,6 +5,7 @@ import com.revealprecision.revealserver.exceptions.NotFoundException;
 import com.revealprecision.revealserver.persistence.domain.Action;
 import com.revealprecision.revealserver.persistence.domain.CostByLocation;
 import com.revealprecision.revealserver.persistence.domain.CostByLocation.Fields;
+import com.revealprecision.revealserver.persistence.domain.Instance;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.repository.CostByLocationRepository;
 import java.util.List;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Service;
 public class CostByLocationService {
 
   private final CostByLocationRepository costByLocationRepository;
+  private final InstanceService instanceService;
   private final LocationService locationService;
   private final ActionService actionService;
 
@@ -35,22 +37,34 @@ public class CostByLocationService {
     return costByLocationRepository.findByAction_Identifier(actionIdentifier);
   }
 
+  public List<CostByLocation> getByInstanceAndLocation(UUID instanceIdentifier,
+      UUID locationIdentifier) {
+    return costByLocationRepository.findByInstance_IdentifierAndLocation_Identifier(
+        instanceIdentifier, locationIdentifier);
+  }
+
+  // Upserts by instance+location+action so a cost is never duplicated for the same combination
   public CostByLocation create(CostByLocationRequest request) {
+    Instance instance = instanceService.findById(request.getInstanceIdentifier());
     Location location = locationService.findByIdentifier(request.getLocationIdentifier());
     Action action = actionService.getByIdentifier(request.getActionIdentifier());
 
-    CostByLocation costByLocation = CostByLocation.builder()
-        .location(location)
-        .action(action)
-        .costContainer(request.getCostContainer())
-        .calculatedValue(request.getCalculatedValue())
-        .build();
+    CostByLocation costByLocation = costByLocationRepository
+        .findByInstance_IdentifierAndLocation_IdentifierAndAction_Identifier(
+            instance.getIdentifier(), location.getIdentifier(), action.getIdentifier())
+        .orElseGet(CostByLocation::new);
+    costByLocation.setInstance(instance);
+    costByLocation.setLocation(location);
+    costByLocation.setAction(action);
+    costByLocation.setCostContainer(request.getCostContainer());
+    costByLocation.setCalculatedValue(request.getCalculatedValue());
 
     return costByLocationRepository.save(costByLocation);
   }
 
   public CostByLocation update(UUID identifier, CostByLocationRequest request) {
     CostByLocation costByLocation = getByIdentifier(identifier);
+    costByLocation.setInstance(instanceService.findById(request.getInstanceIdentifier()));
     costByLocation.setLocation(locationService.findByIdentifier(request.getLocationIdentifier()));
     costByLocation.setAction(actionService.getByIdentifier(request.getActionIdentifier()));
     costByLocation.setCostContainer(request.getCostContainer());
