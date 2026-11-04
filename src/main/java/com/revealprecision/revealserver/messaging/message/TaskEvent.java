@@ -64,4 +64,8 @@ public class TaskEvent  extends Message  {
   private UUID parentLocation;
 
   private UUID parentTaskId;
+
+  // Mirrors Task.details.limitCounter: number of times the task may be executed before it is
+  // closed. Nullable - older events / tasks without details will leave this unset.
+  private Integer limitCounter;
 }

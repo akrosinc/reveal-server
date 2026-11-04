@@ -39,6 +39,7 @@ import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.ProcessTracker;
 import com.revealprecision.revealserver.persistence.domain.Task;
 import com.revealprecision.revealserver.persistence.domain.Task.Fields;
+import com.revealprecision.revealserver.persistence.domain.TaskDetails;
 import com.revealprecision.revealserver.persistence.domain.TaskProcessStage;
 import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.persistence.domain.actioncondition.Query;
@@ -1214,6 +1215,55 @@ public class TaskService {
 
     log.debug("TASK_GENERATION completed creating individual task for plan: {} and action: {}",
         plan.getIdentifier(), action.getIdentifier());
+
+    return savedTask;
+  }
+
+  /**
+   * Creates and persists a task for a recapture-limit entry. The task is built from the supplied
+   * {@code action} targeting the supplied {@code location}, and the recapture {@code count} is
+   * stored as the {@code limitCounter} inside the task's {@code details} jsonb column, indicating
+   * how many times the task may be executed before it is closed.
+   *
+   * @param action   the action the task is generated for
+   * @param location the location the task targets
+   * @param count    the recapture limit, stored as {@link TaskDetails#getLimitCounter()}
+   * @param owner    the owner to attribute the task to (nullable)
+   * @return the persisted task
+   */
+  public Task generateRecaptureLimitTask(Action action, Location location, Integer count,
+      String owner) {
+
+    Plan plan = action.getGoal().getPlan();
+
+    log.info(
+        "TASK_GENERATION recapture-limit task for plan: {}, action: {}, location: {}, limit: {}",
+        plan.getIdentifier(), action.getIdentifier(), location.getIdentifier(), count);
+
+    Task task = Task.builder()
+        .lookupTaskStatus(lookupTaskStatusRepository.findByCode(TASK_STATUS_READY).orElseThrow(
+            () -> new NotFoundException(Pair.of(LookupTaskStatus.Fields.code, TASK_STATUS_READY),
+                LookupTaskStatus.class)))
+        .priority(TaskPriorityEnum.ROUTINE)
+        .description(action.getDescription())
+        .authoredOn(LocalDateTime.now())
+        .baseEntityIdentifier(location.getIdentifier())
+        .action(action)
+        .executionPeriodStart(action.getTimingPeriodStart())
+        .identifier(UUID.randomUUID())
+        .executionPeriodEnd(action.getTimingPeriodEnd())
+        .plan(plan)
+        .details(TaskDetails.builder().limitCounter(count).build())
+        .build();
+
+    task.setBusinessStatus(businessStatusProperties.getDefaultBusinessStatus(action));
+    task.setEntityStatus(EntityStatus.ACTIVE);
+    task.setLocation(location);
+
+    Task savedTask = saveTaskAndBusinessState(task, owner);
+
+    log.info("TASK_GENERATION completed recapture-limit task {} for action: {} and location: {}",
+        savedTask.getIdentifier(), action.getIdentifier(), location.getIdentifier());
 
     return savedTask;
   }

@@ -31,6 +31,6 @@ public class ActionTemplateConfig implements Serializable {
   private TaskGenerationRecurrence recurrence;
 
   public enum TaskGenerationRecurrence {
-    DAILY, WEEKLY, MONTHLY
+    MINUTELY, HOURLY, DAILY, WEEKLY, MONTHLY
   }
 }

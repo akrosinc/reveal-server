@@ -138,6 +138,10 @@ public class Task extends AbstractAuditableEntity {
   @Column(columnDefinition = "jsonb")
   private TaskEvent taskFacade;
 
+  @Type(type = "jsonb")
+  @Column(columnDefinition = "jsonb")
+  private TaskDetails details;
+
   @OneToMany(mappedBy = "parentTaskIdentifier", fetch = FetchType.LAZY)
   private List<Task> childTasks = new ArrayList<>();
 

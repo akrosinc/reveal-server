@@ -21,6 +21,7 @@ import com.revealprecision.revealserver.persistence.domain.LookupTaskStatus.Fiel
 import com.revealprecision.revealserver.persistence.domain.Person;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.Task;
+import com.revealprecision.revealserver.persistence.domain.TaskDetails;
 import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.props.KafkaProperties;
 import com.revealprecision.revealserver.service.ActionService;
@@ -283,6 +284,12 @@ public class TaskFacadeService {
           taskDto.getExecutionPeriod().getStart()).toLocalDate());
       task.setBaseEntityIdentifier(UUID.fromString(taskDto.getForEntity()));
       task.setBusinessStatus(taskDto.getBusinessStatus());
+
+      if (taskDto.getDetails() != null) {
+        task.setDetails(TaskDetails.builder()
+            .limitCounter(taskDto.getDetails().getLimitCounter())
+            .build());
+      }
 
       task.setEntityStatus(EntityStatus.ACTIVE);
 

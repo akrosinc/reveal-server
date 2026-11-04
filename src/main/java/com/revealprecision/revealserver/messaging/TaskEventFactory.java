@@ -103,6 +103,8 @@ public class TaskEventFactory {
                   taskSaved.getLocation().getGeographicLevel().getName()
                   : null)
         .lastUpdated(taskSaved.getModifiedDatetime())
+        .limitCounter(taskSaved.getDetails() != null
+            ? taskSaved.getDetails().getLimitCounter() : null)
         .build();
 
     if (ActionUtils.isActionForPerson(taskSaved.getAction())){

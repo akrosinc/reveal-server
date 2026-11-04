@@ -28,6 +28,10 @@ public class ActionLocationRecaptureLimitService {
             ActionLocationRecaptureLimit.class));
   }
 
+  public List<ActionLocationRecaptureLimit> getAll() {
+    return actionLocationRecaptureLimitRepository.findAll();
+  }
+
   public List<ActionLocationRecaptureLimit> getByInstance(UUID instanceIdentifier) {
     return actionLocationRecaptureLimitRepository.findByInstance_Identifier(instanceIdentifier);
   }

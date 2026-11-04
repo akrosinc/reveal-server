@@ -145,6 +145,8 @@ public class TaskFacade implements Serializable {
 
   private String parentTaskId;
 
+  private Details details;
+
   @Data
   @NoArgsConstructor
   @AllArgsConstructor
@@ -153,6 +155,16 @@ public class TaskFacade implements Serializable {
     private int repetitions;
 
     private Period period;
+  }
+
+  @Data
+  @Builder
+  @NoArgsConstructor
+  @AllArgsConstructor
+  @JsonInclude(value = Include.NON_NULL)
+  public static class Details {
+
+    private Integer limitCounter;
   }
 }
 

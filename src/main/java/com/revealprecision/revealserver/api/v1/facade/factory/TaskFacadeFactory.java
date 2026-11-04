@@ -5,6 +5,7 @@ import com.revealprecision.revealserver.api.v1.facade.models.Period;
 import com.revealprecision.revealserver.api.v1.facade.models.TaskFacade;
 import com.revealprecision.revealserver.api.v1.facade.models.TaskFacade.TaskPriority;
 import com.revealprecision.revealserver.api.v1.facade.models.TaskFacade.TaskStatus;
+import com.revealprecision.revealserver.api.v1.facade.models.TaskFacade.Details;
 import com.revealprecision.revealserver.api.v1.facade.util.DateTimeFormatter;
 import com.revealprecision.revealserver.messaging.message.TaskEvent;
 import com.revealprecision.revealserver.persistence.domain.Task;
@@ -43,6 +44,19 @@ public class TaskFacadeFactory {
         .parentTaskId(task.getParentTaskId() != null ? task.getParentTaskId().toString() : null)
         .serverVersion(task.getServerVersion() == null ? 0 : task.getServerVersion())
         .build();
+
+    // Prefer the limitCounter carried on the TaskEvent (the stored taskFacade jsonb), since in the
+    // sync path the Task entity is reconstructed from that facade and its details column is not
+    // populated. Fall back to the entity's details column when present.
+    Integer limitCounter = task.getLimitCounter();
+    if (limitCounter == null && dbTask != null && dbTask.getDetails() != null) {
+      limitCounter = dbTask.getDetails().getLimitCounter();
+    }
+    if (limitCounter != null) {
+      build.setDetails(Details.builder()
+          .limitCounter(limitCounter)
+          .build());
+    }
 
     return build;
   }

@@ -25,6 +25,16 @@ public interface TaskRepository extends JpaRepository<Task, UUID>,
   List<Task> findTasksByAction_IdentifierAndLocation_Identifier(UUID actionIdentifier,
       UUID locationIdentifier);
 
+  @Query("select count(t) > 0 from Task t "
+      + "where t.action.identifier = :actionIdentifier "
+      + "and t.location.identifier = :locationIdentifier "
+      + "and t.authoredOn >= :windowStart and t.authoredOn < :windowEnd")
+  boolean existsForActionAndLocationInWindow(
+      @Param("actionIdentifier") UUID actionIdentifier,
+      @Param("locationIdentifier") UUID locationIdentifier,
+      @Param("windowStart") java.time.LocalDateTime windowStart,
+      @Param("windowEnd") java.time.LocalDateTime windowEnd);
+
   List<Task> findTasksByPlan_Identifier(UUID planIdentifier);
   Page<Task> findTasksByPlan_Identifier(UUID planIdentifier, Pageable pageable);
 
