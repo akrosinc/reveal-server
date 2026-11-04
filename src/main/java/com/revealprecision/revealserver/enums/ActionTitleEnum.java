@@ -39,10 +39,10 @@ public enum ActionTitleEnum {
   DESTRUCTION("Destruction",LookupEntityTypeCodeEnum.LOCATION_CODE),
 
   S1_PLANNING_AND_MANAGEMENT("S1 — Planning and management",LookupEntityTypeCodeEnum.LOCATION_CODE),
-  S2_LINKING_IMMUNISATION_SERVICES("S3 — Linking immunisation services",LookupEntityTypeCodeEnum.LOCATION_CODE),
-  S1_SUPPORTIVE_SUPERVISION("S4 — Supportive supervision",LookupEntityTypeCodeEnum.LOCATION_CODE),
-  S1_DATA_MONITORING("S5 — Data monitoring",LookupEntityTypeCodeEnum.LOCATION_CODE),
-  S1_SUPPLEMENTARY_OUTREACH("S6 — Supplementary outreach",LookupEntityTypeCodeEnum.LOCATION_CODE);
+  S3_LINKING_IMMUNISATION_SERVICES("S3 — Linking immunisation services",LookupEntityTypeCodeEnum.LOCATION_CODE),
+  S4_SUPPORTIVE_SUPERVISION("S4 — Supportive supervision",LookupEntityTypeCodeEnum.LOCATION_CODE),
+  S5_DATA_MONITORING("S5 — Data monitoring",LookupEntityTypeCodeEnum.LOCATION_CODE),
+  S6_SUPPLEMENTARY_OUTREACH("S6 — Supplementary outreach",LookupEntityTypeCodeEnum.LOCATION_CODE);
 
 
 

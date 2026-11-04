@@ -27,7 +27,12 @@ public class NoTaskActionProperties {
       ActionTitleEnum.FOLLOWUP,
       ActionTitleEnum.DESTRUCTION,
       ActionTitleEnum.RAPID_COVERAGE_STRUCTURE,
-      ActionTitleEnum.RAPID_COVERAGE
+      ActionTitleEnum.RAPID_COVERAGE,
+      ActionTitleEnum.S1_PLANNING_AND_MANAGEMENT,
+      ActionTitleEnum.S3_LINKING_IMMUNISATION_SERVICES,
+      ActionTitleEnum.S4_SUPPORTIVE_SUPERVISION,
+      ActionTitleEnum.S5_DATA_MONITORING,
+      ActionTitleEnum.S6_SUPPLEMENTARY_OUTREACH
   );
 
 }
