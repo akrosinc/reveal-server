@@ -500,7 +500,8 @@ public class SimulationService {
         }
 
         Map<String, LocationResponse> locationsMap = locations.stream()
-            .collect(Collectors.toMap(loc -> loc.getIdentifier().toString(), loc -> loc));
+            .collect(Collectors.toMap(loc -> loc.getIdentifier().toString(), loc -> loc,
+                (existing, duplicate) -> existing));
 
         setLocationProperties(locationDetailsProjections).forEach(locationWithoutGeometry -> {
             LocationResponse location = locationsMap.get(locationWithoutGeometry.getIdentifier().toString());
@@ -616,7 +617,8 @@ public class SimulationService {
 
 
             Map<String, LocationResponse> locationsMap = locations.stream()
-                .collect(Collectors.toMap(loc -> loc.getIdentifier().toString(), loc -> loc));
+                .collect(Collectors.toMap(loc -> loc.getIdentifier().toString(), loc -> loc,
+                    (existing, duplicate) -> existing));
 
             setLocationProperties(locationDetailsProjections).forEach(locationWithoutGeometry -> {
                 LocationResponse location = locationsMap.get(locationWithoutGeometry.getIdentifier().toString());
@@ -634,7 +636,8 @@ public class SimulationService {
         }
 
         Map<String, LocationResponse> locationsMap = locations.stream()
-                .collect(Collectors.toMap(loc -> loc.getIdentifier().toString(), loc -> loc));
+                .collect(Collectors.toMap(loc -> loc.getIdentifier().toString(), loc -> loc,
+                    (existing, duplicate) -> existing));
 
         setLocationProperties(locationDetailsProjections).forEach(locationWithoutGeometry -> {
             LocationResponse location = locationsMap.get(locationWithoutGeometry.getIdentifier().toString());
