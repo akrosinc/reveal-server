@@ -1,11 +1,13 @@
 package com.revealprecision.revealserver.schedule;
 
+import com.revealprecision.revealserver.enums.PlanStatusEnum;
 import com.revealprecision.revealserver.model.ActionTemplateConfig;
 import com.revealprecision.revealserver.model.ActionTemplateConfig.TaskGenerationRecurrence;
 import com.revealprecision.revealserver.persistence.domain.Action;
 import com.revealprecision.revealserver.persistence.domain.ActionLocationRecaptureLimit;
 import com.revealprecision.revealserver.persistence.domain.ActionTemplate;
 import com.revealprecision.revealserver.persistence.domain.Location;
+import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.repository.TaskRepository;
 import com.revealprecision.revealserver.props.TaskGenerationScheduleProperties;
 import com.revealprecision.revealserver.service.ActionLocationRecaptureLimitService;
@@ -60,6 +62,16 @@ public class TaskGenerationSchedule {
         if (action == null || location == null) {
           log.warn("TASK_GENERATION skipping recapture limit {}: missing action or location",
               recaptureLimit.getIdentifier());
+          continue;
+        }
+
+        // Tasks are only generated for actions whose plan is ACTIVE.
+        Plan plan = action.getGoal() != null ? action.getGoal().getPlan() : null;
+        if (plan == null || !PlanStatusEnum.ACTIVE.equals(plan.getStatus())) {
+          log.info(
+              "TASK_GENERATION skipping recapture limit {}: plan for action {} is not ACTIVE (status: {})",
+              recaptureLimit.getIdentifier(), action.getIdentifier(),
+              plan == null ? "no plan" : plan.getStatus());
           continue;
         }
 
