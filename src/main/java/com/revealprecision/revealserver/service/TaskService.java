@@ -44,6 +44,7 @@ import com.revealprecision.revealserver.persistence.domain.TaskProcessStage;
 import com.revealprecision.revealserver.persistence.domain.User;
 import com.revealprecision.revealserver.persistence.domain.actioncondition.Query;
 import com.revealprecision.revealserver.persistence.projection.TaskProjection;
+import com.revealprecision.revealserver.persistence.projection.TaskSyncProjection;
 import com.revealprecision.revealserver.persistence.repository.EntityDataRepository;
 import com.revealprecision.revealserver.persistence.repository.LookupTaskStatusRepository;
 import com.revealprecision.revealserver.persistence.repository.TaskProcessStageRepository;
@@ -129,6 +130,16 @@ public class TaskService {
 
   public Page<Task> searchTasks(TaskSearchCriteria taskSearchCriteria, Pageable pageable) {
     return taskRepository.findAll(TaskSpec.getTaskSpecification(taskSearchCriteria), pageable);
+  }
+
+  public List<TaskSyncProjection> getTasksForAssignedOrganizations(List<UUID> organizationIds,
+      List<UUID> planIds, Long serverVersion) {
+    if (organizationIds == null || organizationIds.isEmpty() || planIds == null
+        || planIds.isEmpty()) {
+      return new ArrayList<>();
+    }
+    return taskRepository.getTasksForAssignedOrganizations(organizationIds, planIds,
+        serverVersion);
   }
 
   public List<Task> getNonStructureTaskFacadesByLocationServerVersionAndPlan(UUID planIdentifier,

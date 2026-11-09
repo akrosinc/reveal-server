@@ -18,7 +18,9 @@ import com.revealprecision.revealserver.persistence.domain.Action;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.domain.LookupTaskStatus;
 import com.revealprecision.revealserver.persistence.domain.LookupTaskStatus.Fields;
+import com.revealprecision.revealserver.persistence.domain.Organization;
 import com.revealprecision.revealserver.persistence.domain.Person;
+import com.revealprecision.revealserver.persistence.projection.TaskSyncProjection;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.Task;
 import com.revealprecision.revealserver.persistence.domain.TaskDetails;
@@ -38,6 +40,7 @@ import com.revealprecision.revealserver.util.UserUtils;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -126,6 +129,44 @@ public class TaskFacadeService {
 
   }
 
+
+  /**
+   * Assignment driven sync: scope comes from the caller's organizations (user_organization) and
+   * their SELECTED plan_assignment locations, including every descendant location. The requested
+   * plans are intersected with the assigned plans. No plan target type or client group involved.
+   * The task group is the location the task sits on.
+   */
+  public List<TaskFacade> syncTasksByAssignment(List<String> planIdentifiers, Long serverVersion,
+      String requester) {
+
+    List<UUID> planIds = planIdentifiers == null ? new ArrayList<>()
+        : planIdentifiers.stream().map(UUID::fromString).collect(Collectors.toList());
+
+    List<UUID> organizationIds = userService.getCurrentUser().getOrganizations().stream()
+        .map(Organization::getIdentifier).collect(Collectors.toList());
+
+    List<TaskSyncProjection> rows = taskService.getTasksForAssignedOrganizations(
+        organizationIds, planIds, serverVersion == null ? 0L : serverVersion);
+
+    return rows.stream()
+        .sorted(Comparator.comparing(TaskSyncProjection::getServerVersion,
+            Comparator.nullsFirst(Comparator.naturalOrder())))
+        .map(row -> {
+          try {
+            TaskEvent taskEvent = objectMapper.readValue(row.getTaskFacade(), TaskEvent.class);
+            TaskFacade taskFacade = TaskFacadeFactory.getTaskFacadeObj(null, requester,
+                row.getLocationIdentifier(), taskEvent, objectMapper);
+            taskFacade.setServerVersion(row.getServerVersion());
+            return taskFacade;
+          } catch (Exception e) {
+            log.error("Unable to build task facade for task {}: {}", row.getIdentifier(),
+                e.getMessage(), e);
+            return null;
+          }
+        })
+        .filter(Objects::nonNull)
+        .collect(Collectors.toList());
+  }
 
   private SimpleEntry<UUID, List<Location>> getUuidListSimpleEntry(
       List<UUID> jurisdictionIdentifiers, Plan plan) {

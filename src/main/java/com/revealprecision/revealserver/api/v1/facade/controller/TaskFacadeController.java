@@ -67,6 +67,27 @@ public class TaskFacadeController {
 
   }
 
+  @Operation(summary = "Facade for Android Task Resource", description = "Sync Tasks scoped by the caller's selected plan assignments (including descendant locations). The request 'group' is ignored.", tags = {
+      "Task-Facade"})
+  @ResponseStatus(HttpStatus.OK)
+  @PostMapping(value = "/sync/assigned", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  @Transactional
+  public ResponseEntity<List<TaskFacade>> taskSyncByAssignment(
+      @RequestBody TaskSyncRequest taskSyncRequest) {
+
+    Long serverVersion = taskSyncRequest.getServerVersion();
+
+    List<TaskFacade> taskFacades = taskFacadeService.syncTasksByAssignment(
+        taskSyncRequest.getPlan(), serverVersion, UserUtils.getCurrentPrincipleName());
+
+    if (taskSyncRequest.isReturnCount()) {
+      HttpHeaders headers = new HttpHeaders();
+      headers.add(TOTAL_RECORDS, String.valueOf(taskFacades.size()));
+      return ResponseEntity.ok().headers(headers).body(taskFacades);
+    }
+    return ResponseEntity.ok().body(taskFacades);
+  }
+
   @Operation(summary = "Facade for Android Task Resource", description = "Sync Tasks", tags = {
       "Task-Facade"})
   @ResponseStatus(HttpStatus.CREATED)

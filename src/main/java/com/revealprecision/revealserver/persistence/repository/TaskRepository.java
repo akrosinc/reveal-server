@@ -3,6 +3,7 @@ package com.revealprecision.revealserver.persistence.repository;
 import com.revealprecision.revealserver.persistence.domain.Plan;
 import com.revealprecision.revealserver.persistence.domain.Task;
 import com.revealprecision.revealserver.persistence.projection.TaskProjection;
+import com.revealprecision.revealserver.persistence.projection.TaskSyncProjection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -76,6 +77,54 @@ public interface TaskRepository extends JpaRepository<Task, UUID>,
   List<Task> getStructureForPeopleTaskFacadesByLocationServerVersionAndPlan(UUID planIdentifier,
       List<UUID> locationIdentifiers, Long serverVersion);
 
+
+  /**
+   * Tasks visible to a set of organizations: for every SELECTED plan_assignment of the
+   * organizations (restricted to the requested, ACTIVE plans) return tasks of that plan located on
+   * the selected location or on any descendant of it. Descendants come from the ancestry array on
+   * location_relationship (GIN indexed), so there is no recursive walk. Person tasks are matched
+   * through the person's locations.
+   */
+  @Query(value = "WITH scope AS ( "
+      + "  SELECT pl.plan_identifier AS plan_identifier, pl.location_identifier AS location_identifier "
+      + "  FROM plan_assignment pa "
+      + "  JOIN plan_locations pl ON pl.identifier = pa.plan_locations_identifier "
+      + "  JOIN plan p ON p.identifier = pl.plan_identifier "
+      + "  WHERE pa.organization_identifier IN (:organizationIds) "
+      + "    AND pa.selected = true AND pa.entity_status = 'ACTIVE' "
+      + "    AND pl.entity_status = 'ACTIVE' "
+      + "    AND p.status = 'ACTIVE' AND p.entity_status = 'ACTIVE' "
+      + "    AND pl.plan_identifier IN (:planIds) "
+      + "), scope_locations AS ( "
+      + "  SELECT s.plan_identifier, s.location_identifier FROM scope s "
+      + "  UNION "
+      + "  SELECT s.plan_identifier, lr.location_identifier FROM scope s "
+      + "  JOIN location_relationship lr ON lr.ancestry @> ARRAY[s.location_identifier] "
+      + "  WHERE lr.entity_status = 'ACTIVE' "
+      + "), hits AS ( "
+      + "  SELECT tl.task_identifier, sl.plan_identifier, tl.location_identifier "
+      + "  FROM task_location tl "
+      + "  JOIN scope_locations sl ON sl.location_identifier = tl.location_identifier "
+      + "  UNION "
+      + "  SELECT tp.task_identifier, sl.plan_identifier, pl.location_identifier "
+      + "  FROM task_person tp "
+      + "  JOIN person_location pl ON pl.person_identifier = tp.person_identifier "
+      + "  JOIN scope_locations sl ON sl.location_identifier = pl.location_identifier "
+      + ") "
+      + "SELECT DISTINCT ON (t.identifier) "
+      + "  cast(t.identifier as varchar) AS identifier, "
+      + "  t.server_version AS serverVersion, "
+      + "  cast(t.task_facade as text) AS taskFacade, "
+      + "  cast(h.location_identifier as varchar) AS locationIdentifier "
+      + "FROM hits h "
+      + "JOIN task t ON t.identifier = h.task_identifier AND t.plan_identifier = h.plan_identifier "
+      + "WHERE t.entity_status = 'ACTIVE' AND t.task_facade IS NOT NULL "
+      + "  AND t.server_version >= :serverVersion "
+      + "ORDER BY t.identifier", nativeQuery = true)
+  List<TaskSyncProjection> getTasksForAssignedOrganizations(
+      @Param("organizationIds") List<UUID> organizationIds,
+      @Param("planIds") List<UUID> planIds,
+      @Param("serverVersion") Long serverVersion);
 
   @Query(value = "SELECT DISTINCT cast(t.identifier as varchar)  from task t\n"
       + "left join task_business_state_tracker tbst on t.base_entity_identifier = tbst.task_location_identifier\n"
