@@ -105,6 +105,8 @@ public class TaskEventFactory {
         .lastUpdated(taskSaved.getModifiedDatetime())
         .limitCounter(taskSaved.getDetails() != null
             ? taskSaved.getDetails().getLimitCounter() : null)
+        .pass(taskSaved.getDetails() != null
+            ? taskSaved.getDetails().getPass() : null)
         .build();
 
     if (ActionUtils.isActionForPerson(taskSaved.getAction())){

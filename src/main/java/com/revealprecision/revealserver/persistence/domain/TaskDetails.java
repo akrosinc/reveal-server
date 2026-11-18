@@ -24,4 +24,11 @@ public class TaskDetails implements Serializable {
   private static final long serialVersionUID = 1L;
 
   private Integer limitCounter;
+
+  /**
+   * Child tasks only: the parent's pass (capture number, 1-based) this child belongs to. Null while
+   * the child belongs to the parent's current, still-open pass; set by the client when the parent's
+   * pass is captured.
+   */
+  private Integer pass;
 }

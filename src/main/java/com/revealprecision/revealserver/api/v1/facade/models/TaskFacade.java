@@ -165,6 +165,9 @@ public class TaskFacade implements Serializable {
   public static class Details {
 
     private Integer limitCounter;
+
+    /** Child tasks only: the parent pass this child belongs to (null = current open pass). */
+    private Integer pass;
   }
 }
 

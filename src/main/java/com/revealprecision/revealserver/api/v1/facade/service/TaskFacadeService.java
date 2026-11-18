@@ -329,6 +329,7 @@ public class TaskFacadeService {
       if (taskDto.getDetails() != null) {
         task.setDetails(TaskDetails.builder()
             .limitCounter(taskDto.getDetails().getLimitCounter())
+            .pass(taskDto.getDetails().getPass())
             .build());
       }
 

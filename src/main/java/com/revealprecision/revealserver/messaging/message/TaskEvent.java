@@ -68,4 +68,7 @@ public class TaskEvent  extends Message  {
   // Mirrors Task.details.limitCounter: number of times the task may be executed before it is
   // closed. Nullable - older events / tasks without details will leave this unset.
   private Integer limitCounter;
+
+  // Mirrors Task.details.pass: the parent pass a child task belongs to. Nullable.
+  private Integer pass;
 }

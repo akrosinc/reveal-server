@@ -52,9 +52,15 @@ public class TaskFacadeFactory {
     if (limitCounter == null && dbTask != null && dbTask.getDetails() != null) {
       limitCounter = dbTask.getDetails().getLimitCounter();
     }
-    if (limitCounter != null) {
+    // Same preference order for the child task's pass.
+    Integer pass = task.getPass();
+    if (pass == null && dbTask != null && dbTask.getDetails() != null) {
+      pass = dbTask.getDetails().getPass();
+    }
+    if (limitCounter != null || pass != null) {
       build.setDetails(Details.builder()
           .limitCounter(limitCounter)
+          .pass(pass)
           .build());
     }
 
