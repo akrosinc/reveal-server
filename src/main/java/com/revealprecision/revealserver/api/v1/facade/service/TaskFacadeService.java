@@ -226,6 +226,20 @@ public class TaskFacadeService {
         task.setLookupTaskStatus(taskStatus.get());
         task.setBusinessStatus(updateFacade.getBusinessStatus());
 
+        // Merge client details (limitCounter decrement, child pass stamp). Only non-null fields
+        // overwrite, so status-only callers never wipe existing details. Done before the
+        // TaskEvent is built, so the synced facade carries the new values back to devices.
+        if (updateFacade.getDetails() != null) {
+          TaskDetails details = task.getDetails() != null ? task.getDetails() : new TaskDetails();
+          if (updateFacade.getDetails().getLimitCounter() != null) {
+            details.setLimitCounter(updateFacade.getDetails().getLimitCounter());
+          }
+          if (updateFacade.getDetails().getPass() != null) {
+            details.setPass(updateFacade.getDetails().getPass());
+          }
+          task.setDetails(details);
+        }
+
         identifierUuid = task.getIdentifier();
         identifier = identifierUuid.toString();
 

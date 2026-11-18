@@ -25,4 +25,10 @@ public class TaskUpdateFacade implements Serializable {
   private String status;
   private String businessStatus;
   private Long serverVersion;
+
+  /**
+   * Optional task details from the client (limitCounter, pass). Null from callers that only update
+   * status (e.g. event processing, cleanup), in which case existing details are left untouched.
+   */
+  private TaskFacade.Details details;
 }

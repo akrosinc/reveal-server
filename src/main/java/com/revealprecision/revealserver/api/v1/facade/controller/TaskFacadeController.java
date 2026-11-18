@@ -106,9 +106,12 @@ public class TaskFacadeController {
 
   }
 
-  @Operation(summary = "Facade for Android Task Resource", description = "Update Status for Tasks", tags = {
+  // "/update" is the current path: it updates status, business status and details (limitCounter,
+  // pass). "/update_status" is kept only so app versions already installed keep syncing; remove it
+  // once all devices run a build that calls "/update".
+  @Operation(summary = "Facade for Android Task Resource", description = "Update status, business status and details for Tasks", tags = {
       "Task-Facade"})
-  @RequestMapping(value = "/update_status", method = RequestMethod.POST, consumes = {
+  @RequestMapping(value = {"/update", "/update_status"}, method = RequestMethod.POST, consumes = {
       MediaType.APPLICATION_JSON_VALUE, MediaType.TEXT_PLAIN_VALUE})
   public ResponseEntity<String> updateStatus(@RequestBody List<TaskUpdateFacade> taskUpdates) {
     List<String> updateTasks = taskFacadeService
