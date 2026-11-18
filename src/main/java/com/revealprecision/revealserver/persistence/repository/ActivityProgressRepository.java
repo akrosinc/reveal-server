@@ -21,8 +21,7 @@ public interface ActivityProgressRepository extends JpaRepository<ActivityProgre
   /**
    * Progress rows visible to a set of organizations: for every SELECTED plan_assignment of the
    * organizations (restricted to the requested, ACTIVE plans) return the rows of that plan for the
-   * selected location, every descendant of it and every ancestor of it (not the ancestors' other
-   * children). Descendants and ancestors come from the ancestry array on
+   * selected location and every descendant of it. Descendants come from the ancestry array on
    * location_relationship (GIN indexed) and only relationships of the plan's own hierarchy count.
    * Same scope rules as the assignment driven task sync.
    */
@@ -42,11 +41,6 @@ public interface ActivityProgressRepository extends JpaRepository<ActivityProgre
       + "  UNION "
       + "  SELECT s.plan_identifier, lr.location_identifier FROM scope s "
       + "  JOIN location_relationship lr ON lr.ancestry @> ARRAY[s.location_identifier] "
-      + "    AND lr.location_hierarchy_identifier = s.hierarchy_identifier "
-      + "  WHERE lr.entity_status = 'ACTIVE' "
-      + "  UNION "
-      + "  SELECT s.plan_identifier, unnest(lr.ancestry) FROM scope s "
-      + "  JOIN location_relationship lr ON lr.location_identifier = s.location_identifier "
       + "    AND lr.location_hierarchy_identifier = s.hierarchy_identifier "
       + "  WHERE lr.entity_status = 'ACTIVE' "
       + ") "
