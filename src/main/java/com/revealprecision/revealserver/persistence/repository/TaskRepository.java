@@ -82,11 +82,13 @@ public interface TaskRepository extends JpaRepository<Task, UUID>,
    * Tasks visible to a set of organizations: for every SELECTED plan_assignment of the
    * organizations (restricted to the requested, ACTIVE plans) return tasks of that plan located on
    * the selected location or on any descendant of it. Descendants come from the ancestry array on
-   * location_relationship (GIN indexed), so there is no recursive walk. Person tasks are matched
+   * location_relationship (GIN indexed), so there is no recursive walk, and only relationships of
+   * the plan's own hierarchy count. Person tasks are matched
    * through the person's locations.
    */
   @Query(value = "WITH scope AS ( "
-      + "  SELECT pl.plan_identifier AS plan_identifier, pl.location_identifier AS location_identifier "
+      + "  SELECT pl.plan_identifier AS plan_identifier, pl.location_identifier AS location_identifier, "
+      + "    p.hierarchy_identifier AS hierarchy_identifier "
       + "  FROM plan_assignment pa "
       + "  JOIN plan_locations pl ON pl.identifier = pa.plan_locations_identifier "
       + "  JOIN plan p ON p.identifier = pl.plan_identifier "
@@ -100,6 +102,7 @@ public interface TaskRepository extends JpaRepository<Task, UUID>,
       + "  UNION "
       + "  SELECT s.plan_identifier, lr.location_identifier FROM scope s "
       + "  JOIN location_relationship lr ON lr.ancestry @> ARRAY[s.location_identifier] "
+      + "    AND lr.location_hierarchy_identifier = s.hierarchy_identifier "
       + "  WHERE lr.entity_status = 'ACTIVE' "
       + "), hits AS ( "
       + "  SELECT tl.task_identifier, sl.plan_identifier, tl.location_identifier "
