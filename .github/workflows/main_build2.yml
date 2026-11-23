@@ -5,7 +5,7 @@ name: Reveal Server test, build and deploy
 
 on:
   push:
-    branches: [ merge-2026, fragment-tests,vaccine_microplanning ]
+    branches: [ merge-2026, fragment-tests,vaccine_microplanning,vaccine_microplanning_sites_managment ]
   pull_request:
     branches: [ none ]
 
