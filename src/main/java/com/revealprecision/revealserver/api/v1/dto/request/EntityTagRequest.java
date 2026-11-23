@@ -30,6 +30,8 @@ public class EntityTagRequest {
 
   private String definition;
 
+  private String description;
+
   private List<String> aggregationMethod;
 
   private boolean isAggregate;

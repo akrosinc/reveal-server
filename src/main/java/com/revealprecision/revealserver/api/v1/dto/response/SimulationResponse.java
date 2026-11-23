@@ -25,4 +25,6 @@ public class SimulationResponse {
 
     @Builder.Default
     private List<DataSetYearRangeResponse> datSetYearRange = new ArrayList<>();
+
+    private Map<String, Object> metadata;
 }

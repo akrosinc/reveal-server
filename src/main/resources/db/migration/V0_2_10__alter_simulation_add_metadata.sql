@@ -1,0 +1,5 @@
+ALTER TABLE IF EXISTS  simulation
+    ADD COLUMN IF NOT EXISTS metadata JSONB;
+
+ALTER TABLE IF EXISTS  simulation_aud
+    ADD COLUMN IF NOT EXISTS metadata JSONB;

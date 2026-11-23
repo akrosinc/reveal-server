@@ -40,4 +40,6 @@ public class LocationProperty {
   private String surveyLocationType;
 
   private String structureNumber;
+
+  private String locationSubtype;
 }

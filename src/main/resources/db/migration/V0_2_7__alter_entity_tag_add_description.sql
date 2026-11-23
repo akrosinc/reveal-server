@@ -1,0 +1,5 @@
+ALTER TABLE IF EXISTS  entity_tag
+    ADD COLUMN IF NOT EXISTS description VARCHAR;
+
+ALTER TABLE IF EXISTS  entity_tag_aud
+    ADD COLUMN IF NOT EXISTS description VARCHAR;

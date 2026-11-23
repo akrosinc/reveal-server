@@ -9,6 +9,7 @@ import com.revealprecision.revealserver.api.v1.dto.factory.RasterDatasetResponse
 import com.revealprecision.revealserver.api.v1.dto.request.DatasetLocationsRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.DeleteDatasetRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.UpdateDatasetRequest;
+import com.revealprecision.revealserver.api.v1.dto.request.UpdateSimulationMetadataRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.SimulationDatasetRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.*;
 import com.revealprecision.revealserver.enums.DatasetType;
@@ -161,7 +162,26 @@ public class SimulationService {
             .rasterDatasets(RasterDatasetResponseFactory.fromEntityList(s.getRasterDatasets()))
             .targetAreas(locationsResponse)
             .datSetYearRange(dataSetYearRange)
+            .metadata(s.getMetadata())
             .build();
+    }
+
+    // Sets the given metadata keys on the simulation; a key with a null value is removed
+    @Transactional
+    public Simulation updateSimulationMetadata(UpdateSimulationMetadataRequest request) {
+        Simulation simulation = simulationRepository.findById(request.getSimulationId()).orElseThrow(() -> new NotFoundException("Simulation not found with ID: " + request.getSimulationId()));
+        Map<String, Object> metadata = simulation.getMetadata() == null ? new HashMap<>() : new HashMap<>(simulation.getMetadata());
+        if (request.getMetadata() != null) {
+            request.getMetadata().forEach((key, value) -> {
+                if (value == null) {
+                    metadata.remove(key);
+                } else {
+                    metadata.put(key, value);
+                }
+            });
+        }
+        simulation.setMetadata(metadata);
+        return simulationRepository.save(simulation);
     }
 
     @Transactional

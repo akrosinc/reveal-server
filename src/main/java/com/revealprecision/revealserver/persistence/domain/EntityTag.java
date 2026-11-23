@@ -41,6 +41,8 @@ public class EntityTag {
 
   private String definition;
 
+  private String description;
+
   @Type(type = "list-array")
   private List<String> aggregationMethod;
 

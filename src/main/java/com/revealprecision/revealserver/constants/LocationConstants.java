@@ -8,4 +8,7 @@ public interface LocationConstants {
 
   String WATERBODY = "waterbody";
   String BODY_OF_WATER = "Body of Water";
+
+  // GeoJSON feature type used for locations
+  String FEATURE = "Feature";
 }

@@ -97,6 +97,7 @@ public class InstanceService {
   private final InstanceUserRepository instanceUserRepository;
   private final InstanceLocationRepository instanceLocationRepository;
   private final InstanceLocationService instanceLocationService;
+  private final InstanceCustomLocationService instanceCustomLocationService;
   private final LocationHierarchyService locationHierarchyService;
   private final LocationRelationshipService locationRelationshipService;
   private final OrganizationRoleMappingRepository organizationRoleMappingRepository;
@@ -575,7 +576,11 @@ public class InstanceService {
         currentUser, instanceAdmin.getId(), instanceIdentifier);
 
     if (isGlobalAdmin || isInstanceAdmin) {
-      return instanceLocationService.getInstanceHierarchyTreeResponse(instanceIdentifier);
+      LocationHierarchyResponse response = instanceLocationService.getInstanceHierarchyTreeResponse(
+          instanceIdentifier);
+      instanceCustomLocationService.attachCustomLocationsToTree(instanceIdentifier,
+          response.getGeoTree());
+      return response;
     } else {
       List<UUID> userLocationsIds = organizationLocationRepository.findLocationIdentifiersByInstanceAndUser(
           instanceIdentifier, currentUser.getIdentifier());
@@ -586,6 +591,7 @@ public class InstanceService {
 
       List<GeoTreeResponse> hierarchyTree = locationRelationshipService.getFilteredGeoTreeByLocationIds(
           instance.getLocationHierarchy(), userLocationsIds, null);
+      instanceCustomLocationService.attachCustomLocationsToTree(instanceIdentifier, hierarchyTree);
 
       return LocationHierarchyResponse.builder().identifier(instanceLocationHierarchy.getIdentifier().toString())
           .name(instanceLocationHierarchy.getName())

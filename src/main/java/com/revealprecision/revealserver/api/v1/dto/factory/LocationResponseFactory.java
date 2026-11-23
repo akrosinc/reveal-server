@@ -4,15 +4,19 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.revealprecision.revealserver.api.v1.dto.response.EntityMetadataResponse;
+import com.revealprecision.revealserver.api.v1.dto.response.GeoTreeResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationPropertyResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationResponse;
+import com.revealprecision.revealserver.constants.LocationConstants;
 import com.revealprecision.revealserver.enums.SummaryEnum;
+import com.revealprecision.revealserver.persistence.domain.InstanceCustomLocation;
 import com.revealprecision.revealserver.persistence.domain.Location;
 import com.revealprecision.revealserver.persistence.es.HierarchyDetailsElastic;
 import com.revealprecision.revealserver.persistence.es.LocationElastic;
 import com.revealprecision.revealserver.persistence.projection.LocationWithAncestryProjection;
 import com.revealprecision.revealserver.persistence.projection.LocationWithChildrenCountProjection;
 import com.revealprecision.revealserver.persistence.projection.PlanLocationDetails;
+import com.revealprecision.revealserver.util.JtsGeometryUtil;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -35,6 +39,46 @@ public class LocationResponseFactory {
             LocationPropertyResponse.builder().name(location.getName()).status(location.getStatus())
                 .externalId(location.getExternalId())
                 .geographicLevel(location.getGeographicLevel().getName()).build()).build();
+  }
+
+  public static LocationResponse fromInstanceCustomLocation(
+      InstanceCustomLocation instanceCustomLocation) {
+    return LocationResponse.builder()
+        .identifier(instanceCustomLocation.getIdentifier())
+        .type(LocationConstants.FEATURE)
+        .geometry(JtsGeometryUtil.toGeoJson(instanceCustomLocation.getGeometry()))
+        .properties(instanceCustomLocationProperties(instanceCustomLocation))
+        .build();
+  }
+
+  // location tree node of an instance custom location (no geometry, like the other tree nodes);
+  // a custom location's points are its children
+  public static GeoTreeResponse instanceCustomLocationToGeoTree(
+      InstanceCustomLocation instanceCustomLocation, List<InstanceCustomLocation> children) {
+    return GeoTreeResponse.builder()
+        .identifier(instanceCustomLocation.getIdentifier())
+        .type(LocationConstants.FEATURE)
+        .properties(instanceCustomLocationProperties(instanceCustomLocation))
+        .children(children.stream()
+            .map(child -> instanceCustomLocationToGeoTree(child, new ArrayList<>()))
+            .collect(Collectors.toList()))
+        .build();
+  }
+
+  // parentIdentifier is the shared Health Facility for a custom location, and the custom location
+  // for a point
+  private static LocationPropertyResponse instanceCustomLocationProperties(
+      InstanceCustomLocation instanceCustomLocation) {
+    String locationSubtype = instanceCustomLocation.getMetadata() == null ? null
+        : instanceCustomLocation.getMetadata().getLocationSubtype();
+    return LocationPropertyResponse.builder()
+        .name(instanceCustomLocation.getName())
+        .status(instanceCustomLocation.getStatus())
+        .parentIdentifier(instanceCustomLocation.isCustomLocation()
+            ? instanceCustomLocation.getParentLocation().getIdentifier()
+            : instanceCustomLocation.getParent().getIdentifier())
+        .locationSubtype(locationSubtype)
+        .build();
   }
 
   public static List<LocationResponse> fromEntityList(List<Location> locations) {

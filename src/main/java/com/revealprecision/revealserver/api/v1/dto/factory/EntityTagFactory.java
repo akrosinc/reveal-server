@@ -15,6 +15,7 @@ public class EntityTagFactory {
     EntityTag entityTag = EntityTag.builder()
         .tag(entityTagRequest.getTag())
         .definition(entityTagRequest.getDefinition())
+        .description(entityTagRequest.getDescription())
         .valueType(entityTagRequest.getValueType().equals("number") ? EntityTagDataTypes.DOUBLE
             : entityTagRequest.getValueType())
         .aggregationMethod(entityTagRequest.getAggregationMethod())

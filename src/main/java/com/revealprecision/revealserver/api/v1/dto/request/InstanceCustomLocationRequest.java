@@ -1,0 +1,34 @@
+package com.revealprecision.revealserver.api.v1.dto.request;
+
+import com.revealprecision.revealserver.enums.LocationSubtypeEnum;
+import java.util.List;
+import java.util.UUID;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.Point;
+
+@Getter
+@Setter
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class InstanceCustomLocationRequest {
+
+  private UUID parentLocationIdentifier;
+
+  private LocationSubtypeEnum locationSubtype;
+
+  private String name;
+
+  private String boundaryGeographicLevelName;
+
+  private String pointGeographicLevelName;
+
+  private Geometry locationBoundary;
+
+  private List<Point> points;
+}

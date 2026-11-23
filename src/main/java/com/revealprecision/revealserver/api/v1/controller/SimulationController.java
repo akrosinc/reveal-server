@@ -4,6 +4,7 @@ import com.revealprecision.revealserver.api.v1.dto.request.DatasetLocationsReque
 import com.revealprecision.revealserver.api.v1.dto.request.DeleteDatasetRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.SimulationDatasetRequest;
 import com.revealprecision.revealserver.api.v1.dto.request.UpdateDatasetRequest;
+import com.revealprecision.revealserver.api.v1.dto.request.UpdateSimulationMetadataRequest;
 import com.revealprecision.revealserver.api.v1.dto.response.LocationResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.SimulationDatasetResponse;
 import com.revealprecision.revealserver.api.v1.dto.response.SimulationResponse;
@@ -52,6 +53,11 @@ public class SimulationController {
     @DeleteMapping("dataset")
     public ResponseEntity<Simulation> deleteSimulationDataset(@RequestBody DeleteDatasetRequest request) {
         return ResponseEntity.ok(simulationService.deleteSimulationDataset(request));
+    }
+
+    @PutMapping("metadata")
+    public ResponseEntity<Simulation> updateSimulationMetadata(@RequestBody UpdateSimulationMetadataRequest request) {
+        return ResponseEntity.ok(simulationService.updateSimulationMetadata(request));
     }
 
     //TODO: move to location controller
