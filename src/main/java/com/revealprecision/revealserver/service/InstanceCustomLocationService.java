@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import javax.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.locationtech.jts.geom.Geometry;
@@ -58,8 +59,7 @@ public class InstanceCustomLocationService {
   private final EntityTagService entityTagService;
   private final LocationRelationshipService locationRelationshipService;
   private final ImportAggregationNumericRepository importAggregationNumericRepository;
-  // resolved lazily: MetadataService -> InstanceService -> this service would be a bean cycle
-  private final ObjectProvider<MetadataService> metadataServiceProvider;
+  private final MetadataService metadataService;
 
   /** Creates a custom location and its points in one transaction; any failure rolls everything back. */
   @Transactional
@@ -154,11 +154,14 @@ public class InstanceCustomLocationService {
 
     Set<String> tagNames = request.getTags().stream().map(TagCount::getTag)
         .collect(Collectors.toSet());
+
     Map<String, EntityTag> entityTags = entityTagService.getEntityTagsByTagNames(tagNames).stream()
         .collect(Collectors.toMap(EntityTag::getTag, entityTag -> entityTag, (a, b) -> a));
+
     tagNames.stream().filter(tag -> !entityTags.containsKey(tag)).findFirst().ifPresent(tag -> {
       throw new NotFoundException(Pair.of(EntityTag.Fields.tag, tag), EntityTag.class);
     });
+
     entityTags.values().stream()
         .filter(entityTag -> !EntityTagDataTypes.INTEGER.equals(entityTag.getValueType())
             && !EntityTagDataTypes.DOUBLE.equals(entityTag.getValueType()))
@@ -167,18 +170,13 @@ public class InstanceCustomLocationService {
               "Entity tag " + entityTag.getTag() + " is not numeric: " + entityTag.getValueType());
         });
 
-    List<String> ancestors = locationRelationshipService
-        .getAncestryMap(List.of(location.getIdentifier().toString()))
-        .getOrDefault(location.getIdentifier().toString(),
-            List.of(location.getIdentifier().toString()));
     String hierarchyIdentifier = instance.getLocationHierarchy().getIdentifier().toString();
-    MetadataService metadataService = metadataServiceProvider.getObject();
 
     request.getTags().forEach(tagCount -> {
       EntityTag entityTag = entityTags.get(tagCount.getTag());
-      ancestors.stream().distinct().forEach(ancestor -> metadataService.updateDB(
-          location.getName(), ancestor, tagCount.getCount(), entityTag.getTag(),
-          entityTag.getValueType(), hierarchyIdentifier, request.getDataCaptureDate()));
+      metadataService.updateDB(
+          location.getName(), location.getIdentifier().toString(), tagCount.getCount(), entityTag.getTag(),
+          entityTag.getValueType(), hierarchyIdentifier, request.getDataCaptureDate());
     });
   }
 
@@ -280,7 +278,10 @@ public class InstanceCustomLocationService {
   private InstanceCustomLocation buildCustomLocation(InstanceCustomLocation customLocation,
       InstanceCustomLocationRequest request) {
     String locationSubtype = locationSubtype(request);
-    Location parentLocation = locationRepository.getById(request.getParentLocationIdentifier());
+    Location parentLocation = locationRepository.findById(request.getParentLocationIdentifier()).orElseThrow(
+        () -> new NotFoundException("Parent location not found")
+    );
+
     GeographicLevel boundaryGeographicLevel = findGeographicLevel(request.getBoundaryGeographicLevelName());
     Geometry boundary = JtsGeometryUtil.withWgs84Srid(request.getLocationBoundary());
     LocationProperty metadata = buildMetadata(request.getName(), locationSubtype);

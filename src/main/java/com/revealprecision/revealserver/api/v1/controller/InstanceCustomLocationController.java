@@ -45,7 +45,7 @@ public class InstanceCustomLocationController {
   }
 
   @Operation(summary = "List custom locations and points under a parent location",
-      description = "Custom locations of the current instance under the given Health Facility, each followed by its points",
+      description = "Custom locations of the current instance under the given location, each followed by its points",
       tags = {"Instance Custom Location"})
   @GetMapping
   public ResponseEntity<List<LocationResponse>> getCustomLocations(
@@ -71,10 +71,10 @@ public class InstanceCustomLocationController {
     return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
   }
 
-  @Operation(summary = "Set entity tag counts for a location",
-      description = "Sets the counts of numeric entity tags (e.g. sites_outreach_to_add) for a location "
-          + "of the current instance; each count replaces the previous value and is written for the "
-          + "location and its ancestors, like a dataset upload",
+  @Operation(summary = "Set entity tags count for a location",
+      description = "Sets the counts of numeric entity tags for a location of the current instance;"
+          + "each count replaces the previous value and is written for the location and "
+          + "its ancestors, like a dataset upload",
       tags = {"Instance Custom Location"})
   @PostMapping("/entity-tag-counts")
   public ResponseEntity<Void> setLocationEntityTagCounts(

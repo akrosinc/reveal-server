@@ -36,6 +36,6 @@ public class InstanceLocationEntityTagCountRequest {
 
     private String tag;
 
-    private Double count;
+    private Integer count;
   }
 }
