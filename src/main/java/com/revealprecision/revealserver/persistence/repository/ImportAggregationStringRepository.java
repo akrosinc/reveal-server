@@ -20,4 +20,10 @@ public interface ImportAggregationStringRepository extends
   Optional<ImportAggregationString> findByNameAndAncestorAndFieldCodeAndHierarchyIdentifierAndDataCaptureDate(String name, String ancestor,
       String fieldCode, String hierarchIdentifier, LocalDate dataCaptureDate);
 
+  // planIdentifier holds the instance identifier for 'user-set' rows and is null for dataset
+  // imports; a null dataCaptureDate / planIdentifier is matched with IS NULL by the derived query
+  Optional<ImportAggregationString> findByNameAndAncestorAndFieldCodeAndHierarchyIdentifierAndDataCaptureDateAndPlanIdentifier(
+      String name, String ancestor, String fieldCode, String hierarchIdentifier,
+      LocalDate dataCaptureDate, String planIdentifier);
+
 }

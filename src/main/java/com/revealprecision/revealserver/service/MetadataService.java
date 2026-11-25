@@ -41,6 +41,7 @@ import com.revealprecision.revealserver.persistence.projection.InstanceEntityTag
 import com.revealprecision.revealserver.persistence.repository.ImportAggregateRepository;
 import com.revealprecision.revealserver.persistence.repository.ImportAggregationNumericRepository;
 import com.revealprecision.revealserver.persistence.repository.ImportAggregationStringRepository;
+import com.revealprecision.revealserver.persistence.repository.InstanceRepository;
 import com.revealprecision.revealserver.persistence.repository.MetadataImportRepository;
 import com.revealprecision.revealserver.persistence.repository.OrganizationRepository;
 import com.revealprecision.revealserver.persistence.repository.UserRepository;
@@ -63,6 +64,7 @@ import java.util.stream.Collectors;
 import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -91,7 +93,7 @@ public class MetadataService {
   private final ImportAggregationProperties importAggregationProperties;
   private final OrganizationRepository organizationRepository;
   private final UserRepository userRepository;
-  private final InstanceService  instanceService;
+  private final InstanceRepository instanceRepository;
   private final ImportAggregateRepository importAggregateRepository;
 
   @Transactional(rollbackOn = Exception.class)
@@ -239,7 +241,7 @@ public class MetadataService {
                             updateDB(metaImportDTO.getLocation().getName(), ancestor, value,
                                 key.getTag(), key.getValueType(),
                                 metaImportDTO.getLocationHierarchy().getIdentifier().toString()
-                                ,metaImportDTO.getDataCaptureDate())
+                                ,metaImportDTO.getDataCaptureDate(), EntityTagFieldTypes.IMPORT, null)
                     )));
 
     List<Entry<EntityTagEvent, Object>> string = metaImportDTOS.stream().flatMap(
@@ -290,15 +292,25 @@ public class MetadataService {
 
   }
 
+  /**
+   * planIdentifier scopes the row: null for dataset imports (visible to every instance), the
+   * instance identifier for values set by an instance ('user-set').
+   */
   public void updateDB(String name, String locId, Object importEntityTagValue, String tag,
-      String type, String hierarchyIdentifier, LocalDate dataCaptureDate) {
+      String type, String hierarchyIdentifier, LocalDate dataCaptureDate, String eventType,
+      String planIdentifier) {
     try {
+
+      if(StringUtils.isEmpty(eventType)) {
+        eventType = EntityTagFieldTypes.IMPORT;
+      }
+
       switch (type) {
         case STRING:
         case BOOLEAN:
           Optional<ImportAggregationString> importAggregationStringOptional =
-              importAggregationStringRepository.findByNameAndAncestorAndFieldCodeAndHierarchyIdentifierAndDataCaptureDate(
-                                      name, locId, tag, hierarchyIdentifier,dataCaptureDate);
+              importAggregationStringRepository.findByNameAndAncestorAndFieldCodeAndHierarchyIdentifierAndDataCaptureDateAndPlanIdentifier(
+                                      name, locId, tag, hierarchyIdentifier, dataCaptureDate, planIdentifier);
           ImportAggregationString importAggregationString;
           if (importAggregationStringOptional.isPresent()) {
             importAggregationString = importAggregationStringOptional.get();
@@ -306,10 +318,10 @@ public class MetadataService {
           } else {
             importAggregationString = ImportAggregationString.builder()
                 .val((String) importEntityTagValue).ancestor(locId)
-                .eventType(EntityTagFieldTypes.IMPORT)
+                .eventType(eventType)
                 .fieldCode(tag)
                 .hierarchyIdentifier(hierarchyIdentifier)
-                .name(name).planIdentifier(null)
+                .name(name).planIdentifier(planIdentifier)
                 .dataCaptureDate(dataCaptureDate)
                 .build();
           }
@@ -319,8 +331,8 @@ public class MetadataService {
         case DOUBLE:
         case INTEGER:
           Optional<ImportAggregationNumeric> importAggregationNumericOptional =
-              importAggregationNumericRepository.findByNameAndAncestorAndFieldCodeAndHierarchyIdentifierAndDataCaptureDate(
-              name, locId, tag, hierarchyIdentifier, dataCaptureDate);
+              importAggregationNumericRepository.findByNameAndAncestorAndFieldCodeAndHierarchyIdentifierAndDataCaptureDateAndPlanIdentifier(
+              name, locId, tag, hierarchyIdentifier, dataCaptureDate, planIdentifier);
           ImportAggregationNumeric importAggregationNumeric;
           if (importAggregationNumericOptional.isPresent()) {
             importAggregationNumeric = importAggregationNumericOptional.get();
@@ -329,9 +341,9 @@ public class MetadataService {
             importAggregationNumeric = ImportAggregationNumeric.builder()
                 .val((Double) importEntityTagValue).ancestor(locId)
                 .hierarchyIdentifier(hierarchyIdentifier)
-                .eventType(EntityTagFieldTypes.IMPORT).fieldCode(tag).name(name)
+                .eventType(eventType).fieldCode(tag).name(name)
                 .dataCaptureDate(dataCaptureDate)
-                .planIdentifier(null).build();
+                .planIdentifier(planIdentifier).build();
           }
 
           importAggregationNumericRepository.save(importAggregationNumeric);
@@ -444,7 +456,7 @@ public class MetadataService {
         .stream().flatMap(entityTagListEntry ->
             entityTagListEntry.getValue().stream().map(EntityTag::getIdentifier)).collect(Collectors.toList());
 
-    List<InstanceEntityTagIdProjection> instances = instanceService.findInstancesNamesByEntityIds(entityTagtIdList);
+    List<InstanceEntityTagIdProjection> instances = instanceRepository.findInstancesNamesByEntityIds(entityTagtIdList);
 
     return DatasetImportResponseFactory.fromEntityPage(all, collect,instances, pageable);
   }

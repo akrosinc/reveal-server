@@ -63,11 +63,13 @@ public class InstanceCustomLocationController {
   }
 
   @Operation(summary = "Delete a custom location",
-      description = "Deletes a custom location of the current instance with its points",
+      description = "Deletes a custom location of the current instance with its points. When tagName "
+          + "is given, takes one off that tag on the parent location",
       tags = {"Instance Custom Location"})
   @DeleteMapping("/{identifier}")
-  public ResponseEntity<Void> deleteCustomLocation(@PathVariable UUID identifier) {
-    instanceCustomLocationService.deleteCustomLocation(identifier);
+  public ResponseEntity<Void> deleteCustomLocation(@PathVariable UUID identifier,
+      @RequestParam(required = false) String tagName) {
+    instanceCustomLocationService.deleteCustomLocation(identifier, tagName);
     return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
   }
 

@@ -363,10 +363,9 @@ public class SimulationService {
                 (a, b) -> a
             ));
 
-        if(CollectionUtils.isNotEmpty(request.getUserDatasetIds())){
-            List<EntityTag> entityTags = entityTagService.findEntityTagsByIdentifierIn(request.getUserDatasetIds());
-
-            entityTags.forEach( entityTag -> {
+        List<EntityTag> userEntityTags = getUserEntityTags(simulation, request.getUserDatasetIds(), request.getUserTagNames());
+        if(CollectionUtils.isNotEmpty(userEntityTags)){
+            userEntityTags.forEach( entityTag -> {
                 tagsMap.put(entityTag.getTag(),entityTag.getIdentifier());
 
                 Dataset tmp = new  Dataset();
@@ -381,8 +380,10 @@ public class SimulationService {
             });
         }
 
+        String planIdentifier = getPlanIdentifierFilter(simulation);
+
         Map<UUID,Integer> latestDataYearByTags = getLatestDataYearByTagsID( locationHierarchy.getIdentifier().toString(),
-            new ArrayList<>(tagsMap.values()));
+            new ArrayList<>(tagsMap.values()), planIdentifier);
 
         Map<UUID, Integer> dataSetYearFilter = new HashMap<>();
 
@@ -400,7 +401,8 @@ public class SimulationService {
         final Map<UUID, Integer> computedDataSetYearFilter = dataSetYearFilter;
 
         Map<String, List<EntityMetadataResponse>> metadataMap =
-            fetchLocationsMetaData( locationHierarchy.getIdentifier(), datasetTagMap, locationsIds, computedDataSetYearFilter);
+            fetchLocationsMetaData( locationHierarchy.getIdentifier(), datasetTagMap, locationsIds, computedDataSetYearFilter,
+                planIdentifier);
 
         SseEmitter emitter = new SseEmitter(180000L);
         ExecutorService sseExecutor = Executors.newScheduledThreadPool(2);
@@ -468,6 +470,29 @@ public class SimulationService {
         });
 
         return emitter;
+    }
+
+    // Resolves user-supplied tags by identifier and/or by tag name, de-duplicated by identifier.
+    // Name lookup is scoped to the simulation plan's instance; falls back to a global lookup
+    // only when the plan has no instance.
+    private List<EntityTag> getUserEntityTags(Simulation simulation, List<UUID> userDatasetIds, List<String> userTagNames) {
+        Map<UUID, EntityTag> result = new LinkedHashMap<>();
+
+        if (CollectionUtils.isNotEmpty(userDatasetIds)) {
+            entityTagService.findEntityTagsByIdentifierIn(userDatasetIds)
+                .forEach(entityTag -> result.putIfAbsent(entityTag.getIdentifier(), entityTag));
+        }
+
+        if (CollectionUtils.isNotEmpty(userTagNames)) {
+            Set<String> names = new HashSet<>(userTagNames);
+            Instance instance = simulation.getPlan() != null ? simulation.getPlan().getInstance() : null;
+            Collection<EntityTag> tagsByName = instance != null
+                ? entityTagService.getEntityTagsByInstanceAndTagNames(instance.getIdentifier(), names)
+                : entityTagService.getEntityTagsByTagNames(names);
+            tagsByName.forEach(entityTag -> result.putIfAbsent(entityTag.getIdentifier(), entityTag));
+        }
+
+        return new ArrayList<>(result.values());
     }
 
     private String getRefenceTagName(String aggregateTagName) {
@@ -565,14 +590,12 @@ public class SimulationService {
 
         Map<String, UUID> tagsMap = buildTagsMap(simulation, request.getDatasetsIds());
 
-        if(CollectionUtils.isNotEmpty(request.getUserDatasetIds())){
-            List<EntityTag> entityTags = entityTagService.findEntityTagsByIdentifierIn(request.getUserDatasetIds());
-
-            entityTags.forEach( entityTag -> {
+        List<EntityTag> userEntityTags = getUserEntityTags(simulation, request.getUserDatasetIds(), request.getUserTagNames());
+        if(CollectionUtils.isNotEmpty(userEntityTags)){
+            userEntityTags.forEach( entityTag -> {
                 tagsMap.put(entityTag.getTag(),entityTag.getIdentifier());
 
                 Dataset tmp = new  Dataset();
-                tmp.setIdentifier(entityTag.getIdentifier());
                 tmp.setIdentifier(entityTag.getIdentifier());
                 tmp.setEntityTag(entityTag);
                 simulation.getDatasets().add(tmp);
@@ -611,7 +634,7 @@ public class SimulationService {
                 })
                 .collect(Collectors.toList());
             request.setDataSetYearFilter(getLatestDataYearByTagsID(locationHierarchy.getIdentifier().toString(),
-                tagsIds));
+                tagsIds, getPlanIdentifierFilter(simulation)));
         }
         else{
 
@@ -629,7 +652,7 @@ public class SimulationService {
         Map<String, List<EntityMetadataResponse>> metadataMap = request.getCampaignManagementFeatures()
               ? Collections.emptyMap()
               : fetchLocationsMetaData(locationHierarchy.getIdentifier(),
-                  tagsMap, locationsIds, request.getDataSetYearFilter() );
+                  tagsMap, locationsIds, request.getDataSetYearFilter(), getPlanIdentifierFilter(simulation));
 
         if (request.getIncludeGeometry()) {
             locations = fetchLocationsWithGeometry(locationsIds, locationHierarchy.getIdentifier());
@@ -716,7 +739,8 @@ public class SimulationService {
                     .stream().map(UUID::toString).collect(Collectors.toList());
 
                 Map<UUID, Integer> latestYearMap =
-                    getLatestDataYearByTagsID(locationHierarchy.getIdentifier().toString(), Collections.singletonList(request.getTagId()));
+                    getLatestDataYearByTagsID(locationHierarchy.getIdentifier().toString(), Collections.singletonList(request.getTagId()),
+                        getPlanIdentifierFilter(simulation));
 
                 tags = entityTagService.getValuesForTagAndLocationsLatest(
                     request.getTagId(), locationsIds , latestYearMap.get(request.getTagId()));
@@ -1019,7 +1043,7 @@ public class SimulationService {
 
     private Map<String, List<EntityMetadataResponse>> fetchLocationsMetaData(
         UUID locationHierarchyId, Map<String, UUID> tagsMap, List<String> locationsIds,
-        Map<UUID, Integer> dataSetYearFilter) {
+        Map<UUID, Integer> dataSetYearFilter, String planIdentifier) {
 
         Map<Integer, List<UUID>> entityTagIdsByYear = dataSetYearFilter.entrySet()
             .stream()
@@ -1038,7 +1062,8 @@ public class SimulationService {
                     locationsIds,
                     locationHierarchyId.toString(),
                     tagIds.stream().map(UUID::toString).collect(Collectors.toList()),
-                    year
+                    year,
+                    planIdentifier
                 );
             allResults.addAll(results);
         }
@@ -1210,9 +1235,20 @@ public class SimulationService {
     }
 
 
-    private Map<UUID,Integer> getLatestDataYearByTagsID(String hierarchyId, List<UUID> tagIds){
+    /**
+     * Value of the planidentifier filter on aggregated tag values: rows with no plan identifier
+     * (dataset imports) are always included, plus the 'user-set' rows of the simulation plan's
+     * instance. A plan without an instance only sees the rows with no plan identifier.
+     */
+    private String getPlanIdentifierFilter(Simulation simulation) {
+        Instance instance = simulation.getPlan() != null ? simulation.getPlan().getInstance() : null;
+        return instance != null ? instance.getIdentifier().toString() : "";
+    }
+
+    private Map<UUID,Integer> getLatestDataYearByTagsID(String hierarchyId, List<UUID> tagIds, String planIdentifier){
         List<TagYearAggregateDateProjection> latestYears =
-            importAggregateByDateRepository.findLatestYearPerTag(hierarchyId,  tagIds.stream().map(UUID::toString).collect(Collectors.toList()) );
+            importAggregateByDateRepository.findLatestYearPerTag(hierarchyId,  tagIds.stream().map(UUID::toString).collect(Collectors.toList()),
+                planIdentifier);
 
         Map<UUID, Integer> resultMap = latestYears.stream()
             .collect(Collectors.toMap(
@@ -1230,9 +1266,10 @@ public class SimulationService {
         return tagYearMap;
     }
 
-    private Map<String,Integer> getLatestDataYearByTagName(String hierarchyId, List<UUID> tagIds){
+    private Map<String,Integer> getLatestDataYearByTagName(String hierarchyId, List<UUID> tagIds, String planIdentifier){
         List<TagYearAggregateDateProjection> latestYears =
-            importAggregateByDateRepository.findLatestYearPerTag(hierarchyId,  tagIds.stream().map(UUID::toString).collect(Collectors.toList()));
+            importAggregateByDateRepository.findLatestYearPerTag(hierarchyId,  tagIds.stream().map(UUID::toString).collect(Collectors.toList()),
+                planIdentifier);
 
         Map<UUID, TagYearAggregateDateProjection> resultMap = latestYears.stream()
             .collect(Collectors.toMap(

@@ -74,6 +74,7 @@ import java.io.IOException;
 import java.security.Principal;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -425,6 +426,10 @@ public class EntityTagService {
 
   public Set<EntityTag> getEntityTagsByTagNames(Set<String> names) {
     return entityTagRepository.findEntityTagsByTagIn(names);
+  }
+
+  public List<EntityTag> getEntityTagsByInstanceAndTagNames(UUID instanceId, Collection<String> names) {
+    return entityTagRepository.findByInstanceIdAndTagIn(instanceId, names);
   }
 
   public List<EntityTag> findEntityTagsByIdentifierIn(List<UUID> ids) {

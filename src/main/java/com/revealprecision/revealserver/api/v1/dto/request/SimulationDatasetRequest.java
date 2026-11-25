@@ -22,6 +22,7 @@ public class SimulationDatasetRequest {
     private Map<String, Integer> dataSetYearFilter;
     private Boolean addToSimulation;
     private List<UUID> userDatasetIds;
+    private List<String> userTagNames;
     private DatasetType datasetType;
     private String dataSetId;
     private Map<String,Object> metadata;

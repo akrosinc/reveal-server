@@ -19,23 +19,9 @@ instance. Each count replaces the previous value for the location, tag and dataC
 @AllArgsConstructor
 @NoArgsConstructor
 public class InstanceLocationEntityTagCountRequest {
-
   private UUID locationId;
-
   // optional, as in a dataset upload; values are kept per capture date
   private LocalDate dataCaptureDate;
-
-  private List<TagCount> tags;
-
-  @Getter
-  @Setter
-  @Builder
-  @AllArgsConstructor
-  @NoArgsConstructor
-  public static class TagCount {
-
-    private String tag;
-
-    private Integer count;
-  }
+  private String tag;
+  private Integer count;
 }

@@ -84,13 +84,15 @@ public interface ImportAggregateByDateRepository extends JpaRepository<ImportAgg
             "AND ian.hierarchyidentifier = :hierarchyId " +
             "AND CAST(et.identifier AS VARCHAR) IN (:tagIds ) " +
             "AND (ian.year = :year) " +
+            "AND (ian.planidentifier IS NULL OR ian.planidentifier = :planIdentifier) " +
             "AND l.entity_status = 'ACTIVE'",
         nativeQuery = true)
     List<LocationWithMetadataProjection> findLocationsWithMetadata(
         @Param("locationIds") List<String> locationIds,
         @Param("hierarchyId") String hierarchyId,
         @Param("tagIds") List<String> tagIds,
-        @Param("year") Integer year
+        @Param("year") Integer year,
+        @Param("planIdentifier") String planIdentifier
     );
 
 
@@ -101,11 +103,13 @@ public interface ImportAggregateByDateRepository extends JpaRepository<ImportAgg
             "INNER JOIN entity_tag et ON ian.fieldcode = et.definition " +
             "WHERE ian.hierarchyidentifier = :hierarchyId " +
             "AND CAST(et.identifier AS VARCHAR) IN (:tagIds) " +
+            "AND (ian.planidentifier IS NULL OR ian.planidentifier = :planIdentifier) " +
             "GROUP BY et.identifier,ian.fieldcode",
         nativeQuery = true)
     List<TagYearAggregateDateProjection> findLatestYearPerTag(
         @Param("hierarchyId") String hierarchyId,
-        @Param("tagIds") List<String> tagIds
+        @Param("tagIds") List<String> tagIds,
+        @Param("planIdentifier") String planIdentifier
     );
 
     @Query(value =

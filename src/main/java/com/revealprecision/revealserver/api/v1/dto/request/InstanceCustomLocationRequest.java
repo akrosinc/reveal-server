@@ -31,4 +31,10 @@ public class InstanceCustomLocationRequest {
   private Geometry locationBoundary;
 
   private List<Point> points;
+
+  /**
+   * Numeric entity tag counted on the parent location: incremented by one on create, and moved from
+   * the previous parent to the new one when an update changes the parent. Not stored.
+   */
+  private String tagName;
 }

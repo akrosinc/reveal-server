@@ -22,4 +22,5 @@ public class DatasetLocationsRequest {
     private Boolean campaignManagementFeatures;
     private Map<UUID, Integer> dataSetYearFilter;
     private List<UUID> userDatasetIds;
+    private List<String> userTagNames;
 }

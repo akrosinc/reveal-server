@@ -31,19 +31,32 @@ public interface ImportAggregationNumericRepository extends
       String name,
       String locId, String tag, String hierarchyIdentifier, LocalDate dataCaptureDate);
 
+  // planIdentifier holds the instance identifier for 'user-set' rows and is null for dataset
+  // imports; a null dataCaptureDate / planIdentifier is matched with IS NULL by the derived query
+  Optional<ImportAggregationNumeric> findByNameAndAncestorAndFieldCodeAndHierarchyIdentifierAndDataCaptureDateAndPlanIdentifier(
+      String name, String ancestor, String fieldCode, String hierarchyIdentifier,
+      LocalDate dataCaptureDate, String planIdentifier);
+
+  Optional<ImportAggregationNumeric> findByNameAndAncestorAndFieldCodeAndHierarchyIdentifierAndDataCaptureDateAndEventTypeAndPlanIdentifier(
+      String name, String ancestor, String fieldCode, String hierarchyIdentifier,
+      LocalDate dataCaptureDate, String eventType, String planIdentifier);
+
   // values of the given tags for a location (rows whose ancestor is the location): count is the
-  // location's own value (row named after the location), total includes its descendants
+  // location's own value (row named after the location), total includes its descendants. Only rows
+  // of the instance (planIdentifier) or without one (dataset imports) are counted.
   @Query("SELECT ag.fieldCode AS tag, "
       + "SUM(CASE WHEN ag.name = :name THEN ag.val ELSE NULL END) AS ownCount, "
       + "SUM(ag.val) AS totalCount "
       + "FROM ImportAggregationNumeric ag "
       + "WHERE ag.ancestor = :ancestor AND ag.hierarchyIdentifier = :hierarchyIdentifier "
       + "AND ag.fieldCode IN :tags AND ag.dataCaptureDate = :dataCaptureDate "
+      + "AND (ag.planIdentifier IS NULL OR ag.planIdentifier = :planIdentifier) "
       + "GROUP BY ag.fieldCode")
   List<LocationEntityTagCountProjection> findTagCountsByLocationAndDataCaptureDate(
       @Param("ancestor") String ancestor, @Param("name") String name,
       @Param("hierarchyIdentifier") String hierarchyIdentifier,
-      @Param("tags") Collection<String> tags, @Param("dataCaptureDate") LocalDate dataCaptureDate);
+      @Param("tags") Collection<String> tags, @Param("dataCaptureDate") LocalDate dataCaptureDate,
+      @Param("planIdentifier") String planIdentifier);
 
   @Query("SELECT ag.fieldCode AS tag, "
       + "SUM(CASE WHEN ag.name = :name THEN ag.val ELSE NULL END) AS ownCount, "
@@ -51,9 +64,10 @@ public interface ImportAggregationNumericRepository extends
       + "FROM ImportAggregationNumeric ag "
       + "WHERE ag.ancestor = :ancestor AND ag.hierarchyIdentifier = :hierarchyIdentifier "
       + "AND ag.fieldCode IN :tags AND ag.dataCaptureDate IS NULL "
+      + "AND (ag.planIdentifier IS NULL OR ag.planIdentifier = :planIdentifier) "
       + "GROUP BY ag.fieldCode")
   List<LocationEntityTagCountProjection> findTagCountsByLocationWithoutDataCaptureDate(
       @Param("ancestor") String ancestor, @Param("name") String name,
       @Param("hierarchyIdentifier") String hierarchyIdentifier,
-      @Param("tags") Collection<String> tags);
+      @Param("tags") Collection<String> tags, @Param("planIdentifier") String planIdentifier);
 }
