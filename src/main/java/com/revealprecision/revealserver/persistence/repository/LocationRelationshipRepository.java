@@ -78,6 +78,64 @@ public interface LocationRelationshipRepository extends JpaRepository<LocationRe
         @Param("locationIdentifierListString") List<UUID> locationIdentifierListString,
         @Param("locationHierarchyIdentifier") UUID locationHierarchyIdentifier, Long serverVersion);
 
+    /**
+     * Locations visible to a set of organizations, at every geographic level. For every SELECTED
+     * plan_assignment of the organizations on an ACTIVE plan, returns the selected location, all of
+     * its descendants (structures included) and its ancestors (the path used to draw the map).
+     * Only relationships of the plan's own hierarchy count, and the parent returned is the parent
+     * in that hierarchy. No plan target level and no client-supplied hierarchy are involved.
+     * Descendants come from the GIN-indexed ancestry array, so there is no recursive walk.
+     */
+    @Query(value = "WITH scope AS ( "
+        + "  SELECT pl.location_identifier AS location_identifier, "
+        + "    p.hierarchy_identifier AS hierarchy_identifier "
+        + "  FROM plan_assignment pa "
+        + "  JOIN plan_locations pl ON pl.identifier = pa.plan_locations_identifier "
+        + "  JOIN plan p ON p.identifier = pl.plan_identifier "
+        + "  WHERE pa.organization_identifier IN (:organizationIds) "
+        + "    AND pa.selected = true AND pa.entity_status = 'ACTIVE' "
+        + "    AND pl.entity_status = 'ACTIVE' "
+        + "    AND p.status = 'ACTIVE' AND p.entity_status = 'ACTIVE' "
+        + "), scope_locations AS ( "
+        + "  SELECT s.hierarchy_identifier, s.location_identifier FROM scope s "
+        + "  UNION "
+        + "  SELECT s.hierarchy_identifier, lr.location_identifier FROM scope s "
+        + "  JOIN location_relationship lr ON lr.ancestry @> ARRAY[s.location_identifier] "
+        + "    AND lr.location_hierarchy_identifier = s.hierarchy_identifier "
+        + "  WHERE lr.entity_status = 'ACTIVE' "
+        + "  UNION "
+        + "  SELECT s.hierarchy_identifier, unnest(lr.ancestry) FROM scope s "
+        + "  JOIN location_relationship lr ON lr.location_identifier = s.location_identifier "
+        + "    AND lr.location_hierarchy_identifier = s.hierarchy_identifier "
+        + "  WHERE lr.entity_status = 'ACTIVE' "
+        + "), rows AS ( "
+        + "  SELECT DISTINCT ON (l.identifier) "
+        + "    CAST(l.identifier as varchar) as identifier, "
+        + "    l.name as name, "
+        + "    l.geometry->>'type' as type, "
+        + "    CAST(l.geometry as varchar) as geometry, "
+        + "    l.status as status, "
+        + "    CAST(l.external_id as varchar) as externalId, "
+        + "    gl.name as geographicLevelName, "
+        + "    CAST(l.location_property as varchar) as locationProperty, "
+        + "    l.entity_status as entityStatus, "
+        + "    l.server_version as serverVersion, "
+        + "    l.hash_value as hashValue, "
+        + "    CAST(lr.parent_identifier as varchar) as parentIdentifier "
+        + "  FROM scope_locations sl "
+        + "  JOIN location l ON l.identifier = sl.location_identifier "
+        + "  LEFT JOIN geographic_level gl ON gl.identifier = l.geographic_level_identifier "
+        + "  LEFT JOIN location_relationship lr ON lr.location_identifier = sl.location_identifier "
+        + "    AND lr.location_hierarchy_identifier = sl.hierarchy_identifier "
+        + "    AND lr.entity_status = 'ACTIVE' "
+        + "  WHERE l.entity_status = 'ACTIVE' AND l.server_version >= :serverVersion "
+        + "  ORDER BY l.identifier "
+        + ") "
+        + "SELECT * FROM rows ORDER BY serverVersion", nativeQuery = true)
+    List<LocationWithParentProjection> getLocationsForAssignedOrganizations(
+        @Param("organizationIds") List<UUID> organizationIds,
+        @Param("serverVersion") Long serverVersion);
+
     @Query(value =
         "SELECT cast(lr.identifier as varchar) identifier, l.name locationName, cast(l.identifier as varchar) locationIdentifier, cast(lr.parent_identifier as varchar) parentIdentifier, gl.name geographicLevelName FROM location_relationship lr "
             + "LEFT JOIN location l ON lr.location_identifier = l.identifier "

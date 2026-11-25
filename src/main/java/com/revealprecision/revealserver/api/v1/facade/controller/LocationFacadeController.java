@@ -48,6 +48,22 @@ public class LocationFacadeController {
     return ResponseEntity.status(HttpStatus.OK).headers(headers).body(physicalLocations);
   }
 
+  @Operation(summary = "Assignment driven location sync for Reveal mobile app", description =
+      "Returns every location the caller's teams are assigned to, at every level (selected "
+          + "locations, their descendants and their ancestors), with parents from each plan's own "
+          + "hierarchy. Only serverVersion is read from the request.", tags = {"Location"})
+  @PostMapping(value = "/sync/assigned", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<List<PhysicalLocation>> getLocationsByAssignment(
+      @RequestBody LocationSyncRequest locationSyncRequest) {
+
+    List<PhysicalLocation> physicalLocations = locationFacadeService
+        .syncLocationsByAssignment(locationSyncRequest.getServerVersion());
+
+    HttpHeaders headers = locationFacadeService.addCountToHeaders(
+        (long) physicalLocations.size(), new HttpHeaders());
+    return ResponseEntity.status(HttpStatus.OK).headers(headers).body(physicalLocations);
+  }
+
   @Operation(summary = "Update server with structure/Location created from reveal mobile app", description = "Update server with structure/Location created from reveal mobile app", tags = {
       "Location"})
   @PostMapping(value = "/add", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)

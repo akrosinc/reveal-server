@@ -7,9 +7,12 @@ import com.revealprecision.revealserver.api.v1.facade.models.CreateLocationReque
 import com.revealprecision.revealserver.api.v1.facade.models.PhysicalLocation;
 import com.revealprecision.revealserver.api.v1.facade.request.LocationSyncRequest;
 import com.revealprecision.revealserver.constants.LocationConstants;
+import com.revealprecision.revealserver.persistence.domain.Organization;
 import com.revealprecision.revealserver.persistence.projection.LocationWithParentProjection;
+import com.revealprecision.revealserver.persistence.repository.LocationRelationshipRepository;
 import com.revealprecision.revealserver.service.LocationRelationshipService;
 import com.revealprecision.revealserver.service.LocationService;
+import com.revealprecision.revealserver.service.UserService;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -36,6 +39,10 @@ public class LocationFacadeService {
 
   private final PhysicalLocationResponseFactory physicalLocationResponseFactory;
 
+  private final LocationRelationshipRepository locationRelationshipRepository;
+
+  private final UserService userService;
+
   public List<PhysicalLocation> syncLocations(LocationSyncRequest locationSyncRequest,
       UUID hierarchyIdentifier) {
     boolean isJurisdiction = locationSyncRequest.getIsJurisdiction();
@@ -47,6 +54,25 @@ public class LocationFacadeService {
     }
     return physicalLocations;
 
+  }
+
+  /**
+   * Assignment driven location sync: every location the caller's organizations can see (selected
+   * assignment locations, their descendants at every level and their ancestors), each with its
+   * parent in the plan's own hierarchy. Replaces the jurisdiction / structure split on the client.
+   */
+  public List<PhysicalLocation> syncLocationsByAssignment(Long serverVersion) {
+    List<UUID> organizationIds = userService.getCurrentUser().getOrganizations().stream()
+        .map(Organization::getIdentifier).collect(Collectors.toList());
+    if (organizationIds.isEmpty()) {
+      return new ArrayList<>();
+    }
+    return locationRelationshipRepository
+        .getLocationsForAssignedOrganizations(organizationIds,
+            serverVersion == null ? 0L : serverVersion)
+        .stream()
+        .map(physicalLocationResponseFactory::fromLocationWithParentProjection)
+        .collect(Collectors.toList());
   }
 
   public HttpHeaders addCountToHeaders(Long count,
