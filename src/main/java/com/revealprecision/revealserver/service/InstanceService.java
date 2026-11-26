@@ -576,11 +576,16 @@ public class InstanceService {
         currentUser, instanceAdmin.getId(), instanceIdentifier);
 
     if (isGlobalAdmin || isInstanceAdmin) {
-      LocationHierarchyResponse response = instanceLocationService.getInstanceHierarchyTreeResponse(
+      LocationHierarchyResponse cached = instanceLocationService.getInstanceHierarchyTreeResponse(
           instanceIdentifier);
-      instanceCustomLocationService.attachCustomLocationsToTree(instanceIdentifier,
-          response.getGeoTree());
-      return response;
+      // The hierarchy tree is cached by reference (ehcache heap store), so attach custom
+      // locations to a copy; mutating the cached tree adds them again on every request.
+      List<GeoTreeResponse> hierarchyTree = copyGeoTree(cached.getGeoTree());
+      instanceCustomLocationService.attachCustomLocationsToTree(instanceIdentifier, hierarchyTree);
+      return LocationHierarchyResponse.builder().identifier(cached.getIdentifier())
+          .name(cached.getName())
+          .geoTree(hierarchyTree)
+          .nodeOrder(cached.getNodeOrder()).build();
     } else {
       List<UUID> userLocationsIds = organizationLocationRepository.findLocationIdentifiersByInstanceAndUser(
           instanceIdentifier, currentUser.getIdentifier());
@@ -598,6 +603,24 @@ public class InstanceService {
           .geoTree(hierarchyTree)
           .nodeOrder(instanceLocationHierarchy.getNodeOrder()).build();
     }
+  }
+
+  private static List<GeoTreeResponse> copyGeoTree(List<GeoTreeResponse> tree) {
+    if (tree == null) {
+      return null;
+    }
+    return tree.stream()
+        .map(node -> GeoTreeResponse.builder()
+            .identifier(node.getIdentifier())
+            .type(node.getType())
+            .geometry(node.getGeometry())
+            .properties(node.getProperties())
+            .children(copyGeoTree(node.getChildren()))
+            .active(node.getActive())
+            .teams(node.getTeams())
+            .selected(node.getSelected())
+            .build())
+        .collect(Collectors.toCollection(ArrayList::new));
   }
 
   public List<IdentifierNameResponse> getDatasetsByUserId(UUID userId) {
