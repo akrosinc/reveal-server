@@ -82,7 +82,7 @@ public class InstanceCustomLocationController {
   public ResponseEntity<Void> setLocationEntityTagCounts(
       @RequestBody InstanceLocationEntityTagCountRequest request) {
     instanceCustomLocationService.setLocationEntityTagCounts(request);
-    return ResponseEntity.status(HttpStatus.ACCEPTED).build();
+    return ResponseEntity.status(HttpStatus.OK).build();
   }
 
   @Operation(summary = "Get entity tag counts of a location",

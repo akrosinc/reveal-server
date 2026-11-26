@@ -485,10 +485,7 @@ public class SimulationService {
 
         if (CollectionUtils.isNotEmpty(userTagNames)) {
             Set<String> names = new HashSet<>(userTagNames);
-            Instance instance = simulation.getPlan() != null ? simulation.getPlan().getInstance() : null;
-            Collection<EntityTag> tagsByName = instance != null
-                ? entityTagService.getEntityTagsByInstanceAndTagNames(instance.getIdentifier(), names)
-                : entityTagService.getEntityTagsByTagNames(names);
+            Collection<EntityTag> tagsByName = entityTagService.getEntityTagsByTagNames(names);
             tagsByName.forEach(entityTag -> result.putIfAbsent(entityTag.getIdentifier(), entityTag));
         }
 

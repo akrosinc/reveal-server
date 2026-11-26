@@ -23,5 +23,5 @@ public class InstanceLocationEntityTagCountRequest {
   // optional, as in a dataset upload; values are kept per capture date
   private LocalDate dataCaptureDate;
   private String tag;
-  private Integer count;
+  private Double count;
 }
